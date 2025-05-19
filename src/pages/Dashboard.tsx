@@ -3,6 +3,7 @@ import { useState } from "react";
 import Layout from "@/components/layout/Layout";
 import OrdersTable from "@/components/dashboard/OrdersTable";
 import OrderModal from "@/components/dashboard/OrderModal";
+import CreateOrderModal from "@/components/dashboard/CreateOrderModal";
 import { Order } from "@/types";
 import { Button } from "@/components/ui/button";
 import { RefreshCcw, Plus } from "lucide-react";
@@ -12,6 +13,7 @@ import Sidebar from "@/components/dashboard/Sidebar";
 const Dashboard = () => {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [createModalOpen, setCreateModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("All");
 
   const handleOrderClick = (order: Order) => {
@@ -44,7 +46,7 @@ const Dashboard = () => {
                 <Button variant="outline" size="icon">
                   <RefreshCcw className="h-4 w-4" />
                 </Button>
-                <Button>
+                <Button onClick={() => setCreateModalOpen(true)}>
                   <Plus className="h-4 w-4 mr-2" />
                   Create Order
                 </Button>
@@ -59,6 +61,11 @@ const Dashboard = () => {
               order={selectedOrder} 
               open={modalOpen} 
               onClose={closeModal} 
+            />
+
+            <CreateOrderModal
+              open={createModalOpen}
+              onClose={() => setCreateModalOpen(false)}
             />
           </div>
         </Layout>

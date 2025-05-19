@@ -1,5 +1,6 @@
 
 import { ReactNode } from "react";
+import { Toaster } from "@/components/ui/toaster";
 
 interface LayoutProps {
   children: ReactNode;
@@ -12,6 +13,7 @@ const Layout = ({ children, userRole = "admin" }: LayoutProps) => {
       <main className="flex-1 px-6 py-6">
         {children}
       </main>
+      <Toaster />
     </div>
   );
 };
