@@ -1,6 +1,4 @@
-
 import { useState } from "react";
-import { X } from "lucide-react";
 import { 
   Dialog, 
   DialogContent, 
@@ -197,9 +195,6 @@ const OrderModal = ({ order, open, onClose }: OrderModalProps) => {
               <Badge className={getStatusColor(order.status)}>{order.status}</Badge>
               <Badge className={getPriorityColor(order.priority)}>{order.priority}</Badge>
             </div>
-            <Button variant="ghost" size="icon" onClick={onClose}>
-              <X className="h-4 w-4" />
-            </Button>
           </DialogTitle>
         </DialogHeader>
         
