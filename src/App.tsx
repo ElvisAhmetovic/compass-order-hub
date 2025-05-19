@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
+import UserManagement from "./pages/UserManagement";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,7 +31,7 @@ const App = () => (
           <Route path="/invoice-sent" element={<Dashboard />} />
           <Route path="/invoice-paid" element={<Dashboard />} />
           <Route path="/companies" element={<Dashboard />} />
-          <Route path="/user-management" element={<Dashboard />} />
+          <Route path="/user-management" element={<UserManagement />} />
           <Route path="/deleted" element={<Dashboard />} />
           <Route path="/reviews" element={<Dashboard />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

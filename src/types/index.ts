@@ -1,5 +1,5 @@
 
-export type UserRole = 'admin' | 'agent';
+export type UserRole = 'admin' | 'agent' | 'user';
 
 export interface User {
   id: string;
@@ -7,6 +7,12 @@ export interface User {
   role: UserRole;
   created_at: string;
   full_name?: string;
+}
+
+export interface UserPermission {
+  id: string;
+  user_id: string;
+  permission: string;
 }
 
 export type OrderStatus = 
