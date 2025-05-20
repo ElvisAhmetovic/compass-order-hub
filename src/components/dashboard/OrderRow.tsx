@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { MoreHorizontal, FileText } from "lucide-react";
@@ -13,6 +12,7 @@ import {
 import { TableRow, TableCell } from "@/components/ui/table";
 import { Order } from "@/types";
 import { formatDate } from "@/lib/utils";
+import { useAuth } from "@/context/AuthContext";
 
 interface OrderRowProps {
   order: Order;
@@ -23,6 +23,8 @@ interface OrderRowProps {
 
 const OrderRow = ({ order, onOrderClick, onRefresh, assigneeName }: OrderRowProps) => {
   const [isDeleting, setIsDeleting] = useState(false);
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
@@ -125,43 +127,55 @@ const OrderRow = ({ order, onOrderClick, onRefresh, assigneeName }: OrderRowProp
         {formatDate(order.updated_at)}
       </TableCell>
       <TableCell>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="p-0 h-8 w-8">
-              <MoreHorizontal className="h-4 w-4" />
-              <span className="sr-only">Open menu</span>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => onOrderClick(order)}>
-              View Details
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => handleUpdateStatus("In Progress")}>
-              Mark as In Progress
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleUpdateStatus("Resolved")}>
-              Mark as Resolved
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleUpdateStatus("Invoice Sent")}>
-              Mark as Invoice Sent
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleUpdateStatus("Invoice Paid")}>
-              Mark as Invoice Paid
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleUpdateStatus("Complaint")}>
-              Mark as Complaint
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem 
-              onClick={handleDelete}
-              className="text-destructive"
-              disabled={isDeleting}
-            >
-              {isDeleting ? "Deleting..." : "Delete Order"}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {isAdmin ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="p-0 h-8 w-8">
+                <MoreHorizontal className="h-4 w-4" />
+                <span className="sr-only">Open menu</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => onOrderClick(order)}>
+                View Details
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => handleUpdateStatus("In Progress")}>
+                Mark as In Progress
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleUpdateStatus("Resolved")}>
+                Mark as Resolved
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleUpdateStatus("Invoice Sent")}>
+                Mark as Invoice Sent
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleUpdateStatus("Invoice Paid")}>
+                Mark as Invoice Paid
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleUpdateStatus("Complaint")}>
+                Mark as Complaint
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem 
+                onClick={handleDelete}
+                className="text-destructive"
+                disabled={isDeleting}
+              >
+                {isDeleting ? "Deleting..." : "Delete Order"}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : (
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="p-0 h-8 w-8"
+            onClick={() => onOrderClick(order)}
+          >
+            <FileText className="h-4 w-4" />
+            <span className="sr-only">View Details</span>
+          </Button>
+        )}
       </TableCell>
     </TableRow>
   );

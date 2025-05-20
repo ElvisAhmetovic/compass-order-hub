@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import OrderTable from "@/components/dashboard/OrderTable";
@@ -11,6 +10,7 @@ import ActiveOrdersTabs from "@/components/dashboard/ActiveOrdersTabs";
 import Sidebar from "@/components/dashboard/Sidebar";
 import { useLocation } from "react-router-dom";
 import { useOrderModal } from "@/hooks/useOrderModal";
+import { useAuth } from "@/context/AuthContext";
 
 const Dashboard = () => {
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -22,8 +22,10 @@ const Dashboard = () => {
   // Use the order modal hook
   const { currentOrder, isOpen, open, close } = useOrderModal();
   
-  // Set user role - in a real app, this would come from authentication
-  const userRole: UserRole = "admin";
+  // Get user role from auth context
+  const { user } = useAuth();
+  const userRole: UserRole = user?.role || "user";
+  const isAdmin = userRole === "admin";
 
   // Determine page status filter based on current route
   const getStatusFilterFromPath = (path: string): OrderStatus | null => {
@@ -88,7 +90,7 @@ const Dashboard = () => {
                   ? "Here's an overview of your order statuses" 
                   : `Manage and track all ${getPageTitle().toLowerCase()} in the system`
               }
-              onCreateOrder={() => setCreateModalOpen(true)}
+              onCreateOrder={isAdmin ? () => setCreateModalOpen(true) : undefined}
             />
             
             {isDashboardHome && <DashboardCards />}
@@ -100,7 +102,7 @@ const Dashboard = () => {
             <OrderTable 
               onOrderClick={open} 
               statusFilter={path === "/active-orders" ? activeTab : pathStatusFilter} 
-              refreshTrigger={refreshTrigger} // Pass refresh trigger to table
+              refreshTrigger={refreshTrigger}
             />
             
             <OrderModal 

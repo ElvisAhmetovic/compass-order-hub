@@ -27,7 +27,7 @@ import { Order, OrderComment, OrderStatus, OrderStatusHistory, User, UserRole } 
 import { formatDate } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
 import { Input } from "@/components/ui/input";
-import { Edit, Save } from "lucide-react";
+import { Edit, Save, AlertCircle } from "lucide-react";
 
 // Mock data for demonstration
 const mockComments: OrderComment[] = [
@@ -117,6 +117,7 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
 
   // Check if current user is admin or owner of the order
   const canEdit = userRole === "admin" || currentOrder.created_by === user?.id;
+  const isAdmin = userRole === "admin";
 
   const getStatusColor = (status: OrderStatus) => {
     const statusClasses = {
@@ -433,6 +434,28 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
     return assigneeUser?.full_name || assigneeUser?.email || "Unknown User";
   };
 
+  // Function to determine which tabs should be visible based on user role
+  const getAvailableTabs = () => {
+    // Everyone can see details and comments
+    const tabs = [
+      { value: "details", label: "Details" },
+      { value: "comments", label: "Comments" }
+    ];
+    
+    // Only admin users can see history, change status and assign tabs
+    if (isAdmin) {
+      tabs.push(
+        { value: "history", label: "Status History" },
+        { value: "change", label: "Change Status" },
+        { value: "assign", label: "Assign Order" }
+      );
+    }
+    
+    return tabs;
+  };
+
+  const availableTabs = getAvailableTabs();
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
@@ -447,16 +470,23 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
         </DialogHeader>
         
         <Tabs defaultValue="details" value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid grid-cols-5">
-            <TabsTrigger value="details">Details</TabsTrigger>
-            <TabsTrigger value="history">Status History</TabsTrigger>
-            <TabsTrigger value="comments">Comments</TabsTrigger>
-            <TabsTrigger value="change">Change Status</TabsTrigger>
-            <TabsTrigger value="assign">Assign Order</TabsTrigger>
+          <TabsList className={`grid ${isAdmin ? "grid-cols-5" : "grid-cols-2"}`}>
+            {availableTabs.map((tab) => (
+              <TabsTrigger key={tab.value} value={tab.value}>{tab.label}</TabsTrigger>
+            ))}
           </TabsList>
           
           {/* Details Tab */}
           <TabsContent value="details" className="space-y-4">
+            {!isAdmin && !canEdit && (
+              <div className="bg-amber-50 border border-amber-200 p-3 rounded-md mb-4 flex items-start gap-2">
+                <AlertCircle className="h-5 w-5 text-amber-500 mt-0.5 flex-shrink-0" />
+                <p className="text-sm text-amber-800">
+                  Only administrators can edit order details. You can view but not modify this information.
+                </p>
+              </div>
+            )}
+            
             {canEdit && !isEditing && (
               <div className="flex justify-end">
                 <Button 
@@ -503,7 +533,7 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
                   <div className="py-2 grid grid-cols-3">
                     <dt className="font-medium">Company Name:</dt>
                     <dd className="col-span-2">
-                      {isEditing ? (
+                      {isEditing && canEdit ? (
                         <Input 
                           value={editedOrder.company_name !== undefined ? editedOrder.company_name : currentOrder.company_name} 
                           onChange={(e) => handleEditChange('company_name', e.target.value)}
@@ -516,7 +546,7 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
                   <div className="py-2 grid grid-cols-3">
                     <dt className="font-medium">Contact Name:</dt>
                     <dd className="col-span-2">
-                      {isEditing ? (
+                      {isEditing && canEdit ? (
                         <Input 
                           value={editedOrder.contact_name !== undefined ? editedOrder.contact_name : currentOrder.contact_name} 
                           onChange={(e) => handleEditChange('contact_name', e.target.value)}
@@ -529,7 +559,7 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
                   <div className="py-2 grid grid-cols-3">
                     <dt className="font-medium">Contact Email:</dt>
                     <dd className="col-span-2">
-                      {isEditing ? (
+                      {isEditing && canEdit ? (
                         <Input 
                           type="email"
                           value={editedOrder.contact_email !== undefined ? editedOrder.contact_email : currentOrder.contact_email} 
@@ -543,7 +573,7 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
                   <div className="py-2 grid grid-cols-3">
                     <dt className="font-medium">Contact Phone:</dt>
                     <dd className="col-span-2">
-                      {isEditing ? (
+                      {isEditing && canEdit ? (
                         <Input 
                           value={editedOrder.contact_phone !== undefined ? editedOrder.contact_phone : currentOrder.contact_phone || ""} 
                           onChange={(e) => handleEditChange('contact_phone', e.target.value)}
@@ -603,7 +633,7 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
             </div>
           </TabsContent>
           
-          {/* Status History Tab */}
+          {/* Status History Tab (admin only) */}
           <TabsContent value="history">
             <div className="space-y-4">
               <h3 className="font-medium text-lg">Status History</h3>
@@ -665,82 +695,86 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
             </div>
           </TabsContent>
           
-          {/* Change Status Tab */}
-          <TabsContent value="change">
-            <div className="space-y-4">
-              <h3 className="font-medium text-lg">Change Order Status</h3>
+          {/* Change Status Tab (admin only) */}
+          {isAdmin && (
+            <TabsContent value="change">
               <div className="space-y-4">
-                <div className="space-y-2">
-                  <label htmlFor="status-select" className="text-sm font-medium">New Status</label>
-                  <Select value={newStatus} onValueChange={(value) => setNewStatus(value as OrderStatus)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Created">Created</SelectItem>
-                      <SelectItem value="In Progress">In Progress</SelectItem>
-                      <SelectItem value="Complaint">Complaint</SelectItem>
-                      <SelectItem value="Invoice Sent">Invoice Sent</SelectItem>
-                      <SelectItem value="Invoice Paid">Invoice Paid</SelectItem>
-                      <SelectItem value="Resolved">Resolved</SelectItem>
-                      <SelectItem value="Cancelled">Cancelled</SelectItem>
-                      <SelectItem value="Deleted">Deleted</SelectItem>
-                      <SelectItem value="Review">Review</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <h3 className="font-medium text-lg">Change Order Status</h3>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <label htmlFor="status-select" className="text-sm font-medium">New Status</label>
+                    <Select value={newStatus} onValueChange={(value) => setNewStatus(value as OrderStatus)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Created">Created</SelectItem>
+                        <SelectItem value="In Progress">In Progress</SelectItem>
+                        <SelectItem value="Complaint">Complaint</SelectItem>
+                        <SelectItem value="Invoice Sent">Invoice Sent</SelectItem>
+                        <SelectItem value="Invoice Paid">Invoice Paid</SelectItem>
+                        <SelectItem value="Resolved">Resolved</SelectItem>
+                        <SelectItem value="Cancelled">Cancelled</SelectItem>
+                        <SelectItem value="Deleted">Deleted</SelectItem>
+                        <SelectItem value="Review">Review</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label htmlFor="status-note" className="text-sm font-medium">Status Note (Optional)</label>
+                    <Textarea 
+                      id="status-note"
+                      placeholder="Add a note explaining the status change..."
+                      value={statusNote}
+                      onChange={(e) => setStatusNote(e.target.value)}
+                    />
+                  </div>
+                  
+                  <Button 
+                    onClick={handleStatusChange} 
+                    disabled={!newStatus || isSubmitting}
+                  >
+                    {isSubmitting ? "Updating..." : "Update Status"}
+                  </Button>
                 </div>
-                
-                <div className="space-y-2">
-                  <label htmlFor="status-note" className="text-sm font-medium">Status Note (Optional)</label>
-                  <Textarea 
-                    id="status-note"
-                    placeholder="Add a note explaining the status change..."
-                    value={statusNote}
-                    onChange={(e) => setStatusNote(e.target.value)}
-                  />
-                </div>
-                
-                <Button 
-                  onClick={handleStatusChange} 
-                  disabled={!newStatus || isSubmitting}
-                >
-                  {isSubmitting ? "Updating..." : "Update Status"}
-                </Button>
               </div>
-            </div>
-          </TabsContent>
+            </TabsContent>
+          )}
           
-          {/* Assign Order Tab */}
-          <TabsContent value="assign">
-            <div className="space-y-4">
-              <h3 className="font-medium text-lg">Assign Order</h3>
+          {/* Assign Order Tab (admin only) */}
+          {isAdmin && (
+            <TabsContent value="assign">
               <div className="space-y-4">
-                <div className="space-y-2">
-                  <label htmlFor="assignee-select" className="text-sm font-medium">Assign To</label>
-                  <Select value={selectedAssignee} onValueChange={setSelectedAssignee}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a user" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="unassigned">Unassigned</SelectItem>
-                      {users.map((user) => (
-                        <SelectItem key={user.id} value={user.id}>
-                          {user.full_name} ({user.email})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <h3 className="font-medium text-lg">Assign Order</h3>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <label htmlFor="assignee-select" className="text-sm font-medium">Assign To</label>
+                    <Select value={selectedAssignee} onValueChange={setSelectedAssignee}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a user" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="unassigned">Unassigned</SelectItem>
+                        {users.map((user) => (
+                          <SelectItem key={user.id} value={user.id}>
+                            {user.full_name} ({user.email})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <Button 
+                    onClick={handleAssignOrder} 
+                    disabled={isSubmitting || (selectedAssignee !== "unassigned" && selectedAssignee === currentOrder.assigned_to)}
+                  >
+                    {isSubmitting ? "Assigning..." : "Assign Order"}
+                  </Button>
                 </div>
-                
-                <Button 
-                  onClick={handleAssignOrder} 
-                  disabled={isSubmitting || (selectedAssignee !== "unassigned" && selectedAssignee === currentOrder.assigned_to)}
-                >
-                  {isSubmitting ? "Assigning..." : "Assign Order"}
-                </Button>
               </div>
-            </div>
-          </TabsContent>
+            </TabsContent>
+          )}
         </Tabs>
         
         <DialogFooter>

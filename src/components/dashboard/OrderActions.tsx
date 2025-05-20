@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { 
   DropdownMenu,
@@ -8,7 +7,7 @@ import {
   DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal } from "lucide-react";
+import { MoreHorizontal, FileText } from "lucide-react";
 import { Order, OrderStatus } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
@@ -23,6 +22,7 @@ const OrderActions = ({ order, onOrderView, onRefresh }: OrderActionsProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
 
   const handleStatusChange = async (newStatus: OrderStatus) => {
     setIsLoading(true);
@@ -121,6 +121,14 @@ const OrderActions = ({ order, onOrderView, onRefresh }: OrderActionsProps) => {
       setIsLoading(false);
     }
   };
+
+  if (!isAdmin) {
+    return (
+      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onOrderView(order)}>
+        <FileText className="h-4 w-4" />
+      </Button>
+    );
+  }
 
   return (
     <DropdownMenu>
