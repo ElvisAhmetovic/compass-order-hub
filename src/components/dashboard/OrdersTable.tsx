@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   Table, 
   TableBody, 
@@ -146,7 +146,24 @@ interface OrdersTableProps {
 
 const OrdersTable = ({ onOrderClick, statusFilter = "All" }: OrdersTableProps) => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [orders] = useState<Order[]>(mockOrders);
+  const [orders, setOrders] = useState<Order[]>([]);
+
+  // Load orders from localStorage or use mock data
+  useEffect(() => {
+    const storedOrders = localStorage.getItem("orders");
+    if (storedOrders) {
+      setOrders(JSON.parse(storedOrders));
+    } else {
+      // Initialize with mock data if nothing in localStorage
+      setOrders(mockOrders);
+      localStorage.setItem("orders", JSON.stringify(mockOrders));
+    }
+    
+    // Make mockOrders globally accessible for demonstration purposes
+    if (typeof window !== "undefined") {
+      (window as any).mockOrders = mockOrders;
+    }
+  }, []);
 
   const getPriorityColor = (priority: string) => {
     const priorityClasses = {

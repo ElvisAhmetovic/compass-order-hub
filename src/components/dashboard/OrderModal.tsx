@@ -1,4 +1,5 @@
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
 import { 
   Dialog, 
   DialogContent, 
@@ -77,10 +78,22 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
   const [comments, setComments] = useState<OrderComment[]>(mockComments);
   const [statusHistory, setStatusHistory] = useState<OrderStatusHistory[]>(mockStatusHistory);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [currentOrder, setCurrentOrder] = useState<Order | null>(null);
   
   const { toast } = useToast();
 
-  if (!order) return null;
+  // Update local state when order prop changes
+  useEffect(() => {
+    if (order) {
+      setCurrentOrder(order);
+      // Reset form states
+      setNewStatus("");
+      setStatusNote("");
+      setActiveTab("details");
+    }
+  }, [order]);
+
+  if (!currentOrder) return null;
 
   const getStatusColor = (status: OrderStatus) => {
     const statusClasses = {
@@ -163,7 +176,7 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
     setTimeout(() => {
       const newStatusHistoryItem: OrderStatusHistory = {
         id: `sh${Date.now()}`,
-        order_id: order.id,
+        order_id: currentOrder.id,
         status: newStatus,
         changed_by: "currentUser", // This would come from auth context in a real app
         changed_at: new Date().toISOString(),
@@ -171,7 +184,31 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
       };
       
       setStatusHistory([newStatusHistoryItem, ...statusHistory]);
-      // In a real app, we would also update the order's status
+      
+      // Update the order's status in the mock data
+      // This is where we're making our key change
+      const updatedOrder = { ...currentOrder, status: newStatus };
+      setCurrentOrder(updatedOrder);
+      
+      // Update orders in localStorage for persistence
+      const ordersInStorage = JSON.parse(localStorage.getItem("orders") || "[]");
+      const updatedOrders = ordersInStorage.map((o: Order) => 
+        o.id === currentOrder.id ? { ...o, status: newStatus } : o
+      );
+      localStorage.setItem("orders", JSON.stringify(updatedOrders));
+      
+      // If we have order mock data in the code, update that too
+      if (typeof window !== "undefined") {
+        // This is for demonstration - in a real app, this would be handled by proper state management
+        const mockOrdersInWindow = (window as any).mockOrders;
+        if (mockOrdersInWindow) {
+          const updatedMockOrders = mockOrdersInWindow.map((o: Order) => 
+            o.id === currentOrder.id ? { ...o, status: newStatus } : o
+          );
+          (window as any).mockOrders = updatedMockOrders;
+        }
+      }
+      
       setNewStatus("");
       setStatusNote("");
       setIsSubmitting(false);
@@ -192,9 +229,9 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
         <DialogHeader>
           <DialogTitle className="flex justify-between items-center">
             <div className="flex gap-2 items-center">
-              <span>Order: {order.company_name}</span>
-              <Badge className={getStatusColor(order.status)}>{order.status}</Badge>
-              <Badge className={getPriorityColor(order.priority)}>{order.priority}</Badge>
+              <span>Order: {currentOrder.company_name}</span>
+              <Badge className={getStatusColor(currentOrder.status)}>{currentOrder.status}</Badge>
+              <Badge className={getPriorityColor(currentOrder.priority)}>{currentOrder.priority}</Badge>
             </div>
           </DialogTitle>
         </DialogHeader>
@@ -215,20 +252,20 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
                 <dl className="divide-y divide-gray-200">
                   <div className="py-2 grid grid-cols-3">
                     <dt className="font-medium">Company Name:</dt>
-                    <dd className="col-span-2">{order.company_name}</dd>
+                    <dd className="col-span-2">{currentOrder.company_name}</dd>
                   </div>
                   <div className="py-2 grid grid-cols-3">
                     <dt className="font-medium">Contact Name:</dt>
-                    <dd className="col-span-2">{order.contact_name}</dd>
+                    <dd className="col-span-2">{currentOrder.contact_name}</dd>
                   </div>
                   <div className="py-2 grid grid-cols-3">
                     <dt className="font-medium">Contact Email:</dt>
-                    <dd className="col-span-2">{order.contact_email}</dd>
+                    <dd className="col-span-2">{currentOrder.contact_email}</dd>
                   </div>
-                  {order.contact_phone && (
+                  {currentOrder.contact_phone && (
                     <div className="py-2 grid grid-cols-3">
                       <dt className="font-medium">Contact Phone:</dt>
-                      <dd className="col-span-2">{order.contact_phone}</dd>
+                      <dd className="col-span-2">{currentOrder.contact_phone}</dd>
                     </div>
                   )}
                 </dl>
@@ -239,24 +276,24 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
                 <dl className="divide-y divide-gray-200">
                   <div className="py-2 grid grid-cols-3">
                     <dt className="font-medium">Order ID:</dt>
-                    <dd className="col-span-2">{order.id}</dd>
+                    <dd className="col-span-2">{currentOrder.id}</dd>
                   </div>
                   <div className="py-2 grid grid-cols-3">
                     <dt className="font-medium">Price:</dt>
-                    <dd className="col-span-2">{formatCurrency(order.price)}</dd>
+                    <dd className="col-span-2">{formatCurrency(currentOrder.price)}</dd>
                   </div>
                   <div className="py-2 grid grid-cols-3">
                     <dt className="font-medium">Created:</dt>
-                    <dd className="col-span-2">{formatDate(order.created_at)}</dd>
+                    <dd className="col-span-2">{formatDate(currentOrder.created_at)}</dd>
                   </div>
                   <div className="py-2 grid grid-cols-3">
                     <dt className="font-medium">Last Updated:</dt>
-                    <dd className="col-span-2">{formatDate(order.updated_at)}</dd>
+                    <dd className="col-span-2">{formatDate(currentOrder.updated_at)}</dd>
                   </div>
-                  {order.assigned_to && (
+                  {currentOrder.assigned_to && (
                     <div className="py-2 grid grid-cols-3">
                       <dt className="font-medium">Assigned To:</dt>
-                      <dd className="col-span-2">{order.assigned_to}</dd>
+                      <dd className="col-span-2">{currentOrder.assigned_to}</dd>
                     </div>
                   )}
                 </dl>
@@ -266,7 +303,7 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
             <div>
               <h3 className="font-medium text-lg mb-2">Description</h3>
               <div className="bg-muted p-4 rounded-md">
-                {order.description}
+                {currentOrder.description}
               </div>
             </div>
           </TabsContent>

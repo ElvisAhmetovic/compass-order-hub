@@ -16,6 +16,7 @@ const Dashboard = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("All");
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
   const location = useLocation();
   const path = location.pathname;
   
@@ -64,6 +65,8 @@ const Dashboard = () => {
 
   const closeModal = () => {
     setModalOpen(false);
+    // After modal closes, trigger a refresh to update our data
+    setRefreshTrigger(prev => prev + 1);
     // Small delay before resetting the selected order for smooth transition
     setTimeout(() => {
       setSelectedOrder(null);
@@ -103,6 +106,7 @@ const Dashboard = () => {
             <OrdersTable 
               onOrderClick={handleOrderClick} 
               statusFilter={path === "/active-orders" ? activeTab : pathStatusFilter} 
+              key={`orders-table-${refreshTrigger}`} // Force re-render when data changes
             />
             
             <OrderModal 
