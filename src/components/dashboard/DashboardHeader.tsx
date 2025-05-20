@@ -42,7 +42,7 @@ const DashboardHeader = ({
       </div>
       
       {!isAdmin && title.toLowerCase().includes('order') && (
-        <Alert variant="warning" className="bg-amber-50 border-amber-200">
+        <Alert variant="default" className="bg-amber-50 border-amber-200">
           <AlertCircle className="h-4 w-4 text-amber-800" />
           <AlertDescription className="text-amber-800">
             You can only see orders assigned to you. Contact an administrator if you need access to additional orders.
