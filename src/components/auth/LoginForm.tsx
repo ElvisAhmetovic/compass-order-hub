@@ -1,201 +1,139 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate, Link, useLocation } from "react-router-dom";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useAuth } from "@/contexts/AuthContext";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { AlertTriangle } from "lucide-react";
+import FormInput from "./FormInput";
+import { validateIdentifier, validatePassword } from "@/utils/formValidation";
+import { authenticate } from "@/services/authService";
 
 const LoginForm = () => {
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [errors, setErrors] = useState({
-    email: "",
-    password: "",
-    form: "",
-  });
-  const [needsVerification, setNeedsVerification] = useState(false);
+  const [errors, setErrors] = useState<{identifier?: string, password?: string, auth?: string}>({});
+  const { toast } = useToast();
   const navigate = useNavigate();
-  const location = useLocation();
-  const { isAuthenticated } = useAuth();
-  
-  // Redirect if already authenticated
-  useEffect(() => {
-    if (isAuthenticated) {
-      const from = (location.state as any)?.from?.pathname || "/dashboard";
-      navigate(from, { replace: true });
-    }
-  }, [isAuthenticated, navigate, location]);
 
-  const validateForm = () => {
-    let valid = true;
-    const newErrors = { email: "", password: "", form: "" };
+  const handleIdentifierChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setIdentifier(value);
+    
+    const error = validateIdentifier(value);
+    setErrors(prev => ({ ...prev, identifier: error, auth: undefined }));
+  };
 
-    if (!email) {
-      newErrors.email = "Email is required";
-      valid = false;
-    } else if (!/\S+@\S+\.\S+/.test(email)) {
-      newErrors.email = "Please enter a valid email address";
-      valid = false;
-    }
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setPassword(value);
+    
+    const error = validatePassword(value);
+    setErrors(prev => ({ ...prev, password: error, auth: undefined }));
+  };
 
-    if (!password) {
-      newErrors.password = "Password is required";
-      valid = false;
-    }
-
-    setErrors(newErrors);
-    return valid;
+  const isFormValid = () => {
+    return !errors.identifier && !errors.password && identifier.trim() !== "" && password.trim() !== "";
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!validateForm()) return;
+    if (!isFormValid()) {
+      return;
+    }
     
     setIsLoading(true);
-    setNeedsVerification(false);
-    
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+    setErrors({});
 
-      if (error) {
-        console.error("Login error:", error.message);
-        
-        if (error.message.includes("Invalid login credentials")) {
-          // Check if the user has registered but not confirmed email
-          const { data: signUpData } = await supabase.auth.signUp({
-            email,
-            password,
-          });
-          
-          if (signUpData?.user && signUpData.user.identities?.length === 0) {
-            setNeedsVerification(true);
-            setErrors({
-              ...errors,
-              form: "Please check your email to verify your account before logging in"
-            });
-            toast.error("Email verification required");
-          } else {
-            setErrors({ ...errors, form: "Invalid email or password" });
-            toast.error("Invalid email or password");
-          }
-        } else {
-          setErrors({ ...errors, form: error.message || "Failed to login" });
-          toast.error(error.message || "Failed to login");
-        }
+    try {
+      const result = await authenticate(identifier, password);
+      
+      if (!result.success) {
+        setErrors(prev => ({ ...prev, auth: result.error }));
         return;
       }
-
-      if (data?.user) {
-        toast.success("Login successful!");
-        const from = (location.state as any)?.from?.pathname || "/dashboard";
-        navigate(from, { replace: true });
-      }
+      
+      toast({
+        title: "Login successful",
+        description: "Welcome back to Order Flow Compass",
+      });
+      navigate("/dashboard");
     } catch (error) {
-      console.error("Login error:", error);
-      toast.error("An unexpected error occurred");
+      toast({
+        variant: "destructive",
+        title: "Login failed",
+        description: "Please check your credentials and try again.",
+      });
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <Card className="w-full max-w-md">
+    <Card className="w-[350px] mx-auto">
       <CardHeader>
-        <CardTitle className="text-2xl">Login to your account</CardTitle>
+        <CardTitle>Login</CardTitle>
+        <CardDescription>Enter your credentials to access your account</CardDescription>
       </CardHeader>
-      <CardContent>
-        {needsVerification && (
-          <Alert className="mb-4 bg-amber-50 text-amber-800 border-amber-200">
-            <AlertDescription>
-              You need to verify your email before logging in. Please check your inbox for the verification link.
-            </AlertDescription>
-          </Alert>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <label htmlFor="email" className="text-sm font-medium">
-              Email
-            </label>
-            <Input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Enter your email"
-              disabled={isLoading}
-              className={errors.email ? "border-destructive" : ""}
-            />
-            {errors.email && (
-              <p className="text-sm text-destructive">{errors.email}</p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <label htmlFor="password" className="text-sm font-medium">
-              Password
-            </label>
-            <div className="relative">
-              <Input
-                id="password"
-                type={showPassword ? "text" : "password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter your password"
-                disabled={isLoading}
-                className={errors.password ? "border-destructive pr-10" : "pr-10"}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                tabIndex={-1}
-              >
-                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
+      <form onSubmit={handleSubmit}>
+        <CardContent className="space-y-4">
+          {/* Authentication error message */}
+          {errors.auth && (
+            <div className="p-3 rounded-md bg-destructive/15 text-destructive flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5" />
+              <span>{errors.auth}</span>
             </div>
-            {errors.password && (
-              <p className="text-sm text-destructive">{errors.password}</p>
-            )}
-          </div>
-
-          {errors.form && (
-            <div className="text-sm text-destructive">{errors.form}</div>
           )}
-
+          
+          <FormInput
+            id="identifier"
+            label="Username or Email"
+            type="text"
+            value={identifier}
+            onChange={handleIdentifierChange}
+            placeholder="johndoe or name@company.com"
+            error={errors.identifier}
+            disabled={isLoading}
+          />
+          
+          <FormInput
+            id="password"
+            label="Password"
+            type="password"
+            value={password}
+            onChange={handlePasswordChange}
+            error={errors.password}
+            disabled={isLoading}
+            isPassword
+            showPassword={showPassword}
+            toggleShowPassword={() => setShowPassword(!showPassword)}
+          />
+        </CardContent>
+        <CardFooter className="flex flex-col">
           <Button
             type="submit"
             className="w-full"
-            disabled={isLoading}
+            disabled={isLoading || !isFormValid()}
           >
-            {isLoading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Please wait
-              </>
-            ) : (
-              "Login"
-            )}
+            {isLoading ? "Logging in..." : "Login"}
           </Button>
-        </form>
-      </CardContent>
-      <CardFooter className="flex justify-center">
-        <p className="text-sm text-muted-foreground">
-          Don't have an account?{" "}
-          <Link to="/register" className="text-primary hover:underline">
-            Register
-          </Link>
-        </p>
-      </CardFooter>
+          <div className="mt-4 text-sm text-center">
+            Don't have an account?{" "}
+            <a
+              href="/register"
+              className="text-blue-600 hover:text-blue-800 hover:underline"
+              onClick={(e) => {
+                e.preventDefault();
+                navigate("/register");
+              }}
+            >
+              Register
+            </a>
+          </div>
+        </CardFooter>
+      </form>
     </Card>
   );
 };

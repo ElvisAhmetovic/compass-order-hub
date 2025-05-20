@@ -1,55 +1,64 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Layout from "@/components/layout/Layout";
 import Sidebar from "@/components/dashboard/Sidebar";
 import { Button } from "@/components/ui/button";
 import { UserManagementTable } from "@/components/user-management/UserManagementTable";
 import { AddUserModal } from "@/components/user-management/AddUserModal";
-import { User, UserRole } from "@/types";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { User } from "@/types";
+
+// Mock data for users
+const mockUsers: User[] = [
+  {
+    id: "1",
+    email: "kleinabmedia1@gmail.com",
+    role: "user",
+    created_at: new Date().toISOString(),
+    full_name: "No Name"
+  },
+  {
+    id: "2",
+    email: "office@websworkers.com",
+    role: "user",
+    created_at: new Date().toISOString(),
+    full_name: "No Name"
+  },
+  {
+    id: "3",
+    email: "atwi.automobile.hannover@gmail.com",
+    role: "user",
+    created_at: new Date().toISOString(),
+    full_name: "ATWI"
+  },
+  {
+    id: "4",
+    email: "cmen.sedat242@gmail.com",
+    role: "user",
+    created_at: new Date().toISOString(),
+    full_name: "No Name"
+  },
+  {
+    id: "5",
+    email: "joka4927@gmail.com",
+    role: "admin",
+    created_at: new Date().toISOString(),
+    full_name: "No Name"
+  },
+  {
+    id: "6",
+    email: "kontakt@abmedia24.com",
+    role: "user",
+    created_at: new Date().toISOString(),
+    full_name: "No Name"
+  }
+];
 
 const UserManagement = () => {
   const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
-  const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
-  
-  const fetchUsers = async () => {
-    setLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from("app_users")
-        .select("*")
-        .order("created_at", { ascending: false });
-      
-      if (error) {
-        toast.error("Failed to fetch users");
-        console.error("Error fetching users:", error);
-        return;
-      }
-      
-      setUsers(data.map(user => ({
-        id: user.id,
-        email: user.email,
-        role: user.role as UserRole, // Cast to UserRole type
-        created_at: user.created_at,
-        full_name: user.full_name || "No Name"
-      })));
-    } catch (err) {
-      console.error("Unexpected error fetching users:", err);
-      toast.error("An unexpected error occurred");
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  useEffect(() => {
-    fetchUsers();
-  }, []);
+  const [users, setUsers] = useState<User[]>(mockUsers);
   
   const handleAddUser = (newUser: User) => {
-    setUsers(prevUsers => [newUser, ...prevUsers]);
+    setUsers([...users, newUser]);
   };
   
   return (
@@ -70,20 +79,12 @@ const UserManagement = () => {
               </Button>
             </div>
             
-            {loading ? (
-              <div className="flex items-center justify-center py-10">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <span className="ml-2 text-lg">Loading users...</span>
-              </div>
-            ) : (
-              <UserManagementTable users={users} setUsers={setUsers} onUsersChange={fetchUsers} />
-            )}
+            <UserManagementTable users={users} setUsers={setUsers} />
             
             <AddUserModal 
               open={isAddUserModalOpen} 
               onClose={() => setIsAddUserModalOpen(false)}
               onAddUser={handleAddUser}
-              onSuccess={fetchUsers}
             />
           </div>
         </Layout>

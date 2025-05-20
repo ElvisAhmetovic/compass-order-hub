@@ -1,30 +1,21 @@
 
-import React from 'react';
-import { Link } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 const Index = () => {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // For now, just redirect to login page
+    // In a real app with Supabase integration, we would check authentication status
+    navigate("/login");
+  }, [navigate]);
+
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
-      <div className="text-center space-y-6 max-w-3xl">
-        <h1 className="text-4xl md:text-5xl font-bold text-primary">
-          Order Flow Compass
-        </h1>
-        <p className="text-xl text-muted-foreground">
-          Your all-in-one solution for order management and workflow tracking
-        </p>
-        <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
-          <Button asChild size="lg" className="text-base">
-            <Link to="/login">
-              Sign In
-            </Link>
-          </Button>
-          <Button asChild size="lg" variant="outline" className="text-base">
-            <Link to="/register">
-              Create Account
-            </Link>
-          </Button>
-        </div>
+    <div className="min-h-screen flex items-center justify-center bg-gray-100">
+      <div className="text-center">
+        <h1 className="text-4xl font-bold mb-4">Order Flow Compass</h1>
+        <p className="text-xl text-gray-600 mb-4">Loading your application...</p>
       </div>
     </div>
   );

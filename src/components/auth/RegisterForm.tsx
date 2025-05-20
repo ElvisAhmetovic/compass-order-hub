@@ -1,185 +1,262 @@
 
-import React, { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { validatePassword } from "@/utils/formValidation";
-import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Eye, EyeOff, AlertTriangle } from "lucide-react";
 
 const RegisterForm = () => {
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
+  const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [errors, setErrors] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
-    form: "",
-  });
+  const [errors, setErrors] = useState<{fullName?: string, email?: string, username?: string, password?: string}>({});
+  const { toast } = useToast();
   const navigate = useNavigate();
 
-  const validateForm = () => {
-    let valid = true;
-    const newErrors = {
-      firstName: "",
-      lastName: "",
-      email: "",
-      password: "",
-      confirmPassword: "",
-      form: "",
-    };
+  // List of offensive words to filter out
+  const offensiveWords = ["racist", "offensive", "inappropriate", "slur"];
 
-    if (!firstName.trim()) {
-      newErrors.firstName = "First name is required";
-      valid = false;
+  const validateFullName = (value: string) => {
+    if (value.trim().length < 2) {
+      return "Full name must be at least 2 characters.";
     }
-
-    if (!lastName.trim()) {
-      newErrors.lastName = "Last name is required";
-      valid = false;
+    
+    const nameRegex = /^[a-zA-Z\s]+$/;
+    if (!nameRegex.test(value)) {
+      return "Full name can only contain letters and spaces.";
     }
-
-    if (!email) {
-      newErrors.email = "Email is required";
-      valid = false;
-    } else if (!/\S+@\S+\.\S+/.test(email)) {
-      newErrors.email = "Please enter a valid email address";
-      valid = false;
+    
+    if (offensiveWords.some(word => value.toLowerCase().includes(word))) {
+      return "This contains inappropriate language.";
     }
+    
+    return "";
+  };
 
-    const passwordError = validatePassword(password);
-    if (passwordError) {
-      newErrors.password = passwordError;
-      valid = false;
+  const validateEmail = (value: string) => {
+    const emailRegex = /^[a-zA-Z0-9]+([._-]?[a-zA-Z0-9]+)*@[a-zA-Z0-9]+([.-]?[a-zA-Z0-9]+)*(\.[a-zA-Z]{2,})+$/;
+    if (!emailRegex.test(value)) {
+      return "Please enter a valid email address.";
     }
-
-    if (password !== confirmPassword) {
-      newErrors.confirmPassword = "Passwords do not match";
-      valid = false;
+    
+    if (offensiveWords.some(word => value.toLowerCase().includes(word))) {
+      return "This contains inappropriate language.";
     }
+    
+    return "";
+  };
 
-    setErrors(newErrors);
-    return valid;
+  const validateUsername = (value: string) => {
+    if (value.length < 3) {
+      return "Username must be at least 3 characters.";
+    }
+    
+    const usernameRegex = /^[a-zA-Z0-9]+$/;
+    if (!usernameRegex.test(value)) {
+      return "Username can only contain letters and numbers.";
+    }
+    
+    if (offensiveWords.some(word => value.toLowerCase().includes(word))) {
+      return "This contains inappropriate language.";
+    }
+    
+    return "";
+  };
+
+  const validatePassword = (value: string) => {
+    if (value.length < 8) {
+      return "Password must be at least 8 characters.";
+    }
+    
+    if (!/[A-Z]/.test(value)) {
+      return "Password must include at least one uppercase letter.";
+    }
+    
+    if (!/[a-z]/.test(value)) {
+      return "Password must include at least one lowercase letter.";
+    }
+    
+    if (!/[0-9]/.test(value)) {
+      return "Password must include at least one number.";
+    }
+    
+    // Common password check (very basic implementation)
+    const commonPasswords = ["password", "12345678", "qwerty123"];
+    if (commonPasswords.includes(value.toLowerCase())) {
+      return "This password is too common. Please choose a stronger one.";
+    }
+    
+    return "";
+  };
+
+  const handleFullNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setFullName(value);
+    
+    const error = validateFullName(value);
+    setErrors(prev => ({ ...prev, fullName: error }));
+  };
+
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setEmail(value);
+    
+    const error = validateEmail(value);
+    setErrors(prev => ({ ...prev, email: error }));
+  };
+
+  const handleUsernameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setUsername(value);
+    
+    const error = validateUsername(value);
+    setErrors(prev => ({ ...prev, username: error }));
+  };
+
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setPassword(value);
+    
+    const error = validatePassword(value);
+    setErrors(prev => ({ ...prev, password: error }));
+  };
+
+  const isFormValid = () => {
+    return !errors.fullName && !errors.email && !errors.username && !errors.password && 
+           fullName.trim() !== "" && email.trim() !== "" && username.trim() !== "" && password.trim() !== "";
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!validateForm()) return;
+    if (!isFormValid()) {
+      return;
+    }
     
     setIsLoading(true);
-    try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            first_name: firstName,
-            last_name: lastName,
-          },
-        },
-      });
 
-      if (error) {
-        toast.error(error.message || "Registration failed");
-        setErrors({ ...errors, form: error.message });
+    try {
+      /** ───────────────────────────
+       * save the new user locally
+       * (replace with real backend in production)
+       * ─────────────────────────── */
+      const users = JSON.parse(localStorage.getItem("users") || "[]");
+
+      // simple duplicate check
+      if (users.some((u: any) => u.email === email || u.username === username)) {
+        toast({ 
+          variant: "destructive", 
+          title: "User already exists" 
+        });
+        setIsLoading(false);
         return;
       }
 
-      if (data) {
-        toast.success("Registration successful! Check your email for verification.");
-        navigate("/login");
-      }
+      users.push({
+        id: crypto.randomUUID(),
+        fullName,
+        email,
+        username,
+        // ⚠️ store a real hash in production
+        passwordHash: btoa(password)        // base-64 "hash" for demo only
+      });
+
+      localStorage.setItem("users", JSON.stringify(users));
+      
+      toast({
+        title: "Registration successful",
+        description: "Your account has been created. You can now log in.",
+      });
+      navigate("/login");
     } catch (error) {
-      console.error("Registration error:", error);
-      toast.error("An unexpected error occurred");
+      toast({
+        variant: "destructive",
+        title: "Registration failed",
+        description: "There was a problem creating your account.",
+      });
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <Card className="w-full max-w-md">
+    <Card className="w-[350px] mx-auto">
       <CardHeader>
-        <CardTitle className="text-2xl">Create an account</CardTitle>
+        <CardTitle>Register</CardTitle>
+        <CardDescription>Create a new account</CardDescription>
       </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label htmlFor="firstName" className="text-sm font-medium">
-                First Name
-              </label>
-              <Input
-                id="firstName"
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-                placeholder="First name"
-                disabled={isLoading}
-                className={errors.firstName ? "border-destructive" : ""}
-              />
-              {errors.firstName && (
-                <p className="text-sm text-destructive">{errors.firstName}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <label htmlFor="lastName" className="text-sm font-medium">
-                Last Name
-              </label>
-              <Input
-                id="lastName"
-                value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
-                placeholder="Last name"
-                disabled={isLoading}
-                className={errors.lastName ? "border-destructive" : ""}
-              />
-              {errors.lastName && (
-                <p className="text-sm text-destructive">{errors.lastName}</p>
-              )}
-            </div>
-          </div>
-
+      <form onSubmit={handleSubmit}>
+        <CardContent className="space-y-4">
           <div className="space-y-2">
-            <label htmlFor="email" className="text-sm font-medium">
-              Email
-            </label>
+            <label htmlFor="fullName" className="text-sm font-medium">Full Name</label>
+            <Input
+              id="fullName"
+              value={fullName}
+              onChange={handleFullNameChange}
+              placeholder="John Doe"
+              required
+              disabled={isLoading}
+              className={errors.fullName ? "border-destructive" : ""}
+            />
+            {errors.fullName && (
+              <div className="text-sm text-destructive flex items-center gap-1 mt-1">
+                <AlertTriangle className="h-4 w-4" />
+                <span>{errors.fullName}</span>
+              </div>
+            )}
+          </div>
+          <div className="space-y-2">
+            <label htmlFor="email" className="text-sm font-medium">Email</label>
             <Input
               id="email"
-              type="email"
+              type="text"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Enter your email"
+              onChange={handleEmailChange}
+              placeholder="name@company.com"
+              required
               disabled={isLoading}
               className={errors.email ? "border-destructive" : ""}
             />
             {errors.email && (
-              <p className="text-sm text-destructive">{errors.email}</p>
+              <div className="text-sm text-destructive flex items-center gap-1 mt-1">
+                <AlertTriangle className="h-4 w-4" />
+                <span>{errors.email}</span>
+              </div>
             )}
           </div>
-
           <div className="space-y-2">
-            <label htmlFor="password" className="text-sm font-medium">
-              Password
-            </label>
+            <label htmlFor="username" className="text-sm font-medium">Username</label>
+            <Input
+              id="username"
+              type="text"
+              value={username}
+              onChange={handleUsernameChange}
+              placeholder="johndoe"
+              required
+              disabled={isLoading}
+              className={errors.username ? "border-destructive" : ""}
+            />
+            {errors.username && (
+              <div className="text-sm text-destructive flex items-center gap-1 mt-1">
+                <AlertTriangle className="h-4 w-4" />
+                <span>{errors.username}</span>
+              </div>
+            )}
+          </div>
+          <div className="space-y-2">
+            <label htmlFor="password" className="text-sm font-medium">Password</label>
             <div className="relative">
               <Input
                 id="password"
                 type={showPassword ? "text" : "password"}
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Create a password"
+                onChange={handlePasswordChange}
+                required
                 disabled={isLoading}
                 className={errors.password ? "border-destructive pr-10" : "pr-10"}
               />
@@ -189,69 +266,44 @@ const RegisterForm = () => {
                 className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
                 tabIndex={-1}
               >
-                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                {showPassword ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
               </button>
             </div>
             {errors.password && (
-              <p className="text-sm text-destructive">{errors.password}</p>
+              <div className="text-sm text-destructive flex items-center gap-1 mt-1">
+                <AlertTriangle className="h-4 w-4" />
+                <span>{errors.password}</span>
+              </div>
             )}
           </div>
-
-          <div className="space-y-2">
-            <label htmlFor="confirmPassword" className="text-sm font-medium">
-              Confirm Password
-            </label>
-            <div className="relative">
-              <Input
-                id="confirmPassword"
-                type={showConfirmPassword ? "text" : "password"}
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Confirm your password"
-                disabled={isLoading}
-                className={errors.confirmPassword ? "border-destructive pr-10" : "pr-10"}
-              />
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                tabIndex={-1}
-              >
-                {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
-            </div>
-            {errors.confirmPassword && (
-              <p className="text-sm text-destructive">{errors.confirmPassword}</p>
-            )}
-          </div>
-
-          {errors.form && (
-            <div className="text-sm text-destructive">{errors.form}</div>
-          )}
-
+        </CardContent>
+        <CardFooter className="flex flex-col">
           <Button
             type="submit"
             className="w-full"
-            disabled={isLoading}
+            disabled={isLoading || !isFormValid()}
           >
-            {isLoading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating account
-              </>
-            ) : (
-              "Create Account"
-            )}
+            {isLoading ? "Creating account..." : "Register"}
           </Button>
-        </form>
-      </CardContent>
-      <CardFooter className="flex justify-center">
-        <p className="text-sm text-muted-foreground">
-          Already have an account?{" "}
-          <Link to="/login" className="text-primary hover:underline">
-            Login
-          </Link>
-        </p>
-      </CardFooter>
+          <div className="mt-4 text-sm text-center">
+            Already have an account?{" "}
+            <a
+              href="/login"
+              className="text-blue-600 hover:text-blue-800 hover:underline"
+              onClick={(e) => {
+                e.preventDefault();
+                navigate("/login");
+              }}
+            >
+              Login
+            </a>
+          </div>
+        </CardFooter>
+      </form>
     </Card>
   );
 };

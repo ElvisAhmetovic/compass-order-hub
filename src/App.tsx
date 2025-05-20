@@ -3,8 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import RequireAuth from "@/components/auth/RequireAuth";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -21,25 +20,21 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          {/* Public routes */}
           <Route path="/" element={<Index />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          
-          {/* Protected routes */}
-          <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>} />
-          <Route path="/active-orders" element={<RequireAuth><Dashboard /></RequireAuth>} />
-          <Route path="/complaints" element={<RequireAuth><Dashboard /></RequireAuth>} />
-          <Route path="/completed" element={<RequireAuth><Dashboard /></RequireAuth>} />
-          <Route path="/cancelled" element={<RequireAuth><Dashboard /></RequireAuth>} />
-          <Route path="/invoice-sent" element={<RequireAuth><Dashboard /></RequireAuth>} />
-          <Route path="/invoice-paid" element={<RequireAuth><Dashboard /></RequireAuth>} />
-          <Route path="/companies" element={<RequireAuth><Dashboard /></RequireAuth>} />
-          <Route path="/user-management" element={<RequireAuth><UserManagement /></RequireAuth>} />
-          <Route path="/deleted" element={<RequireAuth><Dashboard /></RequireAuth>} />
-          <Route path="/reviews" element={<RequireAuth><Dashboard /></RequireAuth>} />
-          
-          {/* Catch-all and not found */}
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/active-orders" element={<Dashboard />} />
+          <Route path="/complaints" element={<Dashboard />} />
+          <Route path="/completed" element={<Dashboard />} />
+          <Route path="/cancelled" element={<Dashboard />} />
+          <Route path="/invoice-sent" element={<Dashboard />} />
+          <Route path="/invoice-paid" element={<Dashboard />} />
+          <Route path="/companies" element={<Dashboard />} />
+          <Route path="/user-management" element={<UserManagement />} />
+          <Route path="/deleted" element={<Dashboard />} />
+          <Route path="/reviews" element={<Dashboard />} />
+          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
