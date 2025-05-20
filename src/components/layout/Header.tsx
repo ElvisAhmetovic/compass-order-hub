@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
+import { LogOut } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,6 +23,7 @@ const Header = ({ userRole = "admin" }: HeaderProps) => {
 
   const handleLogout = () => {
     // In a real app, this would connect to Supabase auth
+    localStorage.removeItem("userSession"); // Clear any session data
     toast({
       title: "Logged out",
       description: "You have been logged out successfully.",
@@ -37,6 +39,15 @@ const Header = ({ userRole = "admin" }: HeaderProps) => {
           <Badge userRole={userRole} />
         </div>
         <div className="flex items-center space-x-4">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleLogout}
+            className="hidden sm:flex"
+          >
+            <LogOut className="mr-2 h-4 w-4" />
+            Logout
+          </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm">User</Button>
