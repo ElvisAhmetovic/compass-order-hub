@@ -4,17 +4,20 @@ import Layout from "@/components/layout/Layout";
 import OrdersTable from "@/components/dashboard/OrdersTable";
 import OrderModal from "@/components/dashboard/OrderModal";
 import CreateOrderModal from "@/components/dashboard/CreateOrderModal";
+import { DashboardCards } from "@/components/dashboard/DashboardCards";
+import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import { Order } from "@/types";
-import { Button } from "@/components/ui/button";
-import { RefreshCcw, Plus } from "lucide-react";
 import ActiveOrdersTabs from "@/components/dashboard/ActiveOrdersTabs";
 import Sidebar from "@/components/dashboard/Sidebar";
+import { useLocation } from "react-router-dom";
 
 const Dashboard = () => {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("All");
+  const location = useLocation();
+  const isDashboardHome = location.pathname === "/dashboard";
 
   const handleOrderClick = (order: Order) => {
     setSelectedOrder(order);
@@ -35,23 +38,17 @@ const Dashboard = () => {
       <div className="flex-1">
         <Layout>
           <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <div>
-                <h1 className="text-3xl font-bold tracking-tight">Active Orders</h1>
-                <p className="text-muted-foreground">
-                  Manage and track all active orders in the system
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="icon">
-                  <RefreshCcw className="h-4 w-4" />
-                </Button>
-                <Button onClick={() => setCreateModalOpen(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create Order
-                </Button>
-              </div>
-            </div>
+            <DashboardHeader 
+              title={isDashboardHome ? "Dashboard" : "Active Orders"}
+              description={
+                isDashboardHome 
+                  ? "Here's an overview of your order statuses" 
+                  : "Manage and track all active orders in the system"
+              }
+              onCreateOrder={() => setCreateModalOpen(true)}
+            />
+            
+            {isDashboardHome && <DashboardCards />}
             
             <ActiveOrdersTabs activeTab={activeTab} setActiveTab={setActiveTab} />
             

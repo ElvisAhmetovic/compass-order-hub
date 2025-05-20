@@ -2,6 +2,7 @@
 import { ReactNode } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { UserRole } from "@/types";
+import { useLocation } from "react-router-dom";
 
 interface LayoutProps {
   children: ReactNode;
@@ -9,10 +10,30 @@ interface LayoutProps {
 }
 
 const Layout = ({ children, userRole = "admin" }: LayoutProps) => {
-  // In a real application, this would check the user's permissions
+  const location = useLocation();
+  
+  // Check if user has access to this route based on their role
   const hasAccess = () => {
-    // For now, we'll allow access to all users
-    // In a real application, you would check permissions based on the route
+    const path = location.pathname;
+    
+    // Admin can access everything
+    if (userRole === "admin") return true;
+    
+    // Agents can't access user management
+    if (userRole === "agent" && path.includes("/user-management")) return false;
+    
+    // Regular users have limited access
+    if (userRole === "user") {
+      // Users can only access dashboard, active orders, completed and reviews
+      const allowedPaths = [
+        "/dashboard", 
+        "/active-orders", 
+        "/completed", 
+        "/reviews"
+      ];
+      return allowedPaths.some(allowedPath => path.includes(allowedPath));
+    }
+    
     return true;
   };
 
