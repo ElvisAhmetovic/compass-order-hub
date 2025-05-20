@@ -26,6 +26,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Order, OrderComment, OrderStatus, OrderStatusHistory, User, UserRole } from "@/types";
 import { formatDate } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
+import { Input } from "@/components/ui/input";
+import { Edit, Save } from "lucide-react";
 
 // Mock data for demonstration
 const mockComments: OrderComment[] = [
@@ -72,6 +74,10 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
   const [users, setUsers] = useState<User[]>([]);
   const [selectedAssignee, setSelectedAssignee] = useState("unassigned");
   
+  // Edit mode state
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedOrder, setEditedOrder] = useState<Partial<Order>>({});
+  
   const { toast } = useToast();
   const { user } = useAuth(); // Get current user from Auth context
 
@@ -92,6 +98,8 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
     if (order) {
       setCurrentOrder(order);
       setSelectedAssignee(order.assigned_to || "unassigned");
+      setEditedOrder({});
+      setIsEditing(false);
       
       // Reset form states
       setNewStatus("");
@@ -106,6 +114,9 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
   }, [order]);
 
   if (!currentOrder) return null;
+
+  // Check if current user is admin or owner of the order
+  const canEdit = userRole === "admin" || currentOrder.created_by === user?.id;
 
   const getStatusColor = (status: OrderStatus) => {
     const statusClasses = {
@@ -148,6 +159,77 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
       style: 'currency', 
       currency: 'USD' 
     }).format(amount);
+  };
+
+  const handleEditChange = (field: string, value: string) => {
+    setEditedOrder({
+      ...editedOrder,
+      [field]: value
+    });
+  };
+
+  const handleSaveChanges = () => {
+    if (Object.keys(editedOrder).length === 0) {
+      setIsEditing(false);
+      return;
+    }
+
+    setIsSubmitting(true);
+    
+    setTimeout(() => {
+      try {
+        // Create updated order
+        const updatedOrder = {
+          ...currentOrder,
+          ...editedOrder,
+          updated_at: new Date().toISOString()
+        };
+        
+        // Update order in localStorage
+        const ordersInStorage = JSON.parse(localStorage.getItem("orders") || "[]");
+        const updatedOrders = ordersInStorage.map((o: Order) => 
+          o.id === currentOrder.id ? updatedOrder : o
+        );
+        localStorage.setItem("orders", JSON.stringify(updatedOrders));
+        
+        // Add edit to history
+        const newStatusHistoryItem: OrderStatusHistory = {
+          id: `sh${Date.now()}`,
+          order_id: currentOrder.id,
+          status: currentOrder.status,
+          changed_by: user?.full_name || user?.email || "Unknown User",
+          changed_at: new Date().toISOString(),
+          notes: "Order details edited"
+        };
+        
+        const updatedStatusHistory = [newStatusHistoryItem, ...statusHistory];
+        setStatusHistory(updatedStatusHistory);
+        
+        // Save history to localStorage
+        const allStatusHistories = JSON.parse(localStorage.getItem("statusHistories") || "{}");
+        allStatusHistories[currentOrder.id] = updatedStatusHistory;
+        localStorage.setItem("statusHistories", JSON.stringify(allStatusHistories));
+        
+        // Update current order in state
+        setCurrentOrder(updatedOrder);
+        setEditedOrder({});
+        
+        toast({
+          title: "Order updated",
+          description: "Order details have been successfully updated.",
+        });
+      } catch (error) {
+        console.error("Error updating order:", error);
+        toast({
+          variant: "destructive",
+          title: "Update failed",
+          description: "There was a problem updating the order details.",
+        });
+      } finally {
+        setIsSubmitting(false);
+        setIsEditing(false);
+      }
+    }, 500);
   };
 
   const handleAddComment = () => {
@@ -375,28 +457,102 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
           
           {/* Details Tab */}
           <TabsContent value="details" className="space-y-4">
+            {canEdit && !isEditing && (
+              <div className="flex justify-end">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setIsEditing(true)}
+                  className="flex items-center gap-1"
+                >
+                  <Edit className="h-4 w-4" />
+                  Edit Details
+                </Button>
+              </div>
+            )}
+            
+            {canEdit && isEditing && (
+              <div className="flex justify-end gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => {
+                    setIsEditing(false);
+                    setEditedOrder({});
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  variant="default" 
+                  size="sm"
+                  onClick={handleSaveChanges}
+                  disabled={isSubmitting}
+                  className="flex items-center gap-1"
+                >
+                  <Save className="h-4 w-4" />
+                  {isSubmitting ? "Saving..." : "Save Changes"}
+                </Button>
+              </div>
+            )}
+            
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <h3 className="font-medium text-lg mb-2">Company Information</h3>
                 <dl className="divide-y divide-gray-200">
                   <div className="py-2 grid grid-cols-3">
                     <dt className="font-medium">Company Name:</dt>
-                    <dd className="col-span-2">{currentOrder.company_name}</dd>
+                    <dd className="col-span-2">
+                      {isEditing ? (
+                        <Input 
+                          value={editedOrder.company_name !== undefined ? editedOrder.company_name : currentOrder.company_name} 
+                          onChange={(e) => handleEditChange('company_name', e.target.value)}
+                        />
+                      ) : (
+                        currentOrder.company_name
+                      )}
+                    </dd>
                   </div>
                   <div className="py-2 grid grid-cols-3">
                     <dt className="font-medium">Contact Name:</dt>
-                    <dd className="col-span-2">{currentOrder.contact_name}</dd>
+                    <dd className="col-span-2">
+                      {isEditing ? (
+                        <Input 
+                          value={editedOrder.contact_name !== undefined ? editedOrder.contact_name : currentOrder.contact_name} 
+                          onChange={(e) => handleEditChange('contact_name', e.target.value)}
+                        />
+                      ) : (
+                        currentOrder.contact_name
+                      )}
+                    </dd>
                   </div>
                   <div className="py-2 grid grid-cols-3">
                     <dt className="font-medium">Contact Email:</dt>
-                    <dd className="col-span-2">{currentOrder.contact_email}</dd>
+                    <dd className="col-span-2">
+                      {isEditing ? (
+                        <Input 
+                          type="email"
+                          value={editedOrder.contact_email !== undefined ? editedOrder.contact_email : currentOrder.contact_email} 
+                          onChange={(e) => handleEditChange('contact_email', e.target.value)}
+                        />
+                      ) : (
+                        currentOrder.contact_email
+                      )}
+                    </dd>
                   </div>
-                  {currentOrder.contact_phone && (
-                    <div className="py-2 grid grid-cols-3">
-                      <dt className="font-medium">Contact Phone:</dt>
-                      <dd className="col-span-2">{currentOrder.contact_phone}</dd>
-                    </div>
-                  )}
+                  <div className="py-2 grid grid-cols-3">
+                    <dt className="font-medium">Contact Phone:</dt>
+                    <dd className="col-span-2">
+                      {isEditing ? (
+                        <Input 
+                          value={editedOrder.contact_phone !== undefined ? editedOrder.contact_phone : currentOrder.contact_phone || ""} 
+                          onChange={(e) => handleEditChange('contact_phone', e.target.value)}
+                        />
+                      ) : (
+                        currentOrder.contact_phone || "N/A"
+                      )}
+                    </dd>
+                  </div>
                 </dl>
               </div>
               
@@ -433,9 +589,17 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
             
             <div>
               <h3 className="font-medium text-lg mb-2">Description</h3>
-              <div className="bg-muted p-4 rounded-md">
-                {currentOrder.description}
-              </div>
+              {isEditing && canEdit ? (
+                <Textarea 
+                  className="min-h-[100px]" 
+                  value={editedOrder.description !== undefined ? editedOrder.description : currentOrder.description}
+                  onChange={(e) => handleEditChange('description', e.target.value)}
+                />
+              ) : (
+                <div className="bg-muted p-4 rounded-md">
+                  {currentOrder.description}
+                </div>
+              )}
             </div>
           </TabsContent>
           
