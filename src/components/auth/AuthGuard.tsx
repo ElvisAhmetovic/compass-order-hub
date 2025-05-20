@@ -1,7 +1,9 @@
 
 import { ReactNode, useEffect, useState } from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { UserRole } from '@/types';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft } from 'lucide-react';
 
 interface AuthGuardProps {
   children: ReactNode;
@@ -19,6 +21,7 @@ const AuthGuard = ({ children, requiredRoles = [] }: AuthGuardProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const [userSession, setUserSession] = useState<UserSession | null>(null);
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const checkAuth = () => {
@@ -42,6 +45,10 @@ const AuthGuard = ({ children, requiredRoles = [] }: AuthGuardProps) => {
     checkAuth();
   }, []);
 
+  const handleBackToDashboard = () => {
+    navigate("/dashboard");
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -63,6 +70,13 @@ const AuthGuard = ({ children, requiredRoles = [] }: AuthGuardProps) => {
         <p className="text-muted-foreground mb-6">
           You don't have permission to access this page.
         </p>
+        <Button 
+          onClick={handleBackToDashboard}
+          className="flex items-center gap-2 mb-6"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Dashboard
+        </Button>
         <p className="text-sm">
           Your role: <span className="font-medium">{userSession.role}</span>
         </p>
