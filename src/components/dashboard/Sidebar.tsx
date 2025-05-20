@@ -12,7 +12,6 @@ import {
   Star,
   LogOut,
   CheckCircle,
-  XCircle2,
 } from "lucide-react";
 import { LogoutButton } from "@/components/auth/LogoutButton";
 
@@ -21,7 +20,7 @@ const navItems = [
   { icon: Home, label: "Active Orders", path: "/active-orders" },
   { icon: XCircle, label: "Complaints", path: "/complaints" },
   { icon: CheckCircle, label: "Completed", path: "/completed" },
-  { icon: XCircle2, label: "Cancelled", path: "/cancelled" },
+  { icon: XCircle, label: "Cancelled", path: "/cancelled" },
   { icon: Receipt, label: "Invoice Sent", path: "/invoice-sent" },
   { icon: CreditCard, label: "Invoice Paid", path: "/invoice-paid" },
   { icon: Building2, label: "Companies", path: "/companies" },
