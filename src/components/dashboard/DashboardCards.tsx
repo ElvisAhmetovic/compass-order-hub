@@ -11,24 +11,15 @@ import {
   Trash
 } from "lucide-react";
 import { OrderStatus } from "@/types";
+import { useEffect, useState } from "react";
+import { useAuth } from "@/context/AuthContext";
+import { Order } from "@/types";
 
 interface OrderSummary {
   status: OrderStatus;
   count: number;
   value: number;
 }
-
-// Mock data for demonstration purposes
-const orderSummaries: OrderSummary[] = [
-  { status: "In Progress", count: 21, value: 1000 },
-  { status: "Invoice Sent", count: 3, value: 500 },
-  { status: "Invoice Paid", count: 1, value: 750 },
-  { status: "Complaint", count: 0, value: 250 },
-  { status: "Resolved", count: 1, value: 1250 },
-  { status: "Cancelled", count: 2, value: 100 },
-  { status: "Deleted", count: 5, value: 50 },
-  { status: "Review", count: 1, value: 300 },
-];
 
 interface SummaryCardProps {
   icon: React.ReactNode;
@@ -65,6 +56,63 @@ const SummaryCard = ({
 };
 
 export const DashboardCards = () => {
+  const [orderSummaries, setOrderSummaries] = useState<OrderSummary[]>([]);
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
+  
+  useEffect(() => {
+    // Fetch orders from localStorage
+    const fetchOrders = () => {
+      try {
+        const storedOrders = localStorage.getItem("orders");
+        if (!storedOrders) return [];
+        
+        let orders: Order[] = JSON.parse(storedOrders);
+        
+        // Filter orders for non-admin users to only show their assigned orders
+        if (!isAdmin && user) {
+          orders = orders.filter(order => order.assigned_to === user.id);
+        }
+        
+        return orders;
+      } catch (error) {
+        console.error("Error fetching orders:", error);
+        return [];
+      }
+    };
+    
+    // Calculate summaries based on orders
+    const calculateSummaries = (orders: Order[]) => {
+      // Initialize summaries for all status types we want to track
+      const summaryMap = new Map<OrderStatus, OrderSummary>();
+      
+      // Initialize with empty data for each status
+      const statusesToTrack: OrderStatus[] = isAdmin 
+        ? ["In Progress", "Invoice Sent", "Invoice Paid", "Complaint", "Resolved", "Cancelled", "Deleted", "Review"] 
+        : ["In Progress", "Invoice Sent", "Invoice Paid", "Cancelled", "Review"];
+      
+      statusesToTrack.forEach(status => {
+        summaryMap.set(status, { status, count: 0, value: 0 });
+      });
+      
+      // Update summaries with actual data
+      orders.forEach(order => {
+        if (summaryMap.has(order.status)) {
+          const summary = summaryMap.get(order.status)!;
+          summary.count += 1;
+          summary.value += order.price;
+        }
+      });
+      
+      // Convert map to array
+      return Array.from(summaryMap.values());
+    };
+    
+    const orders = fetchOrders();
+    const summaries = calculateSummaries(orders);
+    setOrderSummaries(summaries);
+  }, [isAdmin, user]);
+
   const getIcon = (status: OrderStatus) => {
     const iconProps = { className: "h-6 w-6" };
     
