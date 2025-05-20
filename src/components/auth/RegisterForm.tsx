@@ -140,12 +140,34 @@ const RegisterForm = () => {
     
     setIsLoading(true);
 
-    // In a real app, this would connect to Supabase auth
     try {
-      // Placeholder for Supabase registration
-      console.log("Register with", { fullName, email, username, password });
+      /** ───────────────────────────
+       * save the new user locally
+       * (replace with real backend in production)
+       * ─────────────────────────── */
+      const users = JSON.parse(localStorage.getItem("users") || "[]");
+
+      // simple duplicate check
+      if (users.some((u: any) => u.email === email || u.username === username)) {
+        toast({ 
+          variant: "destructive", 
+          title: "User already exists" 
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      users.push({
+        id: crypto.randomUUID(),
+        fullName,
+        email,
+        username,
+        // ⚠️ store a real hash in production
+        passwordHash: btoa(password)        // base-64 "hash" for demo only
+      });
+
+      localStorage.setItem("users", JSON.stringify(users));
       
-      // Simulate successful registration
       toast({
         title: "Registration successful",
         description: "Your account has been created. You can now log in.",

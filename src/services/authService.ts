@@ -14,37 +14,64 @@ export interface AuthResult {
 
 /**
  * Authenticate by username *or* email.
- * 1. Look up the user.
+ * 1. Look up the user from localStorage first, then fallback to fake users.
  * 2. If not found → "username/email doesn't exist".
  * 3. If found but password mismatch → "Incorrect password".
  * 4. If match → success.
  */
 export const authenticate = async (identifier: string, password: string): Promise<AuthResult> => {
-  // Step 1 – find the user
+  // Get users from localStorage
+  const localUsers = JSON.parse(localStorage.getItem("users") || "[]");
+  
+  // Check localStorage first for registered users
   const isEmail = identifier.includes('@');
-  const user = fakeUsers.find(user => 
+  const localUser = localUsers.find(
+    (u: any) => isEmail ? u.email === identifier : u.username === identifier
+  );
+  
+  // If found in localStorage
+  if (localUser) {
+    // Check password (using the simple btoa for demo)
+    const matches = localUser.passwordHash === btoa(password);
+    if (!matches) {
+      return { 
+        success: false, 
+        error: "Incorrect password" 
+      };
+    }
+    
+    // Success - store a session token
+    localStorage.setItem("userSession", JSON.stringify({ id: localUser.id }));
+    return {
+      success: true,
+      userId: localUser.id
+    };
+  }
+  
+  // If not in localStorage, try the fake users (fallback)
+  const fakeUser = fakeUsers.find(user => 
     isEmail ? user.email === identifier : user.username === identifier
   );
   
-  // If no user found, return early with the appropriate message
-  if (!user) {
+  // If no user found anywhere, return early with the appropriate message
+  if (!fakeUser) {
     return { 
       success: false, 
       error: "This username or email doesn't exist" 
     };
   }
   
-  // Step 2 – validate password (user exists, now check password)
-  if (user.password !== password) {
+  // Fake user exists, validate password
+  if (fakeUser.password !== password) {
     return { 
       success: false, 
       error: "Incorrect password" 
     };
   }
   
-  // Step 3 – success
+  // Success with fake user
   return {
     success: true,
-    user
+    user: fakeUser
   };
 };
