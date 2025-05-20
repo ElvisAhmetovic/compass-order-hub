@@ -43,18 +43,23 @@ export const assignAdminPermission = (email: string): void => {
       console.log(`Updated user ${email} to admin in authentication users`);
     } else {
       // User doesn't exist in auth users, create a new entry with a default password
-      const defaultPassword = btoa("Admin@123"); // Base64 encoded default password
+      const defaultPassword = "Admin@123"; // Default admin password (not encoded)
+      const passwordHash = btoa(defaultPassword); // Encode password for storage
+      
       const newAuthUser = {
         id: `user-${Date.now()}`,
         email,
         role: 'admin',
         full_name: "Admin User",
-        passwordHash: defaultPassword,
+        passwordHash: passwordHash,
         created_at: new Date().toISOString()
       };
       authUsers.push(newAuthUser);
       localStorage.setItem("users", JSON.stringify(authUsers));
       console.log(`Created new admin user ${email} in authentication users with default password`);
+      
+      // Log the generated credentials for visibility (remove in production)
+      console.log(`Admin login credentials - Email: ${email}, Password: ${defaultPassword}`);
     }
     
     // Check if user is currently logged in

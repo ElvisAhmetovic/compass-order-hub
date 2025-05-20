@@ -57,6 +57,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // Check if identifier is username or email
       const isEmail = identifier.includes("@");
       
+      // For debugging purposes
+      console.log(`Login attempt for: ${identifier}`);
+      
       // Find the user in registered users
       let foundUser = registeredUsers.find((user: any) => 
         isEmail ? user.email === identifier : user.username === identifier
@@ -66,19 +69,40 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (!foundUser) {
         const appUser = appUsers.find((user: any) => user.email === identifier);
         if (appUser) {
-          // For app_users, we don't have a stored password, so we'll use a dummy check
-          foundUser = {
-            id: appUser.id,
-            email: appUser.email,
-            role: appUser.role,
-            full_name: appUser.full_name,
-            passwordHash: btoa("password") // Default password for app_users
-          };
+          // For app_users, we need to check if there's a corresponding user in the auth system
+          const authUser = registeredUsers.find((u: any) => u.email === identifier);
+          if (authUser) {
+            foundUser = authUser;
+          } else {
+            // If no auth user exists, this means it's a system-created user (like an admin)
+            // with the default password "Admin@123"
+            const defaultPasswordHash = btoa("Admin@123");
+            foundUser = {
+              id: appUser.id,
+              email: appUser.email,
+              role: appUser.role,
+              full_name: appUser.full_name,
+              passwordHash: defaultPasswordHash
+            };
+          }
         }
       }
       
       // If user not found or password doesn't match
-      if (!foundUser || btoa(password) !== foundUser.passwordHash) {
+      if (!foundUser) {
+        console.log("User not found");
+        toast({
+          variant: "destructive",
+          title: "Login failed",
+          description: "Invalid email/username or password."
+        });
+        return false;
+      }
+      
+      // Check password
+      const inputPasswordHash = btoa(password);
+      if (inputPasswordHash !== foundUser.passwordHash) {
+        console.log("Password mismatch");
         toast({
           variant: "destructive",
           title: "Login failed",

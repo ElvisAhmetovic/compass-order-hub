@@ -50,6 +50,7 @@ const LoginForm = () => {
     setErrors({});
 
     try {
+      console.log(`Attempting to log in with: ${identifier}, password: ${password.replace(/./g, '*')}`);
       const success = await login(identifier, password);
       
       if (success) {
