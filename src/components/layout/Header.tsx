@@ -1,8 +1,7 @@
 
 import { useNavigate } from "react-router-dom";
-import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { LogOut } from "lucide-react";
+import { LogoutButton } from "@/components/auth/LogoutButton";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,14 +18,7 @@ interface HeaderProps {
 }
 
 export default function Header({ userRole = "admin" }: HeaderProps) {
-  const { toast } = useToast();
-  const navigate  = useNavigate();
-
-  const handleLogout = () => {
-    localStorage.removeItem("userSession");
-    toast({ title: "Logged out", description: "You have been logged out successfully." });
-    navigate("/login");
-  };
+  const navigate = useNavigate();
 
   return (
     <header className="border-b">
@@ -39,14 +31,7 @@ export default function Header({ userRole = "admin" }: HeaderProps) {
 
         {/* actions */}
         <div className="flex items-center gap-4">
-          <Button
-            variant="destructive"
-            onClick={handleLogout}
-            className="flex items-center gap-2"
-          >
-            <LogOut className="h-4 w-4" />
-            Logout
-          </Button>
+          <LogoutButton />
 
           {/* user dropdown */}
           <DropdownMenu>
@@ -70,7 +55,7 @@ export default function Header({ userRole = "admin" }: HeaderProps) {
 
               <DropdownMenuSeparator />
 
-              <DropdownMenuItem onClick={handleLogout}>
+              <DropdownMenuItem onClick={() => navigate("/login")}>
                 Logout
               </DropdownMenuItem>
             </DropdownMenuContent>
