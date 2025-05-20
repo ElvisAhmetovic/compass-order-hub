@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import {
   Table,
@@ -13,6 +14,7 @@ import OrderPagination from "./OrderPagination";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { Order, OrderStatus, User } from "@/types";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/context/AuthContext";
 
 interface OrderTableProps {
   onOrderClick: (order: Order) => void;
@@ -39,6 +41,8 @@ const OrderTable = ({ onOrderClick, statusFilter, refreshTrigger }: OrderTablePr
   const [priorityFilter, setPriorityFilter] = useState<string | null>(null);
   
   const { toast } = useToast();
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
 
   // Load users
   useEffect(() => {
@@ -59,7 +63,13 @@ const OrderTable = ({ onOrderClick, statusFilter, refreshTrigger }: OrderTablePr
       try {
         // In a real app, this would be an API call
         const storedOrders = localStorage.getItem("orders");
-        const parsedOrders = storedOrders ? JSON.parse(storedOrders) : [];
+        let parsedOrders = storedOrders ? JSON.parse(storedOrders) : [];
+        
+        // Filter orders for non-admin users to only show their assigned orders
+        if (!isAdmin && user) {
+          parsedOrders = parsedOrders.filter((order: Order) => order.assigned_to === user.id);
+        }
+        
         setOrders(parsedOrders);
         setError(null);
       } catch (err) {
@@ -76,7 +86,7 @@ const OrderTable = ({ onOrderClick, statusFilter, refreshTrigger }: OrderTablePr
     };
 
     fetchOrders();
-  }, [refreshTrigger, toast]);
+  }, [refreshTrigger, toast, isAdmin, user]);
 
   // Apply filters and sorting whenever orders or filter criteria change
   useEffect(() => {
@@ -94,8 +104,8 @@ const OrderTable = ({ onOrderClick, statusFilter, refreshTrigger }: OrderTablePr
       }
     }
     
-    // Apply priority filter
-    if (priorityFilter) {
+    // Apply priority filter - only for admins
+    if (isAdmin && priorityFilter) {
       result = result.filter(order => order.priority === priorityFilter);
     }
     
@@ -114,7 +124,7 @@ const OrderTable = ({ onOrderClick, statusFilter, refreshTrigger }: OrderTablePr
     setFilteredOrders(result);
     // Reset to first page when filters change
     setCurrentPage(1);
-  }, [orders, statusFilter, priorityFilter, sortField, sortDirection]);
+  }, [orders, statusFilter, priorityFilter, sortField, sortDirection, isAdmin]);
 
   // Get current page of orders
   const indexOfLastOrder = currentPage * rowsPerPage;
@@ -147,15 +157,19 @@ const OrderTable = ({ onOrderClick, statusFilter, refreshTrigger }: OrderTablePr
     return assigneeUser?.full_name || assigneeUser?.email || userId;
   };
 
-  // Always render the filters regardless of data state
-  const renderFilters = () => (
-    <div className="space-y-4 mb-4">
-      <OrderFilters 
-        onStatusChange={(status) => setPriorityFilter(status)} 
-        selectedStatus={priorityFilter}
-      />
-    </div>
-  );
+  // Always render the filters regardless of data state, but only for admins
+  const renderFilters = () => {
+    if (!isAdmin) return null;
+    
+    return (
+      <div className="space-y-4 mb-4">
+        <OrderFilters 
+          onStatusChange={(status) => setPriorityFilter(status)} 
+          selectedStatus={priorityFilter}
+        />
+      </div>
+    );
+  };
 
   if (loading) {
     return (
@@ -192,7 +206,9 @@ const OrderTable = ({ onOrderClick, statusFilter, refreshTrigger }: OrderTablePr
         <div className="p-8 text-center border rounded-md">
           <p className="text-muted-foreground text-lg">No orders found.</p>
           <p className="text-sm text-muted-foreground mt-1">
-            {statusFilter || priorityFilter ? `Try changing your filters or create a new order.` : `Start by creating your first order.`}
+            {isAdmin 
+              ? (statusFilter || priorityFilter ? "Try changing your filters or create a new order." : "Start by creating your first order.")
+              : "You have no orders assigned to you."}
           </p>
         </div>
       </div>
@@ -222,7 +238,7 @@ const OrderTable = ({ onOrderClick, statusFilter, refreshTrigger }: OrderTablePr
                   )}
                 </div>
               </TableHead>
-              <TableHead>Priority</TableHead>
+              {isAdmin && <TableHead>Priority</TableHead>}
               <TableHead>Price</TableHead>
               <TableHead>Status</TableHead>
               <TableHead 
@@ -249,6 +265,8 @@ const OrderTable = ({ onOrderClick, statusFilter, refreshTrigger }: OrderTablePr
                 onOrderClick={onOrderClick}
                 onRefresh={handleRefresh}
                 assigneeName={order.assigned_to_name || getAssigneeName(order.assigned_to || "")}
+                hideActions={!isAdmin}
+                hidePriority={!isAdmin}
               />
             ))}
           </TableBody>

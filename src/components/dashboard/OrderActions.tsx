@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { 
   DropdownMenu,
@@ -7,7 +8,7 @@ import {
   DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, FileText } from "lucide-react";
+import { MoreHorizontal, FileText, AlertTriangle } from "lucide-react";
 import { Order, OrderStatus } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
@@ -23,8 +24,41 @@ const OrderActions = ({ order, onOrderView, onRefresh }: OrderActionsProps) => {
   const { toast } = useToast();
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
+  const isAssignedToUser = user && order.assigned_to === user.id;
+
+  // Check if user has permission to view this order
+  const hasPermission = isAdmin || isAssignedToUser;
+
+  // Show warning for non-admin users trying to access unassigned orders
+  if (!hasPermission && !isAdmin) {
+    return (
+      <Button 
+        variant="ghost" 
+        size="icon" 
+        className="h-8 w-8 text-amber-500" 
+        onClick={() => {
+          toast({
+            title: "Access Restricted",
+            description: "You don't have permission to access this order.",
+            variant: "destructive"
+          });
+        }}
+      >
+        <AlertTriangle className="h-4 w-4" />
+      </Button>
+    );
+  }
 
   const handleStatusChange = async (newStatus: OrderStatus) => {
+    if (!isAdmin) {
+      toast({
+        title: "Permission Denied",
+        description: "Only administrators can change order status.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsLoading(true);
     
     try {
@@ -83,6 +117,15 @@ const OrderActions = ({ order, onOrderView, onRefresh }: OrderActionsProps) => {
   };
   
   const handleDeleteOrder = async () => {
+    if (!isAdmin) {
+      toast({
+        title: "Permission Denied",
+        description: "Only administrators can delete orders.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     if (!window.confirm("Are you sure you want to delete this order?")) {
       return;
     }

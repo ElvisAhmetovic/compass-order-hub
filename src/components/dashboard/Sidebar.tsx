@@ -14,22 +14,37 @@ import {
   CheckCircle,
 } from "lucide-react";
 import { LogoutButton } from "@/components/auth/LogoutButton";
-
-const navItems = [
-  { icon: Home, label: "Dashboard", path: "/dashboard" },
-  { icon: Home, label: "Active Orders", path: "/active-orders" },
-  { icon: XCircle, label: "Complaints", path: "/complaints" },
-  { icon: CheckCircle, label: "Completed", path: "/completed" },
-  { icon: XCircle, label: "Cancelled", path: "/cancelled" },
-  { icon: Receipt, label: "Invoice Sent", path: "/invoice-sent" },
-  { icon: CreditCard, label: "Invoice Paid", path: "/invoice-paid" },
-  { icon: Building2, label: "Companies", path: "/companies" },
-  { icon: Users, label: "User Management", path: "/user-management" },
-  { icon: Trash, label: "Deleted", path: "/deleted" },
-  { icon: Star, label: "Reviews", path: "/reviews" },
-];
+import { useAuth } from "@/context/AuthContext";
 
 const Sidebar = () => {
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
+
+  // Define navigation items based on user role
+  const getNavItems = () => {
+    const baseItems = [
+      { icon: Home, label: "Dashboard", path: "/dashboard" },
+      { icon: Home, label: "Active Orders", path: "/active-orders" },
+      { icon: XCircle, label: "Complaints", path: "/complaints" },
+      { icon: CheckCircle, label: "Completed", path: "/completed" },
+      { icon: XCircle, label: "Cancelled", path: "/cancelled" },
+      { icon: Receipt, label: "Invoice Sent", path: "/invoice-sent" },
+      { icon: CreditCard, label: "Invoice Paid", path: "/invoice-paid" },
+    ];
+    
+    // Admin-only items
+    const adminItems = [
+      { icon: Building2, label: "Companies", path: "/companies" },
+      { icon: Users, label: "User Management", path: "/user-management" },
+      { icon: Trash, label: "Deleted", path: "/deleted" },
+      { icon: Star, label: "Reviews", path: "/reviews" },
+    ];
+    
+    return isAdmin ? [...baseItems, ...adminItems] : baseItems;
+  };
+
+  const navItems = getNavItems();
+
   return (
     <aside className="w-64 bg-white border-r h-screen sticky top-0">
       <nav className="p-4 space-y-1">

@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { MoreHorizontal, FileText } from "lucide-react";
@@ -19,9 +20,18 @@ interface OrderRowProps {
   onOrderClick: (order: Order) => void;
   onRefresh: () => void;
   assigneeName: string;
+  hideActions?: boolean;
+  hidePriority?: boolean;
 }
 
-const OrderRow = ({ order, onOrderClick, onRefresh, assigneeName }: OrderRowProps) => {
+const OrderRow = ({ 
+  order, 
+  onOrderClick, 
+  onRefresh, 
+  assigneeName, 
+  hideActions = false, 
+  hidePriority = false 
+}: OrderRowProps) => {
   const [isDeleting, setIsDeleting] = useState(false);
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
@@ -114,9 +124,11 @@ const OrderRow = ({ order, onOrderClick, onRefresh, assigneeName }: OrderRowProp
       <TableCell>
         {formatDate(order.created_at)}
       </TableCell>
-      <TableCell>
-        <Badge className={getPriorityColor(order.priority)}>{order.priority}</Badge>
-      </TableCell>
+      {!hidePriority && (
+        <TableCell>
+          <Badge className={getPriorityColor(order.priority)}>{order.priority}</Badge>
+        </TableCell>
+      )}
       <TableCell>
         {formatCurrency(order.price)}
       </TableCell>
@@ -127,7 +139,7 @@ const OrderRow = ({ order, onOrderClick, onRefresh, assigneeName }: OrderRowProp
         {formatDate(order.updated_at)}
       </TableCell>
       <TableCell>
-        {isAdmin ? (
+        {!hideActions && isAdmin ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="sm" className="p-0 h-8 w-8">
