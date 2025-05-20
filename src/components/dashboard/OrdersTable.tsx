@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { 
   Table, 
@@ -8,19 +7,11 @@ import {
   TableHeader, 
   TableRow 
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { 
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Order, OrderStatus } from "@/types";
-import { Search, Filter, MoreHorizontal } from "lucide-react";
+import { Search, Filter } from "lucide-react";
+import OrderRow from "./OrderRow";
 
 // Mock data for demonstration purposes
 const mockOrders: Order[] = [
@@ -142,11 +133,21 @@ const mockOrders: Order[] = [
 interface OrdersTableProps {
   onOrderClick: (order: Order) => void;
   statusFilter?: string | OrderStatus | null;
+  refreshTrigger?: number; // Added prop to trigger refresh
 }
 
-const OrdersTable = ({ onOrderClick, statusFilter = "All" }: OrdersTableProps) => {
+const OrdersTable = ({ onOrderClick, statusFilter = "All", refreshTrigger = 0 }: OrdersTableProps) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [orders, setOrders] = useState<Order[]>([]);
+  const [localRefreshTrigger, setLocalRefreshTrigger] = useState(0);
+
+  // Combine external and internal refresh triggers
+  const combinedRefreshTrigger = refreshTrigger + localRefreshTrigger;
+  
+  // Force refresh from within the component
+  const handleRefresh = () => {
+    setLocalRefreshTrigger(prev => prev + 1);
+  };
 
   // Load orders from localStorage or use mock data
   useEffect(() => {
@@ -163,52 +164,7 @@ const OrdersTable = ({ onOrderClick, statusFilter = "All" }: OrdersTableProps) =
     if (typeof window !== "undefined") {
       (window as any).mockOrders = mockOrders;
     }
-  }, []);
-
-  const getPriorityColor = (priority: string) => {
-    const priorityClasses = {
-      "Low": "bg-blue-100 text-blue-800 border border-blue-200",
-      "Medium": "bg-yellow-100 text-yellow-800 border border-yellow-200",
-      "High": "bg-red-100 text-red-800 border border-red-200",
-      "Urgent": "bg-red-500 text-white",
-    };
-    return priorityClasses[priority] || "bg-gray-500 text-white";
-  };
-
-  const getStatusColor = (status: OrderStatus) => {
-    const statusClasses = {
-      "Created": "bg-gray-100 text-gray-800 border border-gray-200",
-      "In Progress": "bg-blue-100 text-blue-800 border border-blue-200",
-      "Complaint": "bg-red-100 text-red-800 border border-red-200",
-      "Invoice Sent": "bg-purple-100 text-purple-800 border border-purple-200",
-      "Invoice Paid": "bg-green-100 text-green-800 border border-green-200",
-      "Resolved": "bg-green-500 text-white",
-      "Cancelled": "bg-gray-500 text-white",
-      "Deleted": "bg-gray-800 text-white",
-      "Review": "bg-yellow-500 text-white",
-    };
-    return statusClasses[status] || "bg-gray-500 text-white";
-  };
-
-  const formatDate = (dateString: string) => {
-    try {
-      const date = new Date(dateString);
-      if (isNaN(date.getTime())) return "Invalid date";
-      
-      const month = date.toLocaleString('default', { month: 'short' });
-      const day = date.getDate();
-      const year = date.getFullYear();
-      
-      return `${month} ${day}, ${year}`;
-    } catch (error) {
-      console.error("Error formatting date:", error);
-      return "Invalid date";
-    }
-  };
-
-  const formatCurrency = (amount: number) => {
-    return `${amount} EUR`;
-  };
+  }, [combinedRefreshTrigger]); // Re-fetch when triggers change
 
   const filteredOrders = orders.filter(order => {
     const matchesSearch = 
@@ -279,48 +235,12 @@ const OrdersTable = ({ onOrderClick, statusFilter = "All" }: OrdersTableProps) =
           <TableBody>
             {filteredOrders.length > 0 ? (
               filteredOrders.map((order) => (
-                <TableRow 
-                  key={order.id}
-                  className="cursor-pointer hover:bg-muted/50"
-                  onClick={() => onOrderClick(order)}
-                >
-                  <TableCell className="font-medium">{order.company_name}</TableCell>
-                  <TableCell>{order.assigned_to || "Unassigned"}</TableCell>
-                  <TableCell>
-                    <div className="flex flex-col">
-                      <span>{formatDate(order.created_at)}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge className={getPriorityColor(order.priority)}>{order.priority}</Badge>
-                  </TableCell>
-                  <TableCell>{formatCurrency(order.price)}</TableCell>
-                  <TableCell>
-                    <Badge className={getStatusColor(order.status)}>
-                      {order.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-col">
-                      <span>{formatDate(order.updated_at)}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem>View Details</DropdownMenuItem>
-                        <DropdownMenuItem>Edit Order</DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem className="text-red-600">Cancel Order</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
+                <OrderRow 
+                  key={order.id} 
+                  order={order} 
+                  onOrderClick={onOrderClick}
+                  onRefresh={handleRefresh}
+                />
               ))
             ) : (
               <TableRow>

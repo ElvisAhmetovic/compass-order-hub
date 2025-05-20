@@ -108,7 +108,7 @@ const Dashboard = () => {
             <OrdersTable 
               onOrderClick={handleOrderClick} 
               statusFilter={path === "/active-orders" ? activeTab : pathStatusFilter} 
-              key={`orders-table-${refreshTrigger}`} // Force re-render when data changes
+              refreshTrigger={refreshTrigger} // Pass refresh trigger to table
             />
             
             <OrderModal 
