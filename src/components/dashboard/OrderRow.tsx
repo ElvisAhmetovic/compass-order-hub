@@ -3,6 +3,7 @@ import { TableRow, TableCell } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Order, OrderStatus } from "@/types";
 import OrderActions from "./OrderActions";
+import { formatDate } from "@/lib/utils";
 
 interface OrderRowProps {
   order: Order;
@@ -11,22 +12,6 @@ interface OrderRowProps {
 }
 
 const OrderRow = ({ order, onOrderClick, onRefresh }: OrderRowProps) => {
-  const formatDate = (dateString: string) => {
-    try {
-      const date = new Date(dateString);
-      if (isNaN(date.getTime())) return "Invalid date";
-      
-      const month = date.toLocaleString('default', { month: 'short' });
-      const day = date.getDate();
-      const year = date.getFullYear();
-      
-      return `${month} ${day}, ${year}`;
-    } catch (error) {
-      console.error("Error formatting date:", error);
-      return "Invalid date";
-    }
-  };
-
   const formatCurrency = (amount: number) => {
     return `${amount} EUR`;
   };

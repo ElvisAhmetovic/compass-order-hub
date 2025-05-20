@@ -26,3 +26,5 @@ export const useOrderModal = () => {
     close
   };
 };
+
+export default useOrderModal;

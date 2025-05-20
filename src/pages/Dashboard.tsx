@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
-import OrdersTable from "@/components/dashboard/OrdersTable";
+import OrderTable from "@/components/dashboard/OrderTable";
 import OrderModal from "@/components/dashboard/OrderModal";
 import CreateOrderModal from "@/components/dashboard/CreateOrderModal";
 import { DashboardCards } from "@/components/dashboard/DashboardCards";
@@ -10,15 +10,17 @@ import { Order, UserRole, OrderStatus } from "@/types";
 import ActiveOrdersTabs from "@/components/dashboard/ActiveOrdersTabs";
 import Sidebar from "@/components/dashboard/Sidebar";
 import { useLocation } from "react-router-dom";
+import { useOrderModal } from "@/hooks/useOrderModal";
 
 const Dashboard = () => {
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-  const [modalOpen, setModalOpen] = useState(false);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("All");
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const location = useLocation();
   const path = location.pathname;
+  
+  // Use the order modal hook
+  const { currentOrder, isOpen, open, close } = useOrderModal();
   
   // Set user role - in a real app, this would come from authentication
   const userRole: UserRole = "admin";
@@ -58,19 +60,9 @@ const Dashboard = () => {
     ).join(' ');
   };
 
-  const handleOrderClick = (order: Order) => {
-    setSelectedOrder(order);
-    setModalOpen(true);
-  };
-
-  const closeModal = () => {
-    setModalOpen(false);
-    // After modal closes, trigger a refresh to update our data
+  const handleRefresh = () => {
+    // Trigger a refresh to update our data
     setRefreshTrigger(prev => prev + 1);
-    // Small delay before resetting the selected order for smooth transition
-    setTimeout(() => {
-      setSelectedOrder(null);
-    }, 300);
   };
 
   // Reset active tab when path changes and trigger a refresh
@@ -105,16 +97,16 @@ const Dashboard = () => {
               <ActiveOrdersTabs activeTab={activeTab} setActiveTab={setActiveTab} />
             )}
             
-            <OrdersTable 
-              onOrderClick={handleOrderClick} 
+            <OrderTable 
+              onOrderClick={open} 
               statusFilter={path === "/active-orders" ? activeTab : pathStatusFilter} 
               refreshTrigger={refreshTrigger} // Pass refresh trigger to table
             />
             
             <OrderModal 
-              order={selectedOrder} 
-              open={modalOpen} 
-              onClose={closeModal}
+              order={currentOrder} 
+              open={isOpen} 
+              onClose={close}
               userRole={userRole}
             />
 
@@ -123,7 +115,7 @@ const Dashboard = () => {
               onClose={() => {
                 setCreateModalOpen(false);
                 // Also refresh the table when a new order is created
-                setRefreshTrigger(prev => prev + 1);
+                handleRefresh();
               }}
             />
           </div>
