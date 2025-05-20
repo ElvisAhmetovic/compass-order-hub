@@ -1,11 +1,13 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Eye, EyeOff, AlertTriangle } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
+import FormInput from "./FormInput";
+import { validateIdentifier, validatePassword } from "@/utils/formValidation";
+import { authenticate } from "@/services/authService";
 
 const LoginForm = () => {
   const [identifier, setIdentifier] = useState("");
@@ -15,67 +17,6 @@ const LoginForm = () => {
   const [errors, setErrors] = useState<{identifier?: string, password?: string, auth?: string}>({});
   const { toast } = useToast();
   const navigate = useNavigate();
-
-  // List of offensive words to filter out
-  const offensiveWords = ["racist", "offensive", "inappropriate", "slur"];
-
-  // Fake user database for demonstration - in a real app, this would be in your backend
-  const fakeUsers = [
-    { email: "user@example.com", username: "user1", password: "Password123" },
-    { email: "admin@example.com", username: "admin", password: "Admin123!" }
-  ];
-
-  const validateIdentifier = (value: string) => {
-    // Check if it's an email
-    const isEmail = value.includes('@');
-    
-    if (isEmail) {
-      // Email validation - simple regex for email format
-      const emailRegex = /^[a-zA-Z0-9]+([._-]?[a-zA-Z0-9]+)*@[a-zA-Z0-9]+([.-]?[a-zA-Z0-9]+)*(\.[a-zA-Z]{2,})+$/;
-      if (!emailRegex.test(value)) {
-        return "Please enter a valid email address.";
-      }
-    } else {
-      // Username validation - only letters and numbers
-      const usernameRegex = /^[a-zA-Z0-9]+$/;
-      if (!usernameRegex.test(value)) {
-        return "Username can only contain letters and numbers.";
-      }
-    }
-    
-    // Check for offensive words
-    if (offensiveWords.some(word => value.toLowerCase().includes(word))) {
-      return "This contains inappropriate language.";
-    }
-    
-    return "";
-  };
-
-  const validatePassword = (value: string) => {
-    if (value.length < 8) {
-      return "Password must be at least 8 characters.";
-    }
-    
-    if (!/[A-Z]/.test(value)) {
-      return "Password must include at least one uppercase letter.";
-    }
-    
-    if (!/[a-z]/.test(value)) {
-      return "Password must include at least one lowercase letter.";
-    }
-    
-    if (!/[0-9]/.test(value)) {
-      return "Password must include at least one number.";
-    }
-    
-    // Common password check (very basic implementation)
-    const commonPasswords = ["password", "12345678", "qwerty123"];
-    if (commonPasswords.includes(value.toLowerCase())) {
-      return "This password is too common. Please choose a stronger one.";
-    }
-    
-    return "";
-  };
 
   const handleIdentifierChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -107,27 +48,12 @@ const LoginForm = () => {
     setIsLoading(true);
     setErrors({});
 
-    // In a real app, this would connect to Supabase auth
     try {
-      // Placeholder for Supabase authentication
-      console.log("Login with", { identifier, password });
+      // Use the auth service
+      const result = authenticate(identifier, password);
       
-      // Simulate authentication with our fake user database
-      const isEmail = identifier.includes('@');
-      const user = fakeUsers.find(user => 
-        isEmail ? user.email === identifier : user.username === identifier
-      );
-      
-      if (!user) {
-        // User not found
-        setErrors({ auth: "No account found with this email/username" });
-        setIsLoading(false);
-        return;
-      }
-      
-      if (user.password !== password) {
-        // Incorrect password for existing user
-        setErrors({ auth: "Wrong password" });
+      if (!result.success) {
+        setErrors({ auth: result.error });
         setIsLoading(false);
         return;
       }
@@ -165,57 +91,29 @@ const LoginForm = () => {
             </div>
           )}
           
-          <div className="space-y-2">
-            <label htmlFor="identifier" className="text-sm font-medium">Username or Email</label>
-            <Input
-              id="identifier"
-              type="text"
-              value={identifier}
-              onChange={handleIdentifierChange}
-              placeholder="johndoe or name@company.com"
-              required
-              disabled={isLoading}
-              className={errors.identifier ? "border-destructive" : ""}
-            />
-            {errors.identifier && (
-              <div className="text-sm text-destructive flex items-center gap-1 mt-1">
-                <AlertTriangle className="h-4 w-4" />
-                <span>{errors.identifier}</span>
-              </div>
-            )}
-          </div>
-          <div className="space-y-2">
-            <label htmlFor="password" className="text-sm font-medium">Password</label>
-            <div className="relative">
-              <Input
-                id="password"
-                type={showPassword ? "text" : "password"}
-                value={password}
-                onChange={handlePasswordChange}
-                required
-                disabled={isLoading}
-                className={errors.password ? "border-destructive pr-10" : "pr-10"}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                tabIndex={-1}
-              >
-                {showPassword ? (
-                  <EyeOff className="h-4 w-4" />
-                ) : (
-                  <Eye className="h-4 w-4" />
-                )}
-              </button>
-            </div>
-            {errors.password && (
-              <div className="text-sm text-destructive flex items-center gap-1 mt-1">
-                <AlertTriangle className="h-4 w-4" />
-                <span>{errors.password}</span>
-              </div>
-            )}
-          </div>
+          <FormInput
+            id="identifier"
+            label="Username or Email"
+            type="text"
+            value={identifier}
+            onChange={handleIdentifierChange}
+            placeholder="johndoe or name@company.com"
+            error={errors.identifier}
+            disabled={isLoading}
+          />
+          
+          <FormInput
+            id="password"
+            label="Password"
+            type="password"
+            value={password}
+            onChange={handlePasswordChange}
+            error={errors.password}
+            disabled={isLoading}
+            isPassword
+            showPassword={showPassword}
+            toggleShowPassword={() => setShowPassword(!showPassword)}
+          />
         </CardContent>
         <CardFooter className="flex flex-col">
           <Button
