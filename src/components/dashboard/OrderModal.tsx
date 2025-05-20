@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { 
   Dialog, 
@@ -26,6 +25,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Order, OrderComment, OrderStatus, OrderStatusHistory, UserRole } from "@/types";
 import { formatDate } from "@/lib/utils";
+import { useAuth } from "@/context/AuthContext";
 
 // Mock data for demonstration
 const mockComments: OrderComment[] = [
@@ -71,6 +71,7 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
   const [currentOrder, setCurrentOrder] = useState<Order | null>(null);
   
   const { toast } = useToast();
+  const { user } = useAuth(); // Get current user from Auth context
 
   // Update local state when order prop changes
   useEffect(() => {
@@ -143,12 +144,12 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
       const newCommentObj: OrderComment = {
         id: `c${Date.now()}`,
         order_id: order.id,
-        user_id: "currentUser", // This would come from auth context in a real app
+        user_id: user?.id || "unknown", // Use actual user ID
         comment: newComment,
         created_at: new Date().toISOString(),
         user: {
-          full_name: "Current User", // This would come from auth context in a real app
-          email: "current@example.com"
+          full_name: user?.full_name || "Anonymous User",
+          email: user?.email || "unknown@email.com"
         }
       };
       
@@ -173,7 +174,7 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
         id: `sh${Date.now()}`,
         order_id: currentOrder.id,
         status: newStatus,
-        changed_by: "currentUser", // This would come from auth context in a real app
+        changed_by: user?.full_name || user?.email || "Unknown User", // Use actual user name or email
         changed_at: new Date().toISOString(),
         notes: statusNote
       };
