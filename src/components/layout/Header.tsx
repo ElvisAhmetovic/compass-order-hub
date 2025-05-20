@@ -1,5 +1,4 @@
 
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -13,56 +12,64 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+type UserRole = "admin" | "agent";
+
 interface HeaderProps {
-  userRole?: "admin" | "agent";
+  userRole?: UserRole;          // optional; defaults to "admin"
 }
 
-const Header = ({ userRole = "admin" }: HeaderProps) => {
+export default function Header({ userRole = "admin" }: HeaderProps) {
   const { toast } = useToast();
-  const navigate = useNavigate();
+  const navigate  = useNavigate();
 
   const handleLogout = () => {
-    // In a real app, this would connect to Supabase auth
-    localStorage.removeItem("userSession"); // Clear any session data
-    toast({
-      title: "Logged out",
-      description: "You have been logged out successfully.",
-    });
+    localStorage.removeItem("userSession");
+    toast({ title: "Logged out", description: "You have been logged out successfully." });
     navigate("/login");
   };
 
   return (
     <header className="border-b">
       <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-        <div className="flex items-center space-x-2">
+        {/* logo + role badge */}
+        <div className="flex items-center gap-2">
           <h1 className="text-2xl font-bold text-primary">Order Flow Compass</h1>
-          <Badge userRole={userRole} />
+          <RoleBadge role={userRole} />
         </div>
-        <div className="flex items-center space-x-4">
-          <Button 
-            variant="destructive" 
+
+        {/* actions */}
+        <div className="flex items-center gap-4">
+          <Button
+            variant="destructive"
             onClick={handleLogout}
             className="flex items-center gap-2"
           >
             <LogOut className="h-4 w-4" />
-            <span>Logout</span>
+            Logout
           </Button>
+
+          {/* user dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm">User</Button>
             </DropdownMenuTrigger>
+
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>
                 {userRole === "admin" ? "Admin User" : "Agent User"}
               </DropdownMenuLabel>
+
               <DropdownMenuSeparator />
+
               <DropdownMenuItem onClick={() => navigate("/profile")}>
                 Profile
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => navigate("/settings")}>
                 Settings
               </DropdownMenuItem>
+
               <DropdownMenuSeparator />
+
               <DropdownMenuItem onClick={handleLogout}>
                 Logout
               </DropdownMenuItem>
@@ -72,19 +79,13 @@ const Header = ({ userRole = "admin" }: HeaderProps) => {
       </div>
     </header>
   );
-};
+}
 
-// Badge component to show user role
-const Badge = ({ userRole }: { userRole: string }) => {
-  return (
-    <span className={`px-2 py-1 text-xs rounded-full ${
-      userRole === "admin" 
-        ? "bg-purple-100 text-purple-800" 
-        : "bg-blue-100 text-blue-800"
-    }`}>
-      {userRole === "admin" ? "Admin" : "Agent"}
-    </span>
-  );
-};
+/* small badge component */
+function RoleBadge({ role }: { role: UserRole }) {
+  const common = "px-2 py-0.5 text-xs rounded-full";
+  const admin  = "bg-purple-100 text-purple-800";
+  const agent  = "bg-blue-100 text-blue-800";
 
-export default Header;
+  return <span className={`${common} ${role === "admin" ? admin : agent}`}>{role}</span>;
+}
