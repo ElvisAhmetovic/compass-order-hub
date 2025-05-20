@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const LoginForm = () => {
   const [email, setEmail] = useState("");
@@ -18,6 +19,7 @@ const LoginForm = () => {
     password: "",
     form: "",
   });
+  const [needsVerification, setNeedsVerification] = useState(false);
   const navigate = useNavigate();
 
   const validateForm = () => {
@@ -47,6 +49,8 @@ const LoginForm = () => {
     if (!validateForm()) return;
     
     setIsLoading(true);
+    setNeedsVerification(false);
+    
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -54,8 +58,30 @@ const LoginForm = () => {
       });
 
       if (error) {
-        toast.error(error.message || "Failed to login");
-        setErrors({ ...errors, form: error.message || "Invalid credentials" });
+        console.error("Login error:", error.message);
+        
+        if (error.message.includes("Invalid login credentials")) {
+          // Check if the user has registered but not confirmed email
+          const { data: signUpData } = await supabase.auth.signUp({
+            email,
+            password,
+          });
+          
+          if (signUpData?.user && signUpData.user.identities?.length === 0) {
+            setNeedsVerification(true);
+            setErrors({
+              ...errors,
+              form: "Please check your email to verify your account before logging in"
+            });
+            toast.error("Email verification required");
+          } else {
+            setErrors({ ...errors, form: "Invalid email or password" });
+            toast.error("Invalid email or password");
+          }
+        } else {
+          setErrors({ ...errors, form: error.message || "Failed to login" });
+          toast.error(error.message || "Failed to login");
+        }
         return;
       }
 
@@ -77,6 +103,14 @@ const LoginForm = () => {
         <CardTitle className="text-2xl">Login to your account</CardTitle>
       </CardHeader>
       <CardContent>
+        {needsVerification && (
+          <Alert className="mb-4 bg-amber-50 text-amber-800 border-amber-200">
+            <AlertDescription>
+              You need to verify your email before logging in. Please check your inbox for the verification link.
+            </AlertDescription>
+          </Alert>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <label htmlFor="email" className="text-sm font-medium">
