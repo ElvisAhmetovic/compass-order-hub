@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
@@ -10,12 +11,14 @@ import Deleted from './pages/Deleted';
 import Reviews from './pages/Reviews';
 import Support from "./pages/Support";
 import SupportDetail from "./pages/SupportDetail";
+import Index from './pages/Index';
 
 function App() {
   return (
-    <AuthProvider>
-      <Router>
+    <Router>
+      <AuthProvider>
         <Routes>
+          <Route path="/" element={<Index />} />
           <Route path="/login" element={<Login />} />
           <Route
             path="/dashboard"
@@ -122,8 +125,8 @@ function App() {
             }
           />
         </Routes>
-      </Router>
-    </AuthProvider>
+      </AuthProvider>
+    </Router>
   );
 }
 
