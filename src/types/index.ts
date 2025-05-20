@@ -1,3 +1,4 @@
+
 export type UserRole = 'admin' | 'agent' | 'user';
 
 export interface User {
@@ -41,6 +42,19 @@ export interface Order {
   created_at: string;
   updated_at: string;
   created_by: string;
+  invoice_details?: InvoiceDetails;
+}
+
+export interface InvoiceDetails {
+  invoice_number: string;
+  transaction_id: string;
+  transaction_date: string;
+  account_number: string;
+  reference_number?: string;
+  bank_details?: string;
+  posting_date?: string;
+  value_date?: string;
+  elba_reference?: string;
 }
 
 export interface OrderStatusHistory {

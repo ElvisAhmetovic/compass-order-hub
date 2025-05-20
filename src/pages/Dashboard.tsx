@@ -6,7 +6,7 @@ import OrderModal from "@/components/dashboard/OrderModal";
 import CreateOrderModal from "@/components/dashboard/CreateOrderModal";
 import { DashboardCards } from "@/components/dashboard/DashboardCards";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
-import { Order } from "@/types";
+import { Order, UserRole } from "@/types";
 import ActiveOrdersTabs from "@/components/dashboard/ActiveOrdersTabs";
 import Sidebar from "@/components/dashboard/Sidebar";
 import { useLocation } from "react-router-dom";
@@ -18,6 +18,9 @@ const Dashboard = () => {
   const [activeTab, setActiveTab] = useState<string>("All");
   const location = useLocation();
   const isDashboardHome = location.pathname === "/dashboard";
+  
+  // Set user role - in a real app, this would come from authentication
+  const userRole: UserRole = "admin";
 
   const handleOrderClick = (order: Order) => {
     setSelectedOrder(order);
@@ -36,7 +39,7 @@ const Dashboard = () => {
     <div className="flex min-h-screen">
       <Sidebar />
       <div className="flex-1">
-        <Layout>
+        <Layout userRole={userRole}>
           <div className="space-y-6">
             <DashboardHeader 
               title={isDashboardHome ? "Dashboard" : "Active Orders"}
@@ -57,7 +60,8 @@ const Dashboard = () => {
             <OrderModal 
               order={selectedOrder} 
               open={modalOpen} 
-              onClose={closeModal} 
+              onClose={closeModal}
+              userRole={userRole}
             />
 
             <CreateOrderModal
