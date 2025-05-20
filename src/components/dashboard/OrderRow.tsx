@@ -1,6 +1,7 @@
+
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
-import { MoreHorizontal } from "lucide-react";
+import { MoreHorizontal, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -86,8 +87,19 @@ const OrderRow = ({ order, onOrderClick, onRefresh, assigneeName }: OrderRowProp
   return (
     <TableRow>
       <TableCell>
-        <div className="font-medium truncate max-w-[150px]">
-          {order.company_name}
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => onOrderClick(order)}
+            className="px-2 h-7"
+          >
+            <FileText className="h-4 w-4 mr-1" />
+            <span className="sr-only">View Details</span>
+          </Button>
+          <div className="font-medium truncate max-w-[120px]">
+            {order.company_name}
+          </div>
         </div>
       </TableCell>
       <TableCell>
