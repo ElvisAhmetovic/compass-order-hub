@@ -7,12 +7,14 @@ import { UserManagementTable } from "@/components/user-management/UserManagement
 import { AddUserModal } from "@/components/user-management/AddUserModal";
 import { User } from "@/types";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/context/AuthContext";
 
 const UserManagement = () => {
   const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const { user: currentUser } = useAuth();
   
   // Load users from localStorage on component mount
   useEffect(() => {
@@ -110,7 +112,7 @@ const UserManagement = () => {
     <div className="flex min-h-screen">
       <Sidebar />
       <div className="flex-1">
-        <Layout userRole="admin">
+        <Layout userRole={currentUser?.role || "admin"}>
           <div className="space-y-6">
             <div className="flex justify-between items-center">
               <div>
