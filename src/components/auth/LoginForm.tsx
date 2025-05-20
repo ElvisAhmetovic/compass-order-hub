@@ -73,7 +73,6 @@ const LoginForm = () => {
         title: "Login failed",
         description: "Please check your credentials and try again.",
       });
-    } finally {
       setIsLoading(false);
     }
   };
