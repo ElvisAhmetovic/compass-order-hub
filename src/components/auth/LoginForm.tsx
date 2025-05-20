@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -49,19 +48,13 @@ const LoginForm = () => {
     setErrors({});
 
     try {
-      // Use the auth service with the exact flow:
-      // 1. Check if user exists
-      // 2. If exists but wrong password → "Incorrect password"
-      // 3. If user does not exist → "This username or email doesn't exist"
       const result = await authenticate(identifier, password);
       
       if (!result.success) {
         setErrors(prev => ({ ...prev, auth: result.error }));
-        setIsLoading(false);
         return;
       }
       
-      // Successful login
       toast({
         title: "Login successful",
         description: "Welcome back to Order Flow Compass",
@@ -73,6 +66,7 @@ const LoginForm = () => {
         title: "Login failed",
         description: "Please check your credentials and try again.",
       });
+    } finally {
       setIsLoading(false);
     }
   };
