@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import {
   Table,
@@ -128,45 +129,61 @@ const OrderTable = ({ onOrderClick, statusFilter, refreshTrigger }: OrderTablePr
     // This will be passed down to child components
   };
 
+  // Always render the filters regardless of data state
+  const renderFilters = () => (
+    <div className="space-y-4 mb-4">
+      <OrderFilters 
+        onStatusChange={(status) => setPriorityFilter(status)} 
+        selectedStatus={priorityFilter}
+      />
+    </div>
+  );
+
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
+      <div>
+        {renderFilters()}
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="p-4 text-center">
-        <p className="text-destructive">{error}</p>
-        <button 
-          className="mt-2 px-4 py-2 bg-primary text-primary-foreground rounded"
-          onClick={() => window.location.reload()}
-        >
-          Retry
-        </button>
+      <div>
+        {renderFilters()}
+        <div className="p-4 text-center">
+          <p className="text-destructive">{error}</p>
+          <button 
+            className="mt-2 px-4 py-2 bg-primary text-primary-foreground rounded"
+            onClick={() => window.location.reload()}
+          >
+            Retry
+          </button>
+        </div>
       </div>
     );
   }
 
   if (filteredOrders.length === 0) {
     return (
-      <div className="p-8 text-center border rounded-md">
-        <p className="text-muted-foreground text-lg">No orders found.</p>
-        <p className="text-sm text-muted-foreground mt-1">
-          {statusFilter ? `Try changing your filters or create a new order.` : `Start by creating your first order.`}
-        </p>
+      <div>
+        {renderFilters()}
+        <div className="p-8 text-center border rounded-md">
+          <p className="text-muted-foreground text-lg">No orders found.</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            {statusFilter || priorityFilter ? `Try changing your filters or create a new order.` : `Start by creating your first order.`}
+          </p>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="space-y-4">
-      <OrderFilters 
-        onStatusChange={(status) => setPriorityFilter(status)} 
-        selectedStatus={priorityFilter}
-      />
+      {renderFilters()}
       
       <div className="rounded-md border overflow-hidden">
         <Table>
