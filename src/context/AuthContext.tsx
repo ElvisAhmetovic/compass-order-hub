@@ -9,6 +9,10 @@ interface User {
   email: string;
   role: UserRole;
   full_name: string;
+  first_name?: string;
+  last_name?: string;
+  created_at?: string;
+  last_sign_in?: string;
 }
 
 interface AuthContextType {
@@ -17,6 +21,9 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
   checkUserRole: (requiredRoles: UserRole[]) => boolean;
+  refreshUser: () => Promise<void>;
+  updateUserProfile: (profileData: Partial<User>) => Promise<boolean>;
+  updatePassword: (newPassword: string) => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -27,24 +34,161 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const loadUserFromSession = () => {
-      try {
-        const sessionData = localStorage.getItem('userSession');
-        if (sessionData) {
-          const userData = JSON.parse(sessionData);
-          setUser(userData);
-        }
-      } catch (error) {
-        console.error('Error loading user session:', error);
-        localStorage.removeItem('userSession');
-      } finally {
-        setIsLoading(false);
+  const loadUserFromSession = () => {
+    try {
+      const sessionData = localStorage.getItem('userSession');
+      if (sessionData) {
+        const userData = JSON.parse(sessionData);
+        setUser(userData);
       }
-    };
+    } catch (error) {
+      console.error('Error loading user session:', error);
+      localStorage.removeItem('userSession');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
+  useEffect(() => {
     loadUserFromSession();
   }, []);
+
+  const refreshUser = async (): Promise<void> => {
+    try {
+      // For now just reload from localStorage, but in a real app with Supabase,
+      // you'd fetch fresh data from the server
+      loadUserFromSession();
+    } catch (error) {
+      console.error('Error refreshing user data:', error);
+    }
+  };
+
+  const updateUserProfile = async (profileData: Partial<User>): Promise<boolean> => {
+    try {
+      setIsLoading(true);
+      // Get current user data
+      const sessionData = localStorage.getItem('userSession');
+      if (!sessionData) {
+        toast({
+          variant: "destructive",
+          title: "Update failed",
+          description: "No active session found.",
+        });
+        return false;
+      }
+
+      const userData = JSON.parse(sessionData);
+      
+      // In a real app, you'd call Supabase here
+      // For this demo, we'll simulate by updating localStorage
+      const updatedUser = { 
+        ...userData, 
+        ...profileData,
+        full_name: `${profileData.first_name || userData.first_name || ''} ${profileData.last_name || userData.last_name || ''}`.trim()
+      };
+      
+      // Update in localStorage
+      localStorage.setItem('userSession', JSON.stringify(updatedUser));
+      
+      // Update registered users if found
+      const registeredUsers = JSON.parse(localStorage.getItem("users") || "[]");
+      const userIndex = registeredUsers.findIndex((u: any) => u.id === userData.id);
+      
+      if (userIndex !== -1) {
+        registeredUsers[userIndex] = { 
+          ...registeredUsers[userIndex],
+          ...profileData,
+          full_name: updatedUser.full_name
+        };
+        localStorage.setItem("users", JSON.stringify(registeredUsers));
+      }
+      
+      // Update app_users if found
+      const appUsers = JSON.parse(localStorage.getItem("app_users") || "[]");
+      const appUserIndex = appUsers.findIndex((u: any) => u.id === userData.id);
+      
+      if (appUserIndex !== -1) {
+        appUsers[appUserIndex] = { 
+          ...appUsers[appUserIndex],
+          ...profileData,
+          full_name: updatedUser.full_name
+        };
+        localStorage.setItem("app_users", JSON.stringify(appUsers));
+      }
+      
+      // Update user in context
+      setUser(updatedUser);
+      
+      toast({
+        title: "Profile updated",
+        description: "Your profile has been updated successfully.",
+      });
+      
+      return true;
+    } catch (error) {
+      console.error("Profile update error:", error);
+      toast({
+        variant: "destructive",
+        title: "Update failed",
+        description: "There was a problem updating your profile. Please try again later.",
+      });
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const updatePassword = async (newPassword: string): Promise<boolean> => {
+    try {
+      setIsLoading(true);
+      // Get current user data
+      const sessionData = localStorage.getItem('userSession');
+      if (!sessionData) return false;
+      
+      const userData = JSON.parse(sessionData);
+      
+      // In a real app with Supabase, you'd call auth.updateUser({password: newPassword})
+      // For this mock implementation, we'll update the passwordHash in localStorage
+      
+      // Update in registered users
+      const registeredUsers = JSON.parse(localStorage.getItem("users") || "[]");
+      const userIndex = registeredUsers.findIndex((u: any) => u.id === userData.id);
+      
+      if (userIndex !== -1) {
+        const newPasswordHash = btoa(newPassword);
+        registeredUsers[userIndex].passwordHash = newPasswordHash;
+        localStorage.setItem("users", JSON.stringify(registeredUsers));
+      } else {
+        // If user not found in registered users, create entry
+        const newPasswordHash = btoa(newPassword);
+        registeredUsers.push({
+          id: userData.id,
+          email: userData.email,
+          passwordHash: newPasswordHash,
+          role: userData.role,
+          full_name: userData.full_name
+        });
+        localStorage.setItem("users", JSON.stringify(registeredUsers));
+      }
+      
+      toast({
+        title: "Password updated",
+        description: "Your password has been updated successfully.",
+      });
+      
+      return true;
+    } catch (error) {
+      console.error("Password update error:", error);
+      toast({
+        variant: "destructive",
+        title: "Password update failed",
+        description: "There was a problem updating your password. Please try again later.",
+      });
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const login = async (identifier: string, password: string): Promise<boolean> => {
     try {
@@ -124,12 +268,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
       }
       
-      // Create user session
+      // Create user session with additional profile info
+      const appUser = appUsers.find((user: any) => user.email === foundUser.email);
+      
       const userData = {
         id: foundUser.id,
         email: foundUser.email,
         role: foundUser.role as UserRole,
-        full_name: foundUser.full_name || foundUser.fullName || "User"
+        full_name: foundUser.full_name || foundUser.fullName || "User",
+        first_name: appUser?.first_name || "",
+        last_name: appUser?.last_name || "",
+        created_at: appUser?.created_at || new Date().toISOString(),
+        last_sign_in: new Date().toISOString()
       };
       
       // Save to localStorage and context
@@ -182,7 +332,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, logout, checkUserRole }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      isLoading, 
+      login, 
+      logout, 
+      checkUserRole,
+      refreshUser,
+      updateUserProfile,
+      updatePassword
+    }}>
       {children}
     </AuthContext.Provider>
   );
