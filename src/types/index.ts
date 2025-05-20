@@ -1,4 +1,3 @@
-
 export type UserRole = 'admin' | 'agent' | 'user';
 
 export interface User {
@@ -23,7 +22,8 @@ export type OrderStatus =
   | 'Invoice Paid' 
   | 'Resolved' 
   | 'Cancelled' 
-  | 'Deleted';
+  | 'Deleted'
+  | 'Review';
 
 export type OrderPriority = 'Low' | 'Medium' | 'High' | 'Urgent';
 
