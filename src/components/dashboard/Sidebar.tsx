@@ -10,7 +10,9 @@ import {
   Users,
   Trash,
   Star,
+  LogOut,
 } from "lucide-react";
+import { LogoutButton } from "@/components/auth/LogoutButton";
 
 const navItems = [
   { icon: Home, label: "Dashboard", path: "/dashboard" },
@@ -46,6 +48,11 @@ const Sidebar = () => {
             <span>{item.label}</span>
           </NavLink>
         ))}
+        
+        {/* Logout Button */}
+        <div className="px-3 py-2 mt-4">
+          <LogoutButton />
+        </div>
       </nav>
     </aside>
   );
