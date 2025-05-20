@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Order, OrderComment, OrderStatus, OrderStatusHistory, UserRole } from "@/types";
+import { formatDate } from "@/lib/utils";
 
 // Mock data for demonstration
 const mockComments: OrderComment[] = [
@@ -52,17 +53,6 @@ const mockComments: OrderComment[] = [
   }
 ];
 
-const mockStatusHistory: OrderStatusHistory[] = [
-  {
-    id: "sh1",
-    order_id: "1",
-    status: "Created",
-    changed_by: "user1",
-    changed_at: "2025-05-15T10:30:00Z",
-    notes: "Order created in the system"
-  }
-];
-
 interface OrderModalProps {
   order: Order | null;
   open: boolean;
@@ -76,7 +66,7 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
   const [newStatus, setNewStatus] = useState<OrderStatus | "">("");
   const [statusNote, setStatusNote] = useState("");
   const [comments, setComments] = useState<OrderComment[]>(mockComments);
-  const [statusHistory, setStatusHistory] = useState<OrderStatusHistory[]>(mockStatusHistory);
+  const [statusHistory, setStatusHistory] = useState<OrderStatusHistory[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentOrder, setCurrentOrder] = useState<Order | null>(null);
   
@@ -90,6 +80,11 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
       setNewStatus("");
       setStatusNote("");
       setActiveTab("details");
+      
+      // Load order status history
+      const allStatusHistories = JSON.parse(localStorage.getItem("statusHistories") || "{}");
+      const orderHistory = allStatusHistories[order.id] || [];
+      setStatusHistory(orderHistory);
     }
   }, [order]);
 
@@ -105,6 +100,7 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
       "Resolved": "bg-status-resolved text-white",
       "Cancelled": "bg-status-cancelled text-white",
       "Deleted": "bg-status-deleted text-white",
+      "Review": "bg-status-review text-white",
     };
     return statusClasses[status] || "bg-gray-500 text-white";
   };
@@ -119,7 +115,7 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
     return priorityClasses[priority] || "bg-gray-500 text-white";
   };
 
-  const formatDate = (dateString: string) => {
+  const formatDateTime = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', { 
       year: 'numeric', 
@@ -172,7 +168,6 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
     
     setIsSubmitting(true);
     
-    // Simulate API call
     setTimeout(() => {
       const newStatusHistoryItem: OrderStatusHistory = {
         id: `sh${Date.now()}`,
@@ -183,17 +178,23 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
         notes: statusNote
       };
       
-      setStatusHistory([newStatusHistoryItem, ...statusHistory]);
+      // Update status history in local state
+      const updatedStatusHistory = [newStatusHistoryItem, ...statusHistory];
+      setStatusHistory(updatedStatusHistory);
+      
+      // Save status history to localStorage
+      const allStatusHistories = JSON.parse(localStorage.getItem("statusHistories") || "{}");
+      allStatusHistories[currentOrder.id] = updatedStatusHistory;
+      localStorage.setItem("statusHistories", JSON.stringify(allStatusHistories));
       
       // Update the order's status in the mock data
-      // This is where we're making our key change
-      const updatedOrder = { ...currentOrder, status: newStatus };
+      const updatedOrder = { ...currentOrder, status: newStatus, updated_at: new Date().toISOString() };
       setCurrentOrder(updatedOrder);
       
       // Update orders in localStorage for persistence
       const ordersInStorage = JSON.parse(localStorage.getItem("orders") || "[]");
       const updatedOrders = ordersInStorage.map((o: Order) => 
-        o.id === currentOrder.id ? { ...o, status: newStatus } : o
+        o.id === currentOrder.id ? { ...o, status: newStatus, updated_at: new Date().toISOString() } : o
       );
       localStorage.setItem("orders", JSON.stringify(updatedOrders));
       
@@ -203,7 +204,7 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
         const mockOrdersInWindow = (window as any).mockOrders;
         if (mockOrdersInWindow) {
           const updatedMockOrders = mockOrdersInWindow.map((o: Order) => 
-            o.id === currentOrder.id ? { ...o, status: newStatus } : o
+            o.id === currentOrder.id ? { ...o, status: newStatus, updated_at: new Date().toISOString() } : o
           );
           (window as any).mockOrders = updatedMockOrders;
         }
@@ -284,11 +285,11 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
                   </div>
                   <div className="py-2 grid grid-cols-3">
                     <dt className="font-medium">Created:</dt>
-                    <dd className="col-span-2">{formatDate(currentOrder.created_at)}</dd>
+                    <dd className="col-span-2">{formatDateTime(currentOrder.created_at)}</dd>
                   </div>
                   <div className="py-2 grid grid-cols-3">
                     <dt className="font-medium">Last Updated:</dt>
-                    <dd className="col-span-2">{formatDate(currentOrder.updated_at)}</dd>
+                    <dd className="col-span-2">{formatDateTime(currentOrder.updated_at)}</dd>
                   </div>
                   {currentOrder.assigned_to && (
                     <div className="py-2 grid grid-cols-3">
@@ -318,7 +319,7 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
                     <div key={history.id} className="border rounded-md p-4 space-y-2">
                       <div className="flex items-center justify-between">
                         <Badge className={getStatusColor(history.status)}>{history.status}</Badge>
-                        <span className="text-sm text-muted-foreground">{formatDate(history.changed_at)}</span>
+                        <span className="text-sm text-muted-foreground">{formatDateTime(history.changed_at)}</span>
                       </div>
                       {history.notes && (
                         <p className="text-sm">{history.notes}</p>
@@ -358,7 +359,7 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
                     <div key={comment.id} className="border rounded-md p-4 space-y-2">
                       <div className="flex items-center justify-between">
                         <span className="font-medium">{comment.user?.full_name || comment.user?.email}</span>
-                        <span className="text-sm text-muted-foreground">{formatDate(comment.created_at)}</span>
+                        <span className="text-sm text-muted-foreground">{formatDateTime(comment.created_at)}</span>
                       </div>
                       <p>{comment.comment}</p>
                     </div>
@@ -390,6 +391,7 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
                       <SelectItem value="Resolved">Resolved</SelectItem>
                       <SelectItem value="Cancelled">Cancelled</SelectItem>
                       <SelectItem value="Deleted">Deleted</SelectItem>
+                      <SelectItem value="Review">Review</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

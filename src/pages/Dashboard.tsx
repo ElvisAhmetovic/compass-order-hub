@@ -73,12 +73,14 @@ const Dashboard = () => {
     }, 300);
   };
 
-  // Reset active tab when path changes
+  // Reset active tab when path changes and trigger a refresh
   useEffect(() => {
     // Only apply tabs for active orders
     if (path === "/active-orders") {
       setActiveTab("All");
     }
+    // Force refresh when path changes to ensure correct orders are displayed
+    setRefreshTrigger(prev => prev + 1);
   }, [path]);
 
   return (
@@ -118,7 +120,11 @@ const Dashboard = () => {
 
             <CreateOrderModal
               open={createModalOpen}
-              onClose={() => setCreateModalOpen(false)}
+              onClose={() => {
+                setCreateModalOpen(false);
+                // Also refresh the table when a new order is created
+                setRefreshTrigger(prev => prev + 1);
+              }}
             />
           </div>
         </Layout>

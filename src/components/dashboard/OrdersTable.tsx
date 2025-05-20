@@ -185,16 +185,25 @@ const OrdersTable = ({ onOrderClick, statusFilter = "All" }: OrdersTableProps) =
       "Resolved": "bg-green-500 text-white",
       "Cancelled": "bg-gray-500 text-white",
       "Deleted": "bg-gray-800 text-white",
+      "Review": "bg-yellow-500 text-white",
     };
     return statusClasses[status] || "bg-gray-500 text-white";
   };
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return `${date.toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric',
-    })}, ${date.getFullYear()}`;
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return "Invalid date";
+      
+      const month = date.toLocaleString('default', { month: 'short' });
+      const day = date.getDate();
+      const year = date.getFullYear();
+      
+      return `${month} ${day}, ${year}`;
+    } catch (error) {
+      console.error("Error formatting date:", error);
+      return "Invalid date";
+    }
   };
 
   const formatCurrency = (amount: number) => {
@@ -279,8 +288,7 @@ const OrdersTable = ({ onOrderClick, statusFilter = "All" }: OrdersTableProps) =
                   <TableCell>{order.assigned_to || "Unassigned"}</TableCell>
                   <TableCell>
                     <div className="flex flex-col">
-                      <span>Apr {order.created_at.includes("Apr") ? order.created_at.split("T")[0].split("-")[2] : "N/A"},</span>
-                      <span>2025</span>
+                      <span>{formatDate(order.created_at)}</span>
                     </div>
                   </TableCell>
                   <TableCell>
@@ -294,8 +302,7 @@ const OrdersTable = ({ onOrderClick, statusFilter = "All" }: OrdersTableProps) =
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-col">
-                      <span>Apr {order.updated_at.includes("Apr") ? order.updated_at.split("T")[0].split("-")[2] : "N/A"},</span>
-                      <span>2025</span>
+                      <span>{formatDate(order.updated_at)}</span>
                     </div>
                   </TableCell>
                   <TableCell>
