@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -7,7 +8,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { User, UserRole } from "@/types";
 import { useToast } from "@/components/ui/use-toast";
-import { formatDate } from "@/lib/utils";
 
 interface Permission {
   id: string;
@@ -146,7 +146,7 @@ export const AddUserModal = ({ open, onClose, onAddUser }: AddUserModalProps) =>
     const newUser: User = {
       id: `user-${Date.now()}`,
       email,
-      role,
+      role: role as UserRole,  // Type cast for TypeScript safety
       full_name: `${firstName} ${lastName}`.trim() || "No Name",
       created_at: new Date().toISOString()
     };
@@ -166,13 +166,16 @@ export const AddUserModal = ({ open, onClose, onAddUser }: AddUserModalProps) =>
     console.log('New User:', newUser);
     console.log('Selected Permissions:', selectedPermissions);
     
+    // Store password separately (in a real app, this would be handled by backend authentication)
+    const users = JSON.parse(localStorage.getItem("users") || "[]");
+    users.push({
+      ...newUser,
+      passwordHash: btoa(password) // base-64 "hash" for demo only
+    });
+    localStorage.setItem("users", JSON.stringify(users));
+    
     // Add the new user to the list
     onAddUser(newUser);
-    
-    toast({
-      title: "User created",
-      description: "The new user has been successfully created.",
-    });
     
     handleClose();
   };

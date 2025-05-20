@@ -32,7 +32,7 @@ interface EditUserModalProps {
 export const EditUserModal = ({ user, open, onClose, onUpdate }: EditUserModalProps) => {
   const [email, setEmail] = useState(user.email);
   const [firstName, setFirstName] = useState(user.full_name?.split(" ")[0] || "");
-  const [lastName, setLastName] = useState(user.full_name?.split(" ")[1] || "");
+  const [lastName, setLastName] = useState(user.full_name?.split(" ").slice(1).join(" ") || "");
   const [role, setRole] = useState<UserRole>(user.role);
   const [permissionCategories, setPermissionCategories] = useState<PermissionCategory[]>([
     {
@@ -113,9 +113,6 @@ export const EditUserModal = ({ user, open, onClose, onUpdate }: EditUserModalPr
       setFirstName(nameParts[0] || "");
       setLastName(nameParts.slice(1).join(" ") || "");
       setRole(user.role);
-      
-      // Here you would typically fetch the user's permissions from your backend
-      // and update the permissionCategories state
     }
   }, [user]);
 
@@ -147,7 +144,7 @@ export const EditUserModal = ({ user, open, onClose, onUpdate }: EditUserModalPr
     const updatedUser: User = {
       ...user,
       email,
-      role,
+      role: role as UserRole, // Type cast for TypeScript safety
       full_name: `${firstName} ${lastName}`.trim() || "No Name"
     };
     
@@ -165,6 +162,19 @@ export const EditUserModal = ({ user, open, onClose, onUpdate }: EditUserModalPr
     
     console.log('Updated User:', updatedUser);
     console.log('Selected Permissions:', selectedPermissions);
+    
+    // Also update the user in the authentication system if email changed
+    const authUsers = JSON.parse(localStorage.getItem("users") || "[]");
+    const userIndex = authUsers.findIndex((u: any) => u.id === user.id);
+    if (userIndex !== -1) {
+      authUsers[userIndex] = {
+        ...authUsers[userIndex],
+        email: updatedUser.email,
+        full_name: updatedUser.full_name,
+        role: updatedUser.role
+      };
+      localStorage.setItem("users", JSON.stringify(authUsers));
+    }
     
     onUpdate(updatedUser);
   };

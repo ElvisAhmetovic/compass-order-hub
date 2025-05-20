@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -6,7 +7,6 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { AlertTriangle } from "lucide-react";
 import FormInput from "./FormInput";
 import { validateIdentifier, validatePassword } from "@/utils/formValidation";
-import { authenticate } from "@/services/authService";
 
 const LoginForm = () => {
   const [identifier, setIdentifier] = useState("");
@@ -48,24 +48,46 @@ const LoginForm = () => {
     setErrors({});
 
     try {
-      const result = await authenticate(identifier, password);
+      // Get users from local storage
+      const users = JSON.parse(localStorage.getItem("users") || "[]");
       
-      if (!result.success) {
-        setErrors(prev => ({ ...prev, auth: result.error }));
+      // Check if identifier is username or email
+      const isEmail = identifier.includes("@");
+      
+      // Find the user by username or email
+      const user = users.find((user: any) => 
+        isEmail ? user.email === identifier : user.username === identifier
+      );
+      
+      // If user not found or password doesn't match
+      if (!user || btoa(password) !== user.passwordHash) {
+        setErrors(prev => ({ ...prev, auth: "Invalid email/username or password" }));
+        setIsLoading(false);
         return;
       }
+      
+      // Set user session
+      localStorage.setItem("userSession", JSON.stringify({
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        full_name: user.full_name
+      }));
       
       toast({
         title: "Login successful",
         description: "Welcome back to Order Flow Compass",
       });
+      
       navigate("/dashboard");
     } catch (error) {
+      console.error("Login error:", error);
       toast({
         variant: "destructive",
         title: "Login failed",
         description: "Please check your credentials and try again.",
       });
+      setErrors(prev => ({ ...prev, auth: "An unexpected error occurred." }));
     } finally {
       setIsLoading(false);
     }
@@ -82,7 +104,7 @@ const LoginForm = () => {
           {/* Authentication error message */}
           {errors.auth && (
             <div className="p-3 rounded-md bg-destructive/15 text-destructive flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5" />
+              <AlertTriangle className="h-5 w-4" />
               <span>{errors.auth}</span>
             </div>
           )}

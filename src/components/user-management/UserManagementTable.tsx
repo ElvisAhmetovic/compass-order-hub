@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { User } from "@/types";
 import { EditUserModal } from "./EditUserModal";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 interface UserManagementTableProps {
   users: User[];
@@ -30,22 +30,44 @@ export const UserManagementTable = ({ users, setUsers }: UserManagementTableProp
   };
 
   const handleDelete = (userId: string) => {
-    setUsers(users.filter(user => user.id !== userId));
-    toast({
-      title: "User deleted",
-      description: "The user has been successfully removed.",
-    });
+    try {
+      const updatedUsers = users.filter(user => user.id !== userId);
+      localStorage.setItem("app_users", JSON.stringify(updatedUsers));
+      setUsers(updatedUsers);
+      toast({
+        title: "User deleted",
+        description: "The user has been successfully removed.",
+      });
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      toast({
+        variant: "destructive",
+        title: "Error deleting user",
+        description: "Could not delete the user.",
+      });
+    }
   };
 
   const handleUpdateUser = (updatedUser: User) => {
-    setUsers(users.map(user => 
-      user.id === updatedUser.id ? updatedUser : user
-    ));
-    setIsEditModalOpen(false);
-    toast({
-      title: "User updated",
-      description: "The user information has been updated successfully.",
-    });
+    try {
+      const updatedUsers = users.map(user => 
+        user.id === updatedUser.id ? updatedUser : user
+      );
+      localStorage.setItem("app_users", JSON.stringify(updatedUsers));
+      setUsers(updatedUsers);
+      setIsEditModalOpen(false);
+      toast({
+        title: "User updated",
+        description: "The user information has been updated successfully.",
+      });
+    } catch (error) {
+      console.error("Error updating user:", error);
+      toast({
+        variant: "destructive",
+        title: "Error updating user",
+        description: "Could not update the user information.",
+      });
+    }
   };
 
   return (
@@ -114,10 +136,6 @@ export const UserManagementTable = ({ users, setUsers }: UserManagementTableProp
       
       <div className="p-4 text-sm text-muted-foreground border-t">
         Total {users.length} users
-      </div>
-      
-      <div className="p-4 text-sm text-muted-foreground border-t">
-        A list of your registered users.
       </div>
       
       {selectedUser && (
