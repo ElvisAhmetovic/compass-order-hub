@@ -11,29 +11,30 @@ interface AuthResult {
   user?: typeof fakeUsers[0];
 }
 
-export const authenticate = (identifier: string, password: string): AuthResult => {
+export const authenticate = async (identifier: string, password: string): Promise<AuthResult> => {
+  // First check if the user exists (by email or username)
   const isEmail = identifier.includes('@');
   const user = fakeUsers.find(user => 
     isEmail ? user.email === identifier : user.username === identifier
   );
   
+  // If no user found, return early with the appropriate message
   if (!user) {
-    // User not found
     return { 
       success: false, 
-      error: "No account found with this email/username" 
+      error: "This username or email doesn't exist" 
     };
   }
   
+  // User exists, now check if password is correct
   if (user.password !== password) {
-    // Incorrect password for existing user
     return { 
       success: false, 
-      error: "Wrong password" 
+      error: "Incorrect password" 
     };
   }
   
-  // Successful login
+  // Successful login - both username/email and password match
   return {
     success: true,
     user
