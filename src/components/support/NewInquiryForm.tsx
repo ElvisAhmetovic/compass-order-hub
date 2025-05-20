@@ -7,6 +7,7 @@ import { v4 as uuidv4 } from "uuid";
 import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { SupportInquiry } from "@/types/support";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -19,7 +20,6 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { SupportInquiry } from "@/types/support";
 
 const formSchema = z.object({
   subject: z.string().min(3, "Subject must be at least 3 characters"),

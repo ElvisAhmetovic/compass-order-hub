@@ -94,7 +94,7 @@ export const InquiryDetail = () => {
       localStorage.setItem("supportInquiries", JSON.stringify(updatedInquiries));
       
       // Update local state
-      const updatedInquiry = updatedInquiries.find(inq => inq.id === inquiry.id)!;
+      const updatedInquiry = updatedInquiries.find(inq => inq.id === inquiry.id) as SupportInquiry;
       setInquiry(updatedInquiry);
       setReplyText("");
       
@@ -141,7 +141,7 @@ export const InquiryDetail = () => {
         if (inq.id === inquiry.id) {
           return {
             ...inq,
-            status: "closed",
+            status: "closed" as const,
           };
         }
         return inq;
@@ -151,7 +151,7 @@ export const InquiryDetail = () => {
       localStorage.setItem("supportInquiries", JSON.stringify(updatedInquiries));
       
       // Update local state
-      const updatedInquiry = updatedInquiries.find(inq => inq.id === inquiry.id)!;
+      const updatedInquiry = updatedInquiries.find(inq => inq.id === inquiry.id) as SupportInquiry;
       setInquiry(updatedInquiry);
       
       toast({
