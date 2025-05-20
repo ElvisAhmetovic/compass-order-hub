@@ -12,12 +12,18 @@ const LoginForm = () => {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [errors, setErrors] = useState<{identifier?: string, password?: string}>({});
+  const [errors, setErrors] = useState<{identifier?: string, password?: string, auth?: string}>({});
   const { toast } = useToast();
   const navigate = useNavigate();
 
   // List of offensive words to filter out
   const offensiveWords = ["racist", "offensive", "inappropriate", "slur"];
+
+  // Fake user database for demonstration - in a real app, this would be in your backend
+  const fakeUsers = [
+    { email: "user@example.com", username: "user1", password: "Password123" },
+    { email: "admin@example.com", username: "admin", password: "Admin123!" }
+  ];
 
   const validateIdentifier = (value: string) => {
     // Check if it's an email
@@ -76,7 +82,7 @@ const LoginForm = () => {
     setIdentifier(value);
     
     const error = validateIdentifier(value);
-    setErrors(prev => ({ ...prev, identifier: error }));
+    setErrors(prev => ({ ...prev, identifier: error, auth: undefined }));
   };
 
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -84,7 +90,7 @@ const LoginForm = () => {
     setPassword(value);
     
     const error = validatePassword(value);
-    setErrors(prev => ({ ...prev, password: error }));
+    setErrors(prev => ({ ...prev, password: error, auth: undefined }));
   };
 
   const isFormValid = () => {
@@ -99,13 +105,34 @@ const LoginForm = () => {
     }
     
     setIsLoading(true);
+    setErrors({});
 
     // In a real app, this would connect to Supabase auth
     try {
       // Placeholder for Supabase authentication
       console.log("Login with", { identifier, password });
       
-      // Simulate successful login
+      // Simulate authentication with our fake user database
+      const isEmail = identifier.includes('@');
+      const user = fakeUsers.find(user => 
+        isEmail ? user.email === identifier : user.username === identifier
+      );
+      
+      if (!user) {
+        // User not found
+        setErrors({ auth: "Username or email not found" });
+        setIsLoading(false);
+        return;
+      }
+      
+      if (user.password !== password) {
+        // Incorrect password
+        setErrors({ auth: "Wrong password" });
+        setIsLoading(false);
+        return;
+      }
+      
+      // Successful login
       toast({
         title: "Login successful",
         description: "Welcome back to Order Flow Compass",
@@ -130,6 +157,14 @@ const LoginForm = () => {
       </CardHeader>
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
+          {/* Authentication error message */}
+          {errors.auth && (
+            <div className="p-3 rounded-md bg-destructive/15 text-destructive flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5" />
+              <span>{errors.auth}</span>
+            </div>
+          )}
+          
           <div className="space-y-2">
             <label htmlFor="identifier" className="text-sm font-medium">Username or Email</label>
             <Input
