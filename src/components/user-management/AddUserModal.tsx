@@ -8,6 +8,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { User, UserRole } from "@/types";
 import { useToast } from "@/components/ui/use-toast";
 import { formatDate } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 
 interface Permission {
   id: string;
@@ -27,9 +30,10 @@ interface AddUserModalProps {
   open: boolean;
   onClose: () => void;
   onAddUser: (user: User) => void;
+  onSuccess: () => Promise<void>;
 }
 
-export const AddUserModal = ({ open, onClose, onAddUser }: AddUserModalProps) => {
+export const AddUserModal = ({ open, onClose, onAddUser, onSuccess }: AddUserModalProps) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [firstName, setFirstName] = useState("");
@@ -106,8 +110,9 @@ export const AddUserModal = ({ open, onClose, onAddUser }: AddUserModalProps) =>
       }
     }
   ]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
-  const { toast } = useToast();
+  const { toast: uiToast } = useToast();
 
   const handleTogglePermission = (categoryIndex: number, permissionType: 'view' | 'modify', checked: boolean) => {
     const updatedCategories = [...permissionCategories];
@@ -132,49 +137,59 @@ export const AddUserModal = ({ open, onClose, onAddUser }: AddUserModalProps) =>
     setPermissionCategories(updatedCategories);
   };
 
-  const handleCreate = () => {
+  const handleCreate = async () => {
     if (!email || !password) {
-      toast({
-        title: "Error",
-        description: "Email and password are required.",
-        variant: "destructive",
-      });
+      toast.error("Email and password are required");
       return;
     }
     
-    // Create a new user with a unique ID
-    const newUser: User = {
-      id: `user-${Date.now()}`,
-      email,
-      role,
-      full_name: `${firstName} ${lastName}`.trim() || "No Name",
-      created_at: new Date().toISOString()
-    };
+    setIsSubmitting(true);
     
-    // Get all selected permissions
-    const selectedPermissions = permissionCategories.flatMap(category => {
-      const permissions = [];
-      if (category.permissions.view?.checked) {
-        permissions.push(category.permissions.view.id);
+    try {
+      // Create a new user with a unique ID
+      const { data, error } = await supabase
+        .from("app_users")
+        .insert({
+          email,
+          role,
+          full_name: `${firstName} ${lastName}`.trim() || "No Name"
+        })
+        .select()
+        .single();
+        
+      if (error) {
+        toast.error("Failed to create user");
+        console.error("Error creating user:", error);
+        return;
       }
-      if (category.permissions.modify?.checked) {
-        permissions.push(category.permissions.modify.id);
-      }
-      return permissions;
-    });
-    
-    console.log('New User:', newUser);
-    console.log('Selected Permissions:', selectedPermissions);
-    
-    // Add the new user to the list
-    onAddUser(newUser);
-    
-    toast({
-      title: "User created",
-      description: "The new user has been successfully created.",
-    });
-    
-    handleClose();
+      
+      // Get all selected permissions
+      const selectedPermissions = permissionCategories.flatMap(category => {
+        const permissions = [];
+        if (category.permissions.view?.checked) {
+          permissions.push(category.permissions.view.id);
+        }
+        if (category.permissions.modify?.checked) {
+          permissions.push(category.permissions.modify.id);
+        }
+        return permissions;
+      });
+      
+      console.log('New User:', data);
+      console.log('Selected Permissions:', selectedPermissions);
+      
+      // Add the new user to the list
+      onAddUser(data);
+      
+      toast.success("User created successfully");
+      await onSuccess();
+      handleClose();
+    } catch (err) {
+      console.error("Unexpected error creating user:", err);
+      toast.error("An unexpected error occurred");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleClose = () => {
@@ -293,11 +308,18 @@ export const AddUserModal = ({ open, onClose, onAddUser }: AddUserModalProps) =>
         </div>
         
         <div className="flex justify-end gap-2 pt-4">
-          <Button variant="outline" onClick={handleClose}>
+          <Button variant="outline" onClick={handleClose} disabled={isSubmitting}>
             Cancel
           </Button>
-          <Button onClick={handleCreate}>
-            Create User
+          <Button onClick={handleCreate} disabled={isSubmitting}>
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Creating...
+              </>
+            ) : (
+              "Create User"
+            )}
           </Button>
         </div>
       </DialogContent>
