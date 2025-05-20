@@ -2,7 +2,9 @@
 import { ReactNode } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { UserRole } from "@/types";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
 
 interface LayoutProps {
   children: ReactNode;
@@ -11,6 +13,7 @@ interface LayoutProps {
 
 const Layout = ({ children, userRole = "admin" }: LayoutProps) => {
   const location = useLocation();
+  const navigate = useNavigate();
   
   // Check if user has access to this route based on their role
   const hasAccess = () => {
@@ -37,18 +40,29 @@ const Layout = ({ children, userRole = "admin" }: LayoutProps) => {
     return true;
   };
 
+  const handleBackToDashboard = () => {
+    navigate("/dashboard");
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       <main className="flex-1 px-6 py-6">
         {hasAccess() ? (
           children
         ) : (
-          <div className="flex items-center justify-center h-full">
+          <div className="flex flex-col items-center justify-center h-full">
             <div className="text-center">
               <h1 className="text-2xl font-bold">Access Denied</h1>
-              <p className="text-muted-foreground mt-2">
+              <p className="text-muted-foreground mt-2 mb-6">
                 You don't have permission to access this page.
               </p>
+              <Button 
+                onClick={handleBackToDashboard} 
+                className="flex items-center gap-2"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Back to Dashboard
+              </Button>
             </div>
           </div>
         )}
