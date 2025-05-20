@@ -39,6 +39,7 @@ export const AddUserModal = ({ open, onClose, onAddUser, onSuccess }: AddUserMod
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [role, setRole] = useState<UserRole>("user");
+  
   const [permissionCategories, setPermissionCategories] = useState<PermissionCategory[]>([
     {
       section: "Active Orders",
@@ -178,8 +179,14 @@ export const AddUserModal = ({ open, onClose, onAddUser, onSuccess }: AddUserMod
       console.log('New User:', data);
       console.log('Selected Permissions:', selectedPermissions);
       
+      // Cast the role to UserRole before adding to the users list
+      const typedUser: User = {
+        ...data,
+        role: data.role as UserRole
+      };
+      
       // Add the new user to the list
-      onAddUser(data);
+      onAddUser(typedUser);
       
       toast.success("User created successfully");
       await onSuccess();

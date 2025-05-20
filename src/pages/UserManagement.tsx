@@ -5,7 +5,7 @@ import Sidebar from "@/components/dashboard/Sidebar";
 import { Button } from "@/components/ui/button";
 import { UserManagementTable } from "@/components/user-management/UserManagementTable";
 import { AddUserModal } from "@/components/user-management/AddUserModal";
-import { User } from "@/types";
+import { User, UserRole } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
@@ -32,7 +32,7 @@ const UserManagement = () => {
       setUsers(data.map(user => ({
         id: user.id,
         email: user.email,
-        role: user.role,
+        role: user.role as UserRole, // Cast to UserRole type
         created_at: user.created_at,
         full_name: user.full_name || "No Name"
       })));
