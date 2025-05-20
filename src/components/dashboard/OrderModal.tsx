@@ -70,7 +70,7 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentOrder, setCurrentOrder] = useState<Order | null>(null);
   const [users, setUsers] = useState<User[]>([]);
-  const [selectedAssignee, setSelectedAssignee] = useState("");
+  const [selectedAssignee, setSelectedAssignee] = useState("unassigned");
   
   const { toast } = useToast();
   const { user } = useAuth(); // Get current user from Auth context
@@ -91,7 +91,7 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
   useEffect(() => {
     if (order) {
       setCurrentOrder(order);
-      setSelectedAssignee(order.assigned_to || "");
+      setSelectedAssignee(order.assigned_to || "unassigned");
       
       // Reset form states
       setNewStatus("");
@@ -242,7 +242,50 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
   };
 
   const handleAssignOrder = () => {
-    if (!selectedAssignee || !currentOrder) return;
+    if (!selectedAssignee || selectedAssignee === "unassigned") {
+      // If "unassigned" is selected, clear the assignment
+      const updatedOrder = { 
+        ...currentOrder, 
+        assigned_to: "",
+        updated_at: new Date().toISOString() 
+      };
+      setCurrentOrder(updatedOrder);
+      
+      // Update orders in localStorage
+      const ordersInStorage = JSON.parse(localStorage.getItem("orders") || "[]");
+      const updatedOrders = ordersInStorage.map((o: Order) => 
+        o.id === currentOrder.id ? { ...o, assigned_to: "", updated_at: new Date().toISOString() } : o
+      );
+      localStorage.setItem("orders", JSON.stringify(updatedOrders));
+      
+      // Add unassignment to history
+      const newStatusHistoryItem: OrderStatusHistory = {
+        id: `sh${Date.now()}`,
+        order_id: currentOrder.id,
+        status: currentOrder.status,
+        changed_by: user?.full_name || user?.email || "Unknown User",
+        changed_at: new Date().toISOString(),
+        notes: "Order unassigned"
+      };
+      
+      // Update status history and save to localStorage
+      const updatedStatusHistory = [newStatusHistoryItem, ...statusHistory];
+      setStatusHistory(updatedStatusHistory);
+      
+      const allStatusHistories = JSON.parse(localStorage.getItem("statusHistories") || "{}");
+      allStatusHistories[currentOrder.id] = updatedStatusHistory;
+      localStorage.setItem("statusHistories", JSON.stringify(allStatusHistories));
+      
+      toast({
+        title: "Order unassigned",
+        description: "Order has been unassigned.",
+      });
+      return;
+    }
+    
+    if (!selectedAssignee || selectedAssignee === currentOrder.assigned_to) {
+      return;
+    }
     
     setIsSubmitting(true);
     
@@ -501,7 +544,7 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
                       <SelectValue placeholder="Select a user" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Unassigned</SelectItem>
+                      <SelectItem value="unassigned">Unassigned</SelectItem>
                       {users.map((user) => (
                         <SelectItem key={user.id} value={user.id}>
                           {user.full_name} ({user.email})
@@ -513,7 +556,7 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
                 
                 <Button 
                   onClick={handleAssignOrder} 
-                  disabled={isSubmitting || selectedAssignee === currentOrder.assigned_to}
+                  disabled={isSubmitting || (selectedAssignee !== "unassigned" && selectedAssignee === currentOrder.assigned_to)}
                 >
                   {isSubmitting ? "Assigning..." : "Assign Order"}
                 </Button>
