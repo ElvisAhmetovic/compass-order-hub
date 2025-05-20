@@ -27,12 +27,13 @@ const Layout = ({ children, userRole = "admin" }: LayoutProps) => {
     
     // Regular users have limited access
     if (userRole === "user") {
-      // Users can only access dashboard, active orders, completed and reviews
+      // Users can access dashboard, active orders, completed, reviews and support
       const allowedPaths = [
         "/dashboard", 
         "/active-orders", 
         "/completed", 
-        "/reviews"
+        "/reviews",
+        "/support"
       ];
       return allowedPaths.some(allowedPath => path.includes(allowedPath));
     }
