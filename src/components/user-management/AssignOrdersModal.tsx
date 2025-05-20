@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -60,7 +59,7 @@ export function AssignOrdersModal({ user, open, onClose }: AssignOrdersModalProp
   const handleAssignOrders = async () => {
     setIsSubmitting(true);
     try {
-      // Get user's name
+      // Get user's display name - prioritize full name, fall back to email
       const assigneeName = user.full_name || user.email;
       
       // Update orders in localStorage

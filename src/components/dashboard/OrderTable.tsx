@@ -144,7 +144,7 @@ const OrderTable = ({ onOrderClick, statusFilter, refreshTrigger }: OrderTablePr
   const getAssigneeName = (userId: string): string => {
     if (!userId) return "Unassigned";
     const assigneeUser = users.find(u => u.id === userId);
-    return assigneeUser?.full_name || assigneeUser?.email || "Unknown User";
+    return assigneeUser?.full_name || assigneeUser?.email || userId;
   };
 
   // Always render the filters regardless of data state

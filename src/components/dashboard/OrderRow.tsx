@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { MoreHorizontal } from "lucide-react";
@@ -93,7 +92,9 @@ const OrderRow = ({ order, onOrderClick, onRefresh, assigneeName }: OrderRowProp
       </TableCell>
       <TableCell>
         <div className="font-medium truncate max-w-[100px]">
-          {assigneeName}
+          {assigneeName && assigneeName !== "Unknown User" && assigneeName !== "Admin User" ? 
+            assigneeName : 
+            order.assigned_to ? "Assigned User" : "Unassigned"}
         </div>
       </TableCell>
       <TableCell>
