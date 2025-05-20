@@ -1,4 +1,3 @@
-
 export type UserRole = 'admin' | 'agent' | 'user';
 
 export interface User {
@@ -43,6 +42,7 @@ export interface Order {
   updated_at: string;
   created_by: string;
   invoice_details?: InvoiceDetails;
+  assigned_to_name?: string; // Adding this field to store the assignee's name
 }
 
 export interface InvoiceDetails {

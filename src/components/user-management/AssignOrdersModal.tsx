@@ -60,14 +60,27 @@ export function AssignOrdersModal({ user, open, onClose }: AssignOrdersModalProp
   const handleAssignOrders = async () => {
     setIsSubmitting(true);
     try {
+      // Get user's name
+      const assigneeName = user.full_name || user.email;
+      
       // Update orders in localStorage
       const updatedOrders = orders.map(order => {
         if (selectedOrders.includes(order.id)) {
           // Assign to this user
-          return { ...order, assigned_to: user.id, updated_at: new Date().toISOString() };
+          return { 
+            ...order, 
+            assigned_to: user.id, 
+            assigned_to_name: assigneeName,
+            updated_at: new Date().toISOString() 
+          };
         } else if (order.assigned_to === user.id) {
           // Unassign if previously assigned to this user but not selected now
-          return { ...order, assigned_to: "", updated_at: new Date().toISOString() };
+          return { 
+            ...order, 
+            assigned_to: "", 
+            assigned_to_name: "",
+            updated_at: new Date().toISOString() 
+          };
         }
         // Don't change other orders
         return order;
@@ -78,7 +91,7 @@ export function AssignOrdersModal({ user, open, onClose }: AssignOrdersModalProp
       
       toast({
         title: "Orders assigned",
-        description: `Successfully assigned orders to ${user.full_name || user.email}.`,
+        description: `Successfully assigned orders to ${assigneeName}.`,
       });
       
       onClose();

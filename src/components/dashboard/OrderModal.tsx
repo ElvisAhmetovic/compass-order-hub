@@ -247,6 +247,7 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
       const updatedOrder = { 
         ...currentOrder, 
         assigned_to: "",
+        assigned_to_name: "",
         updated_at: new Date().toISOString() 
       };
       setCurrentOrder(updatedOrder);
@@ -254,7 +255,7 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
       // Update orders in localStorage
       const ordersInStorage = JSON.parse(localStorage.getItem("orders") || "[]");
       const updatedOrders = ordersInStorage.map((o: Order) => 
-        o.id === currentOrder.id ? { ...o, assigned_to: "", updated_at: new Date().toISOString() } : o
+        o.id === currentOrder.id ? { ...o, assigned_to: "", assigned_to_name: "", updated_at: new Date().toISOString() } : o
       );
       localStorage.setItem("orders", JSON.stringify(updatedOrders));
       
@@ -268,10 +269,11 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
         notes: "Order unassigned"
       };
       
-      // Update status history and save to localStorage
+      // Update status history in local state
       const updatedStatusHistory = [newStatusHistoryItem, ...statusHistory];
       setStatusHistory(updatedStatusHistory);
       
+      // Save status history to localStorage
       const allStatusHistories = JSON.parse(localStorage.getItem("statusHistories") || "{}");
       allStatusHistories[currentOrder.id] = updatedStatusHistory;
       localStorage.setItem("statusHistories", JSON.stringify(allStatusHistories));
@@ -290,10 +292,15 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
     setIsSubmitting(true);
     
     setTimeout(() => {
+      // Find the selected user's details
+      const assigneeUser = users.find(u => u.id === selectedAssignee);
+      const assigneeName = assigneeUser?.full_name || assigneeUser?.email || "Unknown User";
+      
       // Update the order's assigned_to in the mock data
       const updatedOrder = { 
         ...currentOrder, 
         assigned_to: selectedAssignee,
+        assigned_to_name: assigneeName,
         updated_at: new Date().toISOString() 
       };
       setCurrentOrder(updatedOrder);
@@ -301,14 +308,16 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
       // Update orders in localStorage
       const ordersInStorage = JSON.parse(localStorage.getItem("orders") || "[]");
       const updatedOrders = ordersInStorage.map((o: Order) => 
-        o.id === currentOrder.id ? { ...o, assigned_to: selectedAssignee, updated_at: new Date().toISOString() } : o
+        o.id === currentOrder.id ? { 
+          ...o, 
+          assigned_to: selectedAssignee, 
+          assigned_to_name: assigneeName, 
+          updated_at: new Date().toISOString() 
+        } : o
       );
       localStorage.setItem("orders", JSON.stringify(updatedOrders));
       
       // Add assignment change to history
-      const assigneeUser = users.find(u => u.id === selectedAssignee);
-      const assigneeName = assigneeUser ? assigneeUser.full_name : selectedAssignee;
-      
       const newStatusHistoryItem: OrderStatusHistory = {
         id: `sh${Date.now()}`,
         order_id: currentOrder.id,
@@ -318,10 +327,11 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
         notes: `Order assigned to ${assigneeName}`
       };
       
-      // Update status history in local state and localStorage
+      // Update status history in local state
       const updatedStatusHistory = [newStatusHistoryItem, ...statusHistory];
       setStatusHistory(updatedStatusHistory);
       
+      // Save status history to localStorage
       const allStatusHistories = JSON.parse(localStorage.getItem("statusHistories") || "{}");
       allStatusHistories[currentOrder.id] = updatedStatusHistory;
       localStorage.setItem("statusHistories", JSON.stringify(allStatusHistories));
@@ -338,7 +348,7 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
   const getAssigneeName = (userId: string): string => {
     if (!userId) return "Unassigned";
     const assigneeUser = users.find(u => u.id === userId);
-    return assigneeUser ? assigneeUser.full_name : userId;
+    return assigneeUser?.full_name || assigneeUser?.email || "Unknown User";
   };
 
   return (
@@ -411,7 +421,11 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
                   </div>
                   <div className="py-2 grid grid-cols-3">
                     <dt className="font-medium">Assigned To:</dt>
-                    <dd className="col-span-2">{getAssigneeName(currentOrder.assigned_to || "")}</dd>
+                    <dd className="col-span-2">
+                      {currentOrder.assigned_to 
+                        ? (currentOrder.assigned_to_name || getAssigneeName(currentOrder.assigned_to))
+                        : "Unassigned"}
+                    </dd>
                   </div>
                 </dl>
               </div>

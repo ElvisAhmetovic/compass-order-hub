@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import {
   Table,
@@ -145,7 +144,7 @@ const OrderTable = ({ onOrderClick, statusFilter, refreshTrigger }: OrderTablePr
   const getAssigneeName = (userId: string): string => {
     if (!userId) return "Unassigned";
     const assigneeUser = users.find(u => u.id === userId);
-    return assigneeUser ? assigneeUser.full_name : "Unknown";
+    return assigneeUser?.full_name || assigneeUser?.email || "Unknown User";
   };
 
   // Always render the filters regardless of data state
@@ -249,7 +248,7 @@ const OrderTable = ({ onOrderClick, statusFilter, refreshTrigger }: OrderTablePr
                 order={order}
                 onOrderClick={onOrderClick}
                 onRefresh={handleRefresh}
-                assigneeName={getAssigneeName(order.assigned_to || "")}
+                assigneeName={order.assigned_to_name || getAssigneeName(order.assigned_to || "")}
               />
             ))}
           </TableBody>
