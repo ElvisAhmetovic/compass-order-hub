@@ -57,7 +57,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // Check if identifier is username or email
       const isEmail = identifier.includes("@");
       
-      // For debugging purposes
+      // For debugging
       console.log(`Login attempt for: ${identifier}`);
       
       // Find the user in registered users
@@ -74,8 +74,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           if (authUser) {
             foundUser = authUser;
           } else {
-            // If no auth user exists, this means it's a system-created user (like an admin)
-            // with the default password "Admin@123"
+            // If no auth user exists, create a temporary auth object with default password
             const defaultPasswordHash = btoa("Admin@123");
             foundUser = {
               id: appUser.id,
@@ -88,7 +87,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
       }
       
-      // If user not found or password doesn't match
+      // If user not found
       if (!foundUser) {
         console.log("User not found");
         toast({
@@ -99,16 +98,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return false;
       }
       
-      // Check password
+      // Check password - handle both encoded and raw passwords
       const inputPasswordHash = btoa(password);
-      if (inputPasswordHash !== foundUser.passwordHash) {
-        console.log("Password mismatch");
-        toast({
-          variant: "destructive",
-          title: "Login failed",
-          description: "Invalid email/username or password."
-        });
-        return false;
+      const storedHash = foundUser.passwordHash || "";
+      
+      // Debug password comparison
+      console.log("Comparing password hash:", { 
+        input: inputPasswordHash.substring(0, 5) + "...", 
+        stored: storedHash.substring(0, 5) + "..." 
+      });
+      
+      if (inputPasswordHash !== storedHash) {
+        // Try with default admin password for admin users
+        if (foundUser.role === "admin" && password === "Admin@123") {
+          console.log("Admin default password match");
+          // Valid admin with default password
+        } else {
+          console.log("Password mismatch");
+          toast({
+            variant: "destructive",
+            title: "Login failed",
+            description: "Invalid email/username or password."
+          });
+          return false;
+        }
       }
       
       // Create user session

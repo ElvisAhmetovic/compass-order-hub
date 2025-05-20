@@ -11,6 +11,9 @@ export const assignAdminPermission = (email: string): void => {
     const appUsers = JSON.parse(localStorage.getItem("app_users") || "[]");
     const authUsers = JSON.parse(localStorage.getItem("users") || "[]");
     
+    // Create unique user ID
+    const userId = `user-${Date.now()}`;
+    
     // Check if the user exists in app_users
     const appUserIndex = appUsers.findIndex((user: User) => user.email === email);
     
@@ -22,7 +25,7 @@ export const assignAdminPermission = (email: string): void => {
     } else {
       // User doesn't exist, create a new admin user
       const newUser: User = {
-        id: `user-${Date.now()}`,
+        id: userId,
         email,
         role: 'admin' as UserRole,
         full_name: "Admin User",
@@ -39,6 +42,10 @@ export const assignAdminPermission = (email: string): void => {
     if (authUserIndex !== -1) {
       // User exists, update their role
       authUsers[authUserIndex].role = 'admin';
+      // Ensure password hash is set
+      if (!authUsers[authUserIndex].passwordHash) {
+        authUsers[authUserIndex].passwordHash = btoa("Admin@123");
+      }
       localStorage.setItem("users", JSON.stringify(authUsers));
       console.log(`Updated user ${email} to admin in authentication users`);
     } else {
@@ -47,7 +54,7 @@ export const assignAdminPermission = (email: string): void => {
       const passwordHash = btoa(defaultPassword); // Encode password for storage
       
       const newAuthUser = {
-        id: `user-${Date.now()}`,
+        id: userId, // Use the same ID as in app_users
         email,
         role: 'admin',
         full_name: "Admin User",
