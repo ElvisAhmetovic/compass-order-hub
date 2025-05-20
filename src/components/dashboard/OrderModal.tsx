@@ -23,7 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Order, OrderComment, OrderStatus, OrderStatusHistory, UserRole } from "@/types";
+import { Order, OrderComment, OrderStatus, OrderStatusHistory, User, UserRole } from "@/types";
 import { formatDate } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
 
@@ -69,14 +69,30 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
   const [statusHistory, setStatusHistory] = useState<OrderStatusHistory[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentOrder, setCurrentOrder] = useState<Order | null>(null);
+  const [users, setUsers] = useState<User[]>([]);
+  const [selectedAssignee, setSelectedAssignee] = useState("");
   
   const { toast } = useToast();
   const { user } = useAuth(); // Get current user from Auth context
+
+  // Fetch available users
+  useEffect(() => {
+    try {
+      const storedUsers = localStorage.getItem("app_users");
+      if (storedUsers) {
+        setUsers(JSON.parse(storedUsers));
+      }
+    } catch (error) {
+      console.error("Error loading users:", error);
+    }
+  }, []);
 
   // Update local state when order prop changes
   useEffect(() => {
     if (order) {
       setCurrentOrder(order);
+      setSelectedAssignee(order.assigned_to || "");
+      
       // Reset form states
       setNewStatus("");
       setStatusNote("");
@@ -225,6 +241,63 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
     }, 500);
   };
 
+  const handleAssignOrder = () => {
+    if (!selectedAssignee || !currentOrder) return;
+    
+    setIsSubmitting(true);
+    
+    setTimeout(() => {
+      // Update the order's assigned_to in the mock data
+      const updatedOrder = { 
+        ...currentOrder, 
+        assigned_to: selectedAssignee,
+        updated_at: new Date().toISOString() 
+      };
+      setCurrentOrder(updatedOrder);
+      
+      // Update orders in localStorage
+      const ordersInStorage = JSON.parse(localStorage.getItem("orders") || "[]");
+      const updatedOrders = ordersInStorage.map((o: Order) => 
+        o.id === currentOrder.id ? { ...o, assigned_to: selectedAssignee, updated_at: new Date().toISOString() } : o
+      );
+      localStorage.setItem("orders", JSON.stringify(updatedOrders));
+      
+      // Add assignment change to history
+      const assigneeUser = users.find(u => u.id === selectedAssignee);
+      const assigneeName = assigneeUser ? assigneeUser.full_name : selectedAssignee;
+      
+      const newStatusHistoryItem: OrderStatusHistory = {
+        id: `sh${Date.now()}`,
+        order_id: currentOrder.id,
+        status: currentOrder.status,
+        changed_by: user?.full_name || user?.email || "Unknown User",
+        changed_at: new Date().toISOString(),
+        notes: `Order assigned to ${assigneeName}`
+      };
+      
+      // Update status history in local state and localStorage
+      const updatedStatusHistory = [newStatusHistoryItem, ...statusHistory];
+      setStatusHistory(updatedStatusHistory);
+      
+      const allStatusHistories = JSON.parse(localStorage.getItem("statusHistories") || "{}");
+      allStatusHistories[currentOrder.id] = updatedStatusHistory;
+      localStorage.setItem("statusHistories", JSON.stringify(allStatusHistories));
+      
+      setIsSubmitting(false);
+      
+      toast({
+        title: "Order assigned",
+        description: `Order has been assigned to ${assigneeName}.`,
+      });
+    }, 500);
+  };
+
+  const getAssigneeName = (userId: string): string => {
+    if (!userId) return "Unassigned";
+    const assigneeUser = users.find(u => u.id === userId);
+    return assigneeUser ? assigneeUser.full_name : userId;
+  };
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
@@ -239,11 +312,12 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
         </DialogHeader>
         
         <Tabs defaultValue="details" value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid grid-cols-4">
+          <TabsList className="grid grid-cols-5">
             <TabsTrigger value="details">Details</TabsTrigger>
             <TabsTrigger value="history">Status History</TabsTrigger>
             <TabsTrigger value="comments">Comments</TabsTrigger>
             <TabsTrigger value="change">Change Status</TabsTrigger>
+            <TabsTrigger value="assign">Assign Order</TabsTrigger>
           </TabsList>
           
           {/* Details Tab */}
@@ -292,12 +366,10 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
                     <dt className="font-medium">Last Updated:</dt>
                     <dd className="col-span-2">{formatDateTime(currentOrder.updated_at)}</dd>
                   </div>
-                  {currentOrder.assigned_to && (
-                    <div className="py-2 grid grid-cols-3">
-                      <dt className="font-medium">Assigned To:</dt>
-                      <dd className="col-span-2">{currentOrder.assigned_to}</dd>
-                    </div>
-                  )}
+                  <div className="py-2 grid grid-cols-3">
+                    <dt className="font-medium">Assigned To:</dt>
+                    <dd className="col-span-2">{getAssigneeName(currentOrder.assigned_to || "")}</dd>
+                  </div>
                 </dl>
               </div>
             </div>
@@ -412,6 +484,38 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
                   disabled={!newStatus || isSubmitting}
                 >
                   {isSubmitting ? "Updating..." : "Update Status"}
+                </Button>
+              </div>
+            </div>
+          </TabsContent>
+          
+          {/* Assign Order Tab */}
+          <TabsContent value="assign">
+            <div className="space-y-4">
+              <h3 className="font-medium text-lg">Assign Order</h3>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label htmlFor="assignee-select" className="text-sm font-medium">Assign To</label>
+                  <Select value={selectedAssignee} onValueChange={setSelectedAssignee}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a user" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Unassigned</SelectItem>
+                      {users.map((user) => (
+                        <SelectItem key={user.id} value={user.id}>
+                          {user.full_name} ({user.email})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <Button 
+                  onClick={handleAssignOrder} 
+                  disabled={isSubmitting || selectedAssignee === currentOrder.assigned_to}
+                >
+                  {isSubmitting ? "Assigning..." : "Assign Order"}
                 </Button>
               </div>
             </div>

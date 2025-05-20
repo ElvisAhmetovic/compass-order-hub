@@ -12,7 +12,7 @@ import OrderRow from "./OrderRow";
 import OrderFilters from "./OrderFilters";
 import OrderPagination from "./OrderPagination";
 import { ChevronDown, ChevronUp } from "lucide-react";
-import { Order, OrderStatus } from "@/types";
+import { Order, OrderStatus, User } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 
 interface OrderTableProps {
@@ -26,6 +26,7 @@ const OrderTable = ({ onOrderClick, statusFilter, refreshTrigger }: OrderTablePr
   const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [users, setUsers] = useState<User[]>([]);
   
   // Sorting state
   const [sortField, setSortField] = useState<'created_at' | 'updated_at'>('created_at');
@@ -39,6 +40,18 @@ const OrderTable = ({ onOrderClick, statusFilter, refreshTrigger }: OrderTablePr
   const [priorityFilter, setPriorityFilter] = useState<string | null>(null);
   
   const { toast } = useToast();
+
+  // Load users
+  useEffect(() => {
+    try {
+      const storedUsers = localStorage.getItem("app_users");
+      if (storedUsers) {
+        setUsers(JSON.parse(storedUsers));
+      }
+    } catch (error) {
+      console.error("Error loading users:", error);
+    }
+  }, []);
 
   // Fetch orders (mock from localStorage in this case)
   useEffect(() => {
@@ -127,6 +140,12 @@ const OrderTable = ({ onOrderClick, statusFilter, refreshTrigger }: OrderTablePr
 
   const handleRefresh = () => {
     // This will be passed down to child components
+  };
+
+  const getAssigneeName = (userId: string): string => {
+    if (!userId) return "Unassigned";
+    const assigneeUser = users.find(u => u.id === userId);
+    return assigneeUser ? assigneeUser.full_name : "Unknown";
   };
 
   // Always render the filters regardless of data state
@@ -230,6 +249,7 @@ const OrderTable = ({ onOrderClick, statusFilter, refreshTrigger }: OrderTablePr
                 order={order}
                 onOrderClick={onOrderClick}
                 onRefresh={handleRefresh}
+                assigneeName={getAssigneeName(order.assigned_to || "")}
               />
             ))}
           </TableBody>

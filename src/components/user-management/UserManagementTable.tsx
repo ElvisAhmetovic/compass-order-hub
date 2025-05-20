@@ -1,53 +1,69 @@
 
 import { useState } from "react";
-import { 
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow 
-} from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { User } from "@/types";
 import { EditUserModal } from "./EditUserModal";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { User } from "@/types";
 import { useToast } from "@/hooks/use-toast";
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu";
+import { MoreHorizontal } from "lucide-react";
+import { AssignOrdersModal } from "./AssignOrdersModal";
 
 interface UserManagementTableProps {
   users: User[];
-  setUsers: React.Dispatch<React.SetStateAction<User[]>>;
+  setUsers: (users: User[]) => void;
 }
 
-export const UserManagementTable = ({ users, setUsers }: UserManagementTableProps) => {
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+export function UserManagementTable({ users, setUsers }: UserManagementTableProps) {
+  const [editingUser, setEditingUser] = useState<User | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const { toast } = useToast();
-
-  const handleEdit = (user: User) => {
-    setSelectedUser(user);
+  
+  const handleEditUser = (user: User) => {
+    setEditingUser(user);
     setIsEditModalOpen(true);
   };
-
-  const handleDelete = (userId: string) => {
-    try {
-      const updatedUsers = users.filter(user => user.id !== userId);
-      localStorage.setItem("app_users", JSON.stringify(updatedUsers));
-      setUsers(updatedUsers);
-      toast({
-        title: "User deleted",
-        description: "The user has been successfully removed.",
-      });
-    } catch (error) {
-      console.error("Error deleting user:", error);
-      toast({
-        variant: "destructive",
-        title: "Error deleting user",
-        description: "Could not delete the user.",
-      });
+  
+  const handleAssignOrders = (user: User) => {
+    setSelectedUser(user);
+    setIsAssignModalOpen(true);
+  };
+  
+  const handleDeleteUser = (userId: string) => {
+    if (window.confirm("Are you sure you want to delete this user?")) {
+      try {
+        // Delete user from localStorage
+        const updatedUsers = users.filter(user => user.id !== userId);
+        localStorage.setItem("app_users", JSON.stringify(updatedUsers));
+        setUsers(updatedUsers);
+        
+        // Also delete from auth storage
+        const authUsers = JSON.parse(localStorage.getItem("users") || "[]");
+        const updatedAuthUsers = authUsers.filter((user: any) => user.id !== userId);
+        localStorage.setItem("users", JSON.stringify(updatedAuthUsers));
+        
+        toast({
+          title: "User deleted",
+          description: "User has been successfully deleted."
+        });
+      } catch (error) {
+        console.error("Error deleting user:", error);
+        toast({
+          variant: "destructive",
+          title: "Error deleting user",
+          description: "Could not delete the user."
+        });
+      }
     }
   };
-
+  
   const handleUpdateUser = (updatedUser: User) => {
     try {
       const updatedUsers = users.map(user => 
@@ -56,96 +72,87 @@ export const UserManagementTable = ({ users, setUsers }: UserManagementTableProp
       localStorage.setItem("app_users", JSON.stringify(updatedUsers));
       setUsers(updatedUsers);
       setIsEditModalOpen(false);
+      setEditingUser(null);
+      
       toast({
         title: "User updated",
-        description: "The user information has been updated successfully.",
+        description: "User has been successfully updated."
       });
     } catch (error) {
       console.error("Error updating user:", error);
       toast({
         variant: "destructive",
         title: "Error updating user",
-        description: "Could not update the user information.",
+        description: "Could not update the user."
       });
     }
   };
-
+  
   return (
-    <div className="border rounded-md">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Email</TableHead>
-            <TableHead>Role</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {users.map((user) => (
-            <TableRow key={user.id}>
-              <TableCell>{user.full_name || "No Name"}</TableCell>
-              <TableCell>{user.email}</TableCell>
-              <TableCell>{user.role}</TableCell>
-              <TableCell className="text-right space-x-2">
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => handleEdit(user)}
-                >
-                  Edit
-                </Button>
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button 
-                      variant="destructive" 
-                      size="sm"
-                    >
-                      Delete
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        This action cannot be undone. This will permanently delete the user
-                        account and remove their data from our servers.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={() => handleDelete(user.id)}
-                      >
-                        Delete
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </TableCell>
+    <div className="space-y-4">
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Email</TableHead>
+              <TableHead>Name</TableHead>
+              <TableHead>Role</TableHead>
+              <TableHead>Created</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-      
-      {users.length === 0 && (
-        <div className="p-4 text-center text-muted-foreground">
-          No users found
-        </div>
-      )}
-      
-      <div className="p-4 text-sm text-muted-foreground border-t">
-        Total {users.length} users
+          </TableHeader>
+          <TableBody>
+            {users.map((user) => (
+              <TableRow key={user.id}>
+                <TableCell>{user.email}</TableCell>
+                <TableCell>{user.full_name}</TableCell>
+                <TableCell className="capitalize">{user.role}</TableCell>
+                <TableCell>{new Date(user.created_at).toLocaleDateString()}</TableCell>
+                <TableCell className="text-right">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                      <DropdownMenuItem onClick={() => handleEditUser(user)}>
+                        Edit User
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleAssignOrders(user)}>
+                        Assign Orders
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        onClick={() => handleDeleteUser(user.id)}
+                        className="text-destructive"
+                      >
+                        Delete User
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </div>
       
-      {selectedUser && (
-        <EditUserModal
-          user={selectedUser}
+      {editingUser && (
+        <EditUserModal 
+          user={editingUser}
           open={isEditModalOpen}
           onClose={() => setIsEditModalOpen(false)}
           onUpdate={handleUpdateUser}
         />
       )}
+      
+      {selectedUser && (
+        <AssignOrdersModal
+          user={selectedUser}
+          open={isAssignModalOpen}
+          onClose={() => setIsAssignModalOpen(false)}
+        />
+      )}
     </div>
   );
-};
+}
