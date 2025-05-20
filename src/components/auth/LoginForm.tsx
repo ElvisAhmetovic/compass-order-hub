@@ -56,7 +56,7 @@ const LoginForm = () => {
       const result = await authenticate(identifier, password);
       
       if (!result.success) {
-        setErrors({ auth: result.error });
+        setErrors(prev => ({ ...prev, auth: result.error }));
         setIsLoading(false);
         return;
       }
