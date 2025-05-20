@@ -1,99 +1,130 @@
+import React from 'react';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
+import Login from './pages/Login';
+import Dashboard from './pages/Dashboard';
+import { RequireAuth } from './components/auth/RequireAuth';
+import Companies from './pages/Companies';
+import UserManagement from './pages/UserManagement';
+import Deleted from './pages/Deleted';
+import Reviews from './pages/Reviews';
+import Support from "./pages/Support";
+import SupportDetail from "./pages/SupportDetail";
 
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Index from "./pages/Index";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
-import Dashboard from "./pages/Dashboard";
-import UserManagement from "./pages/UserManagement";
-import NotFound from "./pages/NotFound";
-import AuthGuard from "./components/auth/AuthGuard";
-import { AuthProvider } from "./context/AuthContext";
-
-const queryClient = new QueryClient();
-
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AuthProvider>
-          <Routes>
-            {/* Public routes */}
-            <Route path="/" element={<Index />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            
-            {/* Protected routes - require authentication */}
-            <Route path="/dashboard" element={
-              <AuthGuard>
+function App() {
+  return (
+    <AuthProvider>
+      <Router>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route
+            path="/dashboard"
+            element={
+              <RequireAuth>
                 <Dashboard />
-              </AuthGuard>
-            } />
-            <Route path="/active-orders" element={
-              <AuthGuard>
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/active-orders"
+            element={
+              <RequireAuth>
                 <Dashboard />
-              </AuthGuard>
-            } />
-            <Route path="/complaints" element={
-              <AuthGuard>
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/complaints"
+            element={
+              <RequireAuth>
                 <Dashboard />
-              </AuthGuard>
-            } />
-            <Route path="/completed" element={
-              <AuthGuard>
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/completed"
+            element={
+              <RequireAuth>
                 <Dashboard />
-              </AuthGuard>
-            } />
-            <Route path="/cancelled" element={
-              <AuthGuard>
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/cancelled"
+            element={
+              <RequireAuth>
                 <Dashboard />
-              </AuthGuard>
-            } />
-            <Route path="/invoice-sent" element={
-              <AuthGuard>
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/invoice-sent"
+            element={
+              <RequireAuth>
                 <Dashboard />
-              </AuthGuard>
-            } />
-            <Route path="/invoice-paid" element={
-              <AuthGuard>
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/invoice-paid"
+            element={
+              <RequireAuth>
                 <Dashboard />
-              </AuthGuard>
-            } />
-            <Route path="/companies" element={
-              <AuthGuard>
-                <Dashboard />
-              </AuthGuard>
-            } />
-            
-            {/* Admin-only routes */}
-            <Route path="/user-management" element={
-              <AuthGuard requiredRoles={["admin"]}>
+              </RequireAuth>
+            }
+          />
+           <Route
+            path="/companies"
+            element={
+              <RequireAuth>
+                <Companies />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/user-management"
+            element={
+              <RequireAuth>
                 <UserManagement />
-              </AuthGuard>
-            } />
-            <Route path="/deleted" element={
-              <AuthGuard>
-                <Dashboard />
-              </AuthGuard>
-            } />
-            <Route path="/reviews" element={
-              <AuthGuard>
-                <Dashboard />
-              </AuthGuard>
-            } />
-            
-            {/* Catch-all route */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </AuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/deleted"
+            element={
+              <RequireAuth>
+                <Deleted />
+              </RequireAuth>
+            }
+          />
+           <Route
+            path="/reviews"
+            element={
+              <RequireAuth>
+                <Reviews />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/support"
+            element={
+              <RequireAuth>
+                <Support />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/support/:inquiryId"
+            element={
+              <RequireAuth>
+                <SupportDetail />
+              </RequireAuth>
+            }
+          />
+        </Routes>
+      </Router>
+    </AuthProvider>
+  );
+}
 
 export default App;

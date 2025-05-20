@@ -12,6 +12,7 @@ import {
   Star,
   LogOut,
   CheckCircle,
+  MessageCircle,
 } from "lucide-react";
 import { LogoutButton } from "@/components/auth/LogoutButton";
 import { useAuth } from "@/context/AuthContext";
@@ -30,6 +31,7 @@ const Sidebar = () => {
       { icon: XCircle, label: "Cancelled", path: "/cancelled" },
       { icon: Receipt, label: "Invoice Sent", path: "/invoice-sent" },
       { icon: CreditCard, label: "Invoice Paid", path: "/invoice-paid" },
+      { icon: MessageCircle, label: "Support", path: "/support" },
     ];
     
     // Admin-only items
