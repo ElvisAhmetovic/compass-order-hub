@@ -5,23 +5,145 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Eye, EyeOff, AlertTriangle } from "lucide-react";
 
 const RegisterForm = () => {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState<{fullName?: string, email?: string, username?: string, password?: string}>({});
   const { toast } = useToast();
   const navigate = useNavigate();
 
+  // List of offensive words to filter out
+  const offensiveWords = ["racist", "offensive", "inappropriate", "slur"];
+
+  const validateFullName = (value: string) => {
+    if (value.trim().length < 2) {
+      return "Full name must be at least 2 characters.";
+    }
+    
+    const nameRegex = /^[a-zA-Z\s]+$/;
+    if (!nameRegex.test(value)) {
+      return "Full name can only contain letters and spaces.";
+    }
+    
+    if (offensiveWords.some(word => value.toLowerCase().includes(word))) {
+      return "This contains inappropriate language.";
+    }
+    
+    return "";
+  };
+
+  const validateEmail = (value: string) => {
+    const emailRegex = /^[a-zA-Z0-9]+([._-]?[a-zA-Z0-9]+)*@[a-zA-Z0-9]+([.-]?[a-zA-Z0-9]+)*(\.[a-zA-Z]{2,})+$/;
+    if (!emailRegex.test(value)) {
+      return "Please enter a valid email address.";
+    }
+    
+    if (offensiveWords.some(word => value.toLowerCase().includes(word))) {
+      return "This contains inappropriate language.";
+    }
+    
+    return "";
+  };
+
+  const validateUsername = (value: string) => {
+    if (value.length < 3) {
+      return "Username must be at least 3 characters.";
+    }
+    
+    const usernameRegex = /^[a-zA-Z0-9]+$/;
+    if (!usernameRegex.test(value)) {
+      return "Username can only contain letters and numbers.";
+    }
+    
+    if (offensiveWords.some(word => value.toLowerCase().includes(word))) {
+      return "This contains inappropriate language.";
+    }
+    
+    return "";
+  };
+
+  const validatePassword = (value: string) => {
+    if (value.length < 8) {
+      return "Password must be at least 8 characters.";
+    }
+    
+    if (!/[A-Z]/.test(value)) {
+      return "Password must include at least one uppercase letter.";
+    }
+    
+    if (!/[a-z]/.test(value)) {
+      return "Password must include at least one lowercase letter.";
+    }
+    
+    if (!/[0-9]/.test(value)) {
+      return "Password must include at least one number.";
+    }
+    
+    // Common password check (very basic implementation)
+    const commonPasswords = ["password", "12345678", "qwerty123"];
+    if (commonPasswords.includes(value.toLowerCase())) {
+      return "This password is too common. Please choose a stronger one.";
+    }
+    
+    return "";
+  };
+
+  const handleFullNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setFullName(value);
+    
+    const error = validateFullName(value);
+    setErrors(prev => ({ ...prev, fullName: error }));
+  };
+
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setEmail(value);
+    
+    const error = validateEmail(value);
+    setErrors(prev => ({ ...prev, email: error }));
+  };
+
+  const handleUsernameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setUsername(value);
+    
+    const error = validateUsername(value);
+    setErrors(prev => ({ ...prev, username: error }));
+  };
+
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setPassword(value);
+    
+    const error = validatePassword(value);
+    setErrors(prev => ({ ...prev, password: error }));
+  };
+
+  const isFormValid = () => {
+    return !errors.fullName && !errors.email && !errors.username && !errors.password && 
+           fullName.trim() !== "" && email.trim() !== "" && username.trim() !== "" && password.trim() !== "";
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!isFormValid()) {
+      return;
+    }
+    
     setIsLoading(true);
 
     // In a real app, this would connect to Supabase auth
     try {
       // Placeholder for Supabase registration
-      console.log("Register with", { fullName, email, password });
+      console.log("Register with", { fullName, email, username, password });
       
       // Simulate successful registration
       toast({
@@ -53,41 +175,95 @@ const RegisterForm = () => {
             <Input
               id="fullName"
               value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
+              onChange={handleFullNameChange}
               placeholder="John Doe"
               required
               disabled={isLoading}
+              className={errors.fullName ? "border-destructive" : ""}
             />
+            {errors.fullName && (
+              <div className="text-sm text-destructive flex items-center gap-1 mt-1">
+                <AlertTriangle className="h-4 w-4" />
+                <span>{errors.fullName}</span>
+              </div>
+            )}
           </div>
           <div className="space-y-2">
             <label htmlFor="email" className="text-sm font-medium">Email</label>
             <Input
               id="email"
-              type="email"
+              type="text"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={handleEmailChange}
               placeholder="name@company.com"
               required
               disabled={isLoading}
+              className={errors.email ? "border-destructive" : ""}
             />
+            {errors.email && (
+              <div className="text-sm text-destructive flex items-center gap-1 mt-1">
+                <AlertTriangle className="h-4 w-4" />
+                <span>{errors.email}</span>
+              </div>
+            )}
+          </div>
+          <div className="space-y-2">
+            <label htmlFor="username" className="text-sm font-medium">Username</label>
+            <Input
+              id="username"
+              type="text"
+              value={username}
+              onChange={handleUsernameChange}
+              placeholder="johndoe"
+              required
+              disabled={isLoading}
+              className={errors.username ? "border-destructive" : ""}
+            />
+            {errors.username && (
+              <div className="text-sm text-destructive flex items-center gap-1 mt-1">
+                <AlertTriangle className="h-4 w-4" />
+                <span>{errors.username}</span>
+              </div>
+            )}
           </div>
           <div className="space-y-2">
             <label htmlFor="password" className="text-sm font-medium">Password</label>
-            <Input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              disabled={isLoading}
-            />
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={handlePasswordChange}
+                required
+                disabled={isLoading}
+                className={errors.password ? "border-destructive pr-10" : "pr-10"}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                tabIndex={-1}
+              >
+                {showPassword ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
+              </button>
+            </div>
+            {errors.password && (
+              <div className="text-sm text-destructive flex items-center gap-1 mt-1">
+                <AlertTriangle className="h-4 w-4" />
+                <span>{errors.password}</span>
+              </div>
+            )}
           </div>
         </CardContent>
         <CardFooter className="flex flex-col">
           <Button
             type="submit"
             className="w-full"
-            disabled={isLoading}
+            disabled={isLoading || !isFormValid()}
           >
             {isLoading ? "Creating account..." : "Register"}
           </Button>
