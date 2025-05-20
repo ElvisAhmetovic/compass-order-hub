@@ -141,7 +141,7 @@ const mockOrders: Order[] = [
 
 interface OrdersTableProps {
   onOrderClick: (order: Order) => void;
-  statusFilter?: string;
+  statusFilter?: string | OrderStatus | null;
 }
 
 const OrdersTable = ({ onOrderClick, statusFilter = "All" }: OrdersTableProps) => {
@@ -189,9 +189,29 @@ const OrdersTable = ({ onOrderClick, statusFilter = "All" }: OrdersTableProps) =
       order.company_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       order.description.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesStatus = statusFilter === "All" || order.status === statusFilter;
+    // Special case for "In Progress" tab in Active Orders
+    if (statusFilter === "In Progress") {
+      return matchesSearch && order.status === "In Progress";
+    }
+    // For other status tabs in Active Orders page
+    else if (statusFilter === "Complaint") {
+      return matchesSearch && order.status === "Complaint";
+    }
+    else if (statusFilter === "Invoice Sent") {
+      return matchesSearch && order.status === "Invoice Sent";
+    }
+    // For specific status pages (Completed, Cancelled, etc.)
+    else if (statusFilter && statusFilter !== "All") {
+      return matchesSearch && order.status === statusFilter;
+    }
+    // For "All" tab in Active Orders - show orders that are active
+    else if (statusFilter === "All") {
+      const activeStatuses = ["In Progress", "Complaint", "Invoice Sent"];
+      return matchesSearch && activeStatuses.includes(order.status);
+    }
     
-    return matchesSearch && matchesStatus;
+    // Default: show all orders
+    return matchesSearch;
   });
 
   return (
