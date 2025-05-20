@@ -40,13 +40,12 @@ const Header = ({ userRole = "admin" }: HeaderProps) => {
         </div>
         <div className="flex items-center space-x-4">
           <Button 
-            variant="outline" 
-            size="sm" 
+            variant="destructive" 
             onClick={handleLogout}
-            className="hidden sm:flex"
+            className="flex items-center gap-2"
           >
-            <LogOut className="mr-2 h-4 w-4" />
-            Logout
+            <LogOut className="h-4 w-4" />
+            <span>Logout</span>
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
