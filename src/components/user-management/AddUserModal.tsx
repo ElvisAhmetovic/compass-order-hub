@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -8,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { User, UserRole } from "@/types";
 import { useToast } from "@/components/ui/use-toast";
+import { formatDate } from "@/lib/utils";
 
 interface Permission {
   id: string;
@@ -26,9 +26,10 @@ type PermissionCategory = {
 interface AddUserModalProps {
   open: boolean;
   onClose: () => void;
+  onAddUser: (user: User) => void;
 }
 
-export const AddUserModal = ({ open, onClose }: AddUserModalProps) => {
+export const AddUserModal = ({ open, onClose, onAddUser }: AddUserModalProps) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [firstName, setFirstName] = useState("");
@@ -141,11 +142,13 @@ export const AddUserModal = ({ open, onClose }: AddUserModalProps) => {
       return;
     }
     
-    // Here you would typically send this data to your backend
-    const newUser: Partial<User> = {
+    // Create a new user with a unique ID
+    const newUser: User = {
+      id: `user-${Date.now()}`,
       email,
       role,
-      full_name: `${firstName} ${lastName}`.trim() || "No Name"
+      full_name: `${firstName} ${lastName}`.trim() || "No Name",
+      created_at: new Date().toISOString()
     };
     
     // Get all selected permissions
@@ -162,6 +165,9 @@ export const AddUserModal = ({ open, onClose }: AddUserModalProps) => {
     
     console.log('New User:', newUser);
     console.log('Selected Permissions:', selectedPermissions);
+    
+    // Add the new user to the list
+    onAddUser(newUser);
     
     toast({
       title: "User created",

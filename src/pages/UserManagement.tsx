@@ -7,8 +7,59 @@ import { UserManagementTable } from "@/components/user-management/UserManagement
 import { AddUserModal } from "@/components/user-management/AddUserModal";
 import { User } from "@/types";
 
+// Mock data for users
+const mockUsers: User[] = [
+  {
+    id: "1",
+    email: "kleinabmedia1@gmail.com",
+    role: "user",
+    created_at: new Date().toISOString(),
+    full_name: "No Name"
+  },
+  {
+    id: "2",
+    email: "office@websworkers.com",
+    role: "user",
+    created_at: new Date().toISOString(),
+    full_name: "No Name"
+  },
+  {
+    id: "3",
+    email: "atwi.automobile.hannover@gmail.com",
+    role: "user",
+    created_at: new Date().toISOString(),
+    full_name: "ATWI"
+  },
+  {
+    id: "4",
+    email: "cmen.sedat242@gmail.com",
+    role: "user",
+    created_at: new Date().toISOString(),
+    full_name: "No Name"
+  },
+  {
+    id: "5",
+    email: "joka4927@gmail.com",
+    role: "admin",
+    created_at: new Date().toISOString(),
+    full_name: "No Name"
+  },
+  {
+    id: "6",
+    email: "kontakt@abmedia24.com",
+    role: "user",
+    created_at: new Date().toISOString(),
+    full_name: "No Name"
+  }
+];
+
 const UserManagement = () => {
   const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
+  const [users, setUsers] = useState<User[]>(mockUsers);
+  
+  const handleAddUser = (newUser: User) => {
+    setUsers([...users, newUser]);
+  };
   
   return (
     <div className="flex min-h-screen">
@@ -28,11 +79,12 @@ const UserManagement = () => {
               </Button>
             </div>
             
-            <UserManagementTable />
+            <UserManagementTable users={users} setUsers={setUsers} />
             
             <AddUserModal 
               open={isAddUserModalOpen} 
               onClose={() => setIsAddUserModalOpen(false)}
+              onAddUser={handleAddUser}
             />
           </div>
         </Layout>

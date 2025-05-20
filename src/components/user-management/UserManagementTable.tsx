@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { 
   Table,
   TableBody,
@@ -14,54 +14,12 @@ import { EditUserModal } from "./EditUserModal";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/components/ui/use-toast";
 
-// Mock data for users
-const mockUsers: User[] = [
-  {
-    id: "1",
-    email: "kleinabmedia1@gmail.com",
-    role: "user",
-    created_at: new Date().toISOString(),
-    full_name: "No Name"
-  },
-  {
-    id: "2",
-    email: "office@websworkers.com",
-    role: "user",
-    created_at: new Date().toISOString(),
-    full_name: "No Name"
-  },
-  {
-    id: "3",
-    email: "atwi.automobile.hannover@gmail.com",
-    role: "user",
-    created_at: new Date().toISOString(),
-    full_name: "ATWI"
-  },
-  {
-    id: "4",
-    email: "cmen.sedat242@gmail.com",
-    role: "user",
-    created_at: new Date().toISOString(),
-    full_name: "No Name"
-  },
-  {
-    id: "5",
-    email: "joka4927@gmail.com",
-    role: "admin",
-    created_at: new Date().toISOString(),
-    full_name: "No Name"
-  },
-  {
-    id: "6",
-    email: "kontakt@abmedia24.com",
-    role: "user",
-    created_at: new Date().toISOString(),
-    full_name: "No Name"
-  }
-];
+interface UserManagementTableProps {
+  users: User[];
+  setUsers: React.Dispatch<React.SetStateAction<User[]>>;
+}
 
-export const UserManagementTable = () => {
-  const [users, setUsers] = useState<User[]>(mockUsers);
+export const UserManagementTable = ({ users, setUsers }: UserManagementTableProps) => {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const { toast } = useToast();
