@@ -1,0 +1,75 @@
+
+import { User, UserRole } from "@/types";
+
+/**
+ * Utility function to assign admin role to a specific user by email
+ * @param email The email address to grant admin permissions to
+ */
+export const assignAdminPermission = (email: string): void => {
+  try {
+    // Get users from local storage
+    const appUsers = JSON.parse(localStorage.getItem("app_users") || "[]");
+    const authUsers = JSON.parse(localStorage.getItem("users") || "[]");
+    
+    // Check if the user exists in app_users
+    const appUserIndex = appUsers.findIndex((user: User) => user.email === email);
+    
+    if (appUserIndex !== -1) {
+      // User exists, update their role
+      appUsers[appUserIndex].role = 'admin' as UserRole;
+      localStorage.setItem("app_users", JSON.stringify(appUsers));
+      console.log(`Updated user ${email} to admin in app_users`);
+    } else {
+      // User doesn't exist, create a new admin user
+      const newUser: User = {
+        id: `user-${Date.now()}`,
+        email,
+        role: 'admin' as UserRole,
+        full_name: "Admin User",
+        created_at: new Date().toISOString()
+      };
+      appUsers.push(newUser);
+      localStorage.setItem("app_users", JSON.stringify(appUsers));
+      console.log(`Created new admin user ${email} in app_users`);
+    }
+    
+    // Also check in authentication users
+    const authUserIndex = authUsers.findIndex((user: any) => user.email === email);
+    
+    if (authUserIndex !== -1) {
+      // User exists, update their role
+      authUsers[authUserIndex].role = 'admin';
+      localStorage.setItem("users", JSON.stringify(authUsers));
+      console.log(`Updated user ${email} to admin in authentication users`);
+    } else {
+      // User doesn't exist in auth users, create a new entry with a default password
+      const defaultPassword = btoa("Admin@123"); // Base64 encoded default password
+      const newAuthUser = {
+        id: `user-${Date.now()}`,
+        email,
+        role: 'admin',
+        full_name: "Admin User",
+        passwordHash: defaultPassword,
+        created_at: new Date().toISOString()
+      };
+      authUsers.push(newAuthUser);
+      localStorage.setItem("users", JSON.stringify(authUsers));
+      console.log(`Created new admin user ${email} in authentication users with default password`);
+    }
+    
+    // Check if user is currently logged in
+    const currentSession = localStorage.getItem('userSession');
+    if (currentSession) {
+      const session = JSON.parse(currentSession);
+      if (session.email === email) {
+        // Update the current session if this user is logged in
+        session.role = 'admin';
+        localStorage.setItem('userSession', JSON.stringify(session));
+        console.log(`Updated current session for ${email} to admin role`);
+      }
+    }
+    
+  } catch (error) {
+    console.error("Error updating admin permissions:", error);
+  }
+};
