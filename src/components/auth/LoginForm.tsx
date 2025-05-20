@@ -1,139 +1,156 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useToast } from "@/hooks/use-toast";
+
+import React, { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertTriangle } from "lucide-react";
-import FormInput from "./FormInput";
-import { validateIdentifier, validatePassword } from "@/utils/formValidation";
-import { authenticate } from "@/services/authService";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 const LoginForm = () => {
-  const [identifier, setIdentifier] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [errors, setErrors] = useState<{identifier?: string, password?: string, auth?: string}>({});
-  const { toast } = useToast();
+  const [errors, setErrors] = useState({
+    email: "",
+    password: "",
+    form: "",
+  });
   const navigate = useNavigate();
 
-  const handleIdentifierChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setIdentifier(value);
-    
-    const error = validateIdentifier(value);
-    setErrors(prev => ({ ...prev, identifier: error, auth: undefined }));
-  };
+  const validateForm = () => {
+    let valid = true;
+    const newErrors = { email: "", password: "", form: "" };
 
-  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setPassword(value);
-    
-    const error = validatePassword(value);
-    setErrors(prev => ({ ...prev, password: error, auth: undefined }));
-  };
+    if (!email) {
+      newErrors.email = "Email is required";
+      valid = false;
+    } else if (!/\S+@\S+\.\S+/.test(email)) {
+      newErrors.email = "Please enter a valid email address";
+      valid = false;
+    }
 
-  const isFormValid = () => {
-    return !errors.identifier && !errors.password && identifier.trim() !== "" && password.trim() !== "";
+    if (!password) {
+      newErrors.password = "Password is required";
+      valid = false;
+    }
+
+    setErrors(newErrors);
+    return valid;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!isFormValid()) {
-      return;
-    }
+    if (!validateForm()) return;
     
     setIsLoading(true);
-    setErrors({});
-
     try {
-      const result = await authenticate(identifier, password);
-      
-      if (!result.success) {
-        setErrors(prev => ({ ...prev, auth: result.error }));
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        toast.error(error.message || "Failed to login");
+        setErrors({ ...errors, form: error.message || "Invalid credentials" });
         return;
       }
-      
-      toast({
-        title: "Login successful",
-        description: "Welcome back to Order Flow Compass",
-      });
-      navigate("/dashboard");
+
+      if (data?.user) {
+        toast.success("Login successful!");
+        navigate("/dashboard");
+      }
     } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Login failed",
-        description: "Please check your credentials and try again.",
-      });
+      console.error("Login error:", error);
+      toast.error("An unexpected error occurred");
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <Card className="w-[350px] mx-auto">
+    <Card className="w-full max-w-md">
       <CardHeader>
-        <CardTitle>Login</CardTitle>
-        <CardDescription>Enter your credentials to access your account</CardDescription>
+        <CardTitle className="text-2xl">Login to your account</CardTitle>
       </CardHeader>
-      <form onSubmit={handleSubmit}>
-        <CardContent className="space-y-4">
-          {/* Authentication error message */}
-          {errors.auth && (
-            <div className="p-3 rounded-md bg-destructive/15 text-destructive flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5" />
-              <span>{errors.auth}</span>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <label htmlFor="email" className="text-sm font-medium">
+              Email
+            </label>
+            <Input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Enter your email"
+              disabled={isLoading}
+              className={errors.email ? "border-destructive" : ""}
+            />
+            {errors.email && (
+              <p className="text-sm text-destructive">{errors.email}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <label htmlFor="password" className="text-sm font-medium">
+              Password
+            </label>
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter your password"
+                disabled={isLoading}
+                className={errors.password ? "border-destructive pr-10" : "pr-10"}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                tabIndex={-1}
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
             </div>
+            {errors.password && (
+              <p className="text-sm text-destructive">{errors.password}</p>
+            )}
+          </div>
+
+          {errors.form && (
+            <div className="text-sm text-destructive">{errors.form}</div>
           )}
-          
-          <FormInput
-            id="identifier"
-            label="Username or Email"
-            type="text"
-            value={identifier}
-            onChange={handleIdentifierChange}
-            placeholder="johndoe or name@company.com"
-            error={errors.identifier}
-            disabled={isLoading}
-          />
-          
-          <FormInput
-            id="password"
-            label="Password"
-            type="password"
-            value={password}
-            onChange={handlePasswordChange}
-            error={errors.password}
-            disabled={isLoading}
-            isPassword
-            showPassword={showPassword}
-            toggleShowPassword={() => setShowPassword(!showPassword)}
-          />
-        </CardContent>
-        <CardFooter className="flex flex-col">
+
           <Button
             type="submit"
             className="w-full"
-            disabled={isLoading || !isFormValid()}
+            disabled={isLoading}
           >
-            {isLoading ? "Logging in..." : "Login"}
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Please wait
+              </>
+            ) : (
+              "Login"
+            )}
           </Button>
-          <div className="mt-4 text-sm text-center">
-            Don't have an account?{" "}
-            <a
-              href="/register"
-              className="text-blue-600 hover:text-blue-800 hover:underline"
-              onClick={(e) => {
-                e.preventDefault();
-                navigate("/register");
-              }}
-            >
-              Register
-            </a>
-          </div>
-        </CardFooter>
-      </form>
+        </form>
+      </CardContent>
+      <CardFooter className="flex justify-center">
+        <p className="text-sm text-muted-foreground">
+          Don't have an account?{" "}
+          <Link to="/register" className="text-primary hover:underline">
+            Register
+          </Link>
+        </p>
+      </CardFooter>
     </Card>
   );
 };
