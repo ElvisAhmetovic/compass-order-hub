@@ -23,7 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Order, OrderComment, OrderStatus, OrderStatusHistory } from "@/types";
+import { Order, OrderComment, OrderStatus, OrderStatusHistory, UserRole } from "@/types";
 
 // Mock data for demonstration
 const mockComments: OrderComment[] = [
@@ -66,9 +66,10 @@ interface OrderModalProps {
   order: Order | null;
   open: boolean;
   onClose: () => void;
+  userRole: UserRole;
 }
 
-const OrderModal = ({ order, open, onClose }: OrderModalProps) => {
+const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
   const [activeTab, setActiveTab] = useState("details");
   const [newComment, setNewComment] = useState("");
   const [newStatus, setNewStatus] = useState<OrderStatus | "">("");
