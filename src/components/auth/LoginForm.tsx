@@ -50,7 +50,7 @@ const LoginForm = () => {
 
     try {
       // Use the auth service
-      const result = authenticate(identifier, password);
+      const result = await authenticate(identifier, password);
       
       if (!result.success) {
         setErrors({ auth: result.error });
