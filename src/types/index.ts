@@ -6,6 +6,7 @@ export interface User {
   role: UserRole;
   created_at: string;
   full_name?: string;
+  name?: string; // Adding for backward compatibility
 }
 
 export interface UserPermission {

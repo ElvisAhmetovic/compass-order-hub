@@ -65,7 +65,7 @@ export const InquiryDetail = () => {
         id: uuidv4(),
         inquiryId: inquiry.id,
         userId: user.id,
-        userName: user.name || user.email,
+        userName: user.full_name || user.email,
         userRole: user.role,
         message: replyText.trim(),
         createdAt: new Date().toISOString(),
@@ -80,10 +80,11 @@ export const InquiryDetail = () => {
       const updatedInquiries = allInquiries.map(inq => {
         if (inq.id === inquiry.id) {
           // Add reply and update status
+          const newStatus: "open" | "replied" | "closed" = isAdmin ? "replied" : inq.status;
           return {
             ...inq,
             replies: [...inq.replies, newReply],
-            status: isAdmin ? "replied" : inq.status,
+            status: newStatus,
           };
         }
         return inq;

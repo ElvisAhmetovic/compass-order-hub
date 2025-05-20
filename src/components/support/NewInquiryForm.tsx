@@ -53,7 +53,7 @@ export const NewInquiryForm = () => {
         id: uuidv4(),
         userId: user.id,
         userEmail: user.email,
-        userName: user.name || user.email,
+        userName: user.full_name || user.email,
         subject: values.subject,
         message: values.message,
         createdAt: new Date().toISOString(),
