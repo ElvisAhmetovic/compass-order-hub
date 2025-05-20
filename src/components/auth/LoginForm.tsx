@@ -120,13 +120,13 @@ const LoginForm = () => {
       
       if (!user) {
         // User not found
-        setErrors({ auth: "Username or email not found" });
+        setErrors({ auth: "No account found with this email/username" });
         setIsLoading(false);
         return;
       }
       
       if (user.password !== password) {
-        // Incorrect password
+        // Incorrect password for existing user
         setErrors({ auth: "Wrong password" });
         setIsLoading(false);
         return;
