@@ -18,6 +18,13 @@ interface SupabaseAuthContextProps {
   signOut: () => Promise<void>;
 }
 
+// Extended User type to include common properties for easier access
+export interface ExtendedUser extends User {
+  full_name?: string;
+  name?: string;
+  role?: string;
+}
+
 const SupabaseAuthContext = createContext<SupabaseAuthContextProps | undefined>(undefined);
 
 export function SupabaseAuthProvider({ children }: { children: React.ReactNode }) {
@@ -26,13 +33,25 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
+  // Helper function to enhance user object with metadata properties
+  const enhanceUser = (user: User | null): ExtendedUser | null => {
+    if (!user) return null;
+    
+    return {
+      ...user,
+      full_name: user.user_metadata?.full_name || user.user_metadata?.name,
+      name: user.user_metadata?.name,
+      role: user.user_metadata?.role || 'user'
+    };
+  };
+
   useEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, currentSession) => {
         console.log("Auth state changed:", event);
         setSession(currentSession);
-        setUser(currentSession?.user ?? null);
+        setUser(enhanceUser(currentSession?.user ?? null));
         
         if (event === 'SIGNED_OUT') {
           toast({
@@ -52,7 +71,7 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
     supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
       console.log("Got existing session:", currentSession ? "yes" : "no");
       setSession(currentSession);
-      setUser(currentSession?.user ?? null);
+      setUser(enhanceUser(currentSession?.user ?? null));
       setIsLoading(false);
     });
 
@@ -92,12 +111,14 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
       console.log("Sign up attempt with:", { email, fullName });
       setIsLoading(true);
       
+      // Store full_name in user_metadata
       const { data, error } = await supabase.auth.signUp({ 
         email, 
         password,
         options: {
           data: {
-            full_name: fullName
+            full_name: fullName,
+            name: fullName
           }
         }
       });

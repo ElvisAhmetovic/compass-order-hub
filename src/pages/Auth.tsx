@@ -1,13 +1,13 @@
 
-import { useState } from "react";
-import { Navigate, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Navigate, useNavigate, useLocation } from "react-router-dom";
 import { useSupabaseAuth } from "@/context/SupabaseAuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Auth() {
@@ -17,20 +17,34 @@ export default function Auth() {
   const [fullName, setFullName] = useState("");
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState<"login" | "register">("login");
+  const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
+
+  // Get the intended destination from location state or default to dashboard
+  const from = location.state?.from || "/dashboard";
+
+  // Special case for admin login
+  useEffect(() => {
+    if (email === "luciferbebistar@gmail.com" && password === "Admin@123") {
+      console.log("Admin credentials detected");
+    }
+  }, [email, password]);
 
   // Redirect if user is already logged in
   if (user) {
-    return <Navigate to="/dashboard" />;
+    return <Navigate to={from} />;
   }
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setSubmitting(true);
     
     if (!email || !password) {
       setError("Please fill in all required fields");
+      setSubmitting(false);
       return;
     }
     
@@ -43,24 +57,30 @@ export default function Auth() {
         setError(result.error || "Login failed. Please check your credentials.");
       } else {
         console.log("Login successful!");
+        navigate(from);
       }
     } catch (error) {
       console.error("Unexpected error during login:", error);
       setError("An unexpected error occurred. Please try again.");
+    } finally {
+      setSubmitting(false);
     }
   };
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setSubmitting(true);
     
     if (!email || !password || !fullName) {
       setError("Please fill in all required fields");
+      setSubmitting(false);
       return;
     }
     
     if (password.length < 6) {
       setError("Password must be at least 6 characters");
+      setSubmitting(false);
       return;
     }
     
@@ -82,6 +102,8 @@ export default function Auth() {
     } catch (error) {
       console.error("Unexpected error during registration:", error);
       setError("An unexpected error occurred. Please try again.");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -121,7 +143,7 @@ export default function Auth() {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="name@example.com"
                   required
-                  disabled={isLoading}
+                  disabled={isLoading || submitting}
                 />
               </div>
               
@@ -138,12 +160,17 @@ export default function Auth() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  disabled={isLoading}
+                  disabled={isLoading || submitting}
                 />
               </div>
               
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Signing in..." : "Sign In"}
+              <Button type="submit" className="w-full" disabled={isLoading || submitting}>
+                {(isLoading || submitting) ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Signing in...
+                  </>
+                ) : "Sign In"}
               </Button>
             </form>
           ) : (
@@ -157,7 +184,7 @@ export default function Auth() {
                   onChange={(e) => setFullName(e.target.value)}
                   placeholder="John Doe"
                   required
-                  disabled={isLoading}
+                  disabled={isLoading || submitting}
                 />
               </div>
               
@@ -170,7 +197,7 @@ export default function Auth() {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="name@example.com"
                   required
-                  disabled={isLoading}
+                  disabled={isLoading || submitting}
                 />
               </div>
               
@@ -182,7 +209,7 @@ export default function Auth() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  disabled={isLoading}
+                  disabled={isLoading || submitting}
                   minLength={6}
                 />
                 <p className="text-xs text-muted-foreground">
@@ -190,8 +217,13 @@ export default function Auth() {
                 </p>
               </div>
               
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Creating account..." : "Create Account"}
+              <Button type="submit" className="w-full" disabled={isLoading || submitting}>
+                {(isLoading || submitting) ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creating account...
+                  </>
+                ) : "Create Account"}
               </Button>
             </form>
           )}

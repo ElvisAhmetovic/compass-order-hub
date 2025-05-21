@@ -58,8 +58,14 @@ export const NewInquiryForm = () => {
     setIsSubmitting(true);
     
     try {
-      // Extract user display name - check multiple possible properties
-      const userName = currentUser.full_name || currentUser.name || currentUser.email;
+      // Get user display name with fallbacks
+      // First check user_metadata, then direct properties, then use email
+      const userName = 
+        (currentUser.user_metadata?.full_name) || 
+        (currentUser.user_metadata?.name) || 
+        currentUser.full_name || 
+        currentUser.name || 
+        currentUser.email;
       
       // Create a new inquiry in Supabase
       const { error } = await supabase
