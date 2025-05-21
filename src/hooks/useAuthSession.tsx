@@ -39,7 +39,6 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
           
           // Check if it's the admin user and ensure their role is set correctly
           if (currentSession?.user?.email === "luciferbebistar@gmail.com") {
-            // Update app_users in localStorage for the admin
             try {
               // Update in app_users storage
               const appUsers = JSON.parse(localStorage.getItem("app_users") || "[]");
