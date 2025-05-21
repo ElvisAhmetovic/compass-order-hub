@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { User, Session } from "@supabase/supabase-js";
 
+// Define a clear interface for the login result to prevent excessive type depth
 interface LoginResult {
   success: boolean;
   error?: string;
@@ -15,6 +16,7 @@ export function useSupabaseLogin() {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
+  // Explicitly type the return value to avoid TypeScript recursion issues
   const signIn = async (email: string, password: string): Promise<LoginResult> => {
     try {
       setIsLoading(true);
@@ -23,16 +25,10 @@ export function useSupabaseLogin() {
       const cleanEmail = email.toLowerCase().trim();
       console.log(`Attempting login with email: ${cleanEmail}`);
       
-      // First check if the user exists
-      const { data: userData, error: userError } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('email', cleanEmail)
-        .maybeSingle();
-        
-      console.log("User check result:", userData, userError);
+      // First check if the user exists - this query was causing an error due to missing email column
+      // Removed this check as it was causing a database error
       
-      // Sign in with Supabase
+      // Sign in with Supabase - ensure email and password are correctly passed
       const { data, error } = await supabase.auth.signInWithPassword({ 
         email: cleanEmail, 
         password 

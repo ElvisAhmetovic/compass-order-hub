@@ -38,6 +38,7 @@ export default function LoginForm({ onToggleForm }: LoginFormProps) {
     e.preventDefault();
     setError("");
     
+    // Validate inputs before submitting
     if (!email || !password) {
       setError("Please fill in all required fields");
       return;
@@ -46,6 +47,7 @@ export default function LoginForm({ onToggleForm }: LoginFormProps) {
     try {
       console.log(`Attempting to log in with: ${email}`);
       
+      // Ensure email and password are properly passed to signIn
       const result = await signIn(email, password);
       console.log("Sign in result:", result);
       
