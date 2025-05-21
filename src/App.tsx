@@ -13,6 +13,7 @@ import Reviews from './pages/Reviews';
 import Support from "./pages/Support";
 import SupportDetail from "./pages/SupportDetail";
 import Index from './pages/Index';
+import AuthGuard from './components/auth/AuthGuard';
 
 function App() {
   return (
@@ -86,11 +87,13 @@ function App() {
               </RequireAuth>
             }
           />
-           <Route
+          <Route
             path="/companies"
             element={
               <RequireAuth>
-                <Companies />
+                <AuthGuard requiredRoles={["admin"]}>
+                  <Companies />
+                </AuthGuard>
               </RequireAuth>
             }
           />
@@ -110,7 +113,7 @@ function App() {
               </RequireAuth>
             }
           />
-           <Route
+          <Route
             path="/reviews"
             element={
               <RequireAuth>
