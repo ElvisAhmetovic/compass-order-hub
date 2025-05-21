@@ -1,3 +1,4 @@
+
 export type UserRole = 'admin' | 'agent' | 'user';
 
 export interface User {
@@ -34,6 +35,7 @@ export interface Order {
   contact_name: string;
   contact_email: string;
   contact_phone?: string;
+  contact_address?: string; // Added address field
   description: string;
   price: number;
   status: OrderStatus;
