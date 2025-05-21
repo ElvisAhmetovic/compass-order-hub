@@ -1,6 +1,6 @@
 
-import { useState } from "react";
-import { Navigate, useLocation } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useSupabaseAuth } from "@/context/SupabaseAuthContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
@@ -13,13 +13,47 @@ export default function Auth() {
   const { user, isLoading } = useSupabaseAuth();
   const [activeTab, setActiveTab] = useState<"login" | "register">("login");
   const location = useLocation();
+  const navigate = useNavigate();
 
   // Get the intended destination from location state or default to dashboard
-  const from = location.state?.from || "/dashboard";
+  const from = location.state?.from?.pathname || "/dashboard";
+  
+  // Set initial tab based on URL parameters
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const tab = searchParams.get("tab");
+    if (tab === "register") {
+      setActiveTab("register");
+    }
+  }, [location]);
+
+  // Handle successful registration
+  const handleRegisterSuccess = () => {
+    // Switch to login tab after successful registration
+    setActiveTab("login");
+  };
 
   // Redirect if user is already logged in
+  useEffect(() => {
+    if (user && !isLoading) {
+      navigate(from, { replace: true });
+    }
+  }, [user, isLoading, navigate, from]);
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <AuthContainer>
+        <div className="flex items-center justify-center p-8">
+          <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
+        </div>
+      </AuthContainer>
+    );
+  }
+
+  // Don't show redirect component as it causes flashing
   if (user) {
-    return <Navigate to={from} />;
+    return null;
   }
 
   return (
@@ -28,13 +62,13 @@ export default function Auth() {
         <AuthHeader activeTab={activeTab} onTabChange={setActiveTab} />
         
         <CardContent>
-          <Tabs value={activeTab}>
+          <Tabs value={activeTab} className="mt-2">
             <TabsContent value="login">
               <LoginForm redirectPath={from} />
             </TabsContent>
             
             <TabsContent value="register">
-              <RegisterForm onSuccess={() => setActiveTab("login")} />
+              <RegisterForm onSuccess={handleRegisterSuccess} />
             </TabsContent>
           </Tabs>
         </CardContent>
