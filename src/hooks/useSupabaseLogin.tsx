@@ -2,12 +2,20 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { User, Session } from "@supabase/supabase-js";
+
+interface LoginResult {
+  success: boolean;
+  error?: string;
+  user?: User | null;
+  session?: Session | null;
+}
 
 export function useSupabaseLogin() {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (email: string, password: string): Promise<LoginResult> => {
     try {
       setIsLoading(true);
       
