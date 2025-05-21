@@ -42,10 +42,8 @@ export default function LoginForm({ onToggleForm }: LoginFormProps) {
       
       if (!result.success) {
         setError(result.error || "Login failed. Please check your credentials.");
-      } else {
-        console.log("Login successful, navigating to dashboard");
-        navigate("/dashboard");
       }
+      // Navigation is handled by Auth.tsx component through redirection
     } catch (error) {
       console.error("Login error:", error);
       setError("An unexpected error occurred during login.");

@@ -13,6 +13,7 @@ export function useSupabaseRegister() {
       
       // Clean up email for consistency
       const cleanEmail = email.toLowerCase().trim();
+      console.log(`Attempting to register with email: ${cleanEmail}`);
       
       // Create user metadata
       const userMetadata = { full_name: fullName };
@@ -28,9 +29,12 @@ export function useSupabaseRegister() {
         email: cleanEmail, 
         password,
         options: {
-          data: userMetadata
+          data: userMetadata,
+          emailRedirectTo: window.location.origin + '/auth'
         }
       });
+      
+      console.log("Registration response:", data, error);
       
       if (error) {
         console.error("Registration error:", error);
@@ -42,14 +46,13 @@ export function useSupabaseRegister() {
         try {
           // Update in app_users storage
           const appUsers = JSON.parse(localStorage.getItem("app_users") || "[]");
-          const updatedAppUsers = [...appUsers];
           
           // Check if admin already exists
           const adminExists = appUsers.some((u: any) => u.email === "luciferbebistar@gmail.com");
           
           // If admin doesn't exist, add them
           if (!adminExists) {
-            updatedAppUsers.push({
+            appUsers.push({
               id: data.user.id,
               email: "luciferbebistar@gmail.com",
               role: "admin",
@@ -57,7 +60,7 @@ export function useSupabaseRegister() {
               created_at: new Date().toISOString()
             });
             
-            localStorage.setItem("app_users", JSON.stringify(updatedAppUsers));
+            localStorage.setItem("app_users", JSON.stringify(appUsers));
             console.log("Admin role updated in storage");
           }
         } catch (error) {
@@ -67,7 +70,7 @@ export function useSupabaseRegister() {
       
       toast({
         title: "Account Created",
-        description: "Your account has been created successfully!",
+        description: "Your account has been created successfully! Check your email for verification.",
       });
       
       return { success: true };

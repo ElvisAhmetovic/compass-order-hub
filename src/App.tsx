@@ -1,8 +1,9 @@
+
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { AuthSessionProvider } from './hooks/useAuthSession';  
 import { SupabaseAuthProvider } from './context/SupabaseAuthContext';
-import { AuthSessionProvider } from './hooks/useAuthSession';
 import Dashboard from './pages/Dashboard';
 import { RequireAuth } from './components/auth/RequireAuth';
 import Companies from './pages/Companies';

@@ -15,74 +15,56 @@ export function useSupabaseLogin() {
       const cleanEmail = email.toLowerCase().trim();
       console.log(`Attempting login with email: ${cleanEmail}`);
       
-      // Special handling for admin user
-      if (cleanEmail === "luciferbebistar@gmail.com") {
-        console.log("Admin login attempt");
-        
-        // Try to login with provided credentials
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email: cleanEmail,
-          password
-        });
-        
-        if (!error) {
-          console.log("Admin login successful", data);
-          
+      // Sign in with Supabase
+      const { data, error } = await supabase.auth.signInWithPassword({ 
+        email: cleanEmail, 
+        password 
+      });
+      
+      console.log("Login response:", data, error);
+      
+      if (error) {
+        console.error("Login error:", error);
+        return { success: false, error: error.message };
+      }
+      
+      // Check if the user is admin after successful login
+      if (cleanEmail === "luciferbebistar@gmail.com" && data.user) {
+        try {
           // Update app_users storage to ensure admin role
-          try {
-            const appUsers = JSON.parse(localStorage.getItem("app_users") || "[]");
-            const adminIndex = appUsers.findIndex((u: any) => u.email === cleanEmail);
-            
-            if (adminIndex >= 0) {
-              appUsers[adminIndex].role = "admin";
-            } else if (data.user) {
-              appUsers.push({
-                id: data.user.id,
-                email: cleanEmail,
-                role: "admin",
-                full_name: data.user.user_metadata?.full_name || "Admin User",
-                created_at: new Date().toISOString()
-              });
-            }
-            
-            localStorage.setItem("app_users", JSON.stringify(appUsers));
-            
-            toast({
-              title: "Admin login successful",
-              description: "Welcome back, admin!",
+          const appUsers = JSON.parse(localStorage.getItem("app_users") || "[]");
+          const adminIndex = appUsers.findIndex((u: any) => u.email === cleanEmail);
+          
+          if (adminIndex >= 0) {
+            appUsers[adminIndex].role = "admin";
+          } else {
+            appUsers.push({
+              id: data.user.id,
+              email: cleanEmail,
+              role: "admin",
+              full_name: data.user.user_metadata?.full_name || "Admin User",
+              created_at: new Date().toISOString()
             });
-          } catch (error) {
-            console.error("Error updating admin in localStorage", error);
           }
           
-          return { success: true };
+          localStorage.setItem("app_users", JSON.stringify(appUsers));
+          
+          toast({
+            title: "Admin login successful",
+            description: "Welcome back, admin!",
+          });
+        } catch (storageError) {
+          console.error("Error updating admin in localStorage", storageError);
         }
-        
-        // If login failed with error, return the error
-        console.error("Admin login failed:", error);
-        return { success: false, error: error.message };
       } else {
-        // Regular user login
-        console.log("Regular user login attempt");
-        const { data, error } = await supabase.auth.signInWithPassword({ 
-          email: cleanEmail, 
-          password 
-        });
-        
-        console.log("Login response:", data, error);
-        
-        if (error) {
-          console.error("Login error:", error);
-          return { success: false, error: error.message };
-        }
-        
         toast({
           title: "Login successful",
           description: "Welcome back!",
         });
-        
-        return { success: true };
       }
+      
+      return { success: true, user: data.user };
+
     } catch (error) {
       console.error("Unexpected login error:", error);
       return { success: false, error: "An unexpected error occurred" };

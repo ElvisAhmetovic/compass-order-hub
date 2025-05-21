@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { Navigate, useLocation } from "react-router-dom";
+import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useSupabaseAuth } from "@/context/SupabaseAuthContext";
 import LoginForm from "@/components/auth/LoginForm";
 import RegisterForm from "@/components/auth/RegisterForm";
@@ -12,10 +12,18 @@ export default function Auth() {
   const [activeTab, setActiveTab] = useState<"login" | "register">("login");
   const { toast } = useToast();
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     console.log("Auth component rendered, user:", user, "isLoading:", isLoading);
-  }, [user, isLoading]);
+    
+    // Check if we have a user but we're not loading
+    if (user && !isLoading) {
+      console.log("User is authenticated, redirecting to dashboard");
+      const from = (location.state as { from?: string })?.from || "/dashboard";
+      navigate(from);
+    }
+  }, [user, isLoading, location.state, navigate]);
 
   // Show loading state
   if (isLoading) {
@@ -26,13 +34,7 @@ export default function Auth() {
     );
   }
 
-  // Redirect if user is already logged in
-  if (user) {
-    console.log("User is authenticated, redirecting");
-    // Redirect to the page they were trying to access or dashboard
-    const from = (location.state as { from?: string })?.from || "/dashboard";
-    return <Navigate to={from} />;
-  }
+  // Redirect handled in useEffect to avoid React state updates during render
 
   const handleRegistrationSuccess = () => {
     toast({
@@ -58,4 +60,4 @@ export default function Auth() {
       )}
     </AuthLayout>
   );
-};
+}
