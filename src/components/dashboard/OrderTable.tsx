@@ -69,6 +69,7 @@ const OrderTable = ({ onOrderClick, statusFilter, refreshTrigger }: OrderTablePr
         if (!isAdmin && user) {
           parsedOrders = parsedOrders.filter((order: Order) => order.assigned_to === user.id);
         }
+        // For admin users, show all orders (no filtering by assigned_to)
         
         setOrders(parsedOrders);
         setError(null);

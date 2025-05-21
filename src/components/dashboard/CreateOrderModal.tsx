@@ -1,9 +1,9 @@
-
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Info } from "lucide-react";
+import { v4 as uuidv4 } from "uuid";
 import { 
   Dialog,
   DialogContent,
@@ -30,7 +30,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
-import { OrderPriority } from "@/types";
+import { OrderPriority, Order } from "@/types";
+import { useAuth } from "@/context/AuthContext";
 
 const formSchema = z.object({
   companyName: z.string().min(1, "Company name is required"),
@@ -52,6 +53,8 @@ interface CreateOrderModalProps {
 }
 
 const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
+  const { user } = useAuth();
+  
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -70,15 +73,47 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
   const onSubmit = (values: FormValues) => {
     console.log("Form submitted:", values);
     
-    // In a real application, you would send this data to your backend
-    // For now, we'll just simulate success
-    toast({
-      title: "Order created successfully",
-      description: `Created order for ${values.companyName}`,
-    });
+    // Create a new order object
+    const now = new Date().toISOString();
+    const newOrder: Order = {
+      id: uuidv4(),
+      company_name: values.companyName,
+      contact_name: values.companyName, // Using company name as contact name for simplicity
+      contact_email: values.contactEmail,
+      contact_phone: values.contactPhone,
+      description: values.description,
+      price: values.price,
+      status: "Created",
+      priority: values.priority as OrderPriority,
+      created_at: now,
+      updated_at: now,
+      created_by: user?.id || "unknown",
+      // For admin users, the order is initially unassigned
+    };
     
-    form.reset();
-    onClose();
+    // Save the new order to localStorage
+    try {
+      const storedOrders = localStorage.getItem("orders");
+      const orders = storedOrders ? JSON.parse(storedOrders) : [];
+      orders.push(newOrder);
+      localStorage.setItem("orders", JSON.stringify(orders));
+      
+      // Show success message
+      toast({
+        title: "Order created successfully",
+        description: `Created order for ${values.companyName}`,
+      });
+      
+      form.reset();
+      onClose();
+    } catch (error) {
+      console.error("Error saving order:", error);
+      toast({
+        title: "Error creating order",
+        description: "An error occurred while saving the order.",
+        variant: "destructive",
+      });
+    }
   };
 
   const priorities: OrderPriority[] = ["Low", "Medium", "High", "Urgent"];
