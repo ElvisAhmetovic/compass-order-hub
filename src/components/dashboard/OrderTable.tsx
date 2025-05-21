@@ -98,7 +98,7 @@ const OrderTable = ({ onOrderClick, statusFilter, refreshTrigger }: OrderTablePr
       if (statusFilter === "All") {
         // Keep all orders, but filter out specific statuses if needed
         result = result.filter(order => 
-          order.status !== "Deleted" && order.status !== "Cancelled"
+          !["Resolved", "Cancelled", "Deleted"].includes(order.status)
         );
       } else {
         result = result.filter(order => order.status === statusFilter);

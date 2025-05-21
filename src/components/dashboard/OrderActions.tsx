@@ -96,6 +96,13 @@ const OrderActions = ({ order, onOrderView, onRefresh }: OrderActionsProps) => {
       allStatusHistories[order.id] = [newStatusHistoryItem, ...orderHistory];
       localStorage.setItem("statusHistories", JSON.stringify(allStatusHistories));
       
+      // Create a new order object with the updated status to refresh the UI
+      const updatedOrder = {
+        ...order,
+        status: newStatus,
+        updated_at: new Date().toISOString()
+      };
+      
       // Show success message
       toast({
         title: "Status updated",
