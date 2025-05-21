@@ -160,7 +160,7 @@ export const InquiryDetail = () => {
         .insert({
           inquiry_id: inquiry.id,
           user_id: currentUser.id,
-          user_name: currentUser.email || 'User',
+          user_name: currentUser.full_name || currentUser.email,
           user_role: currentUser.role,
           message: replyText.trim()
         });
@@ -365,7 +365,7 @@ export const InquiryDetail = () => {
               <Button 
                 variant="outline" 
                 onClick={handleCloseInquiry}
-                disabled={isSubmitting}
+                disabled={isSubmitting || inquiry.status === "closed"}
               >
                 Close Inquiry
               </Button>

@@ -1,136 +1,136 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Eye, EyeOff, AlertTriangle } from "lucide-react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useSupabaseAuth } from "@/context/SupabaseAuthContext";
-import { supabase } from "@/integrations/supabase/client";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { AlertTriangle } from "lucide-react";
+import FormInput from "./FormInput";
+import { validateIdentifier, validatePassword } from "@/utils/formValidation";
+import { useAuth } from "@/context/AuthContext";
 
-interface LoginFormProps {
-  onToggleForm?: () => void;
-}
-
-export default function LoginForm({ onToggleForm }: LoginFormProps) {
-  const [email, setEmail] = useState("");
+const LoginForm = () => {
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errors, setErrors] = useState<{identifier?: string, password?: string, auth?: string}>({});
   const navigate = useNavigate();
-  const { signIn, isLoading } = useSupabaseAuth();
+  const { login, isLoading: authLoading } = useAuth();
+  
+  const isLoading = isSubmitting || authLoading;
 
-  // Clear error when inputs change
-  useEffect(() => {
-    if (error) setError("");
-  }, [email, password]);
-
-  // Check Supabase configuration
-  useEffect(() => {
-    console.log("Checking Supabase configuration...");
-    supabase.auth.getSession().then(({ data }) => {
-      console.log("Supabase session check from LoginForm:", data.session ? "Session exists" : "No session");
-    });
-  }, []);
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
+  const handleIdentifierChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setIdentifier(value);
     
-    // Validate inputs before submitting
-    if (!email || !password) {
-      setError("Please fill in all required fields");
+    const error = validateIdentifier(value);
+    setErrors(prev => ({ ...prev, identifier: error, auth: undefined }));
+  };
+
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setPassword(value);
+    
+    const error = validatePassword(value);
+    setErrors(prev => ({ ...prev, password: error, auth: undefined }));
+  };
+
+  const isFormValid = () => {
+    return !errors.identifier && !errors.password && identifier.trim() !== "" && password.trim() !== "";
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!isFormValid()) {
       return;
     }
     
+    setIsSubmitting(true);
+    setErrors({});
+
     try {
-      console.log(`Attempting to log in with: ${email}`);
+      console.log(`Attempting to log in with: ${identifier}, password: ${password.replace(/./g, '*')}`);
+      const success = await login(identifier, password);
       
-      // Ensure email and password are properly passed to signIn
-      const result = await signIn(email, password);
-      console.log("Sign in result:", result);
-      
-      if (!result.success) {
-        setError(result.error || "Login failed. Please check your credentials.");
-        return;
+      if (success) {
+        navigate("/dashboard");
+      } else {
+        setErrors(prev => ({ ...prev, auth: "Invalid email/username or password" }));
       }
-      
-      // Navigation is handled by Auth.tsx component through redirection
-    } catch (error: any) {
+    } catch (error) {
       console.error("Login error:", error);
-      setError(error?.message || "An unexpected error occurred during login.");
+      setErrors(prev => ({ ...prev, auth: "An unexpected error occurred." }));
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <form onSubmit={handleLogin} className="space-y-4">
-      {error && (
-        <Alert variant="destructive" className="mb-4">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-      
-      <div className="space-y-2">
-        <Label htmlFor="email">Email</Label>
-        <Input 
-          id="email" 
-          type="email" 
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="name@example.com"
-          required
-          disabled={isLoading}
-        />
-      </div>
-      
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <Label htmlFor="password">Password</Label>
-          <a href="#" className="text-xs text-primary hover:underline">
-            Forgot password?
-          </a>
-        </div>
-        <div className="relative">
-          <Input 
-            id="password" 
-            type={showPassword ? "text" : "password"}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
+    <Card className="w-[350px] mx-auto">
+      <CardHeader>
+        <CardTitle>Login</CardTitle>
+        <CardDescription>Enter your credentials to access your account</CardDescription>
+      </CardHeader>
+      <form onSubmit={handleSubmit}>
+        <CardContent className="space-y-4">
+          {/* Authentication error message */}
+          {errors.auth && (
+            <div className="p-3 rounded-md bg-destructive/15 text-destructive flex items-center gap-2">
+              <AlertTriangle className="h-5 w-4" />
+              <span>{errors.auth}</span>
+            </div>
+          )}
+          
+          <FormInput
+            id="identifier"
+            label="Username or Email"
+            type="text"
+            value={identifier}
+            onChange={handleIdentifierChange}
+            placeholder="johndoe or name@company.com"
+            error={errors.identifier}
             disabled={isLoading}
           />
-          <button 
-            type="button"
-            onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-            tabIndex={-1}
-            aria-label={showPassword ? "Hide password" : "Show password"}
+          
+          <FormInput
+            id="password"
+            label="Password"
+            type="password"
+            value={password}
+            onChange={handlePasswordChange}
+            error={errors.password}
+            disabled={isLoading}
+            isPassword
+            showPassword={showPassword}
+            toggleShowPassword={() => setShowPassword(!showPassword)}
+          />
+        </CardContent>
+        <CardFooter className="flex flex-col">
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={isLoading || !isFormValid()}
           >
-            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-          </button>
-        </div>
-      </div>
-      
-      <Button type="submit" className="w-full" disabled={isLoading}>
-        {isLoading ? "Signing in..." : "Sign In"}
-      </Button>
-      
-      {onToggleForm && (
-        <div className="text-center mt-4">
-          <p className="text-sm text-gray-600">
+            {isLoading ? "Logging in..." : "Login"}
+          </Button>
+          <div className="mt-4 text-sm text-center">
             Don't have an account?{" "}
-            <button 
-              type="button" 
-              onClick={onToggleForm}
-              className="text-primary hover:underline"
+            <a
+              href="/register"
+              className="text-blue-600 hover:text-blue-800 hover:underline"
+              onClick={(e) => {
+                e.preventDefault();
+                navigate("/register");
+              }}
             >
               Register
-            </button>
-          </p>
-        </div>
-      )}
-    </form>
+            </a>
+          </div>
+        </CardFooter>
+      </form>
+    </Card>
   );
-}
+};
+
+export default LoginForm;

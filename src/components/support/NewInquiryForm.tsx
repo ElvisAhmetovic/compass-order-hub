@@ -64,7 +64,7 @@ export const NewInquiryForm = () => {
         .insert({
           user_id: currentUser.id,
           user_email: currentUser.email,
-          user_name: currentUser.email || 'User',
+          user_name: currentUser.full_name || currentUser.email,
           subject: values.subject,
           message: values.message,
           status: 'open'

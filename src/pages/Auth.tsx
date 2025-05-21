@@ -1,110 +1,183 @@
 
-import { useState, useEffect } from "react";
-import { Navigate, useLocation, useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { Navigate, useNavigate } from "react-router-dom";
 import { useSupabaseAuth } from "@/context/SupabaseAuthContext";
-import LoginForm from "@/components/auth/LoginForm";
-import RegisterForm from "@/components/auth/RegisterForm";
-import AuthLayout from "@/components/auth/AuthLayout";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Label } from "@/components/ui/label";
+import { AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 
 export default function Auth() {
-  const { user, isLoading } = useSupabaseAuth();
+  const { user, signIn, signUp, isLoading } = useSupabaseAuth();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState<"login" | "register">("login");
-  const { toast } = useToast();
-  const location = useLocation();
   const navigate = useNavigate();
+  const { toast } = useToast();
 
-  // Debug auth parameters
-  useEffect(() => {
-    // Parse URL for token
-    const hashParams = new URLSearchParams(window.location.hash.substring(1));
-    const queryParams = new URLSearchParams(window.location.search);
-    
-    const accessToken = hashParams.get('access_token');
-    const refreshToken = hashParams.get('refresh_token');
-    const type = hashParams.get('type');
-    const error = queryParams.get('error');
-    const errorDescription = queryParams.get('error_description');
-    
-    console.log("Auth page URL parameters:", { 
-      accessToken: accessToken ? "present" : "not present", 
-      refreshToken: refreshToken ? "present" : "not present",
-      type,
-      error,
-      errorDescription
-    });
-    
-    // Handle callback from email verification
-    if (accessToken && refreshToken && type === 'recovery') {
-      // Handle password reset
-      toast({
-        title: "Password Reset",
-        description: "Please set your new password.",
-      });
-    } else if (error) {
-      // Handle errors
-      toast({
-        title: "Authentication Error",
-        description: errorDescription || "There was a problem with authentication.",
-        variant: "destructive"
-      });
-    }
-  }, [toast]);
-
-  // Debug authentication state
-  useEffect(() => {
-    console.log("Auth component rendered, user:", user, "isLoading:", isLoading);
-    
-    // Check if we have a user but we're not loading
-    if (user && !isLoading) {
-      console.log("User is authenticated, redirecting to dashboard");
-      const from = (location.state as { from?: string })?.from || "/dashboard";
-      navigate(from, { replace: true });
-    }
-    
-    // Check Supabase session directly
-    supabase.auth.getSession().then(({ data }) => {
-      console.log("Direct Supabase session check:", data.session ? "Session exists" : "No session");
-    });
-  }, [user, isLoading, location.state, navigate]);
-
-  // Show loading state
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <p>Loading...</p>
-      </div>
-    );
+  // Redirect if user is already logged in
+  if (user) {
+    return <Navigate to="/dashboard" />;
   }
 
-  // If user is already authenticated, redirect to dashboard
-  if (user && !isLoading) {
-    return <Navigate to="/dashboard" replace />;
-  }
-
-  const handleRegistrationSuccess = () => {
-    toast({
-      title: "Account Created",
-      description: "Please check your email for verification instructions, then sign in with your new credentials.",
-    });
-    setActiveTab("login");
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    
+    if (!email || !password) {
+      setError("Please fill in all required fields");
+      return;
+    }
+    
+    const result = await signIn(email, password);
+    if (!result.success) {
+      setError(result.error || "Login failed. Please check your credentials.");
+    }
   };
 
-  const handleToggleForm = () => {
-    setActiveTab(activeTab === "login" ? "register" : "login");
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    
+    if (!email || !password || !fullName) {
+      setError("Please fill in all required fields");
+      return;
+    }
+    
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters");
+      return;
+    }
+    
+    const result = await signUp(email, password, fullName);
+    if (!result.success) {
+      setError(result.error || "Registration failed. Please try again.");
+    } else {
+      toast({
+        title: "Account Created",
+        description: "Check your email for a confirmation link.",
+      });
+      setActiveTab("login");
+    }
   };
 
   return (
-    <AuthLayout title={activeTab === "login" ? "Sign In" : "Create Account"}>
-      {activeTab === "login" ? (
-        <LoginForm onToggleForm={handleToggleForm} />
-      ) : (
-        <RegisterForm 
-          onToggleForm={handleToggleForm}
-          onSuccess={handleRegistrationSuccess}
-        />
-      )}
-    </AuthLayout>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 px-4">
+      <div className="mb-6 text-center">
+        <h1 className="text-3xl font-bold text-primary">Order Flow Compass</h1>
+        <p className="text-muted-foreground">Manage your orders efficiently</p>
+      </div>
+      
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "login" | "register")} className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="login">Login</TabsTrigger>
+              <TabsTrigger value="register">Register</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </CardHeader>
+        
+        <CardContent>
+          {error && (
+            <div className="flex items-center gap-2 p-3 mb-4 text-sm border rounded-md border-destructive/50 bg-destructive/10 text-destructive">
+              <AlertCircle className="h-4 w-4" />
+              <span>{error}</span>
+            </div>
+          )}
+          
+          {activeTab === "login" ? (
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input 
+                  id="email" 
+                  type="email" 
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="name@example.com"
+                  required
+                  disabled={isLoading}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password">Password</Label>
+                  <a href="#" className="text-xs text-primary hover:underline">
+                    Forgot password?
+                  </a>
+                </div>
+                <Input 
+                  id="password" 
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  disabled={isLoading}
+                />
+              </div>
+              
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? "Signing in..." : "Sign In"}
+              </Button>
+            </form>
+          ) : (
+            <form onSubmit={handleRegister} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="fullName">Full Name</Label>
+                <Input 
+                  id="fullName" 
+                  type="text" 
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="John Doe"
+                  required
+                  disabled={isLoading}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="registerEmail">Email</Label>
+                <Input 
+                  id="registerEmail" 
+                  type="email" 
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="name@example.com"
+                  required
+                  disabled={isLoading}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="registerPassword">Password</Label>
+                <Input 
+                  id="registerPassword" 
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  disabled={isLoading}
+                  minLength={6}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Password must be at least 6 characters long
+                </p>
+              </div>
+              
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? "Creating account..." : "Create Account"}
+              </Button>
+            </form>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 }
