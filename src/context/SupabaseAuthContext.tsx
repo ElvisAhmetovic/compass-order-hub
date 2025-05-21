@@ -125,28 +125,28 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
       setIsLoading(true);
       
       // Special handling for admin user
-      if (email === "luciferbebistar@gmail.com") {
+      if (email.toLowerCase() === "luciferbebistar@gmail.com") {
         console.log("Admin login attempt");
         
-        // Try login first with the admin password
-        const loginResult = await supabase.auth.signInWithPassword({
-          email: "luciferbebistar@gmail.com",
-          password: "Admin@123"
+        // First attempt direct login
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: email.toLowerCase(),
+          password
         });
         
-        if (!loginResult.error) {
-          // Login successful
+        if (!error) {
           console.log("Admin login successful");
-          updateAdminInStorage(loginResult.data.user);
+          // No need to call updateAdminInStorage here as onAuthStateChange will handle it
           return { success: true };
         }
         
-        console.log("Admin login failed, attempting to create account", loginResult.error);
+        // If login failed, check if we need to create the admin account
+        console.log("Admin login failed, attempting to create account", error);
         
-        // If login failed, try to create the admin account
+        // Try to create the admin account with the provided password
         const signUpResult = await supabase.auth.signUp({
-          email: "luciferbebistar@gmail.com",
-          password: "Admin@123",
+          email: email.toLowerCase(),
+          password,
           options: {
             data: {
               full_name: "Admin User",
@@ -155,35 +155,41 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
           }
         });
         
-        // Handle signup result
         if (signUpResult.error) {
           console.error("Admin account creation failed:", signUpResult.error);
-          return { success: false, error: "Unable to login or create admin account" };
-        }
-        
-        console.log("Admin account created, trying login again");
-        
-        // Try login again after account creation
-        const retryResult = await supabase.auth.signInWithPassword({
-          email: "luciferbebistar@gmail.com",
-          password: "Admin@123"
-        });
-        
-        if (retryResult.error) {
-          console.error("Admin retry login failed:", retryResult.error);
           return { 
             success: false, 
-            error: "Admin account created but login failed. Please try again in a few moments." 
+            error: signUpResult.error.message || "Unable to create admin account"
           };
         }
         
-        // Login successful after account creation
+        // Admin account created, now try to log in with the provided credentials
+        console.log("Admin account created, attempting login");
+        
+        // Add a short delay to allow the account to be fully registered
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        const loginResult = await supabase.auth.signInWithPassword({
+          email: email.toLowerCase(),
+          password
+        });
+        
+        if (loginResult.error) {
+          console.error("Admin login after creation failed:", loginResult.error);
+          return { 
+            success: false, 
+            error: "Admin account created but login failed. Please try again in a moment." 
+          };
+        }
+        
         console.log("Admin login successful after account creation");
-        updateAdminInStorage(retryResult.data.user);
         return { success: true };
       } else {
         // Regular user login
-        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        const { data, error } = await supabase.auth.signInWithPassword({ 
+          email, 
+          password 
+        });
         
         if (error) {
           return { success: false, error: error.message };
@@ -199,62 +205,23 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
     }
   };
 
-  // Helper function to update admin data in storage
-  const updateAdminInStorage = (adminUser: User | null) => {
-    if (!adminUser) return;
-    
-    try {
-      // Update in app_users storage
-      const appUsers = JSON.parse(localStorage.getItem("app_users") || "[]");
-      let adminExists = false;
-      
-      const updatedAppUsers = appUsers.map((u: any) => {
-        if (u.email === "luciferbebistar@gmail.com") {
-          adminExists = true;
-          return { ...u, role: "admin" };
-        }
-        return u;
-      });
-      
-      // If admin doesn't exist, add them
-      if (!adminExists) {
-        updatedAppUsers.push({
-          id: adminUser.id,
-          email: "luciferbebistar@gmail.com",
-          role: "admin",
-          full_name: "Admin User",
-          created_at: new Date().toISOString()
-        });
-      }
-      
-      localStorage.setItem("app_users", JSON.stringify(updatedAppUsers));
-      console.log("Admin credentials set in storage");
-    } catch (error) {
-      console.error("Error updating admin in storage:", error);
-    }
-  };
-
   const signUp = async (email: string, password: string, fullName: string) => {
     try {
       setIsLoading(true);
       
-      // For admin user registration, always use Admin@123
-      let actualPassword = password;
-      if (email === "luciferbebistar@gmail.com") {
-        actualPassword = "Admin@123";
-        console.log("Creating admin account with fixed password");
-      }
+      // Clean up email for consistency
+      const cleanEmail = email.toLowerCase().trim();
       
-      // Special handling for admin user registration
+      // Special handling for admin user
       const userMetadata = { full_name: fullName };
-      if (email === "luciferbebistar@gmail.com") {
+      if (cleanEmail === "luciferbebistar@gmail.com") {
         Object.assign(userMetadata, { role: "admin" });
         console.log("Creating admin account");
       }
       
       const { data, error } = await supabase.auth.signUp({ 
-        email, 
-        password: actualPassword,
+        email: cleanEmail, 
+        password,
         options: {
           data: userMetadata
         }
@@ -264,13 +231,8 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
         return { success: false, error: error.message };
       }
       
-      toast({
-        title: "Account Created",
-        description: "Your account has been created successfully!",
-      });
-      
       // Special handling for admin after signup
-      if (email === "luciferbebistar@gmail.com" && data.user) {
+      if (cleanEmail === "luciferbebistar@gmail.com" && data.user) {
         try {
           // Update in app_users storage
           const appUsers = JSON.parse(localStorage.getItem("app_users") || "[]");
@@ -288,14 +250,19 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
               full_name: "Admin User",
               created_at: new Date().toISOString()
             });
+            
+            localStorage.setItem("app_users", JSON.stringify(updatedAppUsers));
+            console.log("Admin role updated in storage");
           }
-          
-          localStorage.setItem("app_users", JSON.stringify(updatedAppUsers));
-          console.log("Admin role updated in storage");
         } catch (error) {
           console.error("Error updating admin in storage:", error);
         }
       }
+      
+      toast({
+        title: "Account Created",
+        description: "Your account has been created successfully!",
+      });
       
       return { success: true };
     } catch (error) {

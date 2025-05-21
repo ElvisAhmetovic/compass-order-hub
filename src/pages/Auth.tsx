@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
-import { AlertCircle, Eye, EyeOff, AlertTriangle } from "lucide-react";
+import { Eye, EyeOff, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
@@ -45,7 +45,7 @@ export default function Auth() {
       console.log(`Attempting to log in with: ${email}`);
       
       // Special handling for admin account
-      if (email === "luciferbebistar@gmail.com") {
+      if (email.toLowerCase() === "luciferbebistar@gmail.com") {
         toast({
           title: "Admin Login",
           description: "Using admin credentials",
@@ -80,7 +80,7 @@ export default function Auth() {
     
     try {
       // Special handling for admin account registration
-      if (email === "luciferbebistar@gmail.com") {
+      if (email.toLowerCase() === "luciferbebistar@gmail.com") {
         toast({
           title: "Admin Registration",
           description: "Creating admin account",
