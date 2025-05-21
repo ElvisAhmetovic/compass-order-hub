@@ -108,8 +108,12 @@ export function useSupabaseLogin() {
         });
       }
       
-      return { success: true, user: data.user, session: data.session };
-    } catch (error) {
+      return { 
+        success: true, 
+        user: data.user, 
+        session: data.session 
+      };
+    } catch (error: any) {
       console.error("Unexpected login error:", error);
       toast({
         title: "Login error",
