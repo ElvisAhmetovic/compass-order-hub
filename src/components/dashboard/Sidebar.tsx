@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { LogoutButton } from "@/components/auth/LogoutButton";
 import { useAuth } from "@/context/AuthContext";
+import { Badge } from "@/components/ui/badge";
 
 const Sidebar = () => {
   const { user } = useAuth();
@@ -30,7 +31,6 @@ const Sidebar = () => {
       { icon: Home, label: "Active Orders", path: "/active-orders" },
       { icon: XCircle, label: "Complaints", path: "/complaints" },
       { icon: CheckCircle, label: "Completed", path: "/completed" },
-      { icon: MessageCircle, label: "Support", path: "/support" },
     ];
     
     // Items available to admins and agents only
@@ -62,8 +62,8 @@ const Sidebar = () => {
   const navItems = getNavItems();
 
   return (
-    <aside className="w-64 bg-white border-r h-screen sticky top-0">
-      <nav className="p-4 space-y-1">
+    <aside className="w-64 bg-white border-r h-screen sticky top-0 flex flex-col">
+      <nav className="p-4 space-y-1 flex-1">
         {navItems.map((item) => (
           <NavLink
             key={item.path}
@@ -80,12 +80,30 @@ const Sidebar = () => {
             <span>{item.label}</span>
           </NavLink>
         ))}
-        
-        {/* Logout Button */}
-        <div className="px-3 py-2 mt-4">
-          <LogoutButton />
-        </div>
       </nav>
+      
+      {/* Support link at the bottom with highlight */}
+      <div className="px-4 py-3 mt-auto mb-2">
+        <NavLink
+          to="/support"
+          className={({ isActive }) =>
+            `flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${
+              isActive
+                ? "bg-primary text-primary-foreground font-medium"
+                : "bg-purple-100 text-purple-700 hover:bg-purple-200"
+            }`
+          }
+        >
+          <MessageCircle className="h-4 w-4" />
+          <span>Support</span>
+          <Badge className="ml-auto bg-purple-500 text-white">Help</Badge>
+        </NavLink>
+      </div>
+      
+      {/* Logout Button */}
+      <div className="px-3 py-2 mt-1 mb-4">
+        <LogoutButton />
+      </div>
     </aside>
   );
 };
