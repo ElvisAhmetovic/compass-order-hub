@@ -25,12 +25,22 @@ export const InquiriesList = ({ showAll = false }: InquiriesListProps) => {
           localStorage.getItem("supportInquiries") || "[]"
         );
         
-        // Filter inquiries if not admin or not showing all
-        const filteredInquiries = (!isAdmin || !showAll) 
-          ? storedInquiries.filter(inquiry => inquiry.userId === user?.id)
-          : storedInquiries;
-          
-        setInquiries(filteredInquiries);
+        // For admin showing all inquiries or the "open" tab
+        if (isAdmin && showAll) {
+          setInquiries(storedInquiries);
+          return;
+        }
+        
+        // For non-admin users, only show their own inquiries
+        if (!isAdmin) {
+          const userInquiries = storedInquiries.filter(inquiry => inquiry.userId === user?.id);
+          setInquiries(userInquiries);
+          return;
+        }
+        
+        // For admin in "open" tab, filter to show only open inquiries
+        const openInquiries = storedInquiries.filter(inquiry => inquiry.status === "open");
+        setInquiries(openInquiries);
       } catch (error) {
         console.error("Error loading inquiries:", error);
         setInquiries([]);
@@ -100,3 +110,4 @@ export const InquiriesList = ({ showAll = false }: InquiriesListProps) => {
     </div>
   );
 };
+

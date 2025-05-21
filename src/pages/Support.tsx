@@ -64,13 +64,13 @@ const Support = () => {
               </div>
               
               <TabsContent value="inquiries" className="p-0">
-                <InquiriesList showAll={isAdmin} />
+                <InquiriesList showAll={true} />
               </TabsContent>
               
               {isAdmin && (
                 <TabsContent value="open" className="p-0">
-                  {/* Admin-specific view for open inquiries */}
-                  <InquiriesList showAll={true} />
+                  {/* For admin - show only open inquiries */}
+                  <InquiriesList showAll={false} />
                 </TabsContent>
               )}
               
