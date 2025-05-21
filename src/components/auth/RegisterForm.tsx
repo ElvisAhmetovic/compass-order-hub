@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -6,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Eye, EyeOff, AlertTriangle } from "lucide-react";
+import { validateFullName, validateIdentifier, validatePassword } from "@/utils/formValidation";
 
 const RegisterForm = () => {
   const [fullName, setFullName] = useState("");
@@ -17,82 +17,6 @@ const RegisterForm = () => {
   const [errors, setErrors] = useState<{fullName?: string, email?: string, username?: string, password?: string}>({});
   const { toast } = useToast();
   const navigate = useNavigate();
-
-  // List of offensive words to filter out
-  const offensiveWords = ["racist", "offensive", "inappropriate", "slur"];
-
-  const validateFullName = (value: string) => {
-    if (value.trim().length < 2) {
-      return "Full name must be at least 2 characters.";
-    }
-    
-    const nameRegex = /^[a-zA-Z\s]+$/;
-    if (!nameRegex.test(value)) {
-      return "Full name can only contain letters and spaces.";
-    }
-    
-    if (offensiveWords.some(word => value.toLowerCase().includes(word))) {
-      return "This contains inappropriate language.";
-    }
-    
-    return "";
-  };
-
-  const validateEmail = (value: string) => {
-    const emailRegex = /^[a-zA-Z0-9]+([._-]?[a-zA-Z0-9]+)*@[a-zA-Z0-9]+([.-]?[a-zA-Z0-9]+)*(\.[a-zA-Z]{2,})+$/;
-    if (!emailRegex.test(value)) {
-      return "Please enter a valid email address.";
-    }
-    
-    if (offensiveWords.some(word => value.toLowerCase().includes(word))) {
-      return "This contains inappropriate language.";
-    }
-    
-    return "";
-  };
-
-  const validateUsername = (value: string) => {
-    if (value.length < 3) {
-      return "Username must be at least 3 characters.";
-    }
-    
-    const usernameRegex = /^[a-zA-Z0-9]+$/;
-    if (!usernameRegex.test(value)) {
-      return "Username can only contain letters and numbers.";
-    }
-    
-    if (offensiveWords.some(word => value.toLowerCase().includes(word))) {
-      return "This contains inappropriate language.";
-    }
-    
-    return "";
-  };
-
-  const validatePassword = (value: string) => {
-    if (value.length < 8) {
-      return "Password must be at least 8 characters.";
-    }
-    
-    if (!/[A-Z]/.test(value)) {
-      return "Password must include at least one uppercase letter.";
-    }
-    
-    if (!/[a-z]/.test(value)) {
-      return "Password must include at least one lowercase letter.";
-    }
-    
-    if (!/[0-9]/.test(value)) {
-      return "Password must include at least one number.";
-    }
-    
-    // Common password check (very basic implementation)
-    const commonPasswords = ["password", "12345678", "qwerty123"];
-    if (commonPasswords.includes(value.toLowerCase())) {
-      return "This password is too common. Please choose a stronger one.";
-    }
-    
-    return "";
-  };
 
   const handleFullNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -106,7 +30,7 @@ const RegisterForm = () => {
     const value = e.target.value;
     setEmail(value);
     
-    const error = validateEmail(value);
+    const error = validateIdentifier(value);
     setErrors(prev => ({ ...prev, email: error }));
   };
 
@@ -114,7 +38,7 @@ const RegisterForm = () => {
     const value = e.target.value;
     setUsername(value);
     
-    const error = validateUsername(value);
+    const error = validateIdentifier(value);
     setErrors(prev => ({ ...prev, username: error }));
   };
 

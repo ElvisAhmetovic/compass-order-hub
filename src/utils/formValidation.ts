@@ -1,6 +1,5 @@
 
-// Common offensive words to filter out
-const offensiveWords = ["racist", "offensive", "inappropriate", "slur"];
+import { containsProfanity, getProfanityError } from './profanityFilter';
 
 export const validateIdentifier = (value: string) => {
   // Check if it's an email
@@ -20,9 +19,10 @@ export const validateIdentifier = (value: string) => {
     }
   }
   
-  // Check for offensive words
-  if (offensiveWords.some(word => value.toLowerCase().includes(word))) {
-    return "This contains inappropriate language.";
+  // Check for profanity
+  const profanityError = getProfanityError(value, isEmail ? 'Email' : 'Username');
+  if (profanityError) {
+    return profanityError;
   }
   
   return "";
@@ -53,3 +53,23 @@ export const validatePassword = (value: string) => {
   
   return "";
 };
+
+export const validateFullName = (value: string) => {
+  if (value.trim().length < 2) {
+    return "Full name must be at least 2 characters.";
+  }
+  
+  const nameRegex = /^[a-zA-Z\s]+$/;
+  if (!nameRegex.test(value)) {
+    return "Full name can only contain letters and spaces.";
+  }
+  
+  // Check for profanity in name
+  const profanityError = getProfanityError(value, 'Full name');
+  if (profanityError) {
+    return profanityError;
+  }
+  
+  return "";
+};
+
