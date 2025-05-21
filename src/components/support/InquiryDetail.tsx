@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
@@ -220,7 +219,7 @@ export const InquiryDetail = () => {
                   <CardTitle className="text-sm font-medium">
                     {reply.userName}
                     {reply.userRole === "admin" && (
-                      <Badge className="ml-2 bg-blue-500">Admin</Badge>
+                      <Badge className="ml-2 bg-blue-500">Admin - {reply.userName}</Badge>
                     )}
                   </CardTitle>
                   <span className="text-xs text-gray-500">
