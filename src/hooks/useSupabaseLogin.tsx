@@ -25,10 +25,26 @@ export function useSupabaseLogin() {
       
       if (error) {
         console.error("Login error:", error);
+        toast({
+          title: "Login failed",
+          description: error.message || "Invalid login credentials. Please check your email and password.",
+          variant: "destructive"
+        });
         return { success: false, error: error.message };
       }
       
-      // Check if the user is admin after successful login
+      if (!data.user || !data.session) {
+        console.error("Login failed: No user or session returned");
+        toast({
+          title: "Login failed",
+          description: "Something went wrong with authentication. Please try again.",
+          variant: "destructive"
+        });
+        return { success: false, error: "Authentication failed" };
+      }
+      
+      // Success handling
+      // Check if the user is admin
       if (cleanEmail === "luciferbebistar@gmail.com" && data.user) {
         try {
           // Update app_users storage to ensure admin role
@@ -63,10 +79,14 @@ export function useSupabaseLogin() {
         });
       }
       
-      return { success: true, user: data.user };
-
+      return { success: true, user: data.user, session: data.session };
     } catch (error) {
       console.error("Unexpected login error:", error);
+      toast({
+        title: "Login error",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive"
+      });
       return { success: false, error: "An unexpected error occurred" };
     } finally {
       setIsLoading(false);

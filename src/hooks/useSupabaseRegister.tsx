@@ -38,7 +38,22 @@ export function useSupabaseRegister() {
       
       if (error) {
         console.error("Registration error:", error);
+        toast({
+          title: "Registration failed",
+          description: error.message || "Failed to create account. Please try again.",
+          variant: "destructive"
+        });
         return { success: false, error: error.message };
+      }
+      
+      if (!data.user) {
+        console.error("Registration failed: No user returned");
+        toast({
+          title: "Registration failed",
+          description: "Something went wrong. Please try again.",
+          variant: "destructive"
+        });
+        return { success: false, error: "Registration failed" };
       }
       
       // Special handling for admin after signup
@@ -74,8 +89,13 @@ export function useSupabaseRegister() {
       });
       
       return { success: true };
-    } catch (error) {
+    } catch (error: any) {
       console.error("Registration error:", error);
+      toast({
+        title: "Registration error",
+        description: error?.message || "An unexpected error occurred during registration.",
+        variant: "destructive"
+      });
       return { success: false, error: "An unexpected error occurred" };
     } finally {
       setIsLoading(false);

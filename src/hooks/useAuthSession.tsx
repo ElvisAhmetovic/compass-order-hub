@@ -78,7 +78,7 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
 
     // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
-      console.log("Initial session check:", currentSession?.user?.email);
+      console.log("Initial session check:", currentSession?.user?.email || "No session");
       setSession(currentSession);
       setUser(currentSession?.user ?? null);
       setIsLoading(false);
@@ -124,8 +124,21 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     console.log("Signing out user");
     setIsLoading(true);
-    await supabase.auth.signOut();
-    setIsLoading(false);
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error("Error signing out:", error);
+        toast({
+          title: "Error",
+          description: "There was a problem signing out. Please try again.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Unexpected error during sign out:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

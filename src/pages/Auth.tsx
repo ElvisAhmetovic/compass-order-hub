@@ -14,6 +14,7 @@ export default function Auth() {
   const location = useLocation();
   const navigate = useNavigate();
 
+  // Debug authentication state
   useEffect(() => {
     console.log("Auth component rendered, user:", user, "isLoading:", isLoading);
     
@@ -21,7 +22,7 @@ export default function Auth() {
     if (user && !isLoading) {
       console.log("User is authenticated, redirecting to dashboard");
       const from = (location.state as { from?: string })?.from || "/dashboard";
-      navigate(from);
+      navigate(from, { replace: true });
     }
   }, [user, isLoading, location.state, navigate]);
 
@@ -33,8 +34,6 @@ export default function Auth() {
       </div>
     );
   }
-
-  // Redirect handled in useEffect to avoid React state updates during render
 
   const handleRegistrationSuccess = () => {
     toast({

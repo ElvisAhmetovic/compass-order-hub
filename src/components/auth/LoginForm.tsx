@@ -22,7 +22,7 @@ export default function LoginForm({ onToggleForm }: LoginFormProps) {
 
   // Clear error when inputs change
   useEffect(() => {
-    setError("");
+    if (error) setError("");
   }, [email, password]);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -44,9 +44,9 @@ export default function LoginForm({ onToggleForm }: LoginFormProps) {
         setError(result.error || "Login failed. Please check your credentials.");
       }
       // Navigation is handled by Auth.tsx component through redirection
-    } catch (error) {
+    } catch (error: any) {
       console.error("Login error:", error);
-      setError("An unexpected error occurred during login.");
+      setError(error?.message || "An unexpected error occurred during login.");
     }
   };
 

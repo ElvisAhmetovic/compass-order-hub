@@ -1,5 +1,5 @@
 
-import { createContext, useContext, ReactNode } from "react";
+import { createContext, useContext, ReactNode, useState } from "react";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { useSupabaseLogin } from "@/hooks/useSupabaseLogin";
 import { useSupabaseRegister } from "@/hooks/useSupabaseRegister";
@@ -8,7 +8,7 @@ interface SupabaseAuthContextProps {
   user: ReturnType<typeof useAuthSession>["user"];
   session: ReturnType<typeof useAuthSession>["session"];
   isLoading: boolean;
-  signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string; user?: any; session?: any }>;
   signUp: (email: string, password: string, fullName: string) => Promise<{ success: boolean; error?: string }>;
   signOut: () => Promise<void>;
 }
