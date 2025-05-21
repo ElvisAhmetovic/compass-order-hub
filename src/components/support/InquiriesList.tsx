@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { useSupabaseAuth } from "@/context/SupabaseAuthContext";
 import { format } from "date-fns";
 import { SupportInquiry } from "@/types/support";
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface InquiriesListProps {
   showAll?: boolean;
@@ -27,40 +29,66 @@ export const InquiriesList = ({ showAll = false }: InquiriesListProps) => {
   const [inquiryToDelete, setInquiryToDelete] = useState<SupportInquiry | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
+  const { user: supabaseUser } = useSupabaseAuth();
+  const currentUser = supabaseUser || user;
   const navigate = useNavigate();
   const { toast } = useToast();
-  const isAdmin = user?.role === "admin"; // Fixed comparison - only check for "admin" role
+  const isAdmin = currentUser?.role === "admin";
 
   useEffect(() => {
     loadInquiries();
-  }, [user, isAdmin, showAll]);
+  }, [currentUser, isAdmin, showAll]);
 
-  const loadInquiries = () => {
+  const loadInquiries = async () => {
+    if (!currentUser) {
+      setInquiries([]);
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
     try {
-      const storedInquiries: SupportInquiry[] = JSON.parse(
-        localStorage.getItem("supportInquiries") || "[]"
-      );
+      let query = supabase
+        .from('support_inquiries')
+        .select('*');
       
-      // For admin showing all inquiries or the "open" tab
-      if (isAdmin && showAll) {
-        setInquiries(storedInquiries);
-        return;
+      // For non-admin users or admin showing only open inquiries
+      if (!isAdmin || (isAdmin && !showAll)) {
+        query = query.eq('status', 'open');
       }
       
-      // For non-admin users, only show their own inquiries
-      if (!isAdmin) {
-        const userInquiries = storedInquiries.filter(inquiry => inquiry.userId === user?.id);
-        setInquiries(userInquiries);
-        return;
+      const { data, error } = await query.order('created_at', { ascending: false });
+      
+      if (error) {
+        throw error;
       }
       
-      // For admin in "open" tab, filter to show only open inquiries
-      const openInquiries = storedInquiries.filter(inquiry => inquiry.status === "open");
-      setInquiries(openInquiries);
+      // Map the data to match our SupportInquiry type
+      const formattedInquiries: SupportInquiry[] = data.map(item => ({
+        id: item.id,
+        userId: item.user_id,
+        userEmail: item.user_email,
+        userName: item.user_name,
+        subject: item.subject,
+        message: item.message,
+        createdAt: item.created_at,
+        status: item.status as "open" | "replied" | "closed",
+        updated_at: item.updated_at
+      }));
+      
+      setInquiries(formattedInquiries);
     } catch (error) {
       console.error("Error loading inquiries:", error);
+      toast({
+        variant: "destructive",
+        title: "Error loading inquiries",
+        description: "There was a problem loading your inquiries."
+      });
       setInquiries([]);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -69,20 +97,21 @@ export const InquiriesList = ({ showAll = false }: InquiriesListProps) => {
     setIsDeleteDialogOpen(true);
   };
 
-  const handleDeleteConfirm = () => {
-    if (!inquiryToDelete) return;
+  const handleDeleteConfirm = async () => {
+    if (!inquiryToDelete || !isAdmin) return;
     
     setIsDeleting(true);
     try {
-      const storedInquiries: SupportInquiry[] = JSON.parse(
-        localStorage.getItem("supportInquiries") || "[]"
-      );
+      const { error } = await supabase
+        .from('support_inquiries')
+        .delete()
+        .eq('id', inquiryToDelete.id);
       
-      const updatedInquiries = storedInquiries.filter(
-        inquiry => inquiry.id !== inquiryToDelete.id
-      );
+      if (error) {
+        throw error;
+      }
       
-      localStorage.setItem("supportInquiries", JSON.stringify(updatedInquiries));
+      // Remove from local state
       setInquiries(prevInquiries => 
         prevInquiries.filter(inquiry => inquiry.id !== inquiryToDelete.id)
       );
@@ -121,6 +150,14 @@ export const InquiriesList = ({ showAll = false }: InquiriesListProps) => {
   const handleViewInquiry = (inquiryId: string) => {
     navigate(`/support/${inquiryId}`);
   };
+
+  if (isLoading) {
+    return (
+      <div className="text-center py-10">
+        <p className="text-gray-500">Loading inquiries...</p>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -167,7 +204,7 @@ export const InquiriesList = ({ showAll = false }: InquiriesListProps) => {
                     size="sm"
                     onClick={() => handleViewInquiry(inquiry.id)}
                   >
-                    {inquiry.replies.length > 0 ? `View (${inquiry.replies.length} replies)` : "View"}
+                    View
                   </Button>
                 </div>
               </CardFooter>

@@ -1,10 +1,12 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
+import { useSupabaseAuth } from "@/context/SupabaseAuthContext";
 import { format } from "date-fns";
-import { v4 as uuidv4 } from "uuid";
 import { SupportInquiry, SupportReply } from "@/types/support";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,65 +25,110 @@ import {
 export const InquiryDetail = () => {
   const { inquiryId } = useParams<{ inquiryId: string }>();
   const [inquiry, setInquiry] = useState<SupportInquiry | null>(null);
+  const [replies, setReplies] = useState<SupportReply[]>([]);
   const [replyText, setReplyText] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
+  const { user: supabaseUser } = useSupabaseAuth();
+  const currentUser = supabaseUser || user;
   const navigate = useNavigate();
   const { toast } = useToast();
-  const isAdmin = user?.role === "admin"; // Fixed comparison - only check for "admin" role
+  const isAdmin = currentUser?.role === "admin";
 
   useEffect(() => {
-    if (!inquiryId) return;
-
-    const loadInquiry = () => {
+    if (!inquiryId || !currentUser) return;
+    
+    const loadInquiry = async () => {
+      setIsLoading(true);
       try {
-        const storedInquiries: SupportInquiry[] = JSON.parse(
-          localStorage.getItem("supportInquiries") || "[]"
-        );
-        
-        const foundInquiry = storedInquiries.find(inq => inq.id === inquiryId);
-        
-        if (!foundInquiry) {
+        // Get the inquiry
+        const { data: inquiryData, error: inquiryError } = await supabase
+          .from('support_inquiries')
+          .select('*')
+          .eq('id', inquiryId)
+          .single();
+
+        if (inquiryError) {
+          throw inquiryError;
+        }
+
+        if (!inquiryData) {
           navigate("/support");
           return;
         }
-        
-        // Check if user has access to this inquiry
-        if (!isAdmin && foundInquiry.userId !== user?.id) {
-          navigate("/support");
-          return;
+
+        // Map the inquiry data
+        const mappedInquiry: SupportInquiry = {
+          id: inquiryData.id,
+          userId: inquiryData.user_id,
+          userEmail: inquiryData.user_email,
+          userName: inquiryData.user_name,
+          subject: inquiryData.subject,
+          message: inquiryData.message,
+          createdAt: inquiryData.created_at,
+          status: inquiryData.status as "open" | "replied" | "closed",
+        };
+
+        // Get the replies
+        const { data: repliesData, error: repliesError } = await supabase
+          .from('support_replies')
+          .select('*')
+          .eq('inquiry_id', inquiryId)
+          .order('created_at', { ascending: true });
+
+        if (repliesError) {
+          throw repliesError;
         }
-        
-        setInquiry(foundInquiry);
+
+        // Map the replies data
+        const mappedReplies: SupportReply[] = repliesData.map(reply => ({
+          id: reply.id,
+          inquiryId: reply.inquiry_id,
+          userId: reply.user_id,
+          userName: reply.user_name,
+          userRole: reply.user_role,
+          message: reply.message,
+          createdAt: reply.created_at,
+        }));
+
+        setInquiry(mappedInquiry);
+        setReplies(mappedReplies);
       } catch (error) {
         console.error("Error loading inquiry:", error);
+        toast({
+          title: "Error",
+          description: "Could not load the inquiry details.",
+          variant: "destructive",
+        });
         navigate("/support");
+      } finally {
+        setIsLoading(false);
       }
     };
 
     loadInquiry();
-  }, [inquiryId, user, isAdmin, navigate]);
+  }, [inquiryId, currentUser, navigate, toast, isAdmin]);
 
   const handleDeleteInquiry = () => {
     setIsDeleteDialogOpen(true);
   };
 
-  const handleDeleteConfirm = () => {
-    if (!inquiry) return;
+  const handleDeleteConfirm = async () => {
+    if (!inquiry || !isAdmin) return;
     
     setIsDeleting(true);
     try {
-      const storedInquiries: SupportInquiry[] = JSON.parse(
-        localStorage.getItem("supportInquiries") || "[]"
-      );
+      const { error } = await supabase
+        .from('support_inquiries')
+        .delete()
+        .eq('id', inquiry.id);
       
-      const updatedInquiries = storedInquiries.filter(
-        inq => inq.id !== inquiry.id
-      );
-      
-      localStorage.setItem("supportInquiries", JSON.stringify(updatedInquiries));
+      if (error) {
+        throw error;
+      }
       
       toast({
         title: "Inquiry deleted",
@@ -102,47 +149,64 @@ export const InquiryDetail = () => {
     }
   };
 
-  const handleSubmitReply = () => {
-    if (!inquiry || !user || !replyText.trim()) return;
+  const handleSubmitReply = async () => {
+    if (!inquiry || !currentUser || !replyText.trim()) return;
     
     setIsSubmitting(true);
     
     try {
-      const newReply: SupportReply = {
-        id: uuidv4(),
-        inquiryId: inquiry.id,
-        userId: user.id,
-        userName: user.full_name || user.email,
-        userRole: user.role,
-        message: replyText.trim(),
-        createdAt: new Date().toISOString(),
-      };
+      const { error } = await supabase
+        .from('support_replies')
+        .insert({
+          inquiry_id: inquiry.id,
+          user_id: currentUser.id,
+          user_name: currentUser.full_name || currentUser.email,
+          user_role: currentUser.role,
+          message: replyText.trim()
+        });
       
-      // Get all inquiries
-      const allInquiries: SupportInquiry[] = JSON.parse(
-        localStorage.getItem("supportInquiries") || "[]"
-      );
+      if (error) {
+        throw error;
+      }
       
-      // Find and update the current inquiry
-      const updatedInquiries = allInquiries.map(inq => {
-        if (inq.id === inquiry.id) {
-          // Add reply and update status
-          const newStatus: "open" | "replied" | "closed" = isAdmin ? "replied" : inq.status;
-          return {
-            ...inq,
-            replies: [...inq.replies, newReply],
-            status: newStatus,
-          };
+      // If admin is replying, update status to "replied"
+      if (isAdmin && inquiry.status === 'open') {
+        const { error: statusError } = await supabase
+          .from('support_inquiries')
+          .update({ status: 'replied' })
+          .eq('id', inquiry.id);
+        
+        if (statusError) {
+          throw statusError;
         }
-        return inq;
-      });
+        
+        // Update local state
+        setInquiry(prev => prev ? { ...prev, status: 'replied' } : null);
+      }
       
-      // Save back to localStorage
-      localStorage.setItem("supportInquiries", JSON.stringify(updatedInquiries));
+      // Reload the replies
+      const { data: newReplies, error: repliesError } = await supabase
+        .from('support_replies')
+        .select('*')
+        .eq('inquiry_id', inquiry.id)
+        .order('created_at', { ascending: true });
       
-      // Update local state
-      const updatedInquiry = updatedInquiries.find(inq => inq.id === inquiry.id) as SupportInquiry;
-      setInquiry(updatedInquiry);
+      if (repliesError) {
+        throw repliesError;
+      }
+      
+      // Map the replies data
+      const mappedReplies: SupportReply[] = newReplies.map(reply => ({
+        id: reply.id,
+        inquiryId: reply.inquiry_id,
+        userId: reply.user_id,
+        userName: reply.user_name,
+        userRole: reply.user_role,
+        message: reply.message,
+        createdAt: reply.created_at,
+      }));
+      
+      setReplies(mappedReplies);
       setReplyText("");
       
       toast({
@@ -174,32 +238,21 @@ export const InquiryDetail = () => {
     }
   };
   
-  const handleCloseInquiry = () => {
+  const handleCloseInquiry = async () => {
     if (!inquiry || !isAdmin) return;
     
     try {
-      // Get all inquiries
-      const allInquiries: SupportInquiry[] = JSON.parse(
-        localStorage.getItem("supportInquiries") || "[]"
-      );
+      const { error } = await supabase
+        .from('support_inquiries')
+        .update({ status: 'closed' })
+        .eq('id', inquiry.id);
       
-      // Find and update the current inquiry
-      const updatedInquiries = allInquiries.map(inq => {
-        if (inq.id === inquiry.id) {
-          return {
-            ...inq,
-            status: "closed" as const,
-          };
-        }
-        return inq;
-      });
-      
-      // Save back to localStorage
-      localStorage.setItem("supportInquiries", JSON.stringify(updatedInquiries));
+      if (error) {
+        throw error;
+      }
       
       // Update local state
-      const updatedInquiry = updatedInquiries.find(inq => inq.id === inquiry.id) as SupportInquiry;
-      setInquiry(updatedInquiry);
+      setInquiry(prev => prev ? { ...prev, status: 'closed' } : null);
       
       toast({
         title: "Inquiry Closed",
@@ -215,8 +268,12 @@ export const InquiryDetail = () => {
     }
   };
 
-  if (!inquiry) {
+  if (isLoading) {
     return <div className="p-4">Loading...</div>;
+  }
+
+  if (!inquiry) {
+    return <div className="p-4">Inquiry not found.</div>;
   }
 
   return (
@@ -267,17 +324,17 @@ export const InquiryDetail = () => {
       </Card>
       
       {/* Replies */}
-      {inquiry.replies.length > 0 && (
+      {replies.length > 0 && (
         <div className="space-y-4 mt-6">
           <h3 className="text-lg font-medium">Replies</h3>
-          {inquiry.replies.map((reply) => (
+          {replies.map((reply) => (
             <Card key={reply.id} className={`${reply.userRole === "admin" ? "border-l-4 border-l-blue-500" : ""}`}>
               <CardHeader className="py-3">
                 <div className="flex justify-between items-center">
                   <CardTitle className="text-sm font-medium">
                     {reply.userName}
                     {reply.userRole === "admin" && (
-                      <Badge className="ml-2 bg-blue-500">Admin - {reply.userName}</Badge>
+                      <Badge className="ml-2 bg-blue-500">Admin</Badge>
                     )}
                   </CardTitle>
                   <span className="text-xs text-gray-500">
@@ -308,7 +365,7 @@ export const InquiryDetail = () => {
               <Button 
                 variant="outline" 
                 onClick={handleCloseInquiry}
-                disabled={isSubmitting}
+                disabled={isSubmitting || inquiry.status === "closed"}
               >
                 Close Inquiry
               </Button>

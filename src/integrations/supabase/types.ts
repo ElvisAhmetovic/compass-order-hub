@@ -294,6 +294,80 @@ export type Database = {
         }
         Relationships: []
       }
+      support_inquiries: {
+        Row: {
+          created_at: string | null
+          id: string
+          message: string
+          status: string
+          subject: string
+          updated_at: string | null
+          user_email: string
+          user_id: string
+          user_name: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          message: string
+          status?: string
+          subject: string
+          updated_at?: string | null
+          user_email: string
+          user_id: string
+          user_name: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          message?: string
+          status?: string
+          subject?: string
+          updated_at?: string | null
+          user_email?: string
+          user_id?: string
+          user_name?: string
+        }
+        Relationships: []
+      }
+      support_replies: {
+        Row: {
+          created_at: string | null
+          id: string
+          inquiry_id: string
+          message: string
+          user_id: string
+          user_name: string
+          user_role: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          inquiry_id: string
+          message: string
+          user_id: string
+          user_name: string
+          user_role: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          inquiry_id?: string
+          message?: string
+          user_id?: string
+          user_name?: string
+          user_role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_replies_inquiry_id_fkey"
+            columns: ["inquiry_id"]
+            isOneToOne: false
+            referencedRelation: "support_inquiries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_audit_logs: {
         Row: {
           action: string

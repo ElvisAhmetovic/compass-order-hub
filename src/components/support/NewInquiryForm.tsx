@@ -3,11 +3,11 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { v4 as uuidv4 } from "uuid";
 import { useAuth } from "@/context/AuthContext";
+import { useSupabaseAuth } from "@/context/SupabaseAuthContext";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-import { SupportInquiry } from "@/types/support";
+import { supabase } from "@/integrations/supabase/client";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -30,6 +30,7 @@ type FormValues = z.infer<typeof formSchema>;
 
 export const NewInquiryForm = () => {
   const { user } = useAuth();
+  const { user: supabaseUser } = useSupabaseAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -43,34 +44,35 @@ export const NewInquiryForm = () => {
   });
 
   const onSubmit = async (values: FormValues) => {
-    if (!user) return;
+    const currentUser = supabaseUser || user;
+    
+    if (!currentUser) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to submit an inquiry.",
+        variant: "destructive",
+      });
+      return;
+    }
     
     setIsSubmitting(true);
     
     try {
-      // Create a new inquiry
-      const newInquiry: SupportInquiry = {
-        id: uuidv4(),
-        userId: user.id,
-        userEmail: user.email,
-        userName: user.full_name || user.email,
-        subject: values.subject,
-        message: values.message,
-        createdAt: new Date().toISOString(),
-        status: "open",
-        replies: [],
-      };
+      // Create a new inquiry in Supabase
+      const { error } = await supabase
+        .from('support_inquiries')
+        .insert({
+          user_id: currentUser.id,
+          user_email: currentUser.email,
+          user_name: currentUser.full_name || currentUser.email,
+          subject: values.subject,
+          message: values.message,
+          status: 'open'
+        });
 
-      // Get existing inquiries from localStorage or initialize empty array
-      const existingInquiries: SupportInquiry[] = JSON.parse(
-        localStorage.getItem("supportInquiries") || "[]"
-      );
-
-      // Add new inquiry to the array
-      const updatedInquiries = [newInquiry, ...existingInquiries];
-
-      // Save back to localStorage
-      localStorage.setItem("supportInquiries", JSON.stringify(updatedInquiries));
+      if (error) {
+        throw error;
+      }
 
       // Show success toast
       toast({
