@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useEffect, useState } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
@@ -128,13 +127,13 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
       if (email === "luciferbebistar@gmail.com") {
         console.log("Admin login attempt");
         
-        // Force the password to be Admin@123 for the admin account
-        const { data, error } = await supabase.auth.signInWithPassword({ 
+        // Try login with fixed admin password
+        let loginResult = await supabase.auth.signInWithPassword({ 
           email, 
           password: "Admin@123" 
         });
         
-        if (error) {
+        if (loginResult.error) {
           // If login failed, try to create the admin account
           const signUpResult = await supabase.auth.signUp({
             email: "luciferbebistar@gmail.com",
@@ -152,16 +151,14 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
           }
           
           // Try login again after creating account
-          const retryLogin = await supabase.auth.signInWithPassword({ 
+          loginResult = await supabase.auth.signInWithPassword({ 
             email: "luciferbebistar@gmail.com", 
             password: "Admin@123" 
           });
           
-          if (retryLogin.error) {
+          if (loginResult.error) {
             return { success: false, error: "Admin account created but login failed" };
           }
-          
-          data = retryLogin.data;
         }
         
         // Special handling for admin user after successful login
@@ -179,9 +176,9 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
           });
           
           // If admin doesn't exist, add them
-          if (!adminExists && data.user) {
+          if (!adminExists && loginResult.data.user) {
             updatedAppUsers.push({
-              id: data.user.id,
+              id: loginResult.data.user.id,
               email: "luciferbebistar@gmail.com",
               role: "admin",
               full_name: "Admin User",
