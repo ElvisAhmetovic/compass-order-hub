@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Navigate, useNavigate, useLocation } from "react-router-dom";
 import { useSupabaseAuth } from "@/context/SupabaseAuthContext";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { authenticate } from "@/services/authService";
 
 export default function Auth() {
   const { user, signIn, signUp, isLoading } = useSupabaseAuth();
@@ -42,20 +43,32 @@ export default function Auth() {
     }
     
     try {
-      console.log("Login attempt with:", { email, password });
+      console.log("Login attempt with:", { email });
       
-      // Special case for admin credentials
-      if (email === "luciferbebistar@gmail.com" && password === "Admin@123") {
-        console.log("Admin credentials detected");
-      }
-      
+      // Try to authenticate with both systems
+      // First try Supabase
       const result = await signIn(email, password);
       
       if (!result.success) {
-        console.error("Login error:", result.error);
+        console.error("Supabase login error:", result.error);
+        
+        // If Supabase login fails, try legacy authentication
+        const legacyResult = await authenticate(email, password);
+        
+        if (legacyResult.success) {
+          console.log("Legacy login successful!");
+          toast({
+            title: "Login successful",
+            description: "Welcome back!"
+          });
+          navigate(from);
+          return;
+        }
+        
+        // If both fail, show error
         setError(result.error || "Login failed. Please check your credentials.");
       } else {
-        console.log("Login successful!");
+        console.log("Supabase login successful!");
         toast({
           title: "Login successful",
           description: "Welcome back!"
@@ -88,7 +101,7 @@ export default function Auth() {
     }
     
     try {
-      console.log("Register attempt with:", { email, password, fullName });
+      console.log("Register attempt with:", { email, fullName });
       const result = await signUp(email, password, fullName);
       
       if (!result.success) {
