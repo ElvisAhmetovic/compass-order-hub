@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import LoginForm from '@/components/auth/LoginForm';
+import { LoginForm } from '@/components/auth/LoginForm';
 
 const Login = () => {
   return (
@@ -10,7 +10,7 @@ const Login = () => {
         <h1 className="text-3xl font-bold text-center text-primary">Order Flow Compass</h1>
         <p className="text-center text-muted-foreground">Sign in to continue</p>
       </div>
-      <LoginForm />
+      <LoginForm redirectPath="/dashboard" />
       <div className="mt-4 text-sm text-center">
         Don't have an account?{" "}
         <Link to="/register" className="text-blue-600 hover:text-blue-800 hover:underline">

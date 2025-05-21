@@ -1,5 +1,5 @@
 
-import RegisterForm from "@/components/auth/RegisterForm";
+import { RegisterForm } from "@/components/auth/RegisterForm";
 
 const Register = () => {
   return (
@@ -8,7 +8,7 @@ const Register = () => {
         <h1 className="text-3xl font-bold text-center text-primary">Order Flow Compass</h1>
         <p className="text-center text-muted-foreground">Create a new account</p>
       </div>
-      <RegisterForm />
+      <RegisterForm onSuccess={() => {}} />
     </div>
   );
 };
