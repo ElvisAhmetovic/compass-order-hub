@@ -34,9 +34,19 @@ export default function Auth() {
       return;
     }
     
-    const result = await signIn(email, password);
-    if (!result.success) {
-      setError(result.error || "Login failed. Please check your credentials.");
+    try {
+      console.log("Login attempt with:", { email, password });
+      const result = await signIn(email, password);
+      
+      if (!result.success) {
+        console.error("Login error:", result.error);
+        setError(result.error || "Login failed. Please check your credentials.");
+      } else {
+        console.log("Login successful!");
+      }
+    } catch (error) {
+      console.error("Unexpected error during login:", error);
+      setError("An unexpected error occurred. Please try again.");
     }
   };
 
@@ -54,15 +64,24 @@ export default function Auth() {
       return;
     }
     
-    const result = await signUp(email, password, fullName);
-    if (!result.success) {
-      setError(result.error || "Registration failed. Please try again.");
-    } else {
-      toast({
-        title: "Account Created",
-        description: "Check your email for a confirmation link.",
-      });
-      setActiveTab("login");
+    try {
+      console.log("Register attempt with:", { email, password, fullName });
+      const result = await signUp(email, password, fullName);
+      
+      if (!result.success) {
+        console.error("Registration error:", result.error);
+        setError(result.error || "Registration failed. Please try again.");
+      } else {
+        console.log("Registration successful!");
+        toast({
+          title: "Account Created",
+          description: "Check your email for a confirmation link.",
+        });
+        setActiveTab("login");
+      }
+    } catch (error) {
+      console.error("Unexpected error during registration:", error);
+      setError("An unexpected error occurred. Please try again.");
     }
   };
 

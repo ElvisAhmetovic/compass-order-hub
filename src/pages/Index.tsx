@@ -9,6 +9,7 @@ const Index = () => {
 
   useEffect(() => {
     if (!isLoading) {
+      console.log("Index: User authentication status:", user ? "Authenticated" : "Not authenticated");
       if (user) {
         navigate("/dashboard");
       } else {
