@@ -58,13 +58,16 @@ export const NewInquiryForm = () => {
     setIsSubmitting(true);
     
     try {
+      // Extract user display name - check multiple possible properties
+      const userName = currentUser.full_name || currentUser.name || currentUser.email;
+      
       // Create a new inquiry in Supabase
       const { error } = await supabase
         .from('support_inquiries')
         .insert({
           user_id: currentUser.id,
           user_email: currentUser.email,
-          user_name: currentUser.full_name || currentUser.email,
+          user_name: userName,
           subject: values.subject,
           message: values.message,
           status: 'open'

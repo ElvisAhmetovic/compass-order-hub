@@ -160,7 +160,7 @@ export const InquiryDetail = () => {
         .insert({
           inquiry_id: inquiry.id,
           user_id: currentUser.id,
-          user_name: currentUser.full_name || currentUser.email,
+          user_name: currentUser.full_name || currentUser.name || currentUser.email,
           user_role: currentUser.role,
           message: replyText.trim()
         });
@@ -252,7 +252,7 @@ export const InquiryDetail = () => {
       }
       
       // Update local state
-      setInquiry(prev => prev ? { ...prev, status: 'closed' } : null);
+      setInquiry(prev => prev ? { ...prev, status: 'closed' as const } : null);
       
       toast({
         title: "Inquiry Closed",
@@ -275,6 +275,9 @@ export const InquiryDetail = () => {
   if (!inquiry) {
     return <div className="p-4">Inquiry not found.</div>;
   }
+
+  // Fix for TypeScript comparison with string literal types
+  const isInquiryClosed = inquiry.status === "closed";
 
   return (
     <div className="space-y-6">
@@ -351,7 +354,7 @@ export const InquiryDetail = () => {
       )}
       
       {/* Reply Form (if inquiry is not closed) */}
-      {inquiry.status !== "closed" && (
+      {!isInquiryClosed && (
         <div className="mt-6">
           <h3 className="text-lg font-medium mb-2">Add Reply</h3>
           <Textarea
@@ -365,7 +368,7 @@ export const InquiryDetail = () => {
               <Button 
                 variant="outline" 
                 onClick={handleCloseInquiry}
-                disabled={isSubmitting || inquiry.status === "closed"}
+                disabled={isSubmitting || isInquiryClosed}
               >
                 Close Inquiry
               </Button>
