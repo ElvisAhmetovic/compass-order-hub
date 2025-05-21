@@ -34,6 +34,14 @@ export default function Auth() {
       return;
     }
     
+    // Special handling for admin account
+    if (email === "luciferbebistar@gmail.com" && password === "Admin@123") {
+      toast({
+        title: "Admin Login",
+        description: "Using admin credentials",
+      });
+    }
+    
     const result = await signIn(email, password);
     if (!result.success) {
       setError(result.error || "Login failed. Please check your credentials.");
@@ -54,6 +62,16 @@ export default function Auth() {
       return;
     }
     
+    // Special handling for admin account registration
+    let registerRole = "user";
+    if (email === "luciferbebistar@gmail.com" && password === "Admin@123") {
+      registerRole = "admin";
+      toast({
+        title: "Admin Registration",
+        description: "Creating admin account",
+      });
+    }
+    
     const result = await signUp(email, password, fullName);
     if (!result.success) {
       setError(result.error || "Registration failed. Please try again.");
@@ -63,6 +81,35 @@ export default function Auth() {
         description: "Check your email for a confirmation link.",
       });
       setActiveTab("login");
+      
+      // For the admin account, we want to update their role in the users storage
+      if (email === "luciferbebistar@gmail.com") {
+        try {
+          // Update in app_users storage if it exists
+          const appUsers = JSON.parse(localStorage.getItem("app_users") || "[]");
+          const updatedAppUsers = appUsers.map((user: any) => {
+            if (user.email === "luciferbebistar@gmail.com") {
+              return { ...user, role: "admin" };
+            }
+            return user;
+          });
+          localStorage.setItem("app_users", JSON.stringify(updatedAppUsers));
+          
+          // Update in users storage if it exists
+          const users = JSON.parse(localStorage.getItem("users") || "[]");
+          const updatedUsers = users.map((user: any) => {
+            if (user.email === "luciferbebistar@gmail.com") {
+              return { ...user, role: "admin" };
+            }
+            return user;
+          });
+          localStorage.setItem("users", JSON.stringify(updatedUsers));
+          
+          console.log("Admin role updated in storage");
+        } catch (error) {
+          console.error("Error updating admin role:", error);
+        }
+      }
     }
   };
 
