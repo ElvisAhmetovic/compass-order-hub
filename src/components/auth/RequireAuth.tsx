@@ -2,14 +2,19 @@
 import { ReactNode, useEffect } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
+import { useSupabaseAuth } from '@/context/SupabaseAuthContext';
 
 interface RequireAuthProps {
   children: ReactNode;
 }
 
 export const RequireAuth = ({ children }: RequireAuthProps) => {
-  const { user, isLoading } = useAuth();
+  const { user: localUser, isLoading: localLoading } = useAuth();
+  const { user: supabaseUser, isLoading: supabaseLoading } = useSupabaseAuth();
   const location = useLocation();
+  
+  const isLoading = localLoading || supabaseLoading;
+  const user = supabaseUser || localUser;
 
   if (isLoading) {
     return (
@@ -20,8 +25,8 @@ export const RequireAuth = ({ children }: RequireAuthProps) => {
   }
 
   if (!user) {
-    // Redirect to login page but save the location they were trying to access
-    return <Navigate to="/login" state={{ from: location.pathname }} replace />;
+    // Redirect to auth page but save the location they were trying to access
+    return <Navigate to="/auth" state={{ from: location.pathname }} replace />;
   }
 
   return <>{children}</>;

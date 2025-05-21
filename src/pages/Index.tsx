@@ -1,15 +1,21 @@
 
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useSupabaseAuth } from "@/context/SupabaseAuthContext";
 
 const Index = () => {
   const navigate = useNavigate();
+  const { user, isLoading } = useSupabaseAuth();
 
   useEffect(() => {
-    // For now, just redirect to login page
-    // In a real app with Supabase integration, we would check authentication status
-    navigate("/login");
-  }, [navigate]);
+    if (!isLoading) {
+      if (user) {
+        navigate("/dashboard");
+      } else {
+        navigate("/auth");
+      }
+    }
+  }, [user, isLoading, navigate]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
