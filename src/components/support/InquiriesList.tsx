@@ -30,7 +30,7 @@ export const InquiriesList = ({ showAll = false }: InquiriesListProps) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const isAdmin = user?.role === "admin" || user?.role === "owner";
+  const isAdmin = user?.role === "admin"; // Fixed comparison - only check for "admin" role
 
   useEffect(() => {
     loadInquiries();

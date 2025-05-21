@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
@@ -31,7 +30,7 @@ export const InquiryDetail = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const isAdmin = user?.role === "admin" || user?.role === "owner";
+  const isAdmin = user?.role === "admin"; // Fixed comparison - only check for "admin" role
 
   useEffect(() => {
     if (!inquiryId) return;
