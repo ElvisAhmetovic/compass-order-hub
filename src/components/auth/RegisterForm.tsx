@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -81,16 +82,29 @@ const RegisterForm = () => {
         return;
       }
 
+      const userId = crypto.randomUUID();
+      
+      // Add user to authentication storage
       users.push({
-        id: crypto.randomUUID(),
+        id: userId,
         fullName,
         email,
         username,
         // ⚠️ store a real hash in production
         passwordHash: btoa(password)        // base-64 "hash" for demo only
       });
-
       localStorage.setItem("users", JSON.stringify(users));
+      
+      // Also add user to app_users for user management
+      const appUsers = JSON.parse(localStorage.getItem("app_users") || "[]");
+      appUsers.push({
+        id: userId,
+        email: email,
+        full_name: fullName,
+        role: "user", // Default role for new registrations
+        created_at: new Date().toISOString()
+      });
+      localStorage.setItem("app_users", JSON.stringify(appUsers));
       
       toast({
         title: "Registration successful",
@@ -233,3 +247,4 @@ const RegisterForm = () => {
 };
 
 export default RegisterForm;
+

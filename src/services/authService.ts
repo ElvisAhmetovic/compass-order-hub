@@ -1,4 +1,3 @@
-
 /**
  * Authenticates a user with email/username and password
  * 
@@ -27,12 +26,20 @@ export const authenticate = async (identifier: string, password: string) => {
       };
     }
     
+    // Get the user role from app_users if available
+    let userRole = "user";
+    const appUsers = JSON.parse(localStorage.getItem("app_users") || "[]");
+    const appUser = appUsers.find((u: any) => u.id === user.id || u.email === user.email);
+    if (appUser && appUser.role) {
+      userRole = appUser.role;
+    }
+    
     // Set user session
     localStorage.setItem("userSession", JSON.stringify({
       id: user.id,
       email: user.email,
-      role: user.role,
-      full_name: user.full_name
+      role: userRole,
+      full_name: user.fullName
     }));
     
     return {
@@ -40,8 +47,8 @@ export const authenticate = async (identifier: string, password: string) => {
       user: {
         id: user.id,
         email: user.email,
-        role: user.role,
-        full_name: user.full_name
+        role: userRole,
+        full_name: user.fullName
       }
     };
   } catch (error) {

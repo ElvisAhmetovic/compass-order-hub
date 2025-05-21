@@ -16,11 +16,50 @@ const UserManagement = () => {
   const { toast } = useToast();
   const { user: currentUser } = useAuth();
   
+  // Helper function to synchronize users from auth storage with app_users
+  const syncUsersFromAuth = () => {
+    try {
+      const authUsers = JSON.parse(localStorage.getItem("users") || "[]");
+      const appUsers = JSON.parse(localStorage.getItem("app_users") || "[]");
+      
+      let updated = false;
+      
+      // Check for any auth users not in app_users
+      authUsers.forEach((authUser: any) => {
+        const existingUser = appUsers.find((u: User) => u.id === authUser.id || u.email === authUser.email);
+        
+        if (!existingUser) {
+          // Add missing user to app_users
+          appUsers.push({
+            id: authUser.id,
+            email: authUser.email,
+            full_name: authUser.fullName || "No Name",
+            role: "user", // Default role
+            created_at: new Date().toISOString()
+          });
+          updated = true;
+        }
+      });
+      
+      if (updated) {
+        localStorage.setItem("app_users", JSON.stringify(appUsers));
+      }
+      
+      return appUsers;
+    } catch (error) {
+      console.error("Error syncing users:", error);
+      return null;
+    }
+  };
+  
   // Load users from localStorage on component mount
   useEffect(() => {
     const loadUsers = () => {
       setIsLoading(true);
       try {
+        // Sync users first
+        const syncedUsers = syncUsersFromAuth();
+        
         // Get users from localStorage
         const storedUsers = localStorage.getItem("app_users");
         if (storedUsers) {
