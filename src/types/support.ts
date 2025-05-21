@@ -8,7 +8,6 @@ export interface SupportInquiry {
   message: string;
   createdAt: string;
   status: "open" | "replied" | "closed";
-  updated_at?: string;
 }
 
 export interface SupportReply {

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
@@ -159,7 +160,7 @@ export const InquiryDetail = () => {
         .insert({
           inquiry_id: inquiry.id,
           user_id: currentUser.id,
-          user_name: currentUser.full_name || currentUser.email || (currentUser as any).name || 'User',
+          user_name: currentUser.email || 'User',
           user_role: currentUser.role,
           message: replyText.trim()
         });
