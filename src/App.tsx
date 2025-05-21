@@ -91,7 +91,7 @@ function App() {
             path="/companies"
             element={
               <RequireAuth>
-                <AuthGuard requiredRoles={["admin"]}>
+                <AuthGuard requiredRoles={["admin", "owner"]}>
                   <Companies />
                 </AuthGuard>
               </RequireAuth>

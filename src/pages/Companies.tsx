@@ -24,6 +24,7 @@ interface Company {
   email: string;
   phone: string;
   address: string;
+  mapLink?: string; // Added custom map link field
   orders: Order[];
 }
 
@@ -38,12 +39,12 @@ const Companies = () => {
   const [currentCompany, setCurrentCompany] = useState<string>("");
   const [editFormData, setEditFormData] = useState<Company | null>(null);
   
-  // Check if user is admin
-  const isAdmin = user?.role === "admin";
+  // Check if user is admin or owner
+  const hasAccess = user?.role === "admin" || user?.role === "owner";
   
-  // Redirect non-admin users
+  // Redirect users without access
   useEffect(() => {
-    if (user && user.role !== "admin") {
+    if (user && !hasAccess) {
       navigate("/dashboard");
       toast({
         title: "Access Denied",
@@ -51,7 +52,7 @@ const Companies = () => {
         variant: "destructive"
       });
     }
-  }, [user, navigate, toast]);
+  }, [user, navigate, toast, hasAccess]);
   
   useEffect(() => {
     // Load companies from orders
@@ -102,9 +103,11 @@ const Companies = () => {
     company.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
   
-  const getGoogleMapsLink = (address: string) => {
-    if (address === "Not provided") return "#";
-    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
+  const getGoogleMapsLink = (company: Company) => {
+    // Use custom map link if available, otherwise generate from address
+    if (company.mapLink) return company.mapLink;
+    if (company.address === "Not provided") return "#";
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(company.address)}`;
   };
 
   const openEditDialog = (companyKey: string) => {
@@ -170,7 +173,7 @@ const Companies = () => {
     }
   };
 
-  if (!isAdmin) {
+  if (!hasAccess) {
     return null; // Return null while redirecting
   }
 
@@ -207,14 +210,16 @@ const Companies = () => {
                           <Building2 className="h-5 w-5 text-primary" />
                           <h3 className="font-semibold text-lg">{company.name}</h3>
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => openEditDialog(key)}
-                        >
-                          <Edit2 className="h-4 w-4" />
-                          <span className="sr-only">Edit company</span>
-                        </Button>
+                        {hasAccess && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => openEditDialog(key)}
+                          >
+                            <Edit2 className="h-4 w-4" />
+                            <span className="sr-only">Edit company</span>
+                          </Button>
+                        )}
                       </div>
                       
                       <Separator className="my-4" />
@@ -238,7 +243,7 @@ const Companies = () => {
                         <div className="flex items-center space-x-2">
                           <Link className="h-4 w-4 text-muted-foreground" />
                           <a 
-                            href={getGoogleMapsLink(company.address)} 
+                            href={getGoogleMapsLink(company)} 
                             target="_blank" 
                             rel="noopener noreferrer"
                             className="text-primary hover:underline"
@@ -315,6 +320,20 @@ const Companies = () => {
                       value={editFormData.address}
                       onChange={handleInputChange}
                     />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label htmlFor="mapLink" className="text-sm font-medium">Google Maps Link (optional)</label>
+                    <Input
+                      id="mapLink"
+                      name="mapLink"
+                      value={editFormData.mapLink || ''}
+                      onChange={handleInputChange}
+                      placeholder="https://www.google.com/maps/..."
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      If left empty, link will be generated from the address
+                    </p>
                   </div>
                 </div>
               )}
