@@ -24,15 +24,8 @@ export function useSupabaseRegister() {
         console.log("Creating admin account");
       }
       
-      // Check if user already exists
-      const { data: existingUser, error: checkError } = await supabase.auth.admin
-        .listUsers({ 
-          filter: { email: cleanEmail },
-          perPage: 1
-        })
-        .catch(() => ({ data: null, error: null }));
-        
-      console.log("Existing user check:", existingUser);
+      // Check if user already exists - removed invalid API call
+      // Instead, we'll rely on Supabase's error response if the user exists
       
       // Sign up the user
       const { data, error } = await supabase.auth.signUp({ 
