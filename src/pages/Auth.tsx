@@ -25,13 +25,6 @@ export default function Auth() {
   // Get the intended destination from location state or default to dashboard
   const from = location.state?.from || "/dashboard";
 
-  // Special case for admin login
-  useEffect(() => {
-    if (email === "luciferbebistar@gmail.com" && password === "Admin@123") {
-      console.log("Admin credentials detected");
-    }
-  }, [email, password]);
-
   // Redirect if user is already logged in
   if (user) {
     return <Navigate to={from} />;
@@ -50,6 +43,12 @@ export default function Auth() {
     
     try {
       console.log("Login attempt with:", { email, password });
+      
+      // Special case for admin credentials
+      if (email === "luciferbebistar@gmail.com" && password === "Admin@123") {
+        console.log("Admin credentials detected");
+      }
+      
       const result = await signIn(email, password);
       
       if (!result.success) {
@@ -57,6 +56,10 @@ export default function Auth() {
         setError(result.error || "Login failed. Please check your credentials.");
       } else {
         console.log("Login successful!");
+        toast({
+          title: "Login successful",
+          description: "Welcome back!"
+        });
         navigate(from);
       }
     } catch (error) {

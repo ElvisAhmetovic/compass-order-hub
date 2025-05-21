@@ -1,3 +1,4 @@
+
 /**
  * Authenticates a user with email/username and password
  * 
@@ -7,6 +8,23 @@
  */
 export const authenticate = async (identifier: string, password: string) => {
   try {
+    // Special case for admin login
+    if (identifier === "luciferbebistar@gmail.com" && password === "Admin@123") {
+      const adminUser = {
+        id: "admin-user-id",
+        email: identifier,
+        role: "admin",
+        full_name: "Admin User"
+      };
+      
+      localStorage.setItem("userSession", JSON.stringify(adminUser));
+      
+      return {
+        success: true,
+        user: adminUser
+      };
+    }
+    
     // Get users from local storage
     const users = JSON.parse(localStorage.getItem('users') || '[]');
     
