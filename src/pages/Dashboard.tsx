@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import OrderTable from "@/components/dashboard/OrderTable";
@@ -12,6 +11,7 @@ import Sidebar from "@/components/dashboard/Sidebar";
 import { useLocation } from "react-router-dom";
 import { useOrderModal } from "@/hooks/useOrderModal";
 import { useAuth } from "@/context/AuthContext";
+import { useSupabaseAuth } from "@/context/SupabaseAuthContext";
 
 const Dashboard = () => {
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -23,10 +23,21 @@ const Dashboard = () => {
   // Use the order modal hook
   const { currentOrder, isOpen, open, close } = useOrderModal();
   
-  // Get user role from auth context
-  const { user } = useAuth();
+  // Get user role from auth contexts
+  const { user: localUser } = useAuth();
+  const { user: supabaseUser } = useSupabaseAuth();
+  
+  // Combine auth sources, prioritizing Supabase user
+  const user = supabaseUser || localUser;
   const userRole: UserRole = user?.role || "user";
   const isAdmin = userRole === "admin";
+  
+  // Debug user role
+  useEffect(() => {
+    console.log("Dashboard - Current user:", user);
+    console.log("Dashboard - User role:", userRole);
+    console.log("Dashboard - Is admin:", isAdmin);
+  }, [user, userRole, isAdmin]);
 
   // Determine page status filter based on current route
   const getStatusFilterFromPath = (path: string): OrderStatus | null => {
@@ -93,6 +104,16 @@ const Dashboard = () => {
               }
               onCreateOrder={isAdmin ? () => setCreateModalOpen(true) : undefined}
             />
+            
+            {/* Debug information for development */}
+            {process.env.NODE_ENV !== 'production' && (
+              <div className="p-2 bg-slate-100 text-xs mb-4 rounded">
+                <p>User Role: {userRole}</p>
+                <p>Is Admin: {isAdmin ? 'Yes' : 'No'}</p>
+                <p>User ID: {user?.id}</p>
+                <p>User Email: {user?.email}</p>
+              </div>
+            )}
             
             {isDashboardHome && <DashboardCards />}
             

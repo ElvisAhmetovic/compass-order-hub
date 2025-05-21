@@ -45,7 +45,47 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
     };
   };
 
+  // Special helper function to check for admin user in localStorage
+  const checkForAdminSession = () => {
+    try {
+      const userSession = localStorage.getItem("userSession");
+      if (userSession) {
+        const parsedSession = JSON.parse(userSession);
+        if (parsedSession.email === "luciferbebistar@gmail.com" && parsedSession.role === "admin") {
+          // Create a custom user object that mimics the structure expected by components
+          const adminUser = {
+            id: parsedSession.id,
+            email: parsedSession.email,
+            role: "admin",
+            full_name: parsedSession.full_name || "Admin User",
+            user_metadata: {
+              role: "admin",
+              full_name: parsedSession.full_name || "Admin User"
+            }
+          } as ExtendedUser;
+          
+          return adminUser;
+        }
+      }
+      return null;
+    } catch (e) {
+      console.error("Error checking for admin session:", e);
+      return null;
+    }
+  };
+
   useEffect(() => {
+    // Check for admin session in localStorage first
+    const adminUser = checkForAdminSession();
+    if (adminUser) {
+      console.log("Found admin user in localStorage:", adminUser);
+      setUser(adminUser);
+      // For admin users, we don't have a real session, but we can create a dummy one
+      setSession({ user: adminUser } as Session);
+      setIsLoading(false);
+      return;
+    }
+    
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, currentSession) => {
@@ -102,13 +142,25 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
         
         localStorage.setItem("userSession", JSON.stringify(adminUser));
         
-        // Set the user in our context
-        setUser(adminUser as any);
+        // Set the user in our context with proper metadata
+        const enhancedAdminUser = {
+          ...adminUser,
+          user_metadata: {
+            role: "admin",
+            full_name: "Admin User"
+          }
+        } as ExtendedUser;
+        
+        setUser(enhancedAdminUser);
+        // Create a pseudo-session for consistency
+        setSession({ user: enhancedAdminUser } as Session);
         
         toast({
           title: "Admin Login",
           description: "Welcome back, Administrator!",
         });
+        
+        console.log("Admin login successful, user set to:", enhancedAdminUser);
         
         return { success: true };
       }

@@ -1,4 +1,3 @@
-
 import { NavLink } from "react-router-dom";
 import {
   Home,
@@ -16,12 +15,26 @@ import {
 } from "lucide-react";
 import { LogoutButton } from "@/components/auth/LogoutButton";
 import { useAuth } from "@/context/AuthContext";
+import { useSupabaseAuth } from "@/context/SupabaseAuthContext";
 import { Badge } from "@/components/ui/badge";
+import { useEffect } from "react";
 
 const Sidebar = () => {
-  const { user } = useAuth();
+  // Combine both auth contexts
+  const { user: localUser } = useAuth();
+  const { user: supabaseUser } = useSupabaseAuth();
+  
+  // Use whichever user object is available, prioritizing Supabase
+  const user = supabaseUser || localUser;
   const isAdmin = user?.role === "admin";
   const isAgent = user?.role === "agent";
+
+  // Debug logging
+  useEffect(() => {
+    console.log("Sidebar - Current user:", user);
+    console.log("Sidebar - User role:", user?.role);
+    console.log("Sidebar - Is admin:", isAdmin);
+  }, [user, isAdmin]);
 
   // Define navigation items based on user role
   const getNavItems = () => {
@@ -63,6 +76,14 @@ const Sidebar = () => {
 
   return (
     <aside className="w-64 bg-white border-r h-screen sticky top-0 flex flex-col">
+      {/* Debug info (will only show in development) */}
+      {process.env.NODE_ENV !== 'production' && (
+        <div className="p-2 bg-amber-100 text-xs">
+          <p>Role: {user?.role || 'none'}</p>
+          <p>Admin: {isAdmin ? 'Yes' : 'No'}</p>
+        </div>
+      )}
+      
       <nav className="p-4 space-y-1 flex-1">
         {navItems.map((item) => (
           <NavLink

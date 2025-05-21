@@ -16,6 +16,13 @@ export const RequireAuth = ({ children }: RequireAuthProps) => {
   const isLoading = localLoading || supabaseLoading;
   const user = supabaseUser || localUser;
 
+  useEffect(() => {
+    if (user) {
+      console.log("Authenticated user:", user);
+      console.log("User role:", user.role);
+    }
+  }, [user]);
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
