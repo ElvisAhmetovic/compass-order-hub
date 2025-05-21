@@ -38,9 +38,12 @@ export default function LoginForm({ onToggleForm }: LoginFormProps) {
       console.log(`Attempting to log in with: ${email}`);
       
       const result = await signIn(email, password);
+      console.log("Sign in result:", result);
+      
       if (!result.success) {
         setError(result.error || "Login failed. Please check your credentials.");
       } else {
+        console.log("Login successful, navigating to dashboard");
         navigate("/dashboard");
       }
     } catch (error) {

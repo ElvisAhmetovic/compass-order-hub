@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useSupabaseAuth } from "@/context/SupabaseAuthContext";
 import LoginForm from "@/components/auth/LoginForm";
@@ -13,6 +13,10 @@ export default function Auth() {
   const { toast } = useToast();
   const location = useLocation();
 
+  useEffect(() => {
+    console.log("Auth component rendered, user:", user, "isLoading:", isLoading);
+  }, [user, isLoading]);
+
   // Show loading state
   if (isLoading) {
     return (
@@ -24,6 +28,7 @@ export default function Auth() {
 
   // Redirect if user is already logged in
   if (user) {
+    console.log("User is authenticated, redirecting");
     // Redirect to the page they were trying to access or dashboard
     const from = (location.state as { from?: string })?.from || "/dashboard";
     return <Navigate to={from} />;

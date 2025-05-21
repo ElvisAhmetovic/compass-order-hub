@@ -13,6 +13,7 @@ export function useSupabaseLogin() {
       
       // Clean up email for consistency
       const cleanEmail = email.toLowerCase().trim();
+      console.log(`Attempting login with email: ${cleanEmail}`);
       
       // Special handling for admin user
       if (cleanEmail === "luciferbebistar@gmail.com") {
@@ -25,7 +26,7 @@ export function useSupabaseLogin() {
         });
         
         if (!error) {
-          console.log("Admin login successful");
+          console.log("Admin login successful", data);
           
           // Update app_users storage to ensure admin role
           try {
@@ -45,6 +46,11 @@ export function useSupabaseLogin() {
             }
             
             localStorage.setItem("app_users", JSON.stringify(appUsers));
+            
+            toast({
+              title: "Admin login successful",
+              description: "Welcome back, admin!",
+            });
           } catch (error) {
             console.error("Error updating admin in localStorage", error);
           }
@@ -57,10 +63,13 @@ export function useSupabaseLogin() {
         return { success: false, error: error.message };
       } else {
         // Regular user login
+        console.log("Regular user login attempt");
         const { data, error } = await supabase.auth.signInWithPassword({ 
           email: cleanEmail, 
           password 
         });
+        
+        console.log("Login response:", data, error);
         
         if (error) {
           console.error("Login error:", error);
