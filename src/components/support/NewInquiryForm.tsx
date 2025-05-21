@@ -59,13 +59,24 @@ export const NewInquiryForm = () => {
     
     try {
       // Get user display name with fallbacks
-      // First check user_metadata, then direct properties, then use email
-      const userName = 
-        (currentUser.user_metadata?.full_name) || 
-        (currentUser.user_metadata?.name) || 
-        currentUser.full_name || 
-        currentUser.name || 
-        currentUser.email;
+      // Handle different user objects structures safely
+      let userName = currentUser.email; // Default to email
+      
+      // Check for metadata in Supabase User object
+      if ('user_metadata' in currentUser && currentUser.user_metadata) {
+        userName = currentUser.user_metadata.full_name || 
+                  currentUser.user_metadata.name || 
+                  userName;
+      }
+      
+      // Check for direct properties (Auth Context User)
+      if ('full_name' in currentUser && typeof currentUser.full_name === 'string') {
+        userName = currentUser.full_name || userName;
+      }
+      
+      if ('name' in currentUser && typeof currentUser.name === 'string') {
+        userName = userName === currentUser.email ? currentUser.name : userName;
+      }
       
       // Create a new inquiry in Supabase
       const { error } = await supabase

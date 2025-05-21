@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
@@ -155,13 +154,43 @@ export const InquiryDetail = () => {
     setIsSubmitting(true);
     
     try {
+      // Get user display name with fallbacks
+      let userName = currentUser.email; // Default to email
+      let userRole = 'user'; // Default role
+      
+      // Check for metadata in Supabase User object
+      if ('user_metadata' in currentUser && currentUser.user_metadata) {
+        if (currentUser.user_metadata.full_name) {
+          userName = currentUser.user_metadata.full_name;
+        } else if (currentUser.user_metadata.name) {
+          userName = currentUser.user_metadata.name;
+        }
+        
+        if (currentUser.user_metadata.role) {
+          userRole = currentUser.user_metadata.role;
+        }
+      }
+      
+      // Check for direct properties (Auth Context User)
+      if ('full_name' in currentUser && typeof currentUser.full_name === 'string') {
+        userName = currentUser.full_name || userName;
+      }
+      
+      if ('name' in currentUser && typeof currentUser.name === 'string') {
+        userName = userName === currentUser.email ? currentUser.name : userName;
+      }
+      
+      if ('role' in currentUser && typeof currentUser.role === 'string') {
+        userRole = currentUser.role;
+      }
+      
       const { error } = await supabase
         .from('support_replies')
         .insert({
           inquiry_id: inquiry.id,
           user_id: currentUser.id,
-          user_name: currentUser.full_name || currentUser.name || currentUser.email,
-          user_role: currentUser.role,
+          user_name: userName,
+          user_role: userRole,
           message: replyText.trim()
         });
       
