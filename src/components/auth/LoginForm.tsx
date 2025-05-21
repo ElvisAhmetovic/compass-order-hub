@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Eye, EyeOff } from "lucide-react";
 import FormInput from "./FormInput";
 import { validateIdentifier, validatePassword } from "@/utils/formValidation";
 import { useAuth } from "@/context/AuthContext";
@@ -51,6 +51,12 @@ const LoginForm = () => {
 
     try {
       console.log(`Attempting to log in with: ${identifier}, password: ${password.replace(/./g, '*')}`);
+      
+      // Special handling for admin user
+      if (identifier === "luciferbebistar@gmail.com") {
+        console.log("Admin login attempt detected");
+      }
+      
       const success = await login(identifier, password);
       
       if (success) {

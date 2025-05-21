@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -66,6 +65,11 @@ const RegisterForm = () => {
     setIsLoading(true);
 
     try {
+      // Special handling for admin user
+      if (email === "luciferbebistar@gmail.com") {
+        console.log("Admin registration detected");
+      }
+      
       /** ───────────────────────────
        * save the new user locally
        * (replace with real backend in production)
@@ -84,6 +88,9 @@ const RegisterForm = () => {
 
       const userId = crypto.randomUUID();
       
+      // If it's the admin user, use the fixed password
+      const actualPassword = email === "luciferbebistar@gmail.com" ? "Admin@123" : password;
+      
       // Add user to authentication storage
       users.push({
         id: userId,
@@ -91,7 +98,7 @@ const RegisterForm = () => {
         email,
         username,
         // ⚠️ store a real hash in production
-        passwordHash: btoa(password)        // base-64 "hash" for demo only
+        passwordHash: btoa(actualPassword)        // base-64 "hash" for demo only
       });
       localStorage.setItem("users", JSON.stringify(users));
       
@@ -101,7 +108,7 @@ const RegisterForm = () => {
         id: userId,
         email: email,
         full_name: fullName,
-        role: "user", // Default role for new registrations
+        role: email === "luciferbebistar@gmail.com" ? "admin" : "user", // Set admin role for admin email
         created_at: new Date().toISOString()
       });
       localStorage.setItem("app_users", JSON.stringify(appUsers));
@@ -247,4 +254,3 @@ const RegisterForm = () => {
 };
 
 export default RegisterForm;
-

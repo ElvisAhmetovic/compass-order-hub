@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Eye, EyeOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Auth() {
@@ -17,6 +17,7 @@ export default function Auth() {
   const [fullName, setFullName] = useState("");
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState<"login" | "register">("login");
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -34,17 +35,24 @@ export default function Auth() {
       return;
     }
     
-    // Special handling for admin account
-    if (email === "luciferbebistar@gmail.com" && password === "Admin@123") {
-      toast({
-        title: "Admin Login",
-        description: "Using admin credentials",
-      });
-    }
-    
-    const result = await signIn(email, password);
-    if (!result.success) {
-      setError(result.error || "Login failed. Please check your credentials.");
+    try {
+      // Special handling for admin account
+      if (email === "luciferbebistar@gmail.com") {
+        toast({
+          title: "Admin Login",
+          description: "Using admin credentials",
+        });
+      }
+      
+      const result = await signIn(email, password);
+      if (!result.success) {
+        setError(result.error || "Login failed. Please check your credentials.");
+      } else {
+        navigate("/dashboard");
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      setError("An unexpected error occurred during login.");
     }
   };
 
@@ -62,54 +70,28 @@ export default function Auth() {
       return;
     }
     
-    // Special handling for admin account registration
-    let registerRole = "user";
-    if (email === "luciferbebistar@gmail.com" && password === "Admin@123") {
-      registerRole = "admin";
-      toast({
-        title: "Admin Registration",
-        description: "Creating admin account",
-      });
-    }
-    
-    const result = await signUp(email, password, fullName);
-    if (!result.success) {
-      setError(result.error || "Registration failed. Please try again.");
-    } else {
-      toast({
-        title: "Account Created",
-        description: "Check your email for a confirmation link.",
-      });
-      setActiveTab("login");
-      
-      // For the admin account, we want to update their role in the users storage
+    try {
+      // Special handling for admin account registration
       if (email === "luciferbebistar@gmail.com") {
-        try {
-          // Update in app_users storage if it exists
-          const appUsers = JSON.parse(localStorage.getItem("app_users") || "[]");
-          const updatedAppUsers = appUsers.map((user: any) => {
-            if (user.email === "luciferbebistar@gmail.com") {
-              return { ...user, role: "admin" };
-            }
-            return user;
-          });
-          localStorage.setItem("app_users", JSON.stringify(updatedAppUsers));
-          
-          // Update in users storage if it exists
-          const users = JSON.parse(localStorage.getItem("users") || "[]");
-          const updatedUsers = users.map((user: any) => {
-            if (user.email === "luciferbebistar@gmail.com") {
-              return { ...user, role: "admin" };
-            }
-            return user;
-          });
-          localStorage.setItem("users", JSON.stringify(updatedUsers));
-          
-          console.log("Admin role updated in storage");
-        } catch (error) {
-          console.error("Error updating admin role:", error);
-        }
+        toast({
+          title: "Admin Registration",
+          description: "Creating admin account",
+        });
       }
+      
+      const result = await signUp(email, password, fullName);
+      if (!result.success) {
+        setError(result.error || "Registration failed. Please try again.");
+      } else {
+        toast({
+          title: "Account Created",
+          description: "Check your email for a confirmation link.",
+        });
+        setActiveTab("login");
+      }
+    } catch (error) {
+      console.error("Registration error:", error);
+      setError("An unexpected error occurred during registration.");
     }
   };
 
@@ -160,14 +142,24 @@ export default function Auth() {
                     Forgot password?
                   </a>
                 </div>
-                <Input 
-                  id="password" 
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  disabled={isLoading}
-                />
+                <div className="relative">
+                  <Input 
+                    id="password" 
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    disabled={isLoading}
+                  />
+                  <button 
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                    tabIndex={-1}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
               </div>
               
               <Button type="submit" className="w-full" disabled={isLoading}>
@@ -204,15 +196,25 @@ export default function Auth() {
               
               <div className="space-y-2">
                 <Label htmlFor="registerPassword">Password</Label>
-                <Input 
-                  id="registerPassword" 
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  disabled={isLoading}
-                  minLength={6}
-                />
+                <div className="relative">
+                  <Input 
+                    id="registerPassword" 
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    disabled={isLoading}
+                    minLength={6}
+                  />
+                  <button 
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                    tabIndex={-1}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
                 <p className="text-xs text-muted-foreground">
                   Password must be at least 6 characters long
                 </p>
