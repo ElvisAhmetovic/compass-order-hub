@@ -55,6 +55,14 @@ function App() {
             }
           />
           <Route
+            path="/resolved"
+            element={
+              <RequireAuth>
+                <Dashboard />
+              </RequireAuth>
+            }
+          />
+          <Route
             path="/cancelled"
             element={
               <RequireAuth>

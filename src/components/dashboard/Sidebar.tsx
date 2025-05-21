@@ -28,6 +28,7 @@ const Sidebar = () => {
       { icon: Home, label: "Active Orders", path: "/active-orders" },
       { icon: XCircle, label: "Complaints", path: "/complaints" },
       { icon: CheckCircle, label: "Completed", path: "/completed" },
+      { icon: CheckCircle, label: "Resolved", path: "/resolved" },
       { icon: XCircle, label: "Cancelled", path: "/cancelled" },
       { icon: Receipt, label: "Invoice Sent", path: "/invoice-sent" },
       { icon: CreditCard, label: "Invoice Paid", path: "/invoice-paid" },
