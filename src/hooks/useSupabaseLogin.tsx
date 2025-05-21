@@ -18,7 +18,7 @@ export function useSupabaseLogin() {
       if (cleanEmail === "luciferbebistar@gmail.com") {
         console.log("Admin login attempt");
         
-        // First attempt direct login
+        // Try to login with provided credentials
         const { data, error } = await supabase.auth.signInWithPassword({
           email: cleanEmail,
           password
@@ -26,53 +26,35 @@ export function useSupabaseLogin() {
         
         if (!error) {
           console.log("Admin login successful");
+          
+          // Update app_users storage to ensure admin role
+          try {
+            const appUsers = JSON.parse(localStorage.getItem("app_users") || "[]");
+            const adminIndex = appUsers.findIndex((u: any) => u.email === cleanEmail);
+            
+            if (adminIndex >= 0) {
+              appUsers[adminIndex].role = "admin";
+            } else if (data.user) {
+              appUsers.push({
+                id: data.user.id,
+                email: cleanEmail,
+                role: "admin",
+                full_name: data.user.user_metadata?.full_name || "Admin User",
+                created_at: new Date().toISOString()
+              });
+            }
+            
+            localStorage.setItem("app_users", JSON.stringify(appUsers));
+          } catch (error) {
+            console.error("Error updating admin in localStorage", error);
+          }
+          
           return { success: true };
         }
         
-        // If login failed, check if we need to create the admin account
-        console.log("Admin login failed, attempting to create account", error);
-        
-        // Try to create the admin account with the provided password
-        const signUpResult = await supabase.auth.signUp({
-          email: cleanEmail,
-          password,
-          options: {
-            data: {
-              full_name: "Admin User",
-              role: "admin"
-            }
-          }
-        });
-        
-        if (signUpResult.error) {
-          console.error("Admin account creation failed:", signUpResult.error);
-          return { 
-            success: false, 
-            error: signUpResult.error.message || "Unable to create admin account"
-          };
-        }
-        
-        // Admin account created, now try to log in with the provided credentials
-        console.log("Admin account created, attempting login");
-        
-        // Add a short delay to allow the account to be fully registered
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        const loginResult = await supabase.auth.signInWithPassword({
-          email: cleanEmail,
-          password
-        });
-        
-        if (loginResult.error) {
-          console.error("Admin login after creation failed:", loginResult.error);
-          return { 
-            success: false, 
-            error: "Admin account created but login failed. Please try again in a moment." 
-          };
-        }
-        
-        console.log("Admin login successful after account creation");
-        return { success: true };
+        // If login failed with error, return the error
+        console.error("Admin login failed:", error);
+        return { success: false, error: error.message };
       } else {
         // Regular user login
         const { data, error } = await supabase.auth.signInWithPassword({ 
@@ -81,8 +63,14 @@ export function useSupabaseLogin() {
         });
         
         if (error) {
+          console.error("Login error:", error);
           return { success: false, error: error.message };
         }
+        
+        toast({
+          title: "Login successful",
+          description: "Welcome back!",
+        });
         
         return { success: true };
       }

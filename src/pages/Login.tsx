@@ -17,12 +17,8 @@ const Login = () => {
         <h1 className="text-3xl font-bold text-center text-primary">Order Flow Compass</h1>
         <p className="text-center text-muted-foreground">Sign in to continue</p>
       </div>
-      <LoginForm onToggleForm={handleToggleForm} />
-      <div className="mt-4 text-sm text-center">
-        Don't have an account?{" "}
-        <Link to="/register" className="text-blue-600 hover:text-blue-800 hover:underline">
-          Register
-        </Link>
+      <div className="w-full max-w-md p-6 bg-white rounded-lg shadow-md">
+        <LoginForm onToggleForm={handleToggleForm} />
       </div>
     </div>
   );

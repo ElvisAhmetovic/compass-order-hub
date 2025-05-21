@@ -14,13 +14,16 @@ export function useSupabaseRegister() {
       // Clean up email for consistency
       const cleanEmail = email.toLowerCase().trim();
       
-      // Special handling for admin user
+      // Create user metadata
       const userMetadata = { full_name: fullName };
+      
+      // Special handling for admin user
       if (cleanEmail === "luciferbebistar@gmail.com") {
         Object.assign(userMetadata, { role: "admin" });
         console.log("Creating admin account");
       }
       
+      // Sign up the user
       const { data, error } = await supabase.auth.signUp({ 
         email: cleanEmail, 
         password,
@@ -30,6 +33,7 @@ export function useSupabaseRegister() {
       });
       
       if (error) {
+        console.error("Registration error:", error);
         return { success: false, error: error.message };
       }
       
@@ -49,7 +53,7 @@ export function useSupabaseRegister() {
               id: data.user.id,
               email: "luciferbebistar@gmail.com",
               role: "admin",
-              full_name: "Admin User",
+              full_name: fullName || "Admin User",
               created_at: new Date().toISOString()
             });
             
@@ -68,6 +72,7 @@ export function useSupabaseRegister() {
       
       return { success: true };
     } catch (error) {
+      console.error("Registration error:", error);
       return { success: false, error: "An unexpected error occurred" };
     } finally {
       setIsLoading(false);

@@ -5,11 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff, AlertTriangle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useSupabaseRegister } from "@/hooks/useSupabaseRegister";
+import { useSupabaseAuth } from "@/context/SupabaseAuthContext";
 
 interface RegisterFormProps {
-  onToggleForm: () => void;
-  onSuccess: () => void;
+  onToggleForm?: () => void;
+  onSuccess?: () => void;
 }
 
 export default function RegisterForm({ onToggleForm, onSuccess }: RegisterFormProps) {
@@ -18,7 +18,7 @@ export default function RegisterForm({ onToggleForm, onSuccess }: RegisterFormPr
   const [fullName, setFullName] = useState("");
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const { signUp, isLoading } = useSupabaseRegister();
+  const { signUp, isLoading } = useSupabaseAuth();
 
   // Clear error when inputs change
   useEffect(() => {
@@ -44,7 +44,9 @@ export default function RegisterForm({ onToggleForm, onSuccess }: RegisterFormPr
       if (!result.success) {
         setError(result.error || "Registration failed. Please try again.");
       } else {
-        onSuccess();
+        if (onSuccess) {
+          onSuccess();
+        }
       }
     } catch (error) {
       console.error("Registration error:", error);
@@ -118,18 +120,20 @@ export default function RegisterForm({ onToggleForm, onSuccess }: RegisterFormPr
         {isLoading ? "Creating account..." : "Create Account"}
       </Button>
       
-      <div className="text-center mt-4">
-        <p className="text-sm text-gray-600">
-          Already have an account?{" "}
-          <button 
-            type="button" 
-            onClick={onToggleForm}
-            className="text-primary hover:underline"
-          >
-            Sign In
-          </button>
-        </p>
-      </div>
+      {onToggleForm && (
+        <div className="text-center mt-4">
+          <p className="text-sm text-gray-600">
+            Already have an account?{" "}
+            <button 
+              type="button" 
+              onClick={onToggleForm}
+              className="text-primary hover:underline"
+            >
+              Sign In
+            </button>
+          </p>
+        </div>
+      )}
     </form>
   );
 }

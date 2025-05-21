@@ -58,7 +58,7 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
                   id: currentSession.user.id,
                   email: "luciferbebistar@gmail.com",
                   role: "admin",
-                  full_name: "Admin User",
+                  full_name: currentSession.user.user_metadata?.full_name || "Admin User",
                   created_at: new Date().toISOString()
                 });
               }
@@ -100,7 +100,7 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
               id: currentSession.user.id,
               email: "luciferbebistar@gmail.com",
               role: "admin",
-              full_name: "Admin User", 
+              full_name: currentSession.user.user_metadata?.full_name || "Admin User",
               created_at: new Date().toISOString()
             });
           }

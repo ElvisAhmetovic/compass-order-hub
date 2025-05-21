@@ -8,9 +8,9 @@ interface SupabaseAuthContextProps {
   user: ReturnType<typeof useAuthSession>["user"];
   session: ReturnType<typeof useAuthSession>["session"];
   isLoading: boolean;
-  signIn: ReturnType<typeof useSupabaseLogin>["signIn"];
-  signUp: ReturnType<typeof useSupabaseRegister>["signUp"];
-  signOut: ReturnType<typeof useAuthSession>["signOut"];
+  signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  signUp: (email: string, password: string, fullName: string) => Promise<{ success: boolean; error?: string }>;
+  signOut: () => Promise<void>;
 }
 
 const SupabaseAuthContext = createContext<SupabaseAuthContextProps | undefined>(undefined);
@@ -23,7 +23,14 @@ export function SupabaseAuthProvider({ children }: { children: ReactNode }) {
   const isLoading = sessionLoading || loginLoading || registerLoading;
 
   return (
-    <SupabaseAuthContext.Provider value={{ user, session, isLoading, signIn, signUp, signOut }}>
+    <SupabaseAuthContext.Provider value={{ 
+      user, 
+      session, 
+      isLoading, 
+      signIn, 
+      signUp, 
+      signOut 
+    }}>
       {children}
     </SupabaseAuthContext.Provider>
   );

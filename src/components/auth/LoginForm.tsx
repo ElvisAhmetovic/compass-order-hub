@@ -6,10 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff, AlertTriangle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useSupabaseLogin } from "@/hooks/useSupabaseLogin";
+import { useSupabaseAuth } from "@/context/SupabaseAuthContext";
 
 interface LoginFormProps {
-  onToggleForm: () => void;
+  onToggleForm?: () => void;
 }
 
 export default function LoginForm({ onToggleForm }: LoginFormProps) {
@@ -18,7 +18,7 @@ export default function LoginForm({ onToggleForm }: LoginFormProps) {
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
-  const { signIn, isLoading } = useSupabaseLogin();
+  const { signIn, isLoading } = useSupabaseAuth();
 
   // Clear error when inputs change
   useEffect(() => {
@@ -103,18 +103,20 @@ export default function LoginForm({ onToggleForm }: LoginFormProps) {
         {isLoading ? "Signing in..." : "Sign In"}
       </Button>
       
-      <div className="text-center mt-4">
-        <p className="text-sm text-gray-600">
-          Don't have an account?{" "}
-          <button 
-            type="button" 
-            onClick={onToggleForm}
-            className="text-primary hover:underline"
-          >
-            Register
-          </button>
-        </p>
-      </div>
+      {onToggleForm && (
+        <div className="text-center mt-4">
+          <p className="text-sm text-gray-600">
+            Don't have an account?{" "}
+            <button 
+              type="button" 
+              onClick={onToggleForm}
+              className="text-primary hover:underline"
+            >
+              Register
+            </button>
+          </p>
+        </div>
+      )}
     </form>
   );
 }

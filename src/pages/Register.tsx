@@ -9,7 +9,7 @@ const Register = () => {
   
   // Redirect to Login page when toggle is clicked
   const handleToggleForm = () => {
-    navigate('/auth', { state: { activeTab: 'login' } });
+    navigate('/login');
   };
   
   // Handle successful registration
@@ -27,10 +27,12 @@ const Register = () => {
         <h1 className="text-3xl font-bold text-center text-primary">Order Flow Compass</h1>
         <p className="text-center text-muted-foreground">Create a new account</p>
       </div>
-      <RegisterForm 
-        onToggleForm={handleToggleForm}
-        onSuccess={handleRegistrationSuccess}
-      />
+      <div className="w-full max-w-md p-6 bg-white rounded-lg shadow-md">
+        <RegisterForm 
+          onToggleForm={handleToggleForm}
+          onSuccess={handleRegistrationSuccess}
+        />
+      </div>
     </div>
   );
 };

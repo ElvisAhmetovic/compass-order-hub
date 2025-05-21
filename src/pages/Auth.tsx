@@ -8,10 +8,19 @@ import AuthLayout from "@/components/auth/AuthLayout";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Auth() {
-  const { user } = useSupabaseAuth();
+  const { user, isLoading } = useSupabaseAuth();
   const [activeTab, setActiveTab] = useState<"login" | "register">("login");
   const { toast } = useToast();
   const location = useLocation();
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <p>Loading...</p>
+      </div>
+    );
+  }
 
   // Redirect if user is already logged in
   if (user) {
@@ -28,16 +37,20 @@ export default function Auth() {
     setActiveTab("login");
   };
 
+  const handleToggleForm = () => {
+    setActiveTab(activeTab === "login" ? "register" : "login");
+  };
+
   return (
     <AuthLayout title={activeTab === "login" ? "Sign In" : "Create Account"}>
       {activeTab === "login" ? (
-        <LoginForm onToggleForm={() => setActiveTab("register")} />
+        <LoginForm onToggleForm={handleToggleForm} />
       ) : (
         <RegisterForm 
-          onToggleForm={() => setActiveTab("login")}
+          onToggleForm={handleToggleForm}
           onSuccess={handleRegistrationSuccess}
         />
       )}
     </AuthLayout>
   );
-}
+};
