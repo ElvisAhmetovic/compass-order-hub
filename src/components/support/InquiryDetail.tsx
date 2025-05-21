@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
@@ -10,17 +11,27 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Trash } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export const InquiryDetail = () => {
   const { inquiryId } = useParams<{ inquiryId: string }>();
   const [inquiry, setInquiry] = useState<SupportInquiry | null>(null);
   const [replyText, setReplyText] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const isAdmin = user?.role === "admin";
+  const isAdmin = user?.role === "admin" || user?.role === "owner";
 
   useEffect(() => {
     if (!inquiryId) return;
@@ -53,6 +64,44 @@ export const InquiryDetail = () => {
 
     loadInquiry();
   }, [inquiryId, user, isAdmin, navigate]);
+
+  const handleDeleteInquiry = () => {
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (!inquiry) return;
+    
+    setIsDeleting(true);
+    try {
+      const storedInquiries: SupportInquiry[] = JSON.parse(
+        localStorage.getItem("supportInquiries") || "[]"
+      );
+      
+      const updatedInquiries = storedInquiries.filter(
+        inq => inq.id !== inquiry.id
+      );
+      
+      localStorage.setItem("supportInquiries", JSON.stringify(updatedInquiries));
+      
+      toast({
+        title: "Inquiry deleted",
+        description: "The support inquiry has been permanently deleted.",
+      });
+      
+      // Navigate back to support page
+      navigate("/support");
+    } catch (error) {
+      console.error("Error deleting inquiry:", error);
+      toast({
+        variant: "destructive",
+        title: "Delete failed",
+        description: "There was a problem deleting the inquiry. Please try again.",
+      });
+      setIsDeleting(false);
+      setIsDeleteDialogOpen(false);
+    }
+  };
 
   const handleSubmitReply = () => {
     if (!inquiry || !user || !replyText.trim()) return;
@@ -173,7 +222,7 @@ export const InquiryDetail = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-2 mb-4">
+      <div className="flex items-center justify-between mb-4">
         <Button 
           variant="ghost" 
           size="sm" 
@@ -181,6 +230,16 @@ export const InquiryDetail = () => {
         >
           <ArrowLeft className="h-4 w-4 mr-1" /> Back to Inquiries
         </Button>
+        
+        {isAdmin && (
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={handleDeleteInquiry}
+          >
+            <Trash className="h-4 w-4 mr-1" /> Delete Inquiry
+          </Button>
+        )}
       </div>
       
       {/* Original Inquiry */}
@@ -264,6 +323,38 @@ export const InquiryDetail = () => {
           </div>
         </div>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Support Inquiry</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this inquiry? This action cannot be undone.
+              <div className="mt-4 p-3 bg-gray-50 rounded-md">
+                <p className="font-medium">{inquiry.subject}</p>
+                <p className="text-xs text-gray-500 mt-1">From: {inquiry.userName}</p>
+              </div>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setIsDeleteDialogOpen(false)}
+              disabled={isDeleting}
+            >
+              Cancel
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+            >
+              {isDeleting ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
