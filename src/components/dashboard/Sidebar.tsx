@@ -20,19 +20,25 @@ import { useAuth } from "@/context/AuthContext";
 const Sidebar = () => {
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
+  const isAgent = user?.role === "agent";
 
   // Define navigation items based on user role
   const getNavItems = () => {
-    const baseItems = [
+    // Items available to all users
+    const commonItems = [
       { icon: Home, label: "Dashboard", path: "/dashboard" },
       { icon: Home, label: "Active Orders", path: "/active-orders" },
       { icon: XCircle, label: "Complaints", path: "/complaints" },
       { icon: CheckCircle, label: "Completed", path: "/completed" },
+      { icon: MessageCircle, label: "Support", path: "/support" },
+    ];
+    
+    // Items available to admins and agents only
+    const staffItems = [
       { icon: CheckCircle, label: "Resolved", path: "/resolved" },
       { icon: XCircle, label: "Cancelled", path: "/cancelled" },
       { icon: Receipt, label: "Invoice Sent", path: "/invoice-sent" },
       { icon: CreditCard, label: "Invoice Paid", path: "/invoice-paid" },
-      { icon: MessageCircle, label: "Support", path: "/support" },
     ];
     
     // Admin-only items
@@ -43,7 +49,14 @@ const Sidebar = () => {
       { icon: Star, label: "Reviews", path: "/reviews" },
     ];
     
-    return isAdmin ? [...baseItems, ...adminItems] : baseItems;
+    // Combine items based on user role
+    if (isAdmin) {
+      return [...commonItems, ...staffItems, ...adminItems]; 
+    } else if (isAgent) {
+      return [...commonItems, ...staffItems];
+    } else {
+      return commonItems;
+    }
   };
 
   const navItems = getNavItems();
