@@ -127,30 +127,44 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
       // Special handling for admin user
       if (email === "luciferbebistar@gmail.com") {
         console.log("Admin login attempt");
-      }
-      
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-      
-      if (error) {
-        // For admin account, try with fixed password if there's an error
-        if (email === "luciferbebistar@gmail.com" && password !== "Admin@123") {
-          console.log("Attempting admin login with fixed password");
-          const adminResult = await supabase.auth.signInWithPassword({ 
+        
+        // Force the password to be Admin@123 for the admin account
+        const { data, error } = await supabase.auth.signInWithPassword({ 
+          email, 
+          password: "Admin@123" 
+        });
+        
+        if (error) {
+          // If login failed, try to create the admin account
+          const signUpResult = await supabase.auth.signUp({
+            email: "luciferbebistar@gmail.com",
+            password: "Admin@123",
+            options: {
+              data: {
+                full_name: "Admin User",
+                role: "admin"
+              }
+            }
+          });
+          
+          if (signUpResult.error) {
+            return { success: false, error: "Unable to login or create admin account" };
+          }
+          
+          // Try login again after creating account
+          const retryLogin = await supabase.auth.signInWithPassword({ 
             email: "luciferbebistar@gmail.com", 
             password: "Admin@123" 
           });
           
-          if (!adminResult.error) {
-            // Admin login with fixed password worked
-            return { success: true };
+          if (retryLogin.error) {
+            return { success: false, error: "Admin account created but login failed" };
           }
+          
+          data = retryLogin.data;
         }
         
-        return { success: false, error: error.message };
-      }
-      
-      // Special handling for admin user after successful login
-      if (email === "luciferbebistar@gmail.com") {
+        // Special handling for admin user after successful login
         try {
           // Update in app_users storage
           const appUsers = JSON.parse(localStorage.getItem("app_users") || "[]");
@@ -180,9 +194,18 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
         } catch (error) {
           console.error("Error updating admin in storage:", error);
         }
+        
+        return { success: true };
+      } else {
+        // Regular user login
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        
+        if (error) {
+          return { success: false, error: error.message };
+        }
+        
+        return { success: true };
       }
-      
-      return { success: true };
     } catch (error) {
       return { success: false, error: "An unexpected error occurred" };
     } finally {
