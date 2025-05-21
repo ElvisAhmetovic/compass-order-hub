@@ -1,142 +1,120 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertTriangle, Eye, EyeOff } from "lucide-react";
-import FormInput from "./FormInput";
-import { validateIdentifier, validatePassword } from "@/utils/formValidation";
-import { useAuth } from "@/context/AuthContext";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Eye, EyeOff, AlertTriangle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useSupabaseLogin } from "@/hooks/useSupabaseLogin";
 
-const LoginForm = () => {
-  const [identifier, setIdentifier] = useState("");
+interface LoginFormProps {
+  onToggleForm: () => void;
+}
+
+export default function LoginForm({ onToggleForm }: LoginFormProps) {
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errors, setErrors] = useState<{identifier?: string, password?: string, auth?: string}>({});
   const navigate = useNavigate();
-  const { login, isLoading: authLoading } = useAuth();
-  
-  const isLoading = isSubmitting || authLoading;
+  const { signIn, isLoading } = useSupabaseLogin();
 
-  const handleIdentifierChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setIdentifier(value);
-    
-    const error = validateIdentifier(value);
-    setErrors(prev => ({ ...prev, identifier: error, auth: undefined }));
-  };
+  // Clear error when inputs change
+  useEffect(() => {
+    setError("");
+  }, [email, password]);
 
-  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setPassword(value);
-    
-    const error = validatePassword(value);
-    setErrors(prev => ({ ...prev, password: error, auth: undefined }));
-  };
-
-  const isFormValid = () => {
-    return !errors.identifier && !errors.password && identifier.trim() !== "" && password.trim() !== "";
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
     
-    if (!isFormValid()) {
+    if (!email || !password) {
+      setError("Please fill in all required fields");
       return;
     }
     
-    setIsSubmitting(true);
-    setErrors({});
-
     try {
-      console.log(`Attempting to log in with: ${identifier}, password: ${password.replace(/./g, '*')}`);
+      console.log(`Attempting to log in with: ${email}`);
       
-      // Special handling for admin user
-      if (identifier === "luciferbebistar@gmail.com") {
-        console.log("Admin login attempt detected");
-      }
-      
-      const success = await login(identifier, password);
-      
-      if (success) {
-        navigate("/dashboard");
+      const result = await signIn(email, password);
+      if (!result.success) {
+        setError(result.error || "Login failed. Please check your credentials.");
       } else {
-        setErrors(prev => ({ ...prev, auth: "Invalid email/username or password" }));
+        navigate("/dashboard");
       }
     } catch (error) {
       console.error("Login error:", error);
-      setErrors(prev => ({ ...prev, auth: "An unexpected error occurred." }));
-    } finally {
-      setIsSubmitting(false);
+      setError("An unexpected error occurred during login.");
     }
   };
 
   return (
-    <Card className="w-[350px] mx-auto">
-      <CardHeader>
-        <CardTitle>Login</CardTitle>
-        <CardDescription>Enter your credentials to access your account</CardDescription>
-      </CardHeader>
-      <form onSubmit={handleSubmit}>
-        <CardContent className="space-y-4">
-          {/* Authentication error message */}
-          {errors.auth && (
-            <div className="p-3 rounded-md bg-destructive/15 text-destructive flex items-center gap-2">
-              <AlertTriangle className="h-5 w-4" />
-              <span>{errors.auth}</span>
-            </div>
-          )}
-          
-          <FormInput
-            id="identifier"
-            label="Username or Email"
-            type="text"
-            value={identifier}
-            onChange={handleIdentifierChange}
-            placeholder="johndoe or name@company.com"
-            error={errors.identifier}
-            disabled={isLoading}
-          />
-          
-          <FormInput
-            id="password"
-            label="Password"
-            type="password"
+    <form onSubmit={handleLogin} className="space-y-4">
+      {error && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+      
+      <div className="space-y-2">
+        <Label htmlFor="email">Email</Label>
+        <Input 
+          id="email" 
+          type="email" 
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="name@example.com"
+          required
+          disabled={isLoading}
+        />
+      </div>
+      
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <Label htmlFor="password">Password</Label>
+          <a href="#" className="text-xs text-primary hover:underline">
+            Forgot password?
+          </a>
+        </div>
+        <div className="relative">
+          <Input 
+            id="password" 
+            type={showPassword ? "text" : "password"}
             value={password}
-            onChange={handlePasswordChange}
-            error={errors.password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
             disabled={isLoading}
-            isPassword
-            showPassword={showPassword}
-            toggleShowPassword={() => setShowPassword(!showPassword)}
           />
-        </CardContent>
-        <CardFooter className="flex flex-col">
-          <Button
-            type="submit"
-            className="w-full"
-            disabled={isLoading || !isFormValid()}
+          <button 
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+            tabIndex={-1}
+            aria-label={showPassword ? "Hide password" : "Show password"}
           >
-            {isLoading ? "Logging in..." : "Login"}
-          </Button>
-          <div className="mt-4 text-sm text-center">
-            Don't have an account?{" "}
-            <a
-              href="/register"
-              className="text-blue-600 hover:text-blue-800 hover:underline"
-              onClick={(e) => {
-                e.preventDefault();
-                navigate("/register");
-              }}
-            >
-              Register
-            </a>
-          </div>
-        </CardFooter>
-      </form>
-    </Card>
+            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          </button>
+        </div>
+      </div>
+      
+      <Button type="submit" className="w-full" disabled={isLoading}>
+        {isLoading ? "Signing in..." : "Sign In"}
+      </Button>
+      
+      <div className="text-center mt-4">
+        <p className="text-sm text-gray-600">
+          Don't have an account?{" "}
+          <button 
+            type="button" 
+            onClick={onToggleForm}
+            className="text-primary hover:underline"
+          >
+            Register
+          </button>
+        </p>
+      </div>
+    </form>
   );
-};
-
-export default LoginForm;
+}
