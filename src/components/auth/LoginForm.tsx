@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Eye, EyeOff, AlertTriangle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useSupabaseAuth } from "@/context/SupabaseAuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 interface LoginFormProps {
   onToggleForm?: () => void;
@@ -25,6 +26,14 @@ export default function LoginForm({ onToggleForm }: LoginFormProps) {
     if (error) setError("");
   }, [email, password]);
 
+  // Check Supabase configuration
+  useEffect(() => {
+    console.log("Checking Supabase configuration...");
+    supabase.auth.getSession().then(({ data }) => {
+      console.log("Supabase session check from LoginForm:", data.session ? "Session exists" : "No session");
+    });
+  }, []);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -42,7 +51,9 @@ export default function LoginForm({ onToggleForm }: LoginFormProps) {
       
       if (!result.success) {
         setError(result.error || "Login failed. Please check your credentials.");
+        return;
       }
+      
       // Navigation is handled by Auth.tsx component through redirection
     } catch (error: any) {
       console.error("Login error:", error);

@@ -25,16 +25,21 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, currentSession) => {
-        console.log("Auth state change:", event, currentSession?.user?.email);
+        console.log("Auth state change event:", event, "user:", currentSession?.user?.email);
+        
+        // Update state
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
         
+        // Handle events
         if (event === 'SIGNED_OUT') {
+          console.log("User signed out");
           toast({
             title: "Signed Out",
             description: "You have been signed out successfully.",
           });
         } else if (event === 'SIGNED_IN') {
+          console.log("User signed in:", currentSession?.user?.email);
           toast({
             title: "Signed In",
             description: "Welcome back!",
@@ -72,6 +77,8 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
               console.error("Error updating admin role in app_users:", error);
             }
           }
+        } else if (event === 'USER_UPDATED') {
+          console.log("User updated:", currentSession?.user);
         }
       }
     );

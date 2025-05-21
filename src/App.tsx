@@ -19,10 +19,26 @@ import Auth from './pages/Auth';
 import Login from './pages/Login';
 import Register from './pages/Register';
 
+// Import statement for supabase
+import { supabase } from './integrations/supabase/client';
+
 function App() {
   // Log when the App component mounts to help with debugging
   useEffect(() => {
     console.log("App component mounted");
+    
+    // Configure Supabase auth with explicit settings
+    supabase.auth.setSession({
+      access_token: localStorage.getItem('sb-access-token') || '',
+      refresh_token: localStorage.getItem('sb-refresh-token') || '',
+    }).then(({ data, error }) => {
+      if (error) {
+        console.error("Error setting session:", error);
+      } else {
+        console.log("Session set:", data.session ? "Authenticated" : "Not authenticated");
+      }
+    });
+    
     // Log initial auth state
     supabase.auth.getSession().then(({ data }) => {
       console.log("Initial auth session:", data.session ? "Authenticated" : "Not authenticated");
@@ -161,8 +177,5 @@ function App() {
     </Router>
   );
 }
-
-// Import statement for supabase
-import { supabase } from './integrations/supabase/client';
 
 export default App;

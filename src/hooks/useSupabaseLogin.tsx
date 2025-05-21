@@ -15,19 +15,38 @@ export function useSupabaseLogin() {
       const cleanEmail = email.toLowerCase().trim();
       console.log(`Attempting login with email: ${cleanEmail}`);
       
+      // First check if the user exists
+      const { data: userData, error: userError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('email', cleanEmail)
+        .maybeSingle();
+        
+      console.log("User check result:", userData, userError);
+      
       // Sign in with Supabase
       const { data, error } = await supabase.auth.signInWithPassword({ 
         email: cleanEmail, 
         password 
       });
       
-      console.log("Login response:", data, error);
-      
+      console.log("Login response data:", data);
       if (error) {
-        console.error("Login error:", error);
+        console.error("Login error details:", error);
+        
+        // Special case for email verification
+        if (error.message.includes("Email not confirmed")) {
+          toast({
+            title: "Email not verified",
+            description: "Please check your inbox and verify your email before logging in.",
+            variant: "destructive"
+          });
+          return { success: false, error: "Email not verified" };
+        }
+        
         toast({
           title: "Login failed",
-          description: error.message || "Invalid login credentials. Please check your email and password.",
+          description: "Invalid login credentials. Please check your email and password.",
           variant: "destructive"
         });
         return { success: false, error: error.message };
@@ -44,6 +63,8 @@ export function useSupabaseLogin() {
       }
       
       // Success handling
+      console.log("Login successful, user:", data.user);
+      
       // Check if the user is admin
       if (cleanEmail === "luciferbebistar@gmail.com" && data.user) {
         try {

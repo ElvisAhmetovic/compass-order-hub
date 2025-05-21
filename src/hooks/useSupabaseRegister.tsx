@@ -24,6 +24,16 @@ export function useSupabaseRegister() {
         console.log("Creating admin account");
       }
       
+      // Check if user already exists
+      const { data: existingUser, error: checkError } = await supabase.auth.admin
+        .listUsers({ 
+          filter: { email: cleanEmail },
+          perPage: 1
+        })
+        .catch(() => ({ data: null, error: null }));
+        
+      console.log("Existing user check:", existingUser);
+      
       // Sign up the user
       const { data, error } = await supabase.auth.signUp({ 
         email: cleanEmail, 
@@ -38,6 +48,17 @@ export function useSupabaseRegister() {
       
       if (error) {
         console.error("Registration error:", error);
+        
+        // Handle case where user already exists
+        if (error.message.includes("already registered")) {
+          toast({
+            title: "Account already exists",
+            description: "This email is already registered. Please sign in instead.",
+            variant: "destructive"
+          });
+          return { success: false, error: "Account already exists" };
+        }
+        
         toast({
           title: "Registration failed",
           description: error.message || "Failed to create account. Please try again.",
@@ -55,6 +76,9 @@ export function useSupabaseRegister() {
         });
         return { success: false, error: "Registration failed" };
       }
+      
+      // Check if confirmation is required
+      const needsEmailConfirmation = !data.session;
       
       // Special handling for admin after signup
       if (cleanEmail === "luciferbebistar@gmail.com" && data.user) {
@@ -83,12 +107,24 @@ export function useSupabaseRegister() {
         }
       }
       
-      toast({
-        title: "Account Created",
-        description: "Your account has been created successfully! Check your email for verification.",
-      });
+      if (needsEmailConfirmation) {
+        toast({
+          title: "Email Verification Required",
+          description: "We've sent a verification email to your address. Please check your inbox and verify your account.",
+        });
+      } else {
+        toast({
+          title: "Account Created",
+          description: "Your account has been created successfully!",
+        });
+      }
       
-      return { success: true };
+      return { 
+        success: true, 
+        needsEmailConfirmation,
+        user: data.user,
+        session: data.session 
+      };
     } catch (error: any) {
       console.error("Registration error:", error);
       toast({

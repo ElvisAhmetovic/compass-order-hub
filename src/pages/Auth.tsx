@@ -6,6 +6,7 @@ import LoginForm from "@/components/auth/LoginForm";
 import RegisterForm from "@/components/auth/RegisterForm";
 import AuthLayout from "@/components/auth/AuthLayout";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function Auth() {
   const { user, isLoading } = useSupabaseAuth();
@@ -13,6 +14,43 @@ export default function Auth() {
   const { toast } = useToast();
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Debug auth parameters
+  useEffect(() => {
+    // Parse URL for token
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const queryParams = new URLSearchParams(window.location.search);
+    
+    const accessToken = hashParams.get('access_token');
+    const refreshToken = hashParams.get('refresh_token');
+    const type = hashParams.get('type');
+    const error = queryParams.get('error');
+    const errorDescription = queryParams.get('error_description');
+    
+    console.log("Auth page URL parameters:", { 
+      accessToken: accessToken ? "present" : "not present", 
+      refreshToken: refreshToken ? "present" : "not present",
+      type,
+      error,
+      errorDescription
+    });
+    
+    // Handle callback from email verification
+    if (accessToken && refreshToken && type === 'recovery') {
+      // Handle password reset
+      toast({
+        title: "Password Reset",
+        description: "Please set your new password.",
+      });
+    } else if (error) {
+      // Handle errors
+      toast({
+        title: "Authentication Error",
+        description: errorDescription || "There was a problem with authentication.",
+        variant: "destructive"
+      });
+    }
+  }, [toast]);
 
   // Debug authentication state
   useEffect(() => {
@@ -24,6 +62,11 @@ export default function Auth() {
       const from = (location.state as { from?: string })?.from || "/dashboard";
       navigate(from, { replace: true });
     }
+    
+    // Check Supabase session directly
+    supabase.auth.getSession().then(({ data }) => {
+      console.log("Direct Supabase session check:", data.session ? "Session exists" : "No session");
+    });
   }, [user, isLoading, location.state, navigate]);
 
   // Show loading state
@@ -35,10 +78,15 @@ export default function Auth() {
     );
   }
 
+  // If user is already authenticated, redirect to dashboard
+  if (user && !isLoading) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
   const handleRegistrationSuccess = () => {
     toast({
       title: "Account Created",
-      description: "Please sign in with your new credentials.",
+      description: "Please check your email for verification instructions, then sign in with your new credentials.",
     });
     setActiveTab("login");
   };
