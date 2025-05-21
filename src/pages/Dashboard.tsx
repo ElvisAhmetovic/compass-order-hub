@@ -29,7 +29,8 @@ const Dashboard = () => {
   
   // Combine auth sources, prioritizing Supabase user
   const user = supabaseUser || localUser;
-  const userRole: UserRole = user?.role || "user";
+  // Ensure proper UserRole type - default to 'user' if undefined or invalid
+  const userRole: UserRole = (user?.role as UserRole) || "user";
   const isAdmin = userRole === "admin";
   
   // Debug user role

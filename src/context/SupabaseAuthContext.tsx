@@ -1,8 +1,8 @@
-
 import { createContext, useContext, useEffect, useState } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { UserRole } from "@/types";
 
 interface LoginResult {
   success: boolean;
@@ -22,7 +22,7 @@ interface SupabaseAuthContextProps {
 export interface ExtendedUser extends User {
   full_name?: string;
   name?: string;
-  role?: string;
+  role?: UserRole;
 }
 
 const SupabaseAuthContext = createContext<SupabaseAuthContextProps | undefined>(undefined);
@@ -41,7 +41,7 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
       ...user,
       full_name: user.user_metadata?.full_name || user.user_metadata?.name,
       name: user.user_metadata?.name,
-      role: user.user_metadata?.role || 'user'
+      role: user.user_metadata?.role as UserRole || 'user'
     };
   };
 
@@ -56,8 +56,12 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
           const adminUser = {
             id: parsedSession.id,
             email: parsedSession.email,
-            role: "admin",
+            role: "admin" as UserRole,
             full_name: parsedSession.full_name || "Admin User",
+            // Add missing required properties from ExtendedUser/User type
+            app_metadata: {},
+            aud: "authenticated",
+            created_at: new Date().toISOString(),
             user_metadata: {
               role: "admin",
               full_name: parsedSession.full_name || "Admin User"
@@ -142,9 +146,16 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
         
         localStorage.setItem("userSession", JSON.stringify(adminUser));
         
-        // Set the user in our context with proper metadata
+        // Set the user in our context with proper metadata and required User properties
         const enhancedAdminUser = {
-          ...adminUser,
+          id: "admin-user-id",
+          email: email,
+          role: "admin" as UserRole,
+          full_name: "Admin User",
+          // Add required properties from User type
+          app_metadata: {},
+          aud: "authenticated",
+          created_at: new Date().toISOString(),
           user_metadata: {
             role: "admin",
             full_name: "Admin User"
