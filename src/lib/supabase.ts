@@ -62,7 +62,7 @@ export async function getUserProfile(userId: string) {
 /**
  * Update the current user profile
  */
-export async function updateUserProfile(userId: string, updates: { full_name?: string; avatar_url?: string }) {
+export async function updateUserProfile(userId: string, updates: { first_name?: string; last_name?: string; role?: string }) {
   const { data, error } = await supabase
     .from('profiles')
     .update(updates)
