@@ -1,7 +1,6 @@
 
 import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { useNavigate } from 'react-router-dom';
 import { UserRole } from '@/types';
 
 interface User {
@@ -32,7 +31,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
-  const navigate = useNavigate();
 
   const loadUserFromSession = () => {
     try {
@@ -227,6 +225,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               full_name: appUser.full_name,
               passwordHash: defaultPasswordHash
             };
+            
+            // Add this user to registeredUsers
+            registeredUsers.push(foundUser);
+            localStorage.setItem("users", JSON.stringify(registeredUsers));
+            console.log("Created new auth user from app_user");
           }
         }
       }
@@ -252,20 +255,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         stored: storedHash.substring(0, 5) + "..." 
       });
       
-      if (inputPasswordHash !== storedHash) {
-        // Try with default admin password for admin users
-        if (foundUser.role === "admin" && password === "Admin@123") {
-          console.log("Admin default password match");
-          // Valid admin with default password
-        } else {
-          console.log("Password mismatch");
-          toast({
-            variant: "destructive",
-            title: "Login failed",
-            description: "Invalid email/username or password."
-          });
-          return false;
-        }
+      // For admin users, allow either the stored password or the default admin password
+      if (foundUser.role === "admin" && (inputPasswordHash === storedHash || password === "Admin@123")) {
+        console.log("Admin password match");
+        // Valid admin password
+      } else if (inputPasswordHash === storedHash) {
+        console.log("Password match");
+        // Valid password for non-admin
+      } else {
+        console.log("Password mismatch");
+        toast({
+          variant: "destructive",
+          title: "Login failed",
+          description: "Invalid email/username or password."
+        });
+        return false;
       }
       
       // Create user session with additional profile info
@@ -314,8 +318,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         title: "Logged out",
         description: "You have been successfully logged out.",
       });
-      
-      navigate('/login');
     } catch (error) {
       console.error("Logout error:", error);
       toast({
