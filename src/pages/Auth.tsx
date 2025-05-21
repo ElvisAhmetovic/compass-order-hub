@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { useSupabaseAuth } from "@/context/SupabaseAuthContext";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,11 @@ export default function Auth() {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  // Clear error when tab changes or inputs change
+  useEffect(() => {
+    setError("");
+  }, [activeTab, email, password, fullName]);
+
   // Redirect if user is already logged in
   if (user) {
     return <Navigate to="/dashboard" />;
@@ -36,6 +41,8 @@ export default function Auth() {
     }
     
     try {
+      console.log(`Attempting to log in with: ${email}`);
+      
       // Special handling for admin account
       if (email === "luciferbebistar@gmail.com") {
         toast({

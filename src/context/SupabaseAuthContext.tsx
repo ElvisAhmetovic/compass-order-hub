@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useEffect, useState } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
@@ -127,69 +128,58 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
       if (email === "luciferbebistar@gmail.com") {
         console.log("Admin login attempt");
         
-        // Try login with fixed admin password
-        let loginResult = await supabase.auth.signInWithPassword({ 
+        // First, try to login with admin credentials
+        const loginResponse = await supabase.auth.signInWithPassword({ 
           email, 
           password: "Admin@123" 
         });
         
-        if (loginResult.error) {
-          // If login failed, try to create the admin account
-          const signUpResult = await supabase.auth.signUp({
-            email: "luciferbebistar@gmail.com",
-            password: "Admin@123",
-            options: {
-              data: {
-                full_name: "Admin User",
-                role: "admin"
-              }
-            }
-          });
-          
-          if (signUpResult.error) {
-            return { success: false, error: "Unable to login or create admin account" };
-          }
-          
-          // Try login again after creating account
-          loginResult = await supabase.auth.signInWithPassword({ 
-            email: "luciferbebistar@gmail.com", 
-            password: "Admin@123" 
-          });
-          
-          if (loginResult.error) {
-            return { success: false, error: "Admin account created but login failed" };
+        // If login successful, update admin status in local storage
+        if (!loginResponse.error) {
+          try {
+            updateAdminDataInStorage(loginResponse.data.user);
+            return { success: true };
+          } catch (storageError) {
+            console.error("Error updating admin in storage:", storageError);
+            return { success: true }; // Still return success since login worked
           }
         }
         
-        // Special handling for admin user after successful login
-        try {
-          // Update in app_users storage
-          const appUsers = JSON.parse(localStorage.getItem("app_users") || "[]");
-          let adminExists = false;
-          
-          const updatedAppUsers = appUsers.map((u: any) => {
-            if (u.email === "luciferbebistar@gmail.com") {
-              adminExists = true;
-              return { ...u, role: "admin" };
-            }
-            return u;
-          });
-          
-          // If admin doesn't exist, add them
-          if (!adminExists && loginResult.data.user) {
-            updatedAppUsers.push({
-              id: loginResult.data.user.id,
-              email: "luciferbebistar@gmail.com",
-              role: "admin",
+        // If login failed, try to create the admin account
+        console.log("Admin login failed, attempting to create account");
+        const signUpResponse = await supabase.auth.signUp({
+          email: "luciferbebistar@gmail.com",
+          password: "Admin@123",
+          options: {
+            data: {
               full_name: "Admin User",
-              created_at: new Date().toISOString()
-            });
+              role: "admin"
+            }
           }
-          
-          localStorage.setItem("app_users", JSON.stringify(updatedAppUsers));
-          console.log("Admin credentials set in storage");
-        } catch (error) {
-          console.error("Error updating admin in storage:", error);
+        });
+        
+        if (signUpResponse.error) {
+          console.error("Failed to create admin account:", signUpResponse.error);
+          return { success: false, error: "Unable to login or create admin account" };
+        }
+        
+        // Try login again after creating account
+        console.log("Admin account created, trying login again");
+        const retryResponse = await supabase.auth.signInWithPassword({ 
+          email: "luciferbebistar@gmail.com", 
+          password: "Admin@123" 
+        });
+        
+        if (retryResponse.error) {
+          console.error("Admin retry login failed:", retryResponse.error);
+          return { success: false, error: "Admin account created but login failed" };
+        }
+        
+        // Update admin status in local storage
+        try {
+          updateAdminDataInStorage(retryResponse.data.user);
+        } catch (storageError) {
+          console.error("Error updating admin in storage:", storageError);
         }
         
         return { success: true };
@@ -204,10 +194,40 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
         return { success: true };
       }
     } catch (error) {
+      console.error("Unexpected login error:", error);
       return { success: false, error: "An unexpected error occurred" };
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Helper function to update admin data in storage
+  const updateAdminDataInStorage = (user: User | null) => {
+    if (!user) return;
+    
+    const appUsers = JSON.parse(localStorage.getItem("app_users") || "[]");
+    let adminExists = false;
+    
+    const updatedAppUsers = appUsers.map((u: any) => {
+      if (u.email === "luciferbebistar@gmail.com") {
+        adminExists = true;
+        return { ...u, role: "admin" };
+      }
+      return u;
+    });
+    
+    if (!adminExists) {
+      updatedAppUsers.push({
+        id: user.id,
+        email: "luciferbebistar@gmail.com",
+        role: "admin",
+        full_name: "Admin User",
+        created_at: new Date().toISOString()
+      });
+    }
+    
+    localStorage.setItem("app_users", JSON.stringify(updatedAppUsers));
+    console.log("Admin credentials set in storage");
   };
 
   const signUp = async (email: string, password: string, fullName: string) => {
