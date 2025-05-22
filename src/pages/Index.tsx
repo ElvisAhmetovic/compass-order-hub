@@ -10,12 +10,18 @@ const Index = () => {
   useEffect(() => {
     if (!isLoading) {
       console.log("Index: User authentication status:", user ? "Authenticated" : "Not authenticated");
+      
       // If no user is found after loading completes, redirect to auth
       if (user) {
         navigate("/dashboard");
       } else {
         // Force replace to prevent back navigation to this page after logout
-        navigate("/auth", { replace: true });
+        console.log("Index: No authenticated user, redirecting to auth page");
+        
+        // Use setTimeout to ensure navigation happens after all state updates
+        setTimeout(() => {
+          navigate("/auth", { replace: true });
+        }, 0);
       }
     }
   }, [user, isLoading, navigate]);
