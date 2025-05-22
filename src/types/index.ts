@@ -16,6 +16,15 @@ export interface UserPermission {
   permission: string;
 }
 
+export interface Company {
+  name: string;
+  email: string;
+  phone?: string;
+  address?: string;
+  mapLink?: string;
+  orders: Order[];
+}
+
 export type OrderStatus = 
   | 'Created' 
   | 'In Progress' 
