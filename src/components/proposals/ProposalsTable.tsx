@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { 
   Table,
@@ -46,46 +47,46 @@ const ProposalsTable: React.FC<ProposalsTableProps> = ({
   console.log("ProposalsTable rendered with status filter:", statusFilter);
   
   // Fetch proposals
-  useEffect(() => {
-    const fetchProposals = async () => {
-      setIsLoading(true);
-      try {
-        console.log("Fetching proposals...");
+  const fetchProposals = async () => {
+    setIsLoading(true);
+    try {
+      console.log("Fetching proposals...");
+      
+      // First try to fetch from Supabase
+      const { data: supabaseData, error } = await supabase
+        .from('proposals')
+        .select('*')
+        .order('created_at', { ascending: false });
         
-        // First try to fetch from Supabase
-        const { data: supabaseData, error } = await supabase
-          .from('proposals')
-          .select('*')
-          .order('created_at', { ascending: false });
-          
-        if (error) {
-          throw error;
-        }
-
-        if (supabaseData && supabaseData.length > 0) {
-          console.log("Received proposals from Supabase:", supabaseData);
-          setProposals(supabaseData as Proposal[]);
-        } else {
-          // As a fallback, use mock data
-          console.log("No data from Supabase, using mock data");
-          setProposals(mockProposals);
-        }
-      } catch (error) {
-        console.error("Error fetching proposals:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load proposals",
-          variant: "destructive"
-        });
-        // Use mock data as a fallback
-        setProposals(mockProposals);
-      } finally {
-        setIsLoading(false);
+      if (error) {
+        throw error;
       }
-    };
-    
+
+      if (supabaseData && supabaseData.length > 0) {
+        console.log("Received proposals from Supabase:", supabaseData);
+        setProposals(supabaseData as Proposal[]);
+      } else {
+        // As a fallback, use mock data
+        console.log("No data from Supabase, using mock data");
+        setProposals(mockProposals);
+      }
+    } catch (error) {
+      console.error("Error fetching proposals:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load proposals",
+        variant: "destructive"
+      });
+      // Use mock data as a fallback
+      setProposals(mockProposals);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  useEffect(() => {
     fetchProposals();
-  }, [refreshTrigger, toast]);
+  }, [refreshTrigger]);
   
   // Apply filters
   useEffect(() => {
@@ -95,7 +96,7 @@ const ProposalsTable: React.FC<ProposalsTableProps> = ({
     // Filter by status
     if (statusFilter && statusFilter !== 'All') {
       console.log(`Filtering by status: ${statusFilter}`);
-      filtered = filtered.filter(proposal => proposal.status === statusFilter);
+      filtered = filtered.filter(proposal => proposal.status.toLowerCase() === statusFilter.toLowerCase());
     }
     
     // Filter by search term
@@ -170,6 +171,7 @@ const ProposalsTable: React.FC<ProposalsTableProps> = ({
     );
     
     // No need to re-fetch as we're already updating state
+    // This is more efficient and prevents the UI from flickering
   };
   
   // Mock data for development and fallback

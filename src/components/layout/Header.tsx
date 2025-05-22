@@ -53,8 +53,10 @@ export default function Header({ userRole: defaultRole = "admin" }: HeaderProps)
 
         {/* actions */}
         <div className="flex items-center gap-4">
-          {/* Ensure the LogoutButton is always visible */}
-          <LogoutButton />
+          {/* Ensure the LogoutButton is always visible with relative positioning */}
+          <div className="relative z-10">
+            <LogoutButton />
+          </div>
 
           {/* user dropdown */}
           <DropdownMenu>

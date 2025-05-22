@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import { FileText, Download } from 'lucide-react';
+import { Download } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -26,13 +26,21 @@ const ProposalRow: React.FC<ProposalRowProps> = ({ proposal, onStatusChange }) =
   const getStatusColor = (status: string) => {
     const statusColors = {
       'Unpaid': 'bg-yellow-500 text-white',
+      'unpaid': 'bg-yellow-500 text-white',
       'Paid': 'bg-green-500 text-white',
+      'paid': 'bg-green-500 text-white',
       'Received': 'bg-blue-500 text-white',
+      'received': 'bg-blue-500 text-white',
       'Calculated': 'bg-green-500 text-white',
+      'calculated': 'bg-green-500 text-white',
       'Partially Calculated': 'bg-teal-500 text-white',
+      'partially calculated': 'bg-teal-500 text-white',
       'Rejected': 'bg-red-500 text-white',
+      'rejected': 'bg-red-500 text-white',
       'Draft': 'bg-gray-500 text-white',
+      'draft': 'bg-gray-500 text-white',
       'Archived': 'bg-gray-700 text-white',
+      'archived': 'bg-gray-700 text-white',
     };
     return statusColors[status] || 'bg-gray-500 text-white';
   };
@@ -53,7 +61,7 @@ const ProposalRow: React.FC<ProposalRowProps> = ({ proposal, onStatusChange }) =
       // Update in Supabase first
       const { error } = await supabase
         .from('proposals')
-        .update({ status: newStatus })
+        .update({ status: newStatus.toLowerCase() })
         .eq('id', proposal.id);
         
       if (error) {
@@ -64,7 +72,7 @@ const ProposalRow: React.FC<ProposalRowProps> = ({ proposal, onStatusChange }) =
       console.log("Supabase update successful");
       
       // Then update UI via callback
-      onStatusChange(proposal.id, newStatus);
+      onStatusChange(proposal.id, newStatus.toLowerCase());
       
       toast({
         title: "Status Updated",
@@ -93,13 +101,16 @@ const ProposalRow: React.FC<ProposalRowProps> = ({ proposal, onStatusChange }) =
     'Draft', 'Unpaid', 'Paid', 'Received', 'Calculated', 'Partially Calculated', 'Rejected', 'Archived'
   ];
 
+  // Normalize the display status (capitalize first letter)
+  const displayStatus = proposal.status.charAt(0).toUpperCase() + proposal.status.slice(1).toLowerCase();
+
   return (
     <TableRow className="hover:bg-muted/50 cursor-pointer">
       <TableCell>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="sm" className="h-8 p-0">
-              <Badge className={getStatusColor(proposal.status)}>{proposal.status}</Badge>
+              <Badge className={getStatusColor(proposal.status)}>{displayStatus}</Badge>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="z-50 bg-background">
