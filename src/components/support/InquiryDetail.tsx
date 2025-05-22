@@ -119,7 +119,7 @@ export const InquiryDetail = () => {
     };
 
     loadInquiry();
-  }, [inquiryId, currentUser, navigate, toast, isAdmin]);
+  }, [inquiryId, currentUser, navigate, toast]);
 
   const handleDeleteInquiry = () => {
     setIsDeleteDialogOpen(true);
@@ -164,7 +164,7 @@ export const InquiryDetail = () => {
     setIsSubmitting(true);
     
     try {
-      console.log("Current user:", currentUser); // Add logging to debug
+      console.log("Current user:", currentUser); 
       
       // Get user display name with fallbacks
       let userName = currentUser.email || "User"; // Default to email or "User"
@@ -183,7 +183,7 @@ export const InquiryDetail = () => {
       console.log("userName:", userName);
       console.log("userRole:", userRole);
       
-      // Create the reply in the database with a valid UUID
+      // Create the reply in the database - now without foreign key constraint
       const { error } = await supabase
         .from('support_replies')
         .insert({
