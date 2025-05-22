@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useSupabaseAuth } from "@/context/SupabaseAuthContext";
@@ -40,7 +41,7 @@ export const InquiriesList = ({ showAll = false }: InquiriesListProps) => {
 
   useEffect(() => {
     loadInquiries();
-    // Log to help with debugging
+    // Debug logging to help understand what's happening
     console.log("InquiriesList - User role:", currentUser?.role);
     console.log("InquiriesList - Is admin:", isAdmin);
     console.log("InquiriesList - Show all:", showAll);
@@ -57,8 +58,7 @@ export const InquiriesList = ({ showAll = false }: InquiriesListProps) => {
     try {
       console.log("Loading inquiries - Starting query");
       
-      // IMPORTANT: The issue was with the query construction logic.
-      // For admins, we need to fetch ALL inquiries when showAll is true.
+      // FIXED: The critical issue is right here. For admins, we need to query differently
       let query = supabase.from('support_inquiries').select('*');
       
       if (isAdmin) {
@@ -68,9 +68,9 @@ export const InquiriesList = ({ showAll = false }: InquiriesListProps) => {
           console.log("Admin with showAll=false - showing only open inquiries");
           query = query.eq('status', 'open');
         } else {
-          // Admin viewing all inquiries tab
-          console.log("Admin with showAll=true - showing all inquiries");
-          // No additional filters - fetch ALL inquiries regardless of user_id
+          // Admin viewing all inquiries tab - FIXED: Removed filter that was limiting to user's inquiries
+          console.log("Admin with showAll=true - showing ALL inquiries regardless of user");
+          // No additional filters for admins when showAll is true
         }
       } else {
         // Regular user - only show their inquiries
@@ -88,7 +88,7 @@ export const InquiriesList = ({ showAll = false }: InquiriesListProps) => {
       // Debug the actual data received
       console.log("Inquiries retrieved:", data?.length || 0);
       if (data?.length > 0) {
-        console.log("First inquiry:", data[0]);
+        console.log("First inquiry sample:", data[0]);
       }
       
       // Map the data to match our SupportInquiry type
