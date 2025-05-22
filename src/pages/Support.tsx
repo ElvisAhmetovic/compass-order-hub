@@ -9,6 +9,7 @@ import { Plus } from "lucide-react";
 import Sidebar from "@/components/dashboard/Sidebar";
 import { InquiriesList } from "@/components/support/InquiriesList";
 import { NewInquiryForm } from "@/components/support/NewInquiryForm";
+import { UserRole } from "@/types";
 
 const Support = () => {
   const [activeTab, setActiveTab] = useState<string>("inquiries");
@@ -29,7 +30,9 @@ const Support = () => {
     console.log("Support Page - Is admin or owner:", isAdminOrOwner);
   }, [authUser, supabaseUser, user]);
   
-  const isAdminOrOwner = user?.role === "admin" || user?.role === "owner";
+  // Make sure we handle user.role as UserRole type
+  const userRole: UserRole = user?.role as UserRole || "user";
+  const isAdminOrOwner = userRole === "admin" || userRole === "owner";
 
   const handleCreateInquiry = () => {
     setShowNewInquiryForm(true);
@@ -40,7 +43,7 @@ const Support = () => {
     <div className="flex min-h-screen">
       <Sidebar />
       <div className="flex-1">
-        <Layout userRole={user?.role || "user"}>
+        <Layout userRole={userRole}>
           <div className="space-y-6">
             <div className="flex justify-between items-center">
               <div>

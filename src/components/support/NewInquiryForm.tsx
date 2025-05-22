@@ -70,8 +70,9 @@ export const NewInquiryForm = ({ onSuccessfulSubmit }: NewInquiryFormProps) => {
     setIsSubmitting(true);
     
     try {
-      // Get user display name with fallbacks
-      const userName = user.full_name || user.email || "Unknown User";
+      // Get user display name with type-safe fallbacks
+      // Use optional chaining to safely access properties that might not exist
+      const userName = user?.full_name || user?.name || user?.email || "Unknown User";
       
       console.log("Submitting inquiry with user:", {
         userId: user.id,
