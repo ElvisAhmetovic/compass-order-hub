@@ -79,7 +79,15 @@ export default function Header({ userRole: defaultRole = "admin" }: HeaderProps)
 
               <DropdownMenuSeparator />
 
-              <DropdownMenuItem onClick={() => navigate("/login")}>
+              <DropdownMenuItem onClick={() => {
+                // Call the LogoutButton's functionality from here too
+                const logoutBtn = document.querySelector('button[title="Logout"]');
+                if (logoutBtn) {
+                  (logoutBtn as HTMLButtonElement).click();
+                } else {
+                  navigate("/auth");
+                }
+              }}>
                 Logout
               </DropdownMenuItem>
             </DropdownMenuContent>

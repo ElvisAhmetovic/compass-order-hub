@@ -54,6 +54,7 @@ export function LogoutButton() {
       size="sm"
       className="flex items-center gap-2"
       onClick={handleLogout}
+      title="Logout"
     >
       <LogOut className="h-4 w-4" />
       <span className="hidden md:inline">Logout</span>
