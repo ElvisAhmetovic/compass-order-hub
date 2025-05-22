@@ -1,152 +1,131 @@
-
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { useLocation, Link } from "react-router-dom";
-import { useAuth } from "@/context/AuthContext";
-import { useSupabaseAuth } from "@/context/SupabaseAuthContext";
-import { UserRole } from "@/types";
+import { NavLink } from "react-router-dom";
 import {
-  LayoutDashboard,
-  ListChecks,
-  BadgeAlert,
-  CheckCircle,
+  Home,
+  CircleCheck,
   XCircle,
   Receipt,
   CreditCard,
   Building2,
-  Clock,
-  Users2,
-  Trash2,
-  StarIcon,
-  FileText,
-  HelpCircle
+  Users,
+  Trash,
+  Star,
+  LogOut,
+  CheckCircle,
+  MessageCircle,
 } from "lucide-react";
+import { LogoutButton } from "@/components/auth/LogoutButton";
+import { useAuth } from "@/context/AuthContext";
+import { useSupabaseAuth } from "@/context/SupabaseAuthContext";
+import { Badge } from "@/components/ui/badge";
+import { useEffect } from "react";
 
 const Sidebar = () => {
-  const location = useLocation();
+  // Combine both auth contexts
   const { user: localUser } = useAuth();
   const { user: supabaseUser } = useSupabaseAuth();
   
-  // Combine auth sources, prioritizing Supabase user
+  // Use whichever user object is available, prioritizing Supabase
   const user = supabaseUser || localUser;
-  const isAdmin = user?.role === "admin" || user?.role === "owner";
+  const isAdmin = user?.role === "admin";
+  const isAgent = user?.role === "agent";
 
-  const menuItems = [
-    {
-      title: "Dashboard",
-      href: "/dashboard",
-      icon: LayoutDashboard,
-      showFor: ["admin", "owner", "user"],
-    },
-    {
-      title: "Active Orders",
-      href: "/active-orders",
-      icon: Clock,
-      showFor: ["admin", "owner", "user"],
-    },
-    {
-      title: "Complaints",
-      href: "/complaints",
-      icon: BadgeAlert,
-      showFor: ["admin", "owner", "user"],
-    },
-    {
-      title: "Completed",
-      href: "/completed",
-      icon: CheckCircle,
-      showFor: ["admin", "owner", "user"],
-    },
-    {
-      title: "Invoice Sent",
-      href: "/invoice-sent",
-      icon: Receipt,
-      showFor: ["admin", "owner"],
-    },
-    {
-      title: "Invoice Paid",
-      href: "/invoice-paid",
-      icon: CreditCard,
-      showFor: ["admin", "owner"],
-    },
-    {
-      title: "Cancelled",
-      href: "/cancelled",
-      icon: XCircle,
-      showFor: ["admin", "owner"],
-    },
-    {
-      title: "Proposals",
-      href: "/proposals",
-      icon: FileText,
-      showFor: ["admin", "owner"],
-    },
-    {
-      title: "Companies",
-      href: "/companies",
-      icon: Building2,
-      showFor: ["admin", "owner"],
-    },
-    {
-      title: "User Management",
-      href: "/user-management",
-      icon: Users2,
-      showFor: ["admin", "owner"],
-    },
-    {
-      title: "Deleted",
-      href: "/deleted",
-      icon: Trash2,
-      showFor: ["admin", "owner"],
-    },
-    {
-      title: "Reviews",
-      href: "/reviews",
-      icon: StarIcon,
-      showFor: ["admin", "owner", "user"],
-    },
-    {
-      title: "Support",
-      href: "/support",
-      icon: HelpCircle,
-      showFor: ["admin", "owner", "user"],
-    },
-  ];
+  // Debug logging
+  useEffect(() => {
+    console.log("Sidebar - Current user:", user);
+    console.log("Sidebar - User role:", user?.role);
+    console.log("Sidebar - Is admin:", isAdmin);
+  }, [user, isAdmin]);
+
+  // Define navigation items based on user role
+  const getNavItems = () => {
+    // Items available to all users
+    const commonItems = [
+      { icon: Home, label: "Dashboard", path: "/dashboard" },
+      { icon: Home, label: "Active Orders", path: "/active-orders" },
+      { icon: XCircle, label: "Complaints", path: "/complaints" },
+      { icon: CheckCircle, label: "Completed", path: "/completed" },
+    ];
+    
+    // Items available to admins and agents only
+    const staffItems = [
+      { icon: CheckCircle, label: "Resolved", path: "/resolved" },
+      { icon: XCircle, label: "Cancelled", path: "/cancelled" },
+      { icon: Receipt, label: "Invoice Sent", path: "/invoice-sent" },
+      { icon: CreditCard, label: "Invoice Paid", path: "/invoice-paid" },
+    ];
+    
+    // Admin-only items
+    const adminItems = [
+      { icon: Building2, label: "Companies", path: "/companies" },
+      { icon: Users, label: "User Management", path: "/user-management" },
+      { icon: Trash, label: "Deleted", path: "/deleted" },
+      { icon: Star, label: "Reviews", path: "/reviews" },
+    ];
+    
+    // Combine items based on user role
+    if (isAdmin) {
+      return [...commonItems, ...staffItems, ...adminItems]; 
+    } else if (isAgent) {
+      return [...commonItems, ...staffItems];
+    } else {
+      return commonItems;
+    }
+  };
+
+  const navItems = getNavItems();
 
   return (
-    <div className="pb-12 min-h-screen w-64 bg-primary-foreground border-r flex flex-col">
-      <div className="py-4 px-4 border-b">
-        <h2 className="text-lg font-semibold">Order Flow Compass</h2>
-      </div>
-      <div className="px-3 py-2 flex-1">
-        <div className="space-y-1">
-          {menuItems
-            .filter(item => {
-              // Handle permission check
-              if (!user || !user.role) return false;
-              return item.showFor.includes(user.role as UserRole);
-            })
-            .map((item, index) => {
-              const isActive = location.pathname === item.href;
-              return (
-                <Button
-                  key={index}
-                  asChild
-                  variant={isActive ? "secondary" : "ghost"}
-                  className={cn(
-                    "w-full justify-start",
-                    isActive ? "bg-secondary" : ""
-                  )}
-                >
-                  <Link to={item.href}>
-                    <item.icon className="mr-2 h-4 w-4" />
-                    {item.title}
-                  </Link>
-                </Button>
-              );
-            })}
+    <aside className="w-64 bg-white border-r h-screen sticky top-0 flex flex-col">
+      {/* Debug info (will only show in development) */}
+      {process.env.NODE_ENV !== 'production' && (
+        <div className="p-2 bg-amber-100 text-xs">
+          <p>Role: {user?.role || 'none'}</p>
+          <p>Admin: {isAdmin ? 'Yes' : 'No'}</p>
         </div>
+      )}
+      
+      <nav className="p-4 space-y-1 flex-1">
+        {navItems.map((item) => (
+          <NavLink
+            key={item.path}
+            to={item.path}
+            className={({ isActive }) =>
+              `flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${
+                isActive
+                  ? "bg-primary text-primary-foreground font-medium"
+                  : "hover:bg-muted"
+              }`
+            }
+          >
+            <item.icon className="h-4 w-4" />
+            <span>{item.label}</span>
+          </NavLink>
+        ))}
+      </nav>
+      
+      {/* Support link at the bottom with highlight */}
+      <div className="px-4 py-3 mt-auto mb-2">
+        <NavLink
+          to="/support"
+          className={({ isActive }) =>
+            `flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${
+              isActive
+                ? "bg-primary text-primary-foreground font-medium"
+                : "bg-purple-100 text-purple-700 hover:bg-purple-200"
+            }`
+          }
+        >
+          <MessageCircle className="h-4 w-4" />
+          <span>Support</span>
+          <Badge className="ml-auto bg-purple-500 text-white">Help</Badge>
+        </NavLink>
       </div>
-    </div>
+      
+      {/* Logout Button */}
+      <div className="px-3 py-2 mt-1 mb-4">
+        <LogoutButton />
+      </div>
+    </aside>
   );
 };
 

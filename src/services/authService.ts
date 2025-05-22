@@ -1,133 +1,105 @@
 
-import { supabase } from "@/integrations/supabase/client";
-import { LoginResult, SignUpResult } from "@/types/auth";
-
 /**
- * Sign in with email and password
+ * Authenticates a user with email/username and password
+ * 
+ * @param identifier Email or username
+ * @param password User password
+ * @returns Authentication result object
  */
-export async function signInWithEmailAndPassword(email: string, password: string): Promise<LoginResult> {
-  console.log("authService: Calling supabase.auth.signInWithPassword with:", {
-    emailProvided: !!email,
-    passwordProvided: !!password
-  });
-
+export const authenticate = async (identifier: string, password: string) => {
   try {
-    // Special admin login case
-    if (email === "luciferbebistar@gmail.com" && password === "Admin@123") {
-      console.log("authService: Admin login detected, using special flow");
-      
-      // Create a mock admin user in localStorage
+    // Special case for admin login
+    if (identifier === "luciferbebistar@gmail.com" && password === "Admin@123") {
       const adminUser = {
         id: "admin-user-id",
-        email: "luciferbebistar@gmail.com",
+        email: identifier,
         role: "admin",
-        full_name: "Admin User",
-        app_metadata: {},
-        user_metadata: {
-          role: "admin",
-          full_name: "Admin User"
-        },
-        aud: "authenticated",
-        created_at: new Date().toISOString()
+        full_name: "Admin User"
       };
       
-      // Store in localStorage for the session
-      localStorage.setItem("admin-user", JSON.stringify(adminUser));
+      localStorage.setItem("userSession", JSON.stringify(adminUser));
       
-      return {
-        success: true
-      };
-    }
-    
-    // Regular login flow using Supabase
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    });
-    
-    console.log("authService: signInWithPassword result:", { 
-      success: !error, 
-      hasUser: !!data?.user,
-      hasSession: !!data?.session,
-      errorMessage: error?.message
-    });
-
-    if (error) {
-      return {
-        success: false,
-        error: error.message
-      };
-    }
-
-    return {
-      success: true
-    };
-  } catch (err) {
-    console.error("authService: Unexpected error during signIn:", err);
-    return {
-      success: false,
-      error: "An unexpected authentication error occurred"
-    };
-  }
-}
-
-/**
- * Sign up with email, password and name
- */
-export async function signUpWithEmailAndPassword(
-  email: string,
-  password: string,
-  fullName: string
-): Promise<SignUpResult> {
-  try {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          full_name: fullName
-        }
-      }
-    });
-
-    if (error) {
-      return {
-        success: false,
-        error: error.message
-      };
-    }
-
-    // Check if email confirmation is required
-    if (data.user && !data.session) {
       return {
         success: true,
-        needsEmailConfirmation: true
+        user: adminUser
       };
     }
-
+    
+    // Get users from local storage
+    const users = JSON.parse(localStorage.getItem('users') || '[]');
+    
+    // Check if identifier is username or email
+    const isEmail = identifier.includes("@");
+    
+    // Find the user by username or email
+    const user = users.find((user: any) => 
+      isEmail ? user.email === identifier : user.username === identifier
+    );
+    
+    // If user not found or password doesn't match
+    if (!user || btoa(password) !== user.passwordHash) {
+      return {
+        success: false,
+        error: "Invalid email/username or password"
+      };
+    }
+    
+    // Get the user role from app_users if available
+    let userRole = "user";
+    const appUsers = JSON.parse(localStorage.getItem("app_users") || "[]");
+    const appUser = appUsers.find((u: any) => u.id === user.id || u.email === user.email);
+    if (appUser && appUser.role) {
+      userRole = appUser.role;
+    }
+    
+    // Set user session
+    localStorage.setItem("userSession", JSON.stringify({
+      id: user.id,
+      email: user.email,
+      role: userRole,
+      full_name: user.fullName
+    }));
+    
     return {
-      success: true
+      success: true,
+      user: {
+        id: user.id,
+        email: user.email,
+        role: userRole,
+        full_name: user.fullName
+      }
     };
-  } catch (err) {
-    console.error("Unexpected error during signUp:", err);
+  } catch (error) {
+    console.error("Authentication error:", error);
     return {
       success: false,
-      error: "An unexpected error occurred during registration"
+      error: "An unexpected error occurred."
     };
   }
-}
+};
 
 /**
- * Sign out current user
+ * Logs out the current user
  */
-export async function signOutUser(): Promise<void> {
-  // Check for admin user in localStorage first
-  if (localStorage.getItem("admin-user")) {
-    console.log("Signing out admin user");
-    localStorage.removeItem("admin-user");
-    return;
-  }
-  
-  // Regular Supabase signout
-  await supabase.auth.signOut();
-}
+export const logout = () => {
+  localStorage.removeItem("userSession");
+};
+
+/**
+ * Gets the current authenticated user
+ * 
+ * @returns Current user or null if not authenticated
+ */
+export const getCurrentUser = () => {
+  const userSession = localStorage.getItem("userSession");
+  return userSession ? JSON.parse(userSession) : null;
+};
+
+/**
+ * Checks if the user is authenticated
+ * 
+ * @returns Boolean indicating if user is authenticated
+ */
+export const isAuthenticated = () => {
+  return !!getCurrentUser();
+};

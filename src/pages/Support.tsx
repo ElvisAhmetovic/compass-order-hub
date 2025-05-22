@@ -2,26 +2,18 @@
 import { useState } from "react";
 import Layout from "@/components/layout/Layout";
 import { useAuth } from "@/context/AuthContext";
-import { useSupabaseAuth } from "@/context/SupabaseAuthContext";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { InquiriesList } from "@/components/support/InquiriesList";
 import { NewInquiryForm } from "@/components/support/NewInquiryForm";
 import { Plus } from "lucide-react";
 import Sidebar from "@/components/dashboard/Sidebar";
-import { UserRole } from "@/types";
 
 const Support = () => {
   const [activeTab, setActiveTab] = useState<string>("inquiries");
   const [showNewInquiryForm, setShowNewInquiryForm] = useState(false);
   const { user } = useAuth();
-  const { user: supabaseUser } = useSupabaseAuth();
-  const currentUser = supabaseUser || user;
-  const isAdmin = currentUser?.role === "admin" || currentUser?.role === "owner";
-
-  console.log("Support - User role:", currentUser?.role);
-  console.log("Support - Is admin:", isAdmin);
-  console.log("Support - Current user object:", currentUser);
+  const isAdmin = user?.role === "admin";
 
   const handleCreateInquiry = () => {
     setShowNewInquiryForm(true);
@@ -32,7 +24,7 @@ const Support = () => {
     <div className="flex min-h-screen">
       <Sidebar />
       <div className="flex-1">
-        <Layout userRole={(currentUser?.role as UserRole) || "user"}>
+        <Layout userRole={user?.role || "user"}>
           <div className="space-y-6">
             <div className="flex justify-between items-center">
               <div>
@@ -77,6 +69,7 @@ const Support = () => {
               
               {isAdmin && (
                 <TabsContent value="open" className="p-0">
+                  {/* For admin - show only open inquiries */}
                   <InquiriesList showAll={false} />
                 </TabsContent>
               )}

@@ -14,7 +14,6 @@ import Deleted from './pages/Deleted';
 import Reviews from './pages/Reviews';
 import Support from "./pages/Support";
 import SupportDetail from "./pages/SupportDetail";
-import Proposals from './pages/Proposals';
 import Index from './pages/Index';
 import AuthGuard from './components/auth/AuthGuard';
 import { Toaster } from './components/ui/toaster';
@@ -90,16 +89,6 @@ function App() {
               element={
                 <RequireAuth>
                   <Dashboard />
-                </RequireAuth>
-              }
-            />
-            <Route
-              path="/proposals"
-              element={
-                <RequireAuth>
-                  <AuthGuard requiredRoles={["admin", "owner"]}>
-                    <Proposals />
-                  </AuthGuard>
                 </RequireAuth>
               }
             />

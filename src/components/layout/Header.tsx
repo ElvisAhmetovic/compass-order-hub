@@ -53,7 +53,6 @@ export default function Header({ userRole: defaultRole = "admin" }: HeaderProps)
 
         {/* actions */}
         <div className="flex items-center gap-4">
-          {/* Make logout button always visible */}
           <LogoutButton />
 
           {/* user dropdown */}
@@ -64,7 +63,7 @@ export default function Header({ userRole: defaultRole = "admin" }: HeaderProps)
               </Button>
             </DropdownMenuTrigger>
 
-            <DropdownMenuContent align="end" className="z-50 bg-background">
+            <DropdownMenuContent align="end">
               <DropdownMenuLabel>
                 {user?.email || (actualRole === "admin" ? "Admin User" : "Agent User")}
               </DropdownMenuLabel>
@@ -80,15 +79,7 @@ export default function Header({ userRole: defaultRole = "admin" }: HeaderProps)
 
               <DropdownMenuSeparator />
 
-              <DropdownMenuItem onClick={() => {
-                // Call the LogoutButton's functionality directly
-                const logoutBtn = document.querySelector('button[title="Logout"]');
-                if (logoutBtn) {
-                  (logoutBtn as HTMLButtonElement).click();
-                } else {
-                  navigate("/auth");
-                }
-              }}>
+              <DropdownMenuItem onClick={() => navigate("/login")}>
                 Logout
               </DropdownMenuItem>
             </DropdownMenuContent>

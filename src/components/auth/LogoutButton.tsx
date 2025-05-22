@@ -14,32 +14,18 @@ export function LogoutButton() {
 
   const handleLogout = async () => {
     try {
-      console.log("LogoutButton: Starting logout process");
-      
-      // First attempt to clear Supabase session
-      try {
-        await signOut();
-        console.log("LogoutButton: Supabase signOut completed");
-      } catch (supabaseError) {
-        // Continue even if Supabase logout fails (session might already be invalid)
-        console.error("LogoutButton: Supabase signOut error:", supabaseError);
-      }
-      
-      // Always clear local auth state
+      // Clear both authentication systems
+      await signOut();
       logout();
-      console.log("LogoutButton: Local auth state cleared");
       
       toast({
         title: "Logged out successfully",
         description: "You have been signed out of the system."
       });
       
-      // Force navigation to auth page with replace to prevent back navigation
-      console.log("LogoutButton: Navigating to auth page");
-      navigate("/auth", { replace: true });
-      
+      navigate("/auth");
     } catch (error) {
-      console.error("LogoutButton: Error in logout process:", error);
+      console.error("Error logging out:", error);
       toast({
         variant: "destructive",
         title: "Error logging out",
@@ -54,7 +40,6 @@ export function LogoutButton() {
       size="sm"
       className="flex items-center gap-2"
       onClick={handleLogout}
-      title="Logout"
     >
       <LogOut className="h-4 w-4" />
       <span className="hidden md:inline">Logout</span>

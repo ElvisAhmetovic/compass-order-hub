@@ -1,8 +1,8 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/context/AuthContext";
-import { useSupabaseAuth } from "@/context/SupabaseAuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Collapsible, 
@@ -20,7 +20,6 @@ import {
 } from "@/components/ui/form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { useNavigate } from "react-router-dom";
 import * as z from "zod";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
@@ -47,9 +46,7 @@ type PasswordFormValues = z.infer<typeof passwordFormSchema>;
 
 export function ProfileForm() {
   const { user, updateUserProfile, updatePassword, logout } = useAuth();
-  const { signOut } = useSupabaseAuth();
   const { toast } = useToast();
-  const navigate = useNavigate();
   const [isPasswordOpen, setIsPasswordOpen] = useState(false);
   const [isProfileLoading, setIsProfileLoading] = useState(false);
   const [isPasswordLoading, setIsPasswordLoading] = useState(false);
@@ -123,28 +120,8 @@ export function ProfileForm() {
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      // Clear Supabase session
-      await signOut();
-      // Clear local auth
-      logout();
-      
-      toast({
-        title: "Logged out successfully",
-        description: "You have been signed out of the system."
-      });
-      
-      // Force navigation to auth page
-      navigate("/auth", { replace: true });
-    } catch (error) {
-      console.error("Error during logout:", error);
-      toast({
-        variant: "destructive",
-        title: "Logout Error",
-        description: "There was a problem signing you out."
-      });
-    }
+  const handleLogout = () => {
+    logout();
   };
 
   if (!user) {
@@ -160,7 +137,7 @@ export function ProfileForm() {
           <AlertDescription className="space-y-2">
             <p><strong>Email:</strong> {user.email}</p>
             <p><strong>Role:</strong> {user.role}</p>
-            <p><strong>Last Sign In:</strong> {user.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleString() : 'Not available'}</p>
+            <p><strong>Last Sign In:</strong> {user.last_sign_in ? new Date(user.last_sign_in).toLocaleString() : 'Not available'}</p>
           </AlertDescription>
         </Alert>
       </div>

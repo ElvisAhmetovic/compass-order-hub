@@ -15,7 +15,6 @@ import { ChevronDown, ChevronUp } from "lucide-react";
 import { Order, OrderStatus, User } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
-import { useSupabaseAuth } from "@/context/SupabaseAuthContext";
 
 interface OrderTableProps {
   onOrderClick: (order: Order) => void;
@@ -34,21 +33,16 @@ const OrderTable = ({ onOrderClick, statusFilter, refreshTrigger }: OrderTablePr
   const [sortField, setSortField] = useState<'created_at' | 'updated_at'>('created_at');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   
-  // Enhanced pagination state
+  // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [totalPages, setTotalPages] = useState(1);
+  const [rowsPerPage] = useState(10);
   
   // Additional filters
   const [priorityFilter, setPriorityFilter] = useState<string | null>(null);
   
   const { toast } = useToast();
-  const { user: localUser } = useAuth();
-  const { user: supabaseUser } = useSupabaseAuth();
-  
-  // Get the authenticated user, prioritizing Supabase
-  const user = supabaseUser || localUser;
-  const isAdmin = user?.role === "admin" || user?.role === "owner";
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
 
   // Load users
   useEffect(() => {
@@ -102,18 +96,11 @@ const OrderTable = ({ onOrderClick, statusFilter, refreshTrigger }: OrderTablePr
     // Apply status filter
     if (statusFilter) {
       if (statusFilter === "All") {
-        // For regular users, only show orders assigned to them regardless of status
-        if (!isAdmin) {
-          // Already filtered in the fetchOrders function
-        } else {
-          // For admins, filter out specific statuses if needed when "All" is selected
-          result = result.filter(order => 
-            !["Resolved", "Cancelled", "Deleted"].includes(order.status)
-          );
-        }
+        // Keep all orders, but filter out specific statuses if needed
+        result = result.filter(order => 
+          !["Resolved", "Cancelled", "Deleted"].includes(order.status)
+        );
       } else {
-        // Both admin and regular users can filter by status
-        // But regular users can only see orders assigned to them
         result = result.filter(order => order.status === statusFilter);
       }
     }
@@ -136,24 +123,18 @@ const OrderTable = ({ onOrderClick, statusFilter, refreshTrigger }: OrderTablePr
     });
     
     setFilteredOrders(result);
-    // Calculate total pages
-    setTotalPages(Math.ceil(result.length / rowsPerPage));
     // Reset to first page when filters change
     setCurrentPage(1);
-  }, [orders, statusFilter, priorityFilter, sortField, sortDirection, isAdmin, rowsPerPage]);
+  }, [orders, statusFilter, priorityFilter, sortField, sortDirection, isAdmin]);
 
   // Get current page of orders
   const indexOfLastOrder = currentPage * rowsPerPage;
   const indexOfFirstOrder = indexOfLastOrder - rowsPerPage;
   const currentOrders = filteredOrders.slice(indexOfFirstOrder, indexOfLastOrder);
+  const totalPages = Math.ceil(filteredOrders.length / rowsPerPage);
 
   const handlePageChange = (pageNumber: number) => {
     setCurrentPage(pageNumber);
-  };
-
-  const handleRowsPerPageChange = (newRowsPerPage: number) => {
-    setRowsPerPage(newRowsPerPage);
-    setCurrentPage(1); // Reset to first page when changing rows per page
   };
 
   const toggleSort = (field: 'created_at' | 'updated_at') => {
@@ -187,36 +168,6 @@ const OrderTable = ({ onOrderClick, statusFilter, refreshTrigger }: OrderTablePr
           onStatusChange={(status) => setPriorityFilter(status)} 
           selectedStatus={priorityFilter}
         />
-      </div>
-    );
-  };
-
-  // For displaying pagination info and rows per page selector
-  const renderPaginationInfo = () => {
-    if (!isAdmin || filteredOrders.length === 0) return null;
-    
-    const start = Math.min(indexOfFirstOrder + 1, filteredOrders.length);
-    const end = Math.min(indexOfLastOrder, filteredOrders.length);
-    
-    return (
-      <div className="flex justify-between items-center mb-4">
-        <div className="text-sm text-muted-foreground">
-          Showing {start} - {end} of {filteredOrders.length} entries
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Show</span>
-          <select
-            className="border rounded p-1 text-sm"
-            value={rowsPerPage}
-            onChange={(e) => handleRowsPerPageChange(Number(e.target.value))}
-          >
-            <option value={10}>10</option>
-            <option value={25}>25</option>
-            <option value={50}>50</option>
-            <option value={100}>100</option>
-          </select>
-          <span className="text-sm text-muted-foreground">entries</span>
-        </div>
       </div>
     );
   };
@@ -268,7 +219,6 @@ const OrderTable = ({ onOrderClick, statusFilter, refreshTrigger }: OrderTablePr
   return (
     <div className="space-y-4">
       {renderFilters()}
-      {renderPaginationInfo()}
       
       <div className="rounded-md border overflow-hidden">
         <Table>
@@ -324,12 +274,7 @@ const OrderTable = ({ onOrderClick, statusFilter, refreshTrigger }: OrderTablePr
         </Table>
       </div>
 
-      <div className="flex justify-between items-center mt-4">
-        <div className="text-sm text-muted-foreground">
-          {isAdmin && filteredOrders.length > 0 && (
-            <>Showing {indexOfFirstOrder + 1} to {Math.min(indexOfLastOrder, filteredOrders.length)} of {filteredOrders.length} entries</>
-          )}
-        </div>
+      <div className="flex justify-center mt-4">
         <OrderPagination 
           currentPage={currentPage} 
           totalPages={totalPages}
