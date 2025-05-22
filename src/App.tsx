@@ -12,6 +12,7 @@ import Deleted from './pages/Deleted';
 import Reviews from './pages/Reviews';
 import Support from "./pages/Support";
 import SupportDetail from "./pages/SupportDetail";
+import Inventory from './pages/Inventory';
 import Index from './pages/Index';
 
 function App() {
@@ -99,6 +100,14 @@ function App() {
             element={
               <RequireAuth>
                 <UserManagement />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/inventory"
+            element={
+              <RequireAuth>
+                <Inventory />
               </RequireAuth>
             }
           />
