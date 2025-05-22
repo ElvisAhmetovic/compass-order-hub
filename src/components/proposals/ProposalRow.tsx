@@ -25,6 +25,7 @@ const ProposalRow: React.FC<ProposalRowProps> = ({ proposal, onStatusChange }) =
   const getStatusColor = (status: string) => {
     const statusColors = {
       'Unpaid': 'bg-yellow-500 text-white',
+      'Paid': 'bg-green-500 text-white',
       'Received': 'bg-blue-500 text-white',
       'Calculated': 'bg-green-500 text-white',
       'Partially Calculated': 'bg-teal-500 text-white',
@@ -58,7 +59,7 @@ const ProposalRow: React.FC<ProposalRowProps> = ({ proposal, onStatusChange }) =
   };
 
   const availableStatuses = [
-    'Draft', 'Unpaid', 'Received', 'Calculated', 'Partially Calculated', 'Rejected', 'Archived'
+    'Draft', 'Unpaid', 'Paid', 'Received', 'Calculated', 'Partially Calculated', 'Rejected', 'Archived'
   ];
 
   return (

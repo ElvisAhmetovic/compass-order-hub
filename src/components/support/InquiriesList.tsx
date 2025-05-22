@@ -35,14 +35,10 @@ export const InquiriesList = ({ showAll = false }: InquiriesListProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
   
-  // Fix: Ensure role checking is done correctly
   const isAdmin = currentUser?.role === "admin" || currentUser?.role === "owner";
 
   useEffect(() => {
     loadInquiries();
-    console.log("InquiriesList - User role:", currentUser?.role);
-    console.log("InquiriesList - Is admin:", isAdmin);
-    console.log("InquiriesList - Show all:", showAll);
   }, [currentUser, isAdmin, showAll]);
 
   const loadInquiries = async () => {
@@ -54,25 +50,17 @@ export const InquiriesList = ({ showAll = false }: InquiriesListProps) => {
 
     setIsLoading(true);
     try {
-      console.log("Loading inquiries - Starting query");
-      
-      // FIXED: The critical issue is right here. For admins, we need to query differently
+      // For admin/owner users
       let query = supabase.from('support_inquiries').select('*');
       
       if (isAdmin) {
-        console.log("User is admin - checking showAll flag:", showAll);
         if (!showAll) {
-          // Admin viewing open inquiries tab
-          console.log("Admin with showAll=false - showing only open inquiries");
+          // Admin viewing open inquiries tab - only show open inquiries
           query = query.eq('status', 'open');
-        } else {
-          // Admin viewing all inquiries tab
-          console.log("Admin with showAll=true - showing ALL inquiries regardless of user");
-          // No additional filters for admins when showAll is true
         }
+        // For showAll=true, no additional filters needed - admins see all inquiries
       } else {
-        // Regular user - only show their inquiries
-        console.log("User is not admin - filtering by user ID:", currentUser.id);
+        // Regular users - only show their own inquiries
         query = query.eq('user_id', currentUser.id);
       }
       
@@ -83,13 +71,8 @@ export const InquiriesList = ({ showAll = false }: InquiriesListProps) => {
         throw error;
       }
       
-      console.log("Inquiries retrieved:", data?.length || 0);
-      if (data?.length > 0) {
-        console.log("First inquiry sample:", data[0]);
-      }
-      
       // Map the data to match our SupportInquiry type
-      const formattedInquiries: SupportInquiry[] = data.map(item => ({
+      const formattedInquiries: SupportInquiry[] = data?.map(item => ({
         id: item.id,
         userId: item.user_id,
         userEmail: item.user_email,
@@ -99,7 +82,7 @@ export const InquiriesList = ({ showAll = false }: InquiriesListProps) => {
         createdAt: item.created_at,
         status: item.status as "open" | "replied" | "closed",
         updated_at: item.updated_at
-      }));
+      })) || [];
       
       setInquiries(formattedInquiries);
     } catch (error) {

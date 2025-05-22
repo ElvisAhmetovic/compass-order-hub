@@ -11,7 +11,7 @@ export interface Proposal {
   amount: string;
 }
 
-export type ProposalStatus = 'All' | 'Draft' | 'Unpaid' | 'Received' | 'Calculated' | 'Partially Calculated' | 'Rejected' | 'Archived';
+export type ProposalStatus = 'All' | 'Draft' | 'Unpaid' | 'Paid' | 'Received' | 'Calculated' | 'Partially Calculated' | 'Rejected' | 'Archived';
 
 export interface ProposalFilterOptions {
   status: ProposalStatus | null;
