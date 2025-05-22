@@ -69,10 +69,42 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
   const signIn = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      const result = await signInWithEmailAndPassword(email, password);
+      // Add extensive debug logging to track the issue
+      console.log("SupabaseAuthContext: signIn called with:", { 
+        emailProvided: !!email, 
+        passwordLength: password ? password.length : 0,
+        emailValue: email, // Log the actual email for debugging - remove in production!
+      });
+      
+      // Ensure we're working with strings and they're properly trimmed
+      const emailToUse = typeof email === 'string' ? email.trim() : '';
+      const passwordToUse = typeof password === 'string' ? password : '';
+      
+      if (!emailToUse || !passwordToUse) {
+        console.error("SupabaseAuthContext: Empty credentials detected:", {
+          emailEmpty: !emailToUse,
+          passwordEmpty: !passwordToUse
+        });
+        return {
+          success: false,
+          error: "Email and password are required"
+        };
+      }
+
+      // Special admin login case
+      if (emailToUse === "luciferbebistar@gmail.com") {
+        console.log("SupabaseAuthContext: Admin login attempt detected");
+      }
+      
+      console.log("SupabaseAuthContext: Calling signInWithEmailAndPassword with:", { 
+        email: emailToUse,
+        passwordProvided: !!passwordToUse 
+      });
+      
+      const result = await signInWithEmailAndPassword(emailToUse, passwordToUse);
       
       // If using the special admin login case, we need to update our context state
-      if (result.success && email === "luciferbebistar@gmail.com") {
+      if (result.success && emailToUse === "luciferbebistar@gmail.com") {
         const adminUser = checkForAdminSession();
         if (adminUser) {
           setUser(adminUser);
@@ -81,6 +113,12 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
       }
       
       return result;
+    } catch (error) {
+      console.error("SupabaseAuthContext: Unexpected error during signIn:", error);
+      return {
+        success: false,
+        error: "An unexpected authentication error occurred."
+      };
     } finally {
       setIsLoading(false);
     }
