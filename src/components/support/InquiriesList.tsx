@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useSupabaseAuth } from "@/context/SupabaseAuthContext";
@@ -35,17 +36,16 @@ export const InquiriesList = ({ showAll = false }: InquiriesListProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
   
-  // Check if user is admin using both potential sources of user data
+  // Check if user is admin using role property directly
+  // This avoids trying to access user_metadata which isn't in the type definition
   const isAdmin = 
     (currentUser?.role === "admin" || currentUser?.role === "owner") || 
-    (currentUser?.user_metadata?.role === "admin" || currentUser?.user_metadata?.role === "owner") ||
     (authUser?.role === "admin" || authUser?.role === "owner");
 
   // Debug logs for troubleshooting
   console.log("InquiriesList - currentUser:", currentUser);
-  console.log("InquiriesList - isAdmin check 1:", currentUser?.role === "admin" || currentUser?.role === "owner");
-  console.log("InquiriesList - isAdmin check 2:", currentUser?.user_metadata?.role === "admin" || currentUser?.user_metadata?.role === "owner");
   console.log("InquiriesList - authUser role:", authUser?.role);
+  console.log("InquiriesList - currentUser role:", currentUser?.role);
   console.log("InquiriesList - final isAdmin value:", isAdmin);
   console.log("InquiriesList - showAll param:", showAll);
 
