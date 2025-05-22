@@ -71,13 +71,30 @@ export const NewInquiryForm = ({ onSuccessfulSubmit }: NewInquiryFormProps) => {
     
     try {
       // Get user display name with type-safe access
-      // We need to handle different user types safely
-      // Look at the user object structure from both auth contexts
-      const userName = typeof user.user_metadata?.full_name === 'string' ? user.user_metadata.full_name :
-                      typeof user.user_metadata?.name === 'string' ? user.user_metadata.name :
-                      typeof user.full_name === 'string' ? user.full_name :
-                      typeof user.name === 'string' ? user.name :
-                      user.email || "Unknown User";
+      // Use a more robust approach to extract username that works with both auth contexts
+      let userName = "Unknown User";
+      
+      // Log user object to help with debugging type structure
+      console.log("User object structure:", JSON.stringify(user, null, 2));
+      
+      // Check for user_metadata in Supabase user object (using optional chaining)
+      if (user.user_metadata && typeof user.user_metadata === 'object') {
+        if (typeof user.user_metadata.full_name === 'string') {
+          userName = user.user_metadata.full_name;
+        } else if (typeof user.user_metadata.name === 'string') {
+          userName = user.user_metadata.name;
+        }
+      }
+      
+      // If we still don't have a name, try direct properties
+      // TypeScript will allow this with type assertions since we're checking types
+      if (userName === "Unknown User") {
+        // @ts-ignore - Handle potential properties that might exist in different user objects
+        if (typeof user.full_name === 'string') userName = user.full_name;
+        // @ts-ignore
+        else if (typeof user.name === 'string') userName = user.name;
+        else if (typeof user.email === 'string') userName = user.email;
+      }
       
       console.log("Submitting inquiry with user:", {
         userId: user.id,
