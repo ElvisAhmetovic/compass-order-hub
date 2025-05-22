@@ -19,9 +19,19 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar } from "lucide-react";
+import { Calendar, Edit, PlusCircle } from "lucide-react";
 import Sidebar from "@/components/dashboard/Sidebar";
 import { useAuth } from "@/context/AuthContext";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogFooter,
+  DialogClose
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { toast } from "@/hooks/use-toast";
 
 // Example inventory data structure
 interface InventoryItem {
@@ -126,8 +136,14 @@ const Inventory = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentTab, setCurrentTab] = useState("All");
   
+  // State for editing
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [currentEditItem, setCurrentEditItem] = useState<InventoryItem | null>(null);
+  const [editFormData, setEditFormData] = useState<Partial<InventoryItem>>({});
+  const [inventoryData, setInventoryData] = useState<InventoryItem[]>(mockInventoryData);
+
   // Filter data based on search query and selected category/tab
-  const filteredData = mockInventoryData.filter((item) => {
+  const filteredData = inventoryData.filter((item) => {
     const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
                          item.id.toLowerCase().includes(searchQuery.toLowerCase());
     
@@ -136,6 +152,41 @@ const Inventory = () => {
     
     return matchesSearch && matchesCategory && matchesTab;
   });
+
+  // Handle opening the edit dialog
+  const handleEditClick = (item: InventoryItem) => {
+    setCurrentEditItem(item);
+    setEditFormData({ ...item });
+    setIsEditDialogOpen(true);
+  };
+
+  // Handle form input changes
+  const handleInputChange = (field: keyof InventoryItem, value: string) => {
+    setEditFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  // Handle save changes
+  const handleSaveChanges = () => {
+    if (!currentEditItem || !editFormData) return;
+    
+    // Update the inventory item
+    const updatedInventory = inventoryData.map(item => 
+      item.id === currentEditItem.id ? { ...item, ...editFormData } : item
+    );
+    
+    setInventoryData(updatedInventory);
+    setIsEditDialogOpen(false);
+    
+    // Show success toast
+    toast({
+      title: "Item Updated",
+      description: `${editFormData.name} has been successfully updated.`,
+      variant: "default",
+    });
+  };
 
   // If not admin, redirect or show access denied
   if (!isAdmin) {
@@ -166,7 +217,10 @@ const Inventory = () => {
               <h1 className="text-2xl font-bold">Inventory</h1>
               <div className="flex gap-2">
                 <Button variant="outline">Import products</Button>
-                <Button>Add product</Button>
+                <Button>
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Add product
+                </Button>
               </div>
             </div>
 
@@ -244,6 +298,7 @@ const Inventory = () => {
                         <TableHead>Last booking</TableHead>
                         <TableHead>Stock</TableHead>
                         <TableHead className="text-right">Price (Gross)</TableHead>
+                        <TableHead className="w-[80px]">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -255,11 +310,20 @@ const Inventory = () => {
                           <TableCell>{item.lastBooking || "-"}</TableCell>
                           <TableCell>{item.stock}</TableCell>
                           <TableCell className="text-right">{item.price}</TableCell>
+                          <TableCell>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={() => handleEditClick(item)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
                         </TableRow>
                       ))}
                       {filteredData.length === 0 && (
                         <TableRow>
-                          <TableCell colSpan={6} className="text-center py-8">
+                          <TableCell colSpan={7} className="text-center py-8">
                             No items found
                           </TableCell>
                         </TableRow>
@@ -287,12 +351,70 @@ const Inventory = () => {
                     <Button variant="outline" size="sm" className="h-8">Last</Button>
                   </div>
                   <div className="text-gray-600">
-                    Shows 1 - 10 of 57 entries
+                    Shows 1 - {Math.min(filteredData.length, 10)} of {filteredData.length} entries
                   </div>
                 </div>
               </div>
             </div>
           </div>
+
+          {/* Edit Dialog */}
+          <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Edit Inventory Item</DialogTitle>
+              </DialogHeader>
+              {currentEditItem && (
+                <div className="space-y-4 py-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="item-name">Name</Label>
+                    <Input 
+                      id="item-name" 
+                      value={editFormData.name || ''} 
+                      onChange={(e) => handleInputChange('name', e.target.value)} 
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="item-category">Category</Label>
+                    <Select 
+                      value={editFormData.category} 
+                      onValueChange={(value) => handleInputChange('category', value as "Article" | "Service")}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Article">Article</SelectItem>
+                        <SelectItem value="Service">Service</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="item-stock">Stock</Label>
+                    <Input 
+                      id="item-stock" 
+                      value={editFormData.stock || ''} 
+                      onChange={(e) => handleInputChange('stock', e.target.value)} 
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="item-price">Price</Label>
+                    <Input 
+                      id="item-price" 
+                      value={editFormData.price || ''} 
+                      onChange={(e) => handleInputChange('price', e.target.value)} 
+                    />
+                  </div>
+                </div>
+              )}
+              <DialogFooter>
+                <DialogClose asChild>
+                  <Button variant="outline">Cancel</Button>
+                </DialogClose>
+                <Button onClick={handleSaveChanges}>Save Changes</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </Layout>
       </div>
     </div>
