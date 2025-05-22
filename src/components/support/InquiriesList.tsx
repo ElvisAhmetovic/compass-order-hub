@@ -1,13 +1,14 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { useSupabaseAuth } from "@/context/SupabaseAuthContext";
 import { format } from "date-fns";
 import { SupportInquiry } from "@/types/support";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
-import { Trash } from "lucide-react";
+import { Trash, RefreshCw } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -29,14 +30,24 @@ export const InquiriesList = ({ showAll = false }: InquiriesListProps) => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const { user } = useAuth();
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  
+  // Try both auth contexts to ensure we have a user
+  const { user: authUser } = useAuth();
+  const { user: supabaseUser } = useSupabaseAuth();
+  
+  // Use either authUser or supabaseUser, whichever is available
+  const user = supabaseUser || authUser;
+  
   const navigate = useNavigate();
   const { toast } = useToast();
   const isAdminOrOwner = user?.role === "admin" || user?.role === "owner";
 
   useEffect(() => {
-    loadInquiries();
-  }, [user]);
+    if (user) {
+      loadInquiries();
+    }
+  }, [user, showAll]);
 
   const loadInquiries = async () => {
     if (!user) {
@@ -47,24 +58,35 @@ export const InquiriesList = ({ showAll = false }: InquiriesListProps) => {
 
     setIsLoading(true);
     try {
+      console.log("Loading inquiries with user:", {
+        userId: user.id,
+        isAdminOrOwner,
+        showAll
+      });
+      
       let query = supabase
         .from('support_inquiries')
         .select('*');
       
       // For regular users, only show their own inquiries
       if (!isAdminOrOwner) {
+        console.log("Filtering inquiries for regular user:", user.id);
         query = query.eq('user_id', user.id);
       } 
       // For admin/owner showing only open inquiries
       else if (!showAll) {
+        console.log("Filtering for open inquiries only (admin/owner)");
         query = query.eq('status', 'open');
       }
       
       const { data, error } = await query.order('created_at', { ascending: false });
       
       if (error) {
+        console.error("Error in Supabase query:", error);
         throw error;
       }
+      
+      console.log("Inquiries fetched:", data);
       
       // Map the data to match our SupportInquiry type
       const formattedInquiries: SupportInquiry[] = data.map(item => ({
@@ -91,6 +113,17 @@ export const InquiriesList = ({ showAll = false }: InquiriesListProps) => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await loadInquiries();
+    setIsRefreshing(false);
+    
+    toast({
+      title: "Refreshed",
+      description: "Support inquiries have been refreshed.",
+    });
   };
 
   const handleDeleteClick = (inquiry: SupportInquiry) => {
@@ -154,6 +187,19 @@ export const InquiriesList = ({ showAll = false }: InquiriesListProps) => {
   return (
     <>
       <div className="space-y-4">
+        <div className="flex justify-end mb-4">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            className="flex items-center gap-2"
+          >
+            <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+            {isRefreshing ? 'Refreshing...' : 'Refresh'}
+          </Button>
+        </div>
+        
         {inquiries.length === 0 ? (
           <div className="text-center py-10">
             <p className="text-gray-500">No inquiries found.</p>
