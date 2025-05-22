@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
@@ -35,7 +36,7 @@ export const InquiryDetail = () => {
   const currentUser = supabaseUser || user;
   const navigate = useNavigate();
   const { toast } = useToast();
-  const isAdmin = currentUser?.role === "admin";
+  const isAdmin = currentUser?.role === "admin" || currentUser?.role === "owner";
 
   useEffect(() => {
     if (!inquiryId || !currentUser) return;
@@ -154,47 +155,29 @@ export const InquiryDetail = () => {
     setIsSubmitting(true);
     
     try {
+      console.log("Current user:", currentUser); // Add logging to debug
+      
       // Get user display name with fallbacks
-      let userName = currentUser.email; // Default to email
-      let userRole = 'user'; // Default role
+      let userName = currentUser.email || "User"; // Default to email or "User"
+      let userRole = currentUser.role || 'user'; // Get role from currentUser or default to user
       
-      // Check for metadata in Supabase User object
-      if ('user_metadata' in currentUser && currentUser.user_metadata) {
-        if (currentUser.user_metadata.full_name) {
-          userName = currentUser.user_metadata.full_name;
-        } else if (currentUser.user_metadata.name) {
-          userName = currentUser.user_metadata.name;
-        }
-        
-        if (currentUser.user_metadata.role) {
-          userRole = currentUser.user_metadata.role;
-        }
-      }
+      console.log("Submitting reply with userId:", currentUser.id);
+      console.log("userName:", userName);
+      console.log("userRole:", userRole);
       
-      // Check for direct properties (Auth Context User)
-      if ('full_name' in currentUser && typeof currentUser.full_name === 'string') {
-        userName = currentUser.full_name || userName;
-      }
-      
-      if ('name' in currentUser && typeof currentUser.name === 'string') {
-        userName = userName === currentUser.email ? currentUser.name : userName;
-      }
-      
-      if ('role' in currentUser && typeof currentUser.role === 'string') {
-        userRole = currentUser.role;
-      }
-      
+      // Create the reply in the database - FIXED: Using the actual user ID from currentUser
       const { error } = await supabase
         .from('support_replies')
         .insert({
           inquiry_id: inquiry.id,
-          user_id: currentUser.id,
+          user_id: currentUser.id, // FIXED: Using the actual user ID
           user_name: userName,
           user_role: userRole,
           message: replyText.trim()
         });
       
       if (error) {
+        console.error("Error details:", error);
         throw error;
       }
       
@@ -360,13 +343,13 @@ export const InquiryDetail = () => {
         <div className="space-y-4 mt-6">
           <h3 className="text-lg font-medium">Replies</h3>
           {replies.map((reply) => (
-            <Card key={reply.id} className={`${reply.userRole === "admin" ? "border-l-4 border-l-blue-500" : ""}`}>
+            <Card key={reply.id} className={`${reply.userRole === "admin" || reply.userRole === "owner" ? "border-l-4 border-l-blue-500" : ""}`}>
               <CardHeader className="py-3">
                 <div className="flex justify-between items-center">
                   <CardTitle className="text-sm font-medium">
                     {reply.userName}
-                    {reply.userRole === "admin" && (
-                      <Badge className="ml-2 bg-blue-500">Admin</Badge>
+                    {(reply.userRole === "admin" || reply.userRole === "owner") && (
+                      <Badge className="ml-2 bg-blue-500">{reply.userRole.charAt(0).toUpperCase() + reply.userRole.slice(1)}</Badge>
                     )}
                   </CardTitle>
                   <span className="text-xs text-gray-500">
