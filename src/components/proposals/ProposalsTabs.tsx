@@ -10,7 +10,7 @@ interface ProposalsTabsProps {
 
 const ProposalsTabs: React.FC<ProposalsTabsProps> = ({ activeTab, setActiveTab }) => {
   const tabs: ProposalStatus[] = [
-    'Sve', 'Nacrt', 'Neisplaćen', 'Primljen', 'Izračunat', 'Djelomično izračunato', 'Odbijen', 'Arhiv'
+    'All', 'Draft', 'Unpaid', 'Received', 'Calculated', 'Partially Calculated', 'Rejected', 'Archived'
   ];
 
   return (

@@ -11,7 +11,7 @@ export interface Proposal {
   amount: string;
 }
 
-export type ProposalStatus = 'Sve' | 'Nacrt' | 'Neisplaćen' | 'Primljen' | 'Izračunat' | 'Djelomično izračunato' | 'Odbijen' | 'Arhiv';
+export type ProposalStatus = 'All' | 'Draft' | 'Unpaid' | 'Received' | 'Calculated' | 'Partially Calculated' | 'Rejected' | 'Archived';
 
 export interface ProposalFilterOptions {
   status: ProposalStatus | null;

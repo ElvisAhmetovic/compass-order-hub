@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useSupabaseAuth } from "@/context/SupabaseAuthContext";
@@ -41,7 +40,6 @@ export const InquiriesList = ({ showAll = false }: InquiriesListProps) => {
 
   useEffect(() => {
     loadInquiries();
-    // Debug logging to help understand what's happening
     console.log("InquiriesList - User role:", currentUser?.role);
     console.log("InquiriesList - Is admin:", isAdmin);
     console.log("InquiriesList - Show all:", showAll);
@@ -68,7 +66,7 @@ export const InquiriesList = ({ showAll = false }: InquiriesListProps) => {
           console.log("Admin with showAll=false - showing only open inquiries");
           query = query.eq('status', 'open');
         } else {
-          // Admin viewing all inquiries tab - FIXED: Removed filter that was limiting to user's inquiries
+          // Admin viewing all inquiries tab
           console.log("Admin with showAll=true - showing ALL inquiries regardless of user");
           // No additional filters for admins when showAll is true
         }
@@ -85,7 +83,6 @@ export const InquiriesList = ({ showAll = false }: InquiriesListProps) => {
         throw error;
       }
       
-      // Debug the actual data received
       console.log("Inquiries retrieved:", data?.length || 0);
       if (data?.length > 0) {
         console.log("First inquiry sample:", data[0]);

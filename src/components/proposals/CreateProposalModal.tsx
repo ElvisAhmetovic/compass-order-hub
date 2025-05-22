@@ -34,7 +34,7 @@ const CreateProposalModal: React.FC<CreateProposalModalProps> = ({ open, onClose
     customer: '',
     amount: '',
     reference: `AN-${Math.floor(1000 + Math.random() * 9000)}`,
-    status: 'Nacrt',
+    status: 'Draft',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
@@ -70,16 +70,16 @@ const CreateProposalModal: React.FC<CreateProposalModalProps> = ({ open, onClose
       await new Promise(resolve => setTimeout(resolve, 500));
       
       toast({
-        title: 'Prijedlog kreiran',
-        description: 'Novi prijedlog je uspješno dodan.',
+        title: 'Proposal Created',
+        description: 'New proposal has been added successfully.',
       });
       
       onClose();
     } catch (error) {
       console.error('Error creating proposal:', error);
       toast({
-        title: 'Greška',
-        description: 'Došlo je do greške prilikom kreiranja prijedloga.',
+        title: 'Error',
+        description: 'There was an error creating the proposal.',
         variant: 'destructive',
       });
     } finally {
@@ -92,16 +92,16 @@ const CreateProposalModal: React.FC<CreateProposalModalProps> = ({ open, onClose
       <DialogContent className="sm:max-w-[600px]">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>Dodavanje novog prijedloga</DialogTitle>
+            <DialogTitle>Add New Proposal</DialogTitle>
             <DialogDescription>
-              Unesite informacije za novi prijedlog.
+              Enter the details for the new proposal.
             </DialogDescription>
           </DialogHeader>
           
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-1 gap-4">
               <div>
-                <Label htmlFor="customer">Klijent</Label>
+                <Label htmlFor="customer">Customer</Label>
                 <Input
                   id="customer"
                   name="customer"
@@ -113,7 +113,7 @@ const CreateProposalModal: React.FC<CreateProposalModalProps> = ({ open, onClose
               
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="reference">Referenca</Label>
+                  <Label htmlFor="reference">Reference</Label>
                   <Input
                     id="reference"
                     name="reference"
@@ -124,7 +124,7 @@ const CreateProposalModal: React.FC<CreateProposalModalProps> = ({ open, onClose
                 </div>
                 
                 <div>
-                  <Label htmlFor="amount">Iznos</Label>
+                  <Label htmlFor="amount">Amount</Label>
                   <Input
                     id="amount"
                     name="amount"
@@ -143,13 +143,13 @@ const CreateProposalModal: React.FC<CreateProposalModalProps> = ({ open, onClose
                   onValueChange={(value) => handleSelectChange('status', value)}
                 >
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Odaberi status" />
+                    <SelectValue placeholder="Select status" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Nacrt">Nacrt</SelectItem>
-                    <SelectItem value="Neisplaćen">Neisplaćen</SelectItem>
-                    <SelectItem value="Primljen">Primljen</SelectItem>
-                    <SelectItem value="Izračunat">Izračunat</SelectItem>
+                    <SelectItem value="Draft">Draft</SelectItem>
+                    <SelectItem value="Unpaid">Unpaid</SelectItem>
+                    <SelectItem value="Received">Received</SelectItem>
+                    <SelectItem value="Calculated">Calculated</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -158,10 +158,10 @@ const CreateProposalModal: React.FC<CreateProposalModalProps> = ({ open, onClose
           
           <DialogFooter>
             <Button variant="outline" type="button" onClick={onClose}>
-              Odustani
+              Cancel
             </Button>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Kreiranje...' : 'Kreiraj prijedlog'}
+              {isSubmitting ? 'Creating...' : 'Create Proposal'}
             </Button>
           </DialogFooter>
         </form>

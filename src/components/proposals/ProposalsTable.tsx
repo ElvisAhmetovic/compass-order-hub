@@ -9,7 +9,6 @@ import {
   TableCell
 } from '@/components/ui/table';
 import { Proposal, ProposalStatus, ProposalFilterOptions } from '@/types/proposal';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Filter, ArrowDown, Download } from 'lucide-react';
@@ -54,26 +53,26 @@ const ProposalsTable: React.FC<ProposalsTableProps> = ({
       number: 'AN-9981',
       customer: 'Züriwart AG',
       created_at: '2025-05-22T00:00:00Z',
-      status: 'Neisplaćen',
-      amount: '599,00 EUR',
+      status: 'Unpaid',
+      amount: '599.00 EUR',
     },
     {
       id: '2',
       reference: 'AN-9980',
       number: 'AN-9980',
-      customer: 'ATEM - Event agencija',
+      customer: 'ATEM - Event Agency',
       created_at: '2025-05-22T00:00:00Z',
-      status: 'Neisplaćen',
-      amount: '299,00 EUR',
+      status: 'Unpaid',
+      amount: '299.00 EUR',
     },
     {
       id: '3',
       reference: 'AN-9979',
       number: 'AN-9979',
-      customer: 'HIKIMUS Event & Werbeagentur GmbH',
+      customer: 'HIKIMUS Event & Advertising Agency GmbH',
       created_at: '2025-05-22T00:00:00Z',
-      status: 'Neisplaćen',
-      amount: '299,00 EUR',
+      status: 'Unpaid',
+      amount: '299.00 EUR',
     },
     {
       id: '4',
@@ -81,8 +80,8 @@ const ProposalsTable: React.FC<ProposalsTableProps> = ({
       number: 'AN-9978',
       customer: 'BS Gastro & Event Services GmbH',
       created_at: '2025-05-22T00:00:00Z',
-      status: 'Neisplaćen',
-      amount: '299,00 EUR',
+      status: 'Unpaid',
+      amount: '299.00 EUR',
     },
     {
       id: '5',
@@ -90,26 +89,26 @@ const ProposalsTable: React.FC<ProposalsTableProps> = ({
       number: 'AN-9977',
       customer: 'BS Gastro & Event Services GmbH',
       created_at: '2025-05-21T00:00:00Z',
-      status: 'Neisplaćen',
-      amount: '299,00 EUR',
+      status: 'Unpaid',
+      amount: '299.00 EUR',
     },
     {
       id: '6',
       reference: 'AN-9976',
       number: 'AN-9976',
-      customer: 'Parker & Williams usluge nekretnina',
+      customer: 'Parker & Williams Real Estate Services',
       created_at: '2025-05-21T00:00:00Z',
-      status: 'Neisplaćen',
-      amount: '299,00 EUR',
+      status: 'Unpaid',
+      amount: '299.00 EUR',
     },
     {
       id: '7',
       reference: 'AN-9975',
       number: 'AN-9975',
-      customer: 'Parker & Williams usluge nekretnina',
+      customer: 'Parker & Williams Real Estate Services',
       created_at: '2025-05-21T00:00:00Z',
-      status: 'Neisplaćen',
-      amount: '299,00 EUR',
+      status: 'Unpaid',
+      amount: '299.00 EUR',
     },
     {
       id: '8',
@@ -117,8 +116,8 @@ const ProposalsTable: React.FC<ProposalsTableProps> = ({
       number: 'AN-9974',
       customer: 'Larmer Bygg AB',
       created_at: '2025-05-21T00:00:00Z',
-      status: 'Neisplaćen',
-      amount: '249,00 eura',
+      status: 'Unpaid',
+      amount: '249.00 EUR',
     },
     {
       id: '9',
@@ -126,8 +125,8 @@ const ProposalsTable: React.FC<ProposalsTableProps> = ({
       number: 'AN-9973',
       customer: 'tbevents.nl',
       created_at: '2025-05-21T00:00:00Z',
-      status: 'Neisplaćen',
-      amount: '750,00 EUR',
+      status: 'Unpaid',
+      amount: '750.00 EUR',
     }
   ];
   
@@ -161,7 +160,7 @@ const ProposalsTable: React.FC<ProposalsTableProps> = ({
     let filtered = [...proposals];
     
     // Filter by status
-    if (statusFilter && statusFilter !== 'Sve') {
+    if (statusFilter && statusFilter !== 'All') {
       filtered = filtered.filter(proposal => proposal.status === statusFilter);
     }
     
@@ -224,6 +223,21 @@ const ProposalsTable: React.FC<ProposalsTableProps> = ({
     });
     // In a real app, implement PDF export
   };
+
+  const handleStatusChange = (id: string, newStatus: string) => {
+    // Update the proposal status in the state
+    const updatedProposals = proposals.map(proposal => 
+      proposal.id === id ? { ...proposal, status: newStatus as ProposalStatus } : proposal
+    );
+    setProposals(updatedProposals);
+    
+    toast({
+      title: "Status Updated",
+      description: `Proposal status changed to ${newStatus}`,
+    });
+    
+    // In a real app, update in Supabase
+  };
   
   if (isLoading) {
     return (
@@ -236,7 +250,7 @@ const ProposalsTable: React.FC<ProposalsTableProps> = ({
   if (filteredProposals.length === 0) {
     return (
       <div className="p-8 text-center border rounded-md">
-        <p className="text-muted-foreground text-lg">Nema prijedloga.</p>
+        <p className="text-muted-foreground text-lg">No proposals found.</p>
       </div>
     );
   }
@@ -246,7 +260,7 @@ const ProposalsTable: React.FC<ProposalsTableProps> = ({
       <div className="flex items-center justify-between">
         <div className="flex gap-2">
           <Input
-            placeholder="Pretraži prijedloge..."
+            placeholder="Search proposals..."
             value={filterOptions.searchTerm}
             onChange={handleSearch}
             className="max-w-xs"
@@ -259,12 +273,12 @@ const ProposalsTable: React.FC<ProposalsTableProps> = ({
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" className="gap-1">
-              Izvoz <ArrowDown className="h-4 w-4" />
+              Export <ArrowDown className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={exportPDF}>
-              PDF popis
+              PDF List
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -275,15 +289,20 @@ const ProposalsTable: React.FC<ProposalsTableProps> = ({
           <TableHeader>
             <TableRow>
               <TableHead>Status</TableHead>
-              <TableHead>Ne.</TableHead>
-              <TableHead>Zaglavlje kupca / fakture</TableHead>
-              <TableHead>Datum</TableHead>
-              <TableHead className="text-right">Iznos (bruto)</TableHead>
+              <TableHead>No.</TableHead>
+              <TableHead>Customer / Invoice Header</TableHead>
+              <TableHead>Date</TableHead>
+              <TableHead className="text-right">Amount (gross)</TableHead>
+              <TableHead className="w-[50px]">Export</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {currentProposals.map((proposal) => (
-              <ProposalRow key={proposal.id} proposal={proposal} />
+              <ProposalRow 
+                key={proposal.id} 
+                proposal={proposal} 
+                onStatusChange={handleStatusChange}
+              />
             ))}
           </TableBody>
         </Table>
@@ -291,7 +310,7 @@ const ProposalsTable: React.FC<ProposalsTableProps> = ({
       
       <div className="flex justify-between items-center">
         <div className="text-sm text-muted-foreground">
-          Prikazuje {indexOfFirstProposal + 1} - {Math.min(indexOfLastProposal, filteredProposals.length)} od {filteredProposals.length} unosa
+          Showing {indexOfFirstProposal + 1} - {Math.min(indexOfLastProposal, filteredProposals.length)} of {filteredProposals.length} entries
         </div>
         <ProposalsPagination
           currentPage={currentPage}

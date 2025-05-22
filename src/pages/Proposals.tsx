@@ -14,7 +14,7 @@ import CreateProposalModal from '@/components/proposals/CreateProposalModal';
 import Sidebar from '@/components/dashboard/Sidebar';
 
 const Proposals = () => {
-  const [activeTab, setActiveTab] = useState<ProposalStatus>('Sve');
+  const [activeTab, setActiveTab] = useState<ProposalStatus>('All');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -52,7 +52,7 @@ const Proposals = () => {
         <Layout userRole={(user?.role || 'user') as UserRole}>
           <div className="space-y-6">
             <ProposalsHeader 
-              title="Prijedlozi"
+              title="Proposals"
               onCreateProposal={() => setIsCreateModalOpen(true)}
             />
             
