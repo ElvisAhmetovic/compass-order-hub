@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
@@ -19,7 +18,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar, Edit, PlusCircle } from "lucide-react";
+import { Calendar, Edit, PlusCircle, Import } from "lucide-react";
 import Sidebar from "@/components/dashboard/Sidebar";
 import { useAuth } from "@/context/AuthContext";
 import { 
@@ -28,10 +27,22 @@ import {
   DialogHeader, 
   DialogTitle, 
   DialogFooter,
-  DialogClose
+  DialogClose,
+  DialogDescription,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
+import { v4 as uuidv4 } from 'uuid';
+import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
+import { useForm } from "react-hook-form";
 
 // Example inventory data structure
 interface InventoryItem {
@@ -142,6 +153,11 @@ const Inventory = () => {
   const [editFormData, setEditFormData] = useState<Partial<InventoryItem>>({});
   const [inventoryData, setInventoryData] = useState<InventoryItem[]>(mockInventoryData);
 
+  // State for new dialogs
+  const [isAddProductDialogOpen, setIsAddProductDialogOpen] = useState(false);
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
+  const [importFile, setImportFile] = useState<File | null>(null);
+
   // Filter data based on search query and selected category/tab
   const filteredData = inventoryData.filter((item) => {
     const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -188,6 +204,82 @@ const Inventory = () => {
     });
   };
 
+  // Handle add product form
+  const addProductForm = useForm({
+    defaultValues: {
+      name: '',
+      category: 'Article' as "Article" | "Service",
+      stock: '0.00 unit',
+      price: 'EUR0.00'
+    }
+  });
+
+  // Handle add product submission
+  const handleAddProduct = (data: any) => {
+    const newProduct: InventoryItem = {
+      id: uuidv4().substring(0, 5),
+      name: data.name,
+      category: data.category,
+      lastBooking: null,
+      stock: data.stock,
+      price: data.price
+    };
+
+    setInventoryData([newProduct, ...inventoryData]);
+    setIsAddProductDialogOpen(false);
+    addProductForm.reset();
+    
+    toast({
+      title: "Product Added",
+      description: `${data.name} has been successfully added to inventory.`,
+      variant: "default",
+    });
+  };
+
+  // Handle file import
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setImportFile(e.target.files[0]);
+    }
+  };
+
+  // Handle import products
+  const handleImport = () => {
+    if (!importFile) {
+      toast({
+        title: "No File Selected",
+        description: "Please select a file to import.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Simulate file processing
+    setTimeout(() => {
+      // In a real application, you would parse the file and add the products
+      
+      // For demo purposes, we'll add a sample imported product
+      const newProduct: InventoryItem = {
+        id: `IMP${Math.floor(1000 + Math.random() * 9000)}`,
+        name: `Imported Product - ${importFile.name.substring(0, 20)}`,
+        category: Math.random() > 0.5 ? "Article" : "Service",
+        lastBooking: null,
+        stock: "1.00 unit",
+        price: `EUR${(Math.random() * 100).toFixed(2)}`
+      };
+
+      setInventoryData([newProduct, ...inventoryData]);
+      setIsImportDialogOpen(false);
+      setImportFile(null);
+      
+      toast({
+        title: "Products Imported",
+        description: `Successfully imported products from ${importFile.name}.`,
+        variant: "default",
+      });
+    }, 1000);
+  };
+
   // If not admin, redirect or show access denied
   if (!isAdmin) {
     return (
@@ -216,8 +308,11 @@ const Inventory = () => {
             <div className="flex justify-between items-center">
               <h1 className="text-2xl font-bold">Inventory</h1>
               <div className="flex gap-2">
-                <Button variant="outline">Import products</Button>
-                <Button>
+                <Button variant="outline" onClick={() => setIsImportDialogOpen(true)}>
+                  <Import className="mr-2 h-4 w-4" />
+                  Import products
+                </Button>
+                <Button onClick={() => setIsAddProductDialogOpen(true)}>
                   <PlusCircle className="mr-2 h-4 w-4" />
                   Add product
                 </Button>
@@ -412,6 +507,98 @@ const Inventory = () => {
                   <Button variant="outline">Cancel</Button>
                 </DialogClose>
                 <Button onClick={handleSaveChanges}>Save Changes</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Add Product Dialog */}
+          <Dialog open={isAddProductDialogOpen} onOpenChange={setIsAddProductDialogOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Add New Product</DialogTitle>
+                <DialogDescription>
+                  Add a new product to your inventory.
+                </DialogDescription>
+              </DialogHeader>
+              <form onSubmit={addProductForm.handleSubmit(handleAddProduct)}>
+                <div className="space-y-4 py-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="new-product-name">Product Name</Label>
+                    <Input 
+                      id="new-product-name" 
+                      {...addProductForm.register('name', { required: true })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="new-product-category">Category</Label>
+                    <Select 
+                      value={addProductForm.watch('category')}
+                      onValueChange={(value) => addProductForm.setValue('category', value as "Article" | "Service")}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Article">Article</SelectItem>
+                        <SelectItem value="Service">Service</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="new-product-stock">Stock</Label>
+                    <Input 
+                      id="new-product-stock" 
+                      {...addProductForm.register('stock')}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="new-product-price">Price</Label>
+                    <Input 
+                      id="new-product-price" 
+                      {...addProductForm.register('price')}
+                    />
+                  </div>
+                </div>
+                <DialogFooter className="mt-4">
+                  <DialogClose asChild>
+                    <Button type="button" variant="outline">Cancel</Button>
+                  </DialogClose>
+                  <Button type="submit">Add Product</Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
+
+          {/* Import Dialog */}
+          <Dialog open={isImportDialogOpen} onOpenChange={setIsImportDialogOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Import Products</DialogTitle>
+                <DialogDescription>
+                  Upload a CSV or Excel file to import multiple products at once.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-2">
+                <div className="space-y-2">
+                  <Label htmlFor="import-file">Select File</Label>
+                  <Input 
+                    id="import-file" 
+                    type="file" 
+                    accept=".csv,.xlsx,.xls" 
+                    onChange={handleFileChange}
+                  />
+                  <p className="text-sm text-gray-500 mt-2">
+                    Accepted formats: CSV, Excel (.xlsx, .xls)
+                  </p>
+                </div>
+              </div>
+              <DialogFooter>
+                <DialogClose asChild>
+                  <Button variant="outline">Cancel</Button>
+                </DialogClose>
+                <Button onClick={handleImport} disabled={!importFile}>
+                  Import
+                </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
