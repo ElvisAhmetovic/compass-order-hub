@@ -2,15 +2,19 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 import { Session, User } from "@supabase/supabase-js";
-import { supabase } from "@/integrations/supabase/client"; // Keep this
+import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { ExtendedUser, SupabaseAuthContextProps } from "@/types/auth";
 import { enhanceUser, checkForAdminSession } from "@/utils/authHelpers";
-// --- REVERT THIS LINE ---
-// From: import { signIn as authServiceSignIn, signUp as authServiceSignUp, signOut as authServiceSignOut } from "@/services/authService";
-// To:
-import { signIn, signUp, signOut } from "@/services/authService"; // <-- DIRECTLY IMPORT THE EXPORTED NAMES
-// --- END REVERT ---
+
+// --- THE FIX IS HERE ---
+// Import the functions using their EXACT names from authService.ts
+import {
+  signInWithEmailAndPassword, // This is the correct name
+  signUpWithEmailAndPassword, // This is the correct name
+  signOutUser // This is the correct name
+} from "@/services/authService";
+// --- END FIX ---
 
 
 const SupabaseAuthContext = createContext<SupabaseAuthContextProps | undefined>(undefined);
@@ -50,13 +54,14 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
         console.log("SupabaseAuthContext: Admin login attempt detected");
       }
 
-      console.log("SupabaseAuthContext: Calling authService's signIn with:", {
+      console.log("SupabaseAuthContext: Calling authService's signInWithEmailAndPassword with:", {
         email: emailToUse,
         passwordProvided: !!passwordToUse
       });
 
-      // --- THE CALL TO authService.ts's signIn ---
-      const result = await signIn({ email: emailToUse, password: passwordToUse }); // <-- CALL THE IMPORTED 'signIn' (which is from authService.ts)
+      // --- THE CALL TO authService.ts's signInWithEmailAndPassword ---
+      // Pass the arguments directly, not as an object, because authService.ts expects them this way
+      const result = await signInWithEmailAndPassword(emailToUse, passwordToUse);
       // --- END CALL ---
 
       if (result.success && emailToUse === "luciferbebistar@gmail.com") {
@@ -82,8 +87,9 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
   const signUp = async (email: string, password: string, fullName: string) => { // This is the context's signUp
     setIsLoading(true);
     try {
-      // --- THE CALL TO authService.ts's signUp ---
-      const result = await signUp({ email, password, full_name: fullName }); // <-- CALL THE IMPORTED 'signUp' (which is from authService.ts)
+      // --- THE CALL TO authService.ts's signUpWithEmailAndPassword ---
+      // Pass the arguments directly, not as an object, because authService.ts expects them this way
+      const result = await signUpWithEmailAndPassword(email, password, fullName);
       // --- END CALL ---
       return result;
     } catch (error: any) {
@@ -100,7 +106,7 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
   const signOut = async () => { // This is the context's signOut
     try {
       setIsLoading(true);
-      await signOut(); // <-- CALL THE IMPORTED 'signOut' (which is from authService.ts)
+      await signOutUser(); // <-- CALL THE IMPORTED 'signOutUser' from authService.ts
 
       // Explicitly clear user and session state
       setUser(null);
