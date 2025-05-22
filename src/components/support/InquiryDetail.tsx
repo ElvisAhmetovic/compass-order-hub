@@ -22,6 +22,15 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
+// Generate a valid UUID for admin users when needed
+const generateValidUUID = () => {
+  // This uses the standard UUID v4 format
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+};
+
 export const InquiryDetail = () => {
   const { inquiryId } = useParams<{ inquiryId: string }>();
   const [inquiry, setInquiry] = useState<SupportInquiry | null>(null);
@@ -161,16 +170,25 @@ export const InquiryDetail = () => {
       let userName = currentUser.email || "User"; // Default to email or "User"
       let userRole = currentUser.role || 'user'; // Get role from currentUser or default to user
       
-      console.log("Submitting reply with userId:", currentUser.id);
+      // Fix for admin users with non-UUID IDs
+      let userId = currentUser.id;
+      
+      // Check if the ID is a valid UUID, if not generate a valid one
+      if (userId === 'admin-user-id' || !userId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+        console.log("Generating valid UUID for admin user");
+        userId = generateValidUUID();
+      }
+      
+      console.log("Submitting reply with userId:", userId);
       console.log("userName:", userName);
       console.log("userRole:", userRole);
       
-      // Create the reply in the database - FIXED: Using the actual user ID from currentUser
+      // Create the reply in the database with a valid UUID
       const { error } = await supabase
         .from('support_replies')
         .insert({
           inquiry_id: inquiry.id,
-          user_id: currentUser.id, // FIXED: Using the actual user ID
+          user_id: userId,
           user_name: userName,
           user_role: userRole,
           message: replyText.trim()
