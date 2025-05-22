@@ -46,7 +46,7 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
     };
   };
 
-  // Special helper function to check for admin user in localStorage
+  // Special helper function to check for admin session in localStorage
   const checkForAdminSession = () => {
     try {
       const userSession = localStorage.getItem("userSession");
@@ -269,34 +269,53 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
   };
 
   const signOut = async () => {
-    setIsLoading(true);
-    
-    // Check if we have a special admin session
-    const userSession = localStorage.getItem("userSession");
-    if (userSession) {
-      try {
-        const parsedSession = JSON.parse(userSession);
-        if (parsedSession.email === "luciferbebistar@gmail.com") {
-          localStorage.removeItem("userSession");
-          setUser(null);
-          setSession(null);
-          
-          toast({
-            title: "Signed Out",
-            description: "Admin user has been signed out.",
-          });
-          
-          setIsLoading(false);
-          return;
+    try {
+      setIsLoading(true);
+      
+      // Check if we have a special admin session
+      const userSession = localStorage.getItem("userSession");
+      if (userSession) {
+        try {
+          const parsedSession = JSON.parse(userSession);
+          if (parsedSession.email === "luciferbebistar@gmail.com") {
+            console.log("Admin logout: clearing localStorage session");
+            localStorage.removeItem("userSession");
+            setUser(null);
+            setSession(null);
+            
+            toast({
+              title: "Signed Out",
+              description: "Admin user has been signed out.",
+            });
+            
+            return;
+          }
+        } catch (e) {
+          console.error("Error parsing user session:", e);
         }
-      } catch (e) {
-        // If parsing fails, continue with normal signOut
-        console.error("Error parsing user session:", e);
       }
+      
+      // For regular Supabase users, call the API to log out
+      console.log("Regular user logout: calling Supabase signOut");
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        console.error("Error during signOut:", error.message);
+        toast({
+          variant: "destructive",
+          title: "Error Signing Out",
+          description: error.message || "Failed to sign out"
+        });
+      } else {
+        // Explicitly clear user and session state
+        setUser(null);
+        setSession(null);
+      }
+    } catch (err) {
+      console.error("Unexpected error during signOut:", err);
+    } finally {
+      setIsLoading(false);
     }
-    
-    await supabase.auth.signOut();
-    setIsLoading(false);
   };
 
   return (

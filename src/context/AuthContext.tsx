@@ -311,15 +311,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const logout = () => {
     try {
+      console.log("AuthContext: Executing logout");
+      // Clear user session from local storage
       localStorage.removeItem('userSession');
+      
+      // Reset state
       setUser(null);
       
-      toast({
-        title: "Logged out",
-        description: "You have been successfully logged out.",
-      });
+      // No need for toast here, it should be handled by the calling component
     } catch (error) {
-      console.error("Logout error:", error);
+      console.error("Logout error in AuthContext:", error);
       toast({
         variant: "destructive",
         title: "Logout failed",

@@ -10,10 +10,12 @@ const Index = () => {
   useEffect(() => {
     if (!isLoading) {
       console.log("Index: User authentication status:", user ? "Authenticated" : "Not authenticated");
+      // If no user is found after loading completes, redirect to auth
       if (user) {
         navigate("/dashboard");
       } else {
-        navigate("/auth");
+        // Force replace to prevent back navigation to this page after logout
+        navigate("/auth", { replace: true });
       }
     }
   }, [user, isLoading, navigate]);

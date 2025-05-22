@@ -14,8 +14,10 @@ export function LogoutButton() {
 
   const handleLogout = async () => {
     try {
-      // Clear both authentication systems
+      // First clear Supabase session
       await signOut();
+      
+      // Then clear local auth
       logout();
       
       toast({
@@ -23,7 +25,8 @@ export function LogoutButton() {
         description: "You have been signed out of the system."
       });
       
-      navigate("/auth");
+      // Force navigation to auth page
+      navigate("/auth", { replace: true });
     } catch (error) {
       console.error("Error logging out:", error);
       toast({
