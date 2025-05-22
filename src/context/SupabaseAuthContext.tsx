@@ -1,3 +1,4 @@
+
 // src/context/SupabaseAuthContext.tsx
 
 import { createContext, useContext, useEffect, useState } from "react";
@@ -57,7 +58,7 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
     getInitialSession();
 
     // Set up a listener for auth state changes (login, logout, token refresh)
-    const { data: authListener } = supabase.auth.onAuthStateChange(
+    const { data } = supabase.auth.onAuthStateChange(
       (event, currentSession) => {
         console.log("Auth State Change:", event, currentSession);
         if (event === "SIGNED_IN" && currentSession) {
@@ -88,8 +89,12 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
       }
     );
 
+    // Fix for the unsubscribe error
     return () => {
-      authListener?.unsubscribe();
+      // Only call unsubscribe if data exists and has the subscription property
+      if (data && data.subscription && typeof data.subscription.unsubscribe === 'function') {
+        data.subscription.unsubscribe();
+      }
     };
   }, [toast]); // Include toast in dependency array if it's stable
 
