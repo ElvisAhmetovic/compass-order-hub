@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { 
   Table,
@@ -10,9 +11,8 @@ import {
 import { Proposal, ProposalStatus, ProposalFilterOptions } from '@/types/proposal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Filter, ArrowDown, Download } from 'lucide-react';
+import { Filter, ArrowDown } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { format } from 'date-fns';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -88,10 +88,12 @@ const ProposalsTable: React.FC<ProposalsTableProps> = ({
   
   // Apply filters
   useEffect(() => {
+    console.log("Filtering proposals with status:", statusFilter);
     let filtered = [...proposals];
     
     // Filter by status
     if (statusFilter && statusFilter !== 'All') {
+      console.log(`Filtering by status: ${statusFilter}`);
       filtered = filtered.filter(proposal => proposal.status === statusFilter);
     }
     
@@ -121,6 +123,7 @@ const ProposalsTable: React.FC<ProposalsTableProps> = ({
       });
     }
     
+    console.log(`Filtered ${proposals.length} proposals to ${filtered.length}`);
     setFilteredProposals(filtered);
     setTotalPages(Math.ceil(filtered.length / rowsPerPage));
     setCurrentPage(1); // Reset to first page when filters change
@@ -156,10 +159,14 @@ const ProposalsTable: React.FC<ProposalsTableProps> = ({
   };
 
   const handleStatusChange = async (id: string, newStatus: string) => {
+    console.log(`Status change in table for proposal ${id} to ${newStatus}`);
+    
     // Update the proposal status in the state
     const updatedProposals = proposals.map(proposal => 
       proposal.id === id ? { ...proposal, status: newStatus as ProposalStatus } : proposal
     );
+    
+    console.log("Updated proposals:", updatedProposals);
     setProposals(updatedProposals);
   };
   

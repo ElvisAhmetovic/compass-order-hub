@@ -30,15 +30,16 @@ export const InquiriesList = ({ showAll = false }: InquiriesListProps) => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const { user } = useAuth();
+  const { user: authUser } = useAuth();
   const { user: supabaseUser } = useSupabaseAuth();
-  const currentUser = supabaseUser || user;
+  const currentUser = supabaseUser || authUser;
   const navigate = useNavigate();
   const { toast } = useToast();
   
+  // Use a more reliable way to check admin status
   const isAdmin = currentUser?.role === "admin" || currentUser?.role === "owner";
 
-  // Log for debugging
+  // Debug logs for troubleshooting
   console.log("InquiriesList - currentUser:", currentUser);
   console.log("InquiriesList - isAdmin:", isAdmin);
   console.log("InquiriesList - showAll:", showAll);
@@ -49,6 +50,7 @@ export const InquiriesList = ({ showAll = false }: InquiriesListProps) => {
 
   const loadInquiries = async () => {
     if (!currentUser) {
+      console.log("No current user found, returning empty inquiries list");
       setInquiries([]);
       setIsLoading(false);
       return;
@@ -56,7 +58,7 @@ export const InquiriesList = ({ showAll = false }: InquiriesListProps) => {
 
     setIsLoading(true);
     try {
-      console.log("Loading inquiries - starting fetch");
+      console.log("Loading inquiries - starting fetch with userId:", currentUser.id);
       // For admin/owner users
       let query = supabase.from('support_inquiries').select('*');
       
@@ -68,7 +70,7 @@ export const InquiriesList = ({ showAll = false }: InquiriesListProps) => {
         }
         // For showAll=true, no additional filters needed - admins see all inquiries
       } else {
-        console.log("Regular user, fetching own inquiries only");
+        console.log("Regular user, fetching own inquiries only for user ID:", currentUser.id);
         // Regular users - only show their own inquiries
         query = query.eq('user_id', currentUser.id);
       }
@@ -77,10 +79,11 @@ export const InquiriesList = ({ showAll = false }: InquiriesListProps) => {
       const { data, error } = await query.order('created_at', { ascending: false });
       
       if (error) {
+        console.error("Supabase error fetching inquiries:", error);
         throw error;
       }
       
-      console.log("Inquiries loaded:", data?.length || 0, "items");
+      console.log("Inquiries loaded:", data?.length || 0, "items", data);
       
       // Map the data to match our SupportInquiry type
       const formattedInquiries: SupportInquiry[] = data?.map(item => ({
@@ -103,6 +106,7 @@ export const InquiriesList = ({ showAll = false }: InquiriesListProps) => {
         title: "Error loading inquiries",
         description: "There was a problem loading your inquiries."
       });
+      // Use an empty array for display
       setInquiries([]);
     } finally {
       setIsLoading(false);

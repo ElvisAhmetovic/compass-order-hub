@@ -48,6 +48,8 @@ const ProposalRow: React.FC<ProposalRowProps> = ({ proposal, onStatusChange }) =
 
   const handleStatusChange = async (newStatus: string) => {
     try {
+      console.log(`Updating status for proposal ${proposal.id} to ${newStatus}`);
+      
       // Update in Supabase first
       const { error } = await supabase
         .from('proposals')
@@ -55,8 +57,11 @@ const ProposalRow: React.FC<ProposalRowProps> = ({ proposal, onStatusChange }) =
         .eq('id', proposal.id);
         
       if (error) {
+        console.error("Supabase error:", error);
         throw error;
       }
+      
+      console.log("Supabase update successful");
       
       // Then update UI via callback
       onStatusChange(proposal.id, newStatus);

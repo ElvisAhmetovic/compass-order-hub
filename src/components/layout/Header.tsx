@@ -80,7 +80,7 @@ export default function Header({ userRole: defaultRole = "admin" }: HeaderProps)
               <DropdownMenuSeparator />
 
               <DropdownMenuItem onClick={() => {
-                // Call the LogoutButton's functionality from here too
+                // Call the LogoutButton's functionality
                 const logoutBtn = document.querySelector('button[title="Logout"]');
                 if (logoutBtn) {
                   (logoutBtn as HTMLButtonElement).click();
