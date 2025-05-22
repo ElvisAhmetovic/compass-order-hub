@@ -1,47 +1,19 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Layout from "@/components/layout/Layout";
 import { useAuth } from "@/context/AuthContext";
-import { useSupabaseAuth } from "@/context/SupabaseAuthContext";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus } from "lucide-react";
-import Sidebar from "@/components/dashboard/Sidebar";
 import { InquiriesList } from "@/components/support/InquiriesList";
 import { NewInquiryForm } from "@/components/support/NewInquiryForm";
-import { UserRole } from "@/types";
+import { Plus } from "lucide-react";
+import Sidebar from "@/components/dashboard/Sidebar";
 
 const Support = () => {
   const [activeTab, setActiveTab] = useState<string>("inquiries");
   const [showNewInquiryForm, setShowNewInquiryForm] = useState(false);
-  
-  // Try both auth contexts to ensure we have a user
-  const { user: authUser } = useAuth();
-  const { user: supabaseUser } = useSupabaseAuth();
-  
-  // Use either authUser or supabaseUser, whichever is available
-  const user = supabaseUser || authUser;
-  
-  // Log user state for debugging
-  useEffect(() => {
-    console.log("Support Page - Auth User:", authUser);
-    console.log("Support Page - Supabase User:", supabaseUser);
-    console.log("Support Page - Combined User:", user);
-  }, [authUser, supabaseUser, user]);
-  
-  // Safely determine user role using type assertion and fallbacks
-  const userRole = user?.role || 
-                  (user as any)?.user_metadata?.role || 
-                  'user';
-                  
-  // Check if user is admin or owner
-  const isAdminOrOwner = userRole === "admin" || userRole === "owner";
-  
-  // Log the final determination for debugging
-  useEffect(() => {
-    console.log("Support Page - User Role:", userRole);
-    console.log("Support Page - Is admin or owner:", isAdminOrOwner);
-  }, [userRole, isAdminOrOwner]);
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
 
   const handleCreateInquiry = () => {
     setShowNewInquiryForm(true);
@@ -52,20 +24,20 @@ const Support = () => {
     <div className="flex min-h-screen">
       <Sidebar />
       <div className="flex-1">
-        <Layout userRole={userRole}>
+        <Layout userRole={user?.role || "user"}>
           <div className="space-y-6">
             <div className="flex justify-between items-center">
               <div>
-                <h1 className="text-2xl font-bold tracking-tight">Support Inquiries</h1>
+                <h1 className="text-2xl font-bold tracking-tight">Customer Support</h1>
                 <p className="text-muted-foreground">
-                  {isAdminOrOwner 
-                    ? "Manage and respond to user inquiries"
-                    : "Get support from our team"
+                  {isAdmin 
+                    ? "View and respond to customer inquiries"
+                    : "Get help from our support team"
                   }
                 </p>
               </div>
               
-              {!isAdminOrOwner && !showNewInquiryForm && (
+              {!isAdmin && !showNewInquiryForm && (
                 <Button onClick={handleCreateInquiry}>
                   <Plus className="h-4 w-4 mr-1" /> New Inquiry
                 </Button>
@@ -80,12 +52,12 @@ const Support = () => {
               <div className="flex justify-between items-center">
                 <TabsList>
                   <TabsTrigger value="inquiries">
-                    {isAdminOrOwner ? "All Inquiries" : "My Inquiries"}
+                    {isAdmin ? "All Inquiries" : "My Inquiries"}
                   </TabsTrigger>
-                  {isAdminOrOwner && (
+                  {isAdmin && (
                     <TabsTrigger value="open">Open Inquiries</TabsTrigger>
                   )}
-                  {!isAdminOrOwner && showNewInquiryForm && (
+                  {!isAdmin && showNewInquiryForm && (
                     <TabsTrigger value="new">New Inquiry</TabsTrigger>
                   )}
                 </TabsList>
@@ -95,18 +67,16 @@ const Support = () => {
                 <InquiriesList showAll={true} />
               </TabsContent>
               
-              {isAdminOrOwner && (
+              {isAdmin && (
                 <TabsContent value="open" className="p-0">
+                  {/* For admin - show only open inquiries */}
                   <InquiriesList showAll={false} />
                 </TabsContent>
               )}
               
-              {!isAdminOrOwner && showNewInquiryForm && (
+              {!isAdmin && showNewInquiryForm && (
                 <TabsContent value="new" className="p-0">
-                  <NewInquiryForm onSuccessfulSubmit={() => {
-                    setShowNewInquiryForm(false);
-                    setActiveTab("inquiries");
-                  }} />
+                  <NewInquiryForm />
                 </TabsContent>
               )}
             </Tabs>

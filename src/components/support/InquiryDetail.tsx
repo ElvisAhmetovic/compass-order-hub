@@ -1,11 +1,10 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { format } from "date-fns";
+import { v4 as uuidv4 } from "uuid";
 import { SupportInquiry, SupportReply } from "@/types/support";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,120 +23,65 @@ import {
 export const InquiryDetail = () => {
   const { inquiryId } = useParams<{ inquiryId: string }>();
   const [inquiry, setInquiry] = useState<SupportInquiry | null>(null);
-  const [replies, setReplies] = useState<SupportReply[]>([]);
   const [replyText, setReplyText] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const isAdminOrOwner = user?.role === "admin" || user?.role === "owner";
+  const isAdmin = user?.role === "admin"; // Fixed comparison - only check for "admin" role
 
   useEffect(() => {
-    if (!inquiryId || !user) return;
-    
-    const loadInquiry = async () => {
-      setIsLoading(true);
+    if (!inquiryId) return;
+
+    const loadInquiry = () => {
       try {
-        // Get the inquiry
-        const { data: inquiryData, error: inquiryError } = await supabase
-          .from('support_inquiries')
-          .select('*')
-          .eq('id', inquiryId)
-          .single();
-
-        if (inquiryError) {
-          throw inquiryError;
-        }
-
-        if (!inquiryData) {
+        const storedInquiries: SupportInquiry[] = JSON.parse(
+          localStorage.getItem("supportInquiries") || "[]"
+        );
+        
+        const foundInquiry = storedInquiries.find(inq => inq.id === inquiryId);
+        
+        if (!foundInquiry) {
           navigate("/support");
           return;
         }
-
-        // Check if user has permission to view this inquiry
-        if (!isAdminOrOwner && inquiryData.user_id !== user.id) {
-          toast({
-            title: "Access Denied",
-            description: "You don't have permission to view this inquiry.",
-            variant: "destructive",
-          });
+        
+        // Check if user has access to this inquiry
+        if (!isAdmin && foundInquiry.userId !== user?.id) {
           navigate("/support");
           return;
         }
-
-        // Map the inquiry data
-        const mappedInquiry: SupportInquiry = {
-          id: inquiryData.id,
-          userId: inquiryData.user_id,
-          userEmail: inquiryData.user_email,
-          userName: inquiryData.user_name,
-          subject: inquiryData.subject,
-          message: inquiryData.message,
-          createdAt: inquiryData.created_at,
-          status: inquiryData.status as "open" | "closed",
-          updatedAt: inquiryData.updated_at
-        };
-
-        // Get the replies
-        const { data: repliesData, error: repliesError } = await supabase
-          .from('support_replies')
-          .select('*')
-          .eq('inquiry_id', inquiryId)
-          .order('created_at', { ascending: true });
-
-        if (repliesError) {
-          throw repliesError;
-        }
-
-        // Map the replies data
-        const mappedReplies: SupportReply[] = repliesData.map(reply => ({
-          id: reply.id,
-          inquiryId: reply.inquiry_id,
-          userId: reply.user_id,
-          userName: reply.user_name,
-          userRole: reply.user_role,
-          message: reply.message,
-          createdAt: reply.created_at,
-        }));
-
-        setInquiry(mappedInquiry);
-        setReplies(mappedReplies);
+        
+        setInquiry(foundInquiry);
       } catch (error) {
         console.error("Error loading inquiry:", error);
-        toast({
-          title: "Error",
-          description: "Could not load the inquiry details.",
-          variant: "destructive",
-        });
         navigate("/support");
-      } finally {
-        setIsLoading(false);
       }
     };
 
     loadInquiry();
-  }, [inquiryId, user, isAdminOrOwner, navigate, toast]);
+  }, [inquiryId, user, isAdmin, navigate]);
 
   const handleDeleteInquiry = () => {
     setIsDeleteDialogOpen(true);
   };
 
-  const handleDeleteConfirm = async () => {
-    if (!inquiry || !isAdminOrOwner) return;
+  const handleDeleteConfirm = () => {
+    if (!inquiry) return;
     
     setIsDeleting(true);
     try {
-      const { error } = await supabase
-        .from('support_inquiries')
-        .delete()
-        .eq('id', inquiry.id);
+      const storedInquiries: SupportInquiry[] = JSON.parse(
+        localStorage.getItem("supportInquiries") || "[]"
+      );
       
-      if (error) {
-        throw error;
-      }
+      const updatedInquiries = storedInquiries.filter(
+        inq => inq.id !== inquiry.id
+      );
+      
+      localStorage.setItem("supportInquiries", JSON.stringify(updatedInquiries));
       
       toast({
         title: "Inquiry deleted",
@@ -158,67 +102,47 @@ export const InquiryDetail = () => {
     }
   };
 
-  const handleSubmitReply = async () => {
+  const handleSubmitReply = () => {
     if (!inquiry || !user || !replyText.trim()) return;
     
     setIsSubmitting(true);
     
     try {
-      // Get user display name with fallbacks
-      const userName = user.full_name || user.email || "Unknown User";
+      const newReply: SupportReply = {
+        id: uuidv4(),
+        inquiryId: inquiry.id,
+        userId: user.id,
+        userName: user.full_name || user.email,
+        userRole: user.role,
+        message: replyText.trim(),
+        createdAt: new Date().toISOString(),
+      };
       
-      const { error } = await supabase
-        .from('support_replies')
-        .insert({
-          inquiry_id: inquiry.id,
-          user_id: user.id,
-          user_name: userName,
-          user_role: user.role,
-          message: replyText.trim()
-        });
+      // Get all inquiries
+      const allInquiries: SupportInquiry[] = JSON.parse(
+        localStorage.getItem("supportInquiries") || "[]"
+      );
       
-      if (error) {
-        throw error;
-      }
-      
-      // If admin/owner is replying, update status to "closed" if requested
-      if (isAdminOrOwner && inquiry.status === 'open') {
-        const { error: statusError } = await supabase
-          .from('support_inquiries')
-          .update({ status: 'closed', updated_at: new Date().toISOString() })
-          .eq('id', inquiry.id);
-        
-        if (statusError) {
-          throw statusError;
+      // Find and update the current inquiry
+      const updatedInquiries = allInquiries.map(inq => {
+        if (inq.id === inquiry.id) {
+          // Add reply and update status
+          const newStatus: "open" | "replied" | "closed" = isAdmin ? "replied" : inq.status;
+          return {
+            ...inq,
+            replies: [...inq.replies, newReply],
+            status: newStatus,
+          };
         }
-        
-        // Update local state
-        setInquiry(prev => prev ? { ...prev, status: 'closed' } : null);
-      }
+        return inq;
+      });
       
-      // Reload the replies
-      const { data: newReplies, error: repliesError } = await supabase
-        .from('support_replies')
-        .select('*')
-        .eq('inquiry_id', inquiry.id)
-        .order('created_at', { ascending: true });
+      // Save back to localStorage
+      localStorage.setItem("supportInquiries", JSON.stringify(updatedInquiries));
       
-      if (repliesError) {
-        throw repliesError;
-      }
-      
-      // Map the replies data
-      const mappedReplies: SupportReply[] = newReplies.map(reply => ({
-        id: reply.id,
-        inquiryId: reply.inquiry_id,
-        userId: reply.user_id,
-        userName: reply.user_name,
-        userRole: reply.user_role,
-        message: reply.message,
-        createdAt: reply.created_at,
-      }));
-      
-      setReplies(mappedReplies);
+      // Update local state
+      const updatedInquiry = updatedInquiries.find(inq => inq.id === inquiry.id) as SupportInquiry;
+      setInquiry(updatedInquiry);
       setReplyText("");
       
       toast({
@@ -237,51 +161,62 @@ export const InquiryDetail = () => {
     }
   };
 
-  const handleToggleStatus = async () => {
-    if (!inquiry || !isAdminOrOwner) return;
-    
-    const newStatus = inquiry.status === 'open' ? 'closed' : 'open';
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "open":
+        return "bg-yellow-500";
+      case "replied":
+        return "bg-blue-500";
+      case "closed":
+        return "bg-green-500";
+      default:
+        return "bg-gray-500";
+    }
+  };
+  
+  const handleCloseInquiry = () => {
+    if (!inquiry || !isAdmin) return;
     
     try {
-      const { error } = await supabase
-        .from('support_inquiries')
-        .update({ 
-          status: newStatus,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', inquiry.id);
+      // Get all inquiries
+      const allInquiries: SupportInquiry[] = JSON.parse(
+        localStorage.getItem("supportInquiries") || "[]"
+      );
       
-      if (error) {
-        throw error;
-      }
+      // Find and update the current inquiry
+      const updatedInquiries = allInquiries.map(inq => {
+        if (inq.id === inquiry.id) {
+          return {
+            ...inq,
+            status: "closed" as const,
+          };
+        }
+        return inq;
+      });
+      
+      // Save back to localStorage
+      localStorage.setItem("supportInquiries", JSON.stringify(updatedInquiries));
       
       // Update local state
-      setInquiry(prev => prev ? { ...prev, status: newStatus as "open" | "closed" } : null);
+      const updatedInquiry = updatedInquiries.find(inq => inq.id === inquiry.id) as SupportInquiry;
+      setInquiry(updatedInquiry);
       
       toast({
-        title: `Inquiry ${newStatus === 'open' ? 'reopened' : 'closed'}`,
-        description: `This support inquiry has been marked as ${newStatus}.`
+        title: "Inquiry Closed",
+        description: "This support inquiry has been marked as closed."
       });
     } catch (error) {
-      console.error(`Error changing inquiry status to ${newStatus}:`, error);
+      console.error("Error closing inquiry:", error);
       toast({
         title: "Error",
-        description: `There was a problem ${newStatus === 'open' ? 'reopening' : 'closing'} the inquiry.`,
+        description: "There was a problem closing the inquiry.",
         variant: "destructive",
       });
     }
   };
 
-  const getStatusColor = (status: string) => {
-    return status === "open" ? "bg-yellow-500" : "bg-green-500";
-  };
-
-  if (isLoading) {
-    return <div className="p-4">Loading...</div>;
-  }
-
   if (!inquiry) {
-    return <div className="p-4">Inquiry not found.</div>;
+    return <div className="p-4">Loading...</div>;
   }
 
   return (
@@ -295,23 +230,14 @@ export const InquiryDetail = () => {
           <ArrowLeft className="h-4 w-4 mr-1" /> Back to Inquiries
         </Button>
         
-        {isAdminOrOwner && (
-          <div className="flex gap-2">
-            <Button
-              variant={inquiry.status === 'open' ? 'default' : 'outline'}
-              size="sm"
-              onClick={handleToggleStatus}
-            >
-              {inquiry.status === 'open' ? 'Mark as Closed' : 'Reopen Inquiry'}
-            </Button>
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={handleDeleteInquiry}
-            >
-              <Trash className="h-4 w-4 mr-1" /> Delete
-            </Button>
-          </div>
+        {isAdmin && (
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={handleDeleteInquiry}
+          >
+            <Trash className="h-4 w-4 mr-1" /> Delete Inquiry
+          </Button>
         )}
       </div>
       
@@ -341,17 +267,17 @@ export const InquiryDetail = () => {
       </Card>
       
       {/* Replies */}
-      {replies.length > 0 && (
+      {inquiry.replies.length > 0 && (
         <div className="space-y-4 mt-6">
           <h3 className="text-lg font-medium">Replies</h3>
-          {replies.map((reply) => (
-            <Card key={reply.id} className={`${reply.userRole === "admin" || reply.userRole === "owner" ? "border-l-4 border-l-blue-500" : ""}`}>
+          {inquiry.replies.map((reply) => (
+            <Card key={reply.id} className={`${reply.userRole === "admin" ? "border-l-4 border-l-blue-500" : ""}`}>
               <CardHeader className="py-3">
                 <div className="flex justify-between items-center">
                   <CardTitle className="text-sm font-medium">
                     {reply.userName}
-                    {(reply.userRole === "admin" || reply.userRole === "owner") && (
-                      <Badge className="ml-2 bg-blue-500">{reply.userRole}</Badge>
+                    {reply.userRole === "admin" && (
+                      <Badge className="ml-2 bg-blue-500">Admin - {reply.userName}</Badge>
                     )}
                   </CardTitle>
                   <span className="text-xs text-gray-500">
@@ -367,24 +293,35 @@ export const InquiryDetail = () => {
         </div>
       )}
       
-      {/* Reply Form */}
-      <div className="mt-6">
-        <h3 className="text-lg font-medium mb-2">Add Reply</h3>
-        <Textarea
-          value={replyText}
-          onChange={(e) => setReplyText(e.target.value)}
-          placeholder="Type your reply here..."
-          className="min-h-[120px] mb-3"
-        />
-        <div className="flex justify-end">
-          <Button
-            onClick={handleSubmitReply}
-            disabled={!replyText.trim() || isSubmitting}
-          >
-            {isSubmitting ? "Sending..." : "Send Reply"}
-          </Button>
+      {/* Reply Form (if inquiry is not closed) */}
+      {inquiry.status !== "closed" && (
+        <div className="mt-6">
+          <h3 className="text-lg font-medium mb-2">Add Reply</h3>
+          <Textarea
+            value={replyText}
+            onChange={(e) => setReplyText(e.target.value)}
+            placeholder="Type your reply here..."
+            className="min-h-[120px] mb-3"
+          />
+          <div className="flex justify-end gap-2">
+            {isAdmin && (
+              <Button 
+                variant="outline" 
+                onClick={handleCloseInquiry}
+                disabled={isSubmitting}
+              >
+                Close Inquiry
+              </Button>
+            )}
+            <Button
+              onClick={handleSubmitReply}
+              disabled={!replyText.trim() || isSubmitting}
+            >
+              {isSubmitting ? "Sending..." : "Send Reply"}
+            </Button>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>

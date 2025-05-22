@@ -3,10 +3,11 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { v4 as uuidv4 } from "uuid";
 import { useAuth } from "@/context/AuthContext";
-import { useSupabaseAuth } from "@/context/SupabaseAuthContext";
+import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { SupportInquiry } from "@/types/support";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -27,23 +28,11 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-interface NewInquiryFormProps {
-  onSuccessfulSubmit?: () => void;
-}
-
-export const NewInquiryForm = ({ onSuccessfulSubmit }: NewInquiryFormProps) => {
-  // Try both auth contexts to ensure we have a user
-  const { user: authUser } = useAuth();
-  const { user: supabaseUser } = useSupabaseAuth();
+export const NewInquiryForm = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  // Use either authUser or supabaseUser, whichever is available
-  const user = supabaseUser || authUser;
-
-  console.log("NewInquiryForm - Auth User:", authUser);
-  console.log("NewInquiryForm - Supabase User:", supabaseUser);
-  console.log("NewInquiryForm - Combined User:", user);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -54,81 +43,34 @@ export const NewInquiryForm = ({ onSuccessfulSubmit }: NewInquiryFormProps) => {
   });
 
   const onSubmit = async (values: FormValues) => {
-    // Debug user state
-    console.log("Current user state:", user);
-    
-    if (!user) {
-      console.error("User not authenticated in form submission");
-      toast({
-        title: "Error",
-        description: "You must be logged in to submit an inquiry.",
-        variant: "destructive",
-      });
-      return;
-    }
+    if (!user) return;
     
     setIsSubmitting(true);
     
     try {
-      // Get user display name with type-safe access
-      // Use a more robust approach to extract username that works with both auth contexts
-      let userName = "Unknown User";
-      
-      // Log user object to help with debugging type structure
-      console.log("User object structure:", JSON.stringify(user, null, 2));
-      
-      // Type-safe way to check if user_metadata exists and access its properties
-      // Use type assertion to tell TypeScript that user may have these properties
-      const metadata = (user as any).user_metadata;
-      
-      if (metadata && typeof metadata === 'object') {
-        if (typeof metadata.full_name === 'string') {
-          userName = metadata.full_name;
-        } else if (typeof metadata.name === 'string') {
-          userName = metadata.name;
-        }
-      }
-      
-      // If we still don't have a name, try direct properties
-      if (userName === "Unknown User") {
-        // Try various properties that might exist on different user objects
-        const fullName = (user as any).full_name;
-        const name = (user as any).name;
-        const email = user.email;
-        
-        if (typeof fullName === 'string') userName = fullName;
-        else if (typeof name === 'string') userName = name;
-        else if (typeof email === 'string') userName = email;
-      }
-      
-      // Make sure we have a valid user ID that will work with our RLS policies
-      // Special handling for admin user
-      const userId = user.id === 'admin-user-id' 
-        ? '00000000-0000-0000-0000-000000000000' // Use a valid UUID format for admin
-        : user.id;
-      
-      console.log("Submitting inquiry with user:", {
-        userId,
+      // Create a new inquiry
+      const newInquiry: SupportInquiry = {
+        id: uuidv4(),
+        userId: user.id,
         userEmail: user.email,
-        userName,
-      });
-      
-      // Create a new inquiry in Supabase
-      const { error } = await supabase
-        .from('support_inquiries')
-        .insert({
-          user_id: userId,
-          user_email: user.email,
-          user_name: userName,
-          subject: values.subject,
-          message: values.message,
-          status: 'open'
-        });
+        userName: user.full_name || user.email,
+        subject: values.subject,
+        message: values.message,
+        createdAt: new Date().toISOString(),
+        status: "open",
+        replies: [],
+      };
 
-      if (error) {
-        console.error("Supabase error:", error);
-        throw error;
-      }
+      // Get existing inquiries from localStorage or initialize empty array
+      const existingInquiries: SupportInquiry[] = JSON.parse(
+        localStorage.getItem("supportInquiries") || "[]"
+      );
+
+      // Add new inquiry to the array
+      const updatedInquiries = [newInquiry, ...existingInquiries];
+
+      // Save back to localStorage
+      localStorage.setItem("supportInquiries", JSON.stringify(updatedInquiries));
 
       // Show success toast
       toast({
@@ -136,13 +78,8 @@ export const NewInquiryForm = ({ onSuccessfulSubmit }: NewInquiryFormProps) => {
         description: "Your inquiry has been submitted to our support team.",
       });
 
-      // Call the onSuccessfulSubmit callback if provided
-      if (onSuccessfulSubmit) {
-        onSuccessfulSubmit();
-      }
-      
-      // Reset the form
-      form.reset();
+      // Redirect to the support page
+      navigate("/support");
     } catch (error) {
       console.error("Error submitting inquiry:", error);
       toast({

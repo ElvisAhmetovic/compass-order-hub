@@ -1,14 +1,13 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { useSupabaseAuth } from "@/context/SupabaseAuthContext";
 import { format } from "date-fns";
 import { SupportInquiry } from "@/types/support";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
-import { Trash, RefreshCw } from "lucide-react";
+import { Trash } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -18,7 +17,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 
 interface InquiriesListProps {
   showAll?: boolean;
@@ -29,106 +27,41 @@ export const InquiriesList = ({ showAll = false }: InquiriesListProps) => {
   const [inquiryToDelete, setInquiryToDelete] = useState<SupportInquiry | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  
-  // Try both auth contexts to ensure we have a user
-  const { user: authUser } = useAuth();
-  const { user: supabaseUser } = useSupabaseAuth();
-  
-  // Use either authUser or supabaseUser, whichever is available
-  const user = supabaseUser || authUser;
-  
+  const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  
-  // Check if the user is an admin or owner
-  // Added null check and safer access pattern
-  const userRole = user?.role || (user as any)?.user_metadata?.role || 'user';
-  const isAdminOrOwner = userRole === "admin" || userRole === "owner";
+  const isAdmin = user?.role === "admin"; // Fixed comparison - only check for "admin" role
 
   useEffect(() => {
-    if (user) {
-      loadInquiries();
-    }
-  }, [user, showAll]);
+    loadInquiries();
+  }, [user, isAdmin, showAll]);
 
-  const loadInquiries = async () => {
-    if (!user) {
-      setInquiries([]);
-      setIsLoading(false);
-      return;
-    }
-
-    setIsLoading(true);
+  const loadInquiries = () => {
     try {
-      console.log("Loading inquiries with user:", {
-        userId: user.id,
-        userRole,
-        isAdminOrOwner,
-        showAll
-      });
+      const storedInquiries: SupportInquiry[] = JSON.parse(
+        localStorage.getItem("supportInquiries") || "[]"
+      );
       
-      let query = supabase
-        .from('support_inquiries')
-        .select('*');
-      
-      // For regular users, only show their own inquiries
-      if (!isAdminOrOwner) {
-        console.log("Filtering inquiries for regular user:", user.id);
-        query = query.eq('user_id', user.id);
-      } 
-      // For admin/owner showing only open inquiries
-      else if (!showAll) {
-        console.log("Filtering for open inquiries only (admin/owner)");
-        query = query.eq('status', 'open');
+      // For admin showing all inquiries or the "open" tab
+      if (isAdmin && showAll) {
+        setInquiries(storedInquiries);
+        return;
       }
       
-      const { data, error } = await query.order('created_at', { ascending: false });
-      
-      if (error) {
-        console.error("Error in Supabase query:", error);
-        throw error;
+      // For non-admin users, only show their own inquiries
+      if (!isAdmin) {
+        const userInquiries = storedInquiries.filter(inquiry => inquiry.userId === user?.id);
+        setInquiries(userInquiries);
+        return;
       }
       
-      console.log("Inquiries fetched:", data);
-      
-      // Map the data to match our SupportInquiry type
-      const formattedInquiries: SupportInquiry[] = data.map(item => ({
-        id: item.id,
-        userId: item.user_id,
-        userEmail: item.user_email,
-        userName: item.user_name,
-        subject: item.subject,
-        message: item.message,
-        createdAt: item.created_at,
-        status: item.status as "open" | "closed",
-        updatedAt: item.updated_at
-      }));
-      
-      setInquiries(formattedInquiries);
+      // For admin in "open" tab, filter to show only open inquiries
+      const openInquiries = storedInquiries.filter(inquiry => inquiry.status === "open");
+      setInquiries(openInquiries);
     } catch (error) {
       console.error("Error loading inquiries:", error);
-      toast({
-        variant: "destructive",
-        title: "Error loading inquiries",
-        description: "There was a problem loading your inquiries."
-      });
       setInquiries([]);
-    } finally {
-      setIsLoading(false);
     }
-  };
-
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    await loadInquiries();
-    setIsRefreshing(false);
-    
-    toast({
-      title: "Refreshed",
-      description: "Support inquiries have been refreshed.",
-    });
   };
 
   const handleDeleteClick = (inquiry: SupportInquiry) => {
@@ -136,21 +69,20 @@ export const InquiriesList = ({ showAll = false }: InquiriesListProps) => {
     setIsDeleteDialogOpen(true);
   };
 
-  const handleDeleteConfirm = async () => {
-    if (!inquiryToDelete || !isAdminOrOwner) return;
+  const handleDeleteConfirm = () => {
+    if (!inquiryToDelete) return;
     
     setIsDeleting(true);
     try {
-      const { error } = await supabase
-        .from('support_inquiries')
-        .delete()
-        .eq('id', inquiryToDelete.id);
+      const storedInquiries: SupportInquiry[] = JSON.parse(
+        localStorage.getItem("supportInquiries") || "[]"
+      );
       
-      if (error) {
-        throw error;
-      }
+      const updatedInquiries = storedInquiries.filter(
+        inquiry => inquiry.id !== inquiryToDelete.id
+      );
       
-      // Remove from local state
+      localStorage.setItem("supportInquiries", JSON.stringify(updatedInquiries));
       setInquiries(prevInquiries => 
         prevInquiries.filter(inquiry => inquiry.id !== inquiryToDelete.id)
       );
@@ -174,37 +106,25 @@ export const InquiriesList = ({ showAll = false }: InquiriesListProps) => {
   };
 
   const getStatusColor = (status: string) => {
-    return status === "open" ? "bg-yellow-500" : "bg-green-500";
+    switch (status) {
+      case "open":
+        return "bg-yellow-500";
+      case "replied":
+        return "bg-blue-500";
+      case "closed":
+        return "bg-green-500";
+      default:
+        return "bg-gray-500";
+    }
   };
 
   const handleViewInquiry = (inquiryId: string) => {
     navigate(`/support/${inquiryId}`);
   };
 
-  if (isLoading) {
-    return (
-      <div className="text-center py-10">
-        <p className="text-gray-500">Loading inquiries...</p>
-      </div>
-    );
-  }
-
   return (
     <>
       <div className="space-y-4">
-        <div className="flex justify-end mb-4">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={handleRefresh}
-            disabled={isRefreshing}
-            className="flex items-center gap-2"
-          >
-            <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-            {isRefreshing ? 'Refreshing...' : 'Refresh'}
-          </Button>
-        </div>
-        
         {inquiries.length === 0 ? (
           <div className="text-center py-10">
             <p className="text-gray-500">No inquiries found.</p>
@@ -233,7 +153,7 @@ export const InquiriesList = ({ showAll = false }: InquiriesListProps) => {
                   {format(new Date(inquiry.createdAt), "PPpp")}
                 </span>
                 <div className="flex gap-2">
-                  {isAdminOrOwner && (
+                  {isAdmin && (
                     <Button
                       variant="destructive"
                       size="sm"
@@ -247,7 +167,7 @@ export const InquiriesList = ({ showAll = false }: InquiriesListProps) => {
                     size="sm"
                     onClick={() => handleViewInquiry(inquiry.id)}
                   >
-                    View
+                    {inquiry.replies.length > 0 ? `View (${inquiry.replies.length} replies)` : "View"}
                   </Button>
                 </div>
               </CardFooter>
