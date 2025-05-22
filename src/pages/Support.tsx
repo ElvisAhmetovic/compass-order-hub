@@ -1,7 +1,8 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import { useAuth } from "@/context/AuthContext";
+import { useSupabaseAuth } from "@/context/SupabaseAuthContext";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus } from "lucide-react";
@@ -12,7 +13,22 @@ import { NewInquiryForm } from "@/components/support/NewInquiryForm";
 const Support = () => {
   const [activeTab, setActiveTab] = useState<string>("inquiries");
   const [showNewInquiryForm, setShowNewInquiryForm] = useState(false);
-  const { user } = useAuth();
+  
+  // Try both auth contexts to ensure we have a user
+  const { user: authUser } = useAuth();
+  const { user: supabaseUser } = useSupabaseAuth();
+  
+  // Use either authUser or supabaseUser, whichever is available
+  const user = supabaseUser || authUser;
+  
+  // Log user state for debugging
+  useEffect(() => {
+    console.log("Support Page - Auth User:", authUser);
+    console.log("Support Page - Supabase User:", supabaseUser);
+    console.log("Support Page - Combined User:", user);
+    console.log("Support Page - Is admin or owner:", isAdminOrOwner);
+  }, [authUser, supabaseUser, user]);
+  
   const isAdminOrOwner = user?.role === "admin" || user?.role === "owner";
 
   const handleCreateInquiry = () => {

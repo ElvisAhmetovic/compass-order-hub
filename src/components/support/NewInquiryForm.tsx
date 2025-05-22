@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useAuth } from "@/context/AuthContext";
+import { useSupabaseAuth } from "@/context/SupabaseAuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -31,9 +32,18 @@ interface NewInquiryFormProps {
 }
 
 export const NewInquiryForm = ({ onSuccessfulSubmit }: NewInquiryFormProps) => {
-  const { user } = useAuth();
+  // Try both auth contexts to ensure we have a user
+  const { user: authUser } = useAuth();
+  const { user: supabaseUser } = useSupabaseAuth();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Use either authUser or supabaseUser, whichever is available
+  const user = supabaseUser || authUser;
+
+  console.log("NewInquiryForm - Auth User:", authUser);
+  console.log("NewInquiryForm - Supabase User:", supabaseUser);
+  console.log("NewInquiryForm - Combined User:", user);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -62,6 +72,12 @@ export const NewInquiryForm = ({ onSuccessfulSubmit }: NewInquiryFormProps) => {
     try {
       // Get user display name with fallbacks
       const userName = user.full_name || user.email || "Unknown User";
+      
+      console.log("Submitting inquiry with user:", {
+        userId: user.id,
+        userEmail: user.email,
+        userName,
+      });
       
       // Create a new inquiry in Supabase
       const { error } = await supabase
