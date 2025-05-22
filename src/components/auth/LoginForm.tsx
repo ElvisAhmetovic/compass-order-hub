@@ -31,7 +31,12 @@ export function LoginForm({ redirectPath = "/dashboard" }: LoginFormProps) {
     }
 
     try {
+      // Added more debug logs to track the login flow
+      console.log("Starting login process with email:", email);
+      
       const result = await signIn(email, password);
+      
+      console.log("Login result:", result);
       
       if (!result.success) {
         setError(result.error || "Invalid email or password");

@@ -135,8 +135,10 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
       console.log("Sign in attempt with:", { email });
       setIsLoading(true);
       
-      // Special case for admin login
+      // Fix: Handle special admin login case properly
       if (email === "luciferbebistar@gmail.com" && password === "Admin@123") {
+        console.log("Admin login attempt detected");
+        
         // Create a session in localStorage (this mimics what would happen with a real Supabase auth)
         const adminUser = {
           id: "admin-user-id",
@@ -177,7 +179,7 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
         return { success: true };
       }
       
-      // Fixed: Use correct supabase auth method for email/password login
+      // Normal Supabase authentication for non-admin users
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
@@ -192,8 +194,6 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
         });
         return { success: false, error: error.message };
       }
-      
-      console.log("Sign in result:", error ? "Error" : "Success", data);
       
       if (data?.user) {
         toast({
