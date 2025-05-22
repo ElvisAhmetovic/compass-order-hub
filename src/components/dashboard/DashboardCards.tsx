@@ -8,11 +8,13 @@ import {
   CheckCircle,
   XCircle,
   Star,
-  Trash
+  Trash,
+  Package
 } from "lucide-react";
 import { OrderStatus } from "@/types";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { useSupabaseAuth } from "@/context/SupabaseAuthContext";
 import { Order } from "@/types";
 
 interface OrderSummary {
@@ -55,10 +57,63 @@ const SummaryCard = ({
   );
 };
 
+interface UserOrderSummary {
+  orderCount: number;
+  totalSpent: number;
+  lastOrder?: {
+    date: string;
+    package?: string;
+  }
+}
+
+const UserOrderSummaryCard = ({ orderCount, totalSpent, lastOrder }: UserOrderSummary) => {
+  return (
+    <Card className="border shadow-sm">
+      <CardContent className="p-6">
+        <div className="flex flex-col space-y-4">
+          <div className="flex justify-between items-center">
+            <h3 className="font-medium text-lg">Your Orders</h3>
+            <Package className="text-primary h-6 w-6" />
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-sm text-muted-foreground">Total Orders</p>
+              <p className="text-2xl font-semibold">{orderCount}</p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Total Spent</p>
+              <p className="text-2xl font-semibold">€{totalSpent}</p>
+            </div>
+          </div>
+          
+          {lastOrder && (
+            <div className="pt-2 border-t">
+              <p className="text-sm text-muted-foreground">Last Order</p>
+              <p className="text-sm">{new Date(lastOrder.date).toLocaleDateString()}</p>
+              {lastOrder.package && (
+                <p className="text-sm font-medium mt-1">{lastOrder.package}</p>
+              )}
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
 export const DashboardCards = () => {
   const [orderSummaries, setOrderSummaries] = useState<OrderSummary[]>([]);
-  const { user } = useAuth();
-  const isAdmin = user?.role === "admin";
+  const [userOrderSummary, setUserOrderSummary] = useState<UserOrderSummary>({
+    orderCount: 0,
+    totalSpent: 0
+  });
+  
+  const { user: localUser } = useAuth();
+  const { user: supabaseUser } = useSupabaseAuth();
+  
+  const user = supabaseUser || localUser;
+  const isAdmin = user?.role === "admin" || user?.role === "owner";
   
   useEffect(() => {
     // Fetch orders from localStorage
@@ -67,14 +122,7 @@ export const DashboardCards = () => {
         const storedOrders = localStorage.getItem("orders");
         if (!storedOrders) return [];
         
-        let orders: Order[] = JSON.parse(storedOrders);
-        
-        // Filter orders for non-admin users to only show their assigned orders
-        if (!isAdmin && user) {
-          orders = orders.filter(order => order.assigned_to === user.id);
-        }
-        
-        return orders;
+        return JSON.parse(storedOrders);
       } catch (error) {
         console.error("Error fetching orders:", error);
         return [];
@@ -83,34 +131,78 @@ export const DashboardCards = () => {
     
     // Calculate summaries based on orders
     const calculateSummaries = (orders: Order[]) => {
-      // Initialize summaries for all status types we want to track
-      const summaryMap = new Map<OrderStatus, OrderSummary>();
+      // For admin users: show status-based summaries
+      if (isAdmin) {
+        // Initialize summaries for all status types we want to track
+        const summaryMap = new Map<OrderStatus, OrderSummary>();
+        
+        // Initialize with empty data for each status
+        const statusesToTrack: OrderStatus[] = [
+          "In Progress", "Invoice Sent", "Invoice Paid", "Complaint", 
+          "Resolved", "Cancelled", "Deleted", "Review"
+        ];
+        
+        statusesToTrack.forEach(status => {
+          summaryMap.set(status, { status, count: 0, value: 0 });
+        });
+        
+        // Update summaries with actual data
+        orders.forEach(order => {
+          if (summaryMap.has(order.status)) {
+            const summary = summaryMap.get(order.status)!;
+            summary.count += 1;
+            summary.value += order.price;
+          }
+        });
+        
+        // Convert map to array
+        return Array.from(summaryMap.values());
+      }
+      // For regular users: return empty array as we'll handle their orders separately
+      return [];
+    };
+    
+    // Calculate user-specific order summary
+    const calculateUserOrderSummary = (orders: Order[]) => {
+      if (!user) return {
+        orderCount: 0,
+        totalSpent: 0
+      };
       
-      // Initialize with empty data for each status
-      const statusesToTrack: OrderStatus[] = isAdmin 
-        ? ["In Progress", "Invoice Sent", "Invoice Paid", "Complaint", "Resolved", "Cancelled", "Deleted", "Review"] 
-        : ["In Progress", "Invoice Sent", "Invoice Paid", "Cancelled", "Review"];
+      // Filter orders assigned to this user
+      const userOrders = orders.filter(order => order.assigned_to === user.id);
       
-      statusesToTrack.forEach(status => {
-        summaryMap.set(status, { status, count: 0, value: 0 });
-      });
+      // Calculate total spent and order count
+      const totalSpent = userOrders.reduce((sum, order) => sum + order.price, 0);
       
-      // Update summaries with actual data
-      orders.forEach(order => {
-        if (summaryMap.has(order.status)) {
-          const summary = summaryMap.get(order.status)!;
-          summary.count += 1;
-          summary.value += order.price;
-        }
-      });
+      // Find the most recent order
+      const sortedOrders = [...userOrders].sort((a, b) => 
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
       
-      // Convert map to array
-      return Array.from(summaryMap.values());
+      const lastOrder = sortedOrders.length > 0 ? {
+        date: sortedOrders[0].created_at,
+        package: sortedOrders[0].description // Will be updated with proper package info later
+      } : undefined;
+      
+      return {
+        orderCount: userOrders.length,
+        totalSpent,
+        lastOrder
+      };
     };
     
     const orders = fetchOrders();
-    const summaries = calculateSummaries(orders);
-    setOrderSummaries(summaries);
+    
+    // For admin users, calculate status-based summaries
+    if (isAdmin) {
+      const summaries = calculateSummaries(orders);
+      setOrderSummaries(summaries);
+    } else {
+      // For regular users, calculate their orders summary
+      const summary = calculateUserOrderSummary(orders);
+      setUserOrderSummary(summary);
+    }
   }, [isAdmin, user]);
 
   const getIcon = (status: OrderStatus) => {
@@ -161,18 +253,32 @@ export const DashboardCards = () => {
     }
   };
 
+  // Render different cards based on user role
+  if (isAdmin) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        {orderSummaries.map((summary) => (
+          <SummaryCard
+            key={summary.status}
+            icon={getIcon(summary.status)}
+            title={summary.status}
+            count={summary.count}
+            value={summary.value}
+            colorClass={getColorClass(summary.status)}
+          />
+        ))}
+      </div>
+    );
+  }
+  
+  // User view - show summary of their orders
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-      {orderSummaries.map((summary) => (
-        <SummaryCard
-          key={summary.status}
-          icon={getIcon(summary.status)}
-          title={summary.status}
-          count={summary.count}
-          value={summary.value}
-          colorClass={getColorClass(summary.status)}
-        />
-      ))}
+    <div className="md:max-w-xl mb-8">
+      <UserOrderSummaryCard 
+        orderCount={userOrderSummary.orderCount} 
+        totalSpent={userOrderSummary.totalSpent}
+        lastOrder={userOrderSummary.lastOrder}
+      />
     </div>
   );
 };

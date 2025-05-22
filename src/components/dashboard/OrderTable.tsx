@@ -15,6 +15,7 @@ import { ChevronDown, ChevronUp } from "lucide-react";
 import { Order, OrderStatus, User } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
+import { useSupabaseAuth } from "@/context/SupabaseAuthContext";
 
 interface OrderTableProps {
   onOrderClick: (order: Order) => void;
@@ -41,8 +42,12 @@ const OrderTable = ({ onOrderClick, statusFilter, refreshTrigger }: OrderTablePr
   const [priorityFilter, setPriorityFilter] = useState<string | null>(null);
   
   const { toast } = useToast();
-  const { user } = useAuth();
-  const isAdmin = user?.role === "admin";
+  const { user: localUser } = useAuth();
+  const { user: supabaseUser } = useSupabaseAuth();
+  
+  // Get the authenticated user, prioritizing Supabase
+  const user = supabaseUser || localUser;
+  const isAdmin = user?.role === "admin" || user?.role === "owner";
 
   // Load users
   useEffect(() => {
@@ -96,11 +101,18 @@ const OrderTable = ({ onOrderClick, statusFilter, refreshTrigger }: OrderTablePr
     // Apply status filter
     if (statusFilter) {
       if (statusFilter === "All") {
-        // Keep all orders, but filter out specific statuses if needed
-        result = result.filter(order => 
-          !["Resolved", "Cancelled", "Deleted"].includes(order.status)
-        );
+        // For regular users, only show orders assigned to them regardless of status
+        if (!isAdmin) {
+          // Already filtered in the fetchOrders function
+        } else {
+          // For admins, filter out specific statuses if needed when "All" is selected
+          result = result.filter(order => 
+            !["Resolved", "Cancelled", "Deleted"].includes(order.status)
+          );
+        }
       } else {
+        // Both admin and regular users can filter by status
+        // But regular users can only see orders assigned to them
         result = result.filter(order => order.status === statusFilter);
       }
     }

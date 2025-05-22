@@ -15,6 +15,8 @@ export const DevAuthNote = () => {
           <p className="font-semibold">Development Notes:</p>
           <ul className="list-disc list-inside ml-1 mt-1">
             <li>For admin access use: <span className="font-mono">luciferbebistar@gmail.com</span> / <span className="font-mono">Admin@123</span></li>
+            <li>Regular users can only see orders assigned to them</li>
+            <li>Admin users can see all orders and have full management capabilities</li>
             <li>New registered users need email confirmation by default</li>
             <li>To disable email confirmation for testing, go to Supabase Dashboard &gt; Authentication &gt; Email Templates</li>
           </ul>

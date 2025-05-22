@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import OrderTable from "@/components/dashboard/OrderTable";
@@ -31,7 +32,7 @@ const Dashboard = () => {
   const user = supabaseUser || localUser;
   // Ensure proper UserRole type - default to 'user' if undefined or invalid
   const userRole: UserRole = (user?.role as UserRole) || "user";
-  const isAdmin = userRole === "admin";
+  const isAdmin = userRole === "admin" || userRole === "owner";
   
   // Debug user role
   useEffect(() => {
@@ -100,7 +101,9 @@ const Dashboard = () => {
               title={getPageTitle()}
               description={
                 isDashboardHome 
-                  ? "Here's an overview of your order statuses" 
+                  ? isAdmin
+                    ? "Here's an overview of your order statuses" 
+                    : "Here's an overview of your orders"
                   : `Manage and track all ${getPageTitle().toLowerCase()} in the system`
               }
               onCreateOrder={isAdmin ? () => setCreateModalOpen(true) : undefined}
@@ -118,7 +121,7 @@ const Dashboard = () => {
             
             {isDashboardHome && <DashboardCards />}
             
-            {path === "/active-orders" && (
+            {path === "/active-orders" && isAdmin && (
               <ActiveOrdersTabs activeTab={activeTab} setActiveTab={setActiveTab} />
             )}
             
