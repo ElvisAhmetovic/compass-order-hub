@@ -70,9 +70,14 @@ export const NewInquiryForm = ({ onSuccessfulSubmit }: NewInquiryFormProps) => {
     setIsSubmitting(true);
     
     try {
-      // Get user display name with type-safe fallbacks
-      // Use optional chaining to safely access properties that might not exist
-      const userName = user?.full_name || user?.name || user?.email || "Unknown User";
+      // Get user display name with type-safe access
+      // We need to handle different user types safely
+      // Look at the user object structure from both auth contexts
+      const userName = typeof user.user_metadata?.full_name === 'string' ? user.user_metadata.full_name :
+                      typeof user.user_metadata?.name === 'string' ? user.user_metadata.name :
+                      typeof user.full_name === 'string' ? user.full_name :
+                      typeof user.name === 'string' ? user.name :
+                      user.email || "Unknown User";
       
       console.log("Submitting inquiry with user:", {
         userId: user.id,
