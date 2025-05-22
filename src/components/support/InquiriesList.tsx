@@ -35,10 +35,14 @@ export const InquiriesList = ({ showAll = false }: InquiriesListProps) => {
   const currentUser = supabaseUser || user;
   const navigate = useNavigate();
   const { toast } = useToast();
-  const isAdmin = currentUser?.role === "admin";
+  const isAdmin = currentUser?.role === "admin" || currentUser?.role === "owner";
 
   useEffect(() => {
     loadInquiries();
+    // Add a console log to help with debugging
+    console.log("InquiriesList - User role:", currentUser?.role);
+    console.log("InquiriesList - Is admin:", isAdmin);
+    console.log("InquiriesList - Show all:", showAll);
   }, [currentUser, isAdmin, showAll]);
 
   const loadInquiries = async () => {
@@ -50,26 +54,38 @@ export const InquiriesList = ({ showAll = false }: InquiriesListProps) => {
 
     setIsLoading(true);
     try {
+      console.log("Loading inquiries - Starting query");
+      
       let query = supabase
         .from('support_inquiries')
         .select('*');
       
-      // For regular users, only show their own inquiries
+      // For regular users (not admin/owner), only show their own inquiries
       if (!isAdmin) {
+        console.log("User is not admin - filtering by user ID:", currentUser.id);
         query = query.eq('user_id', currentUser.id);
-      } 
-      // For admin showing only open inquiries - when showAll is false
-      else if (isAdmin && !showAll) {
-        query = query.eq('status', 'open');
+      } else {
+        // For admins/owners
+        console.log("User is admin - checking showAll flag:", showAll);
+        if (!showAll) {
+          // When showAll is false, only show open inquiries
+          console.log("Admin with showAll=false - showing only open inquiries");
+          query = query.eq('status', 'open');
+        } else {
+          // When showAll is true, show all inquiries
+          console.log("Admin with showAll=true - showing all inquiries");
+          // No additional filters needed
+        }
       }
-      // For admin showing all inquiries - when showAll is true
-      // No additional filters needed
       
       const { data, error } = await query.order('created_at', { ascending: false });
       
       if (error) {
         throw error;
       }
+      
+      // Log the retrieved data for debugging
+      console.log("Inquiries retrieved:", data?.length || 0);
       
       // Map the data to match our SupportInquiry type
       const formattedInquiries: SupportInquiry[] = data.map(item => ({
