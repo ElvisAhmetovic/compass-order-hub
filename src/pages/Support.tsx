@@ -9,6 +9,7 @@ import { InquiriesList } from "@/components/support/InquiriesList";
 import { NewInquiryForm } from "@/components/support/NewInquiryForm";
 import { Plus } from "lucide-react";
 import Sidebar from "@/components/dashboard/Sidebar";
+import { UserRole } from "@/types";
 
 const Support = () => {
   const [activeTab, setActiveTab] = useState<string>("inquiries");
@@ -30,7 +31,7 @@ const Support = () => {
     <div className="flex min-h-screen">
       <Sidebar />
       <div className="flex-1">
-        <Layout userRole={currentUser?.role || "user"}>
+        <Layout userRole={(currentUser?.role as UserRole) || "user"}>
           <div className="space-y-6">
             <div className="flex justify-between items-center">
               <div>
