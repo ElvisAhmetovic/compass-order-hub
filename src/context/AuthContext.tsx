@@ -50,7 +50,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .update({
           first_name: data.first_name,
           last_name: data.last_name,
-          updated_at: new Date()
+          updated_at: new Date().toISOString() // Convert Date to ISO string
         })
         .eq('id', supabaseUser.id);
       

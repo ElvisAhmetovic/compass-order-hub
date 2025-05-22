@@ -1,5 +1,5 @@
 
-// src/types/auth.ts (or relevant file)
+// src/types/auth.ts
 
 import { Session, User } from "@supabase/supabase-js";
 import { UserRole } from "@/types"; // Assuming this is defined elsewhere
@@ -26,8 +26,9 @@ export interface ExtendedUser extends User {
   full_name?: string;
   name?: string;
   role?: UserRole;
-  first_name?: string; // Add these properties that ProfileForm is using
+  first_name?: string;
   last_name?: string;
+  // Ensuring last_sign_in_at is properly defined (it comes from the User base type)
 }
 
 export interface SupabaseAuthContextProps {
