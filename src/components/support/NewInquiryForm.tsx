@@ -57,7 +57,7 @@ export const NewInquiryForm = ({ onSuccessfulSubmit }: NewInquiryFormProps) => {
     
     try {
       // Get user display name with fallbacks
-      const userName = user.full_name || user.name || user.email || "Unknown User";
+      const userName = user.full_name || user.email || "Unknown User";
       
       // Create a new inquiry in Supabase
       const { error } = await supabase

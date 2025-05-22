@@ -165,7 +165,7 @@ export const InquiryDetail = () => {
     
     try {
       // Get user display name with fallbacks
-      const userName = user.full_name || user.name || user.email || "Unknown User";
+      const userName = user.full_name || user.email || "Unknown User";
       
       const { error } = await supabase
         .from('support_replies')
