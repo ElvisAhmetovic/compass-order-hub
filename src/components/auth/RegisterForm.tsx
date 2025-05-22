@@ -2,7 +2,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { AlertCircle, CheckCircle, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useSupabaseAuth } from "@/context/SupabaseAuthContext";
@@ -70,6 +69,10 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
           title: "Account Created",
           description: "Check your email for a confirmation link.",
         });
+        
+        // Note for development: In supabase dashboard, you might want to disable email confirmation
+        console.log("Development note: You may want to disable email confirmation in Supabase dashboard");
+        
         setTimeout(() => {
           onSuccess();
         }, 2000);

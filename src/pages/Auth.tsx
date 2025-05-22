@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { Navigate, useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useSupabaseAuth } from "@/context/SupabaseAuthContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
@@ -8,6 +8,7 @@ import { AuthContainer } from "@/components/auth/AuthContainer";
 import { AuthHeader } from "@/components/auth/AuthHeader";
 import { LoginForm } from "@/components/auth/LoginForm";
 import { RegisterForm } from "@/components/auth/RegisterForm";
+import { DevAuthNote } from "@/components/auth/DevAuthNote";
 
 export default function Auth() {
   const { user, isLoading } = useSupabaseAuth();
@@ -36,6 +37,7 @@ export default function Auth() {
   // Redirect if user is already logged in
   useEffect(() => {
     if (user && !isLoading) {
+      console.log("User is logged in, redirecting to:", from);
       navigate(from, { replace: true });
     }
   }, [user, isLoading, navigate, from]);
@@ -62,6 +64,9 @@ export default function Auth() {
         <AuthHeader activeTab={activeTab} onTabChange={setActiveTab} />
         
         <CardContent>
+          {/* Development note with helpful information */}
+          <DevAuthNote />
+          
           <Tabs value={activeTab} className="mt-2">
             <TabsContent value="login">
               <LoginForm redirectPath={from} />

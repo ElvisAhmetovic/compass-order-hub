@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -36,6 +37,7 @@ export function LoginForm({ redirectPath = "/dashboard" }: LoginFormProps) {
         setError(result.error || "Invalid email or password");
       } else {
         // Redirect on successful login
+        console.log("Login successful, redirecting to:", redirectPath);
         navigate(redirectPath);
       }
     } catch (error) {

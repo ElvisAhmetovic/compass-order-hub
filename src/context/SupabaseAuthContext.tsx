@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useEffect, useState } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
@@ -41,7 +42,7 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
       ...user,
       full_name: user.user_metadata?.full_name || user.user_metadata?.name,
       name: user.user_metadata?.name,
-      role: user.user_metadata?.role as UserRole || 'user'
+      role: (user.user_metadata?.role as UserRole) || 'user'
     };
   };
 
@@ -176,21 +177,39 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
         return { success: true };
       }
       
+      // Fixed: Use correct supabase auth method for email/password login
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
       });
       
-      console.log("Sign in result:", error ? "Error" : "Success", data);
-      
       if (error) {
         console.error("Sign in error:", error.message);
+        toast({
+          variant: "destructive",
+          title: "Login failed",
+          description: error.message || "Invalid email or password"
+        });
         return { success: false, error: error.message };
+      }
+      
+      console.log("Sign in result:", error ? "Error" : "Success", data);
+      
+      if (data?.user) {
+        toast({
+          title: "Signed In",
+          description: "You have been signed in successfully.",
+        });
       }
       
       return { success: true };
     } catch (error) {
       console.error("Unexpected sign in error:", error);
+      toast({
+        variant: "destructive",
+        title: "Login Error",
+        description: "An unexpected error occurred during login"
+      });
       return { success: false, error: "An unexpected error occurred" };
     } finally {
       setIsLoading(false);
@@ -209,7 +228,8 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
         options: {
           data: {
             full_name: fullName,
-            name: fullName
+            name: fullName,
+            role: 'user' // Explicitly set default role
           }
         }
       });
@@ -218,17 +238,30 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
       
       if (error) {
         console.error("Sign up error:", error.message);
+        toast({
+          variant: "destructive",
+          title: "Registration failed",
+          description: error.message
+        });
         return { success: false, error: error.message };
       }
       
       toast({
         title: "Account Created",
-        description: "Your account has been created successfully!",
+        description: data.user ? "Your account has been created successfully! Please check your email for confirmation." : "Account created! Check your email for confirmation.",
       });
+      
+      // Important note for development
+      console.log("Note: For development, you may want to disable email confirmation in Supabase console settings");
       
       return { success: true };
     } catch (error) {
       console.error("Unexpected sign up error:", error);
+      toast({
+        variant: "destructive",
+        title: "Registration Error",
+        description: "An unexpected error occurred during registration"
+      });
       return { success: false, error: "An unexpected error occurred" };
     } finally {
       setIsLoading(false);
