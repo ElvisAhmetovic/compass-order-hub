@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useEffect, useState } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
@@ -55,7 +54,7 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
         if (parsedSession.email === "luciferbebistar@gmail.com" && parsedSession.role === "admin") {
           // Create a custom user object that mimics the structure expected by components
           const adminUser = {
-            id: parsedSession.id,
+            id: "00000000-0000-0000-0000-000000000000", // Use a valid UUID format
             email: parsedSession.email,
             role: "admin" as UserRole,
             full_name: parsedSession.full_name || "Admin User",
@@ -139,7 +138,7 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
       if (email === "luciferbebistar@gmail.com" && password === "Admin@123") {
         // Create a session in localStorage (this mimics what would happen with a real Supabase auth)
         const adminUser = {
-          id: "admin-user-id",
+          id: "00000000-0000-0000-0000-000000000000", // Use a valid UUID format
           email: email,
           role: "admin",
           full_name: "Admin User"
@@ -149,7 +148,7 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
         
         // Set the user in our context with proper metadata and required User properties
         const enhancedAdminUser = {
-          id: "admin-user-id",
+          id: "00000000-0000-0000-0000-000000000000", // Use a valid UUID format
           email: email,
           role: "admin" as UserRole,
           full_name: "Admin User",

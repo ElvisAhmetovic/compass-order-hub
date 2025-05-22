@@ -27,12 +27,21 @@ const Support = () => {
     console.log("Support Page - Auth User:", authUser);
     console.log("Support Page - Supabase User:", supabaseUser);
     console.log("Support Page - Combined User:", user);
-    console.log("Support Page - Is admin or owner:", isAdminOrOwner);
   }, [authUser, supabaseUser, user]);
   
-  // Make sure we handle user.role as UserRole type
-  const userRole: UserRole = user?.role as UserRole || "user";
+  // Safely determine user role using type assertion and fallbacks
+  const userRole = user?.role || 
+                  (user as any)?.user_metadata?.role || 
+                  'user';
+                  
+  // Check if user is admin or owner
   const isAdminOrOwner = userRole === "admin" || userRole === "owner";
+  
+  // Log the final determination for debugging
+  useEffect(() => {
+    console.log("Support Page - User Role:", userRole);
+    console.log("Support Page - Is admin or owner:", isAdminOrOwner);
+  }, [userRole, isAdminOrOwner]);
 
   const handleCreateInquiry = () => {
     setShowNewInquiryForm(true);

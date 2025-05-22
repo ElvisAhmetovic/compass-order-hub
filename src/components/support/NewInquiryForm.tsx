@@ -101,8 +101,14 @@ export const NewInquiryForm = ({ onSuccessfulSubmit }: NewInquiryFormProps) => {
         else if (typeof email === 'string') userName = email;
       }
       
+      // Make sure we have a valid user ID that will work with our RLS policies
+      // Special handling for admin user
+      const userId = user.id === 'admin-user-id' 
+        ? '00000000-0000-0000-0000-000000000000' // Use a valid UUID format for admin
+        : user.id;
+      
       console.log("Submitting inquiry with user:", {
-        userId: user.id,
+        userId,
         userEmail: user.email,
         userName,
       });
@@ -111,7 +117,7 @@ export const NewInquiryForm = ({ onSuccessfulSubmit }: NewInquiryFormProps) => {
       const { error } = await supabase
         .from('support_inquiries')
         .insert({
-          user_id: user.id,
+          user_id: userId,
           user_email: user.email,
           user_name: userName,
           subject: values.subject,

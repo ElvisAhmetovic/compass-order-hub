@@ -41,7 +41,11 @@ export const InquiriesList = ({ showAll = false }: InquiriesListProps) => {
   
   const navigate = useNavigate();
   const { toast } = useToast();
-  const isAdminOrOwner = user?.role === "admin" || user?.role === "owner";
+  
+  // Check if the user is an admin or owner
+  // Added null check and safer access pattern
+  const userRole = user?.role || (user as any)?.user_metadata?.role || 'user';
+  const isAdminOrOwner = userRole === "admin" || userRole === "owner";
 
   useEffect(() => {
     if (user) {
@@ -60,6 +64,7 @@ export const InquiriesList = ({ showAll = false }: InquiriesListProps) => {
     try {
       console.log("Loading inquiries with user:", {
         userId: user.id,
+        userRole,
         isAdminOrOwner,
         showAll
       });
