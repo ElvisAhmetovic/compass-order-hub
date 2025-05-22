@@ -7,6 +7,7 @@ import ProposalsTable from '@/components/proposals/ProposalsTable';
 import { ProposalStatus, ProposalFilterOptions } from '@/types/proposal';
 import { useAuth } from '@/context/AuthContext';
 import { useSupabaseAuth } from '@/context/SupabaseAuthContext';
+import { UserRole } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import CreateProposalModal from '@/components/proposals/CreateProposalModal';
@@ -48,7 +49,7 @@ const Proposals = () => {
     <div className="flex min-h-screen">
       <Sidebar />
       <div className="flex-1">
-        <Layout userRole={user?.role || "user"}>
+        <Layout userRole={(user?.role || 'user') as UserRole}>
           <div className="space-y-6">
             <ProposalsHeader 
               title="Prijedlozi"
