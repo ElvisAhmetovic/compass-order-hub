@@ -1,4 +1,3 @@
-
 // src/context/SupabaseAuthContext.tsx
 
 import { createContext, useContext, useEffect, useState } from "react";

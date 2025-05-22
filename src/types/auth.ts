@@ -26,6 +26,8 @@ export interface ExtendedUser extends User {
   full_name?: string;
   name?: string;
   role?: UserRole;
+  first_name?: string; // Add these properties that ProfileForm is using
+  last_name?: string;
 }
 
 export interface SupabaseAuthContextProps {

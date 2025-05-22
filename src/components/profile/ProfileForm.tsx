@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -160,7 +161,7 @@ export function ProfileForm() {
           <AlertDescription className="space-y-2">
             <p><strong>Email:</strong> {user.email}</p>
             <p><strong>Role:</strong> {user.role}</p>
-            <p><strong>Last Sign In:</strong> {user.last_sign_in ? new Date(user.last_sign_in).toLocaleString() : 'Not available'}</p>
+            <p><strong>Last Sign In:</strong> {user.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleString() : 'Not available'}</p>
           </AlertDescription>
         </Alert>
       </div>

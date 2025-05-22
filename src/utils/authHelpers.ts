@@ -14,7 +14,9 @@ export const enhanceUser = (user: User | null): ExtendedUser | null => {
     ...user,
     full_name: user.user_metadata?.full_name || user.user_metadata?.name,
     name: user.user_metadata?.name,
-    role: (user.user_metadata?.role as UserRole) || 'user'
+    role: (user.user_metadata?.role as UserRole) || 'user',
+    first_name: user.user_metadata?.first_name,
+    last_name: user.user_metadata?.last_name
   };
 };
 
@@ -34,13 +36,17 @@ export const checkForAdminSession = (): ExtendedUser | null => {
           email: parsedSession.email,
           role: "admin" as UserRole,
           full_name: parsedSession.full_name || "Admin User",
+          first_name: parsedSession.first_name || "Admin",
+          last_name: parsedSession.last_name || "User",
           // Add missing required properties from ExtendedUser/User type
           app_metadata: {},
           aud: "authenticated",
           created_at: new Date().toISOString(),
           user_metadata: {
             role: "admin",
-            full_name: parsedSession.full_name || "Admin User"
+            full_name: parsedSession.full_name || "Admin User",
+            first_name: parsedSession.first_name || "Admin",
+            last_name: parsedSession.last_name || "User"
           }
         } as ExtendedUser;
         
