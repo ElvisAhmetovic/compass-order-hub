@@ -44,7 +44,11 @@ export const NewInquiryForm = ({ onSuccessfulSubmit }: NewInquiryFormProps) => {
   });
 
   const onSubmit = async (values: FormValues) => {
+    // Debug user state
+    console.log("Current user state:", user);
+    
     if (!user) {
+      console.error("User not authenticated in form submission");
       toast({
         title: "Error",
         description: "You must be logged in to submit an inquiry.",
@@ -72,6 +76,7 @@ export const NewInquiryForm = ({ onSuccessfulSubmit }: NewInquiryFormProps) => {
         });
 
       if (error) {
+        console.error("Supabase error:", error);
         throw error;
       }
 
