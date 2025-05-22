@@ -5,16 +5,14 @@ import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { ExtendedUser, SupabaseAuthContextProps } from "@/types/auth";
-import { enhanceUser, checkForAdminSession } from "@/utils/authHelpers";
+import { enhanceUser, checkForAdminSession } from "@/utils/authHelpers"; // Ensure authHelpers exists and functions as expected
 
-// --- THE FIX IS HERE ---
 // Import the functions using their EXACT names from authService.ts
 import {
-  signInWithEmailAndPassword, // This is the correct name
-  signUpWithEmailAndPassword, // This is the correct name
-  signOutUser // This is the correct name
+  signInWithEmailAndPassword,
+  signUpWithEmailAndPassword,
+  signOutUser
 } from "@/services/authService";
-// --- END FIX ---
 
 
 const SupabaseAuthContext = createContext<SupabaseAuthContextProps | undefined>(undefined);
@@ -25,9 +23,78 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
-  // ... (rest of your useEffect for auth state listener and initial session)
+  // This useEffect handles the initial session loading and keeps the state updated
+  useEffect(() => {
+    async function getInitialSession() {
+      setIsLoading(true);
+      // Check for mock admin session first
+      const adminUser = checkForAdminSession();
+      if (adminUser) {
+        setUser(adminUser);
+        setSession({ user: adminUser } as Session); // Cast to Session for type compatibility
+        setIsLoading(false);
+        return;
+      }
 
-  const signIn = async (email: string, password: string) => { // This is the context's signIn
+      // If not admin, try to get Supabase session
+      const { data: { session }, error } = await supabase.auth.getSession();
+
+      if (session) {
+        const enhancedUser = enhanceUser(session.user);
+        setUser(enhancedUser);
+        setSession(session);
+      } else {
+        setUser(null);
+        setSession(null);
+      }
+      setIsLoading(false);
+      
+      if (error) {
+        console.error("SupabaseAuthContext: Error getting initial session:", error);
+      }
+    }
+
+    getInitialSession();
+
+    // Set up a listener for auth state changes (login, logout, token refresh)
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      (event, currentSession) => {
+        console.log("Auth State Change:", event, currentSession);
+        if (event === "SIGNED_IN" && currentSession) {
+          const enhancedUser = enhanceUser(currentSession.user);
+          setUser(enhancedUser);
+          setSession(currentSession);
+          toast({
+            title: "Logged In",
+            description: "You have been successfully logged in.",
+          });
+        } else if (event === "SIGNED_OUT") {
+          setUser(null);
+          setSession(null);
+          toast({
+            title: "Logged Out",
+            description: "You have been successfully logged out.",
+          });
+        } else if (event === "USER_UPDATED" && currentSession) {
+          const enhancedUser = enhanceUser(currentSession.user);
+          setUser(enhancedUser);
+          setSession(currentSession);
+          toast({
+            title: "Profile Updated",
+            description: "Your profile information has been updated.",
+          });
+        }
+        setIsLoading(false);
+      }
+    );
+
+    return () => {
+      authListener?.unsubscribe();
+    };
+  }, [toast]); // Include toast in dependency array if it's stable
+
+
+  const signIn = async (email: string, password: string) => {
     setIsLoading(true);
     try {
       console.log("SupabaseAuthContext: signIn called with:", {
@@ -51,7 +118,7 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
       }
 
       if (emailToUse === "luciferbebistar@gmail.com") {
-        console.log("SupabaseAuthContext: Admin login attempt detected");
+        console.log("SupabaseAuthContext: Admin login attempt detected, handing off to authService");
       }
 
       console.log("SupabaseAuthContext: Calling authService's signInWithEmailAndPassword with:", {
@@ -59,16 +126,14 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
         passwordProvided: !!passwordToUse
       });
 
-      // --- THE CALL TO authService.ts's signInWithEmailAndPassword ---
-      // Pass the arguments directly, not as an object, because authService.ts expects them this way
       const result = await signInWithEmailAndPassword(emailToUse, passwordToUse);
-      // --- END CALL ---
-
+      
+      // If admin login was successful, update state directly from mock
       if (result.success && emailToUse === "luciferbebistar@gmail.com") {
-        const adminUser = checkForAdminSession();
+        const adminUser = checkForAdminSession(); // Retrieve the mock admin user
         if (adminUser) {
           setUser(adminUser);
-          setSession({ user: adminUser } as Session);
+          setSession({ user: adminUser } as Session); // Mimic a session for admin
         }
       }
 
@@ -84,13 +149,10 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
     }
   };
 
-  const signUp = async (email: string, password: string, fullName: string) => { // This is the context's signUp
+  const signUp = async (email: string, password: string, fullName: string) => {
     setIsLoading(true);
     try {
-      // --- THE CALL TO authService.ts's signUpWithEmailAndPassword ---
-      // Pass the arguments directly, not as an object, because authService.ts expects them this way
       const result = await signUpWithEmailAndPassword(email, password, fullName);
-      // --- END CALL ---
       return result;
     } catch (error: any) {
         console.error("SupabaseAuthContext: Unexpected error during signUp:", error);
@@ -103,12 +165,12 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
     }
   };
 
-  const signOut = async () => { // This is the context's signOut
+  const signOut = async () => {
     try {
       setIsLoading(true);
-      await signOutUser(); // <-- CALL THE IMPORTED 'signOutUser' from authService.ts
+      await signOutUser();
 
-      // Explicitly clear user and session state
+      // Explicitly clear user and session state on sign out
       setUser(null);
       setSession(null);
 
@@ -117,7 +179,12 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
         description: "You have been signed out successfully.",
       });
     } catch (err) {
-      console.error("Unexpected error during signOut:", err);
+      console.error("SupabaseAuthContext: Unexpected error during signOut:", err);
+      toast({
+        variant: "destructive",
+        title: "Sign Out Failed",
+        description: "There was an issue signing you out. Please try again.",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -125,7 +192,6 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
 
   return (
     <SupabaseAuthContext.Provider value={{ user, session, isLoading, signIn, signUp, signOut }}>
-      {/* ... (rest of the context provider's return) */}
       {isLoading ? (
         <div className="flex justify-center items-center h-screen text-lg text-gray-500">
           Initializing authentication...

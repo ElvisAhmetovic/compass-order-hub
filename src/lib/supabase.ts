@@ -1,42 +1,8 @@
+// src/lib/supabase.ts
 
 import { supabase } from "@/integrations/supabase/client";
 
-/**
- * Sign up a new user with email and password
- */
-export async function signUp({ email, password, full_name }: { email: string; password: string; full_name?: string }) {
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: {
-        full_name,
-      },
-    },
-  });
-
-  return { data, error };
-}
-
-/**
- * Sign in a user with email and password
- */
-export async function signIn({ email, password }: { email: string; password: string }) {
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
-
-  return { data, error };
-}
-
-/**
- * Sign out the current user
- */
-export async function signOut() {
-  const { error } = await supabase.auth.signOut();
-  return { error };
-}
+// REMOVE signIn, signUp, signOut from here as they are handled in src/services/authService.ts
 
 /**
  * Get the current session
@@ -47,7 +13,7 @@ export async function getCurrentSession() {
 }
 
 /**
- * Get the current user profile
+ * Get the current user profile from the 'profiles' table
  */
 export async function getUserProfile(userId: string) {
   const { data, error } = await supabase
@@ -60,7 +26,7 @@ export async function getUserProfile(userId: string) {
 }
 
 /**
- * Update the current user profile
+ * Update the current user profile in the 'profiles' table
  */
 export async function updateUserProfile(userId: string, updates: { first_name?: string; last_name?: string; role?: string }) {
   const { data, error } = await supabase
@@ -70,3 +36,6 @@ export async function updateUserProfile(userId: string, updates: { first_name?: 
 
   return { data, error };
 }
+
+// Add other non-auth related Supabase functions here if needed,
+// e.g., fetching orders, companies, etc.
