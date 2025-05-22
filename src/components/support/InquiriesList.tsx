@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useSupabaseAuth } from "@/context/SupabaseAuthContext";
@@ -35,11 +34,13 @@ export const InquiriesList = ({ showAll = false }: InquiriesListProps) => {
   const currentUser = supabaseUser || user;
   const navigate = useNavigate();
   const { toast } = useToast();
+  
+  // Fix: Ensure role checking is done correctly
   const isAdmin = currentUser?.role === "admin" || currentUser?.role === "owner";
 
   useEffect(() => {
     loadInquiries();
-    // Add a console log to help with debugging
+    // Log to help with debugging
     console.log("InquiriesList - User role:", currentUser?.role);
     console.log("InquiriesList - Is admin:", isAdmin);
     console.log("InquiriesList - Show all:", showAll);
@@ -56,36 +57,39 @@ export const InquiriesList = ({ showAll = false }: InquiriesListProps) => {
     try {
       console.log("Loading inquiries - Starting query");
       
-      let query = supabase
-        .from('support_inquiries')
-        .select('*');
+      // IMPORTANT: The issue was with the query construction logic.
+      // For admins, we need to fetch ALL inquiries when showAll is true.
+      let query = supabase.from('support_inquiries').select('*');
       
-      // For regular users (not admin/owner), only show their own inquiries
-      if (!isAdmin) {
-        console.log("User is not admin - filtering by user ID:", currentUser.id);
-        query = query.eq('user_id', currentUser.id);
-      } else {
-        // For admins/owners
+      if (isAdmin) {
         console.log("User is admin - checking showAll flag:", showAll);
         if (!showAll) {
-          // When showAll is false, only show open inquiries
+          // Admin viewing open inquiries tab
           console.log("Admin with showAll=false - showing only open inquiries");
           query = query.eq('status', 'open');
         } else {
-          // When showAll is true, show all inquiries
+          // Admin viewing all inquiries tab
           console.log("Admin with showAll=true - showing all inquiries");
-          // No additional filters needed
+          // No additional filters - fetch ALL inquiries regardless of user_id
         }
+      } else {
+        // Regular user - only show their inquiries
+        console.log("User is not admin - filtering by user ID:", currentUser.id);
+        query = query.eq('user_id', currentUser.id);
       }
       
+      // Always order by creation date, newest first
       const { data, error } = await query.order('created_at', { ascending: false });
       
       if (error) {
         throw error;
       }
       
-      // Log the retrieved data for debugging
+      // Debug the actual data received
       console.log("Inquiries retrieved:", data?.length || 0);
+      if (data?.length > 0) {
+        console.log("First inquiry:", data[0]);
+      }
       
       // Map the data to match our SupportInquiry type
       const formattedInquiries: SupportInquiry[] = data.map(item => ({

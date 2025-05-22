@@ -21,6 +21,7 @@ const Support = () => {
 
   console.log("Support - User role:", currentUser?.role);
   console.log("Support - Is admin:", isAdmin);
+  console.log("Support - Current user object:", currentUser);
 
   const handleCreateInquiry = () => {
     setShowNewInquiryForm(true);
