@@ -4,8 +4,6 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useAuth } from "@/context/AuthContext";
-import { useSupabaseAuth } from "@/context/SupabaseAuthContext";
-import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -28,10 +26,12 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-export const NewInquiryForm = () => {
+interface NewInquiryFormProps {
+  onSuccessfulSubmit?: () => void;
+}
+
+export const NewInquiryForm = ({ onSuccessfulSubmit }: NewInquiryFormProps) => {
   const { user } = useAuth();
-  const { user: supabaseUser } = useSupabaseAuth();
-  const navigate = useNavigate();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -44,9 +44,7 @@ export const NewInquiryForm = () => {
   });
 
   const onSubmit = async (values: FormValues) => {
-    const currentUser = supabaseUser || user;
-    
-    if (!currentUser) {
+    if (!user) {
       toast({
         title: "Error",
         description: "You must be logged in to submit an inquiry.",
@@ -59,31 +57,14 @@ export const NewInquiryForm = () => {
     
     try {
       // Get user display name with fallbacks
-      // Handle different user objects structures safely
-      let userName = currentUser.email; // Default to email
-      
-      // Check for metadata in Supabase User object
-      if ('user_metadata' in currentUser && currentUser.user_metadata) {
-        userName = currentUser.user_metadata.full_name || 
-                  currentUser.user_metadata.name || 
-                  userName;
-      }
-      
-      // Check for direct properties (Auth Context User)
-      if ('full_name' in currentUser && typeof currentUser.full_name === 'string') {
-        userName = currentUser.full_name || userName;
-      }
-      
-      if ('name' in currentUser && typeof currentUser.name === 'string') {
-        userName = userName === currentUser.email ? currentUser.name : userName;
-      }
+      const userName = user.full_name || user.name || user.email || "Unknown User";
       
       // Create a new inquiry in Supabase
       const { error } = await supabase
         .from('support_inquiries')
         .insert({
-          user_id: currentUser.id,
-          user_email: currentUser.email,
+          user_id: user.id,
+          user_email: user.email,
           user_name: userName,
           subject: values.subject,
           message: values.message,
@@ -100,8 +81,13 @@ export const NewInquiryForm = () => {
         description: "Your inquiry has been submitted to our support team.",
       });
 
-      // Redirect to the support page
-      navigate("/support");
+      // Call the onSuccessfulSubmit callback if provided
+      if (onSuccessfulSubmit) {
+        onSuccessfulSubmit();
+      }
+      
+      // Reset the form
+      form.reset();
     } catch (error) {
       console.error("Error submitting inquiry:", error);
       toast({

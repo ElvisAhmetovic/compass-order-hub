@@ -1,7 +1,6 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { useSupabaseAuth } from "@/context/SupabaseAuthContext";
 import { format } from "date-fns";
 import { SupportInquiry } from "@/types/support";
 import { Button } from "@/components/ui/button";
@@ -31,18 +30,16 @@ export const InquiriesList = ({ showAll = false }: InquiriesListProps) => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
-  const { user: supabaseUser } = useSupabaseAuth();
-  const currentUser = supabaseUser || user;
   const navigate = useNavigate();
   const { toast } = useToast();
-  const isAdmin = currentUser?.role === "admin";
+  const isAdminOrOwner = user?.role === "admin" || user?.role === "owner";
 
   useEffect(() => {
     loadInquiries();
-  }, [currentUser, isAdmin, showAll]);
+  }, [user]);
 
   const loadInquiries = async () => {
-    if (!currentUser) {
+    if (!user) {
       setInquiries([]);
       setIsLoading(false);
       return;
@@ -54,8 +51,12 @@ export const InquiriesList = ({ showAll = false }: InquiriesListProps) => {
         .from('support_inquiries')
         .select('*');
       
-      // For non-admin users or admin showing only open inquiries
-      if (!isAdmin || (isAdmin && !showAll)) {
+      // For regular users, only show their own inquiries
+      if (!isAdminOrOwner) {
+        query = query.eq('user_id', user.id);
+      } 
+      // For admin/owner showing only open inquiries
+      else if (!showAll) {
         query = query.eq('status', 'open');
       }
       
@@ -74,8 +75,8 @@ export const InquiriesList = ({ showAll = false }: InquiriesListProps) => {
         subject: item.subject,
         message: item.message,
         createdAt: item.created_at,
-        status: item.status as "open" | "replied" | "closed",
-        updated_at: item.updated_at
+        status: item.status as "open" | "closed",
+        updatedAt: item.updated_at
       }));
       
       setInquiries(formattedInquiries);
@@ -98,7 +99,7 @@ export const InquiriesList = ({ showAll = false }: InquiriesListProps) => {
   };
 
   const handleDeleteConfirm = async () => {
-    if (!inquiryToDelete || !isAdmin) return;
+    if (!inquiryToDelete || !isAdminOrOwner) return;
     
     setIsDeleting(true);
     try {
@@ -135,16 +136,7 @@ export const InquiriesList = ({ showAll = false }: InquiriesListProps) => {
   };
 
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case "open":
-        return "bg-yellow-500";
-      case "replied":
-        return "bg-blue-500";
-      case "closed":
-        return "bg-green-500";
-      default:
-        return "bg-gray-500";
-    }
+    return status === "open" ? "bg-yellow-500" : "bg-green-500";
   };
 
   const handleViewInquiry = (inquiryId: string) => {
@@ -190,7 +182,7 @@ export const InquiriesList = ({ showAll = false }: InquiriesListProps) => {
                   {format(new Date(inquiry.createdAt), "PPpp")}
                 </span>
                 <div className="flex gap-2">
-                  {isAdmin && (
+                  {isAdminOrOwner && (
                     <Button
                       variant="destructive"
                       size="sm"

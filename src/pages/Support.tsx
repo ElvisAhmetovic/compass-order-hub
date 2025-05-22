@@ -4,16 +4,16 @@ import Layout from "@/components/layout/Layout";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { InquiriesList } from "@/components/support/InquiriesList";
-import { NewInquiryForm } from "@/components/support/NewInquiryForm";
 import { Plus } from "lucide-react";
 import Sidebar from "@/components/dashboard/Sidebar";
+import { InquiriesList } from "@/components/support/InquiriesList";
+import { NewInquiryForm } from "@/components/support/NewInquiryForm";
 
 const Support = () => {
   const [activeTab, setActiveTab] = useState<string>("inquiries");
   const [showNewInquiryForm, setShowNewInquiryForm] = useState(false);
   const { user } = useAuth();
-  const isAdmin = user?.role === "admin";
+  const isAdminOrOwner = user?.role === "admin" || user?.role === "owner";
 
   const handleCreateInquiry = () => {
     setShowNewInquiryForm(true);
@@ -28,16 +28,16 @@ const Support = () => {
           <div className="space-y-6">
             <div className="flex justify-between items-center">
               <div>
-                <h1 className="text-2xl font-bold tracking-tight">Customer Support</h1>
+                <h1 className="text-2xl font-bold tracking-tight">Support Inquiries</h1>
                 <p className="text-muted-foreground">
-                  {isAdmin 
-                    ? "View and respond to customer inquiries"
-                    : "Get help from our support team"
+                  {isAdminOrOwner 
+                    ? "Manage and respond to user inquiries"
+                    : "Get support from our team"
                   }
                 </p>
               </div>
               
-              {!isAdmin && !showNewInquiryForm && (
+              {!isAdminOrOwner && !showNewInquiryForm && (
                 <Button onClick={handleCreateInquiry}>
                   <Plus className="h-4 w-4 mr-1" /> New Inquiry
                 </Button>
@@ -52,12 +52,12 @@ const Support = () => {
               <div className="flex justify-between items-center">
                 <TabsList>
                   <TabsTrigger value="inquiries">
-                    {isAdmin ? "All Inquiries" : "My Inquiries"}
+                    {isAdminOrOwner ? "All Inquiries" : "My Inquiries"}
                   </TabsTrigger>
-                  {isAdmin && (
+                  {isAdminOrOwner && (
                     <TabsTrigger value="open">Open Inquiries</TabsTrigger>
                   )}
-                  {!isAdmin && showNewInquiryForm && (
+                  {!isAdminOrOwner && showNewInquiryForm && (
                     <TabsTrigger value="new">New Inquiry</TabsTrigger>
                   )}
                 </TabsList>
@@ -67,16 +67,18 @@ const Support = () => {
                 <InquiriesList showAll={true} />
               </TabsContent>
               
-              {isAdmin && (
+              {isAdminOrOwner && (
                 <TabsContent value="open" className="p-0">
-                  {/* For admin - show only open inquiries */}
                   <InquiriesList showAll={false} />
                 </TabsContent>
               )}
               
-              {!isAdmin && showNewInquiryForm && (
+              {!isAdminOrOwner && showNewInquiryForm && (
                 <TabsContent value="new" className="p-0">
-                  <NewInquiryForm />
+                  <NewInquiryForm onSuccessfulSubmit={() => {
+                    setShowNewInquiryForm(false);
+                    setActiveTab("inquiries");
+                  }} />
                 </TabsContent>
               )}
             </Tabs>
