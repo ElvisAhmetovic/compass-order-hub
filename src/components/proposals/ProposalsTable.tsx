@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { 
   Table,
@@ -45,7 +44,126 @@ const ProposalsTable: React.FC<ProposalsTableProps> = ({
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const { toast } = useToast();
   
-  // Mock data for development
+  // Fetch proposals
+  useEffect(() => {
+    const fetchProposals = async () => {
+      setIsLoading(true);
+      try {
+        console.log("Fetching proposals...");
+        
+        // First try to fetch from Supabase
+        const { data: supabaseData, error } = await supabase
+          .from('proposals')
+          .select('*')
+          .order('created_at', { ascending: false });
+          
+        if (error) {
+          throw error;
+        }
+
+        if (supabaseData && supabaseData.length > 0) {
+          console.log("Received proposals from Supabase:", supabaseData);
+          setProposals(supabaseData as Proposal[]);
+        } else {
+          // As a fallback, use mock data
+          console.log("No data from Supabase, using mock data");
+          setProposals(mockProposals);
+        }
+      } catch (error) {
+        console.error("Error fetching proposals:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load proposals",
+          variant: "destructive"
+        });
+        // Use mock data as a fallback
+        setProposals(mockProposals);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchProposals();
+  }, [refreshTrigger, toast]);
+  
+  // Apply filters
+  useEffect(() => {
+    let filtered = [...proposals];
+    
+    // Filter by status
+    if (statusFilter && statusFilter !== 'All') {
+      filtered = filtered.filter(proposal => proposal.status === statusFilter);
+    }
+    
+    // Filter by search term
+    if (filterOptions.searchTerm) {
+      const searchLower = filterOptions.searchTerm.toLowerCase();
+      filtered = filtered.filter(proposal => 
+        proposal.customer.toLowerCase().includes(searchLower) || 
+        proposal.reference.toLowerCase().includes(searchLower)
+      );
+    }
+    
+    // Filter by date range
+    if (filterOptions.dateRange.from || filterOptions.dateRange.to) {
+      filtered = filtered.filter(proposal => {
+        const createdAt = new Date(proposal.created_at);
+        
+        if (filterOptions.dateRange.from && filterOptions.dateRange.to) {
+          return createdAt >= filterOptions.dateRange.from && createdAt <= filterOptions.dateRange.to;
+        } else if (filterOptions.dateRange.from) {
+          return createdAt >= filterOptions.dateRange.from;
+        } else if (filterOptions.dateRange.to) {
+          return createdAt <= filterOptions.dateRange.to;
+        }
+        
+        return true;
+      });
+    }
+    
+    setFilteredProposals(filtered);
+    setTotalPages(Math.ceil(filtered.length / rowsPerPage));
+    setCurrentPage(1); // Reset to first page when filters change
+  }, [proposals, statusFilter, filterOptions, rowsPerPage]);
+  
+  // Get current page proposals
+  const indexOfLastProposal = currentPage * rowsPerPage;
+  const indexOfFirstProposal = indexOfLastProposal - rowsPerPage;
+  const currentProposals = filteredProposals.slice(indexOfFirstProposal, indexOfLastProposal);
+  
+  const handlePageChange = (pageNumber: number) => {
+    setCurrentPage(pageNumber);
+  };
+  
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFilterOptions(prev => ({
+      ...prev,
+      searchTerm: e.target.value
+    }));
+  };
+  
+  const handleRowsPerPageChange = (value: number) => {
+    setRowsPerPage(value);
+    setCurrentPage(1); // Reset to first page
+  };
+  
+  const exportPDF = () => {
+    toast({
+      title: "Export Started",
+      description: "Your PDF is being generated",
+    });
+    // In a real app, implement PDF export
+  };
+
+  const handleStatusChange = async (id: string, newStatus: string) => {
+    // Update the proposal status in the state
+    const updatedProposals = proposals.map(proposal => 
+      proposal.id === id ? { ...proposal, status: newStatus as ProposalStatus } : proposal
+    );
+    setProposals(updatedProposals);
+  };
+  
+  // Mock data for development and fallback
   const mockProposals: Proposal[] = [
     {
       id: '1',
@@ -129,115 +247,6 @@ const ProposalsTable: React.FC<ProposalsTableProps> = ({
       amount: '750.00 EUR',
     }
   ];
-  
-  // Fetch proposals
-  useEffect(() => {
-    const fetchProposals = async () => {
-      setIsLoading(true);
-      try {
-        console.log("Fetching proposals...");
-        
-        // In a real app, fetch from Supabase
-        // For now, use mock data
-        setProposals(mockProposals);
-      } catch (error) {
-        console.error("Error fetching proposals:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load proposals",
-          variant: "destructive"
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    fetchProposals();
-  }, [refreshTrigger, toast]);
-  
-  // Apply filters
-  useEffect(() => {
-    let filtered = [...proposals];
-    
-    // Filter by status
-    if (statusFilter && statusFilter !== 'All') {
-      filtered = filtered.filter(proposal => proposal.status === statusFilter);
-    }
-    
-    // Filter by search term
-    if (filterOptions.searchTerm) {
-      const searchLower = filterOptions.searchTerm.toLowerCase();
-      filtered = filtered.filter(proposal => 
-        proposal.customer.toLowerCase().includes(searchLower) || 
-        proposal.reference.toLowerCase().includes(searchLower)
-      );
-    }
-    
-    // Filter by date range
-    if (filterOptions.dateRange.from || filterOptions.dateRange.to) {
-      filtered = filtered.filter(proposal => {
-        const createdAt = new Date(proposal.created_at);
-        
-        if (filterOptions.dateRange.from && filterOptions.dateRange.to) {
-          return createdAt >= filterOptions.dateRange.from && createdAt <= filterOptions.dateRange.to;
-        } else if (filterOptions.dateRange.from) {
-          return createdAt >= filterOptions.dateRange.from;
-        } else if (filterOptions.dateRange.to) {
-          return createdAt <= filterOptions.dateRange.to;
-        }
-        
-        return true;
-      });
-    }
-    
-    setFilteredProposals(filtered);
-    setTotalPages(Math.ceil(filtered.length / rowsPerPage));
-    setCurrentPage(1); // Reset to first page when filters change
-  }, [proposals, statusFilter, filterOptions, rowsPerPage]);
-  
-  // Get current page proposals
-  const indexOfLastProposal = currentPage * rowsPerPage;
-  const indexOfFirstProposal = indexOfLastProposal - rowsPerPage;
-  const currentProposals = filteredProposals.slice(indexOfFirstProposal, indexOfLastProposal);
-  
-  const handlePageChange = (pageNumber: number) => {
-    setCurrentPage(pageNumber);
-  };
-  
-  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFilterOptions(prev => ({
-      ...prev,
-      searchTerm: e.target.value
-    }));
-  };
-  
-  const handleRowsPerPageChange = (value: number) => {
-    setRowsPerPage(value);
-    setCurrentPage(1); // Reset to first page
-  };
-  
-  const exportPDF = () => {
-    toast({
-      title: "Export Started",
-      description: "Your PDF is being generated",
-    });
-    // In a real app, implement PDF export
-  };
-
-  const handleStatusChange = (id: string, newStatus: string) => {
-    // Update the proposal status in the state
-    const updatedProposals = proposals.map(proposal => 
-      proposal.id === id ? { ...proposal, status: newStatus as ProposalStatus } : proposal
-    );
-    setProposals(updatedProposals);
-    
-    toast({
-      title: "Status Updated",
-      description: `Proposal status changed to ${newStatus}`,
-    });
-    
-    // In a real app, update in Supabase
-  };
   
   if (isLoading) {
     return (

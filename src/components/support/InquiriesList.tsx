@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useSupabaseAuth } from "@/context/SupabaseAuthContext";
@@ -37,6 +38,11 @@ export const InquiriesList = ({ showAll = false }: InquiriesListProps) => {
   
   const isAdmin = currentUser?.role === "admin" || currentUser?.role === "owner";
 
+  // Log for debugging
+  console.log("InquiriesList - currentUser:", currentUser);
+  console.log("InquiriesList - isAdmin:", isAdmin);
+  console.log("InquiriesList - showAll:", showAll);
+
   useEffect(() => {
     loadInquiries();
   }, [currentUser, isAdmin, showAll]);
@@ -50,16 +56,19 @@ export const InquiriesList = ({ showAll = false }: InquiriesListProps) => {
 
     setIsLoading(true);
     try {
+      console.log("Loading inquiries - starting fetch");
       // For admin/owner users
       let query = supabase.from('support_inquiries').select('*');
       
       if (isAdmin) {
+        console.log("Admin user, fetching inquiries with filters:", showAll ? "all" : "open only");
         if (!showAll) {
           // Admin viewing open inquiries tab - only show open inquiries
           query = query.eq('status', 'open');
         }
         // For showAll=true, no additional filters needed - admins see all inquiries
       } else {
+        console.log("Regular user, fetching own inquiries only");
         // Regular users - only show their own inquiries
         query = query.eq('user_id', currentUser.id);
       }
@@ -70,6 +79,8 @@ export const InquiriesList = ({ showAll = false }: InquiriesListProps) => {
       if (error) {
         throw error;
       }
+      
+      console.log("Inquiries loaded:", data?.length || 0, "items");
       
       // Map the data to match our SupportInquiry type
       const formattedInquiries: SupportInquiry[] = data?.map(item => ({

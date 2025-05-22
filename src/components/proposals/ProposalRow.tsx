@@ -2,7 +2,7 @@
 import React from 'react';
 import { TableRow, TableCell } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Proposal } from '@/types/proposal';
+import { Proposal, ProposalStatus } from '@/types/proposal';
 import { format } from 'date-fns';
 import {
   DropdownMenu,
@@ -13,6 +13,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { FileText, Download } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ProposalRowProps {
   proposal: Proposal;
@@ -45,8 +46,33 @@ const ProposalRow: React.FC<ProposalRowProps> = ({ proposal, onStatusChange }) =
     }
   };
 
-  const handleStatusChange = (newStatus: string) => {
-    onStatusChange(proposal.id, newStatus);
+  const handleStatusChange = async (newStatus: string) => {
+    try {
+      // Update in Supabase first
+      const { error } = await supabase
+        .from('proposals')
+        .update({ status: newStatus })
+        .eq('id', proposal.id);
+        
+      if (error) {
+        throw error;
+      }
+      
+      // Then update UI via callback
+      onStatusChange(proposal.id, newStatus);
+      
+      toast({
+        title: "Status Updated",
+        description: `Proposal status changed to ${newStatus}`,
+      });
+    } catch (err) {
+      console.error("Error updating proposal status:", err);
+      toast({
+        variant: "destructive",
+        title: "Update Failed",
+        description: "Failed to update proposal status. Please try again.",
+      });
+    }
   };
 
   const handleExportPDF = (e: React.MouseEvent) => {
