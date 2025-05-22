@@ -1,105 +1,146 @@
 
+import { supabase } from "@/integrations/supabase/client";
+import { LoginResult, SignUpResult } from "@/types/auth";
+import { toast } from "@/hooks/use-toast";
+import { UserRole } from "@/types";
+
 /**
- * Authenticates a user with email/username and password
- * 
- * @param identifier Email or username
- * @param password User password
- * @returns Authentication result object
+ * Handles the sign-in process with email and password
  */
-export const authenticate = async (identifier: string, password: string) => {
+export async function signInWithEmailAndPassword(
+  email: string, 
+  password: string
+): Promise<LoginResult> {
+  console.log("Sign in attempt with:", { email });
+  
   try {
-    // Special case for admin login
-    if (identifier === "luciferbebistar@gmail.com" && password === "Admin@123") {
+    // Handle special admin login case properly
+    if (email === "luciferbebistar@gmail.com" && password === "Admin@123") {
+      console.log("Admin login attempt detected");
+      
+      // Create a session in localStorage (this mimics what would happen with a real Supabase auth)
       const adminUser = {
         id: "admin-user-id",
-        email: identifier,
+        email: email,
         role: "admin",
         full_name: "Admin User"
       };
       
+      console.log("Setting admin user in localStorage");
       localStorage.setItem("userSession", JSON.stringify(adminUser));
       
-      return {
-        success: true,
-        user: adminUser
-      };
+      toast({
+        title: "Admin Login",
+        description: "Welcome back, Administrator!",
+      });
+      
+      return { success: true };
     }
     
-    // Get users from local storage
-    const users = JSON.parse(localStorage.getItem('users') || '[]');
+    // Normal Supabase authentication for non-admin users
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password
+    });
     
-    // Check if identifier is username or email
-    const isEmail = identifier.includes("@");
-    
-    // Find the user by username or email
-    const user = users.find((user: any) => 
-      isEmail ? user.email === identifier : user.username === identifier
-    );
-    
-    // If user not found or password doesn't match
-    if (!user || btoa(password) !== user.passwordHash) {
-      return {
-        success: false,
-        error: "Invalid email/username or password"
-      };
+    if (error) {
+      console.error("Sign in error:", error.message);
+      toast({
+        variant: "destructive",
+        title: "Login failed",
+        description: error.message || "Invalid email or password"
+      });
+      return { success: false, error: error.message };
     }
     
-    // Get the user role from app_users if available
-    let userRole = "user";
-    const appUsers = JSON.parse(localStorage.getItem("app_users") || "[]");
-    const appUser = appUsers.find((u: any) => u.id === user.id || u.email === user.email);
-    if (appUser && appUser.role) {
-      userRole = appUser.role;
-    }
-    
-    // Set user session
-    localStorage.setItem("userSession", JSON.stringify({
-      id: user.id,
-      email: user.email,
-      role: userRole,
-      full_name: user.fullName
-    }));
-    
-    return {
-      success: true,
-      user: {
-        id: user.id,
-        email: user.email,
-        role: userRole,
-        full_name: user.fullName
-      }
-    };
+    return { success: true };
   } catch (error) {
-    console.error("Authentication error:", error);
-    return {
-      success: false,
-      error: "An unexpected error occurred."
-    };
+    console.error("Unexpected sign in error:", error);
+    toast({
+      variant: "destructive",
+      title: "Login Error",
+      description: "An unexpected error occurred during login"
+    });
+    return { success: false, error: "An unexpected error occurred" };
   }
-};
+}
 
 /**
- * Logs out the current user
+ * Handles user registration with email, password and profile data
  */
-export const logout = () => {
-  localStorage.removeItem("userSession");
-};
+export async function signUpWithEmailAndPassword(
+  email: string, 
+  password: string, 
+  fullName: string
+): Promise<SignUpResult> {
+  console.log("Sign up attempt with:", { email, fullName });
+  
+  try {    
+    // Store full_name in user_metadata
+    const { data, error } = await supabase.auth.signUp({ 
+      email, 
+      password,
+      options: {
+        data: {
+          full_name: fullName,
+          name: fullName,
+          role: 'user' // Explicitly set default role
+        }
+      }
+    });
+    
+    console.log("Sign up result:", error ? "Error" : "Success", data);
+    
+    if (error) {
+      console.error("Sign up error:", error.message);
+      toast({
+        variant: "destructive",
+        title: "Registration failed",
+        description: error.message
+      });
+      return { success: false, error: error.message };
+    }
+    
+    toast({
+      title: "Account Created",
+      description: data.user ? "Your account has been created successfully! Please check your email for confirmation." : "Account created! Check your email for confirmation.",
+    });
+    
+    // Important note for development
+    console.log("Note: For development, you may want to disable email confirmation in Supabase console settings");
+    
+    return { success: true };
+  } catch (error) {
+    console.error("Unexpected sign up error:", error);
+    toast({
+      variant: "destructive",
+      title: "Registration Error",
+      description: "An unexpected error occurred during registration"
+    });
+    return { success: false, error: "An unexpected error occurred" };
+  }
+}
 
 /**
- * Gets the current authenticated user
- * 
- * @returns Current user or null if not authenticated
+ * Signs out the current user
  */
-export const getCurrentUser = () => {
+export async function signOutUser(): Promise<void> {
+  // Check if we have a special admin session
   const userSession = localStorage.getItem("userSession");
-  return userSession ? JSON.parse(userSession) : null;
-};
-
-/**
- * Checks if the user is authenticated
- * 
- * @returns Boolean indicating if user is authenticated
- */
-export const isAuthenticated = () => {
-  return !!getCurrentUser();
-};
+  if (userSession) {
+    try {
+      const parsedSession = JSON.parse(userSession);
+      if (parsedSession.email === "luciferbebistar@gmail.com") {
+        console.log("Admin logout: clearing localStorage session");
+        localStorage.removeItem("userSession");
+        return;
+      }
+    } catch (e) {
+      console.error("Error parsing user session:", e);
+    }
+  }
+  
+  // For regular Supabase users, call the API to log out
+  console.log("Regular user logout: calling Supabase signOut");
+  await supabase.auth.signOut();
+}

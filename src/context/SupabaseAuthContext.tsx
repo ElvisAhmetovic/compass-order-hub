@@ -3,28 +3,9 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { UserRole } from "@/types";
-
-interface LoginResult {
-  success: boolean;
-  error?: string;
-}
-
-interface SupabaseAuthContextProps {
-  user: User | null;
-  session: Session | null;
-  isLoading: boolean;
-  signIn: (email: string, password: string) => Promise<LoginResult>;
-  signUp: (email: string, password: string, fullName: string) => Promise<{ success: boolean; error?: string }>;
-  signOut: () => Promise<void>;
-}
-
-// Extended User type to include common properties for easier access
-export interface ExtendedUser extends User {
-  full_name?: string;
-  name?: string;
-  role?: UserRole;
-}
+import { ExtendedUser, SupabaseAuthContextProps } from "@/types/auth";
+import { enhanceUser, checkForAdminSession } from "@/utils/authHelpers";
+import { signInWithEmailAndPassword, signUpWithEmailAndPassword, signOutUser } from "@/services/authService";
 
 const SupabaseAuthContext = createContext<SupabaseAuthContextProps | undefined>(undefined);
 
@@ -33,51 +14,6 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
-
-  // Helper function to enhance user object with metadata properties
-  const enhanceUser = (user: User | null): ExtendedUser | null => {
-    if (!user) return null;
-    
-    return {
-      ...user,
-      full_name: user.user_metadata?.full_name || user.user_metadata?.name,
-      name: user.user_metadata?.name,
-      role: (user.user_metadata?.role as UserRole) || 'user'
-    };
-  };
-
-  // Special helper function to check for admin session in localStorage
-  const checkForAdminSession = () => {
-    try {
-      const userSession = localStorage.getItem("userSession");
-      if (userSession) {
-        const parsedSession = JSON.parse(userSession);
-        if (parsedSession.email === "luciferbebistar@gmail.com" && parsedSession.role === "admin") {
-          // Create a custom user object that mimics the structure expected by components
-          const adminUser = {
-            id: parsedSession.id || "admin-user-id",
-            email: parsedSession.email,
-            role: "admin" as UserRole,
-            full_name: parsedSession.full_name || "Admin User",
-            // Add missing required properties from ExtendedUser/User type
-            app_metadata: {},
-            aud: "authenticated",
-            created_at: new Date().toISOString(),
-            user_metadata: {
-              role: "admin",
-              full_name: parsedSession.full_name || "Admin User"
-            }
-          } as ExtendedUser;
-          
-          return adminUser;
-        }
-      }
-      return null;
-    } catch (e) {
-      console.error("Error checking for admin session:", e);
-      return null;
-    }
-  };
 
   useEffect(() => {
     // Check for admin session in localStorage first
@@ -130,140 +66,30 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
     };
   }, [toast]);
 
-  const signIn = async (email: string, password: string): Promise<LoginResult> => {
+  const signIn = async (email: string, password: string) => {
+    setIsLoading(true);
     try {
-      console.log("Sign in attempt with:", { email });
-      setIsLoading(true);
+      const result = await signInWithEmailAndPassword(email, password);
       
-      // Handle special admin login case properly
-      if (email === "luciferbebistar@gmail.com" && password === "Admin@123") {
-        console.log("Admin login attempt detected");
-        
-        // Create a session in localStorage (this mimics what would happen with a real Supabase auth)
-        const adminUser = {
-          id: "admin-user-id",
-          email: email,
-          role: "admin",
-          full_name: "Admin User"
-        };
-        
-        console.log("Setting admin user in localStorage");
-        localStorage.setItem("userSession", JSON.stringify(adminUser));
-        
-        // Set the user in our context with proper metadata and required User properties
-        const enhancedAdminUser = {
-          id: "admin-user-id",
-          email: email,
-          role: "admin" as UserRole,
-          full_name: "Admin User",
-          // Add required properties from User type
-          app_metadata: {},
-          aud: "authenticated",
-          created_at: new Date().toISOString(),
-          user_metadata: {
-            role: "admin",
-            full_name: "Admin User"
-          }
-        } as ExtendedUser;
-        
-        setUser(enhancedAdminUser);
-        // Create a pseudo-session for consistency
-        setSession({ user: enhancedAdminUser } as Session);
-        
-        toast({
-          title: "Admin Login",
-          description: "Welcome back, Administrator!",
-        });
-        
-        console.log("Admin login successful, user set to:", enhancedAdminUser);
-        
-        return { success: true };
+      // If using the special admin login case, we need to update our context state
+      if (result.success && email === "luciferbebistar@gmail.com") {
+        const adminUser = checkForAdminSession();
+        if (adminUser) {
+          setUser(adminUser);
+          setSession({ user: adminUser } as Session);
+        }
       }
       
-      // Normal Supabase authentication for non-admin users
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
-      
-      if (error) {
-        console.error("Sign in error:", error.message);
-        toast({
-          variant: "destructive",
-          title: "Login failed",
-          description: error.message || "Invalid email or password"
-        });
-        return { success: false, error: error.message };
-      }
-      
-      if (data?.user) {
-        toast({
-          title: "Signed In",
-          description: "You have been signed in successfully.",
-        });
-      }
-      
-      return { success: true };
-    } catch (error) {
-      console.error("Unexpected sign in error:", error);
-      toast({
-        variant: "destructive",
-        title: "Login Error",
-        description: "An unexpected error occurred during login"
-      });
-      return { success: false, error: "An unexpected error occurred" };
+      return result;
     } finally {
       setIsLoading(false);
     }
   };
 
-  const signUp = async (email: string, password: string, fullName: string): Promise<{ success: boolean; error?: string }> => {
+  const signUp = async (email: string, password: string, fullName: string) => {
+    setIsLoading(true);
     try {
-      console.log("Sign up attempt with:", { email, fullName });
-      setIsLoading(true);
-      
-      // Store full_name in user_metadata
-      const { data, error } = await supabase.auth.signUp({ 
-        email, 
-        password,
-        options: {
-          data: {
-            full_name: fullName,
-            name: fullName,
-            role: 'user' // Explicitly set default role
-          }
-        }
-      });
-      
-      console.log("Sign up result:", error ? "Error" : "Success", data);
-      
-      if (error) {
-        console.error("Sign up error:", error.message);
-        toast({
-          variant: "destructive",
-          title: "Registration failed",
-          description: error.message
-        });
-        return { success: false, error: error.message };
-      }
-      
-      toast({
-        title: "Account Created",
-        description: data.user ? "Your account has been created successfully! Please check your email for confirmation." : "Account created! Check your email for confirmation.",
-      });
-      
-      // Important note for development
-      console.log("Note: For development, you may want to disable email confirmation in Supabase console settings");
-      
-      return { success: true };
-    } catch (error) {
-      console.error("Unexpected sign up error:", error);
-      toast({
-        variant: "destructive",
-        title: "Registration Error",
-        description: "An unexpected error occurred during registration"
-      });
-      return { success: false, error: "An unexpected error occurred" };
+      return await signUpWithEmailAndPassword(email, password, fullName);
     } finally {
       setIsLoading(false);
     }
@@ -272,46 +98,16 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
   const signOut = async () => {
     try {
       setIsLoading(true);
+      await signOutUser();
       
-      // Check if we have a special admin session
-      const userSession = localStorage.getItem("userSession");
-      if (userSession) {
-        try {
-          const parsedSession = JSON.parse(userSession);
-          if (parsedSession.email === "luciferbebistar@gmail.com") {
-            console.log("Admin logout: clearing localStorage session");
-            localStorage.removeItem("userSession");
-            setUser(null);
-            setSession(null);
-            
-            toast({
-              title: "Signed Out",
-              description: "Admin user has been signed out.",
-            });
-            
-            return;
-          }
-        } catch (e) {
-          console.error("Error parsing user session:", e);
-        }
-      }
+      // Explicitly clear user and session state
+      setUser(null);
+      setSession(null);
       
-      // For regular Supabase users, call the API to log out
-      console.log("Regular user logout: calling Supabase signOut");
-      const { error } = await supabase.auth.signOut();
-      
-      if (error) {
-        console.error("Error during signOut:", error.message);
-        toast({
-          variant: "destructive",
-          title: "Error Signing Out",
-          description: error.message || "Failed to sign out"
-        });
-      } else {
-        // Explicitly clear user and session state
-        setUser(null);
-        setSession(null);
-      }
+      toast({
+        title: "Signed Out",
+        description: "You have been signed out successfully.",
+      });
     } catch (err) {
       console.error("Unexpected error during signOut:", err);
     } finally {
