@@ -5,6 +5,70 @@ import { useAuth } from "@/context/AuthContext";
 import Sidebar from "@/components/dashboard/Sidebar";
 import { Order } from "@/types";
 import { Card } from "@/components/ui/card";
+import { Building2, Mail, MapPin, Phone, Link, Pencil, Plus, ExternalLink } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogFooter,
+  DialogDescription
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { toast } from "@/hooks/use-toast";
+import { v4 as uuidv4 } from 'uuid';
+import { Textarea } from "@/components/ui/textarea";
+
+interface Company {
+  name: string;
+  email: string;
+  phone?: string;
+  address?: string;
+  mapsUrl?: string;
+  orders: Order[];
+}
+
+const Companies = () => {
+  const { user } = useAuth();
+  const [companies, setCompanies] = useState<{[key: string]: Company}>({});
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [currentCompany, setCurrentCompany] = useState<Company | null>(null);
+  const [currentCompanyKey, setCurrentCompanyKey] = useState<string>("");
+  const [newCompany, setNewCompany] = useState<Omit<Company, 'orders'>>({
+    name: '',
+    email: '',
+    phone: '',
+    address: '',
+    mapsUrl: ''
+  });
+  
+  const isAdmin = user?.role === 'admin';
+  
+  useEffect(() => {
+    // Load companies from orders
+    const loadCompanies = () => {
+      setIsLoading(true);
+      try {
+        const storedOrders = localStorage.getItem("orders");
+        if (!storedOrders) {
+          I'll add the ability to include a Google Maps link in the company information, which will be editable in the dialog forms. Let's make this change.
+
+<lov-code>
+Let's modify the Companies.tsx file to add Google Maps link functionality in the edit and create dialogs:
+
+<lov-write file_path="src/pages/Companies.tsx">
+import React, { useState, useEffect } from 'react';
+import Layout from "@/components/layout/Layout";
+import { useAuth } from "@/context/AuthContext";
+import Sidebar from "@/components/dashboard/Sidebar";
+import { Order } from "@/types";
+import { Card } from "@/components/ui/card";
 import { Building2, Mail, MapPin, Phone, Link, Pencil, Plus } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
@@ -27,6 +91,7 @@ interface Company {
   email: string;
   phone?: string;
   address?: string;
+  mapLink?: string;
   orders: Order[];
 }
 
@@ -43,7 +108,8 @@ const Companies = () => {
     name: '',
     email: '',
     phone: '',
-    address: ''
+    address: '',
+    mapLink: ''
   });
   
   const isAdmin = user?.role === 'admin';
@@ -73,6 +139,7 @@ const Companies = () => {
               email: order.contact_email,
               phone: order.contact_phone || "Not provided",
               address: order.contact_address || "Not provided",
+              mapLink: '',
               orders: []
             };
           }
@@ -97,7 +164,8 @@ const Companies = () => {
     company.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
   
-  const getGoogleMapsLink = (address: string) => {
+  const getGoogleMapsLink = (address: string, customLink?: string) => {
+    if (customLink && customLink.trim() !== '') return customLink;
     if (address === "Not provided") return "#";
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
   };
@@ -222,7 +290,8 @@ const Companies = () => {
         name: '',
         email: '',
         phone: '',
-        address: ''
+        address: '',
+        mapLink: ''
       });
       setCreateDialogOpen(false);
     } catch (error) {
@@ -313,7 +382,7 @@ const Companies = () => {
                         <div className="flex items-center space-x-2">
                           <Link className="h-4 w-4 text-muted-foreground" />
                           <a 
-                            href={getGoogleMapsLink(company.address || "")} 
+                            href={getGoogleMapsLink(company.address || "", company.mapLink)} 
                             target="_blank" 
                             rel="noopener noreferrer"
                             className="text-primary hover:underline"
@@ -400,6 +469,22 @@ const Companies = () => {
                 rows={3}
               />
             </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="map-link" className="text-right">
+                Google Maps URL
+              </Label>
+              <Input
+                id="map-link"
+                type="url"
+                placeholder="https://www.google.com/maps/..."
+                value={currentCompany?.mapLink || ""}
+                onChange={(e) => currentCompany && setCurrentCompany({...currentCompany, mapLink: e.target.value})}
+                className="col-span-3"
+              />
+              <div className="col-start-2 col-span-3 text-xs text-muted-foreground">
+                Optional: Add a custom Google Maps link. If empty, a link will be generated from the address.
+              </div>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
@@ -467,6 +552,22 @@ const Companies = () => {
                 className="col-span-3"
                 rows={3}
               />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="new-map-link" className="text-right">
+                Google Maps URL
+              </Label>
+              <Input
+                id="new-map-link"
+                type="url"
+                placeholder="https://www.google.com/maps/..."
+                value={newCompany.mapLink || ""}
+                onChange={(e) => setNewCompany({...newCompany, mapLink: e.target.value})}
+                className="col-span-3"
+              />
+              <div className="col-start-2 col-span-3 text-xs text-muted-foreground">
+                Optional: Add a custom Google Maps link. If empty, a link will be generated from the address.
+              </div>
             </div>
           </div>
           <DialogFooter>
