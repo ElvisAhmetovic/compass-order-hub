@@ -102,7 +102,7 @@ const ProposalRow: React.FC<ProposalRowProps> = ({ proposal, onStatusChange }) =
               <Badge className={getStatusColor(proposal.status)}>{proposal.status}</Badge>
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="start">
+          <DropdownMenuContent align="start" className="z-50 bg-background">
             {availableStatuses.map(status => (
               <DropdownMenuItem 
                 key={status} 

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { 
   Table,
@@ -43,6 +42,8 @@ const ProposalsTable: React.FC<ProposalsTableProps> = ({
   const [totalPages, setTotalPages] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const { toast } = useToast();
+  
+  console.log("ProposalsTable rendered with status filter:", statusFilter);
   
   // Fetch proposals
   useEffect(() => {
@@ -162,12 +163,13 @@ const ProposalsTable: React.FC<ProposalsTableProps> = ({
     console.log(`Status change in table for proposal ${id} to ${newStatus}`);
     
     // Update the proposal status in the state
-    const updatedProposals = proposals.map(proposal => 
-      proposal.id === id ? { ...proposal, status: newStatus as ProposalStatus } : proposal
+    setProposals(prevProposals => 
+      prevProposals.map(proposal => 
+        proposal.id === id ? { ...proposal, status: newStatus as ProposalStatus } : proposal
+      )
     );
     
-    console.log("Updated proposals:", updatedProposals);
-    setProposals(updatedProposals);
+    // No need to re-fetch as we're already updating state
   };
   
   // Mock data for development and fallback

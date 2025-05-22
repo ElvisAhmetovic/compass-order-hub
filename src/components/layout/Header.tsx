@@ -53,6 +53,7 @@ export default function Header({ userRole: defaultRole = "admin" }: HeaderProps)
 
         {/* actions */}
         <div className="flex items-center gap-4">
+          {/* Ensure the LogoutButton is always visible */}
           <LogoutButton />
 
           {/* user dropdown */}
@@ -63,7 +64,7 @@ export default function Header({ userRole: defaultRole = "admin" }: HeaderProps)
               </Button>
             </DropdownMenuTrigger>
 
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent align="end" className="z-50 bg-background">
               <DropdownMenuLabel>
                 {user?.email || (actualRole === "admin" ? "Admin User" : "Agent User")}
               </DropdownMenuLabel>
