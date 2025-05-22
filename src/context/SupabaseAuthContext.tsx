@@ -55,7 +55,7 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
         if (parsedSession.email === "luciferbebistar@gmail.com" && parsedSession.role === "admin") {
           // Create a custom user object that mimics the structure expected by components
           const adminUser = {
-            id: parsedSession.id,
+            id: parsedSession.id || "admin-user-id",
             email: parsedSession.email,
             role: "admin" as UserRole,
             full_name: parsedSession.full_name || "Admin User",
@@ -135,7 +135,7 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
       console.log("Sign in attempt with:", { email });
       setIsLoading(true);
       
-      // Fix: Handle special admin login case properly
+      // Handle special admin login case properly
       if (email === "luciferbebistar@gmail.com" && password === "Admin@123") {
         console.log("Admin login attempt detected");
         
@@ -147,6 +147,7 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
           full_name: "Admin User"
         };
         
+        console.log("Setting admin user in localStorage");
         localStorage.setItem("userSession", JSON.stringify(adminUser));
         
         // Set the user in our context with proper metadata and required User properties

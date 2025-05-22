@@ -34,6 +34,11 @@ export function LoginForm({ redirectPath = "/dashboard" }: LoginFormProps) {
       // Added more debug logs to track the login flow
       console.log("Starting login process with email:", email);
       
+      // Special admin login logging
+      if (email === "luciferbebistar@gmail.com") {
+        console.log("Admin login attempt detected in LoginForm");
+      }
+      
       const result = await signIn(email, password);
       
       console.log("Login result:", result);
@@ -95,6 +100,12 @@ export function LoginForm({ redirectPath = "/dashboard" }: LoginFormProps) {
           </>
         ) : "Sign In"}
       </Button>
+      
+      {email === "luciferbebistar@gmail.com" && (
+        <div className="mt-2 text-sm text-muted-foreground">
+          <p>Admin access: use password "Admin@123"</p>
+        </div>
+      )}
     </form>
   );
 }
