@@ -54,10 +54,16 @@ export const InquiriesList = ({ showAll = false }: InquiriesListProps) => {
         .from('support_inquiries')
         .select('*');
       
-      // For non-admin users or admin showing only open inquiries
-      if (!isAdmin || (isAdmin && !showAll)) {
+      // For regular users, only show their own inquiries
+      if (!isAdmin) {
+        query = query.eq('user_id', currentUser.id);
+      } 
+      // For admin showing only open inquiries - when showAll is false
+      else if (isAdmin && !showAll) {
         query = query.eq('status', 'open');
       }
+      // For admin showing all inquiries - when showAll is true
+      // No additional filters needed
       
       const { data, error } = await query.order('created_at', { ascending: false });
       
