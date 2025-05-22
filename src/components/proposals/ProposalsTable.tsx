@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { 
   Table,
@@ -169,9 +168,6 @@ const ProposalsTable: React.FC<ProposalsTableProps> = ({
         proposal.id === id ? { ...proposal, status: newStatus as ProposalStatus } : proposal
       )
     );
-    
-    // No need to re-fetch as we're already updating state
-    // This is more efficient and prevents the UI from flickering
   };
   
   // Mock data for development and fallback

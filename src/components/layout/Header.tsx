@@ -53,10 +53,8 @@ export default function Header({ userRole: defaultRole = "admin" }: HeaderProps)
 
         {/* actions */}
         <div className="flex items-center gap-4">
-          {/* Ensure the LogoutButton is always visible with relative positioning */}
-          <div className="relative z-10">
-            <LogoutButton />
-          </div>
+          {/* Make logout button always visible */}
+          <LogoutButton />
 
           {/* user dropdown */}
           <DropdownMenu>
@@ -83,7 +81,7 @@ export default function Header({ userRole: defaultRole = "admin" }: HeaderProps)
               <DropdownMenuSeparator />
 
               <DropdownMenuItem onClick={() => {
-                // Call the LogoutButton's functionality
+                // Call the LogoutButton's functionality directly
                 const logoutBtn = document.querySelector('button[title="Logout"]');
                 if (logoutBtn) {
                   (logoutBtn as HTMLButtonElement).click();

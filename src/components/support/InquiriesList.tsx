@@ -37,10 +37,7 @@ export const InquiriesList = ({ showAll = false }: InquiriesListProps) => {
   const { toast } = useToast();
   
   // Check if user is admin using role property directly
-  // This avoids trying to access user_metadata which isn't in the type definition
-  const isAdmin = 
-    (currentUser?.role === "admin" || currentUser?.role === "owner") || 
-    (authUser?.role === "admin" || authUser?.role === "owner");
+  const isAdmin = currentUser?.role === "admin" || currentUser?.role === "owner";
 
   // Debug logs for troubleshooting
   console.log("InquiriesList - currentUser:", currentUser);
@@ -275,3 +272,63 @@ export const InquiriesList = ({ showAll = false }: InquiriesListProps) => {
     </>
   );
 };
+
+// Helper function defined within the scope but kept in its original place
+function getStatusColor(status: string) {
+  switch (status) {
+    case "open":
+      return "bg-yellow-500";
+    case "replied":
+      return "bg-blue-500";
+    case "closed":
+      return "bg-green-500";
+    default:
+      return "bg-gray-500";
+  }
+}
+
+function handleDeleteClick(inquiry: SupportInquiry) {
+  setInquiryToDelete(inquiry);
+  setIsDeleteDialogOpen(true);
+}
+
+async function handleDeleteConfirm() {
+  if (!inquiryToDelete || !isAdmin) return;
+  
+  setIsDeleting(true);
+  try {
+    const { error } = await supabase
+      .from('support_inquiries')
+      .delete()
+      .eq('id', inquiryToDelete.id);
+    
+    if (error) {
+      throw error;
+    }
+    
+    // Remove from local state
+    setInquiries(prevInquiries => 
+      prevInquiries.filter(inquiry => inquiry.id !== inquiryToDelete.id)
+    );
+    
+    toast({
+      title: "Inquiry deleted",
+      description: "The support inquiry has been permanently deleted.",
+    });
+  } catch (error) {
+    console.error("Error deleting inquiry:", error);
+    toast({
+      variant: "destructive",
+      title: "Delete failed",
+      description: "There was a problem deleting the inquiry. Please try again.",
+    });
+  } finally {
+    setIsDeleting(false);
+    setIsDeleteDialogOpen(false);
+    setInquiryToDelete(null);
+  }
+}
+
+function handleViewInquiry(inquiryId: string) {
+  navigate(`/support/${inquiryId}`);
+}

@@ -58,10 +58,13 @@ const ProposalRow: React.FC<ProposalRowProps> = ({ proposal, onStatusChange }) =
     try {
       console.log(`Updating status for proposal ${proposal.id} to ${newStatus}`);
       
+      // Normalize status to lowercase for consistent storage
+      const normalizedStatus = newStatus.toLowerCase();
+      
       // Update in Supabase first
       const { error } = await supabase
         .from('proposals')
-        .update({ status: newStatus.toLowerCase() })
+        .update({ status: normalizedStatus })
         .eq('id', proposal.id);
         
       if (error) {
@@ -71,8 +74,8 @@ const ProposalRow: React.FC<ProposalRowProps> = ({ proposal, onStatusChange }) =
       
       console.log("Supabase update successful");
       
-      // Then update UI via callback
-      onStatusChange(proposal.id, newStatus.toLowerCase());
+      // Then update UI via callback - pass the normalized status
+      onStatusChange(proposal.id, normalizedStatus);
       
       toast({
         title: "Status Updated",
