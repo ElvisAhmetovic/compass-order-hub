@@ -1,3 +1,4 @@
+
 // src/types/auth.ts (or relevant file)
 
 import { Session, User } from "@supabase/supabase-js";
@@ -14,8 +15,7 @@ export interface LoginResult {
 export interface SignUpResult {
   success: boolean;
   error?: string;
-  // ADD THIS LINE:
-  needsEmailConfirmation?: boolean; // <-- THIS IS THE MISSING PIECE
+  needsEmailConfirmation?: boolean; // This is needed for the authService.ts
   // Potentially add user/session here if your signUp also returns them
   // user?: User | null;
   // session?: Session | null;
