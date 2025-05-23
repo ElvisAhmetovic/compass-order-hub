@@ -1,4 +1,3 @@
-
 import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
 import { Proposal, ProposalLineItem, InventoryItem } from "@/types";
@@ -101,7 +100,7 @@ export const generateProposalPDF = async (proposalData: any, language: string = 
           </div>
         </div>
         <div style="text-align: right;">
-          <img src="${companyInfo.logo}" style="max-height: 60px; margin-bottom: 20px;" />
+          <img src="${proposalData.logo || companyInfo.logo}" style="max-height: 60px; margin-bottom: 20px;" />
           <div style="display: flex; justify-content: flex-end; margin-bottom: 10px;">
             <div style="margin-right: 20px;">
               <div style="font-weight: bold;">${t.proposal} N°</div>
@@ -182,6 +181,7 @@ export const generateProposalPDF = async (proposalData: any, language: string = 
         </div>
         <div style="border-top: 1px solid #000; width: 40%;">
           <div style="font-size: 12px; margin-top: 5px;">${t.signature}</div>
+          ${proposalData.signatureUrl ? `<img src="${proposalData.signatureUrl}" style="max-height: 50px; margin-top: 5px;" />` : ''}
         </div>
       </div>
 
@@ -257,138 +257,155 @@ export const generateProposalPDF = async (proposalData: any, language: string = 
 
 // New function to display PDF preview in a modal or dialog
 export const previewProposalPDF = async (proposalData: any, language: string = "en") => {
-  // Generate PDF in preview mode
-  const pdfResult = await generateProposalPDF({...proposalData, previewMode: true}, language);
-  
-  // Check if the result is a jsPDF instance
-  if (!pdfResult || typeof pdfResult === 'boolean') {
-    console.error("Failed to generate PDF preview");
+  try {
+    // Generate PDF in preview mode
+    const pdfResult = await generateProposalPDF({...proposalData, previewMode: true}, language);
+    
+    // Check if the result is a jsPDF instance
+    if (!pdfResult || typeof pdfResult === 'boolean') {
+      console.error("Failed to generate PDF preview");
+      return false;
+    }
+    
+    // At this point, we know pdfResult is a jsPDF instance
+    const pdf = pdfResult as jsPDF;
+    
+    // Convert the PDF to a data URL
+    const dataUrl = pdf.output('datauristring');
+    
+    // Remove any existing PDF preview
+    const existingOverlay = document.getElementById("pdf-preview-overlay");
+    if (existingOverlay) {
+      document.body.removeChild(existingOverlay);
+    }
+    
+    // Create a modal to display the PDF
+    const modalOverlay = document.createElement("div");
+    modalOverlay.style.position = "fixed";
+    modalOverlay.style.top = "0";
+    modalOverlay.style.left = "0";
+    modalOverlay.style.width = "100%";
+    modalOverlay.style.height = "100%";
+    modalOverlay.style.backgroundColor = "rgba(0, 0, 0, 0.75)";
+    modalOverlay.style.zIndex = "9999";
+    modalOverlay.style.display = "flex";
+    modalOverlay.style.flexDirection = "column";
+    modalOverlay.style.alignItems = "center";
+    modalOverlay.style.justifyContent = "center";
+    modalOverlay.id = "pdf-preview-overlay";
+    
+    // Create controls for the preview
+    const controls = document.createElement("div");
+    controls.style.display = "flex";
+    controls.style.justifyContent = "space-between";
+    controls.style.width = "80%";
+    controls.style.maxWidth = "1000px";
+    controls.style.padding = "10px";
+    controls.style.backgroundColor = "white";
+    controls.style.borderRadius = "8px 8px 0 0";
+    
+    // Create language selector
+    const languageSelector = document.createElement("select");
+    languageSelector.style.padding = "8px";
+    languageSelector.style.borderRadius = "4px";
+    languageSelector.style.marginRight = "8px";
+    
+    // Add language options
+    PROPOSAL_LANGUAGES.forEach(lang => {
+      const option = document.createElement("option");
+      option.value = lang.code;
+      option.text = lang.name;
+      option.selected = lang.code === language;
+      languageSelector.appendChild(option);
+    });
+    
+    // Create left side controls div
+    const leftControls = document.createElement("div");
+    leftControls.appendChild(document.createTextNode("Language: "));
+    leftControls.appendChild(languageSelector);
+    
+    // Create close button
+    const closeButton = document.createElement("button");
+    closeButton.textContent = "Close";
+    closeButton.style.padding = "8px 16px";
+    closeButton.style.backgroundColor = "#f44336";
+    closeButton.style.color = "white";
+    closeButton.style.border = "none";
+    closeButton.style.borderRadius = "4px";
+    closeButton.style.cursor = "pointer";
+    closeButton.onclick = () => {
+      document.body.removeChild(modalOverlay);
+    };
+    
+    // Create download button
+    const downloadButton = document.createElement("button");
+    downloadButton.textContent = "Download PDF";
+    downloadButton.style.padding = "8px 16px";
+    downloadButton.style.backgroundColor = "#4CAF50";
+    downloadButton.style.color = "white";
+    downloadButton.style.border = "none";
+    downloadButton.style.borderRadius = "4px";
+    downloadButton.style.cursor = "pointer";
+    downloadButton.style.marginRight = "8px";
+    downloadButton.onclick = async () => {
+      await generateProposalPDF(proposalData, languageSelector.value);
+    };
+    
+    // Create right side controls div
+    const rightControls = document.createElement("div");
+    rightControls.appendChild(downloadButton);
+    rightControls.appendChild(closeButton);
+    
+    // Add controls to the controls div
+    controls.appendChild(leftControls);
+    controls.appendChild(rightControls);
+    
+    // Create iframe to display the PDF
+    const iframe = document.createElement("iframe");
+    iframe.src = dataUrl;
+    iframe.style.width = "80%";
+    iframe.style.maxWidth = "1000px";
+    iframe.style.height = "80%";
+    iframe.style.border = "none";
+    iframe.style.backgroundColor = "white";
+    iframe.style.boxShadow = "0 0 10px rgba(0, 0, 0, 0.5)";
+    iframe.style.borderRadius = "0 0 8px 8px";
+    
+    // Add event listener to language selector
+    languageSelector.addEventListener("change", async () => {
+      const newLanguage = languageSelector.value;
+      const newPdfResult = await generateProposalPDF({...proposalData, previewMode: true}, newLanguage);
+      
+      if (newPdfResult && typeof newPdfResult !== 'boolean') {
+        // newPdfResult is a jsPDF instance
+        const newPdf = newPdfResult as jsPDF;
+        iframe.src = newPdf.output('datauristring');
+      }
+    });
+    
+    // Add elements to the modal
+    modalOverlay.appendChild(controls);
+    modalOverlay.appendChild(iframe);
+    
+    // Add modal to the document
+    document.body.appendChild(modalOverlay);
+    
+    return true;
+  } catch (error) {
+    console.error("PDF preview error:", error);
     return false;
   }
-  
-  // At this point, we know pdfResult is a jsPDF instance
-  const pdf = pdfResult as jsPDF;
-  
-  // Convert the PDF to a data URL
-  const dataUrl = pdf.output('datauristring');
-  
-  // Create a modal to display the PDF
-  const modalOverlay = document.createElement("div");
-  modalOverlay.style.position = "fixed";
-  modalOverlay.style.top = "0";
-  modalOverlay.style.left = "0";
-  modalOverlay.style.width = "100%";
-  modalOverlay.style.height = "100%";
-  modalOverlay.style.backgroundColor = "rgba(0, 0, 0, 0.75)";
-  modalOverlay.style.zIndex = "9999";
-  modalOverlay.style.display = "flex";
-  modalOverlay.style.flexDirection = "column";
-  modalOverlay.style.alignItems = "center";
-  modalOverlay.style.justifyContent = "center";
-  modalOverlay.id = "pdf-preview-overlay";
-  
-  // Create controls for the preview
-  const controls = document.createElement("div");
-  controls.style.display = "flex";
-  controls.style.justifyContent = "space-between";
-  controls.style.width = "80%";
-  controls.style.maxWidth = "1000px";
-  controls.style.padding = "10px";
-  controls.style.backgroundColor = "white";
-  controls.style.borderRadius = "8px 8px 0 0";
-  
-  // Create language selector
-  const languageSelector = document.createElement("select");
-  languageSelector.style.padding = "8px";
-  languageSelector.style.borderRadius = "4px";
-  languageSelector.style.marginRight = "8px";
-  
-  // Add language options
-  PROPOSAL_LANGUAGES.forEach(lang => {
-    const option = document.createElement("option");
-    option.value = lang.code;
-    option.text = lang.name;
-    option.selected = lang.code === language;
-    languageSelector.appendChild(option);
-  });
-  
-  // Create left side controls div
-  const leftControls = document.createElement("div");
-  leftControls.appendChild(document.createTextNode("Language: "));
-  leftControls.appendChild(languageSelector);
-  
-  // Create close button
-  const closeButton = document.createElement("button");
-  closeButton.textContent = "Close";
-  closeButton.style.padding = "8px 16px";
-  closeButton.style.backgroundColor = "#f44336";
-  closeButton.style.color = "white";
-  closeButton.style.border = "none";
-  closeButton.style.borderRadius = "4px";
-  closeButton.style.cursor = "pointer";
-  closeButton.onclick = () => {
-    document.body.removeChild(modalOverlay);
-  };
-  
-  // Create download button
-  const downloadButton = document.createElement("button");
-  downloadButton.textContent = "Download PDF";
-  downloadButton.style.padding = "8px 16px";
-  downloadButton.style.backgroundColor = "#4CAF50";
-  downloadButton.style.color = "white";
-  downloadButton.style.border = "none";
-  downloadButton.style.borderRadius = "4px";
-  downloadButton.style.cursor = "pointer";
-  downloadButton.style.marginRight = "8px";
-  downloadButton.onclick = async () => {
-    await generateProposalPDF(proposalData, languageSelector.value);
-  };
-  
-  // Create right side controls div
-  const rightControls = document.createElement("div");
-  rightControls.appendChild(downloadButton);
-  rightControls.appendChild(closeButton);
-  
-  // Add controls to the controls div
-  controls.appendChild(leftControls);
-  controls.appendChild(rightControls);
-  
-  // Create iframe to display the PDF
-  const iframe = document.createElement("iframe");
-  iframe.src = dataUrl;
-  iframe.style.width = "80%";
-  iframe.style.maxWidth = "1000px";
-  iframe.style.height = "80%";
-  iframe.style.border = "none";
-  iframe.style.backgroundColor = "white";
-  iframe.style.boxShadow = "0 0 10px rgba(0, 0, 0, 0.5)";
-  iframe.style.borderRadius = "0 0 8px 8px";
-  
-  // Add event listener to language selector
-  languageSelector.addEventListener("change", async () => {
-    const newLanguage = languageSelector.value;
-    const newPdfResult = await generateProposalPDF({...proposalData, previewMode: true}, newLanguage);
-    
-    if (newPdfResult && typeof newPdfResult !== 'boolean') {
-      // newPdfResult is a jsPDF instance
-      const newPdf = newPdfResult as jsPDF;
-      iframe.src = newPdf.output('datauristring');
-    }
-  });
-  
-  // Add elements to the modal
-  modalOverlay.appendChild(controls);
-  modalOverlay.appendChild(iframe);
-  
-  // Add modal to the document
-  document.body.appendChild(modalOverlay);
-  
-  return true;
 };
 
 // Helper function to get company information - can be replaced with API call or settings
 export const getCompanyInfo = () => {
-  // This should ideally come from the company settings or database
+  // Get stored company info from localStorage if available
+  const storedCompanyInfo = localStorage.getItem("companyInfo");
+  if (storedCompanyInfo) {
+    return JSON.parse(storedCompanyInfo);
+  }
+  
+  // Default company info
   return {
     logo: "https://placehold.co/200x60?text=Your+Logo",
     name: "AB MEDIA TEAM LTD",
@@ -411,6 +428,11 @@ export const getCompanyInfo = () => {
     iban: "BE79967023897833",
     bic: "TRWIBEB1"
   };
+};
+
+// Function to save company information
+export const saveCompanyInfo = (companyInfo: any) => {
+  localStorage.setItem("companyInfo", JSON.stringify(companyInfo));
 };
 
 // Simple version for downloading as text - kept for backward compatibility
