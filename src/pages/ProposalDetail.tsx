@@ -150,6 +150,52 @@ const ProposalDetail = () => {
     },
   });
 
+  // Add missing PDF generation function
+  const handleGeneratePDF = () => {
+    const data = form.getValues();
+    const proposalData = {
+      ...data,
+      lineItems,
+      totalAmount,
+      vatAmount,
+      netAmount,
+      vatRate: 19,
+      signatureUrl,
+      logo: companyLogo,
+      logoSize: logoSize
+    };
+    
+    generateProposalPDF(proposalData, selectedLanguage);
+    
+    toast({
+      title: "PDF generated",
+      description: "Your proposal has been downloaded as a PDF.",
+    });
+  };
+  
+  // Add missing preview download function
+  const downloadPreviewPDF = () => {
+    const data = form.getValues();
+    const proposalData = {
+      ...data,
+      lineItems,
+      totalAmount,
+      vatAmount,
+      netAmount,
+      vatRate: 19,
+      signatureUrl,
+      logo: companyLogo,
+      logoSize: previewLogoSize // Use preview logo size
+    };
+    
+    generateProposalPDF(proposalData, selectedLanguage, `proposal-${proposalData.number || 'draft'}.pdf`);
+    
+    toast({
+      title: "PDF downloaded",
+      description: "Your preview PDF has been downloaded.",
+    });
+  };
+  
   // When preview is opened, initialize logo size from current setting
   useEffect(() => {
     if (isPreviewOpen) {
