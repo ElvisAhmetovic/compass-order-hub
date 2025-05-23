@@ -72,7 +72,11 @@ export const translations = {
 };
 
 // Function to generate a PDF from a proposal
-export const generateProposalPDF = async (proposalData: any, language: string = "en"): Promise<jsPDF | boolean> => {
+export const generateProposalPDF = async (
+  proposalData: any, 
+  language: string = "en", 
+  customFilename?: string
+): Promise<jsPDF | boolean> => {
   // Create a temporary div to render the proposal
   const tempDiv = document.createElement("div");
   tempDiv.style.position = "absolute";
@@ -248,8 +252,9 @@ export const generateProposalPDF = async (proposalData: any, language: string = 
       return pdf;
     }
     
-    // For download mode, save the PDF
-    pdf.save(`proposal_${proposalData.number}.pdf`);
+    // For download mode, save the PDF with custom filename if provided
+    const filename = customFilename || `proposal_${proposalData.number}.pdf`;
+    pdf.save(filename);
     return true;
   } catch (error) {
     console.error("PDF generation error:", error);
