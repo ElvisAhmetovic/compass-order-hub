@@ -1,3 +1,4 @@
+
 import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
 import { Proposal, ProposalLineItem, InventoryItem } from "@/types";
@@ -100,7 +101,7 @@ export const generateProposalPDF = async (proposalData: any, language: string = 
           </div>
         </div>
         <div style="text-align: right;">
-          <img src="${proposalData.logo || companyInfo.logo}" style="max-height: 60px; margin-bottom: 20px;" />
+          <img src="${proposalData.logo || companyInfo.logo}" style="max-height: 60px; margin-bottom: 20px;" onerror="this.src='https://placehold.co/200x60?text=Your+Logo'; this.onerror=null;" />
           <div style="display: flex; justify-content: flex-end; margin-bottom: 10px;">
             <div style="margin-right: 20px;">
               <div style="font-weight: bold;">${t.proposal} N°</div>

@@ -30,9 +30,11 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { 
   downloadProposal, 
   loadInventoryItems,
-  generateProposalPDF, 
+  generateProposalPDF,
   previewProposalPDF,
-  PROPOSAL_LANGUAGES 
+  PROPOSAL_LANGUAGES,
+  saveCompanyInfo, 
+  getCompanyInfo
 } from "@/utils/proposalUtils";
 import {
   Dialog,
@@ -113,6 +115,7 @@ const ProposalDetail = () => {
   const [logoSize, setLogoSize] = useState(33); // Default logo size percentage
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const form = useForm<ProposalFormValues>({
     resolver: zodResolver(proposalSchema),
@@ -135,10 +138,69 @@ const ProposalDetail = () => {
     },
   });
 
+  // Load company logo from saved company info
+  useEffect(() => {
+    const companyInfo = getCompanyInfo();
+    if (companyInfo && companyInfo.logo) {
+      setCompanyLogo(companyInfo.logo);
+    }
+  }, []);
+
   // Handle logo upload or selection
   const handleLogoChange = (logo: string) => {
     setCompanyLogo(logo);
-    // You'd typically save this to user settings or company profile
+    
+    // Save the logo to company info
+    const companyInfo = getCompanyInfo();
+    companyInfo.logo = logo;
+    saveCompanyInfo(companyInfo);
+    
+    toast({
+      title: "Company logo updated",
+      description: "Your company logo has been updated successfully.",
+    });
+  };
+
+  // Trigger file input click
+  const triggerLogoUpload = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  // Handle file selection
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      
+      // Check file size (limit to 2MB)
+      if (file.size > 2 * 1024 * 1024) {
+        toast({
+          title: "File too large",
+          description: "Please select an image under 2MB.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Check file type
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: "Invalid file type",
+          description: "Please select an image file (JPEG, PNG, etc.).",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (event.target && typeof event.target.result === 'string') {
+          handleLogoChange(event.target.result);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   // Decrease logo size
@@ -638,9 +700,13 @@ const ProposalDetail = () => {
                       alt="Company Logo" 
                       className="max-h-32 object-contain" 
                       style={{ maxWidth: '100%' }}
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.src = "https://placehold.co/200x60?text=Your+Logo";
+                      }}
                     />
                   </div>
-                  <div className="flex items-center gap-2 mb-2 w-full">
+                  <div className="flex items-center gap-2 mb-4 w-full">
                     <span className="text-sm font-medium">Size</span>
                     <Button variant="outline" size="sm" onClick={decreaseLogoSize} className="h-8 w-8 p-0">
                       -
@@ -650,22 +716,30 @@ const ProposalDetail = () => {
                       +
                     </Button>
                   </div>
-                  <Input
+                  
+                  {/* Hidden file input */}
+                  <input
+                    ref={fileInputRef}
                     type="file"
                     accept="image/*"
-                    className="w-full"
-                    onChange={(e) => {
-                      if (e.target.files && e.target.files[0]) {
-                        const reader = new FileReader();
-                        reader.onload = (event) => {
-                          if (event.target && typeof event.target.result === 'string') {
-                            setCompanyLogo(event.target.result);
-                          }
-                        };
-                        reader.readAsDataURL(e.target.files[0]);
-                      }
-                    }}
+                    className="hidden"
+                    onChange={handleFileSelect}
                   />
+                  
+                  {/* Custom button to trigger file upload */}
+                  <div className="w-full flex flex-col gap-2">
+                    <Button 
+                      variant="outline" 
+                      onClick={triggerLogoUpload} 
+                      className="w-full"
+                    >
+                      Upload company logo
+                    </Button>
+                    
+                    <div className="text-xs text-gray-500 text-center">
+                      Recommended size: 200x60px, Max: 2MB, Formats: PNG, JPG
+                    </div>
+                  </div>
                 </div>
                 <DialogFooter>
                   <Button onClick={() => setIsLogoDialogOpen(false)}>Save Logo</Button>
@@ -735,6 +809,10 @@ const ProposalDetail = () => {
                           src={companyLogo} 
                           alt="Company Logo" 
                           className="h-5 w-auto" 
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.src = "https://placehold.co/200x60?text=Your+Logo";
+                          }}
                         />
                         <span>Edit Company Logo</span>
                       </Button>
