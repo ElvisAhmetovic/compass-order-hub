@@ -72,7 +72,7 @@ export const translations = {
 };
 
 // Function to generate a PDF from a proposal
-export const generateProposalPDF = async (proposalData: any, language: string = "en") => {
+export const generateProposalPDF = async (proposalData: any, language: string = "en"): Promise<jsPDF | boolean> => {
   // Create a temporary div to render the proposal
   const tempDiv = document.createElement("div");
   tempDiv.style.position = "absolute";
@@ -258,12 +258,16 @@ export const generateProposalPDF = async (proposalData: any, language: string = 
 // New function to display PDF preview in a modal or dialog
 export const previewProposalPDF = async (proposalData: any, language: string = "en") => {
   // Generate PDF in preview mode
-  const pdf = await generateProposalPDF({...proposalData, previewMode: true}, language);
+  const pdfResult = await generateProposalPDF({...proposalData, previewMode: true}, language);
   
-  if (!pdf) {
+  // Check if the result is a jsPDF instance
+  if (!pdfResult || typeof pdfResult === 'boolean') {
     console.error("Failed to generate PDF preview");
     return false;
   }
+  
+  // At this point, we know pdfResult is a jsPDF instance
+  const pdf = pdfResult as jsPDF;
   
   // Convert the PDF to a data URL
   const dataUrl = pdf.output('datauristring');
@@ -363,8 +367,11 @@ export const previewProposalPDF = async (proposalData: any, language: string = "
   // Add event listener to language selector
   languageSelector.addEventListener("change", async () => {
     const newLanguage = languageSelector.value;
-    const newPdf = await generateProposalPDF({...proposalData, previewMode: true}, newLanguage);
-    if (newPdf) {
+    const newPdfResult = await generateProposalPDF({...proposalData, previewMode: true}, newLanguage);
+    
+    if (newPdfResult && typeof newPdfResult !== 'boolean') {
+      // newPdfResult is a jsPDF instance
+      const newPdf = newPdfResult as jsPDF;
       iframe.src = newPdf.output('datauristring');
     }
   });
