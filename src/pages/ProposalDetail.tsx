@@ -628,6 +628,14 @@ const ProposalDetail = () => {
   const vatAmount = lineItems.reduce((sum, item) => sum + (item.amount * item.vat / 100), 0);
   const netAmount = totalAmount - vatAmount;
 
+  // Fix for the Company Logo button - ensure it opens the dialog
+  const handleLogoButtonClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsLogoDialogOpen(true);
+    console.log("Opening logo dialog");
+  };
+
   return (
     <div className="flex min-h-screen">
       <Sidebar />
@@ -799,10 +807,11 @@ const ProposalDetail = () => {
                         </Select>
                       </div>
                       
-                      {/* Company Logo Button */}
+                      {/* Fixed Company Logo Button - using our new handler */}
                       <Button 
                         variant="outline" 
-                        onClick={() => setIsLogoDialogOpen(true)} 
+                        onClick={handleLogoButtonClick}
+                        type="button"
                         className="flex items-center gap-2"
                       >
                         <img 
