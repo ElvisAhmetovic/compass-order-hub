@@ -188,7 +188,9 @@ const ProposalDetail = () => {
       logoSize: previewLogoSize // Use preview logo size
     };
     
-    generateProposalPDF(proposalData, selectedLanguage, `proposal-${proposalData.number || 'draft'}.pdf`);
+    // Fix here: Check the function signature and adjust the arguments
+    const filename = `proposal-${proposalData.number || 'draft'}.pdf`;
+    generateProposalPDF(proposalData, { language: selectedLanguage, filename });
     
     toast({
       title: "PDF downloaded",
@@ -903,7 +905,7 @@ const ProposalDetail = () => {
                   <Save className="h-4 w-4 mr-1" />
                   Save as draft
                 </Button>
-                <div className="flex items-center">
+                <div className="flex items-center gap-2">
                   <Button size="sm" className="bg-blue-600 rounded-r-none" onClick={sendProposal}>
                     <Send className="h-4 w-4 mr-1" />
                     Send
