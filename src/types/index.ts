@@ -1,4 +1,3 @@
-
 export type UserRole = "admin" | "user" | "agent";
 
 export interface User {
@@ -112,6 +111,7 @@ export interface Proposal {
   country?: string;
   content?: string;
   totalAmount?: number;
+  currency?: string; // Added currency property
 }
 
 export interface ProposalLineItem {
