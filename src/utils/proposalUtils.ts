@@ -1,7 +1,7 @@
 
 import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
-import { Proposal, ProposalLineItem } from "@/types";
+import { Proposal, ProposalLineItem, InventoryItem } from "@/types";
 
 // Function to generate a PDF from a proposal
 export const generateProposalPDF = async (proposalData: any) => {
@@ -15,21 +15,21 @@ export const downloadProposal = (proposalData: any) => {
 PROPOSAL ${proposalData.number}
 Customer: ${proposalData.customer}
 Subject: ${proposalData.subject}
-Date: ${proposalData.date}
+Date: ${proposalData.date || new Date().toLocaleDateString()}
 
 Address:
-${proposalData.address}
-${proposalData.country}
+${proposalData.address || 'N/A'}
+${proposalData.country || 'N/A'}
 
 Content:
-${proposalData.content}
+${proposalData.content || 'N/A'}
 
 Line Items:
 ${proposalData.lineItems.map((item: any) => 
-  `${item.description} - Qty: ${item.quantity} - Price: €${item.price} - Amount: €${item.amount.toFixed(2)}`
+  `${item.name} - ${item.description || 'No description'} - Qty: ${item.quantity} - Price: €${item.unit_price?.toFixed(2) || '0.00'} - Amount: €${item.total_price?.toFixed(2) || '0.00'}`
 ).join('\n')}
 
-Total Amount: €${proposalData.totalAmount.toFixed(2)}
+Total Amount: €${proposalData.totalAmount?.toFixed(2) || '0.00'}
 `;
 
   const blob = new Blob([content], { type: 'text/plain' });
@@ -44,13 +44,13 @@ Total Amount: €${proposalData.totalAmount.toFixed(2)}
 };
 
 export const loadInventoryItems = () => {
-  const savedInventory = localStorage.getItem("inventory");
+  const savedInventory = localStorage.getItem("inventoryItems");
   if (savedInventory) {
     return JSON.parse(savedInventory);
   }
   
   // Check alternative storage keys
-  const savedInventoryItems = localStorage.getItem("inventoryItems");
+  const savedInventoryItems = localStorage.getItem("inventory");
   if (savedInventoryItems) {
     return JSON.parse(savedInventoryItems);
   }
@@ -87,3 +87,21 @@ export const PROPOSAL_STATUSES = [
   "Expired",
   "Revised"
 ];
+
+// Function to format inventory item for proposal line item
+export const formatInventoryItemForProposal = (item: InventoryItem, quantity: number = 1): ProposalLineItem => {
+  const unitPrice = parseFloat(item.price.replace('EUR', '')) || 0;
+  return {
+    id: crypto.randomUUID(),
+    proposal_id: "",
+    item_id: item.id,
+    name: item.name,
+    description: item.description || "",
+    quantity: quantity,
+    unit_price: unitPrice,
+    total_price: unitPrice * quantity,
+    category: item.category,
+    unit: item.unit || "unit",
+    created_at: new Date().toISOString()
+  };
+};

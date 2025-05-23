@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import Sidebar from "@/components/dashboard/Sidebar";
@@ -89,12 +88,13 @@ const Inventory = () => {
       id: uuidv4().substring(0, 5),
       name: data.name,
       category: data.category,
-      description: "",
+      description: data.description || "",
       lastBooking: null,
       stock: parseInt(data.stock) || 0,
-      unit: "Stk",
+      unit: data.unit || "Stk",
       price: data.price,
-      buyingPrice: data.buyingPrice || 'EUR0.00'
+      buyingPrice: data.buyingPrice || 'EUR0.00',
+      internalNote: data.internalNote || "",
     };
 
     const updatedInventory = [newProduct, ...inventoryData];
@@ -118,9 +118,20 @@ const Inventory = () => {
     setCurrentTab("All");
   };
 
-  // Save inventory data on component mount
+  // Load inventory data on component mount
   useEffect(() => {
-    localStorage.setItem("inventoryItems", JSON.stringify(inventoryData));
+    const savedInventory = localStorage.getItem("inventoryItems");
+    if (savedInventory) {
+      try {
+        const parsedInventory = JSON.parse(savedInventory);
+        setInventoryData(parsedInventory);
+      } catch (error) {
+        console.error("Error loading inventory:", error);
+        localStorage.setItem("inventoryItems", JSON.stringify(mockInventoryData));
+      }
+    } else {
+      localStorage.setItem("inventoryItems", JSON.stringify(mockInventoryData));
+    }
   }, []);
 
   // Handle import products

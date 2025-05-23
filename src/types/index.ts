@@ -108,6 +108,10 @@ export interface Proposal {
   created_at: string;
   updated_at: string;
   lineItems?: ProposalLineItem[];
+  address?: string;
+  country?: string;
+  content?: string;
+  totalAmount?: number;
 }
 
 export interface ProposalLineItem {
@@ -122,6 +126,7 @@ export interface ProposalLineItem {
   category?: string;
   created_at: string;
   updated_at?: string;
+  unit?: string;
 }
 
 export interface InventoryItem {
@@ -134,6 +139,9 @@ export interface InventoryItem {
   unit: string;
   price: string;
   buyingPrice: string;
+  buyingPriceGross?: string;
+  priceGross?: string;
+  internalNote?: string;
 }
 
 export type SupportInquiryStatus = "new" | "open" | "in-progress" | "resolved" | "closed";
