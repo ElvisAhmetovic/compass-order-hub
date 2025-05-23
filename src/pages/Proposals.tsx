@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import Sidebar from "@/components/dashboard/Sidebar";
@@ -29,6 +28,19 @@ export const PROPOSAL_STATUSES = [
   "Revised"
 ];
 
+// Function to get currency symbol
+const getCurrencySymbol = (currency: string = 'EUR') => {
+  switch (currency) {
+    case 'USD':
+      return '$';
+    case 'GBP':
+      return '£';
+    case 'EUR':
+    default:
+      return '€';
+  }
+};
+
 const Proposals = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -55,6 +67,7 @@ const Proposals = () => {
             status: "Draft",
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
+            currency: 'EUR'
           },
           {
             id: uuidv4(),
@@ -66,6 +79,7 @@ const Proposals = () => {
             status: "Sent",
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
+            currency: 'USD'
           }
         ];
         setProposals(mockProposals);
@@ -290,7 +304,10 @@ Date: ${new Date(proposal.created_at).toLocaleDateString()}
                           <TableCell>{proposal.customer}</TableCell>
                           <TableCell>{proposal.subject}</TableCell>
                           <TableCell>{proposal.reference}</TableCell>
-                          <TableCell>€{parseFloat(proposal.amount).toFixed(2)}</TableCell>
+                          <TableCell>
+                            {getCurrencySymbol(proposal.currency)}
+                            {parseFloat(proposal.amount).toFixed(2)}
+                          </TableCell>
                           <TableCell>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>

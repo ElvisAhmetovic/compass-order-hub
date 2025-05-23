@@ -113,6 +113,8 @@ const ProposalDetail = () => {
   const [isLogoDialogOpen, setIsLogoDialogOpen] = useState(false);
   const [companyLogo, setCompanyLogo] = useState<string>("https://placehold.co/200x60?text=Your+Logo");
   const [logoSize, setLogoSize] = useState(33); // Default logo size percentage
+  const [selectedCurrency, setSelectedCurrency] = useState("EUR");
+  const [currencySymbol, setCurrencySymbol] = useState("€");
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -145,6 +147,23 @@ const ProposalDetail = () => {
       setCompanyLogo(companyInfo.logo);
     }
   }, []);
+
+  // Handle currency change
+  useEffect(() => {
+    // Update currency symbol when currency changes
+    switch (selectedCurrency) {
+      case "USD":
+        setCurrencySymbol("$");
+        break;
+      case "GBP":
+        setCurrencySymbol("£");
+        break;
+      case "EUR":
+      default:
+        setCurrencySymbol("€");
+        break;
+    }
+  }, [selectedCurrency]);
 
   // Handle logo upload or selection
   const handleLogoChange = (logo: string) => {
@@ -480,7 +499,8 @@ const ProposalDetail = () => {
       address: data.address,
       country: data.country,
       content: data.content,
-      totalAmount: totalAmount
+      totalAmount: totalAmount,
+      currency: selectedCurrency // Add currency to the saved proposal
     };
 
     if (id === "new") {
@@ -1075,7 +1095,7 @@ const ProposalDetail = () => {
                                 </td>
                                 <td className="px-2 py-3 text-right">
                                   <div className="flex items-center justify-end">
-                                    <span className="text-sm font-medium">€{item.amount.toFixed(2)}</span>
+                                    <span className="text-sm font-medium">{currencySymbol}{item.amount.toFixed(2)}</span>
                                   </div>
                                 </td>
                                 <td className="px-2 py-3">
@@ -1169,7 +1189,13 @@ const ProposalDetail = () => {
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel>Currency</FormLabel>
-                              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <Select 
+                                onValueChange={(value) => {
+                                  field.onChange(value);
+                                  setSelectedCurrency(value);
+                                }} 
+                                defaultValue={field.value}
+                              >
                                 <FormControl>
                                   <SelectTrigger>
                                     <SelectValue placeholder="Select currency" />
@@ -1278,15 +1304,15 @@ const ProposalDetail = () => {
                         <div className="w-64">
                           <div className="flex justify-between py-1">
                             <span className="text-sm text-gray-700">Net amount (inc. discount/surcharge)</span>
-                            <span className="font-medium">€{netAmount.toFixed(2)}</span>
+                            <span className="font-medium">{currencySymbol}{netAmount.toFixed(2)}</span>
                           </div>
                           <div className="flex justify-between py-1">
                             <span className="text-sm text-gray-700">VAT 19%</span>
-                            <span className="font-medium">€{vatAmount.toFixed(2)}</span>
+                            <span className="font-medium">{currencySymbol}{vatAmount.toFixed(2)}</span>
                           </div>
                           <div className="flex justify-between py-2 border-t border-gray-200 mt-1">
                             <span className="font-medium">Total</span>
-                            <span className="font-bold">€{totalAmount.toFixed(2)}</span>
+                            <span className="font-bold">{currencySymbol}{totalAmount.toFixed(2)}</span>
                           </div>
                         </div>
                       </div>
