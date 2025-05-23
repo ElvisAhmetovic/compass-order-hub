@@ -466,6 +466,14 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
     return assigneeUser?.full_name || assigneeUser?.email || "Unknown User";
   };
 
+  // Helper function to safely access user properties
+  const getUserDisplayName = (user: string | { full_name?: string; email?: string; }): string => {
+    if (typeof user === 'string') {
+      return user;
+    }
+    return user.full_name || user.email || 'Unknown User';
+  };
+
   // Function to determine which tabs should be visible based on user role
   const getAvailableTabs = () => {
     // Everyone can see details and comments
@@ -714,7 +722,7 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
                   {comments.map((comment) => (
                     <div key={comment.id} className="border rounded-md p-4 space-y-2">
                       <div className="flex items-center justify-between">
-                        <span className="font-medium">{comment.user?.full_name || comment.user?.email}</span>
+                        <span className="font-medium">{getUserDisplayName(comment.user)}</span>
                         <span className="text-sm text-muted-foreground">{formatDateTime(comment.created_at)}</span>
                       </div>
                       <p>{comment.comment}</p>
