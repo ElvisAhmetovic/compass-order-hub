@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import Sidebar from "@/components/dashboard/Sidebar";
@@ -16,8 +17,18 @@ import * as z from "zod";
 import { useNavigate, useParams } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Save, Send, Download, Printer, Eye, Plus, Trash2 } from "lucide-react";
-import { Proposal } from "@/types";
+import { Proposal, InventoryItem } from "@/types";
 import { v4 as uuidv4 } from "uuid";
+import { 
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList
+} from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { downloadProposal } from "@/utils/proposalUtils";
 
 const proposalSchema = z.object({
   customer: z.string().min(1, "Customer is required"),
@@ -55,6 +66,7 @@ const ProposalDetail = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
   const [lineItems, setLineItems] = useState<LineItem[]>([
     {
       id: "1",
@@ -67,6 +79,7 @@ const ProposalDetail = () => {
       amount: 0.0
     }
   ]);
+  const [popoverOpen, setPopoverOpen] = useState<{[key: string]: boolean}>({});
 
   const form = useForm<ProposalFormValues>({
     resolver: zodResolver(proposalSchema),
@@ -87,6 +100,14 @@ const ProposalDetail = () => {
       vatRule: "umsatzsteuerpflichtig",
     },
   });
+
+  // Load inventory items
+  useEffect(() => {
+    const savedInventory = localStorage.getItem("inventory");
+    if (savedInventory) {
+      setInventoryItems(JSON.parse(savedInventory));
+    }
+  }, []);
 
   // Load existing proposal if editing
   useEffect(() => {
@@ -116,6 +137,13 @@ const ProposalDetail = () => {
       }
     }
   }, [id, form]);
+
+  const togglePopover = (itemId: string) => {
+    setPopoverOpen(prev => ({
+      ...prev,
+      [itemId]: !prev[itemId]
+    }));
+  };
 
   const addLineItem = () => {
     const newItem: LineItem = {
@@ -151,6 +179,28 @@ const ProposalDetail = () => {
     }));
   };
 
+  const selectInventoryItem = (itemId: string, lineItemId: string) => {
+    const selectedItem = inventoryItems.find(item => item.id === itemId);
+    if (selectedItem) {
+      setLineItems(lineItems.map(item => {
+        if (item.id === lineItemId) {
+          return {
+            ...item,
+            description: selectedItem.name,
+            price: parseFloat(selectedItem.price) || 0,
+            unit: selectedItem.unit || "Stk",
+            amount: parseFloat(selectedItem.price) * item.quantity
+          };
+        }
+        return item;
+      }));
+    }
+    setPopoverOpen(prev => ({
+      ...prev,
+      [lineItemId]: false
+    }));
+  };
+
   const saveProposal = (data: ProposalFormValues, status: string = "Draft") => {
     const savedProposals = localStorage.getItem("proposals");
     const proposals: Proposal[] = savedProposals ? JSON.parse(savedProposals) : [];
@@ -182,45 +232,17 @@ const ProposalDetail = () => {
     return proposalData;
   };
 
-  const downloadProposal = () => {
+  const handleDownloadProposal = () => {
     const proposalData = {
       ...form.getValues(),
       lineItems,
-      totalAmount: lineItems.reduce((sum, item) => sum + item.amount, 0)
+      totalAmount,
+      vatAmount,
+      netAmount
     };
     
-    // Create a simple PDF-like content
-    const content = `
-PROPOSAL ${proposalData.number}
-Customer: ${proposalData.customer}
-Subject: ${proposalData.subject}
-Date: ${proposalData.date}
-
-Address:
-${proposalData.address}
-${proposalData.country}
-
-Content:
-${proposalData.content}
-
-Line Items:
-${lineItems.map(item => 
-  `${item.description} - Qty: ${item.quantity} - Price: €${item.price} - Amount: €${item.amount.toFixed(2)}`
-).join('\n')}
-
-Total Amount: €${proposalData.totalAmount.toFixed(2)}
-    `;
-
-    const blob = new Blob([content], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `proposal_${proposalData.number}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-
+    downloadProposal(proposalData);
+    
     toast({
       title: "Download started",
       description: "Your proposal has been downloaded.",
@@ -325,7 +347,7 @@ Total Amount: €${proposalData.totalAmount.toFixed(2)}
                     <Button variant="outline" size="sm" className="rounded-none border-l-0" onClick={printProposal}>
                       <Printer className="h-4 w-4" />
                     </Button>
-                    <Button variant="outline" size="sm" className="rounded-l-none border-l-0" onClick={downloadProposal}>
+                    <Button variant="outline" size="sm" className="rounded-l-none border-l-0" onClick={handleDownloadProposal}>
                       <Download className="h-4 w-4" />
                     </Button>
                   </div>
@@ -497,12 +519,58 @@ Total Amount: €${proposalData.totalAmount.toFixed(2)}
                             {lineItems.map((item, index) => (
                               <tr key={item.id}>
                                 <td className="px-2 py-3">
-                                  <Input 
-                                    placeholder="Search product" 
-                                    className="text-sm"
-                                    value={item.description}
-                                    onChange={(e) => updateLineItem(item.id, 'description', e.target.value)}
-                                  />
+                                  <Popover 
+                                    open={popoverOpen[item.id] || false} 
+                                    onOpenChange={() => togglePopover(item.id)}
+                                  >
+                                    <PopoverTrigger asChild>
+                                      <Input 
+                                        placeholder="Search product" 
+                                        className="text-sm"
+                                        value={item.description}
+                                        onChange={(e) => {
+                                          updateLineItem(item.id, 'description', e.target.value);
+                                          if (e.target.value.length > 0 && !popoverOpen[item.id]) {
+                                            togglePopover(item.id);
+                                          } else if (e.target.value.length === 0 && popoverOpen[item.id]) {
+                                            togglePopover(item.id);
+                                          }
+                                        }}
+                                      />
+                                    </PopoverTrigger>
+                                    <PopoverContent className="p-0 w-80" align="start">
+                                      <Command>
+                                        <CommandInput placeholder="Search products..." />
+                                        <CommandList>
+                                          <CommandEmpty>No products found.</CommandEmpty>
+                                          <CommandGroup>
+                                            {inventoryItems
+                                              .filter(invItem => 
+                                                invItem.name.toLowerCase().includes(item.description.toLowerCase()) ||
+                                                invItem.id.toString().includes(item.description.toLowerCase())
+                                              )
+                                              .slice(0, 10)
+                                              .map((invItem) => (
+                                                <CommandItem 
+                                                  key={invItem.id} 
+                                                  onSelect={() => selectInventoryItem(invItem.id, item.id)}
+                                                  className="cursor-pointer"
+                                                >
+                                                  <div className="flex flex-col">
+                                                    <span className="font-medium">{invItem.name}</span>
+                                                    <div className="flex justify-between text-xs text-gray-500">
+                                                      <span>#{invItem.id}</span>
+                                                      <span>{invItem.price} EUR</span>
+                                                    </div>
+                                                  </div>
+                                                </CommandItem>
+                                              ))
+                                            }
+                                          </CommandGroup>
+                                        </CommandList>
+                                      </Command>
+                                    </PopoverContent>
+                                  </Popover>
                                 </td>
                                 <td className="px-2 py-3">
                                   <div className="flex items-center">
