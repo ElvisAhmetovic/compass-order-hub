@@ -169,24 +169,28 @@ const ProposalDetail = () => {
     });
   };
 
-  // Decrease logo size
-  const decreaseLogoSize = () => {
-    const newSize = Math.max(10, logoSize - 5);
+  // Function to save logo size to company info and update the component state
+  const updateLogoSize = (newSize: number) => {
     setLogoSize(newSize);
-    // Save the updated size
+    
+    // Save the updated size to company info
     const companyInfo = getCompanyInfo();
     companyInfo.logoSize = newSize;
     saveCompanyInfo(companyInfo);
+    
+    console.log(`Logo size updated to: ${newSize}%`);
+  };
+
+  // Decrease logo size
+  const decreaseLogoSize = () => {
+    const newSize = Math.max(10, logoSize - 5);
+    updateLogoSize(newSize);
   };
 
   // Increase logo size
   const increaseLogoSize = () => {
     const newSize = Math.min(100, logoSize + 5);
-    setLogoSize(newSize);
-    // Save the updated size
-    const companyInfo = getCompanyInfo();
-    companyInfo.logoSize = newSize;
-    saveCompanyInfo(companyInfo);
+    updateLogoSize(newSize);
   };
 
   // Handle currency change
@@ -550,6 +554,7 @@ const ProposalDetail = () => {
     return proposalData;
   };
 
+  // Modify the handleGeneratePDF function to pass the logoSize parameter
   const handleGeneratePDF = async () => {
     const data = form.getValues();
     const proposalData = {
@@ -580,31 +585,7 @@ const ProposalDetail = () => {
     }
   };
 
-  const handleDownloadProposal = () => {
-    const proposalData = {
-      ...form.getValues(),
-      lineItems,
-      totalAmount,
-      vatAmount,
-      netAmount
-    };
-    
-    downloadProposal(proposalData);
-    
-    toast({
-      title: "Download started",
-      description: "Your proposal has been downloaded.",
-    });
-  };
-
-  const printProposal = () => {
-    window.print();
-    toast({
-      title: "Print dialog opened",
-      description: "Your proposal is ready to print.",
-    });
-  };
-
+  // Modify the previewProposal function to pass the logoSize parameter
   const previewProposal = async () => {
     const data = form.getValues();
     const proposalData = {

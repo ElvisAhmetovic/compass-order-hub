@@ -84,6 +84,9 @@ export const generateProposalPDF = async (proposalData: any, language: string = 
   const t = translations[language as keyof typeof translations] || translations.en;
   const companyInfo = getCompanyInfo();
 
+  // Calculate logo width based on logoSize (if provided)
+  const logoWidth = proposalData.logoSize ? `${proposalData.logoSize}%` : '33%';
+
   // HTML structure for the PDF
   tempDiv.innerHTML = `
     <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 210mm;">
@@ -101,7 +104,7 @@ export const generateProposalPDF = async (proposalData: any, language: string = 
           </div>
         </div>
         <div style="text-align: right;">
-          <img src="${proposalData.logo || companyInfo.logo}" style="max-height: 60px; margin-bottom: 20px;" onerror="this.src='https://placehold.co/200x60?text=Your+Logo'; this.onerror=null;" />
+          <img src="${proposalData.logo || companyInfo.logo}" style="max-height: 60px; max-width: ${logoWidth}; margin-bottom: 20px;" onerror="this.src='https://placehold.co/200x60?text=Your+Logo'; this.onerror=null;" />
           <div style="display: flex; justify-content: flex-end; margin-bottom: 10px;">
             <div style="margin-right: 20px;">
               <div style="font-weight: bold;">${t.proposal} N°</div>
@@ -320,10 +323,50 @@ export const previewProposalPDF = async (proposalData: any, language: string = "
       languageSelector.appendChild(option);
     });
     
+    // Create logo size controls
+    const logoSizeControls = document.createElement("div");
+    logoSizeControls.style.display = "flex";
+    logoSizeControls.style.alignItems = "center";
+    logoSizeControls.style.marginLeft = "16px";
+    
+    const logoSizeLabel = document.createElement("span");
+    logoSizeLabel.textContent = "Logo Size:";
+    logoSizeLabel.style.marginRight = "8px";
+    
+    const decreaseButton = document.createElement("button");
+    decreaseButton.textContent = "-";
+    decreaseButton.style.padding = "4px 8px";
+    decreaseButton.style.borderRadius = "4px";
+    decreaseButton.style.border = "1px solid #ccc";
+    decreaseButton.style.marginRight = "8px";
+    decreaseButton.style.cursor = "pointer";
+    
+    const logoSizeValue = document.createElement("span");
+    logoSizeValue.textContent = `${proposalData.logoSize || 33}%`;
+    logoSizeValue.style.marginRight = "8px";
+    logoSizeValue.style.minWidth = "40px";
+    logoSizeValue.style.textAlign = "center";
+    
+    const increaseButton = document.createElement("button");
+    increaseButton.textContent = "+";
+    increaseButton.style.padding = "4px 8px";
+    increaseButton.style.borderRadius = "4px";
+    increaseButton.style.border = "1px solid #ccc";
+    increaseButton.style.cursor = "pointer";
+    
+    // Add logo size controls to the container
+    logoSizeControls.appendChild(logoSizeLabel);
+    logoSizeControls.appendChild(decreaseButton);
+    logoSizeControls.appendChild(logoSizeValue);
+    logoSizeControls.appendChild(increaseButton);
+    
     // Create left side controls div
     const leftControls = document.createElement("div");
+    leftControls.style.display = "flex";
+    leftControls.style.alignItems = "center";
     leftControls.appendChild(document.createTextNode("Language: "));
     leftControls.appendChild(languageSelector);
+    leftControls.appendChild(logoSizeControls);
     
     // Create close button
     const closeButton = document.createElement("button");
@@ -349,7 +392,7 @@ export const previewProposalPDF = async (proposalData: any, language: string = "
     downloadButton.style.cursor = "pointer";
     downloadButton.style.marginRight = "8px";
     downloadButton.onclick = async () => {
-      await generateProposalPDF(proposalData, languageSelector.value);
+      await generateProposalPDF({...proposalData, logoSize: parseInt(logoSizeValue.textContent || '33')}, languageSelector.value);
     };
     
     // Create right side controls div
@@ -371,11 +414,50 @@ export const previewProposalPDF = async (proposalData: any, language: string = "
     iframe.style.backgroundColor = "white";
     iframe.style.boxShadow = "0 0 10px rgba(0, 0, 0, 0.5)";
     iframe.style.borderRadius = "0 0 8px 8px";
+
+    // Handler for logo size adjustment
+    let currentLogoSize = proposalData.logoSize || 33;
+
+    decreaseButton.onclick = async () => {
+      currentLogoSize = Math.max(10, currentLogoSize - 5);
+      logoSizeValue.textContent = `${currentLogoSize}%`;
+      
+      // Generate new preview with updated logo size
+      const newPdfResult = await generateProposalPDF({
+        ...proposalData, 
+        previewMode: true,
+        logoSize: currentLogoSize
+      }, languageSelector.value);
+      
+      if (newPdfResult && typeof newPdfResult !== 'boolean') {
+        iframe.src = (newPdfResult as jsPDF).output('datauristring');
+      }
+    };
+
+    increaseButton.onclick = async () => {
+      currentLogoSize = Math.min(100, currentLogoSize + 5);
+      logoSizeValue.textContent = `${currentLogoSize}%`;
+      
+      // Generate new preview with updated logo size
+      const newPdfResult = await generateProposalPDF({
+        ...proposalData, 
+        previewMode: true,
+        logoSize: currentLogoSize
+      }, languageSelector.value);
+      
+      if (newPdfResult && typeof newPdfResult !== 'boolean') {
+        iframe.src = (newPdfResult as jsPDF).output('datauristring');
+      }
+    };
     
     // Add event listener to language selector
     languageSelector.addEventListener("change", async () => {
       const newLanguage = languageSelector.value;
-      const newPdfResult = await generateProposalPDF({...proposalData, previewMode: true}, newLanguage);
+      const newPdfResult = await generateProposalPDF({
+        ...proposalData, 
+        previewMode: true, 
+        logoSize: currentLogoSize
+      }, newLanguage);
       
       if (newPdfResult && typeof newPdfResult !== 'boolean') {
         // newPdfResult is a jsPDF instance
