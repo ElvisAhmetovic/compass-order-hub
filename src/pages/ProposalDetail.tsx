@@ -31,6 +31,7 @@ import {
   downloadProposal, 
   loadInventoryItems,
   generateProposalPDF, 
+  previewProposalPDF,
   PROPOSAL_LANGUAGES 
 } from "@/utils/proposalUtils";
 import {
@@ -107,6 +108,9 @@ const ProposalDetail = () => {
   const [selectedLanguage, setSelectedLanguage] = useState("en");
   const [signatureUrl, setSignatureUrl] = useState<string | null>(null);
   const [signaturePadOpen, setSignaturePadOpen] = useState(false);
+  const [isLogoDialogOpen, setIsLogoDialogOpen] = useState(false);
+  const [companyLogo, setCompanyLogo] = useState<string>("https://placehold.co/200x60?text=Your+Logo");
+  const [logoSize, setLogoSize] = useState(33); // Default logo size percentage
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
 
@@ -130,6 +134,22 @@ const ProposalDetail = () => {
       signatureUrl: "",
     },
   });
+
+  // Handle logo upload or selection
+  const handleLogoChange = (logo: string) => {
+    setCompanyLogo(logo);
+    // You'd typically save this to user settings or company profile
+  };
+
+  // Decrease logo size
+  const decreaseLogoSize = () => {
+    setLogoSize(prev => Math.max(10, prev - 5));
+  };
+
+  // Increase logo size
+  const increaseLogoSize = () => {
+    setLogoSize(prev => Math.min(100, prev + 5));
+  };
 
   // Signature pad functions
   const initializeCanvas = () => {
@@ -425,7 +445,8 @@ const ProposalDetail = () => {
       vatAmount,
       netAmount,
       vatRate: 19, // Default VAT rate
-      signatureUrl
+      signatureUrl,
+      logo: companyLogo // Add company logo
     };
     
     const success = await generateProposalPDF(proposalData, selectedLanguage);
@@ -469,11 +490,28 @@ const ProposalDetail = () => {
     });
   };
 
-  const previewProposal = () => {
-    toast({
-      title: "Preview mode",
-      description: "Showing proposal preview (feature coming soon).",
-    });
+  const previewProposal = async () => {
+    const data = form.getValues();
+    const proposalData = {
+      ...data,
+      lineItems,
+      totalAmount,
+      vatAmount,
+      netAmount,
+      vatRate: 19,
+      signatureUrl,
+      logo: companyLogo // Add company logo
+    };
+    
+    const success = await previewProposalPDF(proposalData, selectedLanguage);
+    
+    if (!success) {
+      toast({
+        title: "Error",
+        description: "Failed to generate PDF preview. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const saveAsDraft = () => {
@@ -584,6 +622,57 @@ const ProposalDetail = () => {
               </div>
             </div>
 
+            {/* Logo Dialog */}
+            <Dialog open={isLogoDialogOpen} onOpenChange={setIsLogoDialogOpen}>
+              <DialogContent className="sm:max-w-[500px]">
+                <DialogHeader>
+                  <DialogTitle>Your company logo</DialogTitle>
+                  <DialogDescription>
+                    Select your company logo to display on proposals.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="border border-gray-200 rounded-md p-4 flex flex-col items-center">
+                  <div className="border border-dashed border-gray-300 rounded-md p-4 mb-4 w-full flex justify-center">
+                    <img 
+                      src={companyLogo} 
+                      alt="Company Logo" 
+                      className="max-h-32 object-contain" 
+                      style={{ maxWidth: '100%' }}
+                    />
+                  </div>
+                  <div className="flex items-center gap-2 mb-2 w-full">
+                    <span className="text-sm font-medium">Size</span>
+                    <Button variant="outline" size="sm" onClick={decreaseLogoSize} className="h-8 w-8 p-0">
+                      -
+                    </Button>
+                    <span className="text-sm w-10 text-center">{logoSize}%</span>
+                    <Button variant="outline" size="sm" onClick={increaseLogoSize} className="h-8 w-8 p-0">
+                      +
+                    </Button>
+                  </div>
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    className="w-full"
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files[0]) {
+                        const reader = new FileReader();
+                        reader.onload = (event) => {
+                          if (event.target && typeof event.target.result === 'string') {
+                            setCompanyLogo(event.target.result);
+                          }
+                        };
+                        reader.readAsDataURL(e.target.files[0]);
+                      }
+                    }}
+                  />
+                </div>
+                <DialogFooter>
+                  <Button onClick={() => setIsLogoDialogOpen(false)}>Save Logo</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
             {/* Signature Dialog */}
             <Dialog open={signaturePadOpen} onOpenChange={setSignaturePadOpen}>
               <DialogContent className="sm:max-w-[500px]">
@@ -616,8 +705,9 @@ const ProposalDetail = () => {
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 <Card>
                   <CardContent className="pt-6">
-                    {/* Language Selection */}
-                    <div className="mb-4 flex justify-end">
+                    {/* Language and Company Logo Selection */}
+                    <div className="mb-4 flex justify-between">
+                      {/* Language Selector */}
                       <div className="flex items-center gap-2">
                         <Languages className="h-4 w-4" />
                         <span className="text-sm">PDF Language:</span>
@@ -634,6 +724,20 @@ const ProposalDetail = () => {
                           </SelectContent>
                         </Select>
                       </div>
+                      
+                      {/* Company Logo Button */}
+                      <Button 
+                        variant="outline" 
+                        onClick={() => setIsLogoDialogOpen(true)} 
+                        className="flex items-center gap-2"
+                      >
+                        <img 
+                          src={companyLogo} 
+                          alt="Company Logo" 
+                          className="h-5 w-auto" 
+                        />
+                        <span>Edit Company Logo</span>
+                      </Button>
                     </div>
 
                     {/* Contact and proposal information section */}

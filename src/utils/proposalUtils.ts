@@ -238,8 +238,14 @@ export const generateProposalPDF = async (proposalData: any, language: string = 
     const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
     
     pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-    pdf.save(`proposal_${proposalData.number}.pdf`);
     
+    // For preview mode, return the PDF document
+    if (proposalData.previewMode) {
+      return pdf;
+    }
+    
+    // For download mode, save the PDF
+    pdf.save(`proposal_${proposalData.number}.pdf`);
     return true;
   } catch (error) {
     console.error("PDF generation error:", error);
@@ -247,6 +253,130 @@ export const generateProposalPDF = async (proposalData: any, language: string = 
   } finally {
     document.body.removeChild(tempDiv);
   }
+};
+
+// New function to display PDF preview in a modal or dialog
+export const previewProposalPDF = async (proposalData: any, language: string = "en") => {
+  // Generate PDF in preview mode
+  const pdf = await generateProposalPDF({...proposalData, previewMode: true}, language);
+  
+  if (!pdf) {
+    console.error("Failed to generate PDF preview");
+    return false;
+  }
+  
+  // Convert the PDF to a data URL
+  const dataUrl = pdf.output('datauristring');
+  
+  // Create a modal to display the PDF
+  const modalOverlay = document.createElement("div");
+  modalOverlay.style.position = "fixed";
+  modalOverlay.style.top = "0";
+  modalOverlay.style.left = "0";
+  modalOverlay.style.width = "100%";
+  modalOverlay.style.height = "100%";
+  modalOverlay.style.backgroundColor = "rgba(0, 0, 0, 0.75)";
+  modalOverlay.style.zIndex = "9999";
+  modalOverlay.style.display = "flex";
+  modalOverlay.style.flexDirection = "column";
+  modalOverlay.style.alignItems = "center";
+  modalOverlay.style.justifyContent = "center";
+  modalOverlay.id = "pdf-preview-overlay";
+  
+  // Create controls for the preview
+  const controls = document.createElement("div");
+  controls.style.display = "flex";
+  controls.style.justifyContent = "space-between";
+  controls.style.width = "80%";
+  controls.style.maxWidth = "1000px";
+  controls.style.padding = "10px";
+  controls.style.backgroundColor = "white";
+  controls.style.borderRadius = "8px 8px 0 0";
+  
+  // Create language selector
+  const languageSelector = document.createElement("select");
+  languageSelector.style.padding = "8px";
+  languageSelector.style.borderRadius = "4px";
+  languageSelector.style.marginRight = "8px";
+  
+  // Add language options
+  PROPOSAL_LANGUAGES.forEach(lang => {
+    const option = document.createElement("option");
+    option.value = lang.code;
+    option.text = lang.name;
+    option.selected = lang.code === language;
+    languageSelector.appendChild(option);
+  });
+  
+  // Create left side controls div
+  const leftControls = document.createElement("div");
+  leftControls.appendChild(document.createTextNode("Language: "));
+  leftControls.appendChild(languageSelector);
+  
+  // Create close button
+  const closeButton = document.createElement("button");
+  closeButton.textContent = "Close";
+  closeButton.style.padding = "8px 16px";
+  closeButton.style.backgroundColor = "#f44336";
+  closeButton.style.color = "white";
+  closeButton.style.border = "none";
+  closeButton.style.borderRadius = "4px";
+  closeButton.style.cursor = "pointer";
+  closeButton.onclick = () => {
+    document.body.removeChild(modalOverlay);
+  };
+  
+  // Create download button
+  const downloadButton = document.createElement("button");
+  downloadButton.textContent = "Download PDF";
+  downloadButton.style.padding = "8px 16px";
+  downloadButton.style.backgroundColor = "#4CAF50";
+  downloadButton.style.color = "white";
+  downloadButton.style.border = "none";
+  downloadButton.style.borderRadius = "4px";
+  downloadButton.style.cursor = "pointer";
+  downloadButton.style.marginRight = "8px";
+  downloadButton.onclick = async () => {
+    await generateProposalPDF(proposalData, languageSelector.value);
+  };
+  
+  // Create right side controls div
+  const rightControls = document.createElement("div");
+  rightControls.appendChild(downloadButton);
+  rightControls.appendChild(closeButton);
+  
+  // Add controls to the controls div
+  controls.appendChild(leftControls);
+  controls.appendChild(rightControls);
+  
+  // Create iframe to display the PDF
+  const iframe = document.createElement("iframe");
+  iframe.src = dataUrl;
+  iframe.style.width = "80%";
+  iframe.style.maxWidth = "1000px";
+  iframe.style.height = "80%";
+  iframe.style.border = "none";
+  iframe.style.backgroundColor = "white";
+  iframe.style.boxShadow = "0 0 10px rgba(0, 0, 0, 0.5)";
+  iframe.style.borderRadius = "0 0 8px 8px";
+  
+  // Add event listener to language selector
+  languageSelector.addEventListener("change", async () => {
+    const newLanguage = languageSelector.value;
+    const newPdf = await generateProposalPDF({...proposalData, previewMode: true}, newLanguage);
+    if (newPdf) {
+      iframe.src = newPdf.output('datauristring');
+    }
+  });
+  
+  // Add elements to the modal
+  modalOverlay.appendChild(controls);
+  modalOverlay.appendChild(iframe);
+  
+  // Add modal to the document
+  document.body.appendChild(modalOverlay);
+  
+  return true;
 };
 
 // Helper function to get company information - can be replaced with API call or settings
