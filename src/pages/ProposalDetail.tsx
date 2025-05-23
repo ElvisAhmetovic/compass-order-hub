@@ -1,5 +1,4 @@
-
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import Sidebar from "@/components/dashboard/Sidebar";
 import { useAuth } from "@/context/AuthContext";
@@ -14,9 +13,11 @@ import { Label } from "@/components/ui/label";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Save, Send, Download, Printer, Eye, Plus, Trash2 } from "lucide-react";
+import { Proposal } from "@/types";
+import { v4 as uuidv4 } from "uuid";
 
 const proposalSchema = z.object({
   customer: z.string().min(1, "Customer is required"),
@@ -52,6 +53,7 @@ const ProposalDetail = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { id } = useParams();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [lineItems, setLineItems] = useState<LineItem[]>([
     {
@@ -86,6 +88,35 @@ const ProposalDetail = () => {
     },
   });
 
+  // Load existing proposal if editing
+  useEffect(() => {
+    if (id && id !== "new") {
+      const savedProposals = localStorage.getItem("proposals");
+      if (savedProposals) {
+        const proposals: Proposal[] = JSON.parse(savedProposals);
+        const existingProposal = proposals.find(p => p.id === id);
+        if (existingProposal) {
+          form.reset({
+            customer: existingProposal.customer,
+            subject: existingProposal.subject || "Proposal",
+            number: existingProposal.number,
+            reference: existingProposal.reference,
+            date: new Date().toISOString().split('T')[0],
+            address: "123 Sample Street\nLLC & City",
+            country: "Deutschland",
+            content: "Thank you for your enquiry. We will be happy to provide you with the requested non-binding offer.",
+            amount: existingProposal.amount,
+            currency: "EUR",
+            deliveryTerms: "",
+            paymentTerms: "",
+            internalContact: "Thomas Klein",
+            vatRule: "umsatzsteuerpflichtig",
+          });
+        }
+      }
+    }
+  }, [id, form]);
+
   const addLineItem = () => {
     const newItem: LineItem = {
       id: Date.now().toString(),
@@ -118,6 +149,37 @@ const ProposalDetail = () => {
       }
       return item;
     }));
+  };
+
+  const saveProposal = (data: ProposalFormValues, status: string = "Draft") => {
+    const savedProposals = localStorage.getItem("proposals");
+    const proposals: Proposal[] = savedProposals ? JSON.parse(savedProposals) : [];
+    
+    const proposalData: Proposal = {
+      id: id === "new" ? uuidv4() : id!,
+      reference: data.reference || `REF-${new Date().getFullYear()}-${String(proposals.length + 1).padStart(3, '0')}`,
+      number: data.number,
+      customer: data.customer,
+      subject: data.subject,
+      amount: totalAmount.toFixed(2),
+      status: status,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    if (id === "new") {
+      proposals.push(proposalData);
+    } else {
+      const index = proposals.findIndex(p => p.id === id);
+      if (index >= 0) {
+        proposals[index] = { ...proposals[index], ...proposalData };
+      } else {
+        proposals.push(proposalData);
+      }
+    }
+
+    localStorage.setItem("proposals", JSON.stringify(proposals));
+    return proposalData;
   };
 
   const downloadProposal = () => {
@@ -165,19 +227,67 @@ Total Amount: €${proposalData.totalAmount.toFixed(2)}
     });
   };
 
+  const printProposal = () => {
+    window.print();
+    toast({
+      title: "Print dialog opened",
+      description: "Your proposal is ready to print.",
+    });
+  };
+
+  const previewProposal = () => {
+    toast({
+      title: "Preview mode",
+      description: "Showing proposal preview (feature coming soon).",
+    });
+  };
+
+  const saveAsDraft = () => {
+    const data = form.getValues();
+    saveProposal(data, "Draft");
+    toast({
+      title: "Proposal saved",
+      description: "Your proposal has been saved as a draft.",
+    });
+  };
+
+  const sendProposal = () => {
+    const data = form.getValues();
+    if (!data.customer || !data.subject) {
+      toast({
+        title: "Missing information",
+        description: "Please fill in customer and subject fields.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    saveProposal(data, "Sent");
+    toast({
+      title: "Proposal sent",
+      description: "Your proposal has been sent to the customer.",
+    });
+  };
+
   const onSubmit = (data: ProposalFormValues) => {
     setIsSubmitting(true);
     
-    console.log("Saving proposal:", data);
-    
-    setTimeout(() => {
-      setIsSubmitting(false);
+    try {
+      saveProposal(data, "Draft");
       toast({
         title: "Proposal saved",
-        description: "Your proposal has been saved as a draft.",
+        description: "Your proposal has been saved successfully.",
       });
       navigate("/proposals");
-    }, 1000);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to save proposal.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const totalAmount = lineItems.reduce((sum, item) => sum + item.amount, 0);
@@ -195,21 +305,31 @@ Total Amount: €${proposalData.totalAmount.toFixed(2)}
                 <Button variant="outline" size="icon" onClick={() => navigate("/proposals")}>
                   <ArrowLeft size={16} />
                 </Button>
-                <h1 className="text-2xl font-bold">Edit proposal</h1>
+                <h1 className="text-2xl font-bold">{id === "new" ? "Create proposal" : "Edit proposal"}</h1>
               </div>
               <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" onClick={previewProposal}>
                   <Eye className="h-4 w-4 mr-1" />
                   Preview
                 </Button>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" onClick={saveAsDraft}>
                   <Save className="h-4 w-4 mr-1" />
                   Save as draft
                 </Button>
-                <Button size="sm" className="bg-blue-600" onClick={downloadProposal}>
-                  <Download className="h-4 w-4 mr-1" />
-                  Send / Print / Download
-                </Button>
+                <div className="flex items-center">
+                  <Button size="sm" className="bg-blue-600 rounded-r-none" onClick={sendProposal}>
+                    <Send className="h-4 w-4 mr-1" />
+                    Send
+                  </Button>
+                  <div className="flex border-l border-white/20">
+                    <Button variant="outline" size="sm" className="rounded-none border-l-0" onClick={printProposal}>
+                      <Printer className="h-4 w-4" />
+                    </Button>
+                    <Button variant="outline" size="sm" className="rounded-l-none border-l-0" onClick={downloadProposal}>
+                      <Download className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
               </div>
             </div>
 

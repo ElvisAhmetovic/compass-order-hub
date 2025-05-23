@@ -21,55 +21,63 @@ const Proposals = () => {
   const [loading, setLoading] = useState(true);
   const [filterText, setFilterText] = useState("");
   
-  useEffect(() => {
-    // In a real app, we'd fetch from API/database
-    // For now, let's use mock data stored in localStorage
-    const loadProposals = () => {
-      try {
-        const savedProposals = localStorage.getItem("proposals");
-        if (savedProposals) {
-          setProposals(JSON.parse(savedProposals));
-        } else {
-          // Set some mock data if nothing exists
-          const mockProposals: Proposal[] = [
-            {
-              id: uuidv4(),
-              reference: "REF-2025-001",
-              number: "AN-9984",
-              customer: "Acme Corporation",
-              subject: "Website Redesign",
-              amount: "2500.00",
-              status: "Draft",
-              created_at: new Date().toISOString(),
-            },
-            {
-              id: uuidv4(),
-              reference: "REF-2025-002",
-              number: "AN-9985",
-              customer: "TechStart Inc.",
-              subject: "Mobile App Development",
-              amount: "5000.00",
-              status: "Sent",
-              created_at: new Date().toISOString(),
-            }
-          ];
-          setProposals(mockProposals);
-          localStorage.setItem("proposals", JSON.stringify(mockProposals));
-        }
-      } catch (error) {
-        console.error("Error loading proposals:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load proposals.",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
+  const loadProposals = () => {
+    try {
+      const savedProposals = localStorage.getItem("proposals");
+      if (savedProposals) {
+        setProposals(JSON.parse(savedProposals));
+      } else {
+        // Set some mock data if nothing exists
+        const mockProposals: Proposal[] = [
+          {
+            id: uuidv4(),
+            reference: "REF-2025-001",
+            number: "AN-9984",
+            customer: "Acme Corporation",
+            subject: "Website Redesign",
+            amount: "2500.00",
+            status: "Draft",
+            created_at: new Date().toISOString(),
+          },
+          {
+            id: uuidv4(),
+            reference: "REF-2025-002",
+            number: "AN-9985",
+            customer: "TechStart Inc.",
+            subject: "Mobile App Development",
+            amount: "5000.00",
+            status: "Sent",
+            created_at: new Date().toISOString(),
+          }
+        ];
+        setProposals(mockProposals);
+        localStorage.setItem("proposals", JSON.stringify(mockProposals));
       }
-    };
+    } catch (error) {
+      console.error("Error loading proposals:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load proposals.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     loadProposals();
   }, [toast]);
+
+  // Reload proposals when returning to this page
+  useEffect(() => {
+    const handleFocus = () => {
+      loadProposals();
+    };
+    
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, []);
 
   const handleDeleteProposal = (id: string) => {
     const updatedProposals = proposals.filter(p => p.id !== id);
@@ -80,6 +88,10 @@ const Proposals = () => {
       title: "Proposal deleted",
       description: "Proposal has been deleted successfully.",
     });
+  };
+
+  const handleCreateProposal = () => {
+    navigate("/proposals/new");
   };
 
   const filteredProposals = proposals.filter(proposal => 
@@ -96,7 +108,7 @@ const Proposals = () => {
           <div className="container mx-auto py-8">
             <div className="flex justify-between items-center mb-6">
               <h1 className="text-2xl font-bold">Proposals</h1>
-              <Button onClick={() => navigate("/proposals/new")} className="flex items-center gap-2">
+              <Button onClick={handleCreateProposal} className="flex items-center gap-2">
                 <PlusCircle size={16} />
                 Create Proposal
               </Button>
