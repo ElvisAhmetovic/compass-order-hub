@@ -28,6 +28,24 @@ import {
   CommandList
 } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { 
   downloadProposal, 
   loadInventoryItems,
@@ -657,6 +675,59 @@ const ProposalDetail = () => {
     e.stopPropagation();
     setIsLogoDialogOpen(true);
     console.log("Opening logo dialog");
+  };
+
+  // Function to handle downloading proposal as text
+  const handleDownloadProposal = () => {
+    const data = form.getValues();
+    const proposalData = {
+      ...data,
+      lineItems,
+      totalAmount,
+      vatAmount,
+      netAmount
+    };
+    
+    downloadProposal(proposalData);
+    
+    toast({
+      title: "Proposal downloaded",
+      description: "Your proposal has been downloaded as a text file.",
+    });
+  };
+
+  // Function to handle printing the proposal
+  const printProposal = () => {
+    const data = form.getValues();
+    const proposalData = {
+      ...data,
+      lineItems,
+      totalAmount,
+      vatAmount,
+      netAmount,
+      vatRate: 19,
+      signatureUrl,
+      logo: companyLogo,
+      logoSize: logoSize
+    };
+    
+    // Generate PDF and then print it
+    const doc = new jsPDF();
+    
+    // Add content to PDF
+    doc.text("Proposal", 20, 20);
+    doc.text(`Customer: ${proposalData.customer}`, 20, 30);
+    doc.text(`Subject: ${proposalData.subject}`, 20, 40);
+    doc.text(`Total Amount: ${currencySymbol}${totalAmount.toFixed(2)}`, 20, 50);
+    
+    // Print the document
+    doc.autoPrint();
+    doc.output('dataurlnewwindow');
+    
+    toast({
+      title: "Printing proposal",
+      description: "Your proposal has been sent to your printer.",
+    });
   };
 
   return (
