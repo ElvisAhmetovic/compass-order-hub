@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Layout from "@/components/layout/Layout";
 import Sidebar from "@/components/dashboard/Sidebar";
 import { useAuth } from "@/context/AuthContext";
@@ -19,6 +19,7 @@ import { ArrowLeft, Save, Send, Download, Printer, Eye, Plus, Trash2, FileText, 
 import { Proposal, InventoryItem } from "@/types";
 import { v4 as uuidv4 } from "uuid";
 import { jsPDF } from "jspdf";
+import html2canvas from "html2canvas";
 import { 
   Command,
   CommandEmpty,
@@ -120,6 +121,13 @@ const ProposalDetail = () => {
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+  
+  // PDF preview state variables
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [previewLogoSize, setPreviewLogoSize] = useState(33);
+  const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
+  const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
+  const previewContentRef = useRef<HTMLDivElement>(null);
 
   const form = useForm<ProposalFormValues>({
     resolver: zodResolver(proposalSchema),
@@ -141,6 +149,155 @@ const ProposalDetail = () => {
       signatureUrl: "",
     },
   });
+
+  // When preview is opened, initialize logo size from current setting
+  useEffect(() => {
+    if (isPreviewOpen) {
+      setPreviewLogoSize(logoSize);
+      generatePreview();
+    }
+  }, [isPreviewOpen]);
+
+  // Dynamic preview generator
+  const generatePreview = async () => {
+    setIsGeneratingPreview(true);
+    
+    const data = form.getValues();
+    const proposalData = {
+      ...data,
+      lineItems,
+      totalAmount,
+      vatAmount,
+      netAmount,
+      vatRate: 19,
+      signatureUrl,
+      logo: companyLogo,
+      logoSize: previewLogoSize // Use preview-specific logo size
+    };
+    
+    try {
+      // Create a temporary container for the PDF preview
+      const tempContainer = document.createElement('div');
+      tempContainer.style.position = 'absolute';
+      tempContainer.style.left = '-9999px';
+      tempContainer.style.width = '794px'; // A4 width at 96 DPI
+      document.body.appendChild(tempContainer);
+      
+      // Generate PDF content
+      const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+      
+      // Add logo with dynamic size
+      if (companyLogo) {
+        doc.addImage(
+          companyLogo, 
+          'JPEG', 
+          20, 
+          20, 
+          (previewLogoSize / 100) * 80, // Scale logo based on percentage
+          30
+        );
+      }
+      
+      // Add proposal content
+      doc.setFontSize(22);
+      doc.text("PROPOSAL", 20, 60);
+      
+      doc.setFontSize(12);
+      doc.text(`${proposalData.customer}`, 20, 80);
+      doc.text(`${proposalData.address}`, 20, 90);
+      
+      doc.text(`Proposal No: ${proposalData.number}`, 130, 80);
+      doc.text(`Date: ${proposalData.date}`, 130, 90);
+      
+      doc.text(`Subject: ${proposalData.subject}`, 20, 110);
+      doc.text(`${proposalData.content}`, 20, 120);
+      
+      // Add line items table
+      let yPos = 150;
+      doc.line(20, yPos, 190, yPos);
+      yPos += 10;
+      
+      doc.text("Description", 20, yPos);
+      doc.text("Qty", 120, yPos);
+      doc.text("Price", 140, yPos);
+      doc.text("Amount", 170, yPos);
+      
+      yPos += 5;
+      doc.line(20, yPos, 190, yPos);
+      yPos += 10;
+      
+      lineItems.forEach(item => {
+        doc.text(item.description.substring(0, 40), 20, yPos);
+        doc.text(item.quantity.toString(), 120, yPos);
+        doc.text(`${currencySymbol}${item.price.toFixed(2)}`, 140, yPos);
+        doc.text(`${currencySymbol}${item.amount.toFixed(2)}`, 170, yPos);
+        yPos += 10;
+      });
+      
+      yPos += 5;
+      doc.line(20, yPos, 190, yPos);
+      yPos += 10;
+      
+      // Add totals
+      doc.text("Total:", 140, yPos);
+      doc.text(`${currencySymbol}${(isVatEnabled ? totalAmount : netAmount).toFixed(2)}`, 170, yPos);
+      
+      // Add signature if available
+      if (signatureUrl) {
+        yPos += 30;
+        doc.text("Signature:", 20, yPos);
+        doc.addImage(signatureUrl, 'PNG', 20, yPos + 5, 50, 20);
+      }
+      
+      // Convert to data URL
+      const pdfOutput = doc.output('datauristring');
+      setPdfPreviewUrl(pdfOutput);
+      
+      // Clean up
+      document.body.removeChild(tempContainer);
+    } catch (error) {
+      console.error("Error generating preview:", error);
+      toast({
+        title: "Preview Error",
+        description: "Could not generate PDF preview.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingPreview(false);
+    }
+  };
+
+  // Preview logo size controls
+  const decreasePreviewLogoSize = () => {
+    const newSize = Math.max(10, previewLogoSize - 5);
+    setPreviewLogoSize(newSize);
+    generatePreview();
+  };
+
+  const increasePreviewLogoSize = () => {
+    const newSize = Math.min(100, previewLogoSize + 5);
+    setPreviewLogoSize(newSize);
+    generatePreview();
+  };
+
+  // Apply preview logo size to actual logo size
+  const applyPreviewLogoSize = () => {
+    setLogoSize(previewLogoSize);
+    
+    // Save the updated size to company info
+    const companyInfo = getCompanyInfo();
+    companyInfo.logoSize = previewLogoSize;
+    saveCompanyInfo(companyInfo);
+    
+    toast({
+      title: "Logo size updated",
+      description: `Logo size updated to ${previewLogoSize}%`,
+    });
+  };
 
   // Load company logo and size from saved company info
   useEffect(() => {
@@ -554,61 +711,9 @@ const ProposalDetail = () => {
     return proposalData;
   };
 
-  // Modify the handleGeneratePDF function to pass the logoSize parameter
-  const handleGeneratePDF = async () => {
-    const data = form.getValues();
-    const proposalData = {
-      ...data,
-      lineItems,
-      totalAmount,
-      vatAmount,
-      netAmount,
-      vatRate: 19, // Default VAT rate
-      signatureUrl,
-      logo: companyLogo, // Add company logo
-      logoSize: logoSize // Pass the logo size to the PDF generator
-    };
-    
-    const success = await generateProposalPDF(proposalData, selectedLanguage);
-    
-    if (success) {
-      toast({
-        title: "PDF Generated",
-        description: "Your proposal has been generated as a PDF.",
-      });
-    } else {
-      toast({
-        title: "Error",
-        description: "Failed to generate PDF. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  // Modify the previewProposal function to pass the logoSize parameter
-  const previewProposal = async () => {
-    const data = form.getValues();
-    const proposalData = {
-      ...data,
-      lineItems,
-      totalAmount,
-      vatAmount,
-      netAmount,
-      vatRate: 19,
-      signatureUrl,
-      logo: companyLogo, // Add company logo
-      logoSize: logoSize // Pass the logo size to the PDF previewer
-    };
-    
-    const success = await previewProposalPDF(proposalData, selectedLanguage);
-    
-    if (!success) {
-      toast({
-        title: "Error",
-        description: "Failed to generate PDF preview. Please try again.",
-        variant: "destructive",
-      });
-    }
+  // Modified previewProposal to open our new preview dialog
+  const previewProposal = () => {
+    setIsPreviewOpen(true);
   };
 
   const saveAsDraft = () => {
@@ -785,6 +890,93 @@ const ProposalDetail = () => {
                 </div>
               </div>
             </div>
+
+            {/* PDF Preview Dialog */}
+            <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
+              <DialogContent className="sm:max-w-4xl">
+                <DialogHeader>
+                  <DialogTitle>Proposal Preview</DialogTitle>
+                  <DialogDescription>
+                    Preview how your proposal will look as a PDF.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="flex flex-col h-[600px]">
+                  {/* Controls */}
+                  <div className="flex justify-between items-center p-2 bg-gray-50 border-b">
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm">Language:</span>
+                        <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
+                          <SelectTrigger className="w-[120px]">
+                            <SelectValue placeholder="Select language" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {PROPOSAL_LANGUAGES.map((lang) => (
+                              <SelectItem key={lang.code} value={lang.code}>
+                                {lang.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm">Logo Size:</span>
+                        <Button variant="outline" size="sm" onClick={decreasePreviewLogoSize} className="h-8 w-8 p-0">
+                          -
+                        </Button>
+                        <span className="text-sm w-10 text-center">{previewLogoSize}%</span>
+                        <Button variant="outline" size="sm" onClick={increasePreviewLogoSize} className="h-8 w-8 p-0">
+                          +
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        onClick={applyPreviewLogoSize}
+                        className="text-xs"
+                      >
+                        Apply Size
+                      </Button>
+                      <Button 
+                        onClick={downloadPreviewPDF}
+                        className="bg-green-600"
+                      >
+                        <Download className="h-4 w-4 mr-1" />
+                        Download PDF
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  {/* PDF Preview */}
+                  <div 
+                    className="flex-1 overflow-auto bg-gray-200 flex justify-center p-4"
+                    ref={previewContentRef}
+                  >
+                    {isGeneratingPreview ? (
+                      <div className="flex items-center justify-center h-full">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-700"></div>
+                      </div>
+                    ) : pdfPreviewUrl ? (
+                      <iframe 
+                        src={pdfPreviewUrl}
+                        className="w-full h-full bg-white shadow-lg"
+                        title="PDF Preview"
+                      />
+                    ) : (
+                      <div className="flex items-center justify-center h-full">
+                        <p>No preview available. Click "Apply Size" to refresh.</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setIsPreviewOpen(false)}>Close</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
 
             {/* Logo Dialog */}
             <Dialog open={isLogoDialogOpen} onOpenChange={setIsLogoDialogOpen}>
