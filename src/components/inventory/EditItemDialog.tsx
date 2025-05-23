@@ -11,10 +11,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTabs,
-  DialogTabsList,
-  DialogTabsTrigger,
-  DialogTabsContent,
 } from "@/components/ui/dialog";
 import {
   Select,
