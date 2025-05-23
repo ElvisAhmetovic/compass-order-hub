@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import Sidebar from "@/components/dashboard/Sidebar";
@@ -7,10 +8,26 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { PlusCircle, FileEdit, Trash2, Download, File } from "lucide-react";
+import { PlusCircle, FileEdit, Trash2, Download, File, CheckCircle2, XCircle, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { v4 as uuidv4 } from "uuid";
 import { useNavigate } from "react-router-dom";
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu";
+
+// Define the available proposal statuses
+export const PROPOSAL_STATUSES = [
+  "Draft",
+  "Sent",
+  "Accepted",
+  "Rejected",
+  "Expired",
+  "Revised"
+];
 
 const Proposals = () => {
   const { user } = useAuth();
@@ -115,6 +132,27 @@ const Proposals = () => {
     navigate("/proposals/new");
   };
 
+  const handleUpdateStatus = (id: string, newStatus: string) => {
+    const updatedProposals = proposals.map(proposal => {
+      if (proposal.id === id) {
+        return {
+          ...proposal,
+          status: newStatus,
+          updated_at: new Date().toISOString()
+        };
+      }
+      return proposal;
+    });
+    
+    setProposals(updatedProposals);
+    localStorage.setItem("proposals", JSON.stringify(updatedProposals));
+    
+    toast({
+      title: "Status updated",
+      description: `Proposal status changed to ${newStatus}`,
+    });
+  };
+
   const handleDownloadProposal = (proposal: Proposal) => {
     // Create a download of the proposal as a text file
     const proposalText = `
@@ -141,6 +179,38 @@ Date: ${new Date(proposal.created_at).toLocaleDateString()}
       title: "Proposal downloaded",
       description: `Proposal ${proposal.number} has been downloaded.`,
     });
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case "Accepted":
+        return <CheckCircle2 size={14} className="mr-1.5 text-green-600" />;
+      case "Rejected":
+        return <XCircle size={14} className="mr-1.5 text-red-600" />;
+      case "Sent":
+        return <Send size={14} className="mr-1.5 text-blue-600" />;
+      default:
+        return null;
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "Draft":
+        return "bg-yellow-100 text-yellow-800";
+      case "Sent":
+        return "bg-blue-100 text-blue-800";
+      case "Accepted":
+        return "bg-green-100 text-green-800";
+      case "Rejected":
+        return "bg-red-100 text-red-800";
+      case "Expired":
+        return "bg-gray-100 text-gray-800";
+      case "Revised":
+        return "bg-purple-100 text-purple-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
   };
 
   const filteredProposals = proposals.filter(proposal => 
@@ -222,14 +292,26 @@ Date: ${new Date(proposal.created_at).toLocaleDateString()}
                           <TableCell>{proposal.reference}</TableCell>
                           <TableCell>€{parseFloat(proposal.amount).toFixed(2)}</TableCell>
                           <TableCell>
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              proposal.status === "Draft" ? "bg-yellow-100 text-yellow-800" :
-                              proposal.status === "Sent" ? "bg-blue-100 text-blue-800" :
-                              proposal.status === "Accepted" ? "bg-green-100 text-green-800" :
-                              "bg-gray-100 text-gray-800"
-                            }`}>
-                              {proposal.status}
-                            </span>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium cursor-pointer ${
+                                  getStatusColor(proposal.status)}`}>
+                                  {getStatusIcon(proposal.status)} {proposal.status}
+                                </span>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="start">
+                                {PROPOSAL_STATUSES.map((status) => (
+                                  <DropdownMenuItem 
+                                    key={status} 
+                                    onClick={() => handleUpdateStatus(proposal.id, status)}
+                                    className="cursor-pointer"
+                                  >
+                                    <span className={`h-2 w-2 rounded-full mr-2 ${getStatusColor(status)}`} />
+                                    {status}
+                                  </DropdownMenuItem>
+                                ))}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                           </TableCell>
                           <TableCell>
                             <div className="flex space-x-2">
