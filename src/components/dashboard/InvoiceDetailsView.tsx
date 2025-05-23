@@ -12,8 +12,15 @@ interface InvoiceDetailsViewProps {
 
 const InvoiceDetailsView = ({ order }: InvoiceDetailsViewProps) => {
   // Mock invoice details if not available
-  const invoiceDetails = order.invoice_details || {
+  const invoiceDetails: InvoiceDetails = order.invoice_details || {
+    id: `inv_${order.id.substring(0, 6)}`,
+    order_id: order.id,
     invoice_number: `INV-${order.id.substring(0, 6)}`,
+    amount: order.price || 0,
+    issued_date: order.updated_at || order.created_at,
+    due_date: new Date(new Date(order.created_at).getTime() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+    status: "unpaid",
+    // Add extended fields for the view
     transaction_id: `${Math.floor(Math.random() * 900000000) + 100000000}`,
     transaction_date: order.updated_at,
     account_number: `SI${Math.floor(Math.random() * 900000000) + 100000000}`,

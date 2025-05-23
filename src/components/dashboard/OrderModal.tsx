@@ -35,7 +35,8 @@ const mockComments: OrderComment[] = [
     id: "c1",
     order_id: "1",
     user_id: "user1",
-    comment: "Initial contact made with the client. They're interested in starting next week.",
+    user_name: "Admin User",
+    content: "Initial contact made with the client. They're interested in starting next week.",
     created_at: "2025-05-15T11:30:00Z",
     user: {
       full_name: "Admin User",
@@ -46,7 +47,8 @@ const mockComments: OrderComment[] = [
     id: "c2",
     order_id: "1",
     user_id: "user2",
-    comment: "Client requested a detailed quote breakdown before proceeding.",
+    user_name: "Sales Agent",
+    content: "Client requested a detailed quote breakdown before proceeding.",
     created_at: "2025-05-16T09:45:00Z",
     user: {
       full_name: "Sales Agent",
@@ -196,6 +198,10 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
         // Add edit to history
         const newStatusHistoryItem: OrderStatusHistory = {
           id: `sh${Date.now()}`,
+          orderId: currentOrder.id,
+          userId: user?.id || "unknown", 
+          userName: user?.full_name || user?.email || "Unknown User",
+          createdAt: new Date().toISOString(),
           order_id: currentOrder.id,
           status: currentOrder.status,
           changed_by: user?.full_name || user?.email || "Unknown User",
@@ -242,9 +248,10 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
     setTimeout(() => {
       const newCommentObj: OrderComment = {
         id: `c${Date.now()}`,
-        order_id: order.id,
-        user_id: user?.id || "unknown", // Use actual user ID
-        comment: newComment,
+        order_id: currentOrder.id,
+        user_id: user?.id || "unknown",
+        user_name: user?.full_name || "Anonymous User",
+        content: newComment,
         created_at: new Date().toISOString(),
         user: {
           full_name: user?.full_name || "Anonymous User",
@@ -271,9 +278,13 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
     setTimeout(() => {
       const newStatusHistoryItem: OrderStatusHistory = {
         id: `sh${Date.now()}`,
+        orderId: currentOrder.id,
+        userId: user?.id || "unknown", 
+        userName: user?.full_name || user?.email || "Unknown User",
+        createdAt: new Date().toISOString(),
         order_id: currentOrder.id,
-        status: newStatus,
-        changed_by: user?.full_name || user?.email || "Unknown User", // Use actual user name or email
+        status: newStatus as OrderStatus,
+        changed_by: user?.full_name || user?.email || "Unknown User",
         changed_at: new Date().toISOString(),
         notes: statusNote
       };
@@ -294,7 +305,11 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
       // Update orders in localStorage for persistence
       const ordersInStorage = JSON.parse(localStorage.getItem("orders") || "[]");
       const updatedOrders = ordersInStorage.map((o: Order) => 
-        o.id === currentOrder.id ? { ...o, status: newStatus, updated_at: new Date().toISOString() } : o
+        o.id === currentOrder.id ? { 
+          ...o, 
+          status: newStatus, 
+          updated_at: new Date().toISOString() 
+        } : o
       );
       localStorage.setItem("orders", JSON.stringify(updatedOrders));
       
@@ -304,7 +319,11 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
         const mockOrdersInWindow = (window as any).mockOrders;
         if (mockOrdersInWindow) {
           const updatedMockOrders = mockOrdersInWindow.map((o: Order) => 
-            o.id === currentOrder.id ? { ...o, status: newStatus, updated_at: new Date().toISOString() } : o
+            o.id === currentOrder.id ? { 
+              ...o, 
+              status: newStatus, 
+              updated_at: new Date().toISOString() 
+            } : o
           );
           (window as any).mockOrders = updatedMockOrders;
         }
@@ -338,13 +357,22 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
       // Update orders in localStorage
       const ordersInStorage = JSON.parse(localStorage.getItem("orders") || "[]");
       const updatedOrders = ordersInStorage.map((o: Order) => 
-        o.id === currentOrder.id ? { ...o, assigned_to: "", assigned_to_name: "", updated_at: new Date().toISOString() } : o
+        o.id === currentOrder.id ? { 
+          ...o, 
+          assigned_to: "", 
+          assigned_to_name: "", 
+          updated_at: new Date().toISOString() 
+        } : o
       );
       localStorage.setItem("orders", JSON.stringify(updatedOrders));
       
       // Add unassignment to history
       const newStatusHistoryItem: OrderStatusHistory = {
         id: `sh${Date.now()}`,
+        orderId: currentOrder.id,
+        userId: user?.id || "unknown", 
+        userName: user?.full_name || user?.email || "Unknown User",
+        createdAt: new Date().toISOString(),
         order_id: currentOrder.id,
         status: currentOrder.status,
         changed_by: user?.full_name || user?.email || "Unknown User",
@@ -403,6 +431,10 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
       // Add assignment change to history
       const newStatusHistoryItem: OrderStatusHistory = {
         id: `sh${Date.now()}`,
+        orderId: currentOrder.id,
+        userId: user?.id || "unknown", 
+        userName: user?.full_name || user?.email || "Unknown User",
+        createdAt: new Date().toISOString(),
         order_id: currentOrder.id,
         status: currentOrder.status,
         changed_by: user?.full_name || user?.email || "Unknown User",

@@ -150,17 +150,20 @@ export interface OrderComment {
   content: string;
   created_at: string;
   comment?: string; // Alias for content in some components
-  user?: string; // Alias for user_name in some components
+  user: string | { // Allow both string and object formats
+    full_name?: string;
+    email?: string;
+  };
 }
 
 // Order status history interface
 export interface OrderStatusHistory {
   id: string;
-  orderId: string;
+  orderId: string; // Required in OrderStatusHistory interface
+  userId: string; // Required in OrderStatusHistory interface
+  userName: string; // Required in OrderStatusHistory interface
+  createdAt: string; // Required in OrderStatusHistory interface
   status: OrderStatus;
-  userId: string;
-  userName: string;
-  createdAt: string;
   order_id?: string; // Alias for orderId in some components
   actor_name?: string;
   actor_id?: string;
@@ -179,4 +182,13 @@ export interface InvoiceDetails {
   issued_date: string;
   due_date: string;
   status: "paid" | "unpaid" | "overdue";
+  // Extended fields needed for InvoiceDetailsView component
+  transaction_id?: string;
+  transaction_date?: string;
+  account_number?: string;
+  reference_number?: string;
+  bank_details?: string;
+  posting_date?: string;
+  value_date?: string;
+  elba_reference?: string;
 }

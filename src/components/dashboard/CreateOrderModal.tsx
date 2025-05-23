@@ -41,7 +41,7 @@ const formSchema = z.object({
   companyLink: z.string().optional(),
   price: z.coerce.number().min(0, "Price must be a positive number"),
   currency: z.string().default("EUR"),
-  priority: z.string().default("Medium"),
+  priority: z.string().default("medium"),
   description: z.string().min(10, "Minimum 10 characters required"),
 });
 
@@ -65,7 +65,7 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
       companyLink: "",
       price: 0,
       currency: "EUR",
-      priority: "Medium",
+      priority: "medium",
       description: "",
     },
   });
@@ -81,6 +81,8 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
       contact_name: values.companyName, // Using company name as contact name for simplicity
       contact_email: values.contactEmail,
       contact_phone: values.contactPhone,
+      company_address: values.companyAddress,
+      company_link: values.companyLink,
       description: values.description,
       price: values.price,
       status: "Created",
@@ -109,14 +111,15 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
     } catch (error) {
       console.error("Error saving order:", error);
       toast({
+        variant: "destructive",
         title: "Error creating order",
         description: "An error occurred while saving the order.",
-        variant: "destructive",
       });
     }
   };
 
-  const priorities: OrderPriority[] = ["Low", "Medium", "High", "Urgent"];
+  // Updated priorities to use lowercase values to match the OrderPriority type
+  const priorities: OrderPriority[] = ["low", "medium", "high", "urgent"];
 
   return (
     <Dialog open={open} onOpenChange={onClose}>

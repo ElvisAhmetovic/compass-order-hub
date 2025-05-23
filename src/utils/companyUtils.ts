@@ -19,7 +19,7 @@ export const groupOrdersByCompany = (orders: Order[]): {[key: string]: Company} 
         name: order.company_name,
         email: order.contact_email,
         phone: order.contact_phone || "Not provided",
-        address: order.contact_address || "Not provided",
+        address: order.company_address || "Not provided",
         mapLink: '',
         orders: []
       };
