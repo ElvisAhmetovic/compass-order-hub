@@ -15,7 +15,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useNavigate, useParams } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Save, Send, Download, Printer, Eye, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Save, Send, Download, Printer, Eye, Plus, Trash2, FileText, Languages } from "lucide-react";
 import { Proposal, InventoryItem } from "@/types";
 import { v4 as uuidv4 } from "uuid";
 import { 
@@ -27,7 +27,30 @@ import {
   CommandList
 } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { downloadProposal, loadInventoryItems } from "@/utils/proposalUtils";
+import { 
+  downloadProposal, 
+  loadInventoryItems,
+  generateProposalPDF, 
+  PROPOSAL_LANGUAGES 
+} from "@/utils/proposalUtils";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const proposalSchema = z.object({
   customer: z.string().min(1, "Customer is required"),
@@ -44,6 +67,7 @@ const proposalSchema = z.object({
   paymentTerms: z.string().optional(),
   internalContact: z.string().default("Thomas Klein"),
   vatRule: z.string().default("umsatzsteuerpflichtig"),
+  signatureUrl: z.string().optional(),
 });
 
 type ProposalFormValues = z.infer<typeof proposalSchema>;
@@ -80,6 +104,11 @@ const ProposalDetail = () => {
   ]);
   const [popoverOpen, setPopoverOpen] = useState<{[key: string]: boolean}>({});
   const [searchQuery, setSearchQuery] = useState<{[key: string]: string}>({});
+  const [selectedLanguage, setSelectedLanguage] = useState("en");
+  const [signatureUrl, setSignatureUrl] = useState<string | null>(null);
+  const [signaturePadOpen, setSignaturePadOpen] = useState(false);
+  const canvasRef = React.useRef<HTMLCanvasElement>(null);
+  const [isDrawing, setIsDrawing] = useState(false);
 
   const form = useForm<ProposalFormValues>({
     resolver: zodResolver(proposalSchema),
@@ -98,8 +127,95 @@ const ProposalDetail = () => {
       paymentTerms: "",
       internalContact: "Thomas Klein",
       vatRule: "umsatzsteuerpflichtig",
+      signatureUrl: "",
     },
   });
+
+  // Signature pad functions
+  const initializeCanvas = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = '#000';
+    
+    // Clear canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  };
+
+  const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    setIsDrawing(true);
+  };
+
+  const draw = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!isDrawing) return;
+    
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    ctx.lineTo(x, y);
+    ctx.stroke();
+  };
+
+  const stopDrawing = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    ctx.closePath();
+    setIsDrawing(false);
+  };
+
+  const saveSignature = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const signatureData = canvas.toDataURL('image/png');
+    setSignatureUrl(signatureData);
+    form.setValue('signatureUrl', signatureData);
+    setSignaturePadOpen(false);
+    
+    toast({
+      title: "Signature saved",
+      description: "Your signature has been added to the proposal.",
+    });
+  };
+
+  const clearSignature = () => {
+    initializeCanvas();
+  };
+  
+  // Initialize canvas when signature dialog opens
+  useEffect(() => {
+    if (signaturePadOpen) {
+      initializeCanvas();
+    }
+  }, [signaturePadOpen]);
 
   // Load inventory items
   useEffect(() => {
@@ -126,16 +242,32 @@ const ProposalDetail = () => {
             number: existingProposal.number,
             reference: existingProposal.reference,
             date: new Date().toISOString().split('T')[0],
-            address: "123 Sample Street\nLLC & City",
-            country: "Deutschland",
-            content: "Thank you for your enquiry. We will be happy to provide you with the requested non-binding offer.",
+            address: existingProposal.address || "123 Sample Street\nLLC & City",
+            country: existingProposal.country || "Deutschland",
+            content: existingProposal.content || "Thank you for your enquiry. We will be happy to provide you with the requested non-binding offer.",
             amount: existingProposal.amount,
             currency: "EUR",
             deliveryTerms: "",
             paymentTerms: "",
             internalContact: "Thomas Klein",
             vatRule: "umsatzsteuerpflichtig",
+            signatureUrl: "",
           });
+          
+          // If proposal has line items, load them
+          if (existingProposal.lineItems && existingProposal.lineItems.length > 0) {
+            const formattedLineItems = existingProposal.lineItems.map(item => ({
+              id: item.id,
+              description: item.name,
+              quantity: item.quantity,
+              unit: item.unit || "pcs",
+              price: item.unit_price,
+              vat: 19,
+              discount: 0,
+              amount: item.total_price
+            }));
+            setLineItems(formattedLineItems);
+          }
         }
       }
     }
@@ -238,6 +370,20 @@ const ProposalDetail = () => {
     const savedProposals = localStorage.getItem("proposals");
     const proposals: Proposal[] = savedProposals ? JSON.parse(savedProposals) : [];
     
+    // Convert line items to proposal line items
+    const proposalLineItems = lineItems.map(item => ({
+      id: item.id,
+      proposal_id: id === "new" ? uuidv4() : id!,
+      item_id: item.id,
+      name: item.description,
+      description: item.description,
+      quantity: item.quantity,
+      unit_price: item.price,
+      total_price: item.amount,
+      unit: item.unit,
+      created_at: new Date().toISOString()
+    }));
+    
     const proposalData: Proposal = {
       id: id === "new" ? uuidv4() : id!,
       reference: data.reference || `REF-${new Date().getFullYear()}-${String(proposals.length + 1).padStart(3, '0')}`,
@@ -248,6 +394,11 @@ const ProposalDetail = () => {
       status: status,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
+      lineItems: proposalLineItems,
+      address: data.address,
+      country: data.country,
+      content: data.content,
+      totalAmount: totalAmount
     };
 
     if (id === "new") {
@@ -263,6 +414,34 @@ const ProposalDetail = () => {
 
     localStorage.setItem("proposals", JSON.stringify(proposals));
     return proposalData;
+  };
+
+  const handleGeneratePDF = async () => {
+    const data = form.getValues();
+    const proposalData = {
+      ...data,
+      lineItems,
+      totalAmount,
+      vatAmount,
+      netAmount,
+      vatRate: 19, // Default VAT rate
+      signatureUrl
+    };
+    
+    const success = await generateProposalPDF(proposalData, selectedLanguage);
+    
+    if (success) {
+      toast({
+        title: "PDF Generated",
+        description: "Your proposal has been generated as a PDF.",
+      });
+    } else {
+      toast({
+        title: "Error",
+        description: "Failed to generate PDF. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleDownloadProposal = () => {
@@ -376,22 +555,87 @@ const ProposalDetail = () => {
                     <Send className="h-4 w-4 mr-1" />
                     Send
                   </Button>
-                  <div className="flex border-l border-white/20">
-                    <Button variant="outline" size="sm" className="rounded-none border-l-0" onClick={printProposal}>
-                      <Printer className="h-4 w-4" />
-                    </Button>
-                    <Button variant="outline" size="sm" className="rounded-l-none border-l-0" onClick={handleDownloadProposal}>
-                      <Download className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="sm" className="rounded-l-none border-l-0">
+                        <Download className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuLabel>Export Options</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuGroup>
+                        <DropdownMenuItem onClick={handleGeneratePDF}>
+                          <FileText className="h-4 w-4 mr-2" />
+                          Download as PDF
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={handleDownloadProposal}>
+                          <Download className="h-4 w-4 mr-2" />
+                          Download as Text
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={printProposal}>
+                          <Printer className="h-4 w-4 mr-2" />
+                          Print
+                        </DropdownMenuItem>
+                      </DropdownMenuGroup>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </div>
             </div>
+
+            {/* Signature Dialog */}
+            <Dialog open={signaturePadOpen} onOpenChange={setSignaturePadOpen}>
+              <DialogContent className="sm:max-w-[500px]">
+                <DialogHeader>
+                  <DialogTitle>Add your signature</DialogTitle>
+                  <DialogDescription>
+                    Draw your signature below. Click save when you're done.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="border border-gray-300 rounded-md p-2">
+                  <canvas
+                    ref={canvasRef}
+                    width={450}
+                    height={200}
+                    onMouseDown={startDrawing}
+                    onMouseMove={draw}
+                    onMouseUp={stopDrawing}
+                    onMouseLeave={stopDrawing}
+                    className="bg-white cursor-crosshair"
+                  />
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={clearSignature}>Clear</Button>
+                  <Button onClick={saveSignature}>Save Signature</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
 
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 <Card>
                   <CardContent className="pt-6">
+                    {/* Language Selection */}
+                    <div className="mb-4 flex justify-end">
+                      <div className="flex items-center gap-2">
+                        <Languages className="h-4 w-4" />
+                        <span className="text-sm">PDF Language:</span>
+                        <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
+                          <SelectTrigger className="w-[180px]">
+                            <SelectValue placeholder="Select language" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {PROPOSAL_LANGUAGES.map((lang) => (
+                              <SelectItem key={lang.code} value={lang.code}>
+                                {lang.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
                     {/* Contact and proposal information section */}
                     <div className="mb-8">
                       <h2 className="text-sm font-semibold bg-gray-100 p-2 mb-4 uppercase">
@@ -665,6 +909,41 @@ const ProposalDetail = () => {
                           <Plus className="h-4 w-4 mr-1" />
                           Add line item
                         </Button>
+                      </div>
+                    </div>
+                    
+                    {/* Signature Section */}
+                    <div className="mb-8">
+                      <h2 className="text-sm font-semibold bg-gray-100 p-2 mb-4 uppercase">
+                        Signature
+                      </h2>
+                      <div className="flex items-start gap-6">
+                        <div className="flex-1">
+                          <Button 
+                            variant="outline" 
+                            type="button" 
+                            onClick={() => setSignaturePadOpen(true)} 
+                            className="mb-2 w-full"
+                          >
+                            Add Signature
+                          </Button>
+                          {signatureUrl && (
+                            <div className="border border-gray-200 rounded p-4 mt-2 bg-gray-50">
+                              <img src={signatureUrl} alt="Signature" className="max-h-24" />
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                onClick={() => {
+                                  setSignatureUrl(null);
+                                  form.setValue('signatureUrl', '');
+                                }} 
+                                className="mt-2"
+                              >
+                                Clear Signature
+                              </Button>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                     
