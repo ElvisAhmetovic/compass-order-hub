@@ -67,7 +67,7 @@ const Proposals = () => {
 
   useEffect(() => {
     loadProposals();
-  }, [toast]);
+  }, []);
 
   // Reload proposals when returning to this page
   useEffect(() => {
@@ -76,8 +76,28 @@ const Proposals = () => {
     };
     
     window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
-  }, []);
+    window.addEventListener('popstate', loadProposals);
+    
+    // Add a special listener for new proposals
+    const checkForNewProposals = () => {
+      const savedProposals = localStorage.getItem("proposals");
+      if (savedProposals) {
+        const parsedProposals = JSON.parse(savedProposals);
+        if (parsedProposals.length !== proposals.length) {
+          loadProposals();
+        }
+      }
+    };
+    
+    // Check every few seconds for new proposals
+    const interval = setInterval(checkForNewProposals, 3000);
+    
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('popstate', loadProposals);
+      clearInterval(interval);
+    };
+  }, [proposals.length]);
 
   const handleDeleteProposal = (id: string) => {
     const updatedProposals = proposals.filter(p => p.id !== id);
@@ -92,6 +112,34 @@ const Proposals = () => {
 
   const handleCreateProposal = () => {
     navigate("/proposals/new");
+  };
+
+  const handleDownloadProposal = (proposal: Proposal) => {
+    // Create a download of the proposal as a text file
+    const proposalText = `
+Proposal: ${proposal.number}
+Customer: ${proposal.customer}
+Reference: ${proposal.reference}
+Subject: ${proposal.subject || 'N/A'}
+Amount: €${parseFloat(proposal.amount).toFixed(2)}
+Status: ${proposal.status}
+Date: ${new Date(proposal.created_at).toLocaleDateString()}
+    `;
+    
+    const blob = new Blob([proposalText], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `proposal-${proposal.number}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    toast({
+      title: "Proposal downloaded",
+      description: `Proposal ${proposal.number} has been downloaded.`,
+    });
   };
 
   const filteredProposals = proposals.filter(proposal => 
@@ -203,6 +251,7 @@ const Proposals = () => {
                               <Button 
                                 variant="ghost" 
                                 size="icon"
+                                onClick={() => handleDownloadProposal(proposal)}
                                 title="Download"
                               >
                                 <Download size={16} />

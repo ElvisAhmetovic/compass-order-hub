@@ -90,7 +90,7 @@ export interface OrderComment {
   };
 }
 
-// New Proposal type for the proposal management interface
+// Extended Proposal type with additional fields for the proposal management interface
 export interface Proposal {
   id: string;
   reference: string;
@@ -101,4 +101,33 @@ export interface Proposal {
   status: string;
   created_at: string;
   updated_at?: string;
+  lineItems?: ProposalLineItem[];
+  currency?: string;
+  deliveryTerms?: string;
+  paymentTerms?: string;
+  contactPerson?: string;
+  vatRules?: string;
+}
+
+// New type for proposal line items
+export interface ProposalLineItem {
+  id: string;
+  name: string;
+  description?: string;
+  quantity: number;
+  unit?: string;
+  unitPrice: number;
+  totalPrice: number;
+  inventoryItemId?: string;
+}
+
+// Type for inventory items
+export interface InventoryItem {
+  id: string;
+  name: string;
+  category: "Article" | "Service";
+  lastBooking: string | null;
+  stock: string;
+  price: string;
+  buyingPrice?: string;
 }
