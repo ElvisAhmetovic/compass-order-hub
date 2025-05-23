@@ -18,6 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Save, Send, Download, Printer, Eye, Plus, Trash2, FileText, Languages, ToggleLeft, ToggleRight } from "lucide-react";
 import { Proposal, InventoryItem } from "@/types";
 import { v4 as uuidv4 } from "uuid";
+import { jsPDF } from "jspdf";
 import { 
   Command,
   CommandEmpty,
@@ -36,25 +37,6 @@ import {
   saveCompanyInfo, 
   getCompanyInfo
 } from "@/utils/proposalUtils";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Switch } from "@/components/ui/switch";
 
 const proposalSchema = z.object({
   customer: z.string().min(1, "Customer is required"),
