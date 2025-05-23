@@ -14,6 +14,8 @@ import Support from "./pages/Support";
 import SupportDetail from "./pages/SupportDetail";
 import Inventory from './pages/Inventory';
 import Index from './pages/Index';
+import Proposals from './pages/Proposals';
+import ProposalDetail from './pages/ProposalDetail';
 
 function App() {
   return (
@@ -140,6 +142,31 @@ function App() {
             element={
               <RequireAuth>
                 <SupportDetail />
+              </RequireAuth>
+            }
+          />
+          {/* Proposal routes */}
+          <Route
+            path="/proposals"
+            element={
+              <RequireAuth>
+                <Proposals />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/proposals/new"
+            element={
+              <RequireAuth>
+                <ProposalDetail />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/proposals/:id"
+            element={
+              <RequireAuth>
+                <ProposalDetail />
               </RequireAuth>
             }
           />

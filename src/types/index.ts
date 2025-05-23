@@ -89,3 +89,16 @@ export interface OrderComment {
     email: string;
   };
 }
+
+// New Proposal type for the proposal management interface
+export interface Proposal {
+  id: string;
+  reference: string;
+  number: string;
+  customer: string;
+  subject?: string;
+  amount: string;
+  status: string;
+  created_at: string;
+  updated_at?: string;
+}

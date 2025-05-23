@@ -14,6 +14,7 @@ import {
   CheckCircle,
   MessageCircle,
   Package,
+  FileText,
 } from "lucide-react";
 import { LogoutButton } from "@/components/auth/LogoutButton";
 import { useAuth } from "@/context/AuthContext";
@@ -47,6 +48,7 @@ const Sidebar = () => {
       { icon: Building2, label: "Companies", path: "/companies" },
       { icon: Users, label: "User Management", path: "/user-management" },
       { icon: Package, label: "Inventory", path: "/inventory" },
+      { icon: FileText, label: "Proposals", path: "/proposals" }, // New Proposals link
       { icon: Trash, label: "Deleted", path: "/deleted" },
       { icon: Star, label: "Reviews", path: "/reviews" },
     ];
