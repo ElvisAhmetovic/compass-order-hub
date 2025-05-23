@@ -1,7 +1,7 @@
-
-import { Proposal, ProposalLineItem } from "@/types";
-import { jsPDF } from "jspdf";
-import html2canvas from "html2canvas";
+import React from 'react';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
+import { Proposal, ProposalLineItem } from '@/types';
 
 // Function to generate a PDF from a proposal
 export const generateProposalPDF = async (
