@@ -1032,9 +1032,12 @@ const ProposalDetail = () => {
                               <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[120px]">
                                 Price (gross)
                               </th>
-                              <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[80px]">
-                                {isVatEnabled ? "VAT" : "VAT (disabled)"}
-                              </th>
+                              {/* Conditionally render VAT header based on VAT enabled state */}
+                              {isVatEnabled && (
+                                <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[80px]">
+                                  VAT
+                                </th>
+                              )}
                               <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[100px]">
                                 Discount
                               </th>
@@ -1115,14 +1118,17 @@ const ProposalDetail = () => {
                                     className="text-sm text-right" 
                                   />
                                 </td>
-                                <td className="px-2 py-3">
-                                  <Input 
-                                    type="text" 
-                                    value={`${item.vat}%`}
-                                    onChange={(e) => updateLineItem(item.id, 'vat', parseInt(e.target.value) || 19)}
-                                    className="text-sm" 
-                                  />
-                                </td>
+                                {/* Conditionally render VAT cell based on VAT enabled state */}
+                                {isVatEnabled && (
+                                  <td className="px-2 py-3">
+                                    <Input 
+                                      type="text" 
+                                      value={`${item.vat}%`}
+                                      onChange={(e) => updateLineItem(item.id, 'vat', parseInt(e.target.value) || 19)}
+                                      className="text-sm" 
+                                    />
+                                  </td>
+                                )}
                                 <td className="px-2 py-3">
                                   <div className="flex items-center">
                                     <Input 
