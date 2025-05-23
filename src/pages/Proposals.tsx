@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import Sidebar from "@/components/dashboard/Sidebar";
@@ -38,6 +37,7 @@ const Proposals = () => {
             amount: "2500.00",
             status: "Draft",
             created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
           },
           {
             id: uuidv4(),
@@ -48,6 +48,7 @@ const Proposals = () => {
             amount: "5000.00",
             status: "Sent",
             created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
           }
         ];
         setProposals(mockProposals);

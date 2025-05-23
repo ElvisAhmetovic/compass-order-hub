@@ -4,7 +4,7 @@ export interface User {
   full_name?: string;
   email: string;
   password?: string;
-  role: "user" | "admin";
+  role: UserRole;
   created_at: string;
   updated_at: string;
 }
@@ -76,11 +76,12 @@ export interface ProposalLineItem {
   amount: number;
 }
 
-// Missing types needed for other components
-export type UserRole = "user" | "admin";
+// User role type
+export type UserRole = "user" | "admin" | "agent";
 
+// Company interface
 export interface Company {
-  id: string;
+  id?: string;
   name: string;
   address?: string;
   industry?: string;
@@ -90,30 +91,57 @@ export interface Company {
   website?: string;
   logo?: string;
   description?: string;
+  mapLink?: string;
   created_at?: string;
   updated_at?: string;
+  orders: any[];
 }
 
-export type OrderPriority = "low" | "medium" | "high";
-export type OrderStatus = "pending" | "in_progress" | "completed" | "cancelled";
+// Order status type
+export type OrderPriority = "low" | "medium" | "high" | "urgent";
+export type OrderStatus = 
+  | "pending" 
+  | "in_progress" 
+  | "completed" 
+  | "cancelled" 
+  | "Created" 
+  | "In Progress" 
+  | "Resolved" 
+  | "Invoice Sent" 
+  | "Invoice Paid" 
+  | "Complaint" 
+  | "Cancelled" 
+  | "Deleted" 
+  | "Review";
 
+// Order interface
 export interface Order {
   id: string;
-  number: string;
-  title: string;
+  number?: string;
+  title?: string;
   description?: string;
-  customer: string;
+  customer?: string;
   status: OrderStatus;
   priority: OrderPriority;
   assigned_to?: string;
   assigned_to_name?: string;
   created_at: string;
   due_date?: string;
-  created_by: string;
-  created_by_name: string;
+  created_by?: string;
+  created_by_name?: string;
   updated_at?: string;
+  price?: number;
+  company_name?: string;
+  contact_name?: string;
+  contact_email?: string;
+  contact_phone?: string;
+  company_address?: string;
+  company_link?: string;
+  invoice_details?: InvoiceDetails;
+  company_id?: string;
 }
 
+// Order comment interface
 export interface OrderComment {
   id: string;
   order_id: string;
@@ -121,8 +149,11 @@ export interface OrderComment {
   user_name: string;
   content: string;
   created_at: string;
+  comment?: string; // Alias for content in some components
+  user?: string; // Alias for user_name in some components
 }
 
+// Order status history interface
 export interface OrderStatusHistory {
   id: string;
   orderId: string;
@@ -130,8 +161,16 @@ export interface OrderStatusHistory {
   userId: string;
   userName: string;
   createdAt: string;
+  order_id?: string; // Alias for orderId in some components
+  actor_name?: string;
+  actor_id?: string;
+  changed_at?: string;
+  changed_by?: string;
+  notes?: string;
+  details?: string;
 }
 
+// Invoice details interface
 export interface InvoiceDetails {
   id: string;
   order_id: string;

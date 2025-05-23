@@ -1,27 +1,44 @@
-
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { v4 as uuidv4 } from "uuid";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
-import { User, UserRole } from "@/types";
-import { useToast } from "@/components/ui/use-toast";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { UserRole, User } from "@/types";
+import { useToast } from "@/hooks/use-toast";
 
-interface Permission {
-  id: string;
-  name: string;
-  checked: boolean;
-}
-
-type PermissionCategory = {
-  section: string;
-  permissions: {
-    view: Permission;
-    modify?: Permission;
-  };
-};
+const formSchema = z.object({
+  email: z.string().email({ message: "Invalid email address" }),
+  fullName: z.string().min(2, {
+    message: "Full name must be at least 2 characters.",
+  }),
+  role: z.enum(["user", "admin", "agent"] as const),
+});
 
 interface AddUserModalProps {
   open: boolean;
@@ -29,280 +46,132 @@ interface AddUserModalProps {
   onAddUser: (user: User) => void;
 }
 
-export const AddUserModal = ({ open, onClose, onAddUser }: AddUserModalProps) => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [role, setRole] = useState<UserRole>("user");
-  const [permissionCategories, setPermissionCategories] = useState<PermissionCategory[]>([
-    {
-      section: "Active Orders",
-      permissions: {
-        view: { id: "active_orders_view", name: "Active Orders View", checked: true },
-        modify: { id: "active_orders_modify", name: "Active Orders Modify", checked: true }
-      }
-    },
-    {
-      section: "Complaints",
-      permissions: {
-        view: { id: "complaints_view", name: "Complaints View", checked: true },
-        modify: { id: "complaints_modify", name: "Complaints Modify", checked: true }
-      }
-    },
-    {
-      section: "Completed",
-      permissions: {
-        view: { id: "completed_view", name: "Completed View", checked: true },
-        modify: { id: "completed_modify", name: "Completed Modify", checked: true }
-      }
-    },
-    {
-      section: "Cancelled",
-      permissions: {
-        view: { id: "cancelled_view", name: "Cancelled View", checked: true },
-        modify: { id: "cancelled_modify", name: "Cancelled Modify", checked: true }
-      }
-    },
-    {
-      section: "Invoice Sent",
-      permissions: {
-        view: { id: "invoice_sent_view", name: "Invoice Sent View", checked: true },
-        modify: { id: "invoice_sent_modify", name: "Invoice Sent Modify", checked: true }
-      }
-    },
-    {
-      section: "Invoice Paid",
-      permissions: {
-        view: { id: "invoice_paid_view", name: "Invoice Paid View", checked: true },
-        modify: { id: "invoice_paid_modify", name: "Invoice Paid Modify", checked: true }
-      }
-    },
-    {
-      section: "Deleted",
-      permissions: {
-        view: { id: "deleted_view", name: "Deleted View", checked: true },
-        modify: { id: "deleted_modify", name: "Deleted Modify", checked: false }
-      }
-    },
-    {
-      section: "Reviews",
-      permissions: {
-        view: { id: "reviews_view", name: "Reviews View", checked: true },
-        modify: { id: "reviews_modify", name: "Reviews Modify", checked: true }
-      }
-    },
-    {
-      section: "Companies",
-      permissions: {
-        view: { id: "companies_view", name: "Companies View", checked: true },
-        modify: { id: "companies_modify", name: "Companies Modify", checked: true }
-      }
-    },
-    {
-      section: "Dashboard",
-      permissions: {
-        view: { id: "dashboard_access", name: "Dashboard Access", checked: true }
-      }
-    }
-  ]);
-  
+export const AddUserModal: React.FC<AddUserModalProps> = ({
+  open,
+  onClose,
+  onAddUser,
+}) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
-  const handleTogglePermission = (categoryIndex: number, permissionType: 'view' | 'modify', checked: boolean) => {
-    const updatedCategories = [...permissionCategories];
-    if (permissionType === 'view' && updatedCategories[categoryIndex].permissions.view) {
-      updatedCategories[categoryIndex].permissions.view.checked = checked;
-      
-      // If view is unchecked, also uncheck modify
-      if (!checked && updatedCategories[categoryIndex].permissions.modify) {
-        updatedCategories[categoryIndex].permissions.modify.checked = false;
-      }
-    }
-    
-    if (permissionType === 'modify' && updatedCategories[categoryIndex].permissions.modify) {
-      updatedCategories[categoryIndex].permissions.modify.checked = checked;
-      
-      // If modify is checked, also check view
-      if (checked && updatedCategories[categoryIndex].permissions.view) {
-        updatedCategories[categoryIndex].permissions.view.checked = true;
-      }
-    }
-    
-    setPermissionCategories(updatedCategories);
-  };
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      email: "",
+      fullName: "",
+      role: "user",
+    },
+  });
 
-  const handleCreate = () => {
-    if (!email || !password) {
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    setIsSubmitting(true);
+    try {
+      // Simulate API call
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      // Create new user object
+      const newUser: User = {
+        id: uuidv4(),
+        email: values.email,
+        role: values.role,
+        full_name: values.fullName,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      // Pass new user to parent component
+      onAddUser(newUser);
+
       toast({
-        title: "Error",
-        description: "Email and password are required.",
-        variant: "destructive",
+        title: "User created",
+        description: "New user has been created successfully.",
       });
-      return;
-    }
-    
-    // Create a new user with a unique ID
-    const newUser: User = {
-      id: `user-${Date.now()}`,
-      email,
-      role: role as UserRole,  // Type cast for TypeScript safety
-      full_name: `${firstName} ${lastName}`.trim() || "No Name",
-      created_at: new Date().toISOString()
-    };
-    
-    // Get all selected permissions
-    const selectedPermissions = permissionCategories.flatMap(category => {
-      const permissions = [];
-      if (category.permissions.view?.checked) {
-        permissions.push(category.permissions.view.id);
-      }
-      if (category.permissions.modify?.checked) {
-        permissions.push(category.permissions.modify.id);
-      }
-      return permissions;
-    });
-    
-    console.log('New User:', newUser);
-    console.log('Selected Permissions:', selectedPermissions);
-    
-    // Store password separately (in a real app, this would be handled by backend authentication)
-    const users = JSON.parse(localStorage.getItem("users") || "[]");
-    users.push({
-      ...newUser,
-      passwordHash: btoa(password) // base-64 "hash" for demo only
-    });
-    localStorage.setItem("users", JSON.stringify(users));
-    
-    // Add the new user to the list
-    onAddUser(newUser);
-    
-    handleClose();
-  };
 
-  const handleClose = () => {
-    // Reset form
-    setEmail("");
-    setPassword("");
-    setFirstName("");
-    setLastName("");
-    setRole("user");
-    onClose();
+      // Reset form and close modal
+      form.reset();
+      onClose();
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Failed to create user",
+        description: "Something went wrong. Please try again later.",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md md:max-w-lg max-h-[90vh] overflow-y-auto">
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Add User</DialogTitle>
           <DialogDescription>
-            Create a new user account.
+            Create a new user account. Set the email, full name and role.
           </DialogDescription>
         </DialogHeader>
-        
-        <div className="grid gap-4 py-4">
-          <div className="grid gap-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="user@example.com"
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email</FormLabel>
+                  <FormControl>
+                    <Input type="email" placeholder="user@example.com" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
-          
-          <div className="grid gap-2">
-            <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+            <FormField
+              control={form.control}
+              name="fullName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Full Name</FormLabel>
+                  <FormControl>
+                    <Input placeholder="John Doe" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
-          
-          <div className="grid gap-2">
-            <Label htmlFor="firstName">First Name</Label>
-            <Input
-              id="firstName"
-              value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
+            <FormField
+              control={form.control}
+              name="role"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Role</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a role" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="user">User</SelectItem>
+                      <SelectItem value="admin">Admin</SelectItem>
+                      <SelectItem value="agent">Agent</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
-          
-          <div className="grid gap-2">
-            <Label htmlFor="lastName">Last Name</Label>
-            <Input
-              id="lastName"
-              value={lastName}
-              onChange={(e) => setLastName(e.target.value)}
-            />
-          </div>
-          
-          <div className="grid gap-2">
-            <Label htmlFor="role">Role</Label>
-            <Select value={role} onValueChange={(value: UserRole) => setRole(value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select role" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="user">User</SelectItem>
-                <SelectItem value="admin">Admin</SelectItem>
-                <SelectItem value="agent">Agent</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div className="grid gap-2 mt-4">
-            <Label>Permissions</Label>
-            <div className="space-y-4 max-h-[300px] overflow-y-auto border rounded-md p-4">
-              {permissionCategories.map((category, categoryIndex) => (
-                <div key={category.section} className="space-y-2">
-                  {category.permissions.view && (
-                    <div className="flex items-center space-x-2">
-                      <Checkbox 
-                        id={category.permissions.view.id}
-                        checked={category.permissions.view.checked}
-                        onCheckedChange={(checked) => 
-                          handleTogglePermission(categoryIndex, 'view', checked as boolean)
-                        }
-                      />
-                      <Label htmlFor={category.permissions.view.id} className="font-normal">
-                        {category.permissions.view.name}
-                      </Label>
-                    </div>
-                  )}
-                  
-                  {category.permissions.modify && (
-                    <div className="flex items-center space-x-2 ml-6">
-                      <Checkbox 
-                        id={category.permissions.modify.id}
-                        checked={category.permissions.modify.checked}
-                        disabled={!category.permissions.view?.checked}
-                        onCheckedChange={(checked) => 
-                          handleTogglePermission(categoryIndex, 'modify', checked as boolean)
-                        }
-                      />
-                      <Label htmlFor={category.permissions.modify.id} className="font-normal">
-                        {category.permissions.modify.name}
-                      </Label>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-        
-        <div className="flex justify-end gap-2 pt-4">
-          <Button variant="outline" onClick={handleClose}>
-            Cancel
-          </Button>
-          <Button onClick={handleCreate}>
-            Create User
-          </Button>
-        </div>
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button type="button" variant="secondary" disabled={isSubmitting}>
+                  Cancel
+                </Button>
+              </DialogClose>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Submitting..." : "Create"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );

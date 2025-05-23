@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import Sidebar from "@/components/dashboard/Sidebar";
@@ -72,6 +71,7 @@ const UserManagement = () => {
               email: "kleinabmedia1@gmail.com",
               role: "user",
               created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
               full_name: "No Name"
             },
             {
@@ -79,6 +79,7 @@ const UserManagement = () => {
               email: "office@websworkers.com",
               role: "user",
               created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
               full_name: "No Name"
             },
             {
@@ -86,6 +87,7 @@ const UserManagement = () => {
               email: "atwi.automobile.hannover@gmail.com",
               role: "user",
               created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
               full_name: "ATWI"
             },
             {
@@ -93,6 +95,7 @@ const UserManagement = () => {
               email: "cmen.sedat242@gmail.com",
               role: "user",
               created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
               full_name: "No Name"
             },
             {
@@ -100,6 +103,7 @@ const UserManagement = () => {
               email: "joka4927@gmail.com",
               role: "admin",
               created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
               full_name: "No Name"
             },
             {
@@ -107,6 +111,7 @@ const UserManagement = () => {
               email: "kontakt@abmedia24.com",
               role: "user",
               created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
               full_name: "No Name"
             }
           ];
