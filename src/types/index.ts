@@ -1,3 +1,4 @@
+
 export interface User {
   id: string;
   full_name?: string;
@@ -43,12 +44,13 @@ export interface SupportReply {
 export interface InventoryItem {
   id: string;
   name: string;
-  category: string;
+  category: "Article" | "Service";
   description?: string;
   stock: number;
   unit: string;
   price: string;
   buyingPrice: string;
+  lastBooking?: string | null;
 }
 
 export interface Proposal {
@@ -72,4 +74,70 @@ export interface ProposalLineItem {
   vat: number;
   discount: number;
   amount: number;
+}
+
+// Missing types needed for other components
+export type UserRole = "user" | "admin";
+
+export interface Company {
+  id: string;
+  name: string;
+  address?: string;
+  industry?: string;
+  contact?: string;
+  phone?: string;
+  email?: string;
+  website?: string;
+  logo?: string;
+  description?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export type OrderPriority = "low" | "medium" | "high";
+export type OrderStatus = "pending" | "in_progress" | "completed" | "cancelled";
+
+export interface Order {
+  id: string;
+  number: string;
+  title: string;
+  description?: string;
+  customer: string;
+  status: OrderStatus;
+  priority: OrderPriority;
+  assigned_to?: string;
+  assigned_to_name?: string;
+  created_at: string;
+  due_date?: string;
+  created_by: string;
+  created_by_name: string;
+  updated_at?: string;
+}
+
+export interface OrderComment {
+  id: string;
+  order_id: string;
+  user_id: string;
+  user_name: string;
+  content: string;
+  created_at: string;
+}
+
+export interface OrderStatusHistory {
+  id: string;
+  orderId: string;
+  status: OrderStatus;
+  userId: string;
+  userName: string;
+  createdAt: string;
+}
+
+export interface InvoiceDetails {
+  id: string;
+  order_id: string;
+  invoice_number: string;
+  amount: number;
+  issued_date: string;
+  due_date: string;
+  status: "paid" | "unpaid" | "overdue";
 }
