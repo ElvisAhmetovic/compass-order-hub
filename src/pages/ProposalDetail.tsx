@@ -8,12 +8,15 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Form, FormField, FormItem, FormLabel, FormControl } from "@/components/ui/form";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Save, Send, Download, Printer, Eye } from "lucide-react";
+import { ArrowLeft, Save, Send, Download, Printer, Eye, Plus, Trash2 } from "lucide-react";
 
 const proposalSchema = z.object({
   customer: z.string().min(1, "Customer is required"),
@@ -25,15 +28,43 @@ const proposalSchema = z.object({
   country: z.string().min(1, "Country is required"),
   content: z.string().min(1, "Content is required"),
   amount: z.string().min(1, "Amount is required"),
+  currency: z.string().default("EUR"),
+  deliveryTerms: z.string().optional(),
+  paymentTerms: z.string().optional(),
+  internalContact: z.string().default("Thomas Klein"),
+  vatRule: z.string().default("umsatzsteuerpflichtig"),
 });
 
 type ProposalFormValues = z.infer<typeof proposalSchema>;
+
+interface LineItem {
+  id: string;
+  description: string;
+  quantity: number;
+  unit: string;
+  price: number;
+  vat: number;
+  discount: number;
+  amount: number;
+}
 
 const ProposalDetail = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [lineItems, setLineItems] = useState<LineItem[]>([
+    {
+      id: "1",
+      description: "",
+      quantity: 1.0,
+      unit: "pcs",
+      price: 0.0,
+      vat: 19,
+      discount: 0,
+      amount: 0.0
+    }
+  ]);
 
   const form = useForm<ProposalFormValues>({
     resolver: zodResolver(proposalSchema),
@@ -47,16 +78,98 @@ const ProposalDetail = () => {
       country: "Deutschland",
       content: "Thank you for your enquiry. We will be happy to provide you with the requested non-binding offer.",
       amount: "0.00",
+      currency: "EUR",
+      deliveryTerms: "",
+      paymentTerms: "",
+      internalContact: "Thomas Klein",
+      vatRule: "umsatzsteuerpflichtig",
     },
   });
+
+  const addLineItem = () => {
+    const newItem: LineItem = {
+      id: Date.now().toString(),
+      description: "",
+      quantity: 1.0,
+      unit: "pcs",
+      price: 0.0,
+      vat: 19,
+      discount: 0,
+      amount: 0.0
+    };
+    setLineItems([...lineItems, newItem]);
+  };
+
+  const removeLineItem = (id: string) => {
+    setLineItems(lineItems.filter(item => item.id !== id));
+  };
+
+  const updateLineItem = (id: string, field: keyof LineItem, value: any) => {
+    setLineItems(lineItems.map(item => {
+      if (item.id === id) {
+        const updatedItem = { ...item, [field]: value };
+        // Recalculate amount when quantity, price, or discount changes
+        if (field === 'quantity' || field === 'price' || field === 'discount') {
+          const baseAmount = updatedItem.quantity * updatedItem.price;
+          const discountAmount = baseAmount * (updatedItem.discount / 100);
+          updatedItem.amount = baseAmount - discountAmount;
+        }
+        return updatedItem;
+      }
+      return item;
+    }));
+  };
+
+  const downloadProposal = () => {
+    const proposalData = {
+      ...form.getValues(),
+      lineItems,
+      totalAmount: lineItems.reduce((sum, item) => sum + item.amount, 0)
+    };
+    
+    // Create a simple PDF-like content
+    const content = `
+PROPOSAL ${proposalData.number}
+Customer: ${proposalData.customer}
+Subject: ${proposalData.subject}
+Date: ${proposalData.date}
+
+Address:
+${proposalData.address}
+${proposalData.country}
+
+Content:
+${proposalData.content}
+
+Line Items:
+${lineItems.map(item => 
+  `${item.description} - Qty: ${item.quantity} - Price: €${item.price} - Amount: €${item.amount.toFixed(2)}`
+).join('\n')}
+
+Total Amount: €${proposalData.totalAmount.toFixed(2)}
+    `;
+
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `proposal_${proposalData.number}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    toast({
+      title: "Download started",
+      description: "Your proposal has been downloaded.",
+    });
+  };
 
   const onSubmit = (data: ProposalFormValues) => {
     setIsSubmitting(true);
     
-    // In a real app, you would save this to your backend
     console.log("Saving proposal:", data);
     
-    // Simulate API call
     setTimeout(() => {
       setIsSubmitting(false);
       toast({
@@ -66,6 +179,10 @@ const ProposalDetail = () => {
       navigate("/proposals");
     }, 1000);
   };
+
+  const totalAmount = lineItems.reduce((sum, item) => sum + item.amount, 0);
+  const vatAmount = lineItems.reduce((sum, item) => sum + (item.amount * item.vat / 100), 0);
+  const netAmount = totalAmount - vatAmount;
 
   return (
     <div className="flex min-h-screen">
@@ -89,8 +206,8 @@ const ProposalDetail = () => {
                   <Save className="h-4 w-4 mr-1" />
                   Save as draft
                 </Button>
-                <Button size="sm" className="bg-blue-600">
-                  <Send className="h-4 w-4 mr-1" />
+                <Button size="sm" className="bg-blue-600" onClick={downloadProposal}>
+                  <Download className="h-4 w-4 mr-1" />
                   Send / Print / Download
                 </Button>
               </div>
@@ -253,43 +370,86 @@ const ProposalDetail = () => {
                               <th className="px-2 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-[120px]">
                                 Amount
                               </th>
+                              <th className="px-2 py-3 w-[50px]"></th>
                             </tr>
                           </thead>
                           <tbody className="bg-white divide-y divide-gray-200">
-                            <tr>
-                              <td className="px-2 py-3">
-                                <Input placeholder="Search product" className="text-sm" />
-                              </td>
-                              <td className="px-2 py-3">
-                                <div className="flex items-center">
-                                  <Input type="text" defaultValue="1.00" className="text-sm" />
-                                  <span className="ml-1 text-xs">pcs</span>
-                                </div>
-                              </td>
-                              <td className="px-2 py-3">
-                                <Input type="text" defaultValue="0.00" className="text-sm text-right" />
-                              </td>
-                              <td className="px-2 py-3">
-                                <Input type="text" defaultValue="19%" className="text-sm" />
-                              </td>
-                              <td className="px-2 py-3">
-                                <div className="flex items-center">
-                                  <Input type="text" defaultValue="0" className="text-sm" />
-                                  <span className="ml-1 text-xs">%</span>
-                                </div>
-                              </td>
-                              <td className="px-2 py-3 text-right">
-                                <div className="flex items-center justify-end">
-                                  <Input type="text" defaultValue="0.00" className="text-sm text-right" />
-                                </div>
-                              </td>
-                            </tr>
+                            {lineItems.map((item, index) => (
+                              <tr key={item.id}>
+                                <td className="px-2 py-3">
+                                  <Input 
+                                    placeholder="Search product" 
+                                    className="text-sm"
+                                    value={item.description}
+                                    onChange={(e) => updateLineItem(item.id, 'description', e.target.value)}
+                                  />
+                                </td>
+                                <td className="px-2 py-3">
+                                  <div className="flex items-center">
+                                    <Input 
+                                      type="number" 
+                                      step="0.01"
+                                      value={item.quantity}
+                                      onChange={(e) => updateLineItem(item.id, 'quantity', parseFloat(e.target.value) || 0)}
+                                      className="text-sm" 
+                                    />
+                                    <span className="ml-1 text-xs">{item.unit}</span>
+                                  </div>
+                                </td>
+                                <td className="px-2 py-3">
+                                  <Input 
+                                    type="number" 
+                                    step="0.01"
+                                    value={item.price}
+                                    onChange={(e) => updateLineItem(item.id, 'price', parseFloat(e.target.value) || 0)}
+                                    className="text-sm text-right" 
+                                  />
+                                </td>
+                                <td className="px-2 py-3">
+                                  <Input 
+                                    type="text" 
+                                    value={`${item.vat}%`}
+                                    onChange={(e) => updateLineItem(item.id, 'vat', parseInt(e.target.value) || 19)}
+                                    className="text-sm" 
+                                  />
+                                </td>
+                                <td className="px-2 py-3">
+                                  <div className="flex items-center">
+                                    <Input 
+                                      type="number" 
+                                      value={item.discount}
+                                      onChange={(e) => updateLineItem(item.id, 'discount', parseFloat(e.target.value) || 0)}
+                                      className="text-sm" 
+                                    />
+                                    <span className="ml-1 text-xs">%</span>
+                                  </div>
+                                </td>
+                                <td className="px-2 py-3 text-right">
+                                  <div className="flex items-center justify-end">
+                                    <span className="text-sm font-medium">€{item.amount.toFixed(2)}</span>
+                                  </div>
+                                </td>
+                                <td className="px-2 py-3">
+                                  {lineItems.length > 1 && (
+                                    <Button 
+                                      variant="ghost" 
+                                      size="icon"
+                                      onClick={() => removeLineItem(item.id)}
+                                      className="h-6 w-6"
+                                    >
+                                      <Trash2 className="h-3 w-3" />
+                                    </Button>
+                                  )}
+                                </td>
+                              </tr>
+                            ))}
                           </tbody>
                         </table>
                       </div>
                       <div className="mt-4 flex justify-between">
-                        <Button variant="outline" type="button" size="sm" className="text-blue-600">
-                          + Add line item
+                        <Button variant="outline" type="button" size="sm" className="text-blue-600" onClick={addLineItem}>
+                          <Plus className="h-4 w-4 mr-1" />
+                          Add line item
                         </Button>
                       </div>
                     </div>
@@ -305,6 +465,128 @@ const ProposalDetail = () => {
                         className="min-h-[80px] w-full"
                       />
                     </div>
+
+                    {/* Options section */}
+                    <div className="mb-8">
+                      <div className="flex items-center justify-between mb-4">
+                        <h2 className="text-sm font-semibold bg-gray-100 p-2 uppercase">
+                          More Options
+                        </h2>
+                        <Button variant="ghost" size="sm" className="text-blue-600">
+                          Hide options
+                        </Button>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {/* Currency */}
+                        <FormField
+                          control={form.control}
+                          name="currency"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Currency</FormLabel>
+                              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select currency" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="EUR">EUR</SelectItem>
+                                  <SelectItem value="USD">USD</SelectItem>
+                                  <SelectItem value="GBP">GBP</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </FormItem>
+                          )}
+                        />
+
+                        {/* Internal contact person */}
+                        <FormField
+                          control={form.control}
+                          name="internalContact"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Internal contact person</FormLabel>
+                              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select contact" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="Thomas Klein">Thomas Klein</SelectItem>
+                                  <SelectItem value="Maria Schmidt">Maria Schmidt</SelectItem>
+                                  <SelectItem value="John Doe">John Doe</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </FormItem>
+                          )}
+                        />
+
+                        {/* VAT rule */}
+                        <FormField
+                          control={form.control}
+                          name="vatRule"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>VAT rule</FormLabel>
+                              <FormControl>
+                                <div className="space-y-3">
+                                  <div className="font-medium text-sm">In Germany</div>
+                                  <RadioGroup
+                                    onValueChange={field.onChange}
+                                    defaultValue={field.value}
+                                    className="space-y-2"
+                                  >
+                                    <div className="flex items-center space-x-2">
+                                      <RadioGroupItem value="umsatzsteuerpflichtig" id="r1" />
+                                      <Label htmlFor="r1" className="text-sm">Umsatzsteuerpflichtige Umsätze</Label>
+                                    </div>
+                                    <div className="flex items-center space-x-2">
+                                      <RadioGroupItem value="steuerfreie" id="r2" />
+                                      <Label htmlFor="r2" className="text-sm">Steuerfreie Umsätze §4 UStG</Label>
+                                    </div>
+                                    <div className="flex items-center space-x-2">
+                                      <RadioGroupItem value="reverse-charge" id="r3" />
+                                      <Label htmlFor="r3" className="text-sm">Reverse Charge gem. §13b UStG</Label>
+                                    </div>
+                                  </RadioGroup>
+                                </div>
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+
+                        {/* Delivery terms */}
+                        <FormField
+                          control={form.control}
+                          name="deliveryTerms"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Delivery terms</FormLabel>
+                              <FormControl>
+                                <Input {...field} placeholder="Enter delivery terms" />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+
+                        {/* Payment terms */}
+                        <FormField
+                          control={form.control}
+                          name="paymentTerms"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Payment terms</FormLabel>
+                              <FormControl>
+                                <Input {...field} placeholder="Enter payment terms" />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </div>
                     
                     {/* Summary section */}
                     <div>
@@ -312,15 +594,15 @@ const ProposalDetail = () => {
                         <div className="w-64">
                           <div className="flex justify-between py-1">
                             <span className="text-sm text-gray-700">Net amount (inc. discount/surcharge)</span>
-                            <span className="font-medium">€0.00</span>
+                            <span className="font-medium">€{netAmount.toFixed(2)}</span>
                           </div>
                           <div className="flex justify-between py-1">
                             <span className="text-sm text-gray-700">VAT 19%</span>
-                            <span className="font-medium">€0.00</span>
+                            <span className="font-medium">€{vatAmount.toFixed(2)}</span>
                           </div>
                           <div className="flex justify-between py-2 border-t border-gray-200 mt-1">
                             <span className="font-medium">Total</span>
-                            <span className="font-bold">€0.00</span>
+                            <span className="font-bold">€{totalAmount.toFixed(2)}</span>
                           </div>
                         </div>
                       </div>
