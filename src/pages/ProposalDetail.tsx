@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import Sidebar from "@/components/dashboard/Sidebar";
@@ -28,7 +27,7 @@ import {
   CommandList
 } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { downloadProposal } from "@/utils/proposalUtils";
+import { downloadProposal, loadInventoryItems } from "@/utils/proposalUtils";
 
 const proposalSchema = z.object({
   customer: z.string().min(1, "Customer is required"),
@@ -80,6 +79,7 @@ const ProposalDetail = () => {
     }
   ]);
   const [popoverOpen, setPopoverOpen] = useState<{[key: string]: boolean}>({});
+  const [searchQuery, setSearchQuery] = useState<{[key: string]: string}>({});
 
   const form = useForm<ProposalFormValues>({
     resolver: zodResolver(proposalSchema),
@@ -103,9 +103,12 @@ const ProposalDetail = () => {
 
   // Load inventory items
   useEffect(() => {
-    const savedInventory = localStorage.getItem("inventory");
-    if (savedInventory) {
-      setInventoryItems(JSON.parse(savedInventory));
+    const items = loadInventoryItems();
+    if (items && items.length > 0) {
+      console.log("Loaded inventory items:", items.length);
+      setInventoryItems(items);
+    } else {
+      console.warn("No inventory items found in local storage");
     }
   }, []);
 
@@ -143,6 +146,32 @@ const ProposalDetail = () => {
       ...prev,
       [itemId]: !prev[itemId]
     }));
+  };
+
+  const handleSearchChange = (itemId: string, value: string) => {
+    setSearchQuery(prev => ({
+      ...prev,
+      [itemId]: value
+    }));
+    
+    // Open the popover when search has content
+    if (value.length > 0 && !popoverOpen[itemId]) {
+      togglePopover(itemId);
+    }
+  };
+
+  // Filter inventory items based on search query
+  const getFilteredItems = (itemId: string) => {
+    const query = searchQuery[itemId] || "";
+    if (!query.trim()) return inventoryItems.slice(0, 10); // Show first 10 items if no search query
+    
+    return inventoryItems
+      .filter(item => 
+        item.name.toLowerCase().includes(query.toLowerCase()) || 
+        item.id.toString().toLowerCase().includes(query.toLowerCase()) ||
+        (item.description && item.description.toLowerCase().includes(query.toLowerCase()))
+      )
+      .slice(0, 10); // Limit to first 10 matches
   };
 
   const addLineItem = () => {
@@ -184,12 +213,16 @@ const ProposalDetail = () => {
     if (selectedItem) {
       setLineItems(lineItems.map(item => {
         if (item.id === lineItemId) {
+          const price = typeof selectedItem.price === 'string' 
+            ? parseFloat(selectedItem.price.replace(/[^\d.-]/g, '') || '0') 
+            : selectedItem.price;
+            
           return {
             ...item,
             description: selectedItem.name,
-            price: parseFloat(selectedItem.price) || 0,
+            price: price || 0,
             unit: selectedItem.unit || "Stk",
-            amount: parseFloat(selectedItem.price) * item.quantity
+            amount: price * item.quantity
           };
         }
         return item;
@@ -530,42 +563,35 @@ const ProposalDetail = () => {
                                         value={item.description}
                                         onChange={(e) => {
                                           updateLineItem(item.id, 'description', e.target.value);
-                                          if (e.target.value.length > 0 && !popoverOpen[item.id]) {
-                                            togglePopover(item.id);
-                                          } else if (e.target.value.length === 0 && popoverOpen[item.id]) {
-                                            togglePopover(item.id);
-                                          }
+                                          handleSearchChange(item.id, e.target.value);
                                         }}
                                       />
                                     </PopoverTrigger>
                                     <PopoverContent className="p-0 w-80" align="start">
                                       <Command>
-                                        <CommandInput placeholder="Search products..." />
+                                        <CommandInput 
+                                          placeholder="Search products..." 
+                                          value={searchQuery[item.id] || ''}
+                                          onValueChange={(value) => handleSearchChange(item.id, value)}
+                                        />
                                         <CommandList>
                                           <CommandEmpty>No products found.</CommandEmpty>
                                           <CommandGroup>
-                                            {inventoryItems
-                                              .filter(invItem => 
-                                                invItem.name.toLowerCase().includes(item.description.toLowerCase()) ||
-                                                invItem.id.toString().includes(item.description.toLowerCase())
-                                              )
-                                              .slice(0, 10)
-                                              .map((invItem) => (
-                                                <CommandItem 
-                                                  key={invItem.id} 
-                                                  onSelect={() => selectInventoryItem(invItem.id, item.id)}
-                                                  className="cursor-pointer"
-                                                >
-                                                  <div className="flex flex-col">
-                                                    <span className="font-medium">{invItem.name}</span>
-                                                    <div className="flex justify-between text-xs text-gray-500">
-                                                      <span>#{invItem.id}</span>
-                                                      <span>{invItem.price} EUR</span>
-                                                    </div>
+                                            {getFilteredItems(item.id).map((invItem) => (
+                                              <CommandItem 
+                                                key={invItem.id} 
+                                                onSelect={() => selectInventoryItem(invItem.id, item.id)}
+                                                className="cursor-pointer"
+                                              >
+                                                <div className="flex flex-col">
+                                                  <span className="font-medium">{invItem.name}</span>
+                                                  <div className="flex justify-between text-xs text-gray-500">
+                                                    <span>#{invItem.id}</span>
+                                                    <span>{invItem.price} {typeof invItem.price === 'string' && !invItem.price.includes('EUR') ? 'EUR' : ''}</span>
                                                   </div>
-                                                </CommandItem>
-                                              ))
-                                            }
+                                                </div>
+                                              </CommandItem>
+                                            ))}
                                           </CommandGroup>
                                         </CommandList>
                                       </Command>

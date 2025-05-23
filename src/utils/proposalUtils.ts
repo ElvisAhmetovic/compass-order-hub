@@ -41,3 +41,18 @@ Total Amount: €${proposalData.totalAmount.toFixed(2)}
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 };
+
+export const loadInventoryItems = () => {
+  const savedInventory = localStorage.getItem("inventory");
+  if (savedInventory) {
+    return JSON.parse(savedInventory);
+  }
+  
+  // Check alternative storage keys
+  const savedInventoryItems = localStorage.getItem("inventoryItems");
+  if (savedInventoryItems) {
+    return JSON.parse(savedInventoryItems);
+  }
+  
+  return [];
+};
