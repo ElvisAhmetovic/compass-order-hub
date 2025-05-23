@@ -67,7 +67,8 @@ const Proposals = () => {
             status: "Draft",
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
-            currency: 'EUR'
+            currency: 'EUR',
+            vatEnabled: true
           },
           {
             id: uuidv4(),
@@ -79,7 +80,8 @@ const Proposals = () => {
             status: "Sent",
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
-            currency: 'USD'
+            currency: 'USD',
+            vatEnabled: false
           }
         ];
         setProposals(mockProposals);

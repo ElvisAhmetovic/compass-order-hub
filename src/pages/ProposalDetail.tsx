@@ -15,7 +15,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useNavigate, useParams } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Save, Send, Download, Printer, Eye, Plus, Trash2, FileText, Languages } from "lucide-react";
+import { ArrowLeft, Save, Send, Download, Printer, Eye, Plus, Trash2, FileText, Languages, ToggleLeft, ToggleRight } from "lucide-react";
 import { Proposal, InventoryItem } from "@/types";
 import { v4 as uuidv4 } from "uuid";
 import { 
@@ -54,6 +54,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Switch } from "@/components/ui/switch";
 
 const proposalSchema = z.object({
   customer: z.string().min(1, "Customer is required"),
@@ -115,6 +116,7 @@ const ProposalDetail = () => {
   const [logoSize, setLogoSize] = useState(33); // Default logo size percentage
   const [selectedCurrency, setSelectedCurrency] = useState("EUR");
   const [currencySymbol, setCurrencySymbol] = useState("€");
+  const [isVatEnabled, setIsVatEnabled] = useState(true);
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -164,6 +166,20 @@ const ProposalDetail = () => {
         break;
     }
   }, [selectedCurrency]);
+
+  // Load existing VAT setting when editing a proposal
+  useEffect(() => {
+    if (id && id !== "new") {
+      const savedProposals = localStorage.getItem("proposals");
+      if (savedProposals) {
+        const proposals: Proposal[] = JSON.parse(savedProposals);
+        const existingProposal = proposals.find(p => p.id === id);
+        if (existingProposal && existingProposal.vatEnabled !== undefined) {
+          setIsVatEnabled(existingProposal.vatEnabled);
+        }
+      }
+    }
+  }, [id]);
 
   // Handle logo upload or selection
   const handleLogoChange = (logo: string) => {
@@ -467,6 +483,7 @@ const ProposalDetail = () => {
     }));
   };
 
+  // Update the saveProposal function to include VAT status
   const saveProposal = (data: ProposalFormValues, status: string = "Draft") => {
     const savedProposals = localStorage.getItem("proposals");
     const proposals: Proposal[] = savedProposals ? JSON.parse(savedProposals) : [];
@@ -500,7 +517,8 @@ const ProposalDetail = () => {
       country: data.country,
       content: data.content,
       totalAmount: totalAmount,
-      currency: selectedCurrency // Add currency to the saved proposal
+      currency: selectedCurrency,
+      vatEnabled: isVatEnabled // Save VAT enabled state
     };
 
     if (id === "new") {
@@ -644,8 +662,14 @@ const ProposalDetail = () => {
     }
   };
 
+  // Recalculate amounts based on VAT status
+  const calculateVatAmount = () => {
+    if (!isVatEnabled) return 0;
+    return lineItems.reduce((sum, item) => sum + (item.amount * item.vat / 100), 0);
+  };
+
+  const vatAmount = calculateVatAmount();
   const totalAmount = lineItems.reduce((sum, item) => sum + item.amount, 0);
-  const vatAmount = lineItems.reduce((sum, item) => sum + (item.amount * item.vat / 100), 0);
   const netAmount = totalAmount - vatAmount;
 
   // Fix for the Company Logo button - ensure it opens the dialog
@@ -973,11 +997,28 @@ const ProposalDetail = () => {
                       />
                     </div>
                     
-                    {/* Products section */}
+                    {/* Products section with VAT toggle */}
                     <div className="mb-8">
-                      <h2 className="text-sm font-semibold bg-gray-100 p-2 mb-4 uppercase">
-                        Products
-                      </h2>
+                      <div className="flex justify-between items-center bg-gray-100 p-2 mb-4">
+                        <h2 className="text-sm font-semibold uppercase">
+                          Products
+                        </h2>
+                        <div className="flex items-center gap-2">
+                          <Label htmlFor="vat-toggle" className="text-xs font-medium">
+                            {isVatEnabled ? 'VAT Enabled' : 'VAT Disabled'}
+                          </Label>
+                          <div 
+                            className="flex items-center cursor-pointer"
+                            onClick={() => setIsVatEnabled(!isVatEnabled)}
+                          >
+                            {isVatEnabled ? (
+                              <ToggleRight className="h-5 w-5 text-blue-600" />
+                            ) : (
+                              <ToggleLeft className="h-5 w-5 text-gray-400" />
+                            )}
+                          </div>
+                        </div>
+                      </div>
                       <div className="overflow-x-auto">
                         <table className="min-w-full divide-y divide-gray-200">
                           <thead>
@@ -992,7 +1033,7 @@ const ProposalDetail = () => {
                                 Price (gross)
                               </th>
                               <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[80px]">
-                                VAT
+                                {isVatEnabled ? "VAT" : "VAT (disabled)"}
                               </th>
                               <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[100px]">
                                 Discount
@@ -1298,7 +1339,7 @@ const ProposalDetail = () => {
                       </div>
                     </div>
                     
-                    {/* Summary section */}
+                    {/* Summary section with conditional VAT display */}
                     <div>
                       <div className="flex justify-end">
                         <div className="w-64">
@@ -1306,13 +1347,15 @@ const ProposalDetail = () => {
                             <span className="text-sm text-gray-700">Net amount (inc. discount/surcharge)</span>
                             <span className="font-medium">{currencySymbol}{netAmount.toFixed(2)}</span>
                           </div>
-                          <div className="flex justify-between py-1">
-                            <span className="text-sm text-gray-700">VAT 19%</span>
-                            <span className="font-medium">{currencySymbol}{vatAmount.toFixed(2)}</span>
-                          </div>
+                          {isVatEnabled && (
+                            <div className="flex justify-between py-1">
+                              <span className="text-sm text-gray-700">VAT 19%</span>
+                              <span className="font-medium">{currencySymbol}{vatAmount.toFixed(2)}</span>
+                            </div>
+                          )}
                           <div className="flex justify-between py-2 border-t border-gray-200 mt-1">
                             <span className="font-medium">Total</span>
-                            <span className="font-bold">{currencySymbol}{totalAmount.toFixed(2)}</span>
+                            <span className="font-bold">{currencySymbol}{(isVatEnabled ? totalAmount : netAmount).toFixed(2)}</span>
                           </div>
                         </div>
                       </div>
