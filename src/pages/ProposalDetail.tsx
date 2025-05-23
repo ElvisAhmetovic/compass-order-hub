@@ -142,13 +142,52 @@ const ProposalDetail = () => {
     },
   });
 
-  // Load company logo from saved company info
+  // Load company logo and size from saved company info
   useEffect(() => {
     const companyInfo = getCompanyInfo();
     if (companyInfo && companyInfo.logo) {
       setCompanyLogo(companyInfo.logo);
     }
+    if (companyInfo && companyInfo.logoSize) {
+      setLogoSize(companyInfo.logoSize);
+    }
   }, []);
+
+  // Handle logo change
+  const handleLogoChange = (logo: string) => {
+    setCompanyLogo(logo);
+    
+    // Save the logo to company info
+    const companyInfo = getCompanyInfo();
+    companyInfo.logo = logo;
+    companyInfo.logoSize = logoSize;
+    saveCompanyInfo(companyInfo);
+    
+    toast({
+      title: "Company logo updated",
+      description: "Your company logo has been updated successfully.",
+    });
+  };
+
+  // Decrease logo size
+  const decreaseLogoSize = () => {
+    const newSize = Math.max(10, logoSize - 5);
+    setLogoSize(newSize);
+    // Save the updated size
+    const companyInfo = getCompanyInfo();
+    companyInfo.logoSize = newSize;
+    saveCompanyInfo(companyInfo);
+  };
+
+  // Increase logo size
+  const increaseLogoSize = () => {
+    const newSize = Math.min(100, logoSize + 5);
+    setLogoSize(newSize);
+    // Save the updated size
+    const companyInfo = getCompanyInfo();
+    companyInfo.logoSize = newSize;
+    saveCompanyInfo(companyInfo);
+  };
 
   // Handle currency change
   useEffect(() => {
@@ -180,21 +219,6 @@ const ProposalDetail = () => {
       }
     }
   }, [id]);
-
-  // Handle logo upload or selection
-  const handleLogoChange = (logo: string) => {
-    setCompanyLogo(logo);
-    
-    // Save the logo to company info
-    const companyInfo = getCompanyInfo();
-    companyInfo.logo = logo;
-    saveCompanyInfo(companyInfo);
-    
-    toast({
-      title: "Company logo updated",
-      description: "Your company logo has been updated successfully.",
-    });
-  };
 
   // Trigger file input click
   const triggerLogoUpload = () => {
@@ -236,16 +260,6 @@ const ProposalDetail = () => {
       };
       reader.readAsDataURL(file);
     }
-  };
-
-  // Decrease logo size
-  const decreaseLogoSize = () => {
-    setLogoSize(prev => Math.max(10, prev - 5));
-  };
-
-  // Increase logo size
-  const increaseLogoSize = () => {
-    setLogoSize(prev => Math.min(100, prev + 5));
   };
 
   // Signature pad functions
@@ -546,7 +560,8 @@ const ProposalDetail = () => {
       netAmount,
       vatRate: 19, // Default VAT rate
       signatureUrl,
-      logo: companyLogo // Add company logo
+      logo: companyLogo, // Add company logo
+      logoSize: logoSize // Pass the logo size to the PDF generator
     };
     
     const success = await generateProposalPDF(proposalData, selectedLanguage);
@@ -600,7 +615,8 @@ const ProposalDetail = () => {
       netAmount,
       vatRate: 19,
       signatureUrl,
-      logo: companyLogo // Add company logo
+      logo: companyLogo, // Add company logo
+      logoSize: logoSize // Pass the logo size to the PDF previewer
     };
     
     const success = await previewProposalPDF(proposalData, selectedLanguage);
@@ -751,7 +767,10 @@ const ProposalDetail = () => {
                       src={companyLogo} 
                       alt="Company Logo" 
                       className="max-h-32 object-contain" 
-                      style={{ maxWidth: '100%' }}
+                      style={{ 
+                        maxWidth: `${logoSize}%`,
+                        height: 'auto'
+                      }}
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
                         target.src = "https://placehold.co/200x60?text=Your+Logo";
