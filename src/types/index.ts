@@ -1,5 +1,5 @@
 
-export type UserRole = "admin" | "user";
+export type UserRole = "admin" | "user" | "agent";
 
 export interface User {
   id: string;
@@ -30,6 +30,7 @@ export interface Order {
   contact_email: string;
   contact_phone?: string;
   company_address?: string;
+  company_link?: string;
   price: number;
   description: string;
   status: OrderStatus;
@@ -106,4 +107,66 @@ export interface Proposal {
   status: string;
   created_at: string;
   updated_at: string;
+  lineItems?: ProposalLineItem[];
+}
+
+export interface ProposalLineItem {
+  id: string;
+  proposal_id: string;
+  item_id: string;
+  name: string;
+  description: string;
+  quantity: number;
+  unit_price: number;
+  total_price: number;
+  category?: string;
+  created_at: string;
+  updated_at?: string;
+}
+
+export interface InventoryItem {
+  id: string;
+  name: string;
+  category: string;
+  description: string;
+  lastBooking: string | null;
+  stock: number;
+  unit: string;
+  price: string;
+  buyingPrice: string;
+}
+
+export type SupportInquiryStatus = "new" | "open" | "in-progress" | "resolved" | "closed";
+
+export interface SupportInquiry {
+  id: string;
+  user_id: string;
+  user_email: string;
+  user_name: string;
+  subject: string;
+  message: string;
+  status: SupportInquiryStatus;
+  created_at: string;
+  updated_at?: string;
+}
+
+export interface SupportReply {
+  id: string;
+  inquiry_id: string;
+  user_id: string;
+  user_name: string;
+  user_role: UserRole;
+  message: string;
+  created_at: string;
+}
+
+export interface LoginResult {
+  success: boolean;
+  error?: string;
+}
+
+export interface SignUpResult {
+  success: boolean;
+  error?: string;
+  needsEmailConfirmation?: boolean;
 }
