@@ -188,9 +188,9 @@ const ProposalDetail = () => {
       logoSize: previewLogoSize // Use preview logo size
     };
     
-    // Fix here: Check the function signature and adjust the arguments
+    // Fix: Pass the correct parameters according to the function signature
     const filename = `proposal-${proposalData.number || 'draft'}.pdf`;
-    generateProposalPDF(proposalData, { language: selectedLanguage, filename });
+    generateProposalPDF(proposalData, selectedLanguage, filename);
     
     toast({
       title: "PDF downloaded",
