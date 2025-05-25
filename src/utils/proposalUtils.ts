@@ -91,70 +91,87 @@ export const generateProposalPDF = async (
   // Calculate logo width based on logoSize (if provided)
   const logoWidth = proposalData.logoSize ? `${proposalData.logoSize}%` : '33%';
 
-  // HTML structure for the PDF
+  // HTML structure for the PDF - matching the screenshot design
   tempDiv.innerHTML = `
-    <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 210mm;">
-      <div style="display: flex; justify-content: space-between; margin-bottom: 40px;">
-        <div style="max-width: 50%;">
-          <div style="font-size: 12px; margin-bottom: 30px;">
+    <div style="font-family: Arial, sans-serif; padding: 30px; max-width: 210mm; background: white;">
+      <!-- Header Section -->
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px;">
+        <div style="flex: 1; max-width: 60%;">
+          <div style="font-size: 11px; color: #666; margin-bottom: 25px; border-bottom: 1px solid #ddd; padding-bottom: 5px;">
             ${companyInfo.name} · ${companyInfo.street} · ${companyInfo.postal} ${companyInfo.city}
           </div>
-          <div style="font-weight: bold; margin-bottom: 5px;">
-            ${proposalData.customer}
-          </div>
-          <div style="white-space: pre-line;">
-            ${proposalData.address || ''}
-            ${proposalData.country || ''}
-          </div>
-        </div>
-        <div style="text-align: right;">
-          <img src="${proposalData.logo || companyInfo.logo}" style="max-height: 60px; max-width: ${logoWidth}; margin-bottom: 20px;" onerror="this.src='https://placehold.co/200x60?text=Your+Logo'; this.onerror=null;" />
-          <div style="display: flex; justify-content: flex-end; margin-bottom: 10px;">
-            <div style="margin-right: 20px;">
-              <div style="font-weight: bold;">${t.proposal} N°</div>
-              <div style="font-weight: bold;">${t.date}</div>
-              <div style="font-weight: bold;">${t.customerRef}</div>
+          <div style="margin-bottom: 20px;">
+            <div style="font-size: 12px; color: #666; margin-bottom: 5px;">Destinatario diritto a</div>
+            <div style="font-weight: bold; font-size: 14px; margin-bottom: 8px;">
+              ${proposalData.customer}
             </div>
-            <div style="text-align: right;">
-              <div>${proposalData.number}</div>
-              <div>${new Date(proposalData.date || Date.now()).toLocaleDateString()}</div>
-              <div>${proposalData.reference || '-'}</div>
+            <div style="font-size: 12px; color: #333; line-height: 1.4;">
+              ${proposalData.address ? proposalData.address.split('\n').join('<br/>') : ''}
+              ${proposalData.country ? '<br/>' + proposalData.country : ''}
             </div>
           </div>
         </div>
+        
+        <div style="text-align: right; flex-shrink: 0;">
+          <img src="${proposalData.logo || companyInfo.logo}" style="max-height: 80px; max-width: ${logoWidth}; margin-bottom: 20px;" onerror="this.src='https://placehold.co/200x60?text=Your+Logo'; this.onerror=null;" />
+          
+          <table style="margin-left: auto; font-size: 12px;">
+            <tr>
+              <td style="padding: 3px 15px 3px 0; font-weight: bold; text-align: left;">${t.proposal} n°</td>
+              <td style="padding: 3px 0; text-align: right;">${proposalData.number}</td>
+            </tr>
+            <tr>
+              <td style="padding: 3px 15px 3px 0; font-weight: bold; text-align: left;">${t.date}</td>
+              <td style="padding: 3px 0; text-align: right;">${new Date(proposalData.date || Date.now()).toLocaleDateString()}</td>
+            </tr>
+            <tr>
+              <td style="padding: 3px 15px 3px 0; font-weight: bold; text-align: left;">${t.customerRef}</td>
+              <td style="padding: 3px 0; text-align: right;">${proposalData.reference || '-'}</td>
+            </tr>
+          </table>
+        </div>
       </div>
 
-      <h2 style="color: #2563eb; margin-bottom: 15px;">${t.proposal} ${proposalData.number}</h2>
+      <!-- Proposal Title -->
+      <h2 style="color: #2563eb; margin-bottom: 20px; font-size: 18px; font-weight: bold;">
+        ${t.proposal} ${proposalData.number}
+      </h2>
 
-      <div style="white-space: pre-line; margin-bottom: 20px;">
-        ${proposalData.content || ''}
+      <!-- Content Section -->
+      <div style="margin-bottom: 25px; font-size: 12px; line-height: 1.5; color: #333;">
+        ${proposalData.content ? proposalData.content.split('\n').join('<br/>') : ''}
       </div>
 
-      <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+      <!-- Items Table -->
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 25px; font-size: 11px;">
         <thead>
-          <tr style="background-color: #2563eb; color: white;">
-            <th style="padding: 8px; text-align: left;">${t.pos}</th>
-            <th style="padding: 8px; text-align: left;">${t.description}</th>
-            <th style="padding: 8px; text-align: right;">${t.quantity}</th>
-            <th style="padding: 8px; text-align: right;">${t.unitPrice}</th>
-            <th style="padding: 8px; text-align: right;">${t.totalPrice}</th>
+          <tr style="background-color: #4a90c2; color: white;">
+            <th style="padding: 10px 8px; text-align: left; font-weight: bold; border: 1px solid #4a90c2;">${t.pos}</th>
+            <th style="padding: 10px 8px; text-align: left; font-weight: bold; border: 1px solid #4a90c2;">${t.description}</th>
+            <th style="padding: 10px 8px; text-align: center; font-weight: bold; border: 1px solid #4a90c2;">${t.quantity}</th>
+            <th style="padding: 10px 8px; text-align: right; font-weight: bold; border: 1px solid #4a90c2;">${t.unitPrice}</th>
+            <th style="padding: 10px 8px; text-align: right; font-weight: bold; border: 1px solid #4a90c2;">${t.totalPrice}</th>
           </tr>
         </thead>
         <tbody>
           ${(proposalData.lineItems || []).map((item: any, index: number) => `
-            <tr>
-              <td style="padding: 8px; border-bottom: 1px solid #eee;">${index + 1}</td>
-              <td style="padding: 8px; border-bottom: 1px solid #eee;">
-                <div style="font-weight: bold;">${item.name || ''}</div>
-                <div>${item.description || ''}</div>
+            <tr style="border-bottom: 1px solid #e0e0e0;">
+              <td style="padding: 12px 8px; border: 1px solid #e0e0e0; text-align: center; font-weight: bold;">
+                ${index + 1}
               </td>
-              <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">
-                ${item.quantity} ${item.unit || ''}
+              <td style="padding: 12px 8px; border: 1px solid #e0e0e0;">
+                <div style="font-weight: bold; margin-bottom: 4px;">${item.name || ''}</div>
+                <div style="color: #666; font-size: 10px; line-height: 1.3;">
+                  ${item.description ? item.description.split('\n').join('<br/>') : ''}
+                </div>
               </td>
-              <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">
+              <td style="padding: 12px 8px; border: 1px solid #e0e0e0; text-align: center;">
+                ${item.quantity} ${item.unit || 'piece'}
+              </td>
+              <td style="padding: 12px 8px; border: 1px solid #e0e0e0; text-align: right;">
                 ${item.unit_price?.toFixed(2) || '0.00'} EUR
               </td>
-              <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">
+              <td style="padding: 12px 8px; border: 1px solid #e0e0e0; text-align: right; font-weight: bold;">
                 ${item.total_price?.toFixed(2) || '0.00'} EUR
               </td>
             </tr>
@@ -162,63 +179,85 @@ export const generateProposalPDF = async (
         </tbody>
       </table>
 
+      <!-- Totals Section -->
       <div style="display: flex; justify-content: flex-end; margin-bottom: 30px;">
-        <table style="width: 300px;">
+        <table style="width: 250px; font-size: 12px;">
           <tr>
-            <td style="padding: 5px;">${t.netAmount}</td>
-            <td style="padding: 5px; text-align: right;">${proposalData.netAmount?.toFixed(2) || '0.00'} EUR</td>
+            <td style="padding: 6px 12px; text-align: left; border-bottom: 1px solid #e0e0e0;">
+              ${t.netAmount}
+            </td>
+            <td style="padding: 6px 12px; text-align: right; border-bottom: 1px solid #e0e0e0;">
+              ${proposalData.netAmount?.toFixed(2) || '0.00'} EUR
+            </td>
           </tr>
           <tr>
-            <td style="padding: 5px;">${t.vat} ${proposalData.vatRate || '19'}%</td>
-            <td style="padding: 5px; text-align: right;">${proposalData.vatAmount?.toFixed(2) || '0.00'} EUR</td>
+            <td style="padding: 6px 12px; text-align: left; border-bottom: 1px solid #e0e0e0;">
+              ${t.vat} ${proposalData.vatRate || '19'}%
+            </td>
+            <td style="padding: 6px 12px; text-align: right; border-bottom: 1px solid #e0e0e0;">
+              ${proposalData.vatAmount?.toFixed(2) || '0.00'} EUR
+            </td>
           </tr>
-          <tr style="font-weight: bold;">
-            <td style="padding: 5px; border-top: 1px solid #000;">${t.grossAmount}</td>
-            <td style="padding: 5px; border-top: 1px solid #000; text-align: right;">${proposalData.totalAmount?.toFixed(2) || '0.00'} EUR</td>
+          <tr style="background-color: #f8f9fa;">
+            <td style="padding: 8px 12px; text-align: left; font-weight: bold; border: 2px solid #333;">
+              ${t.grossAmount}
+            </td>
+            <td style="padding: 8px 12px; text-align: right; font-weight: bold; border: 2px solid #333;">
+              ${proposalData.totalAmount?.toFixed(2) || '0.00'} EUR
+            </td>
           </tr>
         </table>
       </div>
 
-      <div style="margin-bottom: 40px; white-space: pre-line;">
+      <!-- Payment Terms -->
+      <div style="margin-bottom: 40px; font-size: 11px; line-height: 1.4; color: #555;">
         ${t.paymentTerms}
       </div>
       
-      <div style="margin-top: 60px; display: flex; justify-content: space-between;">
-        <div style="border-top: 1px solid #000; width: 40%;">
-          <div style="font-size: 12px; margin-top: 5px;">${t.placeDate}</div>
+      <!-- Signature Section -->
+      <div style="margin-top: 50px; display: flex; justify-content: space-between;">
+        <div style="width: 45%;">
+          <div style="border-top: 1px solid #333; padding-top: 8px;">
+            <div style="font-size: 10px; color: #666;">${t.placeDate}</div>
+          </div>
         </div>
-        <div style="border-top: 1px solid #000; width: 40%;">
-          <div style="font-size: 12px; margin-top: 5px;">${t.signature}</div>
-          ${proposalData.signatureUrl ? `<img src="${proposalData.signatureUrl}" style="max-height: 50px; margin-top: 5px;" />` : ''}
+        <div style="width: 45%;">
+          <div style="border-top: 1px solid #333; padding-top: 8px;">
+            <div style="font-size: 10px; color: #666;">${t.signature}</div>
+            ${proposalData.signatureUrl ? `<img src="${proposalData.signatureUrl}" style="max-height: 40px; margin-top: 8px;" />` : ''}
+          </div>
         </div>
       </div>
 
-      <div style="margin-top: 80px; font-size: 12px; display: flex; justify-content: space-between; color: #666;">
-        <div style="max-width: 50%;">
-          ${companyInfo.name}<br/>
-          ${companyInfo.contactPerson}<br/>
-          ${companyInfo.street}<br/>
-          ${companyInfo.postal} ${companyInfo.city}<br/>
-          ${companyInfo.country}
-        </div>
-        <div style="max-width: 50%;">
-          Tel: ${companyInfo.phone}<br/>
-          ${companyInfo.fax ? 'Fax: ' + companyInfo.fax + '<br/>' : ''}
-          E-Mail: ${companyInfo.email}<br/>
-          Web: ${companyInfo.website}
-        </div>
-        <div style="max-width: 50%;">
-          ${companyInfo.registrationNumber ? 'N° Registro Mercantil: ' + companyInfo.registrationNumber + '<br/>' : ''}
-          ${companyInfo.vatId ? 'N° de ident. IVA: ' + companyInfo.vatId + '<br/>' : ''}
-          ${companyInfo.taxNumber ? 'Número de impuesto: ' + companyInfo.taxNumber + '<br/>' : ''}
-          ${companyInfo.director ? 'Director general: ' + companyInfo.director + '<br/>' : ''}
-        </div>
-        <div style="max-width: 50%;">
-          ${companyInfo.wise ? 'WISE<br/>' : ''}
-          ${companyInfo.accountNumber ? 'N° de cuenta: ' + companyInfo.accountNumber + '<br/>' : ''}
-          ${companyInfo.bankCode ? 'N° bancario: ' + companyInfo.bankCode + '<br/>' : ''}
-          ${companyInfo.iban ? 'IBAN: ' + companyInfo.iban + '<br/>' : ''}
-          ${companyInfo.bic ? 'BIC: ' + companyInfo.bic : ''}
+      <!-- Footer Company Info -->
+      <div style="margin-top: 60px; font-size: 9px; color: #666; border-top: 1px solid #ddd; padding-top: 15px;">
+        <div style="display: flex; justify-content: space-between;">
+          <div style="width: 22%;">
+            <strong>${companyInfo.name}</strong><br/>
+            ${companyInfo.contactPerson}<br/>
+            ${companyInfo.street}<br/>
+            ${companyInfo.postal} ${companyInfo.city}<br/>
+            ${companyInfo.country}
+          </div>
+          <div style="width: 22%;">
+            Tel: ${companyInfo.phone}<br/>
+            ${companyInfo.fax ? 'Fax: ' + companyInfo.fax + '<br/>' : ''}
+            E-Mail: ${companyInfo.email}<br/>
+            Web: ${companyInfo.website}
+          </div>
+          <div style="width: 22%;">
+            ${companyInfo.registrationNumber ? 'Reg. Merc.: ' + companyInfo.registrationNumber + '<br/>' : ''}
+            ${companyInfo.vatId ? 'IVA: ' + companyInfo.vatId + '<br/>' : ''}
+            ${companyInfo.taxNumber ? 'Tax: ' + companyInfo.taxNumber + '<br/>' : ''}
+            ${companyInfo.director ? 'Dir.: ' + companyInfo.director + '<br/>' : ''}
+          </div>
+          <div style="width: 22%;">
+            ${companyInfo.wise ? 'WISE<br/>' : ''}
+            ${companyInfo.accountNumber ? 'Account: ' + companyInfo.accountNumber + '<br/>' : ''}
+            ${companyInfo.bankCode ? 'Bank: ' + companyInfo.bankCode + '<br/>' : ''}
+            ${companyInfo.iban ? 'IBAN: ' + companyInfo.iban + '<br/>' : ''}
+            ${companyInfo.bic ? 'BIC: ' + companyInfo.bic : ''}
+          </div>
         </div>
       </div>
     </div>
