@@ -91,6 +91,15 @@ export const generateProposalPDF = async (
   // Calculate logo width based on logoSize (if provided)
   const logoWidth = proposalData.logoSize ? `${proposalData.logoSize}%` : '33%';
 
+  // Check if VAT is enabled
+  const isVatEnabled = proposalData.vatEnabled !== false; // Default to true if not specified
+
+  // Calculate totals based on current VAT setting
+  const netAmount = proposalData.netAmount || 0;
+  const vatRate = proposalData.vatRate || 19;
+  const vatAmount = isVatEnabled ? (netAmount * vatRate / 100) : 0;
+  const totalAmount = netAmount + vatAmount;
+
   // HTML structure for the PDF - matching the screenshot design
   tempDiv.innerHTML = `
     <div style="font-family: Arial, sans-serif; padding: 30px; max-width: 210mm; background: white;">
@@ -103,7 +112,7 @@ export const generateProposalPDF = async (
           <div style="margin-bottom: 20px;">
             <div style="font-size: 12px; color: #666; margin-bottom: 5px;">Destinatario diritto a</div>
             <div style="font-weight: bold; font-size: 14px; margin-bottom: 8px;">
-              ${proposalData.customer}
+              ${proposalData.customer || ''}
             </div>
             <div style="font-size: 12px; color: #333; line-height: 1.4;">
               ${proposalData.address ? proposalData.address.split('\n').join('<br/>') : ''}
@@ -118,7 +127,7 @@ export const generateProposalPDF = async (
           <table style="margin-left: auto; font-size: 12px;">
             <tr>
               <td style="padding: 3px 15px 3px 0; font-weight: bold; text-align: left;">${t.proposal} n°</td>
-              <td style="padding: 3px 0; text-align: right;">${proposalData.number}</td>
+              <td style="padding: 3px 0; text-align: right;">${proposalData.number || ''}</td>
             </tr>
             <tr>
               <td style="padding: 3px 15px 3px 0; font-weight: bold; text-align: left;">${t.date}</td>
@@ -134,7 +143,7 @@ export const generateProposalPDF = async (
 
       <!-- Proposal Title -->
       <h2 style="color: #2563eb; margin-bottom: 20px; font-size: 18px; font-weight: bold;">
-        ${t.proposal} ${proposalData.number}
+        ${t.proposal} ${proposalData.number || ''}
       </h2>
 
       <!-- Content Section -->
@@ -166,13 +175,13 @@ export const generateProposalPDF = async (
                 </div>
               </td>
               <td style="padding: 12px 8px; border: 1px solid #e0e0e0; text-align: center;">
-                ${item.quantity} ${item.unit || 'piece'}
+                ${item.quantity || 0} ${item.unit || 'piece'}
               </td>
               <td style="padding: 12px 8px; border: 1px solid #e0e0e0; text-align: right;">
-                ${item.unit_price?.toFixed(2) || '0.00'} EUR
+                ${(item.unit_price || 0).toFixed(2)} EUR
               </td>
               <td style="padding: 12px 8px; border: 1px solid #e0e0e0; text-align: right; font-weight: bold;">
-                ${item.total_price?.toFixed(2) || '0.00'} EUR
+                ${(item.total_price || 0).toFixed(2)} EUR
               </td>
             </tr>
           `).join('')}
@@ -187,23 +196,25 @@ export const generateProposalPDF = async (
               ${t.netAmount}
             </td>
             <td style="padding: 6px 12px; text-align: right; border-bottom: 1px solid #e0e0e0;">
-              ${proposalData.netAmount?.toFixed(2) || '0.00'} EUR
+              ${netAmount.toFixed(2)} EUR
             </td>
           </tr>
+          ${isVatEnabled ? `
           <tr>
             <td style="padding: 6px 12px; text-align: left; border-bottom: 1px solid #e0e0e0;">
-              ${t.vat} ${proposalData.vatRate || '19'}%
+              ${t.vat} ${vatRate}%
             </td>
             <td style="padding: 6px 12px; text-align: right; border-bottom: 1px solid #e0e0e0;">
-              ${proposalData.vatAmount?.toFixed(2) || '0.00'} EUR
+              ${vatAmount.toFixed(2)} EUR
             </td>
           </tr>
+          ` : ''}
           <tr style="background-color: #f8f9fa;">
             <td style="padding: 8px 12px; text-align: left; font-weight: bold; border: 2px solid #333;">
               ${t.grossAmount}
             </td>
             <td style="padding: 8px 12px; text-align: right; font-weight: bold; border: 2px solid #333;">
-              ${proposalData.totalAmount?.toFixed(2) || '0.00'} EUR
+              ${totalAmount.toFixed(2)} EUR
             </td>
           </tr>
         </table>
@@ -292,7 +303,7 @@ export const generateProposalPDF = async (
     }
     
     // For download mode, save the PDF with custom filename if provided
-    const filename = customFilename || `proposal_${proposalData.number}.pdf`;
+    const filename = customFilename || `proposal_${proposalData.number || 'draft'}.pdf`;
     pdf.save(filename);
     return true;
   } catch (error) {
