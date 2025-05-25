@@ -91,14 +91,17 @@ export const generateProposalPDF = async (
   // Calculate logo width based on logoSize (if provided)
   const logoWidth = proposalData.logoSize ? `${proposalData.logoSize}%` : '33%';
 
-  // Check if VAT is enabled
-  const isVatEnabled = proposalData.vatEnabled !== false; // Default to true if not specified
+  // Check if VAT is enabled - fix the logic here
+  console.log('VAT enabled check:', proposalData.vatEnabled, typeof proposalData.vatEnabled);
+  const isVatEnabled = proposalData.vatEnabled === true || proposalData.vatEnabled === undefined;
 
   // Calculate totals based on current VAT setting
   const netAmount = proposalData.netAmount || 0;
   const vatRate = proposalData.vatRate || 19;
   const vatAmount = isVatEnabled ? (netAmount * vatRate / 100) : 0;
   const totalAmount = netAmount + vatAmount;
+
+  console.log('PDF Generation - VAT Enabled:', isVatEnabled, 'Net:', netAmount, 'VAT Amount:', vatAmount, 'Total:', totalAmount);
 
   // HTML structure for the PDF - matching the screenshot design
   tempDiv.innerHTML = `
@@ -211,10 +214,10 @@ export const generateProposalPDF = async (
           ` : ''}
           <tr style="background-color: #f8f9fa;">
             <td style="padding: 8px 12px; text-align: left; font-weight: bold; border: 2px solid #333;">
-              ${t.grossAmount}
+              ${isVatEnabled ? t.grossAmount : t.netAmount}
             </td>
             <td style="padding: 8px 12px; text-align: right; font-weight: bold; border: 2px solid #333;">
-              ${totalAmount.toFixed(2)} EUR
+              ${isVatEnabled ? totalAmount.toFixed(2) : netAmount.toFixed(2)} EUR
             </td>
           </tr>
         </table>
