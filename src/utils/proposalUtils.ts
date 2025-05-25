@@ -1,4 +1,3 @@
-
 import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
 import { Proposal, ProposalLineItem, InventoryItem } from "@/types";
@@ -91,9 +90,9 @@ export const generateProposalPDF = async (
   // Calculate logo width based on logoSize (if provided)
   const logoWidth = proposalData.logoSize ? `${proposalData.logoSize}%` : '33%';
 
-  // Check if VAT is enabled - fix the logic here
+  // Check if VAT is enabled - fix the logic to properly handle false values
   console.log('VAT enabled check:', proposalData.vatEnabled, typeof proposalData.vatEnabled);
-  const isVatEnabled = proposalData.vatEnabled === true || proposalData.vatEnabled === undefined;
+  const isVatEnabled = proposalData.vatEnabled === true;
 
   // Calculate totals based on current VAT setting
   const netAmount = proposalData.netAmount || 0;
