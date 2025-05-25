@@ -1,3 +1,4 @@
+
 import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
 import { Proposal, ProposalLineItem, InventoryItem } from "@/types";
@@ -28,7 +29,8 @@ export const translations = {
     grossAmount: "Gross amount",
     paymentTerms: "By placing your order, you agree to pay for the services included in this offer within 7 days of receipt of the invoice.",
     placeDate: "Place / Date",
-    signature: "Signature / Stamp"
+    signature: "Signature / Stamp",
+    recipient: "Recipient"
   },
   de: {
     proposal: "Angebot",
@@ -47,7 +49,8 @@ export const translations = {
     grossAmount: "Bruttobetrag",
     paymentTerms: "Mit der Bestellung erklären Sie sich damit einverstanden, die in diesem Angebot enthaltenen Leistungen innerhalb von 7 Tagen nach Erhalt der Rechnung zu bezahlen.",
     placeDate: "Ort / Datum",
-    signature: "Unterschrift / Stempel"
+    signature: "Unterschrift / Stempel",
+    recipient: "Empfänger"
   },
   es: {
     proposal: "Oferta",
@@ -66,7 +69,8 @@ export const translations = {
     grossAmount: "Cantidad bruto",
     paymentTerms: "Al realizar su pedido, acepta pagar los servicios incluidos en esta oferta en un plazo de 7 días a partir de la recepción de la factura.",
     placeDate: "Lugar / Fecha",
-    signature: "Firma / Sello"
+    signature: "Firma / Sello",
+    recipient: "Destinatario"
   }
 };
 
@@ -112,7 +116,7 @@ export const generateProposalPDF = async (
             ${companyInfo.name} · ${companyInfo.street} · ${companyInfo.postal} ${companyInfo.city}
           </div>
           <div style="margin-bottom: 20px;">
-            <div style="font-size: 12px; color: #666; margin-bottom: 5px;">Destinatario diritto a</div>
+            <div style="font-size: 12px; color: #666; margin-bottom: 5px;">${t.recipient}</div>
             <div style="font-weight: bold; font-size: 14px; margin-bottom: 8px;">
               ${proposalData.customer || ''}
             </div>
