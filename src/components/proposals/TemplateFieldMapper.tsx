@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,8 +6,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Trash2, Save, Plus, Edit3 } from "lucide-react";
+import { Trash2, Save, Plus, Edit3, Wand2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import TemplatePresets from './TemplatePresets';
 
 export interface TemplateField {
   id: string;
@@ -42,6 +42,7 @@ const TemplateFieldMapper: React.FC<TemplateFieldMapperProps> = ({
   const [selectedField, setSelectedField] = useState<TemplateField | null>(null);
   const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
   const [editingField, setEditingField] = useState<string | null>(null);
+  const [showPresets, setShowPresets] = useState(false);
 
   // Load saved fields on component mount
   React.useEffect(() => {
@@ -150,6 +151,16 @@ const TemplateFieldMapper: React.FC<TemplateFieldMapperProps> = ({
     });
   };
 
+  const handleLoadPreset = (presetFields: TemplateField[]) => {
+    setFields(presetFields);
+    onFieldsChange?.(presetFields);
+    setShowPresets(false);
+    toast({
+      title: "Preset loaded",
+      description: `${presetFields.length} fields have been loaded from the preset.`
+    });
+  };
+
   return (
     <div className="space-y-4">
       {/* Controls */}
@@ -161,6 +172,15 @@ const TemplateFieldMapper: React.FC<TemplateFieldMapperProps> = ({
         >
           <Plus size={16} />
           {isCreatingField ? 'Cancel' : 'Add Field'}
+        </Button>
+        
+        <Button
+          onClick={() => setShowPresets(!showPresets)}
+          variant="outline"
+          className="flex items-center gap-2"
+        >
+          <Wand2 size={16} />
+          {showPresets ? 'Hide Presets' : 'Load Preset'}
         </Button>
         
         {fields.length > 0 && (
@@ -184,6 +204,11 @@ const TemplateFieldMapper: React.FC<TemplateFieldMapperProps> = ({
           </>
         )}
       </div>
+
+      {/* Presets Panel */}
+      {showPresets && (
+        <TemplatePresets onLoadPreset={handleLoadPreset} />
+      )}
 
       {isCreatingField && (
         <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">

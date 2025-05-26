@@ -16,7 +16,7 @@ import { v4 as uuidv4 } from "uuid";
 import { useNavigate, useParams } from "react-router-dom";
 import { generateProposalPDF, previewProposalPDF } from "@/utils/proposalUtils";
 import TemplateManager from "@/components/proposals/TemplateManager";
-import DynamicProposalForm from "@/components/proposals/DynamicProposalForm";
+import EnhancedDynamicForm from "@/components/proposals/EnhancedDynamicForm";
 import { TemplateField } from "@/components/proposals/TemplateFieldMapper";
 
 interface ProposalDetailParams {
@@ -286,19 +286,11 @@ const ProposalDetail = () => {
               {/* Left Column - Template Manager */}
               <div className="space-y-6">
                 <TemplateManager onTemplateChange={handleTemplateChange} />
-                
-                {/* Dynamic Fields Form */}
-                {templateFields.length > 0 && (
-                  <DynamicProposalForm 
-                    fields={templateFields}
-                    values={dynamicFieldValues}
-                    onFieldChange={handleDynamicFieldChange}
-                  />
-                )}
               </div>
 
-              {/* Right Column - Standard Proposal Form */}
+              {/* Right Column - Enhanced Form */}
               <div className="space-y-6">
+                {/* Basic Proposal Details */}
                 <Card>
                   <CardHeader>
                     <CardTitle>Basic Proposal Details</CardTitle>
@@ -415,6 +407,15 @@ const ProposalDetail = () => {
                     </div>
                   </CardContent>
                 </Card>
+
+                {/* Enhanced Dynamic Fields Form */}
+                {templateFields.length > 0 && (
+                  <EnhancedDynamicForm 
+                    fields={templateFields}
+                    values={dynamicFieldValues}
+                    onFieldChange={handleDynamicFieldChange}
+                  />
+                )}
               </div>
             </div>
           </div>
