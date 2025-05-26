@@ -87,137 +87,162 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
   const t = translations[language as keyof typeof translations] || translations.en;
   const companyInfo = getCompanyInfo();
 
-  // REPLACE THIS URL WITH YOUR UPLOADED SCREENSHOT
-  // Upload your screenshot to a hosting service or convert to base64
-  const templateImageUrl = "https://your-screenshot-url-here.jpg"; // Replace with your actual screenshot URL
+  // Get the uploaded template image from localStorage
+  const templateImage = localStorage.getItem('proposalTemplateImage') || '';
+
+  if (!templateImage) {
+    // Fallback to a simple template if no image is uploaded
+    return `
+      <div style="font-family: Arial, sans-serif; width: 794px; height: 1123px; background: white; margin: 0; padding: 40px; position: relative;">
+        <div style="text-align: center; margin-bottom: 40px;">
+          <h1 style="color: #333; margin-bottom: 20px;">PROPOSAL</h1>
+          <p style="color: #666;">Please upload your template image in the Template Manager</p>
+        </div>
+        
+        <div style="margin-bottom: 30px;">
+          <h3>Proposal Details:</h3>
+          <p><strong>Number:</strong> ${proposalData.proposalNumber || 'Not specified'}</p>
+          <p><strong>Customer:</strong> ${proposalData.recipientName || 'Not specified'}</p>
+          <p><strong>Date:</strong> ${proposalData.proposalDate || new Date().toLocaleDateString()}</p>
+        </div>
+        
+        <div style="margin-bottom: 30px;">
+          <h3>Service Details:</h3>
+          <p><strong>Service:</strong> ${proposalData.serviceName || 'Not specified'}</p>
+          <p><strong>Price:</strong> ${proposalData.servicePrice || '0.00'} EUR</p>
+          <p><strong>Total:</strong> ${proposalData.totalAmount || '0.00'} EUR</p>
+        </div>
+      </div>
+    `;
+  }
 
   return `
     <div style="font-family: Arial, sans-serif; width: 794px; height: 1123px; background: white; margin: 0; padding: 0; position: relative; overflow: hidden;">
       
-      <!-- Your Screenshot as Background Template -->
-      <img src="${templateImageUrl}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1;" />
+      <!-- User's Uploaded Screenshot as Background Template -->
+      <img src="${templateImage}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1;" />
       
-      <!-- Editable Text Overlays positioned to match your screenshot -->
+      <!-- Editable Text Overlays positioned to match the screenshot -->
       <div style="position: absolute; z-index: 2; width: 100%; height: 100%;">
         
-        <!-- Recipient Name (positioned where "Name Surname" appears) -->
-        <div style="position: absolute; top: 180px; left: 50px; font-size: 12px; font-weight: bold; color: #000;">
+        <!-- Recipient Name -->
+        <div style="position: absolute; top: 180px; left: 50px; font-size: 12px; font-weight: bold; color: #000; background: rgba(255,255,255,0.8); padding: 2px 4px; border-radius: 2px;">
           ${proposalData.recipientName || 'Name Surname'}
         </div>
         
-        <!-- Recipient Address (positioned where address appears) -->
-        <div style="position: absolute; top: 200px; left: 50px; font-size: 11px; color: #000;">
+        <!-- Recipient Address -->
+        <div style="position: absolute; top: 200px; left: 50px; font-size: 11px; color: #000; background: rgba(255,255,255,0.8); padding: 2px 4px; border-radius: 2px;">
           ${proposalData.recipientAddress || 'Ledeganckkaai 15, 2000 Antwerpen'}
         </div>
         
-        <!-- Recipient Email (positioned where email appears) -->
-        <div style="position: absolute; top: 220px; left: 50px; font-size: 11px; color: #000;">
+        <!-- Recipient Email -->
+        <div style="position: absolute; top: 220px; left: 50px; font-size: 11px; color: #000; background: rgba(255,255,255,0.8); padding: 2px 4px; border-radius: 2px;">
           ${proposalData.recipientEmail || 'Mondzorg.NieuwZuid@outlook.com'}
         </div>
         
-        <!-- Recipient Country (positioned where "Belgium" appears) -->
-        <div style="position: absolute; top: 240px; left: 50px; font-size: 11px; color: #000;">
+        <!-- Recipient Country -->
+        <div style="position: absolute; top: 240px; left: 50px; font-size: 11px; color: #000; background: rgba(255,255,255,0.8); padding: 2px 4px; border-radius: 2px;">
           ${proposalData.recipientCountry || 'Belgium'}
         </div>
         
-        <!-- Proposal Number (positioned where "AN-9993" appears in table) -->
-        <div style="position: absolute; top: 180px; right: 50px; font-size: 11px; color: #000;">
+        <!-- Proposal Number -->
+        <div style="position: absolute; top: 180px; right: 50px; font-size: 11px; color: #000; background: rgba(255,255,255,0.8); padding: 2px 4px; border-radius: 2px;">
           ${proposalData.proposalNumber || 'AN-9993'}
         </div>
         
-        <!-- Date (positioned where date appears in table) -->
-        <div style="position: absolute; top: 200px; right: 50px; font-size: 11px; color: #000;">
+        <!-- Date -->
+        <div style="position: absolute; top: 200px; right: 50px; font-size: 11px; color: #000; background: rgba(255,255,255,0.8); padding: 2px 4px; border-radius: 2px;">
           ${proposalData.proposalDate || new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
         </div>
         
-        <!-- Customer Number (positioned where "7865" appears) -->
-        <div style="position: absolute; top: 220px; right: 50px; font-size: 11px; color: #000;">
+        <!-- Customer Number -->
+        <div style="position: absolute; top: 220px; right: 50px; font-size: 11px; color: #000; background: rgba(255,255,255,0.8); padding: 2px 4px; border-radius: 2px;">
           ${proposalData.customerNumber || '7865'}
         </div>
         
-        <!-- Your Contact (positioned where "Thomas Klein" appears) -->
-        <div style="position: absolute; top: 240px; right: 50px; font-size: 11px; color: #000;">
+        <!-- Your Contact -->
+        <div style="position: absolute; top: 240px; right: 50px; font-size: 11px; color: #000; background: rgba(255,255,255,0.8); padding: 2px 4px; border-radius: 2px;">
           ${proposalData.yourContact || 'Thomas Klein'}
         </div>
         
-        <!-- Proposal Title in Main Heading (positioned where "Proposal AN-9993" appears) -->
-        <div style="position: absolute; top: 320px; left: 50px; font-size: 18px; font-weight: bold; color: #000;">
+        <!-- Proposal Title -->
+        <div style="position: absolute; top: 320px; left: 50px; font-size: 18px; font-weight: bold; color: #000; background: rgba(255,255,255,0.9); padding: 4px 8px; border-radius: 3px;">
           Proposal ${proposalData.proposalNumber || 'AN-9993'}
         </div>
         
-        <!-- Main Proposal Introduction (positioned where the intro text appears) -->
-        <div style="position: absolute; top: 360px; left: 50px; right: 50px; font-size: 12px; color: #000; line-height: 1.4;">
+        <!-- Introduction -->
+        <div style="position: absolute; top: 360px; left: 50px; right: 50px; font-size: 12px; color: #000; line-height: 1.4; background: rgba(255,255,255,0.9); padding: 8px; border-radius: 4px;">
           <strong>${proposalData.introductionTitle || 'Protect your online REPUTATION!'}</strong>
           <br/>${proposalData.introductionText || 'Thank you for your enquiry. We will be happy to provide you with the requested non-binding offer.'}
         </div>
         
-        <!-- Service Name (positioned where "SILBER-OPTIMIERUNGSPAKET ★★" appears) -->
-        <div style="position: absolute; top: 450px; left: 60px; font-size: 11px; font-weight: bold; color: #e67e22;">
+        <!-- Service Name -->
+        <div style="position: absolute; top: 450px; left: 60px; font-size: 11px; font-weight: bold; color: #e67e22; background: rgba(255,255,255,0.9); padding: 3px 6px; border-radius: 2px;">
           ${proposalData.serviceName || 'SILBER-OPTIMIERUNGSPAKET ★★'}
         </div>
         
-        <!-- Service Description (positioned where the service description text appears) -->
-        <div style="position: absolute; top: 470px; left: 60px; right: 350px; font-size: 9px; color: #666; line-height: 1.3;">
+        <!-- Service Description -->
+        <div style="position: absolute; top: 470px; left: 60px; right: 350px; font-size: 9px; color: #666; line-height: 1.3; background: rgba(255,255,255,0.9); padding: 6px; border-radius: 3px;">
           ${proposalData.serviceDescription || 'Remove Google Maps entry, i.e., you will receive a new, optimized Google My Business listing...'}
         </div>
         
-        <!-- Service Price (positioned where "399.00 EUR" appears in PRICE column) -->
-        <div style="position: absolute; top: 450px; right: 250px; font-size: 11px; color: #000; text-align: center;">
+        <!-- Service Price -->
+        <div style="position: absolute; top: 450px; right: 250px; font-size: 11px; color: #000; text-align: center; background: rgba(255,255,255,0.9); padding: 3px 6px; border-radius: 2px;">
           ${proposalData.servicePrice || '399.00'} EUR
         </div>
         
-        <!-- Service Quantity (positioned where "1" appears in QTY column) -->
-        <div style="position: absolute; top: 450px; right: 180px; font-size: 11px; color: #000; text-align: center;">
+        <!-- Service Quantity -->
+        <div style="position: absolute; top: 450px; right: 180px; font-size: 11px; color: #000; text-align: center; background: rgba(255,255,255,0.9); padding: 3px 6px; border-radius: 2px;">
           ${proposalData.serviceQuantity || '1'}
         </div>
         
-        <!-- Service Total (positioned where total appears in TOTAL column) -->
-        <div style="position: absolute; top: 450px; right: 60px; font-size: 11px; font-weight: bold; color: #000; text-align: right;">
+        <!-- Service Total -->
+        <div style="position: absolute; top: 450px; right: 60px; font-size: 11px; font-weight: bold; color: #000; text-align: right; background: rgba(255,255,255,0.9); padding: 3px 6px; border-radius: 2px;">
           ${proposalData.serviceTotal || '399.00'} EUR
         </div>
         
-        <!-- Additional Service Details (positioned where review and benefit text appears) -->
-        <div style="position: absolute; top: 510px; left: 60px; right: 350px; font-size: 9px; color: #666; line-height: 1.3;">
+        <!-- Additional Service Details -->
+        <div style="position: absolute; top: 510px; left: 60px; right: 350px; font-size: 9px; color: #666; line-height: 1.3; background: rgba(255,255,255,0.9); padding: 6px; border-radius: 3px;">
           ${proposalData.additionalDetails || '5/5★★★★★ reviews. We optimize and strengthen your presence on Google Maps with your Google My Business listing. You benefit from this by reaching more customers and being easier to find.'}
         </div>
         
-        <!-- Subtotal (positioned where subtotal value appears) -->
-        <div style="position: absolute; top: 600px; right: 60px; font-size: 11px; color: #000;">
+        <!-- Subtotal -->
+        <div style="position: absolute; top: 600px; right: 60px; font-size: 11px; color: #000; background: rgba(255,255,255,0.9); padding: 3px 6px; border-radius: 2px;">
           ${proposalData.subtotal || '399.00'} EUR
         </div>
         
-        <!-- VAT Amount (positioned where VAT value appears) -->
-        <div style="position: absolute; top: 620px; right: 60px; font-size: 11px; color: #000;">
+        <!-- VAT Amount -->
+        <div style="position: absolute; top: 620px; right: 60px; font-size: 11px; color: #000; background: rgba(255,255,255,0.9); padding: 3px 6px; border-radius: 2px;">
           ${proposalData.vatAmount || '0.00'} EUR
         </div>
         
-        <!-- Total Amount (positioned where final total appears) -->
-        <div style="position: absolute; top: 640px; right: 60px; font-size: 11px; font-weight: bold; color: #000;">
+        <!-- Total Amount -->
+        <div style="position: absolute; top: 640px; right: 60px; font-size: 11px; font-weight: bold; color: #000; background: rgba(255,255,255,0.9); padding: 3px 6px; border-radius: 2px;">
           ${proposalData.totalAmount || '399.00'} EUR
         </div>
         
-        <!-- Account Number (positioned where account number appears) -->
-        <div style="position: absolute; top: 720px; left: 140px; font-size: 10px; color: #000;">
+        <!-- Account Number -->
+        <div style="position: absolute; top: 720px; left: 140px; font-size: 10px; color: #000; background: rgba(255,255,255,0.8); padding: 2px 4px; border-radius: 2px;">
           ${proposalData.accountNumber || '12356587965497'}
         </div>
         
-        <!-- Account Holder Name (positioned where "YOUR NAME" appears) -->
-        <div style="position: absolute; top: 740px; left: 80px; font-size: 10px; color: #000;">
+        <!-- Account Holder Name -->
+        <div style="position: absolute; top: 740px; left: 80px; font-size: 10px; color: #000; background: rgba(255,255,255,0.8); padding: 2px 4px; border-radius: 2px;">
           ${proposalData.accountHolderName || 'YOUR NAME'}
         </div>
         
-        <!-- Payment Method (positioned where "DEBIT CARD" appears) -->
-        <div style="position: absolute; top: 760px; left: 130px; font-size: 10px; color: #000;">
+        <!-- Payment Method -->
+        <div style="position: absolute; top: 760px; left: 130px; font-size: 10px; color: #000; background: rgba(255,255,255,0.8); padding: 2px 4px; border-radius: 2px;">
           ${proposalData.paymentMethod || 'DEBIT CARD'}
         </div>
         
-        <!-- Terms and Conditions Text (positioned where terms text appears) -->
-        <div style="position: absolute; top: 820px; left: 50px; right: 50px; font-size: 10px; color: #000; line-height: 1.4;">
+        <!-- Terms and Conditions -->
+        <div style="position: absolute; top: 820px; left: 50px; right: 50px; font-size: 10px; color: #000; line-height: 1.4; background: rgba(255,255,255,0.9); padding: 8px; border-radius: 4px;">
           ${proposalData.termsAndConditions || 'By placing your order, you agree to pay for the services included in this offer within 7 days of receipt of the invoice. The invoice will only be issued after the service has been provided.'}
         </div>
         
-        <!-- Place/Date field (positioned where signature line appears) -->
-        <div style="position: absolute; bottom: 150px; left: 50px; font-size: 10px; color: #000;">
+        <!-- Place/Date -->
+        <div style="position: absolute; bottom: 150px; left: 50px; font-size: 10px; color: #000; background: rgba(255,255,255,0.8); padding: 2px 4px; border-radius: 2px;">
           ${proposalData.placeDate || ''}
         </div>
         
