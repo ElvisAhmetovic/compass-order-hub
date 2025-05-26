@@ -1,3 +1,4 @@
+
 import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
 import { Proposal, ProposalLineItem, InventoryItem } from "@/types";
@@ -110,6 +111,11 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
 
   const currencySymbol = getCurrencySymbol(proposalData.currency || 'EUR');
 
+  // Use proposal payment data if available, otherwise fall back to company info
+  const paymentAccountNumber = proposalData.accountNumber || companyInfo.accountNumber || '12345678901234567';
+  const paymentAccountName = proposalData.accountName || companyInfo.accountHolder || 'YOUR NAME';
+  const paymentMethodValue = proposalData.paymentMethod || companyInfo.paymentMethod || 'CREDIT CARD';
+
   console.log('PDF Generation - Using data:', {
     customerName: proposalData.customerName,
     customerAddress: proposalData.customerAddress,
@@ -122,7 +128,12 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
     vatEnabled: isVatEnabled,
     netAmount,
     vatAmount,
-    totalAmount
+    totalAmount,
+    paymentData: {
+      accountNumber: paymentAccountNumber,
+      accountName: paymentAccountName,
+      paymentMethod: paymentMethodValue
+    }
   });
 
   return `
@@ -243,9 +254,9 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
       <div style="margin-bottom: 20px; background-color: #f8f9fa; padding: 15px; border-left: 4px solid #4a90e2;">
         <div style="font-weight: bold; margin-bottom: 8px;">${t.paymentData}</div>
         <div style="line-height: 1.4;">
-          <div>${t.accountNr} ${companyInfo.accountNumber || '12345678901234567'}</div>
-          <div>${t.name} ${companyInfo.accountHolder || 'YOUR NAME'}</div>
-          <div>${t.paymentMethod} ${companyInfo.paymentMethod || 'CREDIT CARD'}</div>
+          <div>${t.accountNr} ${paymentAccountNumber}</div>
+          <div>${t.name} ${paymentAccountName}</div>
+          <div>${t.paymentMethod} ${paymentMethodValue}</div>
         </div>
       </div>
 
