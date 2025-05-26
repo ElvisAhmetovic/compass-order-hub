@@ -18,6 +18,7 @@ import ProposalDetail from './pages/ProposalDetail';
 import Invoices from './pages/Invoices';
 import InvoiceDetail from './pages/InvoiceDetail';
 import Clients from './pages/Clients';
+import Templates from './pages/Templates';
 
 function App() {
   return (
@@ -203,6 +204,14 @@ function App() {
             element={
               <RequireAuth>
                 <Clients />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/templates"
+            element={
+              <RequireAuth>
+                <Templates />
               </RequireAuth>
             }
           />
