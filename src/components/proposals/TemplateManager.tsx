@@ -1,12 +1,13 @@
-
 import React, { useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Upload, Save, Eye, FileText, AlertCircle } from "lucide-react";
+import { Upload, Save, Eye, FileText, AlertCircle, Settings } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import * as pdfjsLib from 'pdfjs-dist';
+import TemplateFieldMapper, { TemplateField } from './TemplateFieldMapper';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface TemplateManagerProps {
   onTemplateChange?: (templateData: any) => void;
@@ -18,16 +19,17 @@ const TemplateManager: React.FC<TemplateManagerProps> = ({ onTemplateChange }) =
   const [templateImage, setTemplateImage] = useState<string>('');
   const [isUploading, setIsUploading] = useState(false);
   const [uploadedFileType, setUploadedFileType] = useState<string>('');
+  const [templateFields, setTemplateFields] = useState<TemplateField[]>([]);
 
   // File size limit (10MB)
   const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
-  // Initialize PDF.js worker with fallback approach
+  // Initialize PDF.js worker with local worker file
   const initializePDFWorker = () => {
     try {
-      // First, try to use the worker from node_modules (works in most environments)
       if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
-        pdfjsLib.GlobalWorkerOptions.workerSrc = '/node_modules/pdfjs-dist/build/pdf.worker.min.js';
+        // Use local worker file - this should be more reliable
+        pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
       }
       console.log('PDF.js worker configured:', pdfjsLib.GlobalWorkerOptions.workerSrc);
     } catch (error) {
@@ -77,21 +79,20 @@ const TemplateManager: React.FC<TemplateManagerProps> = ({ onTemplateChange }) =
       
       console.log('Attempting to load PDF document...');
       
-      // Use a simpler configuration that's more likely to work in browser environments
       const pdf = await pdfjsLib.getDocument({ 
         data: arrayBuffer,
-        verbosity: 0, // Reduce console noise
-        disableAutoFetch: true, // Prevent automatic fetching that might cause issues
-        disableStream: true, // Use array buffer directly
-        disableRange: true // Disable range requests
+        verbosity: 0,
+        disableAutoFetch: true,
+        disableStream: true,
+        disableRange: true
       }).promise;
       
       console.log('PDF document loaded successfully, pages:', pdf.numPages);
       
-      const page = await pdf.getPage(1); // Get first page
+      const page = await pdf.getPage(1);
       console.log('First page loaded successfully');
       
-      const viewport = page.getViewport({ scale: 2.0 }); // Higher scale for better quality
+      const viewport = page.getViewport({ scale: 2.0 });
       const canvas = document.createElement('canvas');
       const context = canvas.getContext('2d');
       
@@ -114,7 +115,6 @@ const TemplateManager: React.FC<TemplateManagerProps> = ({ onTemplateChange }) =
       const dataUrl = canvas.toDataURL('image/png', 0.9);
       console.log('Canvas converted to data URL, size:', dataUrl.length);
       
-      // Cleanup
       await pdf.destroy();
       
       return dataUrl;
@@ -153,7 +153,6 @@ const TemplateManager: React.FC<TemplateManagerProps> = ({ onTemplateChange }) =
       type: file.type
     });
 
-    // Validate file
     const validation = validateFile(file);
     if (!validation.isValid) {
       console.error('File validation failed:', validation.error);
@@ -181,7 +180,6 @@ const TemplateManager: React.FC<TemplateManagerProps> = ({ onTemplateChange }) =
         imageDataUrl = await convertPDFToImage(file);
       } else {
         console.log('Processing image file...');
-        // Handle image files
         const reader = new FileReader();
         imageDataUrl = await new Promise<string>((resolve, reject) => {
           reader.onload = (e) => {
@@ -200,7 +198,6 @@ const TemplateManager: React.FC<TemplateManagerProps> = ({ onTemplateChange }) =
       console.log('File processing completed successfully');
       setTemplateImage(imageDataUrl);
       
-      // Save to localStorage
       localStorage.setItem('proposalTemplateImage', imageDataUrl);
       localStorage.setItem('proposalTemplateFileType', file.type);
       
@@ -211,7 +208,7 @@ const TemplateManager: React.FC<TemplateManagerProps> = ({ onTemplateChange }) =
       });
 
       if (onTemplateChange) {
-        onTemplateChange({ templateImage: imageDataUrl });
+        onTemplateChange({ templateImage: imageDataUrl, fields: templateFields });
       }
     } catch (error) {
       console.error('Upload processing error:', error);
@@ -247,12 +244,21 @@ const TemplateManager: React.FC<TemplateManagerProps> = ({ onTemplateChange }) =
   const clearTemplate = () => {
     setTemplateImage('');
     setUploadedFileType('');
+    setTemplateFields([]);
     localStorage.removeItem('proposalTemplateImage');
     localStorage.removeItem('proposalTemplateFileType');
+    localStorage.removeItem('templateFields');
     toast({
       title: "Template cleared",
-      description: "Template has been removed."
+      description: "Template and field mapping have been removed."
     });
+  };
+
+  const handleFieldsChange = (fields: TemplateField[]) => {
+    setTemplateFields(fields);
+    if (onTemplateChange) {
+      onTemplateChange({ templateImage, fields });
+    }
   };
 
   const getFileTypeIcon = () => {
@@ -278,63 +284,86 @@ const TemplateManager: React.FC<TemplateManagerProps> = ({ onTemplateChange }) =
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="space-y-2">
-          <Label>Upload Your Proposal Template</Label>
-          <div className="flex gap-2">
-            <Input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*,application/pdf"
-              onChange={handleFileUpload}
-              className="hidden"
-            />
-            <Button 
-              onClick={handleUploadClick} 
-              disabled={isUploading}
-              className="flex items-center gap-2"
-            >
-              <Upload size={16} />
-              {isUploading ? 'Processing...' : 'Upload Template'}
-            </Button>
-            {templateImage && (
-              <Button 
-                variant="outline" 
-                onClick={clearTemplate}
-              >
-                Clear Template
-              </Button>
-            )}
-          </div>
-          <div className="text-sm text-gray-600 space-y-1">
-            <p>Upload your existing proposal template as an image (PNG, JPG, etc.) or as a PDF file.</p>
-            <p className="flex items-center gap-1">
-              <AlertCircle size={14} className="text-blue-500" />
-              Maximum file size: {Math.round(MAX_FILE_SIZE / (1024 * 1024))}MB. PDF files will be automatically converted to images.
-            </p>
-            <p className="text-xs text-amber-600">
-              Note: If PDF processing fails, please convert your PDF to an image file (PNG or JPG) using any PDF converter tool.
-            </p>
-          </div>
-        </div>
-
-        {templateImage && (
-          <div className="space-y-2">
-            <Label className="flex items-center gap-2">
-              {getFileTypeIcon()}
-              Template Preview - {getFileTypeText()}
-            </Label>
-            <div className="border rounded-lg p-4 bg-gray-50">
-              <img 
-                src={templateImage} 
-                alt="Proposal Template" 
-                className="max-w-full h-auto max-h-96 mx-auto border shadow-sm"
-              />
+        <Tabs defaultValue="upload" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="upload">Upload Template</TabsTrigger>
+            <TabsTrigger value="mapping" disabled={!templateImage}>
+              Field Mapping
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="upload" className="space-y-4">
+            <div className="space-y-2">
+              <Label>Upload Your Proposal Template</Label>
+              <div className="flex gap-2">
+                <Input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*,application/pdf"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
+                <Button 
+                  onClick={handleUploadClick} 
+                  disabled={isUploading}
+                  className="flex items-center gap-2"
+                >
+                  <Upload size={16} />
+                  {isUploading ? 'Processing...' : 'Upload Template'}
+                </Button>
+                {templateImage && (
+                  <Button 
+                    variant="outline" 
+                    onClick={clearTemplate}
+                  >
+                    Clear Template
+                  </Button>
+                )}
+              </div>
+              <div className="text-sm text-gray-600 space-y-1">
+                <p>Upload your existing proposal template as an image (PNG, JPG, etc.) or as a PDF file.</p>
+                <p className="flex items-center gap-1">
+                  <AlertCircle size={14} className="text-blue-500" />
+                  Maximum file size: {Math.round(MAX_FILE_SIZE / (1024 * 1024))}MB. PDF files will be automatically converted to images.
+                </p>
+              </div>
             </div>
-            <p className="text-sm text-green-600">
-              ✓ Template uploaded successfully. This will be used as the background for your proposals.
-            </p>
-          </div>
-        )}
+
+            {templateImage && (
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  {getFileTypeIcon()}
+                  Template Preview - {getFileTypeText()}
+                </Label>
+                <div className="border rounded-lg p-4 bg-gray-50">
+                  <img 
+                    src={templateImage} 
+                    alt="Proposal Template" 
+                    className="max-w-full h-auto max-h-96 mx-auto border shadow-sm"
+                  />
+                </div>
+                <p className="text-sm text-green-600">
+                  ✓ Template uploaded successfully. Switch to the "Field Mapping" tab to create editable fields.
+                </p>
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="mapping" className="space-y-4">
+            {templateImage ? (
+              <TemplateFieldMapper 
+                templateImage={templateImage}
+                onFieldsChange={handleFieldsChange}
+              />
+            ) : (
+              <div className="text-center text-gray-500 p-8 border-2 border-dashed border-gray-300 rounded-lg">
+                <Settings size={48} className="mx-auto mb-4 text-gray-400" />
+                <p>Please upload a template first</p>
+                <p className="text-sm">Switch to the "Upload Template" tab to get started</p>
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
       </CardContent>
     </Card>
   );

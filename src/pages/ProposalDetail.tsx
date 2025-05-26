@@ -16,6 +16,8 @@ import { v4 as uuidv4 } from "uuid";
 import { useNavigate, useParams } from "react-router-dom";
 import { generateProposalPDF, previewProposalPDF } from "@/utils/proposalUtils";
 import TemplateManager from "@/components/proposals/TemplateManager";
+import DynamicProposalForm from "@/components/proposals/DynamicProposalForm";
+import { TemplateField } from "@/components/proposals/TemplateFieldMapper";
 
 interface ProposalDetailParams {
   id?: string;
@@ -42,11 +44,13 @@ const ProposalDetail = () => {
     vatEnabled: true,
   });
 
+  const [templateFields, setTemplateFields] = useState<TemplateField[]>([]);
+  const [dynamicFieldValues, setDynamicFieldValues] = useState<Record<string, string>>({});
+
   useEffect(() => {
     if (!isNewProposal && id) {
       loadProposal(id);
     } else {
-      // Set a default number for new proposals
       setProposal(prev => ({ ...prev, number: generateProposalNumber() }));
     }
   }, [id, isNewProposal]);
@@ -91,6 +95,14 @@ const ProposalDetail = () => {
     }
   };
 
+  // Load template fields on component mount
+  useEffect(() => {
+    const savedFields = localStorage.getItem('templateFields');
+    if (savedFields) {
+      setTemplateFields(JSON.parse(savedFields));
+    }
+  }, []);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setProposal((prev) => ({
@@ -120,6 +132,19 @@ const ProposalDetail = () => {
     }));
   };
 
+  const handleTemplateChange = (templateData: any) => {
+    if (templateData.fields) {
+      setTemplateFields(templateData.fields);
+    }
+  };
+
+  const handleDynamicFieldChange = (fieldId: string, value: string) => {
+    setDynamicFieldValues(prev => ({
+      ...prev,
+      [fieldId]: value
+    }));
+  };
+
   const handleSave = () => {
     try {
       const savedProposals = localStorage.getItem("proposals");
@@ -128,14 +153,20 @@ const ProposalDetail = () => {
         proposals = JSON.parse(savedProposals);
       }
 
+      // Save dynamic field values with the proposal
+      const proposalWithDynamicFields = {
+        ...proposal,
+        dynamicFields: dynamicFieldValues
+      };
+
       if (isNewProposal) {
-        proposals.push(proposal);
+        proposals.push(proposalWithDynamicFields);
         toast({
           title: "Proposal created",
           description: "Proposal has been created successfully.",
         });
       } else {
-        proposals = proposals.map((p) => (p.id === proposal.id ? proposal : p));
+        proposals = proposals.map((p) => (p.id === proposal.id ? proposalWithDynamicFields : p));
         toast({
           title: "Proposal updated",
           description: "Proposal has been updated successfully.",
@@ -156,12 +187,16 @@ const ProposalDetail = () => {
 
   const handleGeneratePDF = async () => {
     try {
-      const result = await generateProposalPDF({
+      // Merge dynamic field values with proposal data for PDF generation
+      const enrichedProposalData = {
         ...proposal,
+        ...dynamicFieldValues,
         netAmount: parseFloat(proposal.amount),
-        vatRate: 19, // Default VAT rate
-        lineItems: [], // Empty array since we don't have detailed line items
-      }, 'en', `proposal-${proposal.number}.pdf`);
+        vatRate: 19,
+        lineItems: [],
+      };
+
+      const result = await generateProposalPDF(enrichedProposalData, 'en', `proposal-${proposal.number}.pdf`);
 
       if (result) {
         toast({
@@ -183,12 +218,15 @@ const ProposalDetail = () => {
   
   const handlePreview = async () => {
     try {
-      await previewProposalPDF({
+      const enrichedProposalData = {
         ...proposal,
+        ...dynamicFieldValues,
         netAmount: parseFloat(proposal.amount),
         vatRate: 19,
         lineItems: [],
-      });
+      };
+
+      await previewProposalPDF(enrichedProposalData);
     } catch (error) {
       console.error('Error previewing PDF:', error);
       toast({
@@ -244,128 +282,141 @@ const ProposalDetail = () => {
               </div>
             </div>
 
-            {/* Template Manager Section */}
-            <div className="mb-6">
-              <TemplateManager />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Left Column - Template Manager */}
+              <div className="space-y-6">
+                <TemplateManager onTemplateChange={handleTemplateChange} />
+                
+                {/* Dynamic Fields Form */}
+                {templateFields.length > 0 && (
+                  <DynamicProposalForm 
+                    fields={templateFields}
+                    values={dynamicFieldValues}
+                    onFieldChange={handleDynamicFieldChange}
+                  />
+                )}
+              </div>
+
+              {/* Right Column - Standard Proposal Form */}
+              <div className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Basic Proposal Details</CardTitle>
+                  </CardHeader>
+                  <CardContent className="grid gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="number">Number</Label>
+                        <Input
+                          type="text"
+                          id="number"
+                          name="number"
+                          value={proposal.number}
+                          onChange={handleInputChange}
+                          readOnly={!isNewProposal}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="reference">Reference</Label>
+                        <Input
+                          type="text"
+                          id="reference"
+                          name="reference"
+                          value={proposal.reference}
+                          onChange={handleInputChange}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="customer">Customer</Label>
+                        <Input
+                          type="text"
+                          id="customer"
+                          name="customer"
+                          value={proposal.customer}
+                          onChange={handleInputChange}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="subject">Subject</Label>
+                        <Input
+                          type="text"
+                          id="subject"
+                          name="subject"
+                          value={proposal.subject}
+                          onChange={handleInputChange}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="amount">Amount</Label>
+                        <Input
+                          type="number"
+                          id="amount"
+                          name="amount"
+                          value={proposal.amount}
+                          onChange={handleInputChange}
+                        />
+                      </div>
+                      <div>
+                        <Label>Currency</Label>
+                        <Select value={proposal.currency} onValueChange={handleCurrencyChange}>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select currency" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="USD">USD</SelectItem>
+                            <SelectItem value="EUR">EUR</SelectItem>
+                            <SelectItem value="GBP">GBP</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <Label htmlFor="vat">Enable VAT</Label>
+                      <Switch
+                        id="vat"
+                        checked={proposal.vatEnabled}
+                        onCheckedChange={handleVatToggle}
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="content">Content</Label>
+                      <Textarea
+                        id="content"
+                        name="content"
+                        value={proposal.content || ""}
+                        onChange={handleInputChange}
+                        placeholder="Proposal content..."
+                      />
+                    </div>
+
+                    <div>
+                      <Label>Status</Label>
+                      <Select value={proposal.status} onValueChange={handleStatusChange}>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Draft">Draft</SelectItem>
+                          <SelectItem value="Sent">Sent</SelectItem>
+                          <SelectItem value="Accepted">Accepted</SelectItem>
+                          <SelectItem value="Rejected">Rejected</SelectItem>
+                          <SelectItem value="Expired">Expired</SelectItem>
+                          <SelectItem value="Revised">Revised</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
-
-            {/* Proposal Form */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Proposal Details</CardTitle>
-              </CardHeader>
-              <CardContent className="grid gap-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="number">Number</Label>
-                    <Input
-                      type="text"
-                      id="number"
-                      name="number"
-                      value={proposal.number}
-                      onChange={handleInputChange}
-                      readOnly={!isNewProposal}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="reference">Reference</Label>
-                    <Input
-                      type="text"
-                      id="reference"
-                      name="reference"
-                      value={proposal.reference}
-                      onChange={handleInputChange}
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="customer">Customer</Label>
-                    <Input
-                      type="text"
-                      id="customer"
-                      name="customer"
-                      value={proposal.customer}
-                      onChange={handleInputChange}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="subject">Subject</Label>
-                    <Input
-                      type="text"
-                      id="subject"
-                      name="subject"
-                      value={proposal.subject}
-                      onChange={handleInputChange}
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="amount">Amount</Label>
-                    <Input
-                      type="number"
-                      id="amount"
-                      name="amount"
-                      value={proposal.amount}
-                      onChange={handleInputChange}
-                    />
-                  </div>
-                  <div>
-                    <Label>Currency</Label>
-                    <Select value={proposal.currency} onValueChange={handleCurrencyChange}>
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select currency" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="USD">USD</SelectItem>
-                        <SelectItem value="EUR">EUR</SelectItem>
-                        <SelectItem value="GBP">GBP</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Label htmlFor="vat">Enable VAT</Label>
-                  <Switch
-                    id="vat"
-                    checked={proposal.vatEnabled}
-                    onCheckedChange={handleVatToggle}
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="content">Content</Label>
-                  <Textarea
-                    id="content"
-                    name="content"
-                    value={proposal.content || ""}
-                    onChange={handleInputChange}
-                    placeholder="Proposal content..."
-                  />
-                </div>
-
-                <div>
-                  <Label>Status</Label>
-                  <Select value={proposal.status} onValueChange={handleStatusChange}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Draft">Draft</SelectItem>
-                      <SelectItem value="Sent">Sent</SelectItem>
-                      <SelectItem value="Accepted">Accepted</SelectItem>
-                      <SelectItem value="Rejected">Rejected</SelectItem>
-                      <SelectItem value="Expired">Expired</SelectItem>
-                      <SelectItem value="Revised">Revised</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </CardContent>
-            </Card>
           </div>
         </Layout>
       </div>
