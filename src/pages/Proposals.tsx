@@ -17,6 +17,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
+import { generateProposalPDF } from "@/utils/proposalUtils";
 
 // Define the available proposal statuses
 export const PROPOSAL_STATUSES = [
@@ -169,32 +170,45 @@ const Proposals = () => {
     });
   };
 
-  const handleDownloadProposal = (proposal: Proposal) => {
-    // Create a download of the proposal as a text file
-    const proposalText = `
-Proposal: ${proposal.number}
-Customer: ${proposal.customer}
-Reference: ${proposal.reference}
-Subject: ${proposal.subject || 'N/A'}
-Amount: €${parseFloat(proposal.amount).toFixed(2)}
-Status: ${proposal.status}
-Date: ${new Date(proposal.created_at).toLocaleDateString()}
-    `;
-    
-    const blob = new Blob([proposalText], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `proposal-${proposal.number}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    
-    toast({
-      title: "Proposal downloaded",
-      description: `Proposal ${proposal.number} has been downloaded.`,
-    });
+  const handleDownloadProposal = async (proposal: Proposal) => {
+    try {
+      // Create proposal data object for PDF generation
+      const proposalData = {
+        number: proposal.number,
+        customer: proposal.customer,
+        subject: proposal.subject,
+        reference: proposal.reference,
+        date: proposal.created_at,
+        amount: proposal.amount,
+        netAmount: parseFloat(proposal.amount),
+        vatEnabled: proposal.vatEnabled || false,
+        vatRate: 19, // Default VAT rate
+        lineItems: [], // Empty array since we don't have detailed line items in the proposals list
+        content: `Subject: ${proposal.subject || 'N/A'}`,
+        address: '', // Would need to be added to proposal data if available
+        country: '', // Would need to be added to proposal data if available
+        currency: proposal.currency || 'EUR'
+      };
+
+      // Generate and download PDF
+      const result = await generateProposalPDF(proposalData, 'en', `proposal-${proposal.number}.pdf`);
+      
+      if (result) {
+        toast({
+          title: "Proposal downloaded",
+          description: `Proposal ${proposal.number} has been downloaded as PDF.`,
+        });
+      } else {
+        throw new Error('PDF generation failed');
+      }
+    } catch (error) {
+      console.error('Error downloading proposal:', error);
+      toast({
+        title: "Download failed",
+        description: "Failed to download proposal as PDF. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const getStatusIcon = (status: string) => {
