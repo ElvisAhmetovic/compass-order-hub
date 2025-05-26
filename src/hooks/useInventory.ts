@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { InventoryItem } from '@/types';
@@ -119,21 +118,31 @@ export const useInventory = () => {
       // Generate a random ID for the inventory item
       const itemId = Math.random().toString(36).substring(2, 7).toUpperCase();
       
-      // Generate a valid UUID for user_id since the local auth system doesn't use UUIDs
-      // We'll use a consistent UUID generation based on the user ID
-      const generateUUIDFromUserId = (userId: string) => {
-        // Create a deterministic UUID from the user ID
-        const hash = userId.split('').reduce((a, b) => {
-          a = ((a << 5) - a) + b.charCodeAt(0);
-          return a & a;
-        }, 0);
+      // Generate a proper UUID v4 format from the user ID
+      const generateValidUUID = (userId: string) => {
+        // Create a hash from the user ID
+        let hash = 0;
+        for (let i = 0; i < userId.length; i++) {
+          const char = userId.charCodeAt(i);
+          hash = ((hash << 5) - hash) + char;
+          hash = hash & hash; // Convert to 32-bit integer
+        }
         
-        // Convert to a UUID-like format
-        const hex = Math.abs(hash).toString(16).padStart(8, '0');
-        return `${hex.slice(0, 8)}-${hex.slice(0, 4)}-4${hex.slice(1, 4)}-a${hex.slice(0, 3)}-${hex.slice(0, 12)}`.slice(0, 36);
+        // Convert to positive number and pad
+        const positiveHash = Math.abs(hash);
+        const hex = positiveHash.toString(16).padStart(8, '0');
+        
+        // Create a proper UUID v4 format
+        const part1 = hex.substring(0, 8);
+        const part2 = hex.substring(0, 4);
+        const part3 = '4' + hex.substring(1, 4); // Version 4
+        const part4 = '8' + hex.substring(1, 4); // Variant bits
+        const part5 = (hex + hex).substring(0, 12);
+        
+        return `${part1}-${part2}-${part3}-${part4}-${part5}`;
       };
 
-      const supabaseUserId = generateUUIDFromUserId(user.id);
+      const supabaseUserId = generateValidUUID(user.id);
       
       console.log('Generated UUID for Supabase:', supabaseUserId);
 
