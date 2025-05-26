@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { PlusCircle, FileEdit, Trash2, Download, File, CheckCircle2, XCircle, Send } from "lucide-react";
+import { PlusCircle, FileEdit, Trash2, Download, File, CheckCircle2, XCircle, Send, FileImage } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { v4 as uuidv4 } from "uuid";
 import { useNavigate } from "react-router-dom";
@@ -257,11 +257,44 @@ const Proposals = () => {
           <div className="container mx-auto py-8">
             <div className="flex justify-between items-center mb-6">
               <h1 className="text-2xl font-bold">Proposals</h1>
-              <Button onClick={handleCreateProposal} className="flex items-center gap-2">
-                <PlusCircle size={16} />
-                Create Proposal
-              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => navigate("/templates")} 
+                  className="flex items-center gap-2"
+                >
+                  <FileImage size={16} />
+                  Manage Templates
+                </Button>
+                <Button onClick={handleCreateProposal} className="flex items-center gap-2">
+                  <PlusCircle size={16} />
+                  Create Proposal
+                </Button>
+              </div>
             </div>
+
+            {/* Template Integration Info Card */}
+            <Card className="mb-6 bg-blue-50 border-blue-200">
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-4">
+                  <FileImage size={24} className="text-blue-600" />
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-blue-900">Background Template System</h3>
+                    <p className="text-blue-700 text-sm">
+                      Upload your PDF templates as background images and create precisely positioned editable fields. 
+                      Perfect for maintaining consistent branding while allowing dynamic content.
+                    </p>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => navigate("/templates")}
+                    className="border-blue-300 text-blue-700 hover:bg-blue-100"
+                  >
+                    Get Started
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
 
             <Card>
               <CardHeader className="pb-3">
