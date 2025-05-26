@@ -82,161 +82,143 @@ export const translations = {
   }
 };
 
-// Template using screenshot as background with positioned editable overlays
+// Template using your screenshot as background with positioned editable overlays
 const createPDFContent = (proposalData: any, language: string = "en") => {
   const t = translations[language as keyof typeof translations] || translations.en;
   const companyInfo = getCompanyInfo();
 
-  // Use the screenshot as base64 or a hosted image URL
-  // For now using a placeholder - you'll need to replace this with the actual screenshot
-  const templateImageUrl = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="; // Replace with actual screenshot base64
+  // REPLACE THIS URL WITH YOUR UPLOADED SCREENSHOT
+  // Upload your screenshot to a hosting service or convert to base64
+  const templateImageUrl = "https://your-screenshot-url-here.jpg"; // Replace with your actual screenshot URL
 
   return `
     <div style="font-family: Arial, sans-serif; width: 794px; height: 1123px; background: white; margin: 0; padding: 0; position: relative; overflow: hidden;">
       
-      <!-- Background Template Image -->
-      <img src="${templateImageUrl}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1;" onerror="this.style.display='none';" />
+      <!-- Your Screenshot as Background Template -->
+      <img src="${templateImageUrl}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1;" />
       
-      <!-- Editable Text Overlays positioned based on screenshot -->
+      <!-- Editable Text Overlays positioned to match your screenshot -->
       <div style="position: absolute; z-index: 2; width: 100%; height: 100%;">
         
-        <!-- Company Logo - Top Right -->
-        <div style="position: absolute; top: 40px; right: 50px;">
-          <img src="${proposalData.logo || companyInfo.logo}" style="max-height: 60px; max-width: 200px;" onerror="this.src='https://placehold.co/200x60?text=Your+Logo'; this.onerror=null;" />
+        <!-- Recipient Name (positioned where "Name Surname" appears) -->
+        <div style="position: absolute; top: 180px; left: 50px; font-size: 12px; font-weight: bold; color: #000;">
+          ${proposalData.recipientName || 'Name Surname'}
         </div>
         
-        <!-- Company Info - Top Left -->
-        <div style="position: absolute; top: 40px; left: 50px; font-size: 12px; line-height: 1.4;">
-          <div style="font-weight: bold; margin-bottom: 5px;">${companyInfo.name}</div>
-          <div>${companyInfo.street}</div>
-          <div>${companyInfo.postal} ${companyInfo.city}</div>
-          <div>${companyInfo.country || 'Germany'}</div>
+        <!-- Recipient Address (positioned where address appears) -->
+        <div style="position: absolute; top: 200px; left: 50px; font-size: 11px; color: #000;">
+          ${proposalData.recipientAddress || 'Ledeganckkaai 15, 2000 Antwerpen'}
         </div>
         
-        <!-- Customer Info - Left Side -->
-        <div style="position: absolute; top: 180px; left: 50px; font-size: 11px; line-height: 1.4;">
-          <div style="font-weight: bold; margin-bottom: 10px;">${proposalData.customerName || 'Customer Name'}</div>
-          <div>${proposalData.customerAddress || 'Customer Address'}</div>
-          <div>${proposalData.customerEmail || 'customer@email.com'}</div>
-          <div>${proposalData.customerCountry || 'Belgium'}</div>
+        <!-- Recipient Email (positioned where email appears) -->
+        <div style="position: absolute; top: 220px; left: 50px; font-size: 11px; color: #000;">
+          ${proposalData.recipientEmail || 'Mondzorg.NieuwZuid@outlook.com'}
         </div>
         
-        <!-- Proposal Details - Right Side -->
-        <div style="position: absolute; top: 180px; right: 50px; font-size: 11px; text-align: right;">
-          <div style="margin-bottom: 5px;">
-            <span style="font-weight: bold;">Proposal no.</span>
-            <span style="margin-left: 20px;">${proposalData.number || 'AN-9993'}</span>
-          </div>
-          <div style="margin-bottom: 5px;">
-            <span style="font-weight: bold;">${t.date}</span>
-            <span style="margin-left: 20px;">${new Date(proposalData.date || Date.now()).toLocaleDateString()}</span>
-          </div>
-          <div style="margin-bottom: 5px;">
-            <span style="font-weight: bold;">${t.customerRef}</span>
-            <span style="margin-left: 20px;">${proposalData.customerRef || '7865'}</span>
-          </div>
-          <div>
-            <span style="font-weight: bold;">${t.yourContact}</span>
-            <span style="margin-left: 20px;">${proposalData.yourContact || 'Contact Person'}</span>
-          </div>
+        <!-- Recipient Country (positioned where "Belgium" appears) -->
+        <div style="position: absolute; top: 240px; left: 50px; font-size: 11px; color: #000;">
+          ${proposalData.recipientCountry || 'Belgium'}
         </div>
         
-        <!-- Proposal Title -->
-        <div style="position: absolute; top: 320px; left: 50px; font-size: 16px; font-weight: bold; color: #4a90e2;">
-          ${t.proposal} ${proposalData.number || 'AN-9993'}
+        <!-- Proposal Number (positioned where "AN-9993" appears in table) -->
+        <div style="position: absolute; top: 180px; right: 50px; font-size: 11px; color: #000;">
+          ${proposalData.proposalNumber || 'AN-9993'}
         </div>
         
-        <!-- Proposal Description -->
-        <div style="position: absolute; top: 360px; left: 50px; right: 50px; font-size: 11px; line-height: 1.5;">
-          <strong>${proposalData.proposalTitle || 'Proposal Title'}</strong> ${proposalData.proposalDescription || 'Proposal description and details go here.'}
+        <!-- Date (positioned where date appears in table) -->
+        <div style="position: absolute; top: 200px; right: 50px; font-size: 11px; color: #000;">
+          ${proposalData.proposalDate || new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
         </div>
         
-        <!-- Service Items Table Area -->
-        <div style="position: absolute; top: 420px; left: 50px; right: 50px; font-size: 10px;">
-          <div style="background-color: #4a5568; color: white; padding: 8px; display: flex; font-weight: bold;">
-            <div style="width: 50%;">${t.productDescription}</div>
-            <div style="width: 16%; text-align: center;">${t.price}</div>
-            <div style="width: 14%; text-align: center;">${t.qty}</div>
-            <div style="width: 20%; text-align: right;">${t.total}</div>
-          </div>
-          
-          ${(proposalData.lineItems || []).map((item: any, index: number) => `
-            <div style="display: flex; padding: 12px 8px; border-bottom: 1px solid #e2e8f0; background-color: ${index % 2 === 0 ? '#f8f9fa' : 'white'};">
-              <div style="width: 50%; padding-right: 10px;">
-                <div style="font-weight: bold; color: #e67e22; margin-bottom: 5px;">
-                  ${item.name || 'Service Name'} ${item.rating ? '★★★★★' : ''}
-                </div>
-                <div style="color: #666; font-size: 9px; line-height: 1.3;">
-                  ${item.description || 'Service description goes here'}
-                </div>
-              </div>
-              <div style="width: 16%; text-align: center; padding-top: 5px;">
-                ${(item.unit_price || 399).toFixed(2)} EUR
-              </div>
-              <div style="width: 14%; text-align: center; padding-top: 5px;">
-                ${item.quantity || 1}
-              </div>
-              <div style="width: 20%; text-align: right; font-weight: bold; padding-top: 5px;">
-                ${(item.total_price || 399).toFixed(2)} EUR
-              </div>
-            </div>
-          `).join('')}
+        <!-- Customer Number (positioned where "7865" appears) -->
+        <div style="position: absolute; top: 220px; right: 50px; font-size: 11px; color: #000;">
+          ${proposalData.customerNumber || '7865'}
         </div>
         
-        <!-- Totals Section -->
-        <div style="position: absolute; top: 600px; right: 50px; width: 250px; font-size: 11px;">
-          <div style="display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #e2e8f0;">
-            <span>${t.subtotal}</span>
-            <span>${(proposalData.netAmount || 0).toFixed(2)} EUR</span>
-          </div>
-          <div style="display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #e2e8f0;">
-            <span>${t.vat}</span>
-            <span>0.00 EUR</span>
-          </div>
-          <div style="display: flex; justify-content: space-between; padding: 8px 0; font-weight: bold; background-color: #f8f9fa;">
-            <span>${t.totalAmount}</span>
-            <span>${(proposalData.netAmount || 0).toFixed(2)} EUR</span>
-          </div>
+        <!-- Your Contact (positioned where "Thomas Klein" appears) -->
+        <div style="position: absolute; top: 240px; right: 50px; font-size: 11px; color: #000;">
+          ${proposalData.yourContact || 'Thomas Klein'}
         </div>
         
-        <!-- Payment Information -->
-        <div style="position: absolute; top: 720px; left: 50px; right: 50px; font-size: 10px; background-color: #f8f9fa; padding: 15px; border-left: 4px solid #4a90e2;">
-          <div style="font-weight: bold; margin-bottom: 8px;">${t.paymentData}</div>
-          <div style="line-height: 1.4;">
-            <div>${t.accountNr} ${companyInfo.accountNumber || '12345678901234567'}</div>
-            <div>${t.name} ${companyInfo.accountHolder || 'Account Holder Name'}</div>
-            <div>${t.paymentMethod} ${companyInfo.paymentMethod || 'Bank Transfer'}</div>
-          </div>
+        <!-- Proposal Title in Main Heading (positioned where "Proposal AN-9993" appears) -->
+        <div style="position: absolute; top: 320px; left: 50px; font-size: 18px; font-weight: bold; color: #000;">
+          Proposal ${proposalData.proposalNumber || 'AN-9993'}
         </div>
         
-        <!-- Terms and Conditions -->
-        <div style="position: absolute; top: 820px; left: 50px; right: 50px; font-size: 10px;">
-          <div style="font-weight: bold; margin-bottom: 8px; text-transform: uppercase;">${t.termsAndConditions}</div>
-          <div style="line-height: 1.4;">
-            ${proposalData.termsAndConditions || t.paymentTerms}
-          </div>
+        <!-- Main Proposal Introduction (positioned where the intro text appears) -->
+        <div style="position: absolute; top: 360px; left: 50px; right: 50px; font-size: 12px; color: #000; line-height: 1.4;">
+          <strong>${proposalData.introductionTitle || 'Protect your online REPUTATION!'}</strong>
+          <br/>${proposalData.introductionText || 'Thank you for your enquiry. We will be happy to provide you with the requested non-binding offer.'}
         </div>
         
-        <!-- Signature Lines -->
-        <div style="position: absolute; bottom: 120px; left: 50px; right: 50px; display: flex; justify-content: space-between;">
-          <div style="width: 45%; border-top: 1px solid #333; padding-top: 8px;">
-            <div style="font-size: 10px; color: #666;">${t.placeDate}</div>
-          </div>
-          <div style="width: 45%; border-top: 1px solid #333; padding-top: 8px;">
-            <div style="font-size: 10px; color: #666;">${t.signatureStamp}</div>
-          </div>
+        <!-- Service Name (positioned where "SILBER-OPTIMIERUNGSPAKET ★★" appears) -->
+        <div style="position: absolute; top: 450px; left: 60px; font-size: 11px; font-weight: bold; color: #e67e22;">
+          ${proposalData.serviceName || 'SILBER-OPTIMIERUNGSPAKET ★★'}
         </div>
         
-        <!-- Footer -->
-        <div style="position: absolute; bottom: 20px; left: 20px; right: 20px; font-size: 8px; color: white; background-color: #e74c3c; padding: 8px; display: flex; justify-content: space-between;">
-          <div>
-            <span style="margin-right: 15px;">Tel.: ${companyInfo.phone || '+49 203 70 90 72 62'}</span>
-            <span style="margin-right: 15px;">Email: ${companyInfo.email || 'contact@company.com'}</span>
-          </div>
-          <div style="text-align: right;">
-            <div style="font-weight: bold;">${companyInfo.name}</div>
-            <div>${companyInfo.street}, ${companyInfo.postal} ${companyInfo.city}</div>
-          </div>
+        <!-- Service Description (positioned where the service description text appears) -->
+        <div style="position: absolute; top: 470px; left: 60px; right: 350px; font-size: 9px; color: #666; line-height: 1.3;">
+          ${proposalData.serviceDescription || 'Remove Google Maps entry, i.e., you will receive a new, optimized Google My Business listing...'}
+        </div>
+        
+        <!-- Service Price (positioned where "399.00 EUR" appears in PRICE column) -->
+        <div style="position: absolute; top: 450px; right: 250px; font-size: 11px; color: #000; text-align: center;">
+          ${proposalData.servicePrice || '399.00'} EUR
+        </div>
+        
+        <!-- Service Quantity (positioned where "1" appears in QTY column) -->
+        <div style="position: absolute; top: 450px; right: 180px; font-size: 11px; color: #000; text-align: center;">
+          ${proposalData.serviceQuantity || '1'}
+        </div>
+        
+        <!-- Service Total (positioned where total appears in TOTAL column) -->
+        <div style="position: absolute; top: 450px; right: 60px; font-size: 11px; font-weight: bold; color: #000; text-align: right;">
+          ${proposalData.serviceTotal || '399.00'} EUR
+        </div>
+        
+        <!-- Additional Service Details (positioned where review and benefit text appears) -->
+        <div style="position: absolute; top: 510px; left: 60px; right: 350px; font-size: 9px; color: #666; line-height: 1.3;">
+          ${proposalData.additionalDetails || '5/5★★★★★ reviews. We optimize and strengthen your presence on Google Maps with your Google My Business listing. You benefit from this by reaching more customers and being easier to find.'}
+        </div>
+        
+        <!-- Subtotal (positioned where subtotal value appears) -->
+        <div style="position: absolute; top: 600px; right: 60px; font-size: 11px; color: #000;">
+          ${proposalData.subtotal || '399.00'} EUR
+        </div>
+        
+        <!-- VAT Amount (positioned where VAT value appears) -->
+        <div style="position: absolute; top: 620px; right: 60px; font-size: 11px; color: #000;">
+          ${proposalData.vatAmount || '0.00'} EUR
+        </div>
+        
+        <!-- Total Amount (positioned where final total appears) -->
+        <div style="position: absolute; top: 640px; right: 60px; font-size: 11px; font-weight: bold; color: #000;">
+          ${proposalData.totalAmount || '399.00'} EUR
+        </div>
+        
+        <!-- Account Number (positioned where account number appears) -->
+        <div style="position: absolute; top: 720px; left: 140px; font-size: 10px; color: #000;">
+          ${proposalData.accountNumber || '12356587965497'}
+        </div>
+        
+        <!-- Account Holder Name (positioned where "YOUR NAME" appears) -->
+        <div style="position: absolute; top: 740px; left: 80px; font-size: 10px; color: #000;">
+          ${proposalData.accountHolderName || 'YOUR NAME'}
+        </div>
+        
+        <!-- Payment Method (positioned where "DEBIT CARD" appears) -->
+        <div style="position: absolute; top: 760px; left: 130px; font-size: 10px; color: #000;">
+          ${proposalData.paymentMethod || 'DEBIT CARD'}
+        </div>
+        
+        <!-- Terms and Conditions Text (positioned where terms text appears) -->
+        <div style="position: absolute; top: 820px; left: 50px; right: 50px; font-size: 10px; color: #000; line-height: 1.4;">
+          ${proposalData.termsAndConditions || 'By placing your order, you agree to pay for the services included in this offer within 7 days of receipt of the invoice. The invoice will only be issued after the service has been provided.'}
+        </div>
+        
+        <!-- Place/Date field (positioned where signature line appears) -->
+        <div style="position: absolute; bottom: 150px; left: 50px; font-size: 10px; color: #000;">
+          ${proposalData.placeDate || ''}
         </div>
         
       </div>
@@ -311,7 +293,7 @@ export const generateProposalPDF = async (
     }
     
     // For download mode, save the PDF with custom filename if provided
-    const filename = customFilename || `proposal_${proposalData.number || 'draft'}.pdf`;
+    const filename = customFilename || `proposal_${proposalData.proposalNumber || 'draft'}.pdf`;
     pdf.save(filename);
     return true;
   } catch (error) {
