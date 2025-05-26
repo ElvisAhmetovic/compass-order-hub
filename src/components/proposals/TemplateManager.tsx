@@ -1,15 +1,18 @@
-
 import React, { useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Upload, Save, Eye, FileText } from "lucide-react";
+import { Upload, Save, Eye, FileText, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import * as pdfjsLib from 'pdfjs-dist';
 
-// Set up PDF.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+// Configure PDF.js worker for Vite environment
+const PDFJS_VERSION = '4.0.379'; // Use a stable version
+pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+  'pdfjs-dist/build/pdf.worker.min.js',
+  import.meta.url
+).toString();
 
 interface TemplateManagerProps {
   onTemplateChange?: (templateData: any) => void;
@@ -22,46 +25,125 @@ const TemplateManager: React.FC<TemplateManagerProps> = ({ onTemplateChange }) =
   const [isUploading, setIsUploading] = useState(false);
   const [uploadedFileType, setUploadedFileType] = useState<string>('');
 
-  const convertPDFToImage = async (file: File): Promise<string> => {
-    const arrayBuffer = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-    const page = await pdf.getPage(1); // Get first page
-    
-    const viewport = page.getViewport({ scale: 2.0 }); // Higher scale for better quality
-    const canvas = document.createElement('canvas');
-    const context = canvas.getContext('2d');
-    
-    if (!context) {
-      throw new Error('Could not get canvas context');
+  // File size limit (10MB)
+  const MAX_FILE_SIZE = 10 * 1024 * 1024;
+
+  const validateFile = (file: File): { isValid: boolean; error?: string } => {
+    console.log('Validating file:', {
+      name: file.name,
+      size: file.size,
+      type: file.type,
+      maxSize: MAX_FILE_SIZE
+    });
+
+    if (file.size > MAX_FILE_SIZE) {
+      return {
+        isValid: false,
+        error: `File too large. Maximum size is ${Math.round(MAX_FILE_SIZE / (1024 * 1024))}MB, but your file is ${Math.round(file.size / (1024 * 1024))}MB.`
+      };
     }
+
+    const isImage = file.type.startsWith('image/');
+    const isPDF = file.type === 'application/pdf';
+
+    if (!isImage && !isPDF) {
+      return {
+        isValid: false,
+        error: `Invalid file type. Please select an image file (PNG, JPG, etc.) or a PDF file. Your file type: ${file.type}`
+      };
+    }
+
+    return { isValid: true };
+  };
+
+  const convertPDFToImage = async (file: File): Promise<string> => {
+    console.log('Starting PDF conversion for file:', file.name);
     
-    canvas.height = viewport.height;
-    canvas.width = viewport.width;
-    
-    await page.render({
-      canvasContext: context,
-      viewport: viewport
-    }).promise;
-    
-    return canvas.toDataURL('image/png');
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      console.log('PDF file loaded into array buffer, size:', arrayBuffer.byteLength);
+      
+      const pdf = await pdfjsLib.getDocument({ 
+        data: arrayBuffer,
+        cMapUrl: `https://cdn.jsdelivr.net/npm/pdfjs-dist@${PDFJS_VERSION}/cmaps/`,
+        cMapPacked: true,
+      }).promise;
+      
+      console.log('PDF document loaded, pages:', pdf.numPages);
+      
+      const page = await pdf.getPage(1); // Get first page
+      console.log('First page loaded');
+      
+      const viewport = page.getViewport({ scale: 2.0 }); // Higher scale for better quality
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
+      
+      if (!context) {
+        throw new Error('Could not get canvas context - browser may not support canvas rendering');
+      }
+      
+      canvas.height = viewport.height;
+      canvas.width = viewport.width;
+      
+      console.log('Canvas created with dimensions:', canvas.width, 'x', canvas.height);
+      
+      await page.render({
+        canvasContext: context,
+        viewport: viewport
+      }).promise;
+      
+      console.log('PDF page rendered to canvas successfully');
+      
+      const dataUrl = canvas.toDataURL('image/png');
+      console.log('Canvas converted to data URL, size:', dataUrl.length);
+      
+      return dataUrl;
+    } catch (error) {
+      console.error('PDF conversion error details:', {
+        error: error,
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      });
+      
+      if (error instanceof Error) {
+        if (error.message.includes('worker')) {
+          throw new Error('PDF processing failed: Worker initialization error. Please try again or use an image file instead.');
+        } else if (error.message.includes('Invalid PDF')) {
+          throw new Error('Invalid PDF file. Please ensure your PDF is not corrupted and try again.');
+        } else if (error.message.includes('canvas')) {
+          throw new Error('PDF rendering failed: Canvas rendering not supported in your browser.');
+        } else {
+          throw new Error(`PDF processing failed: ${error.message}`);
+        }
+      } else {
+        throw new Error('PDF processing failed due to an unknown error. Please try using an image file instead.');
+      }
+    }
   };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    const isImage = file.type.startsWith('image/');
-    const isPDF = file.type === 'application/pdf';
+    console.log('File upload started:', {
+      name: file.name,
+      size: file.size,
+      type: file.type
+    });
 
-    if (!isImage && !isPDF) {
+    // Validate file
+    const validation = validateFile(file);
+    if (!validation.isValid) {
+      console.error('File validation failed:', validation.error);
       toast({
-        title: "Invalid file type",
-        description: "Please select an image file (PNG, JPG, etc.) or a PDF file",
+        title: "Upload failed",
+        description: validation.error,
         variant: "destructive"
       });
       return;
     }
 
+    const isPDF = file.type === 'application/pdf';
     setIsUploading(true);
     setUploadedFileType(file.type);
     
@@ -69,24 +151,31 @@ const TemplateManager: React.FC<TemplateManagerProps> = ({ onTemplateChange }) =
       let imageDataUrl: string;
       
       if (isPDF) {
+        console.log('Processing PDF file...');
         toast({
           title: "Converting PDF...",
           description: "Converting your PDF template to an image, please wait..."
         });
         imageDataUrl = await convertPDFToImage(file);
       } else {
-        // Handle image files as before
+        console.log('Processing image file...');
+        // Handle image files
         const reader = new FileReader();
         imageDataUrl = await new Promise<string>((resolve, reject) => {
           reader.onload = (e) => {
             const result = e.target?.result as string;
+            console.log('Image file loaded, data URL length:', result.length);
             resolve(result);
           };
-          reader.onerror = () => reject(new Error('Failed to read file'));
+          reader.onerror = () => {
+            console.error('FileReader error');
+            reject(new Error('Failed to read image file'));
+          };
           reader.readAsDataURL(file);
         });
       }
       
+      console.log('File processing completed successfully');
       setTemplateImage(imageDataUrl);
       
       // Save to localStorage
@@ -95,19 +184,22 @@ const TemplateManager: React.FC<TemplateManagerProps> = ({ onTemplateChange }) =
       
       setIsUploading(false);
       toast({
-        title: "Template uploaded",
-        description: `Your ${isPDF ? 'PDF' : 'image'} template has been uploaded and converted successfully.`
+        title: "Template uploaded successfully",
+        description: `Your ${isPDF ? 'PDF' : 'image'} template has been uploaded and is ready to use.`
       });
 
       if (onTemplateChange) {
         onTemplateChange({ templateImage: imageDataUrl });
       }
     } catch (error) {
-      console.error('Upload error:', error);
+      console.error('Upload processing error:', error);
       setIsUploading(false);
+      
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred during upload';
+      
       toast({
         title: "Upload failed",
-        description: `Failed to upload the ${isPDF ? 'PDF' : 'image'}. Please try again.`,
+        description: errorMessage,
         variant: "destructive"
       });
     }
@@ -191,9 +283,13 @@ const TemplateManager: React.FC<TemplateManagerProps> = ({ onTemplateChange }) =
               </Button>
             )}
           </div>
-          <p className="text-sm text-gray-600">
-            Upload your existing proposal template as an image (PNG, JPG, etc.) or as a PDF file. PDF files will be automatically converted to images.
-          </p>
+          <div className="text-sm text-gray-600 space-y-1">
+            <p>Upload your existing proposal template as an image (PNG, JPG, etc.) or as a PDF file.</p>
+            <p className="flex items-center gap-1">
+              <AlertCircle size={14} className="text-blue-500" />
+              Maximum file size: {Math.round(MAX_FILE_SIZE / (1024 * 1024))}MB. PDF files will be automatically converted to images.
+            </p>
+          </div>
         </div>
 
         {templateImage && (
