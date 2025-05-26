@@ -1,4 +1,3 @@
-
 import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
 import { Proposal, ProposalLineItem, InventoryItem } from "@/types";
@@ -74,27 +73,15 @@ export const translations = {
   }
 };
 
-// Function to generate a PDF from a proposal
-export const generateProposalPDF = async (
-  proposalData: any, 
-  language: string = "en", 
-  customFilename?: string
-): Promise<jsPDF | boolean> => {
-  // Create a temporary div to render the proposal
-  const tempDiv = document.createElement("div");
-  tempDiv.style.position = "absolute";
-  tempDiv.style.left = "-9999px";
-  tempDiv.style.top = "-9999px";
-  tempDiv.style.width = "210mm"; // A4 width
-  
-  // Get translation based on language
+// Centralized function to create PDF HTML content
+const createPDFContent = (proposalData: any, language: string = "en") => {
   const t = translations[language as keyof typeof translations] || translations.en;
   const companyInfo = getCompanyInfo();
 
-  // Calculate logo width based on logoSize (if provided)
+  // Calculate logo width based on logoSize
   const logoWidth = proposalData.logoSize ? `${proposalData.logoSize}%` : '33%';
 
-  // Check if VAT is enabled - fix the logic to properly handle false values
+  // Check if VAT is enabled with proper handling
   console.log('VAT enabled check:', proposalData.vatEnabled, typeof proposalData.vatEnabled);
   const isVatEnabled = proposalData.vatEnabled === true;
 
@@ -106,8 +93,7 @@ export const generateProposalPDF = async (
 
   console.log('PDF Generation - VAT Enabled:', isVatEnabled, 'Net:', netAmount, 'VAT Amount:', vatAmount, 'Total:', totalAmount);
 
-  // HTML structure for the PDF - matching the screenshot design
-  tempDiv.innerHTML = `
+  return `
     <div style="font-family: Arial, sans-serif; padding: 30px; max-width: 210mm; background: white;">
       <!-- Header Section -->
       <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px;">
@@ -279,15 +265,28 @@ export const generateProposalPDF = async (
       </div>
     </div>
   `;
+};
 
+// Centralized function to generate PDF from HTML content
+const generatePDFFromHTML = async (htmlContent: string): Promise<jsPDF> => {
+  // Create a temporary div to render the proposal
+  const tempDiv = document.createElement("div");
+  tempDiv.style.position = "absolute";
+  tempDiv.style.left = "-9999px";
+  tempDiv.style.top = "-9999px";
+  tempDiv.style.width = "210mm"; // A4 width
+  
+  tempDiv.innerHTML = htmlContent;
   document.body.appendChild(tempDiv);
   
   try {
-    // Convert the HTML to PDF
+    // Convert the HTML to PDF with high quality settings
     const canvas = await html2canvas(tempDiv, {
-      scale: 1.5, // Higher scale for better quality
+      scale: 2, // Higher scale for better quality
       logging: false,
-      useCORS: true
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: '#ffffff'
     });
     
     const imgData = canvas.toDataURL('image/png');
@@ -303,6 +302,25 @@ export const generateProposalPDF = async (
     
     pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
     
+    return pdf;
+  } finally {
+    document.body.removeChild(tempDiv);
+  }
+};
+
+// Main function to generate a PDF from a proposal - now centralized
+export const generateProposalPDF = async (
+  proposalData: any, 
+  language: string = "en", 
+  customFilename?: string
+): Promise<jsPDF | boolean> => {
+  try {
+    // Generate HTML content using centralized function
+    const htmlContent = createPDFContent(proposalData, language);
+    
+    // Generate PDF using centralized function
+    const pdf = await generatePDFFromHTML(htmlContent);
+    
     // For preview mode, return the PDF document
     if (proposalData.previewMode) {
       return pdf;
@@ -315,15 +333,13 @@ export const generateProposalPDF = async (
   } catch (error) {
     console.error("PDF generation error:", error);
     return false;
-  } finally {
-    document.body.removeChild(tempDiv);
   }
 };
 
-// New function to display PDF preview in a modal or dialog
+// Updated function to display PDF preview in a modal - now uses centralized generation
 export const previewProposalPDF = async (proposalData: any, language: string = "en") => {
   try {
-    // Generate PDF in preview mode
+    // Generate PDF using the centralized function
     const pdfResult = await generateProposalPDF({...proposalData, previewMode: true}, language);
     
     // Check if the result is a jsPDF instance
@@ -332,7 +348,6 @@ export const previewProposalPDF = async (proposalData: any, language: string = "
       return false;
     }
     
-    // At this point, we know pdfResult is a jsPDF instance
     const pdf = pdfResult as jsPDF;
     
     // Convert the PDF to a data URL
@@ -476,55 +491,38 @@ export const previewProposalPDF = async (proposalData: any, language: string = "
     iframe.style.boxShadow = "0 0 10px rgba(0, 0, 0, 0.5)";
     iframe.style.borderRadius = "0 0 8px 8px";
 
-    // Handler for logo size adjustment
+    // Handler for logo size adjustment - now uses centralized generation
     let currentLogoSize = proposalData.logoSize || 33;
 
-    decreaseButton.onclick = async () => {
-      currentLogoSize = Math.max(10, currentLogoSize - 5);
-      logoSizeValue.textContent = `${currentLogoSize}%`;
-      
-      // Generate new preview with updated logo size
-      const newPdfResult = await generateProposalPDF({
+    const updatePreview = async (newLogoSize: number, newLanguage: string) => {
+      const updatedProposalData = {
         ...proposalData, 
         previewMode: true,
-        logoSize: currentLogoSize
-      }, languageSelector.value);
+        logoSize: newLogoSize
+      };
+      
+      const newPdfResult = await generateProposalPDF(updatedProposalData, newLanguage);
       
       if (newPdfResult && typeof newPdfResult !== 'boolean') {
         iframe.src = (newPdfResult as jsPDF).output('datauristring');
       }
+    };
+
+    decreaseButton.onclick = async () => {
+      currentLogoSize = Math.max(10, currentLogoSize - 5);
+      logoSizeValue.textContent = `${currentLogoSize}%`;
+      await updatePreview(currentLogoSize, languageSelector.value);
     };
 
     increaseButton.onclick = async () => {
       currentLogoSize = Math.min(100, currentLogoSize + 5);
       logoSizeValue.textContent = `${currentLogoSize}%`;
-      
-      // Generate new preview with updated logo size
-      const newPdfResult = await generateProposalPDF({
-        ...proposalData, 
-        previewMode: true,
-        logoSize: currentLogoSize
-      }, languageSelector.value);
-      
-      if (newPdfResult && typeof newPdfResult !== 'boolean') {
-        iframe.src = (newPdfResult as jsPDF).output('datauristring');
-      }
+      await updatePreview(currentLogoSize, languageSelector.value);
     };
     
-    // Add event listener to language selector
+    // Add event listener to language selector - now uses centralized generation
     languageSelector.addEventListener("change", async () => {
-      const newLanguage = languageSelector.value;
-      const newPdfResult = await generateProposalPDF({
-        ...proposalData, 
-        previewMode: true, 
-        logoSize: currentLogoSize
-      }, newLanguage);
-      
-      if (newPdfResult && typeof newPdfResult !== 'boolean') {
-        // newPdfResult is a jsPDF instance
-        const newPdf = newPdfResult as jsPDF;
-        iframe.src = newPdf.output('datauristring');
-      }
+      await updatePreview(currentLogoSize, languageSelector.value);
     });
     
     // Add elements to the modal
