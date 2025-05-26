@@ -1,3 +1,4 @@
+
 import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
 import { Proposal, ProposalLineItem, InventoryItem } from "@/types";
@@ -73,7 +74,7 @@ export const translations = {
   }
 };
 
-// Centralized function to create PDF HTML content
+// Improved PDF-optimized HTML content with better column layout
 const createPDFContent = (proposalData: any, language: string = "en") => {
   const t = translations[language as keyof typeof translations] || translations.en;
   const companyInfo = getCompanyInfo();
@@ -94,85 +95,85 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
   console.log('PDF Generation - VAT Enabled:', isVatEnabled, 'Net:', netAmount, 'VAT Amount:', vatAmount, 'Total:', totalAmount);
 
   return `
-    <div style="font-family: Arial, sans-serif; padding: 30px; max-width: 210mm; background: white;">
+    <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 794px; min-height: 1123px; background: white; margin: 0; box-sizing: border-box;">
       <!-- Header Section -->
-      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px;">
-        <div style="flex: 1; max-width: 60%;">
-          <div style="font-size: 11px; color: #666; margin-bottom: 25px; border-bottom: 1px solid #ddd; padding-bottom: 5px;">
+      <div style="display: table; width: 100%; margin-bottom: 30px; table-layout: fixed;">
+        <div style="display: table-cell; width: 65%; vertical-align: top; padding-right: 20px;">
+          <div style="font-size: 10px; color: #666; margin-bottom: 20px; border-bottom: 1px solid #ddd; padding-bottom: 4px; white-space: nowrap; overflow: hidden;">
             ${companyInfo.name} · ${companyInfo.street} · ${companyInfo.postal} ${companyInfo.city}
           </div>
-          <div style="margin-bottom: 20px;">
-            <div style="font-size: 12px; color: #666; margin-bottom: 5px;">${t.recipient}</div>
-            <div style="font-weight: bold; font-size: 14px; margin-bottom: 8px;">
+          <div style="margin-bottom: 15px;">
+            <div style="font-size: 11px; color: #666; margin-bottom: 4px;">${t.recipient}</div>
+            <div style="font-weight: bold; font-size: 13px; margin-bottom: 6px; word-wrap: break-word;">
               ${proposalData.customer || ''}
             </div>
-            <div style="font-size: 12px; color: #333; line-height: 1.4;">
+            <div style="font-size: 11px; color: #333; line-height: 1.3; word-wrap: break-word;">
               ${proposalData.address ? proposalData.address.split('\n').join('<br/>') : ''}
               ${proposalData.country ? '<br/>' + proposalData.country : ''}
             </div>
           </div>
         </div>
         
-        <div style="text-align: right; flex-shrink: 0;">
-          <img src="${proposalData.logo || companyInfo.logo}" style="max-height: 80px; max-width: ${logoWidth}; margin-bottom: 20px;" onerror="this.src='https://placehold.co/200x60?text=Your+Logo'; this.onerror=null;" />
+        <div style="display: table-cell; width: 35%; vertical-align: top; text-align: right;">
+          <img src="${proposalData.logo || companyInfo.logo}" style="max-height: 70px; max-width: ${logoWidth}; margin-bottom: 15px; display: block; margin-left: auto;" onerror="this.src='https://placehold.co/200x60?text=Your+Logo'; this.onerror=null;" />
           
-          <table style="margin-left: auto; font-size: 12px;">
+          <table style="margin-left: auto; font-size: 11px; border-collapse: collapse;">
             <tr>
-              <td style="padding: 3px 15px 3px 0; font-weight: bold; text-align: left;">${t.proposal} n°</td>
-              <td style="padding: 3px 0; text-align: right;">${proposalData.number || ''}</td>
+              <td style="padding: 2px 10px 2px 0; font-weight: bold; text-align: left; white-space: nowrap;">${t.proposal} n°</td>
+              <td style="padding: 2px 0; text-align: right; word-wrap: break-word;">${proposalData.number || ''}</td>
             </tr>
             <tr>
-              <td style="padding: 3px 15px 3px 0; font-weight: bold; text-align: left;">${t.date}</td>
-              <td style="padding: 3px 0; text-align: right;">${new Date(proposalData.date || Date.now()).toLocaleDateString()}</td>
+              <td style="padding: 2px 10px 2px 0; font-weight: bold; text-align: left; white-space: nowrap;">${t.date}</td>
+              <td style="padding: 2px 0; text-align: right;">${new Date(proposalData.date || Date.now()).toLocaleDateString()}</td>
             </tr>
             <tr>
-              <td style="padding: 3px 15px 3px 0; font-weight: bold; text-align: left;">${t.customerRef}</td>
-              <td style="padding: 3px 0; text-align: right;">${proposalData.reference || '-'}</td>
+              <td style="padding: 2px 10px 2px 0; font-weight: bold; text-align: left; white-space: nowrap;">${t.customerRef}</td>
+              <td style="padding: 2px 0; text-align: right; word-wrap: break-word;">${proposalData.reference || '-'}</td>
             </tr>
           </table>
         </div>
       </div>
 
       <!-- Proposal Title -->
-      <h2 style="color: #2563eb; margin-bottom: 20px; font-size: 18px; font-weight: bold;">
+      <h2 style="color: #2563eb; margin-bottom: 18px; font-size: 16px; font-weight: bold; clear: both;">
         ${t.proposal} ${proposalData.number || ''}
       </h2>
 
       <!-- Content Section -->
-      <div style="margin-bottom: 25px; font-size: 12px; line-height: 1.5; color: #333;">
+      <div style="margin-bottom: 20px; font-size: 11px; line-height: 1.4; color: #333; word-wrap: break-word;">
         ${proposalData.content ? proposalData.content.split('\n').join('<br/>') : ''}
       </div>
 
       <!-- Items Table -->
-      <table style="width: 100%; border-collapse: collapse; margin-bottom: 25px; font-size: 11px;">
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 10px;">
         <thead>
           <tr style="background-color: #4a90c2; color: white;">
-            <th style="padding: 10px 8px; text-align: left; font-weight: bold; border: 1px solid #4a90c2;">${t.pos}</th>
-            <th style="padding: 10px 8px; text-align: left; font-weight: bold; border: 1px solid #4a90c2;">${t.description}</th>
-            <th style="padding: 10px 8px; text-align: center; font-weight: bold; border: 1px solid #4a90c2;">${t.quantity}</th>
-            <th style="padding: 10px 8px; text-align: right; font-weight: bold; border: 1px solid #4a90c2;">${t.unitPrice}</th>
-            <th style="padding: 10px 8px; text-align: right; font-weight: bold; border: 1px solid #4a90c2;">${t.totalPrice}</th>
+            <th style="padding: 8px 6px; text-align: left; font-weight: bold; border: 1px solid #4a90c2; width: 8%;">${t.pos}</th>
+            <th style="padding: 8px 6px; text-align: left; font-weight: bold; border: 1px solid #4a90c2; width: 42%;">${t.description}</th>
+            <th style="padding: 8px 6px; text-align: center; font-weight: bold; border: 1px solid #4a90c2; width: 15%;">${t.quantity}</th>
+            <th style="padding: 8px 6px; text-align: right; font-weight: bold; border: 1px solid #4a90c2; width: 17.5%;">${t.unitPrice}</th>
+            <th style="padding: 8px 6px; text-align: right; font-weight: bold; border: 1px solid #4a90c2; width: 17.5%;">${t.totalPrice}</th>
           </tr>
         </thead>
         <tbody>
           ${(proposalData.lineItems || []).map((item: any, index: number) => `
             <tr style="border-bottom: 1px solid #e0e0e0;">
-              <td style="padding: 12px 8px; border: 1px solid #e0e0e0; text-align: center; font-weight: bold;">
+              <td style="padding: 10px 6px; border: 1px solid #e0e0e0; text-align: center; font-weight: bold; width: 8%;">
                 ${index + 1}
               </td>
-              <td style="padding: 12px 8px; border: 1px solid #e0e0e0;">
-                <div style="font-weight: bold; margin-bottom: 4px;">${item.name || ''}</div>
-                <div style="color: #666; font-size: 10px; line-height: 1.3;">
+              <td style="padding: 10px 6px; border: 1px solid #e0e0e0; width: 42%; word-wrap: break-word;">
+                <div style="font-weight: bold; margin-bottom: 3px; font-size: 10px;">${item.name || ''}</div>
+                <div style="color: #666; font-size: 9px; line-height: 1.2; word-wrap: break-word;">
                   ${item.description ? item.description.split('\n').join('<br/>') : ''}
                 </div>
               </td>
-              <td style="padding: 12px 8px; border: 1px solid #e0e0e0; text-align: center;">
+              <td style="padding: 10px 6px; border: 1px solid #e0e0e0; text-align: center; width: 15%;">
                 ${item.quantity || 0} ${item.unit || 'piece'}
               </td>
-              <td style="padding: 12px 8px; border: 1px solid #e0e0e0; text-align: right;">
+              <td style="padding: 10px 6px; border: 1px solid #e0e0e0; text-align: right; width: 17.5%;">
                 ${(item.unit_price || 0).toFixed(2)} EUR
               </td>
-              <td style="padding: 12px 8px; border: 1px solid #e0e0e0; text-align: right; font-weight: bold;">
+              <td style="padding: 10px 6px; border: 1px solid #e0e0e0; text-align: right; font-weight: bold; width: 17.5%;">
                 ${(item.total_price || 0).toFixed(2)} EUR
               </td>
             </tr>
@@ -181,80 +182,84 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
       </table>
 
       <!-- Totals Section -->
-      <div style="display: flex; justify-content: flex-end; margin-bottom: 30px;">
-        <table style="width: 250px; font-size: 12px;">
-          <tr>
-            <td style="padding: 6px 12px; text-align: left; border-bottom: 1px solid #e0e0e0;">
-              ${t.netAmount}
-            </td>
-            <td style="padding: 6px 12px; text-align: right; border-bottom: 1px solid #e0e0e0;">
-              ${netAmount.toFixed(2)} EUR
-            </td>
-          </tr>
-          ${isVatEnabled ? `
-          <tr>
-            <td style="padding: 6px 12px; text-align: left; border-bottom: 1px solid #e0e0e0;">
-              ${t.vat} ${vatRate}%
-            </td>
-            <td style="padding: 6px 12px; text-align: right; border-bottom: 1px solid #e0e0e0;">
-              ${vatAmount.toFixed(2)} EUR
-            </td>
-          </tr>
-          ` : ''}
-          <tr style="background-color: #f8f9fa;">
-            <td style="padding: 8px 12px; text-align: left; font-weight: bold; border: 2px solid #333;">
-              ${isVatEnabled ? t.grossAmount : t.netAmount}
-            </td>
-            <td style="padding: 8px 12px; text-align: right; font-weight: bold; border: 2px solid #333;">
-              ${isVatEnabled ? totalAmount.toFixed(2) : netAmount.toFixed(2)} EUR
-            </td>
-          </tr>
-        </table>
+      <div style="display: table; width: 100%; margin-bottom: 25px;">
+        <div style="display: table-cell; width: 70%;"></div>
+        <div style="display: table-cell; width: 30%;">
+          <table style="width: 100%; font-size: 11px; border-collapse: collapse;">
+            <tr>
+              <td style="padding: 5px 10px; text-align: left; border-bottom: 1px solid #e0e0e0;">
+                ${t.netAmount}
+              </td>
+              <td style="padding: 5px 10px; text-align: right; border-bottom: 1px solid #e0e0e0;">
+                ${netAmount.toFixed(2)} EUR
+              </td>
+            </tr>
+            ${isVatEnabled ? `
+            <tr>
+              <td style="padding: 5px 10px; text-align: left; border-bottom: 1px solid #e0e0e0;">
+                ${t.vat} ${vatRate}%
+              </td>
+              <td style="padding: 5px 10px; text-align: right; border-bottom: 1px solid #e0e0e0;">
+                ${vatAmount.toFixed(2)} EUR
+              </td>
+            </tr>
+            ` : ''}
+            <tr style="background-color: #f8f9fa;">
+              <td style="padding: 6px 10px; text-align: left; font-weight: bold; border: 2px solid #333;">
+                ${isVatEnabled ? t.grossAmount : t.netAmount}
+              </td>
+              <td style="padding: 6px 10px; text-align: right; font-weight: bold; border: 2px solid #333;">
+                ${isVatEnabled ? totalAmount.toFixed(2) : netAmount.toFixed(2)} EUR
+              </td>
+            </tr>
+          </table>
+        </div>
       </div>
 
       <!-- Payment Terms -->
-      <div style="margin-bottom: 40px; font-size: 11px; line-height: 1.4; color: #555;">
+      <div style="margin-bottom: 30px; font-size: 10px; line-height: 1.3; color: #555; word-wrap: break-word;">
         ${t.paymentTerms}
       </div>
       
       <!-- Signature Section -->
-      <div style="margin-top: 50px; display: flex; justify-content: space-between;">
-        <div style="width: 45%;">
-          <div style="border-top: 1px solid #333; padding-top: 8px;">
-            <div style="font-size: 10px; color: #666;">${t.placeDate}</div>
+      <div style="display: table; width: 100%; margin-top: 40px;">
+        <div style="display: table-cell; width: 45%;">
+          <div style="border-top: 1px solid #333; padding-top: 6px;">
+            <div style="font-size: 9px; color: #666;">${t.placeDate}</div>
           </div>
         </div>
-        <div style="width: 45%;">
-          <div style="border-top: 1px solid #333; padding-top: 8px;">
-            <div style="font-size: 10px; color: #666;">${t.signature}</div>
-            ${proposalData.signatureUrl ? `<img src="${proposalData.signatureUrl}" style="max-height: 40px; margin-top: 8px;" />` : ''}
+        <div style="display: table-cell; width: 10%;"></div>
+        <div style="display: table-cell; width: 45%;">
+          <div style="border-top: 1px solid #333; padding-top: 6px;">
+            <div style="font-size: 9px; color: #666;">${t.signature}</div>
+            ${proposalData.signatureUrl ? `<img src="${proposalData.signatureUrl}" style="max-height: 35px; margin-top: 6px;" />` : ''}
           </div>
         </div>
       </div>
 
       <!-- Footer Company Info -->
-      <div style="margin-top: 60px; font-size: 9px; color: #666; border-top: 1px solid #ddd; padding-top: 15px;">
-        <div style="display: flex; justify-content: space-between;">
-          <div style="width: 22%;">
+      <div style="margin-top: 50px; font-size: 8px; color: #666; border-top: 1px solid #ddd; padding-top: 12px;">
+        <div style="display: table; width: 100%; table-layout: fixed;">
+          <div style="display: table-cell; width: 25%; vertical-align: top; padding-right: 10px;">
             <strong>${companyInfo.name}</strong><br/>
             ${companyInfo.contactPerson}<br/>
             ${companyInfo.street}<br/>
             ${companyInfo.postal} ${companyInfo.city}<br/>
             ${companyInfo.country}
           </div>
-          <div style="width: 22%;">
+          <div style="display: table-cell; width: 25%; vertical-align: top; padding-right: 10px;">
             Tel: ${companyInfo.phone}<br/>
             ${companyInfo.fax ? 'Fax: ' + companyInfo.fax + '<br/>' : ''}
             E-Mail: ${companyInfo.email}<br/>
             Web: ${companyInfo.website}
           </div>
-          <div style="width: 22%;">
+          <div style="display: table-cell; width: 25%; vertical-align: top; padding-right: 10px;">
             ${companyInfo.registrationNumber ? 'Reg. Merc.: ' + companyInfo.registrationNumber + '<br/>' : ''}
             ${companyInfo.vatId ? 'IVA: ' + companyInfo.vatId + '<br/>' : ''}
             ${companyInfo.taxNumber ? 'Tax: ' + companyInfo.taxNumber + '<br/>' : ''}
             ${companyInfo.director ? 'Dir.: ' + companyInfo.director + '<br/>' : ''}
           </div>
-          <div style="width: 22%;">
+          <div style="display: table-cell; width: 25%; vertical-align: top;">
             ${companyInfo.wise ? 'WISE<br/>' : ''}
             ${companyInfo.accountNumber ? 'Account: ' + companyInfo.accountNumber + '<br/>' : ''}
             ${companyInfo.bankCode ? 'Bank: ' + companyInfo.bankCode + '<br/>' : ''}
@@ -267,26 +272,33 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
   `;
 };
 
-// Centralized function to generate PDF from HTML content
+// Improved PDF generation with consistent canvas settings
 const generatePDFFromHTML = async (htmlContent: string): Promise<jsPDF> => {
-  // Create a temporary div to render the proposal
+  // Create a temporary div to render the proposal with fixed dimensions
   const tempDiv = document.createElement("div");
   tempDiv.style.position = "absolute";
   tempDiv.style.left = "-9999px";
   tempDiv.style.top = "-9999px";
-  tempDiv.style.width = "210mm"; // A4 width
+  tempDiv.style.width = "794px"; // A4 width in pixels at 96 DPI
+  tempDiv.style.height = "1123px"; // A4 height in pixels at 96 DPI
+  tempDiv.style.backgroundColor = "white";
+  tempDiv.style.overflow = "hidden";
   
   tempDiv.innerHTML = htmlContent;
   document.body.appendChild(tempDiv);
   
   try {
-    // Convert the HTML to PDF with high quality settings
+    // Convert the HTML to canvas with consistent settings
     const canvas = await html2canvas(tempDiv, {
-      scale: 2, // Higher scale for better quality
+      scale: 1.5, // Consistent scale for both preview and PDF
       logging: false,
       useCORS: true,
       allowTaint: true,
-      backgroundColor: '#ffffff'
+      backgroundColor: '#ffffff',
+      width: 794,
+      height: 1123,
+      windowWidth: 794,
+      windowHeight: 1123
     });
     
     const imgData = canvas.toDataURL('image/png');
@@ -296,9 +308,9 @@ const generatePDFFromHTML = async (htmlContent: string): Promise<jsPDF> => {
       format: 'a4'
     });
     
-    const imgProps = pdf.getImageProperties(imgData);
+    // Calculate dimensions to fit A4
     const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+    const pdfHeight = pdf.internal.pageSize.getHeight();
     
     pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
     
@@ -336,10 +348,10 @@ export const generateProposalPDF = async (
   }
 };
 
-// Updated function to display PDF preview in a modal - now uses centralized generation
+// Updated preview function to show exact PDF output
 export const previewProposalPDF = async (proposalData: any, language: string = "en") => {
   try {
-    // Generate PDF using the centralized function
+    // Generate PDF using the centralized function - this ensures identical output
     const pdfResult = await generateProposalPDF({...proposalData, previewMode: true}, language);
     
     // Check if the result is a jsPDF instance
@@ -350,7 +362,7 @@ export const previewProposalPDF = async (proposalData: any, language: string = "
     
     const pdf = pdfResult as jsPDF;
     
-    // Convert the PDF to a data URL
+    // Convert the PDF to a data URL - this shows exactly what will be downloaded
     const dataUrl = pdf.output('datauristring');
     
     // Remove any existing PDF preview
@@ -359,7 +371,7 @@ export const previewProposalPDF = async (proposalData: any, language: string = "
       document.body.removeChild(existingOverlay);
     }
     
-    // Create a modal to display the PDF
+    // Create a modal to display the PDF with exact output
     const modalOverlay = document.createElement("div");
     modalOverlay.style.position = "fixed";
     modalOverlay.style.top = "0";
@@ -480,7 +492,7 @@ export const previewProposalPDF = async (proposalData: any, language: string = "
     controls.appendChild(leftControls);
     controls.appendChild(rightControls);
     
-    // Create iframe to display the PDF
+    // Create iframe to display the PDF - shows exact output
     const iframe = document.createElement("iframe");
     iframe.src = dataUrl;
     iframe.style.width = "80%";
@@ -491,7 +503,7 @@ export const previewProposalPDF = async (proposalData: any, language: string = "
     iframe.style.boxShadow = "0 0 10px rgba(0, 0, 0, 0.5)";
     iframe.style.borderRadius = "0 0 8px 8px";
 
-    // Handler for logo size adjustment - now uses centralized generation
+    // Handler for logo size adjustment - regenerates identical PDF
     let currentLogoSize = proposalData.logoSize || 33;
 
     const updatePreview = async (newLogoSize: number, newLanguage: string) => {
@@ -501,9 +513,11 @@ export const previewProposalPDF = async (proposalData: any, language: string = "
         logoSize: newLogoSize
       };
       
+      // Generate new PDF with identical settings
       const newPdfResult = await generateProposalPDF(updatedProposalData, newLanguage);
       
       if (newPdfResult && typeof newPdfResult !== 'boolean') {
+        // Update iframe with new PDF data URL - shows exact output
         iframe.src = (newPdfResult as jsPDF).output('datauristring');
       }
     };
@@ -520,7 +534,7 @@ export const previewProposalPDF = async (proposalData: any, language: string = "
       await updatePreview(currentLogoSize, languageSelector.value);
     };
     
-    // Add event listener to language selector - now uses centralized generation
+    // Add event listener to language selector - regenerates identical PDF
     languageSelector.addEventListener("change", async () => {
       await updatePreview(currentLogoSize, languageSelector.value);
     });
@@ -572,12 +586,10 @@ export const getCompanyInfo = () => {
   };
 };
 
-// Function to save company information
 export const saveCompanyInfo = (companyInfo: any) => {
   localStorage.setItem("companyInfo", JSON.stringify(companyInfo));
 };
 
-// Simple version for downloading as text - kept for backward compatibility
 export const downloadProposal = (proposalData: any) => {
   // Create a simple PDF-like content
   const content = `
@@ -627,7 +639,6 @@ export const loadInventoryItems = () => {
   return [];
 };
 
-// Helper function to get status color class for proposals
 export const getProposalStatusColor = (status: string) => {
   switch (status) {
     case "Draft":
@@ -647,7 +658,6 @@ export const getProposalStatusColor = (status: string) => {
   }
 };
 
-// List of available proposal statuses
 export const PROPOSAL_STATUSES = [
   "Draft",
   "Sent",
@@ -657,7 +667,6 @@ export const PROPOSAL_STATUSES = [
   "Revised"
 ];
 
-// Function to format inventory item for proposal line item
 export const formatInventoryItemForProposal = (item: InventoryItem, quantity: number = 1): ProposalLineItem => {
   const unitPrice = parseFloat(item.price.replace('EUR', '')) || 0;
   return {
