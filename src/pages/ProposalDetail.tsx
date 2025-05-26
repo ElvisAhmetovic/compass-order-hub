@@ -25,7 +25,7 @@ const ProposalDetail = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { id } = useParams<ProposalDetailParams>();
+  const { id } = useParams<{ id?: string }>();
   const isNewProposal = !id;
 
   const [proposal, setProposal] = useState<Proposal>({
