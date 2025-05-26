@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -16,6 +15,7 @@ import { PlusCircle, Trash2, Save, Eye, Download, ArrowLeft } from "lucide-react
 import { useToast } from "@/hooks/use-toast";
 import { v4 as uuidv4 } from "uuid";
 import { generateProposalPDF, previewProposalPDF, loadInventoryItems, formatInventoryItemForProposal, PROPOSAL_STATUSES } from "@/utils/proposalUtils";
+import InventoryAutocomplete from "@/components/inventory/InventoryAutocomplete";
 
 interface ProposalLineItem {
   id: string;
@@ -225,6 +225,37 @@ const ProposalDetail = () => {
     }
     
     // Recalculate totals
+    const { netAmount, vatAmount, totalAmount } = calculateTotals(updatedLineItems, proposalData.vatEnabled, proposalData.vatRate);
+    
+    setProposalData(prev => ({
+      ...prev,
+      lineItems: updatedLineItems,
+      netAmount,
+      vatAmount,
+      totalAmount,
+      amount: totalAmount.toFixed(2)
+    }));
+  };
+
+  const handleInventoryItemSelect = (index: number, inventoryItem: any) => {
+    const updatedLineItems = [...proposalData.lineItems];
+    const parsePrice = (priceStr: string) => {
+      if (!priceStr) return 0;
+      const numStr = priceStr.replace(/[^\d.,]/g, '').replace(',', '.');
+      return parseFloat(numStr) || 0;
+    };
+
+    updatedLineItems[index] = {
+      ...updatedLineItems[index],
+      item_id: inventoryItem.id,
+      name: inventoryItem.name,
+      description: inventoryItem.description || '',
+      unit_price: parsePrice(inventoryItem.price),
+      total_price: updatedLineItems[index].quantity * parsePrice(inventoryItem.price),
+      category: inventoryItem.category,
+      unit: inventoryItem.unit
+    };
+
     const { netAmount, vatAmount, totalAmount } = calculateTotals(updatedLineItems, proposalData.vatEnabled, proposalData.vatRate);
     
     setProposalData(prev => ({
@@ -705,10 +736,12 @@ const ProposalDetail = () => {
                         {proposalData.lineItems.map((item, index) => (
                           <TableRow key={item.id}>
                             <TableCell>
-                              <Input
+                              <InventoryAutocomplete
                                 value={item.name}
-                                onChange={(e) => handleLineItemChange(index, 'name', e.target.value)}
-                                placeholder="Product/Service name"
+                                onChange={(value) => handleLineItemChange(index, 'name', value)}
+                                onSelect={(inventoryItem) => handleInventoryItemSelect(index, inventoryItem)}
+                                inventoryItems={inventoryItems}
+                                placeholder="Type to search products..."
                               />
                             </TableCell>
                             <TableCell>
