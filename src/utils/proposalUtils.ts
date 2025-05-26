@@ -1,4 +1,3 @@
-
 import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
 import { Proposal, ProposalLineItem, InventoryItem } from "@/types";
@@ -16,65 +15,74 @@ export const translations = {
     proposal: "Proposal",
     date: "Date",
     customer: "Customer",
-    customerRef: "Customer Ref.",
-    address: "Address",
+    customerRef: "Your customer no.",
+    yourContact: "Your contact",
     content: "Content",
-    pos: "Pos.",
-    description: "Description",
-    quantity: "Quantity",
-    unitPrice: "Unit Price",
-    totalPrice: "Total Price",
-    netAmount: "Net amount",
-    vat: "VAT",
-    grossAmount: "Gross amount",
-    paymentTerms: "By placing your order, you agree to pay for the services included in this offer within 7 days of receipt of the invoice.",
-    placeDate: "Place / Date",
-    signature: "Signature / Stamp",
-    recipient: "Recipient"
+    productDescription: "PRODUCT/DESCRIPTION",
+    price: "PRICE",
+    qty: "QTY",
+    total: "TOTAL",
+    subtotal: "SUBTOTAL",
+    vat: "VAT 0%",
+    totalAmount: "TOTAL",
+    termsAndConditions: "TERMS AND CONDITIONS",
+    paymentTerms: "By placing your order you agree to pay for the services included in this offer within 7 days of receipt of the invoice. The invoice will only be issued after the service has been provided.",
+    placeDate: "Place / date",
+    signatureStamp: "Signature / Stamp",
+    paymentData: "PAYMENT DATA:",
+    accountNr: "ACCOUNT NR:",
+    name: "NAME:",
+    paymentMethod: "PAYMENT METHOD:"
   },
   de: {
     proposal: "Angebot",
     date: "Datum",
     customer: "Kunde",
-    customerRef: "Kunden-Ref.",
-    address: "Adresse",
+    customerRef: "Ihre Kundennummer",
+    yourContact: "Ihr Kontakt",
     content: "Inhalt",
-    pos: "Pos.",
-    description: "Beschreibung",
-    quantity: "Menge",
-    unitPrice: "Preis pro Einheit",
-    totalPrice: "Gesamtpreis",
-    netAmount: "Nettobetrag",
-    vat: "MwSt",
-    grossAmount: "Bruttobetrag",
-    paymentTerms: "Mit der Bestellung erklären Sie sich damit einverstanden, die in diesem Angebot enthaltenen Leistungen innerhalb von 7 Tagen nach Erhalt der Rechnung zu bezahlen.",
+    productDescription: "PRODUKT/BESCHREIBUNG",
+    price: "PREIS",
+    qty: "MENGE",
+    total: "GESAMT",
+    subtotal: "ZWISCHENSUMME",
+    vat: "MwSt 0%",
+    totalAmount: "GESAMT",
+    termsAndConditions: "GESCHÄFTSBEDINGUNGEN",
+    paymentTerms: "Mit der Bestellung erklären Sie sich damit einverstanden, die in diesem Angebot enthaltenen Leistungen innerhalb von 7 Tagen nach Erhalt der Rechnung zu bezahlen. Die Rechnung wird erst nach Erbringung der Leistung ausgestellt.",
     placeDate: "Ort / Datum",
-    signature: "Unterschrift / Stempel",
-    recipient: "Empfänger"
+    signatureStamp: "Unterschrift / Stempel",
+    paymentData: "ZAHLUNGSDATEN:",
+    accountNr: "KONTONR:",
+    name: "NAME:",
+    paymentMethod: "ZAHLUNGSMETHODE:"
   },
   es: {
-    proposal: "Oferta",
+    proposal: "Propuesta",
     date: "Fecha",
     customer: "Cliente",
-    customerRef: "Su n° de cliente",
-    address: "Dirección",
+    customerRef: "Su número de cliente",
+    yourContact: "Su contacto",
     content: "Contenido",
-    pos: "Pos.",
-    description: "Descripción",
-    quantity: "Cantidad",
-    unitPrice: "Precio unit.",
-    totalPrice: "Precio total",
-    netAmount: "Cantidad neta",
-    vat: "IVA",
-    grossAmount: "Cantidad bruto",
-    paymentTerms: "Al realizar su pedido, acepta pagar los servicios incluidos en esta oferta en un plazo de 7 días a partir de la recepción de la factura.",
-    placeDate: "Lugar / Fecha",
-    signature: "Firma / Sello",
-    recipient: "Destinatario"
+    productDescription: "PRODUCTO/DESCRIPCIÓN",
+    price: "PRECIO",
+    qty: "CANT",
+    total: "TOTAL",
+    subtotal: "SUBTOTAL",
+    vat: "IVA 0%",
+    totalAmount: "TOTAL",
+    termsAndConditions: "TÉRMINOS Y CONDICIONES",
+    paymentTerms: "Al realizar su pedido, acepta pagar los servicios incluidos en esta oferta en un plazo de 7 días a partir de la recepción de la factura. La factura solo se emitirá después de que se haya prestado el servicio.",
+    placeDate: "Lugar / fecha",
+    signatureStamp: "Firma / Sello",
+    paymentData: "DATOS DE PAGO:",
+    accountNr: "NÚM. CUENTA:",
+    name: "NOMBRE:",
+    paymentMethod: "MÉTODO DE PAGO:"
   }
 };
 
-// Improved PDF-optimized HTML content with better column layout
+// Updated PDF content to match the exact template from the screenshot
 const createPDFContent = (proposalData: any, language: string = "en") => {
   const t = translations[language as keyof typeof translations] || translations.en;
   const companyInfo = getCompanyInfo();
@@ -88,93 +96,103 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
 
   // Calculate totals based on current VAT setting
   const netAmount = proposalData.netAmount || 0;
-  const vatRate = proposalData.vatRate || 19;
+  const vatRate = proposalData.vatRate || 0;
   const vatAmount = isVatEnabled ? (netAmount * vatRate / 100) : 0;
   const totalAmount = netAmount + vatAmount;
 
   console.log('PDF Generation - VAT Enabled:', isVatEnabled, 'Net:', netAmount, 'VAT Amount:', vatAmount, 'Total:', totalAmount);
 
   return `
-    <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 794px; min-height: 1123px; background: white; margin: 0; box-sizing: border-box;">
-      <!-- Header Section -->
-      <div style="display: table; width: 100%; margin-bottom: 30px; table-layout: fixed;">
-        <div style="display: table-cell; width: 65%; vertical-align: top; padding-right: 20px;">
-          <div style="font-size: 10px; color: #666; margin-bottom: 20px; border-bottom: 1px solid #ddd; padding-bottom: 4px; white-space: nowrap; overflow: hidden;">
-            ${companyInfo.name} · ${companyInfo.street} · ${companyInfo.postal} ${companyInfo.city}
-          </div>
-          <div style="margin-bottom: 15px;">
-            <div style="font-size: 11px; color: #666; margin-bottom: 4px;">${t.recipient}</div>
-            <div style="font-weight: bold; font-size: 13px; margin-bottom: 6px; word-wrap: break-word;">
-              ${proposalData.customer || ''}
-            </div>
-            <div style="font-size: 11px; color: #333; line-height: 1.3; word-wrap: break-word;">
-              ${proposalData.address ? proposalData.address.split('\n').join('<br/>') : ''}
-              ${proposalData.country ? '<br/>' + proposalData.country : ''}
-            </div>
+    <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 794px; min-height: 1123px; background: white; margin: 0; box-sizing: border-box; font-size: 11px;">
+      
+      <!-- Header Section with Company Info and Logo -->
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px;">
+        <div style="flex: 1;">
+          <div style="font-weight: bold; font-size: 14px; margin-bottom: 5px;">${companyInfo.name}</div>
+          <div style="line-height: 1.4; color: #333;">
+            ${companyInfo.street}<br/>
+            ${companyInfo.postal} ${companyInfo.city}
           </div>
         </div>
-        
-        <div style="display: table-cell; width: 35%; vertical-align: top; text-align: right;">
-          <img src="${proposalData.logo || companyInfo.logo}" style="max-height: 70px; max-width: ${logoWidth}; margin-bottom: 15px; display: block; margin-left: auto;" onerror="this.src='https://placehold.co/200x60?text=Your+Logo'; this.onerror=null;" />
-          
-          <table style="margin-left: auto; font-size: 11px; border-collapse: collapse;">
-            <tr>
-              <td style="padding: 2px 10px 2px 0; font-weight: bold; text-align: left; white-space: nowrap;">${t.proposal} n°</td>
-              <td style="padding: 2px 0; text-align: right; word-wrap: break-word;">${proposalData.number || ''}</td>
-            </tr>
-            <tr>
-              <td style="padding: 2px 10px 2px 0; font-weight: bold; text-align: left; white-space: nowrap;">${t.date}</td>
-              <td style="padding: 2px 0; text-align: right;">${new Date(proposalData.date || Date.now()).toLocaleDateString()}</td>
-            </tr>
-            <tr>
-              <td style="padding: 2px 10px 2px 0; font-weight: bold; text-align: left; white-space: nowrap;">${t.customerRef}</td>
-              <td style="padding: 2px 0; text-align: right; word-wrap: break-word;">${proposalData.reference || '-'}</td>
-            </tr>
-          </table>
+        <div style="text-align: right;">
+          <img src="${proposalData.logo || companyInfo.logo}" style="max-height: 80px; max-width: ${logoWidth};" onerror="this.src='https://placehold.co/200x60?text=Your+Logo'; this.onerror=null;" />
+        </div>
+      </div>
+
+      <!-- Customer Information and Proposal Details -->
+      <div style="display: flex; justify-content: space-between; margin-bottom: 40px;">
+        <div style="flex: 1; padding-right: 40px;">
+          <div style="font-weight: bold; font-size: 12px; margin-bottom: 15px;">${proposalData.customerName || 'Name Surname'}</div>
+          <div style="line-height: 1.4; margin-bottom: 10px;">
+            ${proposalData.customerAddress || 'Leidsestraat 15, 2000 Antwerpen'}<br/>
+            ${proposalData.customerEmail || 'MonzongrealeaZuidbestubook.com'}<br/>
+            ${proposalData.customerCountry || 'Belgium'}
+          </div>
+        </div>
+        <div style="text-align: right;">
+          <div style="margin-bottom: 8px;">
+            <span style="font-weight: bold;">Proposal no.</span>
+            <span style="margin-left: 20px;">${proposalData.number || 'AN-9993'}</span>
+          </div>
+          <div style="margin-bottom: 8px;">
+            <span style="font-weight: bold;">${t.date}</span>
+            <span style="margin-left: 20px;">${new Date(proposalData.date || Date.now()).toLocaleDateString()}</span>
+          </div>
+          <div style="margin-bottom: 8px;">
+            <span style="font-weight: bold;">${t.customerRef}</span>
+            <span style="margin-left: 20px;">${proposalData.customerRef || '7865'}</span>
+          </div>
+          <div>
+            <span style="font-weight: bold;">${t.yourContact}</span>
+            <span style="margin-left: 20px;">${proposalData.yourContact || 'Thomas Klein'}</span>
+          </div>
         </div>
       </div>
 
       <!-- Proposal Title -->
-      <h2 style="color: #2563eb; margin-bottom: 18px; font-size: 16px; font-weight: bold; clear: both;">
-        ${t.proposal} ${proposalData.number || ''}
+      <h2 style="color: #4a90e2; margin-bottom: 15px; font-size: 16px; font-weight: bold;">
+        ${t.proposal} ${proposalData.number || 'AN-9993'}
       </h2>
 
-      <!-- Content Section -->
-      <div style="margin-bottom: 20px; font-size: 11px; line-height: 1.4; color: #333; word-wrap: break-word;">
-        ${proposalData.content ? proposalData.content.split('\n').join('<br/>') : ''}
+      <!-- Proposal Content/Description -->
+      <div style="margin-bottom: 25px; line-height: 1.5;">
+        <strong>${proposalData.proposalTitle || 'Protect your online REPUTATION!'}</strong> ${proposalData.proposalDescription || 'Thank you for your enquiry. We will be happy to provide you with the requested non-binding offer.'}
       </div>
 
-      <!-- Items Table -->
-      <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 10px;">
+      <!-- Products/Services Table -->
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px; font-size: 10px;">
         <thead>
-          <tr style="background-color: #4a90c2; color: white;">
-            <th style="padding: 8px 6px; text-align: left; font-weight: bold; border: 1px solid #4a90c2; width: 8%;">${t.pos}</th>
-            <th style="padding: 8px 6px; text-align: left; font-weight: bold; border: 1px solid #4a90c2; width: 42%;">${t.description}</th>
-            <th style="padding: 8px 6px; text-align: center; font-weight: bold; border: 1px solid #4a90c2; width: 15%;">${t.quantity}</th>
-            <th style="padding: 8px 6px; text-align: right; font-weight: bold; border: 1px solid #4a90c2; width: 17.5%;">${t.unitPrice}</th>
-            <th style="padding: 8px 6px; text-align: right; font-weight: bold; border: 1px solid #4a90c2; width: 17.5%;">${t.totalPrice}</th>
+          <tr style="background-color: #4a5568; color: white;">
+            <th style="padding: 12px 8px; text-align: left; font-weight: bold; border: none; width: 50%;">${t.productDescription}</th>
+            <th style="padding: 12px 8px; text-align: center; font-weight: bold; border: none; width: 16%;">${t.price}</th>
+            <th style="padding: 12px 8px; text-align: center; font-weight: bold; border: none; width: 14%;">${t.qty}</th>
+            <th style="padding: 12px 8px; text-align: right; font-weight: bold; border: none; width: 20%;">${t.total}</th>
           </tr>
         </thead>
         <tbody>
           ${(proposalData.lineItems || []).map((item: any, index: number) => `
-            <tr style="border-bottom: 1px solid #e0e0e0;">
-              <td style="padding: 10px 6px; border: 1px solid #e0e0e0; text-align: center; font-weight: bold; width: 8%;">
-                ${index + 1}
-              </td>
-              <td style="padding: 10px 6px; border: 1px solid #e0e0e0; width: 42%; word-wrap: break-word;">
-                <div style="font-weight: bold; margin-bottom: 3px; font-size: 10px;">${item.name || ''}</div>
-                <div style="color: #666; font-size: 9px; line-height: 1.2; word-wrap: break-word;">
-                  ${item.description ? item.description.split('\n').join('<br/>') : ''}
+            <tr style="border-bottom: 1px solid #e2e8f0; background-color: ${index % 2 === 0 ? '#f8f9fa' : 'white'};">
+              <td style="padding: 15px 8px; border: none; vertical-align: top;">
+                <div style="font-weight: bold; margin-bottom: 5px; color: #e67e22;">
+                  ${item.name || 'SILBER-OPTIMIERUNGSPAKET'} ${item.rating ? '★★★★★' : ''}
                 </div>
+                <div style="line-height: 1.4; color: #666; font-size: 9px;">
+                  ${item.description || 'Remove Google Maps entity, i.e., you will receive a new, optimized Google My Business listing with new images that is better positioned, without negative reviews, which generates new customers online and stands out better from the competition.'}
+                </div>
+                ${item.additionalInfo ? `
+                <div style="margin-top: 10px; color: #666; font-size: 9px;">
+                  <div style="margin-bottom: 3px;">${item.additionalInfo}</div>
+                </div>
+                ` : ''}
               </td>
-              <td style="padding: 10px 6px; border: 1px solid #e0e0e0; text-align: center; width: 15%;">
-                ${item.quantity || 0} ${item.unit || 'piece'}
+              <td style="padding: 15px 8px; border: none; text-align: center; vertical-align: top;">
+                ${(item.unit_price || 399).toFixed(2)} EUR
               </td>
-              <td style="padding: 10px 6px; border: 1px solid #e0e0e0; text-align: right; width: 17.5%;">
-                ${(item.unit_price || 0).toFixed(2)} EUR
+              <td style="padding: 15px 8px; border: none; text-align: center; vertical-align: top;">
+                ${item.quantity || 1}
               </td>
-              <td style="padding: 10px 6px; border: 1px solid #e0e0e0; text-align: right; font-weight: bold; width: 17.5%;">
-                ${(item.total_price || 0).toFixed(2)} EUR
+              <td style="padding: 15px 8px; border: none; text-align: right; vertical-align: top; font-weight: bold;">
+                ${(item.total_price || 399).toFixed(2)} EUR
               </td>
             </tr>
           `).join('')}
@@ -182,90 +200,79 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
       </table>
 
       <!-- Totals Section -->
-      <div style="display: table; width: 100%; margin-bottom: 25px;">
-        <div style="display: table-cell; width: 70%;"></div>
-        <div style="display: table-cell; width: 30%;">
-          <table style="width: 100%; font-size: 11px; border-collapse: collapse;">
-            <tr>
-              <td style="padding: 5px 10px; text-align: left; border-bottom: 1px solid #e0e0e0;">
-                ${t.netAmount}
-              </td>
-              <td style="padding: 5px 10px; text-align: right; border-bottom: 1px solid #e0e0e0;">
-                ${netAmount.toFixed(2)} EUR
-              </td>
-            </tr>
-            ${isVatEnabled ? `
-            <tr>
-              <td style="padding: 5px 10px; text-align: left; border-bottom: 1px solid #e0e0e0;">
-                ${t.vat} ${vatRate}%
-              </td>
-              <td style="padding: 5px 10px; text-align: right; border-bottom: 1px solid #e0e0e0;">
-                ${vatAmount.toFixed(2)} EUR
-              </td>
-            </tr>
-            ` : ''}
-            <tr style="background-color: #f8f9fa;">
-              <td style="padding: 6px 10px; text-align: left; font-weight: bold; border: 2px solid #333;">
-                ${isVatEnabled ? t.grossAmount : t.netAmount}
-              </td>
-              <td style="padding: 6px 10px; text-align: right; font-weight: bold; border: 2px solid #333;">
-                ${isVatEnabled ? totalAmount.toFixed(2) : netAmount.toFixed(2)} EUR
-              </td>
-            </tr>
-          </table>
+      <div style="display: flex; justify-content: flex-end; margin-bottom: 30px;">
+        <div style="width: 250px;">
+          <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e2e8f0;">
+            <span>${t.subtotal}</span>
+            <span>${netAmount.toFixed(2)} EUR</span>
+          </div>
+          ${isVatEnabled ? `
+          <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e2e8f0;">
+            <span>${t.vat}</span>
+            <span>${vatAmount.toFixed(2)} EUR</span>
+          </div>
+          ` : `
+          <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e2e8f0;">
+            <span>${t.vat}</span>
+            <span>0.00 EUR</span>
+          </div>
+          `}
+          <div style="display: flex; justify-content: space-between; padding: 12px 0; font-weight: bold; font-size: 12px; background-color: #f8f9fa;">
+            <span>${t.totalAmount}</span>
+            <span>${isVatEnabled ? totalAmount.toFixed(2) : netAmount.toFixed(2)} EUR</span>
+          </div>
         </div>
       </div>
 
-      <!-- Payment Terms -->
-      <div style="margin-bottom: 30px; font-size: 10px; line-height: 1.3; color: #555; word-wrap: break-word;">
-        ${t.paymentTerms}
+      <!-- Payment Data Section -->
+      <div style="margin-bottom: 20px; background-color: #f8f9fa; padding: 15px; border-left: 4px solid #4a90e2;">
+        <div style="font-weight: bold; margin-bottom: 8px;">${t.paymentData}</div>
+        <div style="line-height: 1.4;">
+          <div>${t.accountNr} ${companyInfo.accountNumber || '12345678901234567'}</div>
+          <div>${t.name} ${companyInfo.accountHolder || 'YOUR NAME'}</div>
+          <div>${t.paymentMethod} ${companyInfo.paymentMethod || 'CREDIT CARD'}</div>
+        </div>
       </div>
-      
+
+      <!-- Terms and Conditions -->
+      <div style="margin-bottom: 30px;">
+        <div style="font-weight: bold; margin-bottom: 10px; text-transform: uppercase;">${t.termsAndConditions}</div>
+        <div style="line-height: 1.4; font-size: 10px;">
+          ${t.paymentTerms}
+        </div>
+      </div>
+
       <!-- Signature Section -->
-      <div style="display: table; width: 100%; margin-top: 40px;">
-        <div style="display: table-cell; width: 45%;">
-          <div style="border-top: 1px solid #333; padding-top: 6px;">
-            <div style="font-size: 9px; color: #666;">${t.placeDate}</div>
+      <div style="display: flex; justify-content: space-between; margin-top: 50px;">
+        <div style="width: 45%;">
+          <div style="border-top: 1px solid #333; padding-top: 8px;">
+            <div style="font-size: 10px; color: #666;">${t.placeDate}</div>
           </div>
         </div>
-        <div style="display: table-cell; width: 10%;"></div>
-        <div style="display: table-cell; width: 45%;">
-          <div style="border-top: 1px solid #333; padding-top: 6px;">
-            <div style="font-size: 9px; color: #666;">${t.signature}</div>
-            ${proposalData.signatureUrl ? `<img src="${proposalData.signatureUrl}" style="max-height: 35px; margin-top: 6px;" />` : ''}
+        <div style="width: 45%;">
+          <div style="border-top: 1px solid #333; padding-top: 8px;">
+            <div style="font-size: 10px; color: #666;">${t.signatureStamp}</div>
+            ${proposalData.signatureUrl ? `<img src="${proposalData.signatureUrl}" style="max-height: 40px; margin-top: 8px;" />` : ''}
           </div>
         </div>
       </div>
 
       <!-- Footer Company Info -->
-      <div style="margin-top: 50px; font-size: 8px; color: #666; border-top: 1px solid #ddd; padding-top: 12px;">
-        <div style="display: table; width: 100%; table-layout: fixed;">
-          <div style="display: table-cell; width: 25%; vertical-align: top; padding-right: 10px;">
-            <strong>${companyInfo.name}</strong><br/>
-            ${companyInfo.contactPerson}<br/>
-            ${companyInfo.street}<br/>
-            ${companyInfo.postal} ${companyInfo.city}<br/>
-            ${companyInfo.country}
-          </div>
-          <div style="display: table-cell; width: 25%; vertical-align: top; padding-right: 10px;">
-            Tel: ${companyInfo.phone}<br/>
-            ${companyInfo.fax ? 'Fax: ' + companyInfo.fax + '<br/>' : ''}
-            E-Mail: ${companyInfo.email}<br/>
-            Web: ${companyInfo.website}
-          </div>
-          <div style="display: table-cell; width: 25%; vertical-align: top; padding-right: 10px;">
-            ${companyInfo.registrationNumber ? 'Reg. Merc.: ' + companyInfo.registrationNumber + '<br/>' : ''}
-            ${companyInfo.vatId ? 'IVA: ' + companyInfo.vatId + '<br/>' : ''}
-            ${companyInfo.taxNumber ? 'Tax: ' + companyInfo.taxNumber + '<br/>' : ''}
-            ${companyInfo.director ? 'Dir.: ' + companyInfo.director + '<br/>' : ''}
-          </div>
-          <div style="display: table-cell; width: 25%; vertical-align: top;">
-            ${companyInfo.wise ? 'WISE<br/>' : ''}
-            ${companyInfo.accountNumber ? 'Account: ' + companyInfo.accountNumber + '<br/>' : ''}
-            ${companyInfo.bankCode ? 'Bank: ' + companyInfo.bankCode + '<br/>' : ''}
-            ${companyInfo.iban ? 'IBAN: ' + companyInfo.iban + '<br/>' : ''}
-            ${companyInfo.bic ? 'BIC: ' + companyInfo.bic : ''}
-          </div>
+      <div style="position: absolute; bottom: 20px; left: 20px; right: 20px; font-size: 8px; color: white; background-color: #e74c3c; padding: 8px; display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; align-items: center;">
+          <span style="margin-right: 15px;">Tel.: ${companyInfo.phone || '+49 203 70 90 72 62'}</span>
+          <span style="margin-right: 15px;">Fax.: ${companyInfo.fax || '+49 203 70 90 73 53'}</span>
+        </div>
+        <div style="display: flex; align-items: center;">
+          <span style="margin-right: 15px;">Email: ${companyInfo.email || 'kontakt.abmedia@gmail.com'}</span>
+          <span style="margin-right: 15px;">Web: ${companyInfo.website || 'www.abmedia-team.com'}</span>
+        </div>
+        <div>
+          <div style="font-weight: bold;">${companyInfo.name}</div>
+          <div>${companyInfo.contactPerson || 'Andreas Berger'}</div>
+          <div>${companyInfo.street}</div>
+          <div>${companyInfo.postal} ${companyInfo.city}</div>
+          <div>${companyInfo.country || 'Germany'}</div>
         </div>
       </div>
     </div>
@@ -569,7 +576,7 @@ export const getCompanyInfo = () => {
     street: "Weseler Str.73",
     postal: "47169",
     city: "Duisburg",
-    country: "Alemania",
+    country: "Germany",
     phone: "+49 203 70 90 72 62",
     fax: "+49 203 70 90 73 53",
     email: "kontakt.abmedia@gmail.com",
@@ -579,7 +586,9 @@ export const getCompanyInfo = () => {
     taxNumber: "13426 27369",
     director: "Andreas Berger",
     wise: true,
-    accountNumber: "96702389783",
+    accountNumber: "12345678901234567",
+    accountHolder: "YOUR NAME",
+    paymentMethod: "CREDIT CARD",
     bankCode: "967",
     iban: "BE79967023897833",
     bic: "TRWIBEB1"
