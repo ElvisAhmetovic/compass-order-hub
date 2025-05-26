@@ -17,7 +17,7 @@ import ImportDialog from "@/components/inventory/ImportDialog";
 
 const Inventory = () => {
   // Use the custom hook for inventory management
-  const { inventoryData, loading, updateInventoryItem, addInventoryItem, deleteInventoryItem, deleteAllInventoryItems } = useInventory();
+  const { inventoryData, loading, updateInventoryItem, addInventoryItem, deleteInventoryItem, deleteAllInventoryItems, importProductData } = useInventory();
   
   // State for filters
   const [category, setCategory] = useState<string>("All");
@@ -183,6 +183,11 @@ const Inventory = () => {
     }
   };
 
+  // Handle import predefined product data
+  const handleImportProductData = async () => {
+    await importProductData();
+  };
+
   // If not admin, redirect or show access denied
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
@@ -234,6 +239,16 @@ const Inventory = () => {
               onImport={() => setIsImportDialogOpen(true)}
               onDeleteAll={handleDeleteAll}
             />
+
+            {/* Import Product Data Button */}
+            <div className="flex justify-end">
+              <button
+                onClick={handleImportProductData}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+              >
+                Import AB Media Team Products
+              </button>
+            </div>
 
             <div className="bg-white rounded-lg shadow">
               {/* Filters */}

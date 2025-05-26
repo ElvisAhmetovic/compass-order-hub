@@ -185,6 +185,628 @@ export const useInventory = () => {
     }
   };
 
+  const importProductData = async () => {
+    const productData = [
+      {
+        id: "10354",
+        name: "Google Maps Seite Erstellen - GOLD PAKET",
+        category: "Article",
+        description: "",
+        stock: 0,
+        unit: "Stk",
+        price: "EUR0.00",
+        buyingPrice: "EUR0.00"
+      },
+      {
+        id: "2000",
+        name: "Entfernung negativer Online-Inhalte",
+        category: "Article",
+        description: "",
+        stock: 0,
+        unit: "Stk",
+        price: "EUR168.07",
+        buyingPrice: "EUR0.00"
+      },
+      {
+        id: "9999",
+        name: "Professionelle SEO-Optimierung zur Verdrängung negativer Inhalte",
+        category: "Article",
+        description: "",
+        stock: 0,
+        unit: "Stk",
+        price: "EUR335.29",
+        buyingPrice: "EUR0.00"
+      },
+      {
+        id: "10351",
+        name: "Deletion Trustpilot Negative Reviews",
+        category: "Article",
+        description: "",
+        stock: 0,
+        unit: "Stk",
+        price: "EUR0.00",
+        buyingPrice: "EUR0.00"
+      },
+      {
+        id: "103526",
+        name: "TRIPADVISOR",
+        category: "Article",
+        description: "",
+        stock: 0,
+        unit: "Stk",
+        price: "EUR0.00",
+        buyingPrice: "EUR0.00"
+      },
+      {
+        id: "2587",
+        name: "SUPPRIMER L'AVIS NÉGATIF - PAQUET GOOGLE ARGENT",
+        category: "Article",
+        description: "",
+        stock: 0,
+        unit: "Stk",
+        price: "EUR0.00",
+        buyingPrice: "EUR0.00"
+      },
+      {
+        id: "10254",
+        name: "REMOVE NEGATIVE RATING - GOOGLE SILVER PACKAGE",
+        category: "Article",
+        description: "",
+        stock: 0,
+        unit: "Stk",
+        price: "EUR0.00",
+        buyingPrice: "EUR0.00"
+      },
+      {
+        id: "10987",
+        name: "NEGATIVE BEWERTUNG ENTFERNEN - GOOGLE SILBER PAKET",
+        category: "Article",
+        description: "",
+        stock: 0,
+        unit: "Stk",
+        price: "EUR0.00",
+        buyingPrice: "EUR0.00"
+      },
+      {
+        id: "2058",
+        name: "SILVER PACKAGE",
+        category: "Article",
+        description: "",
+        stock: 0,
+        unit: "Stk",
+        price: "EUR300.00",
+        buyingPrice: "EUR0.00"
+      },
+      {
+        id: "1966",
+        name: "Google Maps-Element Erstellen",
+        category: "Article",
+        description: "",
+        stock: 0,
+        unit: "Stk",
+        price: "EUR126.05",
+        buyingPrice: "EUR0.00"
+      },
+      {
+        id: "1084",
+        name: "Einzelne negative Google-Bewertungen löschen",
+        category: "Article",
+        description: "",
+        stock: 0,
+        unit: "Stk",
+        price: "EUR100.84",
+        buyingPrice: "EUR0.00"
+      },
+      {
+        id: "1041",
+        name: "NEUE OPTIMIERTE GOOGLE-SEITE ERSTELLEN",
+        category: "Article",
+        description: "",
+        stock: 0,
+        unit: "Stk",
+        price: "EUR209.24",
+        buyingPrice: "EUR0.00"
+      },
+      {
+        id: "1089",
+        name: "TRUSTPILOT OPTIMISATION",
+        category: "Article",
+        description: "",
+        stock: 0,
+        unit: "Stk",
+        price: "EUR300.00",
+        buyingPrice: "EUR0.00"
+      },
+      {
+        id: "1034",
+        name: "Google Maps Seite Erstellen",
+        category: "Article",
+        description: "",
+        stock: 1,
+        unit: "Stk",
+        price: "EUR83.19",
+        buyingPrice: "EUR84.00"
+      },
+      {
+        id: "1035",
+        name: "SEO OPTIMIERUNG",
+        category: "Article",
+        description: "",
+        stock: 0,
+        unit: "Stk",
+        price: "EUR251.26",
+        buyingPrice: "EUR0.00"
+      },
+      {
+        id: "2323",
+        name: "CANCELLAZIONE DELLA RECENSIONE DI GOOGLE MY BUSINESS",
+        category: "Article",
+        description: "",
+        stock: 0,
+        unit: "Stk",
+        price: "EUR299.00",
+        buyingPrice: "EUR0.00"
+      },
+      {
+        id: "103345",
+        name: "Website Erstellung",
+        category: "Article",
+        description: "",
+        stock: 0,
+        unit: "Stk",
+        price: "EUR420.17",
+        buyingPrice: "EUR0.00"
+      },
+      {
+        id: "11111",
+        name: "FORFAIT D'OPTIMISATION ARGENT",
+        category: "Article",
+        description: "",
+        stock: 0,
+        unit: "Stk",
+        price: "EUR209.24",
+        buyingPrice: "EUR0.00"
+      },
+      {
+        id: "10331",
+        name: "Produkt Verlinkung",
+        category: "Article",
+        description: "",
+        stock: 0,
+        unit: "Stk",
+        price: "EUR8.40",
+        buyingPrice: "EUR0.00"
+      },
+      {
+        id: "1039",
+        name: "Google My Business Eintrag Erstellen",
+        category: "Article",
+        description: "",
+        stock: 0,
+        unit: "Stk",
+        price: "EUR167.23",
+        buyingPrice: "EUR0.00"
+      },
+      {
+        id: "1038",
+        name: "Google My Business Eintrag Erstellen",
+        category: "Article",
+        description: "",
+        stock: 0,
+        unit: "Stk",
+        price: "EUR84.03",
+        buyingPrice: "EUR0.00"
+      },
+      {
+        id: "1032",
+        name: "Yearly Protection Package",
+        category: "Article",
+        description: "",
+        stock: 0,
+        unit: "Stk",
+        price: "EUR1799.00",
+        buyingPrice: "EUR0.00"
+      },
+      {
+        id: "1031",
+        name: "FACEBOOK VERWALTUNG",
+        category: "Article",
+        description: "",
+        stock: 0,
+        unit: "Stk",
+        price: "EUR100.84",
+        buyingPrice: "EUR0.00"
+      },
+      {
+        id: "1030",
+        name: "Webdesing Gold Paket",
+        category: "Article",
+        description: "",
+        stock: 0,
+        unit: "Stk",
+        price: "EUR335.29",
+        buyingPrice: "EUR0.00"
+      },
+      {
+        id: "1029",
+        name: "FACEBOOK BEWERTUNGEN",
+        category: "Article",
+        description: "",
+        stock: 0,
+        unit: "Stk",
+        price: "EUR8.40",
+        buyingPrice: "EUR0.00"
+      },
+      {
+        id: "1028",
+        name: "DREI MONATE VERWALTUNG",
+        category: "Article",
+        description: "",
+        stock: 0,
+        unit: "Stk",
+        price: "EUR293.28",
+        buyingPrice: "EUR0.00"
+      },
+      {
+        id: "1027",
+        name: "FACEBOOK DELETION PACKAGE",
+        category: "Article",
+        description: "",
+        stock: 0,
+        unit: "Stk",
+        price: "EUR83.19",
+        buyingPrice: "EUR0.00"
+      },
+      {
+        id: "1026",
+        name: "GOOGLE MY BUSINESS ANNUAL PROTECTION PACKAGE",
+        category: "Article",
+        description: "",
+        stock: 0,
+        unit: "Stk",
+        price: "EUR1008.40",
+        buyingPrice: "EUR0.00"
+      },
+      {
+        id: "1025",
+        name: "POSITIVE GOOGLE RATINGS",
+        category: "Article",
+        description: "",
+        stock: 0,
+        unit: "Stk",
+        price: "EUR0.00",
+        buyingPrice: "EUR0.00"
+      },
+      {
+        id: "1021",
+        name: "Google AdWords (60 - 150 km)",
+        category: "Article",
+        description: "",
+        stock: 0,
+        unit: "Stk",
+        price: "EUR249.00",
+        buyingPrice: "EUR0.00"
+      },
+      {
+        id: "1020",
+        name: "Google AdWords (10 - 60 km)",
+        category: "Article",
+        description: "",
+        stock: 0,
+        unit: "Stk",
+        price: "EUR199.00",
+        buyingPrice: "EUR0.00"
+      },
+      {
+        id: "1019",
+        name: "3 MONATE PAKET-BEWERTUNGEN MOBILE UND AUTOSCOUT",
+        category: "Article",
+        description: "",
+        stock: 90,
+        unit: "Stk",
+        price: "EUR378.15",
+        buyingPrice: "EUR0.00"
+      },
+      {
+        id: "1018",
+        name: "POSITIVE GOOGLE BEWERTUNGEN",
+        category: "Article",
+        description: "",
+        stock: 0,
+        unit: "Stk",
+        price: "EUR12.61",
+        buyingPrice: "EUR0.00"
+      },
+      {
+        id: "1017",
+        name: "EINZELNE AUTOSCOUT UND MOBILE BEWERTUNGEN",
+        category: "Article",
+        description: "",
+        stock: 0,
+        unit: "Stk",
+        price: "EUR12.61",
+        buyingPrice: "EUR0.00"
+      },
+      {
+        id: "1016",
+        name: "BRANCHENPAKET MIT BACKLINKS LOCALES SEO",
+        category: "Article",
+        description: "",
+        stock: 0,
+        unit: "Stk",
+        price: "EUR167.23",
+        buyingPrice: "EUR0.00"
+      },
+      {
+        id: "1015",
+        name: "GOOGLE MY BUSINESS JAHRESSCHUTZ",
+        category: "Article",
+        description: "",
+        stock: 0,
+        unit: "Stk",
+        price: "EUR1008.40",
+        buyingPrice: "EUR0.00"
+      },
+      {
+        id: "1014",
+        name: "GOOGLE MAPS EINTRAG ERSTELLEN",
+        category: "Article",
+        description: "",
+        stock: 0,
+        unit: "Stk",
+        price: "EUR83.19",
+        buyingPrice: "EUR0.00"
+      },
+      {
+        id: "1013",
+        name: "GOOGLE MY BUSINESS WEBSITE",
+        category: "Article",
+        description: "",
+        stock: 0,
+        unit: "Stk",
+        price: "EUR84.03",
+        buyingPrice: "EUR0.00"
+      },
+      {
+        id: "1012",
+        name: "6 MONATE BLOKADE DES GOOGLE MY BUSINESS EINTRAGS",
+        category: "Article",
+        description: "",
+        stock: 0,
+        unit: "Stk",
+        price: "EUR209.24",
+        buyingPrice: "EUR0.00"
+      },
+      {
+        id: "1011",
+        name: "POSITIVE GOOGLE BEWERTUNGEN MIT KOMMENTAR",
+        category: "Article",
+        description: "",
+        stock: 0,
+        unit: "Stk",
+        price: "EUR16.81",
+        buyingPrice: "EUR0.00"
+      },
+      {
+        id: "1010",
+        name: "PLATIN-OPTIMIERUNGSPAKET",
+        category: "Article",
+        description: "",
+        stock: 0,
+        unit: "Stk",
+        price: "EUR419.33",
+        buyingPrice: "EUR0.00"
+      },
+      {
+        id: "1009",
+        name: "GOLD-OPTIMIERUNGSPAKET",
+        category: "Article",
+        description: "",
+        stock: 0,
+        unit: "Stk",
+        price: "EUR293.28",
+        buyingPrice: "EUR0.00"
+      },
+      {
+        id: "1008",
+        name: "SILBER-OPTIMIERUNGSPAKET",
+        category: "Article",
+        description: "",
+        stock: 0,
+        unit: "Stk",
+        price: "EUR251.26",
+        buyingPrice: "EUR0.00"
+      },
+      {
+        id: "1033",
+        name: "12 MONATE BLOKADE DES GOOGLE MY BUSINESS EINTRAGS",
+        category: "Article",
+        description: "",
+        stock: 0,
+        unit: "Stk",
+        price: "EUR251.26",
+        buyingPrice: "EUR0.00"
+      },
+      {
+        id: "9730",
+        name: "Neue Google Maps Profil-Erstellung für Ihr Unternehmen",
+        category: "Service",
+        description: "",
+        stock: 0,
+        unit: "Stk",
+        price: "EUR167.23",
+        buyingPrice: "EUR0.00"
+      },
+      {
+        id: "9720",
+        name: "Neue Google Maps Profil-Erstellung für Ihr Unternehmen",
+        category: "Service",
+        description: "",
+        stock: 0,
+        unit: "Stk",
+        price: "EUR0.00",
+        buyingPrice: "EUR0.00"
+      },
+      {
+        id: "1040",
+        name: "SEO OPTIMISATION",
+        category: "Service",
+        description: "",
+        stock: 0,
+        unit: "Stk",
+        price: "EUR293.28",
+        buyingPrice: "EUR0.00"
+      },
+      {
+        id: "103575",
+        name: "GOOGLE NORVESKI",
+        category: "Service",
+        description: "",
+        stock: 0,
+        unit: "Stk",
+        price: "EUR0.00",
+        buyingPrice: "EUR0.00"
+      },
+      {
+        id: "1037",
+        name: "WEBSITE-ERSTELLUNG GOLD PAKET",
+        category: "Service",
+        description: "",
+        stock: 0,
+        unit: "Stk",
+        price: "EUR798.32",
+        buyingPrice: "EUR0.00"
+      },
+      {
+        id: "1587",
+        name: "Google Local Service Ads",
+        category: "Service",
+        description: "",
+        stock: 0,
+        unit: "Stk",
+        price: "EUR167.23",
+        buyingPrice: "EUR0.00"
+      },
+      {
+        id: "11487",
+        name: "GOOGLE SEO - GOLD PACKAGE",
+        category: "Service",
+        description: "",
+        stock: 0,
+        unit: "Stk",
+        price: "EUR299.00",
+        buyingPrice: "EUR0.00"
+      },
+      {
+        id: "10024",
+        name: "SILBER PAKET",
+        category: "Service",
+        description: "",
+        stock: 0,
+        unit: "Stk",
+        price: "EUR0.00",
+        buyingPrice: "EUR0.00"
+      },
+      {
+        id: "1036",
+        name: "GoodFirm Reviews",
+        category: "Service",
+        description: "",
+        stock: 0,
+        unit: "Stk",
+        price: "EUR0.00",
+        buyingPrice: "EUR0.00"
+      },
+      {
+        id: "1024",
+        name: "BLOCK THE GOOGLE MY BUSINESS ENTRY",
+        category: "Service",
+        description: "",
+        stock: 0,
+        unit: "Stk",
+        price: "EUR293.28",
+        buyingPrice: "EUR0.00"
+      },
+      {
+        id: "1023",
+        name: "GOOGLE DELETION PACKAGE",
+        category: "Service",
+        description: "",
+        stock: 0,
+        unit: "Stk",
+        price: "EUR335.29",
+        buyingPrice: "EUR0.00"
+      },
+      {
+        id: "1007",
+        name: "BLOKADE DES GOOGLE MY BUSINESS EINTRAGS",
+        category: "Service",
+        description: "",
+        stock: 0,
+        unit: "Stk",
+        price: "EUR293.28",
+        buyingPrice: "EUR0.00"
+      },
+      {
+        id: "1006",
+        name: "1880 GOLOCAL AUTOPLENUM CYLEX FIRMEN EINTRAG",
+        category: "Service",
+        description: "",
+        stock: 0,
+        unit: "Stk",
+        price: "EUR167.23",
+        buyingPrice: "EUR0.00"
+      }
+    ];
+
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (const product of productData) {
+      const insertData = {
+        id: product.id,
+        name: product.name,
+        category: product.category,
+        description: product.description,
+        stock: product.stock,
+        unit: product.unit,
+        price: product.price,
+        buying_price: product.buyingPrice,
+        buying_price_gross: null,
+        price_gross: null,
+        internal_note: null,
+        user_id: null
+      };
+
+      try {
+        const { error } = await supabase
+          .from('inventory_items')
+          .insert(insertData);
+
+        if (error) {
+          console.error('Error inserting product:', product.name, error);
+          errorCount++;
+        } else {
+          successCount++;
+        }
+      } catch (error) {
+        console.error('Error inserting product:', product.name, error);
+        errorCount++;
+      }
+    }
+
+    // Refresh inventory after import
+    await fetchInventory();
+
+    toast({
+      title: "Import Complete",
+      description: `Successfully imported ${successCount} products. ${errorCount > 0 ? `${errorCount} errors occurred.` : ''}`,
+      variant: successCount > 0 ? "default" : "destructive",
+    });
+
+    return { successCount, errorCount };
+  };
+
   const deleteInventoryItem = async (itemId: string) => {
     try {
       console.log('Deleting inventory item:', itemId);
@@ -266,6 +888,7 @@ export const useInventory = () => {
     addInventoryItem,
     deleteInventoryItem,
     deleteAllInventoryItems,
+    importProductData,
     refreshInventory: fetchInventory
   };
 };
