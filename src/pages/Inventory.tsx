@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import Layout from "@/components/layout/Layout";
 import Sidebar from "@/components/dashboard/Sidebar";
@@ -18,7 +17,7 @@ import ImportDialog from "@/components/inventory/ImportDialog";
 
 const Inventory = () => {
   // Use the custom hook for inventory management
-  const { inventoryData, loading, updateInventoryItem, addInventoryItem } = useInventory();
+  const { inventoryData, loading, updateInventoryItem, addInventoryItem, deleteInventoryItem } = useInventory();
   
   // State for filters
   const [category, setCategory] = useState<string>("All");
@@ -98,6 +97,11 @@ const Inventory = () => {
     }
   };
 
+  // Handle delete item
+  const handleDeleteClick = async (itemId: string) => {
+    await deleteInventoryItem(itemId);
+  };
+
   // Reset filters
   const resetFilters = () => {
     setSearchQuery("");
@@ -105,7 +109,7 @@ const Inventory = () => {
     setCurrentTab("All");
   };
 
-  // Handle import products
+  // Handle import products with proper CSV parsing
   const handleImport = async () => {
     if (!importFile) {
       toast({
@@ -116,37 +120,62 @@ const Inventory = () => {
       return;
     }
 
-    // Simulate file processing
-    setTimeout(async () => {
-      // In a real application, you would parse the file and add the products
+    try {
+      const text = await importFile.text();
+      const lines = text.split('\n').filter(line => line.trim());
       
-      // For demo purposes, we'll add a sample imported product
-      const newProduct: Omit<InventoryItem, 'id'> = {
-        name: `Imported Product - ${importFile.name.substring(0, 20)}`,
-        category: Math.random() > 0.5 ? "Article" : "Service",
-        description: "",
-        lastBooking: null,
-        stock: 1,
-        unit: "Stk",
-        price: `EUR${(Math.random() * 100).toFixed(2)}`,
-        buyingPrice: `EUR${(Math.random() * 50).toFixed(2)}`,
-        buyingPriceGross: undefined,
-        priceGross: undefined,
-        internalNote: ""
-      };
+      // Skip header row if it exists
+      const dataLines = lines.slice(1);
+      
+      let successCount = 0;
+      let errorCount = 0;
 
-      const success = await addInventoryItem(newProduct);
-      if (success) {
-        setIsImportDialogOpen(false);
-        setImportFile(null);
+      for (const line of dataLines) {
+        if (!line.trim()) continue;
         
-        toast({
-          title: "Products Imported",
-          description: `Successfully imported products from ${importFile.name}.`,
-          variant: "default",
-        });
+        const columns = line.split(',').map(col => col.trim().replace(/"/g, ''));
+        
+        // Assuming CSV format: name, category, description, stock, unit, price, buyingPrice
+        if (columns.length >= 3) {
+          const newProduct: Omit<InventoryItem, 'id'> = {
+            name: columns[0] || 'Unnamed Product',
+            category: columns[1] || 'Article',
+            description: columns[2] || '',
+            lastBooking: null,
+            stock: parseInt(columns[3]) || 0,
+            unit: columns[4] || 'Stk',
+            price: columns[5] || 'EUR0.00',
+            buyingPrice: columns[6] || 'EUR0.00',
+            buyingPriceGross: undefined,
+            priceGross: undefined,
+            internalNote: ''
+          };
+
+          const success = await addInventoryItem(newProduct);
+          if (success) {
+            successCount++;
+          } else {
+            errorCount++;
+          }
+        }
       }
-    }, 1000);
+
+      setIsImportDialogOpen(false);
+      setImportFile(null);
+      
+      toast({
+        title: "Import Complete",
+        description: `Successfully imported ${successCount} products. ${errorCount > 0 ? `${errorCount} errors occurred.` : ''}`,
+        variant: successCount > 0 ? "default" : "destructive",
+      });
+    } catch (error) {
+      console.error('Error parsing CSV file:', error);
+      toast({
+        title: "Import Error",
+        description: "Failed to parse the CSV file. Please check the format.",
+        variant: "destructive",
+      });
+    }
   };
 
   // If not admin, redirect or show access denied
@@ -216,6 +245,7 @@ const Inventory = () => {
               <InventoryTable
                 filteredData={filteredData}
                 handleEditClick={handleEditClick}
+                handleDeleteClick={handleDeleteClick}
               />
 
               {/* Pagination */}

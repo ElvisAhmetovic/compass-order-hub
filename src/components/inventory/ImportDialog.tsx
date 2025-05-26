@@ -40,21 +40,26 @@ const ImportDialog = ({
         <DialogHeader>
           <DialogTitle>Import Products</DialogTitle>
           <DialogDescription>
-            Upload a CSV or Excel file to import multiple products at once.
+            Upload a CSV file to import multiple products at once. 
+            Expected CSV format: Name, Category, Description, Stock, Unit, Price, Buying Price
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-2">
           <div className="space-y-2">
-            <Label htmlFor="import-file">Select File</Label>
+            <Label htmlFor="import-file">Select CSV File</Label>
             <Input 
               id="import-file" 
               type="file" 
-              accept=".csv,.xlsx,.xls" 
+              accept=".csv" 
               onChange={handleFileChange}
             />
-            <p className="text-sm text-gray-500 mt-2">
-              Accepted formats: CSV, Excel (.xlsx, .xls)
-            </p>
+            <div className="text-sm text-gray-500 mt-2 space-y-1">
+              <p>CSV format example:</p>
+              <pre className="bg-gray-100 p-2 rounded text-xs">
+                Name,Category,Description,Stock,Unit,Price,Buying Price{'\n'}
+                Product A,Article,Description here,10,Stk,EUR25.00,EUR15.00
+              </pre>
+            </div>
           </div>
         </div>
         <DialogFooter>

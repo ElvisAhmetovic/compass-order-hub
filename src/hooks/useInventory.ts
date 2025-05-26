@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { InventoryItem } from '@/types';
@@ -186,6 +185,41 @@ export const useInventory = () => {
     }
   };
 
+  const deleteInventoryItem = async (itemId: string) => {
+    try {
+      console.log('Deleting inventory item:', itemId);
+      
+      const { error } = await supabase
+        .from('inventory_items')
+        .delete()
+        .eq('id', itemId);
+
+      if (error) {
+        console.error('Error deleting inventory item:', error);
+        throw error;
+      }
+
+      // Update local state
+      setInventoryData(prev => prev.filter(item => item.id !== itemId));
+
+      toast({
+        title: "Item Deleted",
+        description: "Item has been successfully deleted from inventory.",
+        variant: "default",
+      });
+
+      return true;
+    } catch (error) {
+      console.error('Error deleting inventory item:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete inventory item.",
+        variant: "destructive",
+      });
+      return false;
+    }
+  };
+
   useEffect(() => {
     fetchInventory();
   }, []);
@@ -195,6 +229,7 @@ export const useInventory = () => {
     loading,
     updateInventoryItem,
     addInventoryItem,
+    deleteInventoryItem,
     refreshInventory: fetchInventory
   };
 };
