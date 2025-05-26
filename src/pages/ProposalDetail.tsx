@@ -66,6 +66,11 @@ interface ProposalData {
   paymentTerms: string;
   termsAndConditions: string;
   
+  // Payment data
+  accountNumber: string;
+  accountName: string;
+  paymentMethod: string;
+  
   // Footer and company info
   footerContent: string;
   logo?: string;
@@ -122,6 +127,11 @@ const ProposalDetail = () => {
     deliveryTerms: "7 days after receipt of invoice",
     paymentTerms: "By placing your order you agree to pay for the services included in this offer within 7 days of receipt of the invoice.",
     termsAndConditions: "",
+    
+    // Payment data
+    accountNumber: "",
+    accountName: "",
+    paymentMethod: "CREDIT CARD",
     
     // Footer and company info
     footerContent: "",
@@ -884,6 +894,54 @@ const ProposalDetail = () => {
                       rows={3}
                       placeholder="Additional footer information"
                     />
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Payment Data */}
+              <Card className="lg:col-span-2">
+                <CardHeader>
+                  <CardTitle>Payment Data</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <Label htmlFor="accountNumber">Account Number</Label>
+                      <Input
+                        id="accountNumber"
+                        value={proposalData.accountNumber}
+                        onChange={(e) => setProposalData(prev => ({ ...prev, accountNumber: e.target.value }))}
+                        placeholder="9670238783"
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="accountName">Account Name</Label>
+                      <Input
+                        id="accountName"
+                        value={proposalData.accountName}
+                        onChange={(e) => setProposalData(prev => ({ ...prev, accountName: e.target.value }))}
+                        placeholder="COMPANY NAME"
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="paymentMethod">Payment Method</Label>
+                      <Select 
+                        value={proposalData.paymentMethod} 
+                        onValueChange={(value) => setProposalData(prev => ({ ...prev, paymentMethod: value }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="CREDIT CARD">CREDIT CARD</SelectItem>
+                          <SelectItem value="BANK TRANSFER">BANK TRANSFER</SelectItem>
+                          <SelectItem value="PAYPAL">PAYPAL</SelectItem>
+                          <SelectItem value="CASH">CASH</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
