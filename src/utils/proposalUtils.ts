@@ -15,269 +15,278 @@ export const translations = {
     proposal: "Proposal",
     date: "Date",
     customer: "Customer",
-    customerRef: "Your customer no.",
-    yourContact: "Your contact",
+    customerRef: "Customer Ref.",
+    address: "Address",
     content: "Content",
-    productDescription: "PRODUCT/DESCRIPTION",
-    price: "PRICE",
-    qty: "QTY",
-    total: "TOTAL",
-    subtotal: "SUBTOTAL",
-    vat: "VAT 0%",
-    totalAmount: "TOTAL",
-    termsAndConditions: "TERMS AND CONDITIONS",
-    paymentTerms: "By placing your order you agree to pay for the services included in this offer within 7 days of receipt of the invoice. The invoice will only be issued after the service has been provided.",
-    placeDate: "Place / date",
-    signatureStamp: "Signature / Stamp",
-    paymentData: "PAYMENT DATA:",
-    accountNr: "ACCOUNT NR:",
-    name: "NAME:",
-    paymentMethod: "PAYMENT METHOD:"
+    pos: "Pos.",
+    description: "Description",
+    quantity: "Quantity",
+    unitPrice: "Unit Price",
+    totalPrice: "Total Price",
+    netAmount: "Net amount",
+    vat: "VAT",
+    grossAmount: "Gross amount",
+    paymentTerms: "By placing your order, you agree to pay for the services included in this offer within 7 days of receipt of the invoice.",
+    placeDate: "Place / Date",
+    signature: "Signature / Stamp",
+    recipient: "Recipient"
   },
   de: {
     proposal: "Angebot",
     date: "Datum",
     customer: "Kunde",
-    customerRef: "Ihre Kundennummer",
-    yourContact: "Ihr Kontakt",
+    customerRef: "Kunden-Ref.",
+    address: "Adresse",
     content: "Inhalt",
-    productDescription: "PRODUKT/BESCHREIBUNG",
-    price: "PREIS",
-    qty: "MENGE",
-    total: "GESAMT",
-    subtotal: "ZWISCHENSUMME",
-    vat: "MwSt 0%",
-    totalAmount: "GESAMT",
-    termsAndConditions: "GESCHÄFTSBEDINGUNGEN",
-    paymentTerms: "Mit der Bestellung erklären Sie sich damit einverstanden, die in diesem Angebot enthaltenen Leistungen innerhalb von 7 Tagen nach Erhalt der Rechnung zu bezahlen. Die Rechnung wird erst nach Erbringung der Leistung ausgestellt.",
+    pos: "Pos.",
+    description: "Beschreibung",
+    quantity: "Menge",
+    unitPrice: "Preis pro Einheit",
+    totalPrice: "Gesamtpreis",
+    netAmount: "Nettobetrag",
+    vat: "MwSt",
+    grossAmount: "Bruttobetrag",
+    paymentTerms: "Mit der Bestellung erklären Sie sich damit einverstanden, die in diesem Angebot enthaltenen Leistungen innerhalb von 7 Tagen nach Erhalt der Rechnung zu bezahlen.",
     placeDate: "Ort / Datum",
-    signatureStamp: "Unterschrift / Stempel",
-    paymentData: "ZAHLUNGSDATEN:",
-    accountNr: "KONTONR:",
-    name: "NAME:",
-    paymentMethod: "ZAHLUNGSMETHODE:"
+    signature: "Unterschrift / Stempel",
+    recipient: "Empfänger"
   },
   es: {
-    proposal: "Propuesta",
+    proposal: "Oferta",
     date: "Fecha",
     customer: "Cliente",
-    customerRef: "Su número de cliente",
-    yourContact: "Su contacto",
+    customerRef: "Su n° de cliente",
+    address: "Dirección",
     content: "Contenido",
-    productDescription: "PRODUCTO/DESCRIPCIÓN",
-    price: "PRECIO",
-    qty: "CANT",
-    total: "TOTAL",
-    subtotal: "SUBTOTAL",
-    vat: "IVA 0%",
-    totalAmount: "TOTAL",
-    termsAndConditions: "TÉRMINOS Y CONDICIONES",
-    paymentTerms: "Al realizar su pedido, acepta pagar los servicios incluidos en esta oferta en un plazo de 7 días a partir de la recepción de la factura. La factura solo se emitirá después de que se haya prestado el servicio.",
-    placeDate: "Lugar / fecha",
-    signatureStamp: "Firma / Sello",
-    paymentData: "DATOS DE PAGO:",
-    accountNr: "NÚM. CUENTA:",
-    name: "NOMBRE:",
-    paymentMethod: "MÉTODO DE PAGO:"
+    pos: "Pos.",
+    description: "Descripción",
+    quantity: "Cantidad",
+    unitPrice: "Precio unit.",
+    totalPrice: "Precio total",
+    netAmount: "Cantidad neta",
+    vat: "IVA",
+    grossAmount: "Cantidad bruto",
+    paymentTerms: "Al realizar su pedido, acepta pagar los servicios incluidos en esta oferta en un plazo de 7 días a partir de la recepción de la factura.",
+    placeDate: "Lugar / Fecha",
+    signature: "Firma / Sello",
+    recipient: "Destinatario"
   }
 };
 
-// Template using your screenshot as background with positioned editable overlays
+// Centralized function to create PDF HTML content
 const createPDFContent = (proposalData: any, language: string = "en") => {
   const t = translations[language as keyof typeof translations] || translations.en;
   const companyInfo = getCompanyInfo();
 
-  // Get the uploaded template image from localStorage
-  const templateImage = localStorage.getItem('proposalTemplateImage') || '';
+  // Calculate logo width based on logoSize
+  const logoWidth = proposalData.logoSize ? `${proposalData.logoSize}%` : '33%';
 
-  if (!templateImage) {
-    // Fallback to a simple template if no image is uploaded
-    return `
-      <div style="font-family: Arial, sans-serif; width: 794px; height: 1123px; background: white; margin: 0; padding: 40px; position: relative;">
-        <div style="text-align: center; margin-bottom: 40px;">
-          <h1 style="color: #333; margin-bottom: 20px;">PROPOSAL</h1>
-          <p style="color: #666;">Please upload your template image in the Template Manager</p>
-        </div>
-        
-        <div style="margin-bottom: 30px;">
-          <h3>Proposal Details:</h3>
-          <p><strong>Number:</strong> ${proposalData.proposalNumber || 'Not specified'}</p>
-          <p><strong>Customer:</strong> ${proposalData.recipientName || 'Not specified'}</p>
-          <p><strong>Date:</strong> ${proposalData.proposalDate || new Date().toLocaleDateString()}</p>
-        </div>
-        
-        <div style="margin-bottom: 30px;">
-          <h3>Service Details:</h3>
-          <p><strong>Service:</strong> ${proposalData.serviceName || 'Not specified'}</p>
-          <p><strong>Price:</strong> ${proposalData.servicePrice || '0.00'} EUR</p>
-          <p><strong>Total:</strong> ${proposalData.totalAmount || '0.00'} EUR</p>
-        </div>
-      </div>
-    `;
-  }
+  // Check if VAT is enabled with proper handling
+  console.log('VAT enabled check:', proposalData.vatEnabled, typeof proposalData.vatEnabled);
+  const isVatEnabled = proposalData.vatEnabled === true;
+
+  // Calculate totals based on current VAT setting
+  const netAmount = proposalData.netAmount || 0;
+  const vatRate = proposalData.vatRate || 19;
+  const vatAmount = isVatEnabled ? (netAmount * vatRate / 100) : 0;
+  const totalAmount = netAmount + vatAmount;
+
+  console.log('PDF Generation - VAT Enabled:', isVatEnabled, 'Net:', netAmount, 'VAT Amount:', vatAmount, 'Total:', totalAmount);
 
   return `
-    <div style="font-family: Arial, sans-serif; width: 794px; height: 1123px; background: white; margin: 0; padding: 0; position: relative; overflow: hidden;">
+    <div style="font-family: Arial, sans-serif; padding: 30px; max-width: 210mm; background: white;">
+      <!-- Header Section -->
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px;">
+        <div style="flex: 1; max-width: 60%;">
+          <div style="font-size: 11px; color: #666; margin-bottom: 25px; border-bottom: 1px solid #ddd; padding-bottom: 5px;">
+            ${companyInfo.name} · ${companyInfo.street} · ${companyInfo.postal} ${companyInfo.city}
+          </div>
+          <div style="margin-bottom: 20px;">
+            <div style="font-size: 12px; color: #666; margin-bottom: 5px;">${t.recipient}</div>
+            <div style="font-weight: bold; font-size: 14px; margin-bottom: 8px;">
+              ${proposalData.customer || ''}
+            </div>
+            <div style="font-size: 12px; color: #333; line-height: 1.4;">
+              ${proposalData.address ? proposalData.address.split('\n').join('<br/>') : ''}
+              ${proposalData.country ? '<br/>' + proposalData.country : ''}
+            </div>
+          </div>
+        </div>
+        
+        <div style="text-align: right; flex-shrink: 0;">
+          <img src="${proposalData.logo || companyInfo.logo}" style="max-height: 80px; max-width: ${logoWidth}; margin-bottom: 20px;" onerror="this.src='https://placehold.co/200x60?text=Your+Logo'; this.onerror=null;" />
+          
+          <table style="margin-left: auto; font-size: 12px;">
+            <tr>
+              <td style="padding: 3px 15px 3px 0; font-weight: bold; text-align: left;">${t.proposal} n°</td>
+              <td style="padding: 3px 0; text-align: right;">${proposalData.number || ''}</td>
+            </tr>
+            <tr>
+              <td style="padding: 3px 15px 3px 0; font-weight: bold; text-align: left;">${t.date}</td>
+              <td style="padding: 3px 0; text-align: right;">${new Date(proposalData.date || Date.now()).toLocaleDateString()}</td>
+            </tr>
+            <tr>
+              <td style="padding: 3px 15px 3px 0; font-weight: bold; text-align: left;">${t.customerRef}</td>
+              <td style="padding: 3px 0; text-align: right;">${proposalData.reference || '-'}</td>
+            </tr>
+          </table>
+        </div>
+      </div>
+
+      <!-- Proposal Title -->
+      <h2 style="color: #2563eb; margin-bottom: 20px; font-size: 18px; font-weight: bold;">
+        ${t.proposal} ${proposalData.number || ''}
+      </h2>
+
+      <!-- Content Section -->
+      <div style="margin-bottom: 25px; font-size: 12px; line-height: 1.5; color: #333;">
+        ${proposalData.content ? proposalData.content.split('\n').join('<br/>') : ''}
+      </div>
+
+      <!-- Items Table -->
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 25px; font-size: 11px;">
+        <thead>
+          <tr style="background-color: #4a90c2; color: white;">
+            <th style="padding: 10px 8px; text-align: left; font-weight: bold; border: 1px solid #4a90c2;">${t.pos}</th>
+            <th style="padding: 10px 8px; text-align: left; font-weight: bold; border: 1px solid #4a90c2;">${t.description}</th>
+            <th style="padding: 10px 8px; text-align: center; font-weight: bold; border: 1px solid #4a90c2;">${t.quantity}</th>
+            <th style="padding: 10px 8px; text-align: right; font-weight: bold; border: 1px solid #4a90c2;">${t.unitPrice}</th>
+            <th style="padding: 10px 8px; text-align: right; font-weight: bold; border: 1px solid #4a90c2;">${t.totalPrice}</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${(proposalData.lineItems || []).map((item: any, index: number) => `
+            <tr style="border-bottom: 1px solid #e0e0e0;">
+              <td style="padding: 12px 8px; border: 1px solid #e0e0e0; text-align: center; font-weight: bold;">
+                ${index + 1}
+              </td>
+              <td style="padding: 12px 8px; border: 1px solid #e0e0e0;">
+                <div style="font-weight: bold; margin-bottom: 4px;">${item.name || ''}</div>
+                <div style="color: #666; font-size: 10px; line-height: 1.3;">
+                  ${item.description ? item.description.split('\n').join('<br/>') : ''}
+                </div>
+              </td>
+              <td style="padding: 12px 8px; border: 1px solid #e0e0e0; text-align: center;">
+                ${item.quantity || 0} ${item.unit || 'piece'}
+              </td>
+              <td style="padding: 12px 8px; border: 1px solid #e0e0e0; text-align: right;">
+                ${(item.unit_price || 0).toFixed(2)} EUR
+              </td>
+              <td style="padding: 12px 8px; border: 1px solid #e0e0e0; text-align: right; font-weight: bold;">
+                ${(item.total_price || 0).toFixed(2)} EUR
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+
+      <!-- Totals Section -->
+      <div style="display: flex; justify-content: flex-end; margin-bottom: 30px;">
+        <table style="width: 250px; font-size: 12px;">
+          <tr>
+            <td style="padding: 6px 12px; text-align: left; border-bottom: 1px solid #e0e0e0;">
+              ${t.netAmount}
+            </td>
+            <td style="padding: 6px 12px; text-align: right; border-bottom: 1px solid #e0e0e0;">
+              ${netAmount.toFixed(2)} EUR
+            </td>
+          </tr>
+          ${isVatEnabled ? `
+          <tr>
+            <td style="padding: 6px 12px; text-align: left; border-bottom: 1px solid #e0e0e0;">
+              ${t.vat} ${vatRate}%
+            </td>
+            <td style="padding: 6px 12px; text-align: right; border-bottom: 1px solid #e0e0e0;">
+              ${vatAmount.toFixed(2)} EUR
+            </td>
+          </tr>
+          ` : ''}
+          <tr style="background-color: #f8f9fa;">
+            <td style="padding: 8px 12px; text-align: left; font-weight: bold; border: 2px solid #333;">
+              ${isVatEnabled ? t.grossAmount : t.netAmount}
+            </td>
+            <td style="padding: 8px 12px; text-align: right; font-weight: bold; border: 2px solid #333;">
+              ${isVatEnabled ? totalAmount.toFixed(2) : netAmount.toFixed(2)} EUR
+            </td>
+          </tr>
+        </table>
+      </div>
+
+      <!-- Payment Terms -->
+      <div style="margin-bottom: 40px; font-size: 11px; line-height: 1.4; color: #555;">
+        ${t.paymentTerms}
+      </div>
       
-      <!-- User's Uploaded Screenshot as Background Template -->
-      <img src="${templateImage}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1;" />
-      
-      <!-- Editable Text Overlays positioned to match the screenshot -->
-      <div style="position: absolute; z-index: 2; width: 100%; height: 100%;">
-        
-        <!-- Recipient Name -->
-        <div style="position: absolute; top: 180px; left: 50px; font-size: 12px; font-weight: bold; color: #000; background: rgba(255,255,255,0.8); padding: 2px 4px; border-radius: 2px;">
-          ${proposalData.recipientName || 'Name Surname'}
+      <!-- Signature Section -->
+      <div style="margin-top: 50px; display: flex; justify-content: space-between;">
+        <div style="width: 45%;">
+          <div style="border-top: 1px solid #333; padding-top: 8px;">
+            <div style="font-size: 10px; color: #666;">${t.placeDate}</div>
+          </div>
         </div>
-        
-        <!-- Recipient Address -->
-        <div style="position: absolute; top: 200px; left: 50px; font-size: 11px; color: #000; background: rgba(255,255,255,0.8); padding: 2px 4px; border-radius: 2px;">
-          ${proposalData.recipientAddress || 'Ledeganckkaai 15, 2000 Antwerpen'}
+        <div style="width: 45%;">
+          <div style="border-top: 1px solid #333; padding-top: 8px;">
+            <div style="font-size: 10px; color: #666;">${t.signature}</div>
+            ${proposalData.signatureUrl ? `<img src="${proposalData.signatureUrl}" style="max-height: 40px; margin-top: 8px;" />` : ''}
+          </div>
         </div>
-        
-        <!-- Recipient Email -->
-        <div style="position: absolute; top: 220px; left: 50px; font-size: 11px; color: #000; background: rgba(255,255,255,0.8); padding: 2px 4px; border-radius: 2px;">
-          ${proposalData.recipientEmail || 'Mondzorg.NieuwZuid@outlook.com'}
+      </div>
+
+      <!-- Footer Company Info -->
+      <div style="margin-top: 60px; font-size: 9px; color: #666; border-top: 1px solid #ddd; padding-top: 15px;">
+        <div style="display: flex; justify-content: space-between;">
+          <div style="width: 22%;">
+            <strong>${companyInfo.name}</strong><br/>
+            ${companyInfo.contactPerson}<br/>
+            ${companyInfo.street}<br/>
+            ${companyInfo.postal} ${companyInfo.city}<br/>
+            ${companyInfo.country}
+          </div>
+          <div style="width: 22%;">
+            Tel: ${companyInfo.phone}<br/>
+            ${companyInfo.fax ? 'Fax: ' + companyInfo.fax + '<br/>' : ''}
+            E-Mail: ${companyInfo.email}<br/>
+            Web: ${companyInfo.website}
+          </div>
+          <div style="width: 22%;">
+            ${companyInfo.registrationNumber ? 'Reg. Merc.: ' + companyInfo.registrationNumber + '<br/>' : ''}
+            ${companyInfo.vatId ? 'IVA: ' + companyInfo.vatId + '<br/>' : ''}
+            ${companyInfo.taxNumber ? 'Tax: ' + companyInfo.taxNumber + '<br/>' : ''}
+            ${companyInfo.director ? 'Dir.: ' + companyInfo.director + '<br/>' : ''}
+          </div>
+          <div style="width: 22%;">
+            ${companyInfo.wise ? 'WISE<br/>' : ''}
+            ${companyInfo.accountNumber ? 'Account: ' + companyInfo.accountNumber + '<br/>' : ''}
+            ${companyInfo.bankCode ? 'Bank: ' + companyInfo.bankCode + '<br/>' : ''}
+            ${companyInfo.iban ? 'IBAN: ' + companyInfo.iban + '<br/>' : ''}
+            ${companyInfo.bic ? 'BIC: ' + companyInfo.bic : ''}
+          </div>
         </div>
-        
-        <!-- Recipient Country -->
-        <div style="position: absolute; top: 240px; left: 50px; font-size: 11px; color: #000; background: rgba(255,255,255,0.8); padding: 2px 4px; border-radius: 2px;">
-          ${proposalData.recipientCountry || 'Belgium'}
-        </div>
-        
-        <!-- Proposal Number -->
-        <div style="position: absolute; top: 180px; right: 50px; font-size: 11px; color: #000; background: rgba(255,255,255,0.8); padding: 2px 4px; border-radius: 2px;">
-          ${proposalData.proposalNumber || 'AN-9993'}
-        </div>
-        
-        <!-- Date -->
-        <div style="position: absolute; top: 200px; right: 50px; font-size: 11px; color: #000; background: rgba(255,255,255,0.8); padding: 2px 4px; border-radius: 2px;">
-          ${proposalData.proposalDate || new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
-        </div>
-        
-        <!-- Customer Number -->
-        <div style="position: absolute; top: 220px; right: 50px; font-size: 11px; color: #000; background: rgba(255,255,255,0.8); padding: 2px 4px; border-radius: 2px;">
-          ${proposalData.customerNumber || '7865'}
-        </div>
-        
-        <!-- Your Contact -->
-        <div style="position: absolute; top: 240px; right: 50px; font-size: 11px; color: #000; background: rgba(255,255,255,0.8); padding: 2px 4px; border-radius: 2px;">
-          ${proposalData.yourContact || 'Thomas Klein'}
-        </div>
-        
-        <!-- Proposal Title -->
-        <div style="position: absolute; top: 320px; left: 50px; font-size: 18px; font-weight: bold; color: #000; background: rgba(255,255,255,0.9); padding: 4px 8px; border-radius: 3px;">
-          Proposal ${proposalData.proposalNumber || 'AN-9993'}
-        </div>
-        
-        <!-- Introduction -->
-        <div style="position: absolute; top: 360px; left: 50px; right: 50px; font-size: 12px; color: #000; line-height: 1.4; background: rgba(255,255,255,0.9); padding: 8px; border-radius: 4px;">
-          <strong>${proposalData.introductionTitle || 'Protect your online REPUTATION!'}</strong>
-          <br/>${proposalData.introductionText || 'Thank you for your enquiry. We will be happy to provide you with the requested non-binding offer.'}
-        </div>
-        
-        <!-- Service Name -->
-        <div style="position: absolute; top: 450px; left: 60px; font-size: 11px; font-weight: bold; color: #e67e22; background: rgba(255,255,255,0.9); padding: 3px 6px; border-radius: 2px;">
-          ${proposalData.serviceName || 'SILBER-OPTIMIERUNGSPAKET ★★'}
-        </div>
-        
-        <!-- Service Description -->
-        <div style="position: absolute; top: 470px; left: 60px; right: 350px; font-size: 9px; color: #666; line-height: 1.3; background: rgba(255,255,255,0.9); padding: 6px; border-radius: 3px;">
-          ${proposalData.serviceDescription || 'Remove Google Maps entry, i.e., you will receive a new, optimized Google My Business listing...'}
-        </div>
-        
-        <!-- Service Price -->
-        <div style="position: absolute; top: 450px; right: 250px; font-size: 11px; color: #000; text-align: center; background: rgba(255,255,255,0.9); padding: 3px 6px; border-radius: 2px;">
-          ${proposalData.servicePrice || '399.00'} EUR
-        </div>
-        
-        <!-- Service Quantity -->
-        <div style="position: absolute; top: 450px; right: 180px; font-size: 11px; color: #000; text-align: center; background: rgba(255,255,255,0.9); padding: 3px 6px; border-radius: 2px;">
-          ${proposalData.serviceQuantity || '1'}
-        </div>
-        
-        <!-- Service Total -->
-        <div style="position: absolute; top: 450px; right: 60px; font-size: 11px; font-weight: bold; color: #000; text-align: right; background: rgba(255,255,255,0.9); padding: 3px 6px; border-radius: 2px;">
-          ${proposalData.serviceTotal || '399.00'} EUR
-        </div>
-        
-        <!-- Additional Service Details -->
-        <div style="position: absolute; top: 510px; left: 60px; right: 350px; font-size: 9px; color: #666; line-height: 1.3; background: rgba(255,255,255,0.9); padding: 6px; border-radius: 3px;">
-          ${proposalData.additionalDetails || '5/5★★★★★ reviews. We optimize and strengthen your presence on Google Maps with your Google My Business listing. You benefit from this by reaching more customers and being easier to find.'}
-        </div>
-        
-        <!-- Subtotal -->
-        <div style="position: absolute; top: 600px; right: 60px; font-size: 11px; color: #000; background: rgba(255,255,255,0.9); padding: 3px 6px; border-radius: 2px;">
-          ${proposalData.subtotal || '399.00'} EUR
-        </div>
-        
-        <!-- VAT Amount -->
-        <div style="position: absolute; top: 620px; right: 60px; font-size: 11px; color: #000; background: rgba(255,255,255,0.9); padding: 3px 6px; border-radius: 2px;">
-          ${proposalData.vatAmount || '0.00'} EUR
-        </div>
-        
-        <!-- Total Amount -->
-        <div style="position: absolute; top: 640px; right: 60px; font-size: 11px; font-weight: bold; color: #000; background: rgba(255,255,255,0.9); padding: 3px 6px; border-radius: 2px;">
-          ${proposalData.totalAmount || '399.00'} EUR
-        </div>
-        
-        <!-- Account Number -->
-        <div style="position: absolute; top: 720px; left: 140px; font-size: 10px; color: #000; background: rgba(255,255,255,0.8); padding: 2px 4px; border-radius: 2px;">
-          ${proposalData.accountNumber || '12356587965497'}
-        </div>
-        
-        <!-- Account Holder Name -->
-        <div style="position: absolute; top: 740px; left: 80px; font-size: 10px; color: #000; background: rgba(255,255,255,0.8); padding: 2px 4px; border-radius: 2px;">
-          ${proposalData.accountHolderName || 'YOUR NAME'}
-        </div>
-        
-        <!-- Payment Method -->
-        <div style="position: absolute; top: 760px; left: 130px; font-size: 10px; color: #000; background: rgba(255,255,255,0.8); padding: 2px 4px; border-radius: 2px;">
-          ${proposalData.paymentMethod || 'DEBIT CARD'}
-        </div>
-        
-        <!-- Terms and Conditions -->
-        <div style="position: absolute; top: 820px; left: 50px; right: 50px; font-size: 10px; color: #000; line-height: 1.4; background: rgba(255,255,255,0.9); padding: 8px; border-radius: 4px;">
-          ${proposalData.termsAndConditions || 'By placing your order, you agree to pay for the services included in this offer within 7 days of receipt of the invoice. The invoice will only be issued after the service has been provided.'}
-        </div>
-        
-        <!-- Place/Date -->
-        <div style="position: absolute; bottom: 150px; left: 50px; font-size: 10px; color: #000; background: rgba(255,255,255,0.8); padding: 2px 4px; border-radius: 2px;">
-          ${proposalData.placeDate || ''}
-        </div>
-        
       </div>
     </div>
   `;
 };
 
-// Improved PDF generation with consistent canvas settings
+// Centralized function to generate PDF from HTML content
 const generatePDFFromHTML = async (htmlContent: string): Promise<jsPDF> => {
-  // Create a temporary div to render the proposal with fixed dimensions
+  // Create a temporary div to render the proposal
   const tempDiv = document.createElement("div");
   tempDiv.style.position = "absolute";
   tempDiv.style.left = "-9999px";
   tempDiv.style.top = "-9999px";
-  tempDiv.style.width = "794px"; // A4 width in pixels at 96 DPI
-  tempDiv.style.height = "1123px"; // A4 height in pixels at 96 DPI
-  tempDiv.style.backgroundColor = "white";
-  tempDiv.style.overflow = "hidden";
+  tempDiv.style.width = "210mm"; // A4 width
   
   tempDiv.innerHTML = htmlContent;
   document.body.appendChild(tempDiv);
   
   try {
-    // Convert the HTML to canvas with consistent settings
+    // Convert the HTML to PDF with high quality settings
     const canvas = await html2canvas(tempDiv, {
-      scale: 1.5, // Consistent scale for both preview and PDF
+      scale: 2, // Higher scale for better quality
       logging: false,
       useCORS: true,
       allowTaint: true,
-      backgroundColor: '#ffffff',
-      width: 794,
-      height: 1123,
-      windowWidth: 794,
-      windowHeight: 1123
+      backgroundColor: '#ffffff'
     });
     
     const imgData = canvas.toDataURL('image/png');
@@ -287,9 +296,9 @@ const generatePDFFromHTML = async (htmlContent: string): Promise<jsPDF> => {
       format: 'a4'
     });
     
-    // Calculate dimensions to fit A4
+    const imgProps = pdf.getImageProperties(imgData);
     const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = pdf.internal.pageSize.getHeight();
+    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
     
     pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
     
@@ -318,7 +327,7 @@ export const generateProposalPDF = async (
     }
     
     // For download mode, save the PDF with custom filename if provided
-    const filename = customFilename || `proposal_${proposalData.proposalNumber || 'draft'}.pdf`;
+    const filename = customFilename || `proposal_${proposalData.number || 'draft'}.pdf`;
     pdf.save(filename);
     return true;
   } catch (error) {
@@ -327,10 +336,10 @@ export const generateProposalPDF = async (
   }
 };
 
-// Updated preview function to show exact PDF output
+// Updated function to display PDF preview in a modal - now uses centralized generation
 export const previewProposalPDF = async (proposalData: any, language: string = "en") => {
   try {
-    // Generate PDF using the centralized function - this ensures identical output
+    // Generate PDF using the centralized function
     const pdfResult = await generateProposalPDF({...proposalData, previewMode: true}, language);
     
     // Check if the result is a jsPDF instance
@@ -341,7 +350,7 @@ export const previewProposalPDF = async (proposalData: any, language: string = "
     
     const pdf = pdfResult as jsPDF;
     
-    // Convert the PDF to a data URL - this shows exactly what will be downloaded
+    // Convert the PDF to a data URL
     const dataUrl = pdf.output('datauristring');
     
     // Remove any existing PDF preview
@@ -350,7 +359,7 @@ export const previewProposalPDF = async (proposalData: any, language: string = "
       document.body.removeChild(existingOverlay);
     }
     
-    // Create a modal to display the PDF with exact output
+    // Create a modal to display the PDF
     const modalOverlay = document.createElement("div");
     modalOverlay.style.position = "fixed";
     modalOverlay.style.top = "0";
@@ -390,12 +399,50 @@ export const previewProposalPDF = async (proposalData: any, language: string = "
       languageSelector.appendChild(option);
     });
     
+    // Create logo size controls
+    const logoSizeControls = document.createElement("div");
+    logoSizeControls.style.display = "flex";
+    logoSizeControls.style.alignItems = "center";
+    logoSizeControls.style.marginLeft = "16px";
+    
+    const logoSizeLabel = document.createElement("span");
+    logoSizeLabel.textContent = "Logo Size:";
+    logoSizeLabel.style.marginRight = "8px";
+    
+    const decreaseButton = document.createElement("button");
+    decreaseButton.textContent = "-";
+    decreaseButton.style.padding = "4px 8px";
+    decreaseButton.style.borderRadius = "4px";
+    decreaseButton.style.border = "1px solid #ccc";
+    decreaseButton.style.marginRight = "8px";
+    decreaseButton.style.cursor = "pointer";
+    
+    const logoSizeValue = document.createElement("span");
+    logoSizeValue.textContent = `${proposalData.logoSize || 33}%`;
+    logoSizeValue.style.marginRight = "8px";
+    logoSizeValue.style.minWidth = "40px";
+    logoSizeValue.style.textAlign = "center";
+    
+    const increaseButton = document.createElement("button");
+    increaseButton.textContent = "+";
+    increaseButton.style.padding = "4px 8px";
+    increaseButton.style.borderRadius = "4px";
+    increaseButton.style.border = "1px solid #ccc";
+    increaseButton.style.cursor = "pointer";
+    
+    // Add logo size controls to the container
+    logoSizeControls.appendChild(logoSizeLabel);
+    logoSizeControls.appendChild(decreaseButton);
+    logoSizeControls.appendChild(logoSizeValue);
+    logoSizeControls.appendChild(increaseButton);
+    
     // Create left side controls div
     const leftControls = document.createElement("div");
     leftControls.style.display = "flex";
     leftControls.style.alignItems = "center";
     leftControls.appendChild(document.createTextNode("Language: "));
     leftControls.appendChild(languageSelector);
+    leftControls.appendChild(logoSizeControls);
     
     // Create close button
     const closeButton = document.createElement("button");
@@ -421,7 +468,7 @@ export const previewProposalPDF = async (proposalData: any, language: string = "
     downloadButton.style.cursor = "pointer";
     downloadButton.style.marginRight = "8px";
     downloadButton.onclick = async () => {
-      await generateProposalPDF(proposalData, languageSelector.value);
+      await generateProposalPDF({...proposalData, logoSize: parseInt(logoSizeValue.textContent || '33')}, languageSelector.value);
     };
     
     // Create right side controls div
@@ -433,7 +480,7 @@ export const previewProposalPDF = async (proposalData: any, language: string = "
     controls.appendChild(leftControls);
     controls.appendChild(rightControls);
     
-    // Create iframe to display the PDF - shows exact output
+    // Create iframe to display the PDF
     const iframe = document.createElement("iframe");
     iframe.src = dataUrl;
     iframe.style.width = "80%";
@@ -444,14 +491,38 @@ export const previewProposalPDF = async (proposalData: any, language: string = "
     iframe.style.boxShadow = "0 0 10px rgba(0, 0, 0, 0.5)";
     iframe.style.borderRadius = "0 0 8px 8px";
 
-    // Add event listener to language selector - regenerates identical PDF
-    languageSelector.addEventListener("change", async () => {
-      const updatedProposalData = {...proposalData, previewMode: true};
-      const newPdfResult = await generateProposalPDF(updatedProposalData, languageSelector.value);
+    // Handler for logo size adjustment - now uses centralized generation
+    let currentLogoSize = proposalData.logoSize || 33;
+
+    const updatePreview = async (newLogoSize: number, newLanguage: string) => {
+      const updatedProposalData = {
+        ...proposalData, 
+        previewMode: true,
+        logoSize: newLogoSize
+      };
+      
+      const newPdfResult = await generateProposalPDF(updatedProposalData, newLanguage);
       
       if (newPdfResult && typeof newPdfResult !== 'boolean') {
         iframe.src = (newPdfResult as jsPDF).output('datauristring');
       }
+    };
+
+    decreaseButton.onclick = async () => {
+      currentLogoSize = Math.max(10, currentLogoSize - 5);
+      logoSizeValue.textContent = `${currentLogoSize}%`;
+      await updatePreview(currentLogoSize, languageSelector.value);
+    };
+
+    increaseButton.onclick = async () => {
+      currentLogoSize = Math.min(100, currentLogoSize + 5);
+      logoSizeValue.textContent = `${currentLogoSize}%`;
+      await updatePreview(currentLogoSize, languageSelector.value);
+    };
+    
+    // Add event listener to language selector - now uses centralized generation
+    languageSelector.addEventListener("change", async () => {
+      await updatePreview(currentLogoSize, languageSelector.value);
     });
     
     // Add elements to the modal
@@ -484,7 +555,7 @@ export const getCompanyInfo = () => {
     street: "Weseler Str.73",
     postal: "47169",
     city: "Duisburg",
-    country: "Germany",
+    country: "Alemania",
     phone: "+49 203 70 90 72 62",
     fax: "+49 203 70 90 73 53",
     email: "kontakt.abmedia@gmail.com",
@@ -494,19 +565,19 @@ export const getCompanyInfo = () => {
     taxNumber: "13426 27369",
     director: "Andreas Berger",
     wise: true,
-    accountNumber: "12345678901234567",
-    accountHolder: "YOUR NAME",
-    paymentMethod: "CREDIT CARD",
+    accountNumber: "96702389783",
     bankCode: "967",
     iban: "BE79967023897833",
     bic: "TRWIBEB1"
   };
 };
 
+// Function to save company information
 export const saveCompanyInfo = (companyInfo: any) => {
   localStorage.setItem("companyInfo", JSON.stringify(companyInfo));
 };
 
+// Simple version for downloading as text - kept for backward compatibility
 export const downloadProposal = (proposalData: any) => {
   // Create a simple PDF-like content
   const content = `
@@ -556,6 +627,7 @@ export const loadInventoryItems = () => {
   return [];
 };
 
+// Helper function to get status color class for proposals
 export const getProposalStatusColor = (status: string) => {
   switch (status) {
     case "Draft":
@@ -575,6 +647,7 @@ export const getProposalStatusColor = (status: string) => {
   }
 };
 
+// List of available proposal statuses
 export const PROPOSAL_STATUSES = [
   "Draft",
   "Sent",
@@ -584,6 +657,7 @@ export const PROPOSAL_STATUSES = [
   "Revised"
 ];
 
+// Function to format inventory item for proposal line item
 export const formatInventoryItemForProposal = (item: InventoryItem, quantity: number = 1): ProposalLineItem => {
   const unitPrice = parseFloat(item.price.replace('EUR', '')) || 0;
   return {
