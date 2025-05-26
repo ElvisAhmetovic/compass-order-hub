@@ -357,6 +357,32 @@ const ProposalDetail = () => {
     }));
   };
 
+  const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const logoUrl = e.target?.result as string;
+        setProposalData(prev => ({
+          ...prev,
+          logo: logoUrl
+        }));
+        toast({
+          title: "Logo uploaded",
+          description: "Company logo has been uploaded successfully.",
+        });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleLogoSizeChange = (size: number) => {
+    setProposalData(prev => ({
+      ...prev,
+      logoSize: size
+    }));
+  };
+
   const saveProposal = async () => {
     setSaving(true);
     try {
@@ -610,6 +636,73 @@ const ProposalDetail = () => {
                       </Select>
                     </div>
                   </div>
+                </CardContent>
+              </Card>
+
+              {/* Company Logo Section */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Company Logo</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label htmlFor="logoUpload">Upload Company Logo</Label>
+                    <div className="flex items-center gap-4 mt-2">
+                      <Input
+                        id="logoUpload"
+                        type="file"
+                        accept="image/*"
+                        onChange={handleLogoUpload}
+                        className="flex-1"
+                      />
+                    </div>
+                  </div>
+                  
+                  {proposalData.logo && (
+                    <div className="space-y-4">
+                      <div>
+                        <Label>Logo Preview</Label>
+                        <div className="mt-2 p-4 border rounded-lg bg-gray-50">
+                          <img
+                            src={proposalData.logo}
+                            alt="Company Logo"
+                            style={{ maxWidth: `${proposalData.logoSize || 33}%`, maxHeight: '80px' }}
+                            className="object-contain"
+                          />
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="logoSize">Logo Size: {proposalData.logoSize || 33}%</Label>
+                        <div className="flex items-center gap-4 mt-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleLogoSizeChange(Math.max(10, (proposalData.logoSize || 33) - 5))}
+                          >
+                            -
+                          </Button>
+                          <span className="min-w-[60px] text-center">{proposalData.logoSize || 33}%</span>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleLogoSizeChange(Math.min(100, (proposalData.logoSize || 33) + 5))}
+                          >
+                            +
+                          </Button>
+                        </div>
+                        <Input
+                          type="range"
+                          min="10"
+                          max="100"
+                          step="5"
+                          value={proposalData.logoSize || 33}
+                          onChange={(e) => handleLogoSizeChange(parseInt(e.target.value))}
+                          className="mt-2"
+                        />
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 
