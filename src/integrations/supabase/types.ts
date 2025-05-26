@@ -185,6 +185,60 @@ export type Database = {
         }
         Relationships: []
       }
+      inventory_items: {
+        Row: {
+          buying_price: string | null
+          buying_price_gross: string | null
+          category: string
+          created_at: string
+          description: string | null
+          id: string
+          internal_note: string | null
+          last_booking: string | null
+          name: string
+          price: string
+          price_gross: string | null
+          stock: number
+          unit: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          buying_price?: string | null
+          buying_price_gross?: string | null
+          category: string
+          created_at?: string
+          description?: string | null
+          id: string
+          internal_note?: string | null
+          last_booking?: string | null
+          name: string
+          price: string
+          price_gross?: string | null
+          stock?: number
+          unit?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          buying_price?: string | null
+          buying_price_gross?: string | null
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          internal_note?: string | null
+          last_booking?: string | null
+          name?: string
+          price?: string
+          price_gross?: string | null
+          stock?: number
+          unit?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       invoice_line_items: {
         Row: {
           created_at: string

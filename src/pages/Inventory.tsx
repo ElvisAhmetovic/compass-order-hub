@@ -1,10 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import Layout from "@/components/layout/Layout";
 import Sidebar from "@/components/dashboard/Sidebar";
 import { useAuth } from "@/context/AuthContext";
-import { toast } from "@/hooks/use-toast";
-import { v4 as uuidv4 } from 'uuid';
 import { InventoryItem } from "@/types";
+import { useInventory } from "@/hooks/useInventory";
 
 // Import refactored components
 import InventoryHeader from "@/components/inventory/InventoryHeader";
@@ -14,9 +13,11 @@ import InventoryPagination from "@/components/inventory/InventoryPagination";
 import EditItemDialog from "@/components/inventory/EditItemDialog";
 import AddProductDialog from "@/components/inventory/AddProductDialog";
 import ImportDialog from "@/components/inventory/ImportDialog";
-import { mockInventoryData } from "@/components/inventory/mockInventoryData";
 
 const Inventory = () => {
+  // Use the custom hook for inventory management
+  const { inventoryData, loading, updateInventoryItem, addInventoryItem } = useInventory();
+  
   // State for filters
   const [category, setCategory] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState("");
@@ -26,7 +27,6 @@ const Inventory = () => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [currentEditItem, setCurrentEditItem] = useState<InventoryItem | null>(null);
   const [editFormData, setEditFormData] = useState<Partial<InventoryItem>>({});
-  const [inventoryData, setInventoryData] = useState<InventoryItem[]>(mockInventoryData);
 
   // State for new dialogs
   const [isAddProductDialogOpen, setIsAddProductDialogOpen] = useState(false);
@@ -60,32 +60,23 @@ const Inventory = () => {
   };
 
   // Handle save changes
-  const handleSaveChanges = () => {
+  const handleSaveChanges = async () => {
     if (!currentEditItem || !editFormData) return;
     
-    // Update the inventory item
-    const updatedInventory = inventoryData.map(item => 
-      item.id === currentEditItem.id ? { ...item, ...editFormData } : item
-    );
+    const updatedItem: InventoryItem = {
+      ...currentEditItem,
+      ...editFormData
+    };
     
-    setInventoryData(updatedInventory);
-    setIsEditDialogOpen(false);
-    
-    // Show success toast
-    toast({
-      title: "Item Updated",
-      description: `${editFormData.name} has been successfully updated.`,
-      variant: "default",
-    });
-
-    // Save inventory data to localStorage for use in proposals
-    localStorage.setItem("inventoryItems", JSON.stringify(updatedInventory));
+    const success = await updateInventoryItem(updatedItem);
+    if (success) {
+      setIsEditDialogOpen(false);
+    }
   };
 
   // Handle add product submission
-  const handleAddProduct = (data: any) => {
-    const newProduct: InventoryItem = {
-      id: uuidv4().substring(0, 5),
+  const handleAddProduct = async (data: any) => {
+    const newProduct: Omit<InventoryItem, 'id'> = {
       name: data.name,
       category: data.category,
       description: data.description || "",
@@ -97,18 +88,10 @@ const Inventory = () => {
       internalNote: data.internalNote || "",
     };
 
-    const updatedInventory = [newProduct, ...inventoryData];
-    setInventoryData(updatedInventory);
-    setIsAddProductDialogOpen(false);
-    
-    // Save inventory data to localStorage for use in proposals
-    localStorage.setItem("inventoryItems", JSON.stringify(updatedInventory));
-    
-    toast({
-      title: "Product Added",
-      description: `${data.name} has been successfully added to inventory.`,
-      variant: "default",
-    });
+    const success = await addInventoryItem(newProduct);
+    if (success) {
+      setIsAddProductDialogOpen(false);
+    }
   };
 
   // Reset filters
@@ -117,22 +100,6 @@ const Inventory = () => {
     setCategory("All");
     setCurrentTab("All");
   };
-
-  // Load inventory data on component mount
-  useEffect(() => {
-    const savedInventory = localStorage.getItem("inventoryItems");
-    if (savedInventory) {
-      try {
-        const parsedInventory = JSON.parse(savedInventory);
-        setInventoryData(parsedInventory);
-      } catch (error) {
-        console.error("Error loading inventory:", error);
-        localStorage.setItem("inventoryItems", JSON.stringify(mockInventoryData));
-      }
-    } else {
-      localStorage.setItem("inventoryItems", JSON.stringify(mockInventoryData));
-    }
-  }, []);
 
   // Handle import products
   const handleImport = () => {
@@ -192,6 +159,23 @@ const Inventory = () => {
               <div className="text-center">
                 <h1 className="text-2xl font-bold text-red-600">Access Denied</h1>
                 <p className="mt-2">You don't have permission to access this page.</p>
+              </div>
+            </div>
+          </Layout>
+        </div>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen">
+        <Sidebar />
+        <div className="flex-1">
+          <Layout userRole={"admin"}>
+            <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
+              <div className="text-center">
+                <h1 className="text-xl">Loading inventory...</h1>
               </div>
             </div>
           </Layout>
