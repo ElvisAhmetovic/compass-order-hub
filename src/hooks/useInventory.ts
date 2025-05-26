@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { InventoryItem } from '@/types';
@@ -117,34 +118,6 @@ export const useInventory = () => {
 
       // Generate a random ID for the inventory item
       const itemId = Math.random().toString(36).substring(2, 7).toUpperCase();
-      
-      // Generate a proper UUID v4 format from the user ID
-      const generateValidUUID = (userId: string) => {
-        // Create a hash from the user ID
-        let hash = 0;
-        for (let i = 0; i < userId.length; i++) {
-          const char = userId.charCodeAt(i);
-          hash = ((hash << 5) - hash) + char;
-          hash = hash & hash; // Convert to 32-bit integer
-        }
-        
-        // Convert to positive number and pad
-        const positiveHash = Math.abs(hash);
-        const hex = positiveHash.toString(16).padStart(8, '0');
-        
-        // Create a proper UUID v4 format
-        const part1 = hex.substring(0, 8);
-        const part2 = hex.substring(0, 4);
-        const part3 = '4' + hex.substring(1, 4); // Version 4
-        const part4 = '8' + hex.substring(1, 4); // Variant bits
-        const part5 = (hex + hex).substring(0, 12);
-        
-        return `${part1}-${part2}-${part3}-${part4}-${part5}`;
-      };
-
-      const supabaseUserId = generateValidUUID(user.id);
-      
-      console.log('Generated UUID for Supabase:', supabaseUserId);
 
       const insertData = {
         id: itemId,
@@ -158,7 +131,7 @@ export const useInventory = () => {
         buying_price_gross: item.buyingPriceGross,
         price_gross: item.priceGross,
         internal_note: item.internalNote,
-        user_id: supabaseUserId
+        user_id: null // Set to null since we're using local authentication
       };
 
       console.log('Insert data:', insertData);
