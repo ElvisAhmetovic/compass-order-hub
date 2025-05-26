@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,10 +7,6 @@ import { Label } from "@/components/ui/label";
 import { Upload, Save, Eye, FileText, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import * as pdfjsLib from 'pdfjs-dist';
-
-// Configure PDF.js worker for browser environment using CDN
-const PDFJS_VERSION = '4.0.379';
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${PDFJS_VERSION}/build/pdf.worker.min.js`;
 
 interface TemplateManagerProps {
   onTemplateChange?: (templateData: any) => void;
@@ -24,6 +21,24 @@ const TemplateManager: React.FC<TemplateManagerProps> = ({ onTemplateChange }) =
 
   // File size limit (10MB)
   const MAX_FILE_SIZE = 10 * 1024 * 1024;
+
+  // Initialize PDF.js worker with fallback approach
+  const initializePDFWorker = () => {
+    try {
+      // First, try to use the worker from node_modules (works in most environments)
+      if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = '/node_modules/pdfjs-dist/build/pdf.worker.min.js';
+      }
+      console.log('PDF.js worker configured:', pdfjsLib.GlobalWorkerOptions.workerSrc);
+    } catch (error) {
+      console.warn('Failed to configure PDF.js worker:', error);
+    }
+  };
+
+  // Initialize worker on component mount
+  React.useEffect(() => {
+    initializePDFWorker();
+  }, []);
 
   const validateFile = (file: File): { isValid: boolean; error?: string } => {
     console.log('Validating file:', {
@@ -60,15 +75,15 @@ const TemplateManager: React.FC<TemplateManagerProps> = ({ onTemplateChange }) =
       const arrayBuffer = await file.arrayBuffer();
       console.log('PDF file loaded into array buffer, size:', arrayBuffer.byteLength);
       
-      // Test worker availability first
-      console.log('Testing PDF.js worker availability...');
+      console.log('Attempting to load PDF document...');
       
+      // Use a simpler configuration that's more likely to work in browser environments
       const pdf = await pdfjsLib.getDocument({ 
         data: arrayBuffer,
-        cMapUrl: `https://cdn.jsdelivr.net/npm/pdfjs-dist@${PDFJS_VERSION}/cmaps/`,
-        cMapPacked: true,
-        standardFontDataUrl: `https://cdn.jsdelivr.net/npm/pdfjs-dist@${PDFJS_VERSION}/standard_fonts/`,
-        verbosity: 0 // Reduce console noise
+        verbosity: 0, // Reduce console noise
+        disableAutoFetch: true, // Prevent automatic fetching that might cause issues
+        disableStream: true, // Use array buffer directly
+        disableRange: true // Disable range requests
       }).promise;
       
       console.log('PDF document loaded successfully, pages:', pdf.numPages);
@@ -112,18 +127,18 @@ const TemplateManager: React.FC<TemplateManagerProps> = ({ onTemplateChange }) =
       
       if (error instanceof Error) {
         if (error.message.includes('worker') || error.message.includes('Worker')) {
-          throw new Error('PDF processing failed: Unable to load PDF worker. This may be due to browser security settings or network connectivity. Please try again or use an image file instead.');
+          throw new Error('PDF processing is not available in this browser environment. Please convert your PDF to an image (PNG or JPG) and upload that instead.');
         } else if (error.message.includes('Invalid PDF') || error.message.includes('corrupted')) {
           throw new Error('Invalid or corrupted PDF file. Please ensure your PDF is valid and try again.');
         } else if (error.message.includes('canvas')) {
           throw new Error('PDF rendering failed: Canvas rendering not supported in your browser.');
-        } else if (error.message.includes('fetch')) {
-          throw new Error('PDF processing failed: Network error while loading PDF resources. Please check your internet connection and try again.');
+        } else if (error.message.includes('fetch') || error.message.includes('network')) {
+          throw new Error('PDF processing failed due to network issues. Please convert your PDF to an image and try again.');
         } else {
-          throw new Error(`PDF processing failed: ${error.message}`);
+          throw new Error(`PDF processing failed: ${error.message}. Please try converting your PDF to an image file instead.`);
         }
       } else {
-        throw new Error('PDF processing failed due to an unknown error. Please try using an image file instead.');
+        throw new Error('PDF processing failed due to an unknown error. Please convert your PDF to an image file (PNG or JPG) and upload that instead.');
       }
     }
   };
@@ -295,6 +310,9 @@ const TemplateManager: React.FC<TemplateManagerProps> = ({ onTemplateChange }) =
             <p className="flex items-center gap-1">
               <AlertCircle size={14} className="text-blue-500" />
               Maximum file size: {Math.round(MAX_FILE_SIZE / (1024 * 1024))}MB. PDF files will be automatically converted to images.
+            </p>
+            <p className="text-xs text-amber-600">
+              Note: If PDF processing fails, please convert your PDF to an image file (PNG or JPG) using any PDF converter tool.
             </p>
           </div>
         </div>
