@@ -3,10 +3,12 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { InventoryItem } from '@/types';
 import { toast } from '@/hooks/use-toast';
+import { useAuth } from '@/context/AuthContext';
 
 export const useInventory = () => {
   const [inventoryData, setInventoryData] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
 
   const fetchInventory = async () => {
     try {
@@ -107,25 +109,12 @@ export const useInventory = () => {
     try {
       console.log('Adding inventory item:', item);
       
-      // Get the current user and session
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      console.log('Current user:', user);
-      console.log('Current session:', session ? 'exists' : 'none');
-      
-      if (authError) {
-        console.error('Auth error:', authError);
-        throw new Error(`Authentication error: ${authError.message}`);
-      }
-      
+      // Check if user is authenticated through AuthContext
       if (!user) {
-        throw new Error('User not authenticated - no user found');
+        throw new Error('User not authenticated - please log in');
       }
 
-      if (!session) {
-        throw new Error('User not authenticated - no session found');
-      }
+      console.log('Current user from AuthContext:', user.id);
 
       // Generate a random ID for the inventory item
       const itemId = Math.random().toString(36).substring(2, 7).toUpperCase();
