@@ -788,28 +788,6 @@ const ProposalDetail = () => {
                       </TableBody>
                     </Table>
                   )}
-                  
-                  {inventoryItems.length > 0 && (
-                    <div className="mt-4">
-                      <Label>Add from Inventory</Label>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 mt-2">
-                        {inventoryItems.slice(0, 6).map((item) => (
-                          <Button
-                            key={item.id}
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleAddFromInventory(item)}
-                            className="text-left"
-                          >
-                            <div>
-                              <div className="font-medium">{item.name}</div>
-                              <div className="text-sm text-gray-500">{item.price}</div>
-                            </div>
-                          </Button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                 </CardContent>
               </Card>
 
