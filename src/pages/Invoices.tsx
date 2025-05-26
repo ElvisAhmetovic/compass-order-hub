@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import Sidebar from "@/components/dashboard/Sidebar";
@@ -92,9 +91,14 @@ const Invoices = () => {
 
   const handleUpdateStatus = async (id: string, newStatus: string) => {
     try {
-      await InvoiceService.updateInvoice(id, { status: newStatus as any });
+      // Create a partial invoice update with just the status
+      const updateData = { 
+        status: newStatus as Invoice['status']
+      };
+      
+      await InvoiceService.updateInvoice(id, updateData);
       setInvoices(invoices.map(invoice => 
-        invoice.id === id ? { ...invoice, status: newStatus as any } : invoice
+        invoice.id === id ? { ...invoice, status: newStatus as Invoice['status'] } : invoice
       ));
       
       toast({

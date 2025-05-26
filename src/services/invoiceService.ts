@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { Invoice, Client, InvoiceLineItem, Payment, InvoiceFormData } from "@/types/invoice";
 
@@ -63,7 +62,7 @@ export class InvoiceService {
     return data;
   }
 
-  static async updateInvoice(id: string, invoiceData: Partial<InvoiceFormData>): Promise<Invoice> {
+  static async updateInvoice(id: string, invoiceData: Partial<InvoiceFormData> | { status: Invoice['status'] }): Promise<Invoice> {
     const { data, error } = await supabase
       .from('invoices')
       .update(invoiceData)
