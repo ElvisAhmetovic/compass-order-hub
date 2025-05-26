@@ -11,12 +11,19 @@ export const useInventory = () => {
   const fetchInventory = async () => {
     try {
       setLoading(true);
+      console.log('Fetching inventory...');
+      
       const { data, error } = await supabase
         .from('inventory_items')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching inventory:', error);
+        throw error;
+      }
+
+      console.log('Fetched inventory data:', data);
 
       const formattedData: InventoryItem[] = (data || []).map(item => ({
         id: item.id,
@@ -48,6 +55,8 @@ export const useInventory = () => {
 
   const updateInventoryItem = async (item: InventoryItem) => {
     try {
+      console.log('Updating inventory item:', item);
+      
       const { error } = await supabase
         .from('inventory_items')
         .update({
@@ -64,7 +73,10 @@ export const useInventory = () => {
         })
         .eq('id', item.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error updating inventory item:', error);
+        throw error;
+      }
 
       // Update local state
       setInventoryData(prev => 
@@ -93,33 +105,62 @@ export const useInventory = () => {
 
   const addInventoryItem = async (item: Omit<InventoryItem, 'id'>) => {
     try {
-      // Get the current user
-      const { data: { user } } = await supabase.auth.getUser();
+      console.log('Adding inventory item:', item);
+      
+      // Get the current user and session
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      console.log('Current user:', user);
+      console.log('Current session:', session ? 'exists' : 'none');
+      
+      if (authError) {
+        console.error('Auth error:', authError);
+        throw new Error(`Authentication error: ${authError.message}`);
+      }
       
       if (!user) {
-        throw new Error('User not authenticated');
+        throw new Error('User not authenticated - no user found');
       }
+
+      if (!session) {
+        throw new Error('User not authenticated - no session found');
+      }
+
+      // Generate a random ID for the inventory item
+      const itemId = Math.random().toString(36).substring(2, 7).toUpperCase();
+      
+      console.log('Inserting item with ID:', itemId, 'for user:', user.id);
+
+      const insertData = {
+        id: itemId,
+        name: item.name,
+        category: item.category,
+        description: item.description,
+        stock: item.stock,
+        unit: item.unit,
+        price: item.price,
+        buying_price: item.buyingPrice,
+        buying_price_gross: item.buyingPriceGross,
+        price_gross: item.priceGross,
+        internal_note: item.internalNote,
+        user_id: user.id
+      };
+
+      console.log('Insert data:', insertData);
 
       const { data, error } = await supabase
         .from('inventory_items')
-        .insert({
-          id: Math.random().toString(36).substring(2, 7).toUpperCase(),
-          name: item.name,
-          category: item.category,
-          description: item.description,
-          stock: item.stock,
-          unit: item.unit,
-          price: item.price,
-          buying_price: item.buyingPrice,
-          buying_price_gross: item.buyingPriceGross,
-          price_gross: item.priceGross,
-          internal_note: item.internalNote,
-          user_id: user.id
-        })
+        .insert(insertData)
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Database error:', error);
+        throw error;
+      }
+
+      console.log('Successfully inserted item:', data);
 
       if (data) {
         const newItem: InventoryItem = {
@@ -151,7 +192,7 @@ export const useInventory = () => {
       console.error('Error adding inventory item:', error);
       toast({
         title: "Error",
-        description: "Failed to add inventory item.",
+        description: `Failed to add inventory item: ${error.message}`,
         variant: "destructive",
       });
       return false;
