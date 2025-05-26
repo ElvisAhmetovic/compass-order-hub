@@ -7,12 +7,9 @@ import { Upload, Save, Eye, FileText, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import * as pdfjsLib from 'pdfjs-dist';
 
-// Configure PDF.js worker for Vite environment
-const PDFJS_VERSION = '4.0.379'; // Use a stable version
-pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/build/pdf.worker.min.js',
-  import.meta.url
-).toString();
+// Configure PDF.js worker for browser environment using CDN
+const PDFJS_VERSION = '4.0.379';
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${PDFJS_VERSION}/build/pdf.worker.min.js`;
 
 interface TemplateManagerProps {
   onTemplateChange?: (templateData: any) => void;
@@ -63,16 +60,21 @@ const TemplateManager: React.FC<TemplateManagerProps> = ({ onTemplateChange }) =
       const arrayBuffer = await file.arrayBuffer();
       console.log('PDF file loaded into array buffer, size:', arrayBuffer.byteLength);
       
+      // Test worker availability first
+      console.log('Testing PDF.js worker availability...');
+      
       const pdf = await pdfjsLib.getDocument({ 
         data: arrayBuffer,
         cMapUrl: `https://cdn.jsdelivr.net/npm/pdfjs-dist@${PDFJS_VERSION}/cmaps/`,
         cMapPacked: true,
+        standardFontDataUrl: `https://cdn.jsdelivr.net/npm/pdfjs-dist@${PDFJS_VERSION}/standard_fonts/`,
+        verbosity: 0 // Reduce console noise
       }).promise;
       
-      console.log('PDF document loaded, pages:', pdf.numPages);
+      console.log('PDF document loaded successfully, pages:', pdf.numPages);
       
       const page = await pdf.getPage(1); // Get first page
-      console.log('First page loaded');
+      console.log('First page loaded successfully');
       
       const viewport = page.getViewport({ scale: 2.0 }); // Higher scale for better quality
       const canvas = document.createElement('canvas');
@@ -94,8 +96,11 @@ const TemplateManager: React.FC<TemplateManagerProps> = ({ onTemplateChange }) =
       
       console.log('PDF page rendered to canvas successfully');
       
-      const dataUrl = canvas.toDataURL('image/png');
+      const dataUrl = canvas.toDataURL('image/png', 0.9);
       console.log('Canvas converted to data URL, size:', dataUrl.length);
+      
+      // Cleanup
+      await pdf.destroy();
       
       return dataUrl;
     } catch (error) {
@@ -106,12 +111,14 @@ const TemplateManager: React.FC<TemplateManagerProps> = ({ onTemplateChange }) =
       });
       
       if (error instanceof Error) {
-        if (error.message.includes('worker')) {
-          throw new Error('PDF processing failed: Worker initialization error. Please try again or use an image file instead.');
-        } else if (error.message.includes('Invalid PDF')) {
-          throw new Error('Invalid PDF file. Please ensure your PDF is not corrupted and try again.');
+        if (error.message.includes('worker') || error.message.includes('Worker')) {
+          throw new Error('PDF processing failed: Unable to load PDF worker. This may be due to browser security settings or network connectivity. Please try again or use an image file instead.');
+        } else if (error.message.includes('Invalid PDF') || error.message.includes('corrupted')) {
+          throw new Error('Invalid or corrupted PDF file. Please ensure your PDF is valid and try again.');
         } else if (error.message.includes('canvas')) {
           throw new Error('PDF rendering failed: Canvas rendering not supported in your browser.');
+        } else if (error.message.includes('fetch')) {
+          throw new Error('PDF processing failed: Network error while loading PDF resources. Please check your internet connection and try again.');
         } else {
           throw new Error(`PDF processing failed: ${error.message}`);
         }
