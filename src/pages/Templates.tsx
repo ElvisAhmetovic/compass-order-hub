@@ -9,15 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PlusCircle, FileImage } from 'lucide-react';
 import BackgroundTemplateEditor from '@/components/templates/BackgroundTemplateEditor';
 import TemplateSelector from '@/components/templates/TemplateSelector';
-
-interface BackgroundTemplate {
-  id: string;
-  name: string;
-  backgroundImage: string;
-  fields: any[];
-  width: number;
-  height: number;
-}
+import { BackgroundTemplate } from '@/services/templateService';
 
 const Templates = () => {
   const { user } = useAuth();
@@ -25,8 +17,8 @@ const Templates = () => {
   const [editingTemplate, setEditingTemplate] = useState<BackgroundTemplate | null>(null);
 
   const handleSelectTemplate = (template: BackgroundTemplate) => {
-    // Here you would typically navigate to create a new proposal with this template
     console.log('Selected template:', template);
+    // Here you would typically navigate to create a new proposal with this template
   };
 
   const handleEditTemplate = (template: BackgroundTemplate) => {
@@ -37,6 +29,10 @@ const Templates = () => {
   const handleCreateNew = () => {
     setEditingTemplate(null);
     setActiveTab('editor');
+  };
+
+  const handleTemplateChange = (template: BackgroundTemplate) => {
+    setEditingTemplate(template);
   };
 
   return (
@@ -83,7 +79,10 @@ const Templates = () => {
               </TabsContent>
 
               <TabsContent value="editor" className="mt-6">
-                <BackgroundTemplateEditor />
+                <BackgroundTemplateEditor 
+                  initialTemplate={editingTemplate || undefined}
+                  onTemplateChange={handleTemplateChange}
+                />
               </TabsContent>
             </Tabs>
           </div>

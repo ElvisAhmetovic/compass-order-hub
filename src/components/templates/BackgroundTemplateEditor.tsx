@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,44 +9,34 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Upload, Save, Eye, Trash2, Move, Settings, Type, Palette } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/context/AuthContext';
 import FontSelector, { FontSettings } from './FontSelector';
 import GlobalFontSettings, { DEFAULT_FONT_SETTINGS } from './GlobalFontSettings';
+import { templateService, BackgroundTemplate, TemplateField } from '@/services/templateService';
+import { useAutoSave } from '@/hooks/useAutoSave';
 
-interface TemplateField {
-  id: string;
-  type: 'text' | 'textarea' | 'number' | 'currency' | 'date' | 'calculated';
-  label: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  defaultValue?: string;
-  calculation?: string;
-  required: boolean;
-  fontSettings: FontSettings;
+interface BackgroundTemplateEditorProps {
+  initialTemplate?: BackgroundTemplate;
+  onTemplateChange?: (template: BackgroundTemplate) => void;
 }
 
-interface BackgroundTemplate {
-  id: string;
-  name: string;
-  backgroundImage: string;
-  fields: TemplateField[];
-  width: number;
-  height: number;
-  globalFontSettings: FontSettings;
-}
-
-const BackgroundTemplateEditor = () => {
+const BackgroundTemplateEditor: React.FC<BackgroundTemplateEditorProps> = ({ 
+  initialTemplate,
+  onTemplateChange 
+}) => {
   const { toast } = useToast();
-  const [template, setTemplate] = useState<BackgroundTemplate>({
-    id: '',
-    name: '',
-    backgroundImage: '',
-    fields: [],
-    width: 794, // A4 width in pixels at 96 DPI
-    height: 1123, // A4 height in pixels at 96 DPI
-    globalFontSettings: DEFAULT_FONT_SETTINGS
-  });
+  const { user } = useAuth();
+  const [template, setTemplate] = useState<BackgroundTemplate>(
+    initialTemplate || {
+      id: '',
+      name: '',
+      backgroundImage: '',
+      fields: [],
+      width: 794,
+      height: 1123,
+      globalFontSettings: DEFAULT_FONT_SETTINGS
+    }
+  );
   
   const [selectedField, setSelectedField] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -54,9 +44,46 @@ const BackgroundTemplateEditor = () => {
   const [showFieldSettings, setShowFieldSettings] = useState(false);
   const [previewMode, setPreviewMode] = useState(false);
   const [activeTab, setActiveTab] = useState('setup');
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [isLoading, setIsLoading] = useState(false);
   
   const containerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Auto-save functionality
+  const handleAutoSave = async (templateToSave: BackgroundTemplate) => {
+    if (!user || !templateToSave.name) return;
+    
+    setSaveStatus('saving');
+    try {
+      const { data, error } = await templateService.saveTemplate(templateToSave);
+      if (error) throw new Error(error);
+      
+      if (data && data.id !== templateToSave.id) {
+        setTemplate(prev => ({ ...prev, id: data.id }));
+      }
+      
+      setSaveStatus('saved');
+      setTimeout(() => setSaveStatus('idle'), 2000);
+    } catch (error) {
+      console.error('Auto-save failed:', error);
+      setSaveStatus('error');
+      setTimeout(() => setSaveStatus('idle'), 3000);
+    }
+  };
+
+  useAutoSave({
+    template,
+    onSave: handleAutoSave,
+    delay: 1500
+  });
+
+  // Update parent component when template changes
+  useEffect(() => {
+    if (onTemplateChange) {
+      onTemplateChange(template);
+    }
+  }, [template, onTemplateChange]);
 
   const handleBackgroundUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -135,9 +162,12 @@ const BackgroundTemplateEditor = () => {
     const deltaX = e.clientX - dragStart.x;
     const deltaY = e.clientY - dragStart.y;
 
+    const field = template.fields.find(f => f.id === selectedField);
+    if (!field) return;
+
     updateField(selectedField, {
-      x: Math.max(0, template.fields.find(f => f.id === selectedField)!.x + deltaX),
-      y: Math.max(0, template.fields.find(f => f.id === selectedField)!.y + deltaY)
+      x: Math.max(0, Math.min(template.width - field.width, field.x + deltaX)),
+      y: Math.max(0, Math.min(template.height - field.height, field.y + deltaY))
     });
 
     setDragStart({ x: e.clientX, y: e.clientY });
@@ -162,7 +192,7 @@ const BackgroundTemplateEditor = () => {
     });
   };
 
-  const saveTemplate = () => {
+  const saveTemplate = async () => {
     if (!template.name) {
       toast({
         title: "Template name required",
@@ -172,25 +202,42 @@ const BackgroundTemplateEditor = () => {
       return;
     }
 
-    const savedTemplates = JSON.parse(localStorage.getItem('backgroundTemplates') || '[]');
-    const templateToSave = {
-      ...template,
-      id: template.id || `template_${Date.now()}`
-    };
-    
-    const existingIndex = savedTemplates.findIndex((t: BackgroundTemplate) => t.id === templateToSave.id);
-    if (existingIndex >= 0) {
-      savedTemplates[existingIndex] = templateToSave;
-    } else {
-      savedTemplates.push(templateToSave);
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "Please log in to save templates.",
+        variant: "destructive"
+      });
+      return;
     }
+
+    setIsLoading(true);
+    setSaveStatus('saving');
     
-    localStorage.setItem('backgroundTemplates', JSON.stringify(savedTemplates));
-    
-    toast({
-      title: "Template saved",
-      description: "Your template has been saved successfully."
-    });
+    try {
+      const { data, error } = await templateService.saveTemplate(template);
+      if (error) throw new Error(error);
+      
+      if (data) {
+        setTemplate(data);
+        setSaveStatus('saved');
+        toast({
+          title: "Template saved",
+          description: "Your template has been saved successfully."
+        });
+      }
+    } catch (error) {
+      console.error('Save failed:', error);
+      setSaveStatus('error');
+      toast({
+        title: "Save failed",
+        description: error.message || "Failed to save template. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+      setTimeout(() => setSaveStatus('idle'), 2000);
+    }
   };
 
   const selectedFieldData = selectedField ? template.fields.find(f => f.id === selectedField) : null;
@@ -204,12 +251,43 @@ const BackgroundTemplateEditor = () => {
     { value: 'calculated', label: 'Calculated Field' }
   ];
 
+  const renderSaveStatus = () => {
+    switch (saveStatus) {
+      case 'saving':
+        return (
+          <div className="flex items-center gap-2 text-blue-600">
+            <Loader2 size={16} className="animate-spin" />
+            <span className="text-sm">Saving...</span>
+          </div>
+        );
+      case 'saved':
+        return (
+          <div className="flex items-center gap-2 text-green-600">
+            <CheckCircle size={16} />
+            <span className="text-sm">Saved</span>
+          </div>
+        );
+      case 'error':
+        return (
+          <div className="flex items-center gap-2 text-red-600">
+            <AlertCircle size={16} />
+            <span className="text-sm">Save failed</span>
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
   return (
     <div className="p-6">
       <Card>
         <CardHeader>
           <div className="flex justify-between items-center">
-            <CardTitle>Professional Template Editor</CardTitle>
+            <div className="flex items-center gap-4">
+              <CardTitle>Professional Template Editor</CardTitle>
+              {renderSaveStatus()}
+            </div>
             <div className="flex gap-2">
               <Button
                 variant={previewMode ? "default" : "outline"}
@@ -219,8 +297,12 @@ const BackgroundTemplateEditor = () => {
                 <Eye size={16} />
                 {previewMode ? "Edit Mode" : "Preview"}
               </Button>
-              <Button onClick={saveTemplate} className="flex items-center gap-2">
-                <Save size={16} />
+              <Button 
+                onClick={saveTemplate} 
+                disabled={isLoading || !template.name}
+                className="flex items-center gap-2"
+              >
+                {isLoading ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
                 Save Template
               </Button>
             </div>
@@ -323,12 +405,12 @@ const BackgroundTemplateEditor = () => {
                             : 'border-gray-400 bg-white'
                         } ${previewMode ? 'cursor-default' : ''}`}
                         style={{
-                          left: field.x,
-                          top: field.y,
-                          width: field.width,
-                          height: field.height,
+                          left: `${field.x}px`,
+                          top: `${field.y}px`,
+                          width: `${field.width}px`,
+                          height: `${field.height}px`,
                           fontFamily: field.fontSettings.fontFamily,
-                          fontSize: field.fontSettings.fontSize,
+                          fontSize: `${field.fontSettings.fontSize}px`,
                           fontWeight: field.fontSettings.fontWeight,
                           color: field.fontSettings.color,
                           textAlign: field.fontSettings.textAlign,
@@ -346,7 +428,7 @@ const BackgroundTemplateEditor = () => {
                                 placeholder={field.defaultValue || field.label}
                                 style={{ 
                                   fontFamily: field.fontSettings.fontFamily,
-                                  fontSize: field.fontSettings.fontSize,
+                                  fontSize: `${field.fontSettings.fontSize}px`,
                                   fontWeight: field.fontSettings.fontWeight,
                                   color: field.fontSettings.color,
                                   textAlign: field.fontSettings.textAlign,
@@ -361,7 +443,7 @@ const BackgroundTemplateEditor = () => {
                                 placeholder={field.defaultValue || field.label}
                                 style={{ 
                                   fontFamily: field.fontSettings.fontFamily,
-                                  fontSize: field.fontSettings.fontSize,
+                                  fontSize: `${field.fontSettings.fontSize}px`,
                                   fontWeight: field.fontSettings.fontWeight,
                                   color: field.fontSettings.color,
                                   textAlign: field.fontSettings.textAlign,
@@ -493,21 +575,37 @@ const BackgroundTemplateEditor = () => {
                   </Select>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-4 gap-2">
+                  <div>
+                    <Label>X Position</Label>
+                    <Input
+                      type="number"
+                      value={Math.round(selectedFieldData.x)}
+                      onChange={(e) => updateField(selectedField!, { x: parseInt(e.target.value) || 0 })}
+                    />
+                  </div>
+                  <div>
+                    <Label>Y Position</Label>
+                    <Input
+                      type="number"
+                      value={Math.round(selectedFieldData.y)}
+                      onChange={(e) => updateField(selectedField!, { y: parseInt(e.target.value) || 0 })}
+                    />
+                  </div>
                   <div>
                     <Label>Width</Label>
                     <Input
                       type="number"
-                      value={selectedFieldData.width}
-                      onChange={(e) => updateField(selectedField!, { width: parseInt(e.target.value) })}
+                      value={Math.round(selectedFieldData.width)}
+                      onChange={(e) => updateField(selectedField!, { width: parseInt(e.target.value) || 50 })}
                     />
                   </div>
                   <div>
                     <Label>Height</Label>
                     <Input
                       type="number"
-                      value={selectedFieldData.height}
-                      onChange={(e) => updateField(selectedField!, { height: parseInt(e.target.value) })}
+                      value={Math.round(selectedFieldData.height)}
+                      onChange={(e) => updateField(selectedField!, { height: parseInt(e.target.value) || 25 })}
                     />
                   </div>
                 </div>

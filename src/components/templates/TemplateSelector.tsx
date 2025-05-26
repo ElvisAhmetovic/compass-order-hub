@@ -3,17 +3,10 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Trash2, Edit, Copy } from 'lucide-react';
+import { Trash2, Edit, Copy, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-
-interface BackgroundTemplate {
-  id: string;
-  name: string;
-  backgroundImage: string;
-  fields: any[];
-  width: number;
-  height: number;
-}
+import { templateService, BackgroundTemplate } from '@/services/templateService';
+import { useAuth } from '@/context/AuthContext';
 
 interface TemplateSelectorProps {
   onSelectTemplate: (template: BackgroundTemplate) => void;
@@ -25,44 +18,113 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
   onEditTemplate 
 }) => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [templates, setTemplates] = useState<BackgroundTemplate[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     loadTemplates();
-  }, []);
+  }, [user]);
 
-  const loadTemplates = () => {
-    const savedTemplates = JSON.parse(localStorage.getItem('backgroundTemplates') || '[]');
-    setTemplates(savedTemplates);
+  const loadTemplates = async () => {
+    if (!user) {
+      setTemplates([]);
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const userTemplates = await templateService.getUserTemplates();
+      setTemplates(userTemplates);
+    } catch (error) {
+      console.error('Error loading templates:', error);
+      toast({
+        title: "Error loading templates",
+        description: "Failed to load your templates. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const deleteTemplate = (templateId: string) => {
-    const updatedTemplates = templates.filter(t => t.id !== templateId);
-    setTemplates(updatedTemplates);
-    localStorage.setItem('backgroundTemplates', JSON.stringify(updatedTemplates));
-    
-    toast({
-      title: "Template deleted",
-      description: "The template has been removed successfully."
-    });
+  const deleteTemplate = async (templateId: string) => {
+    try {
+      const { success, error } = await templateService.deleteTemplate(templateId);
+      if (!success) throw new Error(error || 'Delete failed');
+      
+      setTemplates(prev => prev.filter(t => t.id !== templateId));
+      toast({
+        title: "Template deleted",
+        description: "The template has been removed successfully."
+      });
+    } catch (error) {
+      console.error('Delete failed:', error);
+      toast({
+        title: "Delete failed",
+        description: error.message || "Failed to delete template. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
-  const duplicateTemplate = (template: BackgroundTemplate) => {
-    const duplicatedTemplate = {
-      ...template,
-      id: `template_${Date.now()}`,
-      name: `${template.name} (Copy)`
-    };
-    
-    const updatedTemplates = [...templates, duplicatedTemplate];
-    setTemplates(updatedTemplates);
-    localStorage.setItem('backgroundTemplates', JSON.stringify(updatedTemplates));
-    
-    toast({
-      title: "Template duplicated",
-      description: "A copy of the template has been created."
-    });
+  const duplicateTemplate = async (template: BackgroundTemplate) => {
+    try {
+      const duplicatedTemplate: BackgroundTemplate = {
+        ...template,
+        id: '',
+        name: `${template.name} (Copy)`,
+        fields: template.fields.map(field => ({
+          ...field,
+          id: `field_${Date.now()}_${Math.random()}`
+        }))
+      };
+      
+      const { data, error } = await templateService.saveTemplate(duplicatedTemplate);
+      if (error) throw new Error(error);
+      
+      if (data) {
+        setTemplates(prev => [data, ...prev]);
+        toast({
+          title: "Template duplicated",
+          description: "A copy of the template has been created."
+        });
+      }
+    } catch (error) {
+      console.error('Duplicate failed:', error);
+      toast({
+        title: "Duplicate failed",
+        description: error.message || "Failed to duplicate template. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
+
+  if (!user) {
+    return (
+      <Card>
+        <CardContent className="pt-6">
+          <div className="text-center text-gray-500">
+            <p>Please log in to view your templates.</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex items-center justify-center">
+            <Loader2 className="animate-spin mr-2" />
+            <span>Loading templates...</span>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-4">
