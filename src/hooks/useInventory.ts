@@ -93,6 +93,13 @@ export const useInventory = () => {
 
   const addInventoryItem = async (item: Omit<InventoryItem, 'id'>) => {
     try {
+      // Get the current user
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+
       const { data, error } = await supabase
         .from('inventory_items')
         .insert({
@@ -106,7 +113,8 @@ export const useInventory = () => {
           buying_price: item.buyingPrice,
           buying_price_gross: item.buyingPriceGross,
           price_gross: item.priceGross,
-          internal_note: item.internalNote
+          internal_note: item.internalNote,
+          user_id: user.id
         })
         .select()
         .single();
