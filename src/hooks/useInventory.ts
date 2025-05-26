@@ -119,7 +119,23 @@ export const useInventory = () => {
       // Generate a random ID for the inventory item
       const itemId = Math.random().toString(36).substring(2, 7).toUpperCase();
       
-      console.log('Inserting item with ID:', itemId, 'for user:', user.id);
+      // Generate a valid UUID for user_id since the local auth system doesn't use UUIDs
+      // We'll use a consistent UUID generation based on the user ID
+      const generateUUIDFromUserId = (userId: string) => {
+        // Create a deterministic UUID from the user ID
+        const hash = userId.split('').reduce((a, b) => {
+          a = ((a << 5) - a) + b.charCodeAt(0);
+          return a & a;
+        }, 0);
+        
+        // Convert to a UUID-like format
+        const hex = Math.abs(hash).toString(16).padStart(8, '0');
+        return `${hex.slice(0, 8)}-${hex.slice(0, 4)}-4${hex.slice(1, 4)}-a${hex.slice(0, 3)}-${hex.slice(0, 12)}`.slice(0, 36);
+      };
+
+      const supabaseUserId = generateUUIDFromUserId(user.id);
+      
+      console.log('Generated UUID for Supabase:', supabaseUserId);
 
       const insertData = {
         id: itemId,
@@ -133,7 +149,7 @@ export const useInventory = () => {
         buying_price_gross: item.buyingPriceGross,
         price_gross: item.priceGross,
         internal_note: item.internalNote,
-        user_id: user.id
+        user_id: supabaseUserId
       };
 
       console.log('Insert data:', insertData);
