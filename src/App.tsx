@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
@@ -16,6 +15,9 @@ import Inventory from './pages/Inventory';
 import Index from './pages/Index';
 import Proposals from './pages/Proposals';
 import ProposalDetail from './pages/ProposalDetail';
+import Invoices from './pages/Invoices';
+import InvoiceDetail from './pages/InvoiceDetail';
+import Clients from './pages/Clients';
 
 function App() {
   return (
@@ -167,6 +169,40 @@ function App() {
             element={
               <RequireAuth>
                 <ProposalDetail />
+              </RequireAuth>
+            }
+          />
+          {/* Invoice routes */}
+          <Route
+            path="/invoices"
+            element={
+              <RequireAuth>
+                <Invoices />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/invoices/new"
+            element={
+              <RequireAuth>
+                <InvoiceDetail />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/invoices/:id"
+            element={
+              <RequireAuth>
+                <InvoiceDetail />
+              </RequireAuth>
+            }
+          />
+          {/* Clients route */}
+          <Route
+            path="/clients"
+            element={
+              <RequireAuth>
+                <Clients />
               </RequireAuth>
             }
           />

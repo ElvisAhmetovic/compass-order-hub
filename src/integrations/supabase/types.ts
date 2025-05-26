@@ -33,6 +33,57 @@ export type Database = {
         }
         Relationships: []
       }
+      clients: {
+        Row: {
+          address: string | null
+          city: string | null
+          contact_person: string | null
+          country: string | null
+          created_at: string
+          email: string
+          id: string
+          name: string
+          phone: string | null
+          tax_id: string | null
+          updated_at: string
+          user_id: string | null
+          vat_id: string | null
+          zip_code: string | null
+        }
+        Insert: {
+          address?: string | null
+          city?: string | null
+          contact_person?: string | null
+          country?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          name: string
+          phone?: string | null
+          tax_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+          vat_id?: string | null
+          zip_code?: string | null
+        }
+        Update: {
+          address?: string | null
+          city?: string | null
+          contact_person?: string | null
+          country?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          name?: string
+          phone?: string | null
+          tax_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+          vat_id?: string | null
+          zip_code?: string | null
+        }
+        Relationships: []
+      }
       comments: {
         Row: {
           author: string
@@ -97,6 +148,158 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      invoice_line_items: {
+        Row: {
+          created_at: string
+          discount_rate: number
+          id: string
+          invoice_id: string
+          item_description: string
+          line_total: number
+          quantity: number
+          unit: string | null
+          unit_price: number
+          updated_at: string
+          vat_rate: number
+        }
+        Insert: {
+          created_at?: string
+          discount_rate?: number
+          id?: string
+          invoice_id: string
+          item_description: string
+          line_total?: number
+          quantity?: number
+          unit?: string | null
+          unit_price?: number
+          updated_at?: string
+          vat_rate?: number
+        }
+        Update: {
+          created_at?: string
+          discount_rate?: number
+          id?: string
+          invoice_id?: string
+          item_description?: string
+          line_total?: number
+          quantity?: number
+          unit?: string | null
+          unit_price?: number
+          updated_at?: string
+          vat_rate?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_line_items_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoice_sequences: {
+        Row: {
+          created_at: string
+          id: string
+          last_sequence: number
+          prefix: string
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_sequence?: number
+          prefix?: string
+          updated_at?: string
+          year: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_sequence?: number
+          prefix?: string
+          updated_at?: string
+          year?: number
+        }
+        Relationships: []
+      }
+      invoices: {
+        Row: {
+          client_id: string
+          created_at: string
+          currency: string
+          due_date: string
+          id: string
+          internal_notes: string | null
+          invoice_number: string
+          issue_date: string
+          net_amount: number
+          notes: string | null
+          payment_terms: string | null
+          proposal_id: string | null
+          status: string
+          total_amount: number
+          updated_at: string
+          user_id: string
+          vat_amount: number
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          currency?: string
+          due_date: string
+          id?: string
+          internal_notes?: string | null
+          invoice_number: string
+          issue_date?: string
+          net_amount?: number
+          notes?: string | null
+          payment_terms?: string | null
+          proposal_id?: string | null
+          status?: string
+          total_amount?: number
+          updated_at?: string
+          user_id: string
+          vat_amount?: number
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          currency?: string
+          due_date?: string
+          id?: string
+          internal_notes?: string | null
+          invoice_number?: string
+          issue_date?: string
+          net_amount?: number
+          notes?: string | null
+          payment_terms?: string | null
+          proposal_id?: string | null
+          status?: string
+          total_amount?: number
+          updated_at?: string
+          user_id?: string
+          vat_amount?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "proposals"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       order_audit_logs: {
         Row: {
@@ -227,6 +430,47 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payments: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          invoice_id: string
+          notes: string | null
+          payment_date: string
+          payment_method: string
+          transaction_id: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          invoice_id: string
+          notes?: string | null
+          payment_date?: string
+          payment_method?: string
+          transaction_id?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          invoice_id?: string
+          notes?: string | null
+          payment_date?: string
+          payment_method?: string
+          transaction_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
             referencedColumns: ["id"]
           },
         ]
@@ -511,6 +755,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_line_total: {
+        Args: {
+          quantity_param: number
+          unit_price_param: number
+          discount_rate_param?: number
+          vat_rate_param?: number
+        }
+        Returns: number
+      }
+      generate_invoice_number: {
+        Args: { prefix_param?: string }
+        Returns: string
+      }
       get_auth_user_role: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -527,6 +784,10 @@ export type Database = {
       is_admin: {
         Args: Record<PropertyKey, never>
         Returns: boolean
+      }
+      recalculate_invoice_totals: {
+        Args: { invoice_id_param: string }
+        Returns: undefined
       }
     }
     Enums: {

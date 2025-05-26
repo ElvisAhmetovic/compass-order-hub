@@ -1,114 +1,62 @@
-
-import { NavLink } from "react-router-dom";
-import {
-  Home,
-  CircleCheck,
-  XCircle,
-  Receipt,
-  CreditCard,
-  Building2,
-  Users,
-  Trash,
-  Star,
-  LogOut,
-  CheckCircle,
-  MessageCircle,
-  Package,
+import React from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { 
+  Home, 
+  Building2, 
+  Users, 
+  Package, 
+  Trash2, 
+  Star, 
+  HelpCircle,
   FileText,
-} from "lucide-react";
-import { LogoutButton } from "@/components/auth/LogoutButton";
-import { useAuth } from "@/context/AuthContext";
-import { Badge } from "@/components/ui/badge";
+  Receipt,
+  UserCheck
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+const sidebarItems = [
+  { href: '/dashboard', icon: Home, label: 'Dashboard' },
+  { href: '/companies', icon: Building2, label: 'Companies' },
+  { href: '/proposals', icon: FileText, label: 'Proposals' },
+  { href: '/invoices', icon: Receipt, label: 'Invoices' },
+  { href: '/clients', icon: UserCheck, label: 'Clients' },
+  { href: '/user-management', icon: Users, label: 'User Management' },
+  { href: '/inventory', icon: Package, label: 'Inventory' },
+  { href: '/deleted', icon: Trash2, label: 'Deleted' },
+  { href: '/reviews', icon: Star, label: 'Reviews' },
+  { href: '/support', icon: HelpCircle, label: 'Support' },
+];
 
 const Sidebar = () => {
-  const { user } = useAuth();
-  const isAdmin = user?.role === "admin";
-  const isAgent = user?.role === "agent";
-
-  // Define navigation items based on user role
-  const getNavItems = () => {
-    // Items available to all users
-    const commonItems = [
-      { icon: Home, label: "Dashboard", path: "/dashboard" },
-      { icon: Home, label: "Active Orders", path: "/active-orders" },
-      { icon: XCircle, label: "Complaints", path: "/complaints" },
-      { icon: CheckCircle, label: "Completed", path: "/completed" },
-    ];
-    
-    // Items available to admins and agents only
-    const staffItems = [
-      { icon: CheckCircle, label: "Resolved", path: "/resolved" },
-      { icon: XCircle, label: "Cancelled", path: "/cancelled" },
-      { icon: Receipt, label: "Invoice Sent", path: "/invoice-sent" },
-      { icon: CreditCard, label: "Invoice Paid", path: "/invoice-paid" },
-    ];
-    
-    // Admin-only items
-    const adminItems = [
-      { icon: Building2, label: "Companies", path: "/companies" },
-      { icon: Users, label: "User Management", path: "/user-management" },
-      { icon: Package, label: "Inventory", path: "/inventory" },
-      { icon: FileText, label: "Proposals", path: "/proposals" }, // New Proposals link
-      { icon: Trash, label: "Deleted", path: "/deleted" },
-      { icon: Star, label: "Reviews", path: "/reviews" },
-    ];
-    
-    // Combine items based on user role
-    if (isAdmin) {
-      return [...commonItems, ...staffItems, ...adminItems]; 
-    } else if (isAgent) {
-      return [...commonItems, ...staffItems];
-    } else {
-      return commonItems;
-    }
-  };
-
-  const navItems = getNavItems();
+  const location = useLocation();
 
   return (
-    <aside className="w-64 bg-white border-r h-screen sticky top-0 flex flex-col">
-      <nav className="p-4 space-y-1 flex-1">
-        {navItems.map((item) => (
-          <NavLink
-            key={item.path}
-            to={item.path}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${
-                isActive
-                  ? "bg-primary text-primary-foreground font-medium"
-                  : "hover:bg-muted"
-              }`
-            }
-          >
-            <item.icon className="h-4 w-4" />
-            <span>{item.label}</span>
-          </NavLink>
-        ))}
+    <div className="w-64 bg-white border-r border-gray-200 min-h-screen">
+      <div className="p-6">
+        <h2 className="text-xl font-semibold text-gray-800">Navigation</h2>
+      </div>
+      <nav className="mt-6">
+        {sidebarItems.map((item) => {
+          const Icon = item.icon;
+          const isActive = location.pathname === item.href || 
+            (item.href !== '/dashboard' && location.pathname.startsWith(item.href));
+          
+          return (
+            <Link
+              key={item.href}
+              to={item.href}
+              className={cn(
+                "flex items-center px-6 py-3 text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors",
+                isActive && "bg-blue-50 text-blue-700 border-r-2 border-blue-700"
+              )}
+            >
+              <Icon className="w-5 h-5 mr-3" />
+              {item.label}
+            </Link>
+          );
+        })}
       </nav>
-      
-      {/* Support link at the bottom with highlight */}
-      <div className="px-4 py-3 mt-auto mb-2">
-        <NavLink
-          to="/support"
-          className={({ isActive }) =>
-            `flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${
-              isActive
-                ? "bg-primary text-primary-foreground font-medium"
-                : "bg-purple-100 text-purple-700 hover:bg-purple-200"
-            }`
-          }
-        >
-          <MessageCircle className="h-4 w-4" />
-          <span>Support</span>
-          <Badge className="ml-auto bg-purple-500 text-white">Help</Badge>
-        </NavLink>
-      </div>
-      
-      {/* Logout Button */}
-      <div className="px-3 py-2 mt-1 mb-4">
-        <LogoutButton />
-      </div>
-    </aside>
+    </div>
   );
 };
 
