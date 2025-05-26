@@ -1,9 +1,11 @@
+
 import React, { useState } from "react";
 import Layout from "@/components/layout/Layout";
 import Sidebar from "@/components/dashboard/Sidebar";
 import { useAuth } from "@/context/AuthContext";
 import { InventoryItem } from "@/types";
 import { useInventory } from "@/hooks/useInventory";
+import { toast } from "@/hooks/use-toast";
 
 // Import refactored components
 import InventoryHeader from "@/components/inventory/InventoryHeader";
@@ -85,6 +87,8 @@ const Inventory = () => {
       unit: data.unit || "Stk",
       price: data.price,
       buyingPrice: data.buyingPrice || 'EUR0.00',
+      buyingPriceGross: data.buyingPriceGross,
+      priceGross: data.priceGross,
       internalNote: data.internalNote || "",
     };
 
@@ -102,7 +106,7 @@ const Inventory = () => {
   };
 
   // Handle import products
-  const handleImport = () => {
+  const handleImport = async () => {
     if (!importFile) {
       toast({
         title: "No File Selected",
@@ -113,12 +117,11 @@ const Inventory = () => {
     }
 
     // Simulate file processing
-    setTimeout(() => {
+    setTimeout(async () => {
       // In a real application, you would parse the file and add the products
       
       // For demo purposes, we'll add a sample imported product
-      const newProduct: InventoryItem = {
-        id: `IMP${Math.floor(1000 + Math.random() * 9000)}`,
+      const newProduct: Omit<InventoryItem, 'id'> = {
         name: `Imported Product - ${importFile.name.substring(0, 20)}`,
         category: Math.random() > 0.5 ? "Article" : "Service",
         description: "",
@@ -126,22 +129,23 @@ const Inventory = () => {
         stock: 1,
         unit: "Stk",
         price: `EUR${(Math.random() * 100).toFixed(2)}`,
-        buyingPrice: `EUR${(Math.random() * 50).toFixed(2)}`
+        buyingPrice: `EUR${(Math.random() * 50).toFixed(2)}`,
+        buyingPriceGross: undefined,
+        priceGross: undefined,
+        internalNote: ""
       };
 
-      const updatedInventory = [newProduct, ...inventoryData];
-      setInventoryData(updatedInventory);
-      setIsImportDialogOpen(false);
-      setImportFile(null);
-      
-      // Save inventory data to localStorage for use in proposals
-      localStorage.setItem("inventoryItems", JSON.stringify(updatedInventory));
-      
-      toast({
-        title: "Products Imported",
-        description: `Successfully imported products from ${importFile.name}.`,
-        variant: "default",
-      });
+      const success = await addInventoryItem(newProduct);
+      if (success) {
+        setIsImportDialogOpen(false);
+        setImportFile(null);
+        
+        toast({
+          title: "Products Imported",
+          description: `Successfully imported products from ${importFile.name}.`,
+          variant: "default",
+        });
+      }
     }, 1000);
   };
 
