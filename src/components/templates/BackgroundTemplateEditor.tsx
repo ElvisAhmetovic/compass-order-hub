@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,8 +7,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Upload, Save, Eye, Trash2, Move, Settings } from 'lucide-react';
+import { Upload, Save, Eye, Trash2, Move, Settings, Type, Palette } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import FontSelector, { FontSettings } from './FontSelector';
+import GlobalFontSettings, { DEFAULT_FONT_SETTINGS } from './GlobalFontSettings';
 
 interface TemplateField {
   id: string;
@@ -19,13 +20,10 @@ interface TemplateField {
   y: number;
   width: number;
   height: number;
-  fontSize: number;
-  fontWeight: 'normal' | 'bold';
-  color: string;
-  backgroundColor: string;
   defaultValue?: string;
   calculation?: string;
   required: boolean;
+  fontSettings: FontSettings;
 }
 
 interface BackgroundTemplate {
@@ -35,6 +33,7 @@ interface BackgroundTemplate {
   fields: TemplateField[];
   width: number;
   height: number;
+  globalFontSettings: FontSettings;
 }
 
 const BackgroundTemplateEditor = () => {
@@ -45,15 +44,16 @@ const BackgroundTemplateEditor = () => {
     backgroundImage: '',
     fields: [],
     width: 794, // A4 width in pixels at 96 DPI
-    height: 1123 // A4 height in pixels at 96 DPI
+    height: 1123, // A4 height in pixels at 96 DPI
+    globalFontSettings: DEFAULT_FONT_SETTINGS
   });
   
   const [selectedField, setSelectedField] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const [isResizing, setIsResizing] = useState(false);
   const [showFieldSettings, setShowFieldSettings] = useState(false);
   const [previewMode, setPreviewMode] = useState(false);
+  const [activeTab, setActiveTab] = useState('setup');
   
   const containerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -87,11 +87,8 @@ const BackgroundTemplateEditor = () => {
       y: 50,
       width: type === 'textarea' ? 200 : 150,
       height: type === 'textarea' ? 80 : 25,
-      fontSize: 12,
-      fontWeight: 'normal',
-      color: '#000000',
-      backgroundColor: 'transparent',
-      required: false
+      required: false,
+      fontSettings: { ...template.globalFontSettings }
     };
     
     setTemplate(prev => ({
@@ -150,6 +147,21 @@ const BackgroundTemplateEditor = () => {
     setIsDragging(false);
   };
 
+  const applyGlobalFontToAllFields = () => {
+    setTemplate(prev => ({
+      ...prev,
+      fields: prev.fields.map(field => ({
+        ...field,
+        fontSettings: { ...prev.globalFontSettings }
+      }))
+    }));
+    
+    toast({
+      title: "Font settings applied",
+      description: "Global font settings have been applied to all fields."
+    });
+  };
+
   const saveTemplate = () => {
     if (!template.name) {
       toast({
@@ -197,7 +209,7 @@ const BackgroundTemplateEditor = () => {
       <Card>
         <CardHeader>
           <div className="flex justify-between items-center">
-            <CardTitle>Background Template Editor</CardTitle>
+            <CardTitle>Professional Template Editor</CardTitle>
             <div className="flex gap-2">
               <Button
                 variant={previewMode ? "default" : "outline"}
@@ -215,10 +227,11 @@ const BackgroundTemplateEditor = () => {
           </div>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="design" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="setup">Setup</TabsTrigger>
               <TabsTrigger value="design">Design</TabsTrigger>
+              <TabsTrigger value="typography">Typography</TabsTrigger>
               <TabsTrigger value="fields">Fields</TabsTrigger>
             </TabsList>
             
@@ -256,6 +269,16 @@ const BackgroundTemplateEditor = () => {
                   )}
                 </div>
               </div>
+            </TabsContent>
+
+            <TabsContent value="typography" className="space-y-4">
+              <GlobalFontSettings
+                globalSettings={template.globalFontSettings}
+                onGlobalSettingsChange={(settings) => 
+                  setTemplate(prev => ({ ...prev, globalFontSettings: settings }))
+                }
+                onApplyToAllFields={applyGlobalFontToAllFields}
+              />
             </TabsContent>
 
             <TabsContent value="design" className="space-y-4">
@@ -304,21 +327,31 @@ const BackgroundTemplateEditor = () => {
                           top: field.y,
                           width: field.width,
                           height: field.height,
-                          fontSize: field.fontSize,
-                          fontWeight: field.fontWeight,
-                          color: field.color,
-                          backgroundColor: previewMode ? field.backgroundColor : 
+                          fontFamily: field.fontSettings.fontFamily,
+                          fontSize: field.fontSettings.fontSize,
+                          fontWeight: field.fontSettings.fontWeight,
+                          color: field.fontSettings.color,
+                          textAlign: field.fontSettings.textAlign,
+                          lineHeight: field.fontSettings.lineHeight,
+                          backgroundColor: previewMode ? 'transparent' : 
                             (selectedField === field.id ? 'rgba(59, 130, 246, 0.1)' : 'rgba(255, 255, 255, 0.8)')
                         }}
                         onMouseDown={(e) => handleMouseDown(e, field.id)}
                       >
-                        <div className="p-1 truncate">
+                        <div className="p-1 truncate h-full flex items-center">
                           {previewMode ? (
                             field.type === 'textarea' ? (
                               <textarea
                                 className="w-full h-full border-none outline-none resize-none bg-transparent"
                                 placeholder={field.defaultValue || field.label}
-                                style={{ fontSize: field.fontSize, color: field.color }}
+                                style={{ 
+                                  fontFamily: field.fontSettings.fontFamily,
+                                  fontSize: field.fontSettings.fontSize,
+                                  fontWeight: field.fontSettings.fontWeight,
+                                  color: field.fontSettings.color,
+                                  textAlign: field.fontSettings.textAlign,
+                                  lineHeight: field.fontSettings.lineHeight
+                                }}
                               />
                             ) : (
                               <input
@@ -326,7 +359,14 @@ const BackgroundTemplateEditor = () => {
                                       field.type === 'date' ? 'date' : 'text'}
                                 className="w-full h-full border-none outline-none bg-transparent"
                                 placeholder={field.defaultValue || field.label}
-                                style={{ fontSize: field.fontSize, color: field.color }}
+                                style={{ 
+                                  fontFamily: field.fontSettings.fontFamily,
+                                  fontSize: field.fontSettings.fontSize,
+                                  fontWeight: field.fontSettings.fontWeight,
+                                  color: field.fontSettings.color,
+                                  textAlign: field.fontSettings.textAlign,
+                                  lineHeight: field.fontSettings.lineHeight
+                                }}
                               />
                             )
                           ) : (
@@ -338,19 +378,19 @@ const BackgroundTemplateEditor = () => {
                           <div className="absolute -top-6 -right-6 flex gap-1">
                             <Button
                               size="sm"
+                              variant="outline"
+                              className="h-6 w-6 p-0"
+                              onClick={() => setShowFieldSettings(true)}
+                            >
+                              <Type size={12} />
+                            </Button>
+                            <Button
+                              size="sm"
                               variant="destructive"
                               className="h-6 w-6 p-0"
                               onClick={() => deleteField(field.id)}
                             >
                               <Trash2 size={12} />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="h-6 w-6 p-0"
-                              onClick={() => setShowFieldSettings(true)}
-                            >
-                              <Settings size={12} />
                             </Button>
                           </div>
                         )}
@@ -413,115 +453,109 @@ const BackgroundTemplateEditor = () => {
         </CardContent>
       </Card>
 
-      {/* Field Settings Dialog */}
+      {/* Enhanced Field Settings Dialog */}
       {showFieldSettings && selectedFieldData && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <Card className="w-96 max-h-[80vh] overflow-y-auto">
+          <Card className="w-[500px] max-h-[80vh] overflow-y-auto">
             <CardHeader>
-              <CardTitle>Field Settings</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <Settings size={16} />
+                Field Settings
+              </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label>Label</Label>
-                <Input
-                  value={selectedFieldData.label}
-                  onChange={(e) => updateField(selectedField!, { label: e.target.value })}
-                />
-              </div>
-              
-              <div>
-                <Label>Type</Label>
-                <Select
-                  value={selectedFieldData.type}
-                  onValueChange={(value) => updateField(selectedField!, { type: value as TemplateField['type'] })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {fieldTypeOptions.map(option => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
+            <CardContent className="space-y-6">
+              {/* Basic Field Settings */}
+              <div className="space-y-4">
                 <div>
-                  <Label>Width</Label>
+                  <Label>Label</Label>
                   <Input
-                    type="number"
-                    value={selectedFieldData.width}
-                    onChange={(e) => updateField(selectedField!, { width: parseInt(e.target.value) })}
+                    value={selectedFieldData.label}
+                    onChange={(e) => updateField(selectedField!, { label: e.target.value })}
                   />
                 </div>
+                
                 <div>
-                  <Label>Height</Label>
-                  <Input
-                    type="number"
-                    value={selectedFieldData.height}
-                    onChange={(e) => updateField(selectedField!, { height: parseInt(e.target.value) })}
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <Label>Font Size</Label>
-                  <Input
-                    type="number"
-                    value={selectedFieldData.fontSize}
-                    onChange={(e) => updateField(selectedField!, { fontSize: parseInt(e.target.value) })}
-                  />
-                </div>
-                <div>
-                  <Label>Font Weight</Label>
+                  <Label>Type</Label>
                   <Select
-                    value={selectedFieldData.fontWeight}
-                    onValueChange={(value) => updateField(selectedField!, { fontWeight: value as 'normal' | 'bold' })}
+                    value={selectedFieldData.type}
+                    onValueChange={(value) => updateField(selectedField!, { type: value as TemplateField['type'] })}
                   >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="normal">Normal</SelectItem>
-                      <SelectItem value="bold">Bold</SelectItem>
+                      {fieldTypeOptions.map(option => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
-              </div>
 
-              <div>
-                <Label>Default Value</Label>
-                {selectedFieldData.type === 'textarea' ? (
-                  <Textarea
-                    value={selectedFieldData.defaultValue || ''}
-                    onChange={(e) => updateField(selectedField!, { defaultValue: e.target.value })}
-                    placeholder="Enter default text..."
-                  />
-                ) : (
-                  <Input
-                    value={selectedFieldData.defaultValue || ''}
-                    onChange={(e) => updateField(selectedField!, { defaultValue: e.target.value })}
-                    placeholder="Enter default value..."
-                  />
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label>Width</Label>
+                    <Input
+                      type="number"
+                      value={selectedFieldData.width}
+                      onChange={(e) => updateField(selectedField!, { width: parseInt(e.target.value) })}
+                    />
+                  </div>
+                  <div>
+                    <Label>Height</Label>
+                    <Input
+                      type="number"
+                      value={selectedFieldData.height}
+                      onChange={(e) => updateField(selectedField!, { height: parseInt(e.target.value) })}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label>Default Value</Label>
+                  {selectedFieldData.type === 'textarea' ? (
+                    <Textarea
+                      value={selectedFieldData.defaultValue || ''}
+                      onChange={(e) => updateField(selectedField!, { defaultValue: e.target.value })}
+                      placeholder="Enter default text..."
+                    />
+                  ) : (
+                    <Input
+                      value={selectedFieldData.defaultValue || ''}
+                      onChange={(e) => updateField(selectedField!, { defaultValue: e.target.value })}
+                      placeholder="Enter default value..."
+                    />
+                  )}
+                </div>
+
+                {selectedFieldData.type === 'calculated' && (
+                  <div>
+                    <Label>Calculation Formula</Label>
+                    <Input
+                      value={selectedFieldData.calculation || ''}
+                      onChange={(e) => updateField(selectedField!, { calculation: e.target.value })}
+                      placeholder="e.g., quantity * unitPrice"
+                    />
+                  </div>
                 )}
               </div>
 
-              {selectedFieldData.type === 'calculated' && (
-                <div>
-                  <Label>Calculation Formula</Label>
-                  <Input
-                    value={selectedFieldData.calculation || ''}
-                    onChange={(e) => updateField(selectedField!, { calculation: e.target.value })}
-                    placeholder="e.g., quantity * unitPrice"
-                  />
-                </div>
-              )}
+              {/* Font Settings for This Field */}
+              <FontSelector
+                settings={selectedFieldData.fontSettings}
+                onChange={(fontSettings) => updateField(selectedField!, { fontSettings })}
+                label="Field Font Settings"
+                showAdvanced={true}
+              />
 
               <div className="flex justify-end gap-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => updateField(selectedField!, { fontSettings: { ...template.globalFontSettings } })}
+                >
+                  Use Global Font
+                </Button>
                 <Button variant="outline" onClick={() => setShowFieldSettings(false)}>
                   Close
                 </Button>
