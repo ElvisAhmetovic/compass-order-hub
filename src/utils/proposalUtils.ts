@@ -23,7 +23,7 @@ export const translations = {
     qty: "QTY",
     total: "TOTAL",
     subtotal: "SUBTOTAL",
-    vat: "VAT 0%",
+    vat: "VAT",
     totalAmount: "TOTAL",
     termsAndConditions: "TERMS AND CONDITIONS",
     paymentTerms: "By placing your order you agree to pay for the services included in this offer within 7 days of receipt of the invoice. The invoice will only be issued after the service has been provided.",
@@ -46,7 +46,7 @@ export const translations = {
     qty: "MENGE",
     total: "GESAMT",
     subtotal: "ZWISCHENSUMME",
-    vat: "MwSt 0%",
+    vat: "MwSt",
     totalAmount: "GESAMT",
     termsAndConditions: "GESCHÄFTSBEDINGUNGEN",
     paymentTerms: "Mit der Bestellung erklären Sie sich damit einverstanden, die in diesem Angebot enthaltenen Leistungen innerhalb von 7 Tagen nach Erhalt der Rechnung zu bezahlen. Die Rechnung wird erst nach Erbringung der Leistung ausgestellt.",
@@ -69,7 +69,7 @@ export const translations = {
     qty: "CANT",
     total: "TOTAL",
     subtotal: "SUBTOTAL",
-    vat: "IVA 0%",
+    vat: "IVA",
     totalAmount: "TOTAL",
     termsAndConditions: "TÉRMINOS Y CONDICIONES",
     paymentTerms: "Al realizar su pedido, acepta pagar los servicios incluidos en esta oferta en un plazo de 7 días a partir de la recepción de la factura. La factura solo se emitirá después de que se haya prestado el servicio.",
@@ -82,7 +82,7 @@ export const translations = {
   }
 };
 
-// Updated PDF content to match the exact template from the screenshot
+// Updated PDF content to properly use all editable data
 const createPDFContent = (proposalData: any, language: string = "en") => {
   const t = translations[language as keyof typeof translations] || translations.en;
   const companyInfo = getCompanyInfo();
@@ -90,17 +90,40 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
   // Calculate logo width based on logoSize
   const logoWidth = proposalData.logoSize ? `${proposalData.logoSize}%` : '33%';
 
-  // Check if VAT is enabled with proper handling
-  console.log('VAT enabled check:', proposalData.vatEnabled, typeof proposalData.vatEnabled);
+  // Proper VAT handling with all user data
+  console.log('PDF Generation - All proposal data:', proposalData);
   const isVatEnabled = proposalData.vatEnabled === true;
-
-  // Calculate totals based on current VAT setting
   const netAmount = proposalData.netAmount || 0;
   const vatRate = proposalData.vatRate || 0;
   const vatAmount = isVatEnabled ? (netAmount * vatRate / 100) : 0;
-  const totalAmount = netAmount + vatAmount;
+  const totalAmount = isVatEnabled ? (netAmount + vatAmount) : netAmount;
 
-  console.log('PDF Generation - VAT Enabled:', isVatEnabled, 'Net:', netAmount, 'VAT Amount:', vatAmount, 'Total:', totalAmount);
+  // Get currency symbol
+  const getCurrencySymbol = (currency: string) => {
+    switch (currency) {
+      case 'USD': return '$';
+      case 'GBP': return '£';
+      case 'EUR':
+      default: return '€';
+    }
+  };
+
+  const currencySymbol = getCurrencySymbol(proposalData.currency || 'EUR');
+
+  console.log('PDF Generation - Using data:', {
+    customerName: proposalData.customerName,
+    customerAddress: proposalData.customerAddress,
+    customerEmail: proposalData.customerEmail,
+    customerCountry: proposalData.customerCountry,
+    proposalTitle: proposalData.proposalTitle,
+    proposalDescription: proposalData.proposalDescription,
+    yourContact: proposalData.yourContact,
+    lineItems: proposalData.lineItems,
+    vatEnabled: isVatEnabled,
+    netAmount,
+    vatAmount,
+    totalAmount
+  });
 
   return `
     <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 794px; min-height: 1123px; background: white; margin: 0; box-sizing: border-box; font-size: 11px;">
@@ -122,10 +145,10 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
       <!-- Customer Information and Proposal Details -->
       <div style="display: flex; justify-content: space-between; margin-bottom: 40px;">
         <div style="flex: 1; padding-right: 40px;">
-          <div style="font-weight: bold; font-size: 12px; margin-bottom: 15px;">${proposalData.customerName || 'Name Surname'}</div>
+          <div style="font-weight: bold; font-size: 12px; margin-bottom: 15px;">${proposalData.customerName || proposalData.customer || 'Name Surname'}</div>
           <div style="line-height: 1.4; margin-bottom: 10px;">
             ${proposalData.customerAddress || 'Leidsestraat 15, 2000 Antwerpen'}<br/>
-            ${proposalData.customerEmail || 'MonzongrealeaZuidbestubook.com'}<br/>
+            ${proposalData.customerEmail || 'customer@email.com'}<br/>
             ${proposalData.customerCountry || 'Belgium'}
           </div>
         </div>
@@ -136,15 +159,15 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
           </div>
           <div style="margin-bottom: 8px;">
             <span style="font-weight: bold;">${t.date}</span>
-            <span style="margin-left: 20px;">${new Date(proposalData.date || Date.now()).toLocaleDateString()}</span>
+            <span style="margin-left: 20px;">${new Date(proposalData.created_at || Date.now()).toLocaleDateString()}</span>
           </div>
           <div style="margin-bottom: 8px;">
             <span style="font-weight: bold;">${t.customerRef}</span>
-            <span style="margin-left: 20px;">${proposalData.customerRef || '7865'}</span>
+            <span style="margin-left: 20px;">${proposalData.customerRef || proposalData.reference || ''}</span>
           </div>
           <div>
             <span style="font-weight: bold;">${t.yourContact}</span>
-            <span style="margin-left: 20px;">${proposalData.yourContact || 'Thomas Klein'}</span>
+            <span style="margin-left: 20px;">${proposalData.yourContact || proposalData.internalContact || 'Thomas Klein'}</span>
           </div>
         </div>
       </div>
@@ -156,7 +179,9 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
 
       <!-- Proposal Content/Description -->
       <div style="margin-bottom: 25px; line-height: 1.5;">
-        <strong>${proposalData.proposalTitle || 'Protect your online REPUTATION!'}</strong> ${proposalData.proposalDescription || 'Thank you for your enquiry. We will be happy to provide you with the requested non-binding offer.'}
+        <strong>${proposalData.proposalTitle || proposalData.subject || 'Protect your online REPUTATION!'}</strong> 
+        ${proposalData.proposalDescription || 'Thank you for your enquiry. We will be happy to provide you with the requested non-binding offer.'}
+        ${proposalData.content ? `<br/><br/>${proposalData.content}` : ''}
       </div>
 
       <!-- Products/Services Table -->
@@ -174,25 +199,22 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
             <tr style="border-bottom: 1px solid #e2e8f0; background-color: ${index % 2 === 0 ? '#f8f9fa' : 'white'};">
               <td style="padding: 15px 8px; border: none; vertical-align: top;">
                 <div style="font-weight: bold; margin-bottom: 5px; color: #e67e22;">
-                  ${item.name || 'SILBER-OPTIMIERUNGSPAKET'} ${item.rating ? '★★★★★' : ''}
+                  ${item.name || 'Product/Service Name'}
                 </div>
-                <div style="line-height: 1.4; color: #666; font-size: 9px;">
-                  ${item.description || 'Remove Google Maps entity, i.e., you will receive a new, optimized Google My Business listing with new images that is better positioned, without negative reviews, which generates new customers online and stands out better from the competition.'}
-                </div>
-                ${item.additionalInfo ? `
-                <div style="margin-top: 10px; color: #666; font-size: 9px;">
-                  <div style="margin-bottom: 3px;">${item.additionalInfo}</div>
+                ${item.description || item.additionalInfo ? `
+                <div style="line-height: 1.4; color: #666; font-size: 9px; margin-top: 8px;">
+                  ${item.description || item.additionalInfo || ''}
                 </div>
                 ` : ''}
               </td>
               <td style="padding: 15px 8px; border: none; text-align: center; vertical-align: top;">
-                ${(item.unit_price || 399).toFixed(2)} EUR
+                ${currencySymbol}${(item.unit_price || 0).toFixed(2)}
               </td>
               <td style="padding: 15px 8px; border: none; text-align: center; vertical-align: top;">
                 ${item.quantity || 1}
               </td>
               <td style="padding: 15px 8px; border: none; text-align: right; vertical-align: top; font-weight: bold;">
-                ${(item.total_price || 399).toFixed(2)} EUR
+                ${currencySymbol}${(item.total_price || 0).toFixed(2)}
               </td>
             </tr>
           `).join('')}
@@ -204,22 +226,15 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
         <div style="width: 250px;">
           <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e2e8f0;">
             <span>${t.subtotal}</span>
-            <span>${netAmount.toFixed(2)} EUR</span>
+            <span>${currencySymbol}${netAmount.toFixed(2)}</span>
           </div>
-          ${isVatEnabled ? `
           <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e2e8f0;">
-            <span>${t.vat}</span>
-            <span>${vatAmount.toFixed(2)} EUR</span>
+            <span>${t.vat} ${isVatEnabled ? `${vatRate}%` : '0%'}</span>
+            <span>${currencySymbol}${vatAmount.toFixed(2)}</span>
           </div>
-          ` : `
-          <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e2e8f0;">
-            <span>${t.vat}</span>
-            <span>0.00 EUR</span>
-          </div>
-          `}
           <div style="display: flex; justify-content: space-between; padding: 12px 0; font-weight: bold; font-size: 12px; background-color: #f8f9fa;">
             <span>${t.totalAmount}</span>
-            <span>${isVatEnabled ? totalAmount.toFixed(2) : netAmount.toFixed(2)} EUR</span>
+            <span>${currencySymbol}${totalAmount.toFixed(2)}</span>
           </div>
         </div>
       </div>
@@ -238,9 +253,19 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
       <div style="margin-bottom: 30px;">
         <div style="font-weight: bold; margin-bottom: 10px; text-transform: uppercase;">${t.termsAndConditions}</div>
         <div style="line-height: 1.4; font-size: 10px;">
-          ${t.paymentTerms}
+          ${proposalData.paymentTerms || proposalData.deliveryTerms || t.paymentTerms}
+          ${proposalData.termsAndConditions ? `<br/><br/>${proposalData.termsAndConditions}` : ''}
         </div>
       </div>
+
+      <!-- Footer Content -->
+      ${proposalData.footerContent ? `
+      <div style="margin-bottom: 20px; padding: 15px; background-color: #f8f9fa; border-radius: 4px;">
+        <div style="line-height: 1.4; font-size: 10px;">
+          ${proposalData.footerContent}
+        </div>
+      </div>
+      ` : ''}
 
       <!-- Signature Section -->
       <div style="display: flex; justify-content: space-between; margin-top: 50px;">
@@ -327,17 +352,19 @@ const generatePDFFromHTML = async (htmlContent: string): Promise<jsPDF> => {
   }
 };
 
-// Main function to generate a PDF from a proposal - now centralized
+// Main function to generate a PDF from a proposal - now properly handles all user data
 export const generateProposalPDF = async (
   proposalData: any, 
   language: string = "en", 
   customFilename?: string
 ): Promise<jsPDF | boolean> => {
   try {
-    // Generate HTML content using centralized function
+    console.log('Generating PDF with data:', proposalData);
+    
+    // Generate HTML content using all editable fields
     const htmlContent = createPDFContent(proposalData, language);
     
-    // Generate PDF using centralized function
+    // Generate PDF
     const pdf = await generatePDFFromHTML(htmlContent);
     
     // For preview mode, return the PDF document

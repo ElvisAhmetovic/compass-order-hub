@@ -33,6 +33,42 @@ export type Database = {
         }
         Relationships: []
       }
+      background_templates: {
+        Row: {
+          background_image: string
+          created_at: string
+          global_font_settings: Json
+          height: number
+          id: string
+          name: string
+          updated_at: string
+          user_id: string
+          width: number
+        }
+        Insert: {
+          background_image: string
+          created_at?: string
+          global_font_settings?: Json
+          height?: number
+          id?: string
+          name: string
+          updated_at?: string
+          user_id: string
+          width?: number
+        }
+        Update: {
+          background_image?: string
+          created_at?: string
+          global_font_settings?: Json
+          height?: number
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
+          width?: number
+        }
+        Relationships: []
+      }
       clients: {
         Row: {
           address: string | null
@@ -608,6 +644,65 @@ export type Database = {
             columns: ["inquiry_id"]
             isOneToOne: false
             referencedRelation: "support_inquiries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      template_fields: {
+        Row: {
+          calculation: string | null
+          created_at: string
+          default_value: string | null
+          field_type: string
+          font_settings: Json
+          height: number
+          id: string
+          label: string
+          required: boolean
+          template_id: string
+          updated_at: string
+          width: number
+          x: number
+          y: number
+        }
+        Insert: {
+          calculation?: string | null
+          created_at?: string
+          default_value?: string | null
+          field_type: string
+          font_settings?: Json
+          height: number
+          id?: string
+          label: string
+          required?: boolean
+          template_id: string
+          updated_at?: string
+          width: number
+          x: number
+          y: number
+        }
+        Update: {
+          calculation?: string | null
+          created_at?: string
+          default_value?: string | null
+          field_type?: string
+          font_settings?: Json
+          height?: number
+          id?: string
+          label?: string
+          required?: boolean
+          template_id?: string
+          updated_at?: string
+          width?: number
+          x?: number
+          y?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "template_fields_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "background_templates"
             referencedColumns: ["id"]
           },
         ]

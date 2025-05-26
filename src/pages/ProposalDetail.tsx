@@ -1,1677 +1,882 @@
-import React, { useState, useEffect, useRef } from "react";
+
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import Sidebar from "@/components/dashboard/Sidebar";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { Form, FormField, FormItem, FormLabel, FormControl } from "@/components/ui/form";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { useNavigate, useParams } from "react-router-dom";
+import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { PlusCircle, Trash2, Save, Eye, Download, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Save, Send, Download, Printer, Eye, Plus, Trash2, FileText, Languages, ToggleLeft, ToggleRight } from "lucide-react";
-import { Proposal, InventoryItem } from "@/types";
 import { v4 as uuidv4 } from "uuid";
-import { jsPDF } from "jspdf";
-import html2canvas from "html2canvas";
-import { 
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList
-} from "@/components/ui/command";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { 
-  downloadProposal, 
-  loadInventoryItems,
-  generateProposalPDF,
-  previewProposalPDF,
-  PROPOSAL_LANGUAGES,
-  saveCompanyInfo, 
-  getCompanyInfo
-} from "@/utils/proposalUtils";
+import { generateProposalPDF, previewProposalPDF, loadInventoryItems, formatInventoryItemForProposal, PROPOSAL_STATUSES } from "@/utils/proposalUtils";
 
-const proposalSchema = z.object({
-  customer: z.string().min(1, "Customer is required"),
-  subject: z.string().min(1, "Subject is required"),
-  number: z.string().min(1, "Proposal number is required"),
-  reference: z.string().optional(),
-  date: z.string().min(1, "Date is required"),
-  address: z.string().min(1, "Address is required"),
-  country: z.string().min(1, "Country is required"),
-  content: z.string().min(1, "Content is required"),
-  amount: z.string().min(1, "Amount is required"),
-  currency: z.string().default("EUR"),
-  deliveryTerms: z.string().optional(),
-  paymentTerms: z.string().optional(),
-  internalContact: z.string().default("Thomas Klein"),
-  vatRule: z.string().default("umsatzsteuerpflichtig"),
-  signatureUrl: z.string().optional(),
-});
-
-type ProposalFormValues = z.infer<typeof proposalSchema>;
-
-interface LineItem {
+interface ProposalLineItem {
   id: string;
+  proposal_id: string;
+  item_id?: string;
+  name: string;
   description: string;
   quantity: number;
-  unit: string;
-  price: number;
-  vat: number;
-  discount: number;
-  amount: number;
+  unit_price: number;
+  total_price: number;
+  category?: string;
+  unit?: string;
+  created_at: string;
+}
+
+interface ProposalData {
+  id: string;
+  number: string;
+  customer: string;
+  subject: string;
+  reference: string;
+  amount: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  currency: string;
+  vatEnabled: boolean;
+  vatRate: number;
+  
+  // Customer details
+  customerName: string;
+  customerAddress: string;
+  customerEmail: string;
+  customerCountry: string;
+  customerRef: string;
+  
+  // Company/Contact details
+  yourContact: string;
+  internalContact: string;
+  
+  // Proposal content
+  proposalTitle: string;
+  proposalDescription: string;
+  content: string;
+  
+  // Terms and delivery
+  deliveryTerms: string;
+  paymentTerms: string;
+  termsAndConditions: string;
+  
+  // Footer and company info
+  footerContent: string;
+  logo?: string;
+  logoSize?: number;
+  signatureUrl?: string;
+  
+  // Line items
+  lineItems: ProposalLineItem[];
+  
+  // Calculated totals
+  netAmount: number;
+  vatAmount: number;
+  totalAmount: number;
 }
 
 const ProposalDetail = () => {
+  const { id } = useParams();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
-  const navigate = useNavigate();
-  const { id } = useParams();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
-  const [lineItems, setLineItems] = useState<LineItem[]>([
-    {
-      id: "1",
-      description: "",
-      quantity: 1.0,
-      unit: "pcs",
-      price: 0.0,
-      vat: 19,
-      discount: 0,
-      amount: 0.0
-    }
-  ]);
-  const [popoverOpen, setPopoverOpen] = useState<{[key: string]: boolean}>({});
-  const [searchQuery, setSearchQuery] = useState<{[key: string]: string}>({});
-  const [selectedLanguage, setSelectedLanguage] = useState("en");
-  const [signatureUrl, setSignatureUrl] = useState<string | null>(null);
-  const [signaturePadOpen, setSignaturePadOpen] = useState(false);
-  const [isLogoDialogOpen, setIsLogoDialogOpen] = useState(false);
-  const [companyLogo, setCompanyLogo] = useState<string>("https://placehold.co/200x60?text=Your+Logo");
-  const [logoSize, setLogoSize] = useState(33); // Default logo size percentage
-  const [selectedCurrency, setSelectedCurrency] = useState("EUR");
-  const [currencySymbol, setCurrencySymbol] = useState("€");
-  const [isVatEnabled, setIsVatEnabled] = useState(true);
-  const canvasRef = React.useRef<HTMLCanvasElement>(null);
-  const [isDrawing, setIsDrawing] = useState(false);
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
-  
-  // PDF preview state variables
-  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-  const [previewLogoSize, setPreviewLogoSize] = useState(33);
-  const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
-  const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
-  const previewContentRef = useRef<HTMLDivElement>(null);
+  const isNewProposal = id === "new" || !id;
 
-  const form = useForm<ProposalFormValues>({
-    resolver: zodResolver(proposalSchema),
-    defaultValues: {
-      customer: "",
-      subject: "Proposal No. 9984",
-      number: "AN-9984",
-      reference: "",
-      date: new Date().toISOString().split('T')[0],
-      address: "123 Sample Street\nLLC & City",
-      country: "Deutschland",
-      content: "Thank you for your enquiry. We will be happy to provide you with the requested non-binding offer.",
-      amount: "0.00",
-      currency: "EUR",
-      deliveryTerms: "",
-      paymentTerms: "",
-      internalContact: "Thomas Klein",
-      vatRule: "umsatzsteuerpflichtig",
-      signatureUrl: "",
-    },
+  const [proposalData, setProposalData] = useState<ProposalData>({
+    id: isNewProposal ? uuidv4() : id || "",
+    number: "",
+    customer: "",
+    subject: "",
+    reference: "",
+    amount: "0.00",
+    status: "Draft",
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    currency: "EUR",
+    vatEnabled: true,
+    vatRate: 19,
+    
+    // Customer details
+    customerName: "",
+    customerAddress: "",
+    customerEmail: "",
+    customerCountry: "",
+    customerRef: "",
+    
+    // Company/Contact details
+    yourContact: "Thomas Klein",
+    internalContact: "Thomas Klein",
+    
+    // Proposal content
+    proposalTitle: "",
+    proposalDescription: "",
+    content: "",
+    
+    // Terms and delivery
+    deliveryTerms: "7 days after receipt of invoice",
+    paymentTerms: "By placing your order you agree to pay for the services included in this offer within 7 days of receipt of the invoice.",
+    termsAndConditions: "",
+    
+    // Footer and company info
+    footerContent: "",
+    logoSize: 33,
+    
+    // Line items
+    lineItems: [],
+    
+    // Calculated totals
+    netAmount: 0,
+    vatAmount: 0,
+    totalAmount: 0
   });
 
-  // Add missing PDF generation function
-  const handleGeneratePDF = () => {
-    const data = form.getValues();
-    const proposalData = {
-      ...data,
-      lineItems,
-      totalAmount,
-      vatAmount,
-      netAmount,
-      vatRate: 19,
-      signatureUrl,
-      logo: companyLogo,
-      logoSize: logoSize
-    };
-    
-    generateProposalPDF(proposalData, selectedLanguage);
-    
-    toast({
-      title: "PDF generated",
-      description: "Your proposal has been downloaded as a PDF.",
-    });
-  };
-  
-  // Add missing preview download function
-  const downloadPreviewPDF = () => {
-    const data = form.getValues();
-    const proposalData = {
-      ...data,
-      lineItems,
-      totalAmount,
-      vatAmount,
-      netAmount,
-      vatRate: 19,
-      signatureUrl,
-      logo: companyLogo,
-      logoSize: previewLogoSize // Use preview logo size
-    };
-    
-    // Fix: Pass the correct parameters according to the function signature
-    const filename = `proposal-${proposalData.number || 'draft'}.pdf`;
-    generateProposalPDF(proposalData, selectedLanguage, filename);
-    
-    toast({
-      title: "PDF downloaded",
-      description: "Your preview PDF has been downloaded.",
-    });
-  };
-  
-  // When preview is opened, initialize logo size from current setting
+  const [inventoryItems, setInventoryItems] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
   useEffect(() => {
-    if (isPreviewOpen) {
-      setPreviewLogoSize(logoSize);
-      generatePreview();
-    }
-  }, [isPreviewOpen]);
-
-  // Dynamic preview generator
-  const generatePreview = async () => {
-    setIsGeneratingPreview(true);
-    
-    const data = form.getValues();
-    const proposalData = {
-      ...data,
-      lineItems,
-      totalAmount,
-      vatAmount,
-      netAmount,
-      vatRate: 19,
-      signatureUrl,
-      logo: companyLogo,
-      logoSize: previewLogoSize // Use preview-specific logo size
-    };
-    
-    try {
-      // Create a temporary container for the PDF preview
-      const tempContainer = document.createElement('div');
-      tempContainer.style.position = 'absolute';
-      tempContainer.style.left = '-9999px';
-      tempContainer.style.width = '794px'; // A4 width at 96 DPI
-      document.body.appendChild(tempContainer);
-      
-      // Generate PDF content
-      const doc = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4'
-      });
-      
-      // Add logo with dynamic size
-      if (companyLogo) {
-        doc.addImage(
-          companyLogo, 
-          'JPEG', 
-          20, 
-          20, 
-          (previewLogoSize / 100) * 80, // Scale logo based on percentage
-          30
-        );
-      }
-      
-      // Add proposal content
-      doc.setFontSize(22);
-      doc.text("PROPOSAL", 20, 60);
-      
-      doc.setFontSize(12);
-      doc.text(`${proposalData.customer}`, 20, 80);
-      doc.text(`${proposalData.address}`, 20, 90);
-      
-      doc.text(`Proposal No: ${proposalData.number}`, 130, 80);
-      doc.text(`Date: ${proposalData.date}`, 130, 90);
-      
-      doc.text(`Subject: ${proposalData.subject}`, 20, 110);
-      doc.text(`${proposalData.content}`, 20, 120);
-      
-      // Add line items table
-      let yPos = 150;
-      doc.line(20, yPos, 190, yPos);
-      yPos += 10;
-      
-      doc.text("Description", 20, yPos);
-      doc.text("Qty", 120, yPos);
-      doc.text("Price", 140, yPos);
-      doc.text("Amount", 170, yPos);
-      
-      yPos += 5;
-      doc.line(20, yPos, 190, yPos);
-      yPos += 10;
-      
-      lineItems.forEach(item => {
-        doc.text(item.description.substring(0, 40), 20, yPos);
-        doc.text(item.quantity.toString(), 120, yPos);
-        doc.text(`${currencySymbol}${item.price.toFixed(2)}`, 140, yPos);
-        doc.text(`${currencySymbol}${item.amount.toFixed(2)}`, 170, yPos);
-        yPos += 10;
-      });
-      
-      yPos += 5;
-      doc.line(20, yPos, 190, yPos);
-      yPos += 10;
-      
-      // Add totals
-      doc.text("Total:", 140, yPos);
-      doc.text(`${currencySymbol}${(isVatEnabled ? totalAmount : netAmount).toFixed(2)}`, 170, yPos);
-      
-      // Add signature if available
-      if (signatureUrl) {
-        yPos += 30;
-        doc.text("Signature:", 20, yPos);
-        doc.addImage(signatureUrl, 'PNG', 20, yPos + 5, 50, 20);
-      }
-      
-      // Convert to data URL
-      const pdfOutput = doc.output('datauristring');
-      setPdfPreviewUrl(pdfOutput);
-      
-      // Clean up
-      document.body.removeChild(tempContainer);
-    } catch (error) {
-      console.error("Error generating preview:", error);
-      toast({
-        title: "Preview Error",
-        description: "Could not generate PDF preview.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsGeneratingPreview(false);
-    }
-  };
-
-  // Preview logo size controls
-  const decreasePreviewLogoSize = () => {
-    const newSize = Math.max(10, previewLogoSize - 5);
-    setPreviewLogoSize(newSize);
-    generatePreview();
-  };
-
-  const increasePreviewLogoSize = () => {
-    const newSize = Math.min(100, previewLogoSize + 5);
-    setPreviewLogoSize(newSize);
-    generatePreview();
-  };
-
-  // Apply preview logo size to actual logo size
-  const applyPreviewLogoSize = () => {
-    setLogoSize(previewLogoSize);
-    
-    // Save the updated size to company info
-    const companyInfo = getCompanyInfo();
-    companyInfo.logoSize = previewLogoSize;
-    saveCompanyInfo(companyInfo);
-    
-    toast({
-      title: "Logo size updated",
-      description: `Logo size updated to ${previewLogoSize}%`,
-    });
-  };
-
-  // Load company logo and size from saved company info
-  useEffect(() => {
-    const companyInfo = getCompanyInfo();
-    if (companyInfo && companyInfo.logo) {
-      setCompanyLogo(companyInfo.logo);
-    }
-    if (companyInfo && companyInfo.logoSize) {
-      setLogoSize(companyInfo.logoSize);
-    }
-  }, []);
-
-  // Handle logo change
-  const handleLogoChange = (logo: string) => {
-    setCompanyLogo(logo);
-    
-    // Save the logo to company info
-    const companyInfo = getCompanyInfo();
-    companyInfo.logo = logo;
-    companyInfo.logoSize = logoSize;
-    saveCompanyInfo(companyInfo);
-    
-    toast({
-      title: "Company logo updated",
-      description: "Your company logo has been updated successfully.",
-    });
-  };
-
-  // Function to save logo size to company info and update the component state
-  const updateLogoSize = (newSize: number) => {
-    setLogoSize(newSize);
-    
-    // Save the updated size to company info
-    const companyInfo = getCompanyInfo();
-    companyInfo.logoSize = newSize;
-    saveCompanyInfo(companyInfo);
-    
-    console.log(`Logo size updated to: ${newSize}%`);
-  };
-
-  // Decrease logo size
-  const decreaseLogoSize = () => {
-    const newSize = Math.max(10, logoSize - 5);
-    updateLogoSize(newSize);
-  };
-
-  // Increase logo size
-  const increaseLogoSize = () => {
-    const newSize = Math.min(100, logoSize + 5);
-    updateLogoSize(newSize);
-  };
-
-  // Handle currency change
-  useEffect(() => {
-    // Update currency symbol when currency changes
-    switch (selectedCurrency) {
-      case "USD":
-        setCurrencySymbol("$");
-        break;
-      case "GBP":
-        setCurrencySymbol("£");
-        break;
-      case "EUR":
-      default:
-        setCurrencySymbol("€");
-        break;
-    }
-  }, [selectedCurrency]);
-
-  // Load existing VAT setting when editing a proposal
-  useEffect(() => {
-    if (id && id !== "new") {
-      const savedProposals = localStorage.getItem("proposals");
-      if (savedProposals) {
-        const proposals: Proposal[] = JSON.parse(savedProposals);
-        const existingProposal = proposals.find(p => p.id === id);
-        if (existingProposal && existingProposal.vatEnabled !== undefined) {
-          setIsVatEnabled(existingProposal.vatEnabled);
-        }
-      }
-    }
+    loadProposal();
+    loadInventory();
   }, [id]);
 
-  // Trigger file input click
-  const triggerLogoUpload = () => {
-    if (fileInputRef.current) {
-      fileInputRef.current.click();
-    }
-  };
-
-  // Handle file selection
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      
-      // Check file size (limit to 2MB)
-      if (file.size > 2 * 1024 * 1024) {
-        toast({
-          title: "File too large",
-          description: "Please select an image under 2MB.",
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      // Check file type
-      if (!file.type.startsWith('image/')) {
-        toast({
-          title: "Invalid file type",
-          description: "Please select an image file (JPEG, PNG, etc.).",
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        if (event.target && typeof event.target.result === 'string') {
-          handleLogoChange(event.target.result);
-        }
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  // Signature pad functions
-  const initializeCanvas = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    
-    ctx.lineWidth = 2;
-    ctx.lineCap = 'round';
-    ctx.strokeStyle = '#000';
-    
-    // Clear canvas
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-  };
-
-  const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    
-    const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    
-    ctx.beginPath();
-    ctx.moveTo(x, y);
-    setIsDrawing(true);
-  };
-
-  const draw = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!isDrawing) return;
-    
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    
-    const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    
-    ctx.lineTo(x, y);
-    ctx.stroke();
-  };
-
-  const stopDrawing = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    
-    ctx.closePath();
-    setIsDrawing(false);
-  };
-
-  const saveSignature = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    
-    const signatureData = canvas.toDataURL('image/png');
-    setSignatureUrl(signatureData);
-    form.setValue('signatureUrl', signatureData);
-    setSignaturePadOpen(false);
-    
-    toast({
-      title: "Signature saved",
-      description: "Your signature has been added to the proposal.",
-    });
-  };
-
-  const clearSignature = () => {
-    initializeCanvas();
-  };
-  
-  // Initialize canvas when signature dialog opens
-  useEffect(() => {
-    if (signaturePadOpen) {
-      initializeCanvas();
-    }
-  }, [signaturePadOpen]);
-
-  // Load inventory items
-  useEffect(() => {
+  const loadInventory = () => {
     const items = loadInventoryItems();
-    if (items && items.length > 0) {
-      console.log("Loaded inventory items:", items.length);
-      setInventoryItems(items);
-    } else {
-      console.warn("No inventory items found in local storage");
-    }
-  }, []);
+    setInventoryItems(items);
+  };
 
-  // Load existing proposal if editing
-  useEffect(() => {
-    if (id && id !== "new") {
-      const savedProposals = localStorage.getItem("proposals");
-      if (savedProposals) {
-        const proposals: Proposal[] = JSON.parse(savedProposals);
-        const existingProposal = proposals.find(p => p.id === id);
-        if (existingProposal) {
-          form.reset({
-            customer: existingProposal.customer,
-            subject: existingProposal.subject || "Proposal",
-            number: existingProposal.number,
-            reference: existingProposal.reference,
-            date: new Date().toISOString().split('T')[0],
-            address: existingProposal.address || "123 Sample Street\nLLC & City",
-            country: existingProposal.country || "Deutschland",
-            content: existingProposal.content || "Thank you for your enquiry. We will be happy to provide you with the requested non-binding offer.",
-            amount: existingProposal.amount,
-            currency: "EUR",
-            deliveryTerms: "",
-            paymentTerms: "",
-            internalContact: "Thomas Klein",
-            vatRule: "umsatzsteuerpflichtig",
-            signatureUrl: "",
-          });
+  const loadProposal = () => {
+    try {
+      if (isNewProposal) {
+        // Generate a new proposal number
+        const savedProposals = localStorage.getItem("proposals");
+        const proposals = savedProposals ? JSON.parse(savedProposals) : [];
+        const nextNumber = `AN-${(9984 + proposals.length + 1).toString()}`;
+        
+        setProposalData(prev => ({
+          ...prev,
+          number: nextNumber,
+          reference: `REF-${new Date().getFullYear()}-${(proposals.length + 1).toString().padStart(3, '0')}`
+        }));
+      } else {
+        const savedProposals = localStorage.getItem("proposals");
+        if (savedProposals) {
+          const proposals = JSON.parse(savedProposals);
+          const proposal = proposals.find((p: any) => p.id === id);
           
-          // If proposal has line items, load them
-          if (existingProposal.lineItems && existingProposal.lineItems.length > 0) {
-            const formattedLineItems = existingProposal.lineItems.map(item => ({
-              id: item.id,
-              description: item.name,
-              quantity: item.quantity,
-              unit: item.unit || "pcs",
-              price: item.unit_price,
-              vat: 19,
-              discount: 0,
-              amount: item.total_price
-            }));
-            setLineItems(formattedLineItems);
+          if (proposal) {
+            // Load detailed proposal data
+            const savedDetailedProposals = localStorage.getItem("detailedProposals");
+            let detailedProposal = null;
+            
+            if (savedDetailedProposals) {
+              const detailedProposals = JSON.parse(savedDetailedProposals);
+              detailedProposal = detailedProposals.find((p: any) => p.id === id);
+            }
+            
+            // Merge basic and detailed data
+            const mergedData = {
+              ...proposalData,
+              ...proposal,
+              ...detailedProposal,
+              lineItems: detailedProposal?.lineItems || [],
+              netAmount: detailedProposal?.netAmount || parseFloat(proposal.amount) || 0,
+              vatAmount: detailedProposal?.vatAmount || 0,
+              totalAmount: detailedProposal?.totalAmount || parseFloat(proposal.amount) || 0
+            };
+            
+            setProposalData(mergedData);
           }
         }
       }
-    }
-  }, [id, form]);
-
-  const togglePopover = (itemId: string) => {
-    setPopoverOpen(prev => ({
-      ...prev,
-      [itemId]: !prev[itemId]
-    }));
-  };
-
-  const handleSearchChange = (itemId: string, value: string) => {
-    setSearchQuery(prev => ({
-      ...prev,
-      [itemId]: value
-    }));
-    
-    // Open the popover when search has content
-    if (value.length > 0 && !popoverOpen[itemId]) {
-      togglePopover(itemId);
-    }
-  };
-
-  // Filter inventory items based on search query
-  const getFilteredItems = (itemId: string) => {
-    const query = searchQuery[itemId] || "";
-    if (!query.trim()) return inventoryItems.slice(0, 10); // Show first 10 items if no search query
-    
-    return inventoryItems
-      .filter(item => 
-        item.name.toLowerCase().includes(query.toLowerCase()) || 
-        item.id.toString().toLowerCase().includes(query.toLowerCase()) ||
-        (item.description && item.description.toLowerCase().includes(query.toLowerCase()))
-      )
-      .slice(0, 10); // Limit to first 10 matches
-  };
-
-  const addLineItem = () => {
-    const newItem: LineItem = {
-      id: Date.now().toString(),
-      description: "",
-      quantity: 1.0,
-      unit: "pcs",
-      price: 0.0,
-      vat: 19,
-      discount: 0,
-      amount: 0.0
-    };
-    setLineItems([...lineItems, newItem]);
-  };
-
-  const removeLineItem = (id: string) => {
-    setLineItems(lineItems.filter(item => item.id !== id));
-  };
-
-  const updateLineItem = (id: string, field: keyof LineItem, value: any) => {
-    setLineItems(lineItems.map(item => {
-      if (item.id === id) {
-        const updatedItem = { ...item, [field]: value };
-        // Recalculate amount when quantity, price, or discount changes
-        if (field === 'quantity' || field === 'price' || field === 'discount') {
-          const baseAmount = updatedItem.quantity * updatedItem.price;
-          const discountAmount = baseAmount * (updatedItem.discount / 100);
-          updatedItem.amount = baseAmount - discountAmount;
-        }
-        return updatedItem;
-      }
-      return item;
-    }));
-  };
-
-  const selectInventoryItem = (itemId: string, lineItemId: string) => {
-    const selectedItem = inventoryItems.find(item => item.id === itemId);
-    if (selectedItem) {
-      setLineItems(lineItems.map(item => {
-        if (item.id === lineItemId) {
-          const price = typeof selectedItem.price === 'string' 
-            ? parseFloat(selectedItem.price.replace(/[^\d.-]/g, '') || '0') 
-            : selectedItem.price;
-            
-          return {
-            ...item,
-            description: selectedItem.name,
-            price: price || 0,
-            unit: selectedItem.unit || "Stk",
-            amount: price * item.quantity
-          };
-        }
-        return item;
-      }));
-    }
-    setPopoverOpen(prev => ({
-      ...prev,
-      [lineItemId]: false
-    }));
-  };
-
-  // Update the saveProposal function to include VAT status
-  const saveProposal = (data: ProposalFormValues, status: string = "Draft") => {
-    const savedProposals = localStorage.getItem("proposals");
-    const proposals: Proposal[] = savedProposals ? JSON.parse(savedProposals) : [];
-    
-    // Convert line items to proposal line items
-    const proposalLineItems = lineItems.map(item => ({
-      id: item.id,
-      proposal_id: id === "new" ? uuidv4() : id!,
-      item_id: item.id,
-      name: item.description,
-      description: item.description,
-      quantity: item.quantity,
-      unit_price: item.price,
-      total_price: item.amount,
-      unit: item.unit,
-      created_at: new Date().toISOString()
-    }));
-    
-    const proposalData: Proposal = {
-      id: id === "new" ? uuidv4() : id!,
-      reference: data.reference || `REF-${new Date().getFullYear()}-${String(proposals.length + 1).padStart(3, '0')}`,
-      number: data.number,
-      customer: data.customer,
-      subject: data.subject,
-      amount: totalAmount.toFixed(2),
-      status: status,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      lineItems: proposalLineItems,
-      address: data.address,
-      country: data.country,
-      content: data.content,
-      totalAmount: totalAmount,
-      currency: selectedCurrency,
-      vatEnabled: isVatEnabled // Save VAT enabled state
-    };
-
-    if (id === "new") {
-      proposals.push(proposalData);
-    } else {
-      const index = proposals.findIndex(p => p.id === id);
-      if (index >= 0) {
-        proposals[index] = { ...proposals[index], ...proposalData };
-      } else {
-        proposals.push(proposalData);
-      }
-    }
-
-    localStorage.setItem("proposals", JSON.stringify(proposals));
-    return proposalData;
-  };
-
-  // Modified previewProposal to open our new preview dialog
-  const previewProposal = () => {
-    setIsPreviewOpen(true);
-  };
-
-  const saveAsDraft = () => {
-    const data = form.getValues();
-    saveProposal(data, "Draft");
-    toast({
-      title: "Proposal saved",
-      description: "Your proposal has been saved as a draft.",
-    });
-  };
-
-  const sendProposal = () => {
-    const data = form.getValues();
-    if (!data.customer || !data.subject) {
+    } catch (error) {
+      console.error("Error loading proposal:", error);
       toast({
-        title: "Missing information",
-        description: "Please fill in customer and subject fields.",
+        title: "Error",
+        description: "Failed to load proposal.",
         variant: "destructive",
       });
-      return;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const calculateTotals = (lineItems: ProposalLineItem[], vatEnabled: boolean, vatRate: number) => {
+    const netAmount = lineItems.reduce((sum, item) => sum + item.total_price, 0);
+    const vatAmount = vatEnabled ? (netAmount * vatRate / 100) : 0;
+    const totalAmount = netAmount + vatAmount;
+    
+    return { netAmount, vatAmount, totalAmount };
+  };
+
+  const handleLineItemChange = (index: number, field: keyof ProposalLineItem, value: any) => {
+    const updatedLineItems = [...proposalData.lineItems];
+    updatedLineItems[index] = { ...updatedLineItems[index], [field]: value };
+    
+    // Recalculate line item total if quantity or unit_price changed
+    if (field === 'quantity' || field === 'unit_price') {
+      const item = updatedLineItems[index];
+      item.total_price = item.quantity * item.unit_price;
     }
     
-    saveProposal(data, "Sent");
+    // Recalculate totals
+    const { netAmount, vatAmount, totalAmount } = calculateTotals(updatedLineItems, proposalData.vatEnabled, proposalData.vatRate);
+    
+    setProposalData(prev => ({
+      ...prev,
+      lineItems: updatedLineItems,
+      netAmount,
+      vatAmount,
+      totalAmount,
+      amount: totalAmount.toFixed(2)
+    }));
+  };
+
+  const handleAddLineItem = () => {
+    const newItem: ProposalLineItem = {
+      id: uuidv4(),
+      proposal_id: proposalData.id,
+      name: "",
+      description: "",
+      quantity: 1,
+      unit_price: 0,
+      total_price: 0,
+      unit: "unit",
+      created_at: new Date().toISOString()
+    };
+    
+    setProposalData(prev => ({
+      ...prev,
+      lineItems: [...prev.lineItems, newItem]
+    }));
+  };
+
+  const handleRemoveLineItem = (index: number) => {
+    const updatedLineItems = proposalData.lineItems.filter((_, i) => i !== index);
+    const { netAmount, vatAmount, totalAmount } = calculateTotals(updatedLineItems, proposalData.vatEnabled, proposalData.vatRate);
+    
+    setProposalData(prev => ({
+      ...prev,
+      lineItems: updatedLineItems,
+      netAmount,
+      vatAmount,
+      totalAmount,
+      amount: totalAmount.toFixed(2)
+    }));
+  };
+
+  const handleAddFromInventory = (inventoryItem: any) => {
+    const formattedItem = formatInventoryItemForProposal(inventoryItem, 1);
+    formattedItem.proposal_id = proposalData.id;
+    
+    const updatedLineItems = [...proposalData.lineItems, formattedItem];
+    const { netAmount, vatAmount, totalAmount } = calculateTotals(updatedLineItems, proposalData.vatEnabled, proposalData.vatRate);
+    
+    setProposalData(prev => ({
+      ...prev,
+      lineItems: updatedLineItems,
+      netAmount,
+      vatAmount,
+      totalAmount,
+      amount: totalAmount.toFixed(2)
+    }));
+    
     toast({
-      title: "Proposal sent",
-      description: "Your proposal has been sent to the customer.",
+      title: "Item added",
+      description: `${inventoryItem.name} has been added to the proposal.`,
     });
   };
 
-  const onSubmit = (data: ProposalFormValues) => {
-    setIsSubmitting(true);
+  const handleVatToggle = (enabled: boolean) => {
+    const { netAmount, vatAmount, totalAmount } = calculateTotals(proposalData.lineItems, enabled, proposalData.vatRate);
     
+    setProposalData(prev => ({
+      ...prev,
+      vatEnabled: enabled,
+      vatAmount,
+      totalAmount,
+      amount: totalAmount.toFixed(2)
+    }));
+  };
+
+  const handleVatRateChange = (rate: number) => {
+    const { netAmount, vatAmount, totalAmount } = calculateTotals(proposalData.lineItems, proposalData.vatEnabled, rate);
+    
+    setProposalData(prev => ({
+      ...prev,
+      vatRate: rate,
+      vatAmount,
+      totalAmount,
+      amount: totalAmount.toFixed(2)
+    }));
+  };
+
+  const saveProposal = async () => {
+    setSaving(true);
     try {
-      saveProposal(data, "Draft");
+      // Save to basic proposals list
+      const savedProposals = localStorage.getItem("proposals");
+      const proposals = savedProposals ? JSON.parse(savedProposals) : [];
+      
+      const basicProposalData = {
+        id: proposalData.id,
+        number: proposalData.number,
+        customer: proposalData.customerName || proposalData.customer,
+        subject: proposalData.subject,
+        reference: proposalData.reference,
+        amount: proposalData.amount,
+        status: proposalData.status,
+        created_at: proposalData.created_at,
+        updated_at: new Date().toISOString(),
+        currency: proposalData.currency,
+        vatEnabled: proposalData.vatEnabled
+      };
+      
+      const existingIndex = proposals.findIndex((p: any) => p.id === proposalData.id);
+      if (existingIndex >= 0) {
+        proposals[existingIndex] = basicProposalData;
+      } else {
+        proposals.push(basicProposalData);
+      }
+      
+      localStorage.setItem("proposals", JSON.stringify(proposals));
+      
+      // Save detailed proposal data
+      const savedDetailedProposals = localStorage.getItem("detailedProposals");
+      const detailedProposals = savedDetailedProposals ? JSON.parse(savedDetailedProposals) : [];
+      
+      const detailedExistingIndex = detailedProposals.findIndex((p: any) => p.id === proposalData.id);
+      const updatedProposalData = {
+        ...proposalData,
+        updated_at: new Date().toISOString()
+      };
+      
+      if (detailedExistingIndex >= 0) {
+        detailedProposals[detailedExistingIndex] = updatedProposalData;
+      } else {
+        detailedProposals.push(updatedProposalData);
+      }
+      
+      localStorage.setItem("detailedProposals", JSON.stringify(detailedProposals));
+      
       toast({
         title: "Proposal saved",
-        description: "Your proposal has been saved successfully.",
+        description: "Proposal has been saved successfully.",
       });
-      navigate("/proposals");
+      
+      if (isNewProposal) {
+        navigate(`/proposals/${proposalData.id}`);
+      }
     } catch (error) {
+      console.error("Error saving proposal:", error);
       toast({
         title: "Error",
         description: "Failed to save proposal.",
         variant: "destructive",
       });
     } finally {
-      setIsSubmitting(false);
+      setSaving(false);
     }
   };
 
-  // Recalculate amounts based on VAT status
-  const calculateVatAmount = () => {
-    if (!isVatEnabled) return 0;
-    return lineItems.reduce((sum, item) => sum + (item.amount * item.vat / 100), 0);
-  };
-
-  const vatAmount = calculateVatAmount();
-  const totalAmount = lineItems.reduce((sum, item) => sum + item.amount, 0);
-  const netAmount = totalAmount - vatAmount;
-
-  // Fix for the Company Logo button - ensure it opens the dialog
-  const handleLogoButtonClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsLogoDialogOpen(true);
-    console.log("Opening logo dialog");
-  };
-
-  // Function to handle downloading proposal as text
-  const handleDownloadProposal = () => {
-    const data = form.getValues();
-    const proposalData = {
-      ...data,
-      lineItems,
-      totalAmount,
-      vatAmount,
-      netAmount
+  const handlePreview = async () => {
+    // Ensure data is saved before preview
+    await saveProposal();
+    
+    // Prepare proposal data for PDF generation with all editable fields
+    const pdfProposalData = {
+      ...proposalData,
+      // Ensure customer data is properly mapped
+      customer: proposalData.customerName || proposalData.customer,
+      // Map internal contact properly
+      yourContact: proposalData.internalContact || proposalData.yourContact,
+      // Ensure line items include descriptions
+      lineItems: proposalData.lineItems.map(item => ({
+        ...item,
+        // Ensure description is included
+        additionalInfo: item.description
+      }))
     };
     
-    downloadProposal(proposalData);
+    console.log('Preview data being sent:', pdfProposalData);
     
-    toast({
-      title: "Proposal downloaded",
-      description: "Your proposal has been downloaded as a text file.",
-    });
+    const success = await previewProposalPDF(pdfProposalData, 'en');
+    if (!success) {
+      toast({
+        title: "Preview failed",
+        description: "Failed to generate proposal preview.",
+        variant: "destructive",
+      });
+    }
   };
 
-  // Function to handle printing the proposal
-  const printProposal = () => {
-    const data = form.getValues();
-    const proposalData = {
-      ...data,
-      lineItems,
-      totalAmount,
-      vatAmount,
-      netAmount,
-      vatRate: 19,
-      signatureUrl,
-      logo: companyLogo,
-      logoSize: logoSize
+  const handleDownload = async () => {
+    // Ensure data is saved before download
+    await saveProposal();
+    
+    // Prepare proposal data for PDF generation with all editable fields
+    const pdfProposalData = {
+      ...proposalData,
+      // Ensure customer data is properly mapped
+      customer: proposalData.customerName || proposalData.customer,
+      // Map internal contact properly
+      yourContact: proposalData.internalContact || proposalData.yourContact,
+      // Ensure line items include descriptions
+      lineItems: proposalData.lineItems.map(item => ({
+        ...item,
+        // Ensure description is included
+        additionalInfo: item.description
+      }))
     };
     
-    // Generate PDF and then print it
-    const doc = new jsPDF();
+    console.log('Download data being sent:', pdfProposalData);
     
-    // Add content to PDF
-    doc.text("Proposal", 20, 20);
-    doc.text(`Customer: ${proposalData.customer}`, 20, 30);
-    doc.text(`Subject: ${proposalData.subject}`, 20, 40);
-    doc.text(`Total Amount: ${currencySymbol}${totalAmount.toFixed(2)}`, 20, 50);
-    
-    // Print the document
-    doc.autoPrint();
-    doc.output('dataurlnewwindow');
-    
-    toast({
-      title: "Printing proposal",
-      description: "Your proposal has been sent to your printer.",
-    });
+    const success = await generateProposalPDF(pdfProposalData, 'en', `proposal-${proposalData.number}.pdf`);
+    if (success) {
+      toast({
+        title: "Proposal downloaded",
+        description: `Proposal ${proposalData.number} has been downloaded as PDF.`,
+      });
+    } else {
+      toast({
+        title: "Download failed",
+        description: "Failed to download proposal as PDF.",
+        variant: "destructive",
+      });
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen">
+        <Sidebar />
+        <div className="flex-1">
+          <Layout userRole={user?.role || "user"}>
+            <div className="container mx-auto py-8">
+              <div className="text-center">Loading proposal...</div>
+            </div>
+          </Layout>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen">
       <Sidebar />
       <div className="flex-1">
         <Layout userRole={user?.role || "user"}>
-          <div className="container mx-auto py-6">
-            <div className="flex items-center justify-between mb-6">
+          <div className="container mx-auto py-8">
+            <div className="flex justify-between items-center mb-6">
               <div className="flex items-center gap-4">
-                <Button variant="outline" size="icon" onClick={() => navigate("/proposals")}>
-                  <ArrowLeft size={16} />
+                <Button variant="ghost" onClick={() => navigate("/proposals")}>
+                  <ArrowLeft size={16} className="mr-2" />
+                  Back to Proposals
                 </Button>
-                <h1 className="text-2xl font-bold">{id === "new" ? "Create proposal" : "Edit proposal"}</h1>
+                <h1 className="text-2xl font-bold">
+                  {isNewProposal ? "Create New Proposal" : `Edit Proposal ${proposalData.number}`}
+                </h1>
               </div>
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={previewProposal}>
-                  <Eye className="h-4 w-4 mr-1" />
+              <div className="flex gap-2">
+                <Button onClick={handlePreview} variant="outline">
+                  <Eye size={16} className="mr-2" />
                   Preview
                 </Button>
-                <Button variant="outline" size="sm" onClick={saveAsDraft}>
-                  <Save className="h-4 w-4 mr-1" />
-                  Save as draft
+                <Button onClick={handleDownload} variant="outline">
+                  <Download size={16} className="mr-2" />
+                  Download PDF
                 </Button>
-                <div className="flex items-center gap-2">
-                  <Button size="sm" className="bg-blue-600 rounded-r-none" onClick={sendProposal}>
-                    <Send className="h-4 w-4 mr-1" />
-                    Send
-                  </Button>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="sm" className="rounded-l-none border-l-0">
-                        <Download className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuLabel>Export Options</DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuGroup>
-                        <DropdownMenuItem onClick={handleGeneratePDF}>
-                          <FileText className="h-4 w-4 mr-2" />
-                          Download as PDF
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={handleDownloadProposal}>
-                          <Download className="h-4 w-4 mr-2" />
-                          Download as Text
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={printProposal}>
-                          <Printer className="h-4 w-4 mr-2" />
-                          Print
-                        </DropdownMenuItem>
-                      </DropdownMenuGroup>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
+                <Button onClick={saveProposal} disabled={saving}>
+                  <Save size={16} className="mr-2" />
+                  {saving ? "Saving..." : "Save"}
+                </Button>
               </div>
             </div>
 
-            {/* PDF Preview Dialog */}
-            <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
-              <DialogContent className="sm:max-w-4xl">
-                <DialogHeader>
-                  <DialogTitle>Proposal Preview</DialogTitle>
-                  <DialogDescription>
-                    Preview how your proposal will look as a PDF.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="flex flex-col h-[600px]">
-                  {/* Controls */}
-                  <div className="flex justify-between items-center p-2 bg-gray-50 border-b">
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm">Language:</span>
-                        <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
-                          <SelectTrigger className="w-[120px]">
-                            <SelectValue placeholder="Select language" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {PROPOSAL_LANGUAGES.map((lang) => (
-                              <SelectItem key={lang.code} value={lang.code}>
-                                {lang.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm">Logo Size:</span>
-                        <Button variant="outline" size="sm" onClick={decreasePreviewLogoSize} className="h-8 w-8 p-0">
-                          -
-                        </Button>
-                        <span className="text-sm w-10 text-center">{previewLogoSize}%</span>
-                        <Button variant="outline" size="sm" onClick={increasePreviewLogoSize} className="h-8 w-8 p-0">
-                          +
-                        </Button>
-                      </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Basic Information */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Basic Information</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="number">Proposal Number</Label>
+                      <Input
+                        id="number"
+                        value={proposalData.number}
+                        onChange={(e) => setProposalData(prev => ({ ...prev, number: e.target.value }))}
+                      />
                     </div>
-                    
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        onClick={applyPreviewLogoSize}
-                        className="text-xs"
-                      >
-                        Apply Size
-                      </Button>
-                      <Button 
-                        onClick={downloadPreviewPDF}
-                        className="bg-green-600"
-                      >
-                        <Download className="h-4 w-4 mr-1" />
-                        Download PDF
-                      </Button>
+                    <div>
+                      <Label htmlFor="reference">Reference</Label>
+                      <Input
+                        id="reference"
+                        value={proposalData.reference}
+                        onChange={(e) => setProposalData(prev => ({ ...prev, reference: e.target.value }))}
+                      />
                     </div>
                   </div>
                   
-                  {/* PDF Preview */}
-                  <div 
-                    className="flex-1 overflow-auto bg-gray-200 flex justify-center p-4"
-                    ref={previewContentRef}
-                  >
-                    {isGeneratingPreview ? (
-                      <div className="flex items-center justify-center h-full">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-700"></div>
-                      </div>
-                    ) : pdfPreviewUrl ? (
-                      <iframe 
-                        src={pdfPreviewUrl}
-                        className="w-full h-full bg-white shadow-lg"
-                        title="PDF Preview"
-                      />
-                    ) : (
-                      <div className="flex items-center justify-center h-full">
-                        <p>No preview available. Click "Apply Size" to refresh.</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setIsPreviewOpen(false)}>Close</Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-
-            {/* Logo Dialog */}
-            <Dialog open={isLogoDialogOpen} onOpenChange={setIsLogoDialogOpen}>
-              <DialogContent className="sm:max-w-[500px]">
-                <DialogHeader>
-                  <DialogTitle>Your company logo</DialogTitle>
-                  <DialogDescription>
-                    Select your company logo to display on proposals.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="border border-gray-200 rounded-md p-4 flex flex-col items-center">
-                  <div className="border border-dashed border-gray-300 rounded-md p-4 mb-4 w-full flex justify-center">
-                    <img 
-                      src={companyLogo} 
-                      alt="Company Logo" 
-                      className="max-h-32 object-contain" 
-                      style={{ 
-                        maxWidth: `${logoSize}%`,
-                        height: 'auto'
-                      }}
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        target.src = "https://placehold.co/200x60?text=Your+Logo";
-                      }}
+                  <div>
+                    <Label htmlFor="subject">Subject</Label>
+                    <Input
+                      id="subject"
+                      value={proposalData.subject}
+                      onChange={(e) => setProposalData(prev => ({ ...prev, subject: e.target.value }))}
                     />
                   </div>
-                  <div className="flex items-center gap-2 mb-4 w-full">
-                    <span className="text-sm font-medium">Size</span>
-                    <Button variant="outline" size="sm" onClick={decreaseLogoSize} className="h-8 w-8 p-0">
-                      -
-                    </Button>
-                    <span className="text-sm w-10 text-center">{logoSize}%</span>
-                    <Button variant="outline" size="sm" onClick={increaseLogoSize} className="h-8 w-8 p-0">
-                      +
-                    </Button>
-                  </div>
                   
-                  {/* Hidden file input */}
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleFileSelect}
-                  />
-                  
-                  {/* Custom button to trigger file upload */}
-                  <div className="w-full flex flex-col gap-2">
-                    <Button 
-                      variant="outline" 
-                      onClick={triggerLogoUpload} 
-                      className="w-full"
-                    >
-                      Upload company logo
-                    </Button>
-                    
-                    <div className="text-xs text-gray-500 text-center">
-                      Recommended size: 200x60px, Max: 2MB, Formats: PNG, JPG
-                    </div>
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button onClick={() => setIsLogoDialogOpen(false)}>Save Logo</Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-
-            {/* Signature Dialog */}
-            <Dialog open={signaturePadOpen} onOpenChange={setSignaturePadOpen}>
-              <DialogContent className="sm:max-w-[500px]">
-                <DialogHeader>
-                  <DialogTitle>Add your signature</DialogTitle>
-                  <DialogDescription>
-                    Draw your signature below. Click save when you're done.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="border border-gray-300 rounded-md p-2">
-                  <canvas
-                    ref={canvasRef}
-                    width={450}
-                    height={200}
-                    onMouseDown={startDrawing}
-                    onMouseMove={draw}
-                    onMouseUp={stopDrawing}
-                    onMouseLeave={stopDrawing}
-                    className="bg-white cursor-crosshair"
-                  />
-                </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={clearSignature}>Clear</Button>
-                  <Button onClick={saveSignature}>Save Signature</Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                <Card>
-                  <CardContent className="pt-6">
-                    {/* Language and Company Logo Selection */}
-                    <div className="mb-4 flex justify-between">
-                      {/* Language Selector */}
-                      <div className="flex items-center gap-2">
-                        <Languages className="h-4 w-4" />
-                        <span className="text-sm">PDF Language:</span>
-                        <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
-                          <SelectTrigger className="w-[180px]">
-                            <SelectValue placeholder="Select language" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {PROPOSAL_LANGUAGES.map((lang) => (
-                              <SelectItem key={lang.code} value={lang.code}>
-                                {lang.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      
-                      {/* Fixed Company Logo Button - using our new handler */}
-                      <Button 
-                        variant="outline" 
-                        onClick={handleLogoButtonClick}
-                        type="button"
-                        className="flex items-center gap-2"
-                      >
-                        <img 
-                          src={companyLogo} 
-                          alt="Company Logo" 
-                          className="h-5 w-auto" 
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.src = "https://placehold.co/200x60?text=Your+Logo";
-                          }}
-                        />
-                        <span>Edit Company Logo</span>
-                      </Button>
-                    </div>
-
-                    {/* Contact and proposal information section */}
-                    <div className="mb-8">
-                      <h2 className="text-sm font-semibold bg-gray-100 p-2 mb-4 uppercase">
-                        Contact and proposal information
-                      </h2>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-4">
-                          <FormField
-                            control={form.control}
-                            name="customer"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Customer</FormLabel>
-                                <FormControl>
-                                  <Input placeholder="Search / create contact" {...field} />
-                                </FormControl>
-                              </FormItem>
-                            )}
-                          />
-                          
-                          <FormField
-                            control={form.control}
-                            name="address"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Address</FormLabel>
-                                <FormControl>
-                                  <Textarea rows={4} {...field} />
-                                </FormControl>
-                              </FormItem>
-                            )}
-                          />
-                          
-                          <FormField
-                            control={form.control}
-                            name="country"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormControl>
-                                  <Input {...field} />
-                                </FormControl>
-                              </FormItem>
-                            )}
-                          />
-                        </div>
-                        
-                        <div className="space-y-4">
-                          <FormField
-                            control={form.control}
-                            name="subject"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Subject</FormLabel>
-                                <FormControl>
-                                  <Input {...field} />
-                                </FormControl>
-                              </FormItem>
-                            )}
-                          />
-                          
-                          <div className="grid grid-cols-2 gap-4">
-                            <FormField
-                              control={form.control}
-                              name="number"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>Proposal no.</FormLabel>
-                                  <FormControl>
-                                    <Input {...field} />
-                                  </FormControl>
-                                </FormItem>
-                              )}
-                            />
-                            
-                            <FormField
-                              control={form.control}
-                              name="date"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>Proposal date</FormLabel>
-                                  <FormControl>
-                                    <Input type="date" {...field} />
-                                  </FormControl>
-                                </FormItem>
-                              )}
-                            />
-                          </div>
-                          
-                          <FormField
-                            control={form.control}
-                            name="reference"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Reference / Order No.</FormLabel>
-                                <FormControl>
-                                  <Input {...field} />
-                                </FormControl>
-                              </FormItem>
-                            )}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* Proposal content section */}
-                    <div className="mb-8">
-                      <h2 className="text-sm font-semibold bg-gray-100 p-2 mb-4 uppercase">
-                        Proposal Content
-                      </h2>
-                      <FormField
-                        control={form.control}
-                        name="content"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormControl>
-                              <Textarea
-                                rows={6}
-                                className="min-h-[100px]"
-                                {...field}
-                              />
-                            </FormControl>
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                    
-                    {/* Products section with VAT toggle */}
-                    <div className="mb-8">
-                      <div className="flex justify-between items-center bg-gray-100 p-2 mb-4">
-                        <h2 className="text-sm font-semibold uppercase">
-                          Products
-                        </h2>
-                        <div className="flex items-center gap-2">
-                          <Label htmlFor="vat-toggle" className="text-xs font-medium">
-                            {isVatEnabled ? 'VAT Enabled' : 'VAT Disabled'}
-                          </Label>
-                          <div 
-                            className="flex items-center cursor-pointer"
-                            onClick={() => setIsVatEnabled(!isVatEnabled)}
-                          >
-                            {isVatEnabled ? (
-                              <ToggleRight className="h-5 w-5 text-blue-600" />
-                            ) : (
-                              <ToggleLeft className="h-5 w-5 text-gray-400" />
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="overflow-x-auto">
-                        <table className="min-w-full divide-y divide-gray-200">
-                          <thead>
-                            <tr>
-                              <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Line item or service
-                              </th>
-                              <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[100px]">
-                                Quantity
-                              </th>
-                              <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[120px]">
-                                Price (gross)
-                              </th>
-                              {/* Conditionally render VAT header based on VAT enabled state */}
-                              {isVatEnabled && (
-                                <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[80px]">
-                                  VAT
-                                </th>
-                              )}
-                              <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[100px]">
-                                Discount
-                              </th>
-                              <th className="px-2 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-[120px]">
-                                Amount
-                              </th>
-                              <th className="px-2 py-3 w-[50px]"></th>
-                            </tr>
-                          </thead>
-                          <tbody className="bg-white divide-y divide-gray-200">
-                            {lineItems.map((item, index) => (
-                              <tr key={item.id}>
-                                <td className="px-2 py-3">
-                                  <Popover 
-                                    open={popoverOpen[item.id] || false} 
-                                    onOpenChange={() => togglePopover(item.id)}
-                                  >
-                                    <PopoverTrigger asChild>
-                                      <Input 
-                                        placeholder="Search product" 
-                                        className="text-sm"
-                                        value={item.description}
-                                        onChange={(e) => {
-                                          updateLineItem(item.id, 'description', e.target.value);
-                                          handleSearchChange(item.id, e.target.value);
-                                        }}
-                                      />
-                                    </PopoverTrigger>
-                                    <PopoverContent className="p-0 w-80" align="start">
-                                      <Command>
-                                        <CommandInput 
-                                          placeholder="Search products..." 
-                                          value={searchQuery[item.id] || ''}
-                                          onValueChange={(value) => handleSearchChange(item.id, value)}
-                                        />
-                                        <CommandList>
-                                          <CommandEmpty>No products found.</CommandEmpty>
-                                          <CommandGroup>
-                                            {getFilteredItems(item.id).map((invItem) => (
-                                              <CommandItem 
-                                                key={invItem.id} 
-                                                onSelect={() => selectInventoryItem(invItem.id, item.id)}
-                                                className="cursor-pointer"
-                                              >
-                                                <div className="flex flex-col">
-                                                  <span className="font-medium">{invItem.name}</span>
-                                                  <div className="flex justify-between text-xs text-gray-500">
-                                                    <span>#{invItem.id}</span>
-                                                    <span>{invItem.price} {typeof invItem.price === 'string' && !invItem.price.includes('EUR') ? 'EUR' : ''}</span>
-                                                  </div>
-                                                </div>
-                                              </CommandItem>
-                                            ))}
-                                          </CommandGroup>
-                                        </CommandList>
-                                      </Command>
-                                    </PopoverContent>
-                                  </Popover>
-                                </td>
-                                <td className="px-2 py-3">
-                                  <div className="flex items-center">
-                                    <Input 
-                                      type="number" 
-                                      step="0.01"
-                                      value={item.quantity}
-                                      onChange={(e) => updateLineItem(item.id, 'quantity', parseFloat(e.target.value) || 0)}
-                                      className="text-sm" 
-                                    />
-                                    <span className="ml-1 text-xs">{item.unit}</span>
-                                  </div>
-                                </td>
-                                <td className="px-2 py-3">
-                                  <Input 
-                                    type="number" 
-                                    step="0.01"
-                                    value={item.price}
-                                    onChange={(e) => updateLineItem(item.id, 'price', parseFloat(e.target.value) || 0)}
-                                    className="text-sm text-right" 
-                                  />
-                                </td>
-                                {/* Conditionally render VAT cell based on VAT enabled state */}
-                                {isVatEnabled && (
-                                  <td className="px-2 py-3">
-                                    <Input 
-                                      type="text" 
-                                      value={`${item.vat}%`}
-                                      onChange={(e) => updateLineItem(item.id, 'vat', parseInt(e.target.value) || 19)}
-                                      className="text-sm" 
-                                    />
-                                  </td>
-                                )}
-                                <td className="px-2 py-3">
-                                  <div className="flex items-center">
-                                    <Input 
-                                      type="number" 
-                                      value={item.discount}
-                                      onChange={(e) => updateLineItem(item.id, 'discount', parseFloat(e.target.value) || 0)}
-                                      className="text-sm" 
-                                    />
-                                    <span className="ml-1 text-xs">%</span>
-                                  </div>
-                                </td>
-                                <td className="px-2 py-3 text-right">
-                                  <div className="flex items-center justify-end">
-                                    <span className="text-sm font-medium">{currencySymbol}{item.amount.toFixed(2)}</span>
-                                  </div>
-                                </td>
-                                <td className="px-2 py-3">
-                                  {lineItems.length > 1 && (
-                                    <Button 
-                                      variant="ghost" 
-                                      size="icon"
-                                      onClick={() => removeLineItem(item.id)}
-                                      className="h-6 w-6"
-                                    >
-                                      <Trash2 className="h-3 w-3" />
-                                    </Button>
-                                  )}
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                      <div className="mt-4 flex justify-between">
-                        <Button variant="outline" type="button" size="sm" className="text-blue-600" onClick={addLineItem}>
-                          <Plus className="h-4 w-4 mr-1" />
-                          Add line item
-                        </Button>
-                      </div>
-                    </div>
-                    
-                    {/* Signature Section */}
-                    <div className="mb-8">
-                      <h2 className="text-sm font-semibold bg-gray-100 p-2 mb-4 uppercase">
-                        Signature
-                      </h2>
-                      <div className="flex items-start gap-6">
-                        <div className="flex-1">
-                          <Button 
-                            variant="outline" 
-                            type="button" 
-                            onClick={() => setSignaturePadOpen(true)} 
-                            className="mb-2 w-full"
-                          >
-                            Add Signature
-                          </Button>
-                          {signatureUrl && (
-                            <div className="border border-gray-200 rounded p-4 mt-2 bg-gray-50">
-                              <img src={signatureUrl} alt="Signature" className="max-h-24" />
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                onClick={() => {
-                                  setSignatureUrl(null);
-                                  form.setValue('signatureUrl', '');
-                                }} 
-                                className="mt-2"
-                              >
-                                Clear Signature
-                              </Button>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* Footer content section */}
-                    <div className="mb-8">
-                      <h2 className="text-sm font-semibold bg-gray-100 p-2 mb-4 uppercase">
-                        Footer content
-                      </h2>
-                      <Textarea 
-                        rows={4}
-                        defaultValue="By placing your order, you agree to pay for the services included in this offer within 7 days of receipt of the invoice. The invoice will only be issued after the service has been provided."
-                        className="min-h-[80px] w-full"
-                      />
-                    </div>
-
-                    {/* Options section */}
-                    <div className="mb-8">
-                      <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-sm font-semibold bg-gray-100 p-2 uppercase">
-                          More Options
-                        </h2>
-                        <Button variant="ghost" size="sm" className="text-blue-600">
-                          Hide options
-                        </Button>
-                      </div>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {/* Currency */}
-                        <FormField
-                          control={form.control}
-                          name="currency"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Currency</FormLabel>
-                              <Select 
-                                onValueChange={(value) => {
-                                  field.onChange(value);
-                                  setSelectedCurrency(value);
-                                }} 
-                                defaultValue={field.value}
-                              >
-                                <FormControl>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Select currency" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  <SelectItem value="EUR">EUR</SelectItem>
-                                  <SelectItem value="USD">USD</SelectItem>
-                                  <SelectItem value="GBP">GBP</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </FormItem>
-                          )}
-                        />
-
-                        {/* Internal contact person */}
-                        <FormField
-                          control={form.control}
-                          name="internalContact"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Internal contact person</FormLabel>
-                              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Select contact" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  <SelectItem value="Thomas Klein">Thomas Klein</SelectItem>
-                                  <SelectItem value="Maria Schmidt">Maria Schmidt</SelectItem>
-                                  <SelectItem value="John Doe">John Doe</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </FormItem>
-                          )}
-                        />
-
-                        {/* VAT rule */}
-                        <FormField
-                          control={form.control}
-                          name="vatRule"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>VAT rule</FormLabel>
-                              <FormControl>
-                                <div className="space-y-3">
-                                  <div className="font-medium text-sm">In Germany</div>
-                                  <RadioGroup
-                                    onValueChange={field.onChange}
-                                    defaultValue={field.value}
-                                    className="space-y-2"
-                                  >
-                                    <div className="flex items-center space-x-2">
-                                      <RadioGroupItem value="umsatzsteuerpflichtig" id="r1" />
-                                      <Label htmlFor="r1" className="text-sm">Umsatzsteuerpflichtige Umsätze</Label>
-                                    </div>
-                                    <div className="flex items-center space-x-2">
-                                      <RadioGroupItem value="steuerfreie" id="r2" />
-                                      <Label htmlFor="r2" className="text-sm">Steuerfreie Umsätze §4 UStG</Label>
-                                    </div>
-                                    <div className="flex items-center space-x-2">
-                                      <RadioGroupItem value="reverse-charge" id="r3" />
-                                      <Label htmlFor="r3" className="text-sm">Reverse Charge gem. §13b UStG</Label>
-                                    </div>
-                                  </RadioGroup>
-                                </div>
-                              </FormControl>
-                            </FormItem>
-                          )}
-                        />
-
-                        {/* Delivery terms */}
-                        <FormField
-                          control={form.control}
-                          name="deliveryTerms"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Delivery terms</FormLabel>
-                              <FormControl>
-                                <Input {...field} placeholder="Enter delivery terms" />
-                              </FormControl>
-                            </FormItem>
-                          )}
-                        />
-
-                        {/* Payment terms */}
-                        <FormField
-                          control={form.control}
-                          name="paymentTerms"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Payment terms</FormLabel>
-                              <FormControl>
-                                <Input {...field} placeholder="Enter payment terms" />
-                              </FormControl>
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-                    </div>
-                    
-                    {/* Summary section with conditional VAT display */}
+                  <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <div className="flex justify-end">
-                        <div className="w-64">
-                          <div className="flex justify-between py-1">
-                            <span className="text-sm text-gray-700">Net amount (inc. discount/surcharge)</span>
-                            <span className="font-medium">{currencySymbol}{netAmount.toFixed(2)}</span>
-                          </div>
-                          {isVatEnabled && (
-                            <div className="flex justify-between py-1">
-                              <span className="text-sm text-gray-700">VAT 19%</span>
-                              <span className="font-medium">{currencySymbol}{vatAmount.toFixed(2)}</span>
+                      <Label htmlFor="status">Status</Label>
+                      <Select 
+                        value={proposalData.status} 
+                        onValueChange={(value) => setProposalData(prev => ({ ...prev, status: value }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {PROPOSAL_STATUSES.map((status) => (
+                            <SelectItem key={status} value={status}>
+                              {status}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="currency">Currency</Label>
+                      <Select 
+                        value={proposalData.currency} 
+                        onValueChange={(value) => setProposalData(prev => ({ ...prev, currency: value }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="EUR">EUR</SelectItem>
+                          <SelectItem value="USD">USD</SelectItem>
+                          <SelectItem value="GBP">GBP</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Customer Information */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Customer Information</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label htmlFor="customerName">Customer Name</Label>
+                    <Input
+                      id="customerName"
+                      value={proposalData.customerName}
+                      onChange={(e) => setProposalData(prev => ({ ...prev, customerName: e.target.value, customer: e.target.value }))}
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="customerAddress">Customer Address</Label>
+                    <Textarea
+                      id="customerAddress"
+                      value={proposalData.customerAddress}
+                      onChange={(e) => setProposalData(prev => ({ ...prev, customerAddress: e.target.value }))}
+                      rows={3}
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="customerEmail">Customer Email</Label>
+                      <Input
+                        id="customerEmail"
+                        type="email"
+                        value={proposalData.customerEmail}
+                        onChange={(e) => setProposalData(prev => ({ ...prev, customerEmail: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="customerCountry">Country</Label>
+                      <Input
+                        id="customerCountry"
+                        value={proposalData.customerCountry}
+                        onChange={(e) => setProposalData(prev => ({ ...prev, customerCountry: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="customerRef">Customer Reference</Label>
+                      <Input
+                        id="customerRef"
+                        value={proposalData.customerRef}
+                        onChange={(e) => setProposalData(prev => ({ ...prev, customerRef: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="internalContact">Internal Contact Person</Label>
+                      <Input
+                        id="internalContact"
+                        value={proposalData.internalContact}
+                        onChange={(e) => setProposalData(prev => ({ ...prev, internalContact: e.target.value, yourContact: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Proposal Content */}
+              <Card className="lg:col-span-2">
+                <CardHeader>
+                  <CardTitle>Proposal Content</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label htmlFor="proposalTitle">Proposal Title</Label>
+                    <Input
+                      id="proposalTitle"
+                      value={proposalData.proposalTitle}
+                      onChange={(e) => setProposalData(prev => ({ ...prev, proposalTitle: e.target.value }))}
+                      placeholder="e.g., Protect your online REPUTATION!"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="proposalDescription">Proposal Description</Label>
+                    <Textarea
+                      id="proposalDescription"
+                      value={proposalData.proposalDescription}
+                      onChange={(e) => setProposalData(prev => ({ ...prev, proposalDescription: e.target.value }))}
+                      rows={3}
+                      placeholder="Thank you for your enquiry. We will be happy to provide you with the requested non-binding offer."
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="content">Additional Content</Label>
+                    <Textarea
+                      id="content"
+                      value={proposalData.content}
+                      onChange={(e) => setProposalData(prev => ({ ...prev, content: e.target.value }))}
+                      rows={4}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Line Items */}
+              <Card className="lg:col-span-2">
+                <CardHeader>
+                  <CardTitle className="flex justify-between items-center">
+                    Products/Services
+                    <Button onClick={handleAddLineItem} size="sm">
+                      <PlusCircle size={16} className="mr-2" />
+                      Add Line Item
+                    </Button>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {proposalData.lineItems.length > 0 && (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Product/Service Name</TableHead>
+                          <TableHead>Description</TableHead>
+                          <TableHead>Quantity</TableHead>
+                          <TableHead>Unit Price</TableHead>
+                          <TableHead>Total</TableHead>
+                          <TableHead>Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {proposalData.lineItems.map((item, index) => (
+                          <TableRow key={item.id}>
+                            <TableCell>
+                              <Input
+                                value={item.name}
+                                onChange={(e) => handleLineItemChange(index, 'name', e.target.value)}
+                                placeholder="Product/Service name"
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <Textarea
+                                value={item.description}
+                                onChange={(e) => handleLineItemChange(index, 'description', e.target.value)}
+                                placeholder="Detailed description of the product/service"
+                                rows={2}
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <Input
+                                type="number"
+                                value={item.quantity}
+                                onChange={(e) => handleLineItemChange(index, 'quantity', parseFloat(e.target.value) || 0)}
+                                min="0"
+                                step="0.01"
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <Input
+                                type="number"
+                                value={item.unit_price}
+                                onChange={(e) => handleLineItemChange(index, 'unit_price', parseFloat(e.target.value) || 0)}
+                                min="0"
+                                step="0.01"
+                              />
+                            </TableCell>
+                            <TableCell>
+                              {proposalData.currency === 'USD' ? '$' : proposalData.currency === 'GBP' ? '£' : '€'}
+                              {item.total_price.toFixed(2)}
+                            </TableCell>
+                            <TableCell>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleRemoveLineItem(index)}
+                              >
+                                <Trash2 size={16} />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                  
+                  {inventoryItems.length > 0 && (
+                    <div className="mt-4">
+                      <Label>Add from Inventory</Label>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 mt-2">
+                        {inventoryItems.slice(0, 6).map((item) => (
+                          <Button
+                            key={item.id}
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleAddFromInventory(item)}
+                            className="text-left"
+                          >
+                            <div>
+                              <div className="font-medium">{item.name}</div>
+                              <div className="text-sm text-gray-500">{item.price}</div>
                             </div>
-                          )}
-                          <div className="flex justify-between py-2 border-t border-gray-200 mt-1">
-                            <span className="font-medium">Total</span>
-                            <span className="font-bold">{currencySymbol}{(isVatEnabled ? totalAmount : netAmount).toFixed(2)}</span>
-                          </div>
-                        </div>
+                          </Button>
+                        ))}
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
-                
-                <div className="flex justify-end space-x-2">
-                  <Button type="button" variant="outline" onClick={() => navigate("/proposals")}>
-                    Cancel
-                  </Button>
-                  <Button type="submit" disabled={isSubmitting}>
-                    {isSubmitting ? "Saving..." : "Save Proposal"}
-                  </Button>
-                </div>
-              </form>
-            </Form>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* VAT and Pricing */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>VAT & Pricing</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="vatEnabled"
+                      checked={proposalData.vatEnabled}
+                      onCheckedChange={handleVatToggle}
+                    />
+                    <Label htmlFor="vatEnabled">VAT Enabled</Label>
+                  </div>
+                  
+                  {proposalData.vatEnabled && (
+                    <div>
+                      <Label htmlFor="vatRate">VAT Rate (%)</Label>
+                      <Input
+                        id="vatRate"
+                        type="number"
+                        value={proposalData.vatRate}
+                        onChange={(e) => handleVatRateChange(parseFloat(e.target.value) || 0)}
+                        min="0"
+                        max="100"
+                        step="0.1"
+                      />
+                    </div>
+                  )}
+                  
+                  <div className="space-y-2 pt-4 border-t">
+                    <div className="flex justify-between">
+                      <span>Net Amount:</span>
+                      <span>{proposalData.currency === 'USD' ? '$' : proposalData.currency === 'GBP' ? '£' : '€'}{proposalData.netAmount.toFixed(2)}</span>
+                    </div>
+                    {proposalData.vatEnabled && (
+                      <div className="flex justify-between">
+                        <span>VAT ({proposalData.vatRate}%):</span>
+                        <span>{proposalData.currency === 'USD' ? '$' : proposalData.currency === 'GBP' ? '£' : '€'}{proposalData.vatAmount.toFixed(2)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between font-bold text-lg border-t pt-2">
+                      <span>Total Amount:</span>
+                      <span>{proposalData.currency === 'USD' ? '$' : proposalData.currency === 'GBP' ? '£' : '€'}{proposalData.totalAmount.toFixed(2)}</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Terms and Conditions */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Terms & Conditions</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label htmlFor="deliveryTerms">Delivery Terms</Label>
+                    <Input
+                      id="deliveryTerms"
+                      value={proposalData.deliveryTerms}
+                      onChange={(e) => setProposalData(prev => ({ ...prev, deliveryTerms: e.target.value }))}
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="paymentTerms">Payment Terms</Label>
+                    <Textarea
+                      id="paymentTerms"
+                      value={proposalData.paymentTerms}
+                      onChange={(e) => setProposalData(prev => ({ ...prev, paymentTerms: e.target.value }))}
+                      rows={3}
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="termsAndConditions">Additional Terms</Label>
+                    <Textarea
+                      id="termsAndConditions"
+                      value={proposalData.termsAndConditions}
+                      onChange={(e) => setProposalData(prev => ({ ...prev, termsAndConditions: e.target.value }))}
+                      rows={4}
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="footerContent">Footer Content</Label>
+                    <Textarea
+                      id="footerContent"
+                      value={proposalData.footerContent}
+                      onChange={(e) => setProposalData(prev => ({ ...prev, footerContent: e.target.value }))}
+                      rows={3}
+                      placeholder="Additional footer information"
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </Layout>
       </div>

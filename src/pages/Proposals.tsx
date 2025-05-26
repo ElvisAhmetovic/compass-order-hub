@@ -54,7 +54,30 @@ const Proposals = () => {
     try {
       const savedProposals = localStorage.getItem("proposals");
       if (savedProposals) {
-        setProposals(JSON.parse(savedProposals));
+        const proposals = JSON.parse(savedProposals);
+        
+        // Load detailed proposals to get complete data
+        const savedDetailedProposals = localStorage.getItem("detailedProposals");
+        let detailedProposals = [];
+        if (savedDetailedProposals) {
+          detailedProposals = JSON.parse(savedDetailedProposals);
+        }
+        
+        // Merge basic and detailed proposal data
+        const mergedProposals = proposals.map((basicProposal: any) => {
+          const detailedProposal = detailedProposals.find((dp: any) => dp.id === basicProposal.id);
+          return {
+            ...basicProposal,
+            // Use customer name from detailed data if available
+            customer: detailedProposal?.customerName || detailedProposal?.customer || basicProposal.customer,
+            // Ensure currency is available
+            currency: detailedProposal?.currency || basicProposal.currency || 'EUR',
+            // Ensure VAT settings are available
+            vatEnabled: detailedProposal?.vatEnabled !== undefined ? detailedProposal.vatEnabled : basicProposal.vatEnabled
+          };
+        });
+        
+        setProposals(mergedProposals);
       } else {
         // Set some mock data if nothing exists
         const mockProposals: Proposal[] = [
@@ -172,23 +195,63 @@ const Proposals = () => {
 
   const handleDownloadProposal = async (proposal: Proposal) => {
     try {
-      // Create proposal data object for PDF generation
+      // Load detailed proposal data for PDF generation
+      const savedDetailedProposals = localStorage.getItem("detailedProposals");
+      let detailedProposal = null;
+      
+      if (savedDetailedProposals) {
+        const detailedProposals = JSON.parse(savedDetailedProposals);
+        detailedProposal = detailedProposals.find((p: any) => p.id === proposal.id);
+      }
+      
+      // Create comprehensive proposal data object for PDF generation
       const proposalData = {
+        ...proposal,
+        ...detailedProposal,
+        // Ensure basic fields are available
         number: proposal.number,
-        customer: proposal.customer,
+        customer: detailedProposal?.customerName || proposal.customer,
         subject: proposal.subject,
         reference: proposal.reference,
         date: proposal.created_at,
         amount: proposal.amount,
-        netAmount: parseFloat(proposal.amount),
-        vatEnabled: proposal.vatEnabled || false,
-        vatRate: 19, // Default VAT rate
-        lineItems: [], // Empty array since we don't have detailed line items in the proposals list
-        content: `Subject: ${proposal.subject || 'N/A'}`,
-        address: '', // Would need to be added to proposal data if available
-        country: '', // Would need to be added to proposal data if available
+        
+        // Customer details
+        customerName: detailedProposal?.customerName || proposal.customer,
+        customerAddress: detailedProposal?.customerAddress || '',
+        customerEmail: detailedProposal?.customerEmail || '',
+        customerCountry: detailedProposal?.customerCountry || '',
+        customerRef: detailedProposal?.customerRef || proposal.reference,
+        
+        // Contact details
+        yourContact: detailedProposal?.internalContact || detailedProposal?.yourContact || 'Thomas Klein',
+        
+        // Proposal content
+        proposalTitle: detailedProposal?.proposalTitle || proposal.subject,
+        proposalDescription: detailedProposal?.proposalDescription || 'Thank you for your enquiry.',
+        content: detailedProposal?.content || '',
+        
+        // Financial data
+        netAmount: detailedProposal?.netAmount || parseFloat(proposal.amount) || 0,
+        vatEnabled: detailedProposal?.vatEnabled !== undefined ? detailedProposal.vatEnabled : (proposal.vatEnabled || false),
+        vatRate: detailedProposal?.vatRate || 19,
+        vatAmount: detailedProposal?.vatAmount || 0,
+        totalAmount: detailedProposal?.totalAmount || parseFloat(proposal.amount) || 0,
+        
+        // Line items
+        lineItems: detailedProposal?.lineItems || [],
+        
+        // Terms
+        deliveryTerms: detailedProposal?.deliveryTerms || '7 days after receipt of invoice',
+        paymentTerms: detailedProposal?.paymentTerms || 'By placing your order you agree to pay for the services included in this offer within 7 days of receipt of the invoice.',
+        termsAndConditions: detailedProposal?.termsAndConditions || '',
+        footerContent: detailedProposal?.footerContent || '',
+        
+        // Currency
         currency: proposal.currency || 'EUR'
       };
+
+      console.log('Downloading proposal with data:', proposalData);
 
       // Generate and download PDF
       const result = await generateProposalPDF(proposalData, 'en', `proposal-${proposal.number}.pdf`);
