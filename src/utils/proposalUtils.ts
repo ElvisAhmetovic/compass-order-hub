@@ -82,198 +82,163 @@ export const translations = {
   }
 };
 
-// Updated PDF content to match the exact template from the screenshot
+// Template using screenshot as background with positioned editable overlays
 const createPDFContent = (proposalData: any, language: string = "en") => {
   const t = translations[language as keyof typeof translations] || translations.en;
   const companyInfo = getCompanyInfo();
 
-  // Calculate logo width based on logoSize
-  const logoWidth = proposalData.logoSize ? `${proposalData.logoSize}%` : '33%';
-
-  // Check if VAT is enabled with proper handling
-  console.log('VAT enabled check:', proposalData.vatEnabled, typeof proposalData.vatEnabled);
-  const isVatEnabled = proposalData.vatEnabled === true;
-
-  // Calculate totals based on current VAT setting
-  const netAmount = proposalData.netAmount || 0;
-  const vatRate = proposalData.vatRate || 0;
-  const vatAmount = isVatEnabled ? (netAmount * vatRate / 100) : 0;
-  const totalAmount = netAmount + vatAmount;
-
-  console.log('PDF Generation - VAT Enabled:', isVatEnabled, 'Net:', netAmount, 'VAT Amount:', vatAmount, 'Total:', totalAmount);
+  // Use the screenshot as base64 or a hosted image URL
+  // For now using a placeholder - you'll need to replace this with the actual screenshot
+  const templateImageUrl = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="; // Replace with actual screenshot base64
 
   return `
-    <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 794px; min-height: 1123px; background: white; margin: 0; box-sizing: border-box; font-size: 11px;">
+    <div style="font-family: Arial, sans-serif; width: 794px; height: 1123px; background: white; margin: 0; padding: 0; position: relative; overflow: hidden;">
       
-      <!-- Header Section with Company Info and Logo -->
-      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px;">
-        <div style="flex: 1;">
-          <div style="font-weight: bold; font-size: 14px; margin-bottom: 5px;">${companyInfo.name}</div>
-          <div style="line-height: 1.4; color: #333;">
-            ${companyInfo.street}<br/>
-            ${companyInfo.postal} ${companyInfo.city}
-          </div>
+      <!-- Background Template Image -->
+      <img src="${templateImageUrl}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1;" onerror="this.style.display='none';" />
+      
+      <!-- Editable Text Overlays positioned based on screenshot -->
+      <div style="position: absolute; z-index: 2; width: 100%; height: 100%;">
+        
+        <!-- Company Logo - Top Right -->
+        <div style="position: absolute; top: 40px; right: 50px;">
+          <img src="${proposalData.logo || companyInfo.logo}" style="max-height: 60px; max-width: 200px;" onerror="this.src='https://placehold.co/200x60?text=Your+Logo'; this.onerror=null;" />
         </div>
-        <div style="text-align: right;">
-          <img src="${proposalData.logo || companyInfo.logo}" style="max-height: 80px; max-width: ${logoWidth};" onerror="this.src='https://placehold.co/200x60?text=Your+Logo'; this.onerror=null;" />
+        
+        <!-- Company Info - Top Left -->
+        <div style="position: absolute; top: 40px; left: 50px; font-size: 12px; line-height: 1.4;">
+          <div style="font-weight: bold; margin-bottom: 5px;">${companyInfo.name}</div>
+          <div>${companyInfo.street}</div>
+          <div>${companyInfo.postal} ${companyInfo.city}</div>
+          <div>${companyInfo.country || 'Germany'}</div>
         </div>
-      </div>
-
-      <!-- Customer Information and Proposal Details -->
-      <div style="display: flex; justify-content: space-between; margin-bottom: 40px;">
-        <div style="flex: 1; padding-right: 40px;">
-          <div style="font-weight: bold; font-size: 12px; margin-bottom: 15px;">${proposalData.customerName || 'Name Surname'}</div>
-          <div style="line-height: 1.4; margin-bottom: 10px;">
-            ${proposalData.customerAddress || 'Leidsestraat 15, 2000 Antwerpen'}<br/>
-            ${proposalData.customerEmail || 'MonzongrealeaZuidbestubook.com'}<br/>
-            ${proposalData.customerCountry || 'Belgium'}
-          </div>
+        
+        <!-- Customer Info - Left Side -->
+        <div style="position: absolute; top: 180px; left: 50px; font-size: 11px; line-height: 1.4;">
+          <div style="font-weight: bold; margin-bottom: 10px;">${proposalData.customerName || 'Customer Name'}</div>
+          <div>${proposalData.customerAddress || 'Customer Address'}</div>
+          <div>${proposalData.customerEmail || 'customer@email.com'}</div>
+          <div>${proposalData.customerCountry || 'Belgium'}</div>
         </div>
-        <div style="text-align: right;">
-          <div style="margin-bottom: 8px;">
+        
+        <!-- Proposal Details - Right Side -->
+        <div style="position: absolute; top: 180px; right: 50px; font-size: 11px; text-align: right;">
+          <div style="margin-bottom: 5px;">
             <span style="font-weight: bold;">Proposal no.</span>
             <span style="margin-left: 20px;">${proposalData.number || 'AN-9993'}</span>
           </div>
-          <div style="margin-bottom: 8px;">
+          <div style="margin-bottom: 5px;">
             <span style="font-weight: bold;">${t.date}</span>
             <span style="margin-left: 20px;">${new Date(proposalData.date || Date.now()).toLocaleDateString()}</span>
           </div>
-          <div style="margin-bottom: 8px;">
+          <div style="margin-bottom: 5px;">
             <span style="font-weight: bold;">${t.customerRef}</span>
             <span style="margin-left: 20px;">${proposalData.customerRef || '7865'}</span>
           </div>
           <div>
             <span style="font-weight: bold;">${t.yourContact}</span>
-            <span style="margin-left: 20px;">${proposalData.yourContact || 'Thomas Klein'}</span>
+            <span style="margin-left: 20px;">${proposalData.yourContact || 'Contact Person'}</span>
           </div>
         </div>
-      </div>
-
-      <!-- Proposal Title -->
-      <h2 style="color: #4a90e2; margin-bottom: 15px; font-size: 16px; font-weight: bold;">
-        ${t.proposal} ${proposalData.number || 'AN-9993'}
-      </h2>
-
-      <!-- Proposal Content/Description -->
-      <div style="margin-bottom: 25px; line-height: 1.5;">
-        <strong>${proposalData.proposalTitle || 'Protect your online REPUTATION!'}</strong> ${proposalData.proposalDescription || 'Thank you for your enquiry. We will be happy to provide you with the requested non-binding offer.'}
-      </div>
-
-      <!-- Products/Services Table -->
-      <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px; font-size: 10px;">
-        <thead>
-          <tr style="background-color: #4a5568; color: white;">
-            <th style="padding: 12px 8px; text-align: left; font-weight: bold; border: none; width: 50%;">${t.productDescription}</th>
-            <th style="padding: 12px 8px; text-align: center; font-weight: bold; border: none; width: 16%;">${t.price}</th>
-            <th style="padding: 12px 8px; text-align: center; font-weight: bold; border: none; width: 14%;">${t.qty}</th>
-            <th style="padding: 12px 8px; text-align: right; font-weight: bold; border: none; width: 20%;">${t.total}</th>
-          </tr>
-        </thead>
-        <tbody>
+        
+        <!-- Proposal Title -->
+        <div style="position: absolute; top: 320px; left: 50px; font-size: 16px; font-weight: bold; color: #4a90e2;">
+          ${t.proposal} ${proposalData.number || 'AN-9993'}
+        </div>
+        
+        <!-- Proposal Description -->
+        <div style="position: absolute; top: 360px; left: 50px; right: 50px; font-size: 11px; line-height: 1.5;">
+          <strong>${proposalData.proposalTitle || 'Proposal Title'}</strong> ${proposalData.proposalDescription || 'Proposal description and details go here.'}
+        </div>
+        
+        <!-- Service Items Table Area -->
+        <div style="position: absolute; top: 420px; left: 50px; right: 50px; font-size: 10px;">
+          <div style="background-color: #4a5568; color: white; padding: 8px; display: flex; font-weight: bold;">
+            <div style="width: 50%;">${t.productDescription}</div>
+            <div style="width: 16%; text-align: center;">${t.price}</div>
+            <div style="width: 14%; text-align: center;">${t.qty}</div>
+            <div style="width: 20%; text-align: right;">${t.total}</div>
+          </div>
+          
           ${(proposalData.lineItems || []).map((item: any, index: number) => `
-            <tr style="border-bottom: 1px solid #e2e8f0; background-color: ${index % 2 === 0 ? '#f8f9fa' : 'white'};">
-              <td style="padding: 15px 8px; border: none; vertical-align: top;">
-                <div style="font-weight: bold; margin-bottom: 5px; color: #e67e22;">
-                  ${item.name || 'SILBER-OPTIMIERUNGSPAKET'} ${item.rating ? '★★★★★' : ''}
+            <div style="display: flex; padding: 12px 8px; border-bottom: 1px solid #e2e8f0; background-color: ${index % 2 === 0 ? '#f8f9fa' : 'white'};">
+              <div style="width: 50%; padding-right: 10px;">
+                <div style="font-weight: bold; color: #e67e22; margin-bottom: 5px;">
+                  ${item.name || 'Service Name'} ${item.rating ? '★★★★★' : ''}
                 </div>
-                <div style="line-height: 1.4; color: #666; font-size: 9px;">
-                  ${item.description || 'Remove Google Maps entity, i.e., you will receive a new, optimized Google My Business listing with new images that is better positioned, without negative reviews, which generates new customers online and stands out better from the competition.'}
+                <div style="color: #666; font-size: 9px; line-height: 1.3;">
+                  ${item.description || 'Service description goes here'}
                 </div>
-                ${item.additionalInfo ? `
-                <div style="margin-top: 10px; color: #666; font-size: 9px;">
-                  <div style="margin-bottom: 3px;">${item.additionalInfo}</div>
-                </div>
-                ` : ''}
-              </td>
-              <td style="padding: 15px 8px; border: none; text-align: center; vertical-align: top;">
+              </div>
+              <div style="width: 16%; text-align: center; padding-top: 5px;">
                 ${(item.unit_price || 399).toFixed(2)} EUR
-              </td>
-              <td style="padding: 15px 8px; border: none; text-align: center; vertical-align: top;">
+              </div>
+              <div style="width: 14%; text-align: center; padding-top: 5px;">
                 ${item.quantity || 1}
-              </td>
-              <td style="padding: 15px 8px; border: none; text-align: right; vertical-align: top; font-weight: bold;">
+              </div>
+              <div style="width: 20%; text-align: right; font-weight: bold; padding-top: 5px;">
                 ${(item.total_price || 399).toFixed(2)} EUR
-              </td>
-            </tr>
+              </div>
+            </div>
           `).join('')}
-        </tbody>
-      </table>
-
-      <!-- Totals Section -->
-      <div style="display: flex; justify-content: flex-end; margin-bottom: 30px;">
-        <div style="width: 250px;">
-          <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e2e8f0;">
+        </div>
+        
+        <!-- Totals Section -->
+        <div style="position: absolute; top: 600px; right: 50px; width: 250px; font-size: 11px;">
+          <div style="display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #e2e8f0;">
             <span>${t.subtotal}</span>
-            <span>${netAmount.toFixed(2)} EUR</span>
+            <span>${(proposalData.netAmount || 0).toFixed(2)} EUR</span>
           </div>
-          ${isVatEnabled ? `
-          <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e2e8f0;">
-            <span>${t.vat}</span>
-            <span>${vatAmount.toFixed(2)} EUR</span>
-          </div>
-          ` : `
-          <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e2e8f0;">
+          <div style="display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #e2e8f0;">
             <span>${t.vat}</span>
             <span>0.00 EUR</span>
           </div>
-          `}
-          <div style="display: flex; justify-content: space-between; padding: 12px 0; font-weight: bold; font-size: 12px; background-color: #f8f9fa;">
+          <div style="display: flex; justify-content: space-between; padding: 8px 0; font-weight: bold; background-color: #f8f9fa;">
             <span>${t.totalAmount}</span>
-            <span>${isVatEnabled ? totalAmount.toFixed(2) : netAmount.toFixed(2)} EUR</span>
+            <span>${(proposalData.netAmount || 0).toFixed(2)} EUR</span>
           </div>
         </div>
-      </div>
-
-      <!-- Payment Data Section -->
-      <div style="margin-bottom: 20px; background-color: #f8f9fa; padding: 15px; border-left: 4px solid #4a90e2;">
-        <div style="font-weight: bold; margin-bottom: 8px;">${t.paymentData}</div>
-        <div style="line-height: 1.4;">
-          <div>${t.accountNr} ${companyInfo.accountNumber || '12345678901234567'}</div>
-          <div>${t.name} ${companyInfo.accountHolder || 'YOUR NAME'}</div>
-          <div>${t.paymentMethod} ${companyInfo.paymentMethod || 'CREDIT CARD'}</div>
+        
+        <!-- Payment Information -->
+        <div style="position: absolute; top: 720px; left: 50px; right: 50px; font-size: 10px; background-color: #f8f9fa; padding: 15px; border-left: 4px solid #4a90e2;">
+          <div style="font-weight: bold; margin-bottom: 8px;">${t.paymentData}</div>
+          <div style="line-height: 1.4;">
+            <div>${t.accountNr} ${companyInfo.accountNumber || '12345678901234567'}</div>
+            <div>${t.name} ${companyInfo.accountHolder || 'Account Holder Name'}</div>
+            <div>${t.paymentMethod} ${companyInfo.paymentMethod || 'Bank Transfer'}</div>
+          </div>
         </div>
-      </div>
-
-      <!-- Terms and Conditions -->
-      <div style="margin-bottom: 30px;">
-        <div style="font-weight: bold; margin-bottom: 10px; text-transform: uppercase;">${t.termsAndConditions}</div>
-        <div style="line-height: 1.4; font-size: 10px;">
-          ${t.paymentTerms}
+        
+        <!-- Terms and Conditions -->
+        <div style="position: absolute; top: 820px; left: 50px; right: 50px; font-size: 10px;">
+          <div style="font-weight: bold; margin-bottom: 8px; text-transform: uppercase;">${t.termsAndConditions}</div>
+          <div style="line-height: 1.4;">
+            ${proposalData.termsAndConditions || t.paymentTerms}
+          </div>
         </div>
-      </div>
-
-      <!-- Signature Section -->
-      <div style="display: flex; justify-content: space-between; margin-top: 50px;">
-        <div style="width: 45%;">
-          <div style="border-top: 1px solid #333; padding-top: 8px;">
+        
+        <!-- Signature Lines -->
+        <div style="position: absolute; bottom: 120px; left: 50px; right: 50px; display: flex; justify-content: space-between;">
+          <div style="width: 45%; border-top: 1px solid #333; padding-top: 8px;">
             <div style="font-size: 10px; color: #666;">${t.placeDate}</div>
           </div>
-        </div>
-        <div style="width: 45%;">
-          <div style="border-top: 1px solid #333; padding-top: 8px;">
+          <div style="width: 45%; border-top: 1px solid #333; padding-top: 8px;">
             <div style="font-size: 10px; color: #666;">${t.signatureStamp}</div>
-            ${proposalData.signatureUrl ? `<img src="${proposalData.signatureUrl}" style="max-height: 40px; margin-top: 8px;" />` : ''}
           </div>
         </div>
-      </div>
-
-      <!-- Footer Company Info -->
-      <div style="position: absolute; bottom: 20px; left: 20px; right: 20px; font-size: 8px; color: white; background-color: #e74c3c; padding: 8px; display: flex; justify-content: space-between; align-items: center;">
-        <div style="display: flex; align-items: center;">
-          <span style="margin-right: 15px;">Tel.: ${companyInfo.phone || '+49 203 70 90 72 62'}</span>
-          <span style="margin-right: 15px;">Fax.: ${companyInfo.fax || '+49 203 70 90 73 53'}</span>
+        
+        <!-- Footer -->
+        <div style="position: absolute; bottom: 20px; left: 20px; right: 20px; font-size: 8px; color: white; background-color: #e74c3c; padding: 8px; display: flex; justify-content: space-between;">
+          <div>
+            <span style="margin-right: 15px;">Tel.: ${companyInfo.phone || '+49 203 70 90 72 62'}</span>
+            <span style="margin-right: 15px;">Email: ${companyInfo.email || 'contact@company.com'}</span>
+          </div>
+          <div style="text-align: right;">
+            <div style="font-weight: bold;">${companyInfo.name}</div>
+            <div>${companyInfo.street}, ${companyInfo.postal} ${companyInfo.city}</div>
+          </div>
         </div>
-        <div style="display: flex; align-items: center;">
-          <span style="margin-right: 15px;">Email: ${companyInfo.email || 'kontakt.abmedia@gmail.com'}</span>
-          <span style="margin-right: 15px;">Web: ${companyInfo.website || 'www.abmedia-team.com'}</span>
-        </div>
-        <div>
-          <div style="font-weight: bold;">${companyInfo.name}</div>
-          <div>${companyInfo.contactPerson || 'Andreas Berger'}</div>
-          <div>${companyInfo.street}</div>
-          <div>${companyInfo.postal} ${companyInfo.city}</div>
-          <div>${companyInfo.country || 'Germany'}</div>
-        </div>
+        
       </div>
     </div>
   `;
@@ -418,50 +383,12 @@ export const previewProposalPDF = async (proposalData: any, language: string = "
       languageSelector.appendChild(option);
     });
     
-    // Create logo size controls
-    const logoSizeControls = document.createElement("div");
-    logoSizeControls.style.display = "flex";
-    logoSizeControls.style.alignItems = "center";
-    logoSizeControls.style.marginLeft = "16px";
-    
-    const logoSizeLabel = document.createElement("span");
-    logoSizeLabel.textContent = "Logo Size:";
-    logoSizeLabel.style.marginRight = "8px";
-    
-    const decreaseButton = document.createElement("button");
-    decreaseButton.textContent = "-";
-    decreaseButton.style.padding = "4px 8px";
-    decreaseButton.style.borderRadius = "4px";
-    decreaseButton.style.border = "1px solid #ccc";
-    decreaseButton.style.marginRight = "8px";
-    decreaseButton.style.cursor = "pointer";
-    
-    const logoSizeValue = document.createElement("span");
-    logoSizeValue.textContent = `${proposalData.logoSize || 33}%`;
-    logoSizeValue.style.marginRight = "8px";
-    logoSizeValue.style.minWidth = "40px";
-    logoSizeValue.style.textAlign = "center";
-    
-    const increaseButton = document.createElement("button");
-    increaseButton.textContent = "+";
-    increaseButton.style.padding = "4px 8px";
-    increaseButton.style.borderRadius = "4px";
-    increaseButton.style.border = "1px solid #ccc";
-    increaseButton.style.cursor = "pointer";
-    
-    // Add logo size controls to the container
-    logoSizeControls.appendChild(logoSizeLabel);
-    logoSizeControls.appendChild(decreaseButton);
-    logoSizeControls.appendChild(logoSizeValue);
-    logoSizeControls.appendChild(increaseButton);
-    
     // Create left side controls div
     const leftControls = document.createElement("div");
     leftControls.style.display = "flex";
     leftControls.style.alignItems = "center";
     leftControls.appendChild(document.createTextNode("Language: "));
     leftControls.appendChild(languageSelector);
-    leftControls.appendChild(logoSizeControls);
     
     // Create close button
     const closeButton = document.createElement("button");
@@ -487,7 +414,7 @@ export const previewProposalPDF = async (proposalData: any, language: string = "
     downloadButton.style.cursor = "pointer";
     downloadButton.style.marginRight = "8px";
     downloadButton.onclick = async () => {
-      await generateProposalPDF({...proposalData, logoSize: parseInt(logoSizeValue.textContent || '33')}, languageSelector.value);
+      await generateProposalPDF(proposalData, languageSelector.value);
     };
     
     // Create right side controls div
@@ -510,40 +437,14 @@ export const previewProposalPDF = async (proposalData: any, language: string = "
     iframe.style.boxShadow = "0 0 10px rgba(0, 0, 0, 0.5)";
     iframe.style.borderRadius = "0 0 8px 8px";
 
-    // Handler for logo size adjustment - regenerates identical PDF
-    let currentLogoSize = proposalData.logoSize || 33;
-
-    const updatePreview = async (newLogoSize: number, newLanguage: string) => {
-      const updatedProposalData = {
-        ...proposalData, 
-        previewMode: true,
-        logoSize: newLogoSize
-      };
-      
-      // Generate new PDF with identical settings
-      const newPdfResult = await generateProposalPDF(updatedProposalData, newLanguage);
-      
-      if (newPdfResult && typeof newPdfResult !== 'boolean') {
-        // Update iframe with new PDF data URL - shows exact output
-        iframe.src = (newPdfResult as jsPDF).output('datauristring');
-      }
-    };
-
-    decreaseButton.onclick = async () => {
-      currentLogoSize = Math.max(10, currentLogoSize - 5);
-      logoSizeValue.textContent = `${currentLogoSize}%`;
-      await updatePreview(currentLogoSize, languageSelector.value);
-    };
-
-    increaseButton.onclick = async () => {
-      currentLogoSize = Math.min(100, currentLogoSize + 5);
-      logoSizeValue.textContent = `${currentLogoSize}%`;
-      await updatePreview(currentLogoSize, languageSelector.value);
-    };
-    
     // Add event listener to language selector - regenerates identical PDF
     languageSelector.addEventListener("change", async () => {
-      await updatePreview(currentLogoSize, languageSelector.value);
+      const updatedProposalData = {...proposalData, previewMode: true};
+      const newPdfResult = await generateProposalPDF(updatedProposalData, languageSelector.value);
+      
+      if (newPdfResult && typeof newPdfResult !== 'boolean') {
+        iframe.src = (newPdfResult as jsPDF).output('datauristring');
+      }
     });
     
     // Add elements to the modal
