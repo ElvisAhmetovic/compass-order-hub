@@ -293,22 +293,53 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
         </div>
       </div>
 
-      <!-- Footer Company Info -->
-      <div style="position: absolute; bottom: 20px; left: 20px; right: 20px; font-size: 8px; color: white; background-color: #e74c3c; padding: 8px; display: flex; justify-content: space-between; align-items: center;">
-        <div style="display: flex; align-items: center;">
-          <span style="margin-right: 15px;">Tel.: ${companyInfo.phone || '+49 203 70 90 72 62'}</span>
-          <span style="margin-right: 15px;">Fax.: ${companyInfo.fax || '+49 203 70 90 73 53'}</span>
+      <!-- Footer Company Info - Enhanced Professional Design -->
+      <div style="position: absolute; bottom: 15px; left: 15px; right: 15px; background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%); border-radius: 8px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+        <!-- Header section with company name -->
+        <div style="background: rgba(255,255,255,0.1); padding: 8px 20px; border-bottom: 1px solid rgba(255,255,255,0.2);">
+          <div style="color: white; font-weight: bold; font-size: 11px; text-align: center;">
+            ${companyInfo.name}
+          </div>
         </div>
-        <div style="display: flex; align-items: center;">
-          <span style="margin-right: 15px;">Email: ${companyInfo.email || 'kontakt.abmedia@gmail.com'}</span>
-          <span style="margin-right: 15px;">Web: ${companyInfo.website || 'www.abmedia-team.com'}</span>
-        </div>
-        <div>
-          <div style="font-weight: bold;">${companyInfo.name}</div>
-          <div>${companyInfo.contactPerson || 'Andreas Berger'}</div>
-          <div>${companyInfo.street}</div>
-          <div>${companyInfo.postal} ${companyInfo.city}</div>
-          <div>${companyInfo.country || 'Germany'}</div>
+        
+        <!-- Main content area -->
+        <div style="padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; color: white; font-size: 9px;">
+          
+          <!-- Contact Information -->
+          <div style="flex: 1; margin-right: 20px;">
+            <div style="margin-bottom: 6px; display: flex; align-items: center;">
+              <span style="font-weight: 600; margin-right: 8px; color: #e0e7ff;">📞</span>
+              <span>Tel: ${companyInfo.phone || '+49 203 70 90 72 62'}</span>
+            </div>
+            <div style="margin-bottom: 6px; display: flex; align-items: center;">
+              <span style="font-weight: 600; margin-right: 8px; color: #e0e7ff;">📠</span>
+              <span>Fax: ${companyInfo.fax || '+49 203 70 90 73 53'}</span>
+            </div>
+          </div>
+          
+          <!-- Digital Contact -->
+          <div style="flex: 1; margin-right: 20px;">
+            <div style="margin-bottom: 6px; display: flex; align-items: center;">
+              <span style="font-weight: 600; margin-right: 8px; color: #e0e7ff;">✉️</span>
+              <span>Email: ${companyInfo.email || 'kontakt.abmedia@gmail.com'}</span>
+            </div>
+            <div style="margin-bottom: 6px; display: flex; align-items: center;">
+              <span style="font-weight: 600; margin-right: 8px; color: #e0e7ff;">🌐</span>
+              <span>Web: ${companyInfo.website || 'www.abmedia-team.com'}</span>
+            </div>
+          </div>
+          
+          <!-- Company Address -->
+          <div style="flex: 1; text-align: right; padding-left: 20px; border-left: 1px solid rgba(255,255,255,0.2);">
+            <div style="font-weight: 600; margin-bottom: 4px; color: #e0e7ff;">
+              ${companyInfo.contactPerson || 'Andreas Berger'}
+            </div>
+            <div style="line-height: 1.3;">
+              ${companyInfo.street}<br/>
+              ${companyInfo.postal} ${companyInfo.city}<br/>
+              ${companyInfo.country || 'Germany'}
+            </div>
+          </div>
         </div>
       </div>
     </div>
