@@ -220,6 +220,41 @@ export const useInventory = () => {
     }
   };
 
+  const deleteAllInventoryItems = async () => {
+    try {
+      console.log('Deleting all inventory items...');
+      
+      const { error } = await supabase
+        .from('inventory_items')
+        .delete()
+        .neq('id', ''); // This deletes all records
+
+      if (error) {
+        console.error('Error deleting all inventory items:', error);
+        throw error;
+      }
+
+      // Clear local state
+      setInventoryData([]);
+
+      toast({
+        title: "All Items Deleted",
+        description: "All inventory items have been successfully deleted.",
+        variant: "default",
+      });
+
+      return true;
+    } catch (error) {
+      console.error('Error deleting all inventory items:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete all inventory items.",
+        variant: "destructive",
+      });
+      return false;
+    }
+  };
+
   useEffect(() => {
     fetchInventory();
   }, []);
@@ -230,6 +265,7 @@ export const useInventory = () => {
     updateInventoryItem,
     addInventoryItem,
     deleteInventoryItem,
+    deleteAllInventoryItems,
     refreshInventory: fetchInventory
   };
 };

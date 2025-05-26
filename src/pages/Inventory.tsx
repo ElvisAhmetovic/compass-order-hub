@@ -17,7 +17,7 @@ import ImportDialog from "@/components/inventory/ImportDialog";
 
 const Inventory = () => {
   // Use the custom hook for inventory management
-  const { inventoryData, loading, updateInventoryItem, addInventoryItem, deleteInventoryItem } = useInventory();
+  const { inventoryData, loading, updateInventoryItem, addInventoryItem, deleteInventoryItem, deleteAllInventoryItems } = useInventory();
   
   // State for filters
   const [category, setCategory] = useState<string>("All");
@@ -100,6 +100,11 @@ const Inventory = () => {
   // Handle delete item
   const handleDeleteClick = async (itemId: string) => {
     await deleteInventoryItem(itemId);
+  };
+
+  // Handle delete all items
+  const handleDeleteAll = async () => {
+    await deleteAllInventoryItems();
   };
 
   // Reset filters
@@ -226,7 +231,8 @@ const Inventory = () => {
             {/* Header */}
             <InventoryHeader 
               onAddProduct={() => setIsAddProductDialogOpen(true)} 
-              onImport={() => setIsImportDialogOpen(true)} 
+              onImport={() => setIsImportDialogOpen(true)}
+              onDeleteAll={handleDeleteAll}
             />
 
             <div className="bg-white rounded-lg shadow">
