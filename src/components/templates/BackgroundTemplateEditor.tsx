@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -410,18 +409,22 @@ const BackgroundTemplateEditor: React.FC<BackgroundTemplateEditorProps> = ({
                           top: `${field.y}px`,
                           width: `${field.width}px`,
                           height: `${field.height}px`,
-                          fontFamily: field.fontSettings.fontFamily,
-                          fontSize: `${field.fontSettings.fontSize}px`,
-                          fontWeight: field.fontSettings.fontWeight,
-                          color: field.fontSettings.color,
-                          textAlign: field.fontSettings.textAlign,
-                          lineHeight: field.fontSettings.lineHeight,
                           backgroundColor: previewMode ? 'transparent' : 
                             (selectedField === field.id ? 'rgba(59, 130, 246, 0.1)' : 'rgba(255, 255, 255, 0.8)')
                         }}
                         onMouseDown={(e) => handleMouseDown(e, field.id)}
                       >
-                        <div className="p-1 truncate h-full flex items-center">
+                        <div 
+                          className="p-1 truncate h-full flex items-center"
+                          style={{
+                            fontFamily: field.fontSettings.fontFamily,
+                            fontSize: `${field.fontSettings.fontSize}px`,
+                            fontWeight: field.fontSettings.fontWeight,
+                            color: field.fontSettings.color,
+                            textAlign: field.fontSettings.textAlign,
+                            lineHeight: field.fontSettings.lineHeight
+                          }}
+                        >
                           {previewMode ? (
                             field.type === 'textarea' ? (
                               <textarea
