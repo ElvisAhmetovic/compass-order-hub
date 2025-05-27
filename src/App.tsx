@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
@@ -18,6 +19,8 @@ import ProposalDetail from './pages/ProposalDetail';
 import Invoices from './pages/Invoices';
 import InvoiceDetail from './pages/InvoiceDetail';
 import Clients from './pages/Clients';
+import ProfilePage from './pages/Profile';
+import SettingsPage from './pages/Settings';
 
 function App() {
   return (
@@ -203,6 +206,24 @@ function App() {
             element={
               <RequireAuth>
                 <Clients />
+              </RequireAuth>
+            }
+          />
+          {/* Profile route */}
+          <Route
+            path="/profile"
+            element={
+              <RequireAuth>
+                <ProfilePage />
+              </RequireAuth>
+            }
+          />
+          {/* Settings route */}
+          <Route
+            path="/settings"
+            element={
+              <RequireAuth>
+                <SettingsPage />
               </RequireAuth>
             }
           />
