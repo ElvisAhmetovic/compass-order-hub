@@ -1,4 +1,3 @@
-
 import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
 import { Proposal, ProposalLineItem, InventoryItem } from "@/types";
@@ -83,7 +82,7 @@ export const translations = {
   }
 };
 
-// Professional PDF content with optimized sizing and improved layout flow
+// Professional PDF content with reorganized layout for better page flow
 const createPDFContent = (proposalData: any, language: string = "en") => {
   const t = translations[language as keyof typeof translations] || translations.en;
   const companyInfo = getCompanyInfo();
@@ -131,7 +130,7 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
   // Format the proposal date properly
   const proposalDate = proposalData.proposalDate ? new Date(proposalData.proposalDate).toLocaleDateString() : new Date(proposalData.created_at || Date.now()).toLocaleDateString();
 
-  console.log('PDF Generation - Using optimized scaling and layout data:', {
+  console.log('PDF Generation - Reorganized layout with PAYMENT DATA on page 2:', {
     scaleFactor,
     baseFontSize,
     headerFontSize,
@@ -148,6 +147,8 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
 
   return `
     <div style="font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif; padding: ${Math.round(32 * scaleFactor)}px; max-width: 794px; min-height: auto; background: #ffffff; margin: 0; box-sizing: border-box; font-size: ${baseFontSize}px; line-height: ${lineHeight}; color: #2d3748; position: relative;">
+      
+      <!-- PAGE 1 CONTENT -->
       
       <!-- Header Section with Optimized Design -->
       <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: ${Math.round(35 * scaleFactor)}px; padding-bottom: ${Math.round(16 * scaleFactor)}px; border-bottom: 2px solid #e2e8f0;">
@@ -260,7 +261,7 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
       </div>
 
       <!-- Optimized Totals Section -->
-      <div style="display: flex; justify-content: flex-end; margin-bottom: ${Math.round(20 * scaleFactor)}px;">
+      <div style="display: flex; justify-content: flex-end; margin-bottom: ${Math.round(25 * scaleFactor)}px;">
         <div style="width: ${Math.round(290 * scaleFactor)}px; background: white; border-radius: 5px; overflow: hidden; border: 1px solid #e2e8f0;">
           <div style="background: #4a5568; color: white; padding: ${Math.round(10 * scaleFactor)}px ${Math.round(16 * scaleFactor)}px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.2px; font-size: ${Math.round(11 * scaleFactor)}px;">
             Summary
@@ -282,8 +283,19 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
         </div>
       </div>
 
-      <!-- CRITICAL FIX: Signature Section - Positioned immediately after TOTAL with proper spacing -->
-      <div style="display: flex; justify-content: space-between; margin-bottom: ${Math.round(28 * scaleFactor)}px; gap: ${Math.round(24 * scaleFactor)}px; margin-top: ${Math.round(15 * scaleFactor)}px;">
+      <!-- TERMS AND CONDITIONS - Positioned on First Page -->
+      <div style="margin-bottom: ${Math.round(20 * scaleFactor)}px; background: white; padding: ${elementPadding}px; border-radius: 5px; border: 1px solid #e2e8f0; page-break-inside: avoid; break-inside: avoid;">
+        <div style="font-weight: 600; margin-bottom: ${Math.round(10 * scaleFactor)}px; text-transform: uppercase; color: #2d3748; font-size: ${Math.round(12 * scaleFactor)}px; letter-spacing: 0.2px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;">
+          ${t.termsAndConditions}
+        </div>
+        <div style="line-height: ${lineHeight}; font-size: ${Math.round(11 * scaleFactor)}px; color: #4a5568;">
+          ${proposalData.paymentTerms || proposalData.deliveryTerms || t.paymentTerms}
+          ${proposalData.termsAndConditions ? `<br/><br/>${proposalData.termsAndConditions}` : ''}
+        </div>
+      </div>
+
+      <!-- Signature Section - Positioned on First Page after Terms -->
+      <div style="display: flex; justify-content: space-between; margin-bottom: ${Math.round(30 * scaleFactor)}px; gap: ${Math.round(24 * scaleFactor)}px;">
         <div style="width: 45%; background: white; padding: ${Math.round(12 * scaleFactor)}px; border-radius: 5px; border: 1px solid #e2e8f0;">
           <div style="border-top: 2px solid #2d3748; padding-top: ${Math.round(8 * scaleFactor)}px;">
             <div style="font-size: ${Math.round(10 * scaleFactor)}px; color: #718096; font-weight: 500; text-transform: uppercase; letter-spacing: 0.2px;">${t.placeDate}</div>
@@ -297,39 +309,33 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
         </div>
       </div>
 
-      <!-- CRITICAL FIX: Payment Data Section - Properly positioned with anti-clipping measures -->
-      <div style="margin-bottom: ${Math.round(22 * scaleFactor)}px; background: #f0fff4; padding: ${elementPadding}px; border-radius: 6px; border-left: 4px solid #38a169; border: 1px solid #c6f6d5; box-sizing: border-box; overflow: visible; page-break-inside: avoid; break-inside: avoid; position: relative; z-index: 10; min-height: ${Math.round(120 * scaleFactor)}px; display: block; clear: both;">
-        <div style="font-weight: 600; margin-bottom: ${Math.round(10 * scaleFactor)}px; color: #2f855a; font-size: ${Math.round(12 * scaleFactor)}px; text-transform: uppercase; letter-spacing: 0.2px; padding-top: 2px;">
+      <!-- FORCE PAGE BREAK BEFORE PAGE 2 CONTENT -->
+      <div style="page-break-before: always; break-before: page; height: 0; overflow: hidden; margin: 0; padding: 0; border: none; visibility: hidden;"><!-- PAGE BREAK --></div>
+
+      <!-- PAGE 2 CONTENT STARTS HERE -->
+      
+      <!-- PAYMENT DATA Section - Now on Second Page -->
+      <div style="margin-bottom: ${Math.round(30 * scaleFactor)}px; background: #f0fff4; padding: ${elementPadding}px; border-radius: 6px; border-left: 4px solid #38a169; border: 1px solid #c6f6d5; box-sizing: border-box; overflow: visible; page-break-inside: avoid; break-inside: avoid; position: relative; z-index: 10; min-height: ${Math.round(120 * scaleFactor)}px; display: block; clear: both; margin-top: ${Math.round(40 * scaleFactor)}px;">
+        <div style="font-weight: 600; margin-bottom: ${Math.round(12 * scaleFactor)}px; color: #2f855a; font-size: ${Math.round(13 * scaleFactor)}px; text-transform: uppercase; letter-spacing: 0.2px; padding-top: 2px;">
           ${t.paymentData}
         </div>
-        <div style="line-height: 1.6; font-size: ${Math.round(11 * scaleFactor)}px; color: #2f855a;">
-          <div style="margin-bottom: ${Math.round(6 * scaleFactor)}px; display: flex; align-items: center;">
-            <strong style="min-width: ${Math.round(100 * scaleFactor)}px; display: inline-block;">${t.accountNr}</strong> 
+        <div style="line-height: 1.6; font-size: ${Math.round(12 * scaleFactor)}px; color: #2f855a;">
+          <div style="margin-bottom: ${Math.round(8 * scaleFactor)}px; display: flex; align-items: center;">
+            <strong style="min-width: ${Math.round(120 * scaleFactor)}px; display: inline-block;">${t.accountNr}</strong> 
             <span>${paymentAccountNumber}</span>
           </div>
-          <div style="margin-bottom: ${Math.round(6 * scaleFactor)}px; display: flex; align-items: center;">
-            <strong style="min-width: ${Math.round(100 * scaleFactor)}px; display: inline-block;">${t.name}</strong> 
+          <div style="margin-bottom: ${Math.round(8 * scaleFactor)}px; display: flex; align-items: center;">
+            <strong style="min-width: ${Math.round(120 * scaleFactor)}px; display: inline-block;">${t.name}</strong> 
             <span>${paymentAccountName}</span>
           </div>
           <div style="display: flex; align-items: center;">
-            <strong style="min-width: ${Math.round(100 * scaleFactor)}px; display: inline-block;">${t.paymentMethod}</strong> 
+            <strong style="min-width: ${Math.round(120 * scaleFactor)}px; display: inline-block;">${t.paymentMethod}</strong> 
             <span>${paymentMethodValue}</span>
           </div>
         </div>
       </div>
 
-      <!-- Optimized Terms and Conditions -->
-      <div style="margin-bottom: ${Math.round(20 * scaleFactor)}px; background: white; padding: ${elementPadding}px; border-radius: 5px; border: 1px solid #e2e8f0; page-break-inside: avoid; break-inside: avoid;">
-        <div style="font-weight: 600; margin-bottom: ${Math.round(10 * scaleFactor)}px; text-transform: uppercase; color: #2d3748; font-size: ${Math.round(12 * scaleFactor)}px; letter-spacing: 0.2px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;">
-          ${t.termsAndConditions}
-        </div>
-        <div style="line-height: ${lineHeight}; font-size: ${Math.round(11 * scaleFactor)}px; color: #4a5568;">
-          ${proposalData.paymentTerms || proposalData.deliveryTerms || t.paymentTerms}
-          ${proposalData.termsAndConditions ? `<br/><br/>${proposalData.termsAndConditions}` : ''}
-        </div>
-      </div>
-
-      <!-- Optimized Footer Content -->
+      <!-- Footer Content - On Second Page if Present -->
       ${proposalData.footerContent ? `
       <div style="margin-bottom: ${Math.round(20 * scaleFactor)}px; padding: ${elementPadding}px; background: #faf5ff; border-radius: 5px; border-left: 4px solid #805ad5; border: 1px solid #e9d8fd; page-break-inside: avoid; break-inside: avoid;">
         <div style="line-height: ${lineHeight}; font-size: ${Math.round(11 * scaleFactor)}px; color: #553c9a;">
@@ -338,7 +344,7 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
       </div>
       ` : ''}
 
-      <!-- ESSENTIAL COMPANY FOOTER - OPTIMIZED SIZING AND GUARANTEED VISIBILITY -->
+      <!-- COMPANY FOOTER - On Second Page -->
       <div style="background: #2d3748; border-radius: 5px; margin-top: ${Math.round(30 * scaleFactor)}px; width: 100%; clear: both; position: relative; page-break-inside: avoid; break-inside: avoid; box-sizing: border-box; z-index: 20; min-height: ${Math.round(140 * scaleFactor)}px;">
         <!-- Company Name Header -->
         <div style="background: rgba(255,255,255,0.1); padding: ${Math.round(8 * scaleFactor)}px ${Math.round(16 * scaleFactor)}px; border-bottom: 1px solid rgba(255,255,255,0.1);">
