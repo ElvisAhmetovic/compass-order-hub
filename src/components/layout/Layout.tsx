@@ -5,6 +5,7 @@ import { UserRole } from "@/types";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
+import Header from "./Header";
 
 interface LayoutProps {
   children: ReactNode;
@@ -47,6 +48,7 @@ const Layout = ({ children, userRole = "admin" }: LayoutProps) => {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <Header userRole={userRole} />
       <main className="flex-1 px-6 py-6">
         {hasAccess() ? (
           children
