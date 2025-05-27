@@ -23,15 +23,15 @@ const Sidebar = () => {
   // Define sidebar items with role restrictions
   const sidebarItems = [
     { href: '/dashboard', icon: Home, label: 'Dashboard', roles: ['admin', 'agent', 'user'] },
+    { href: '/support', icon: HelpCircle, label: 'Support', roles: ['admin', 'agent', 'user'] },
+    { href: '/reviews', icon: Star, label: 'Reviews', roles: ['admin', 'agent', 'user'] },
     { href: '/companies', icon: Building2, label: 'Companies', roles: ['admin', 'agent'] },
     { href: '/proposals', icon: FileText, label: 'Proposals', roles: ['admin', 'agent'] },
     { href: '/invoices', icon: Receipt, label: 'Invoices', roles: ['admin', 'agent'] },
     { href: '/clients', icon: UserCheck, label: 'Clients', roles: ['admin', 'agent'] },
-    { href: '/user-management', icon: Users, label: 'User Management', roles: ['admin'] }, // Admin only
     { href: '/inventory', icon: Package, label: 'Inventory', roles: ['admin', 'agent'] },
+    { href: '/user-management', icon: Users, label: 'User Management', roles: ['admin'] }, // Admin only
     { href: '/deleted', icon: Trash2, label: 'Deleted', roles: ['admin'] }, // Admin only
-    { href: '/reviews', icon: Star, label: 'Reviews', roles: ['admin', 'agent', 'user'] },
-    { href: '/support', icon: HelpCircle, label: 'Support', roles: ['admin', 'agent', 'user'] },
   ];
 
   // Filter sidebar items based on user role
