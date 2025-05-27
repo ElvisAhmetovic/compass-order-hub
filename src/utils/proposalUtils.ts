@@ -1,3 +1,4 @@
+
 import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
 import { Proposal, ProposalLineItem, InventoryItem } from "@/types";
@@ -445,8 +446,8 @@ const generatePDFFromHTML = async (htmlContent: string): Promise<jsPDF> => {
         // Ensure all elements are properly rendered in the clone
         const paymentSection = clonedDoc.querySelector('[style*="PAYMENT DATA"]');
         if (paymentSection) {
-          paymentSection.style.pageBreakInside = 'avoid';
-          paymentSection.style.breakInside = 'avoid';
+          (paymentSection as HTMLElement).style.pageBreakInside = 'avoid';
+          (paymentSection as HTMLElement).style.breakInside = 'avoid';
         }
       }
     });
