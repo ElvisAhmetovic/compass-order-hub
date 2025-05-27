@@ -1,4 +1,3 @@
-
 import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
 import { Proposal, ProposalLineItem, InventoryItem } from "@/types";
@@ -83,7 +82,7 @@ export const translations = {
   }
 };
 
-// Updated PDF content to properly use all editable data
+// Enhanced PDF content with professional typography and design
 const createPDFContent = (proposalData: any, language: string = "en") => {
   const t = translations[language as keyof typeof translations] || translations.en;
   const companyInfo = getCompanyInfo();
@@ -137,158 +136,189 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
   });
 
   return `
-    <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 794px; min-height: 1123px; background: white; margin: 0; box-sizing: border-box; font-size: 11px;">
+    <div style="font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Roboto', sans-serif; padding: 30px; max-width: 794px; min-height: 1123px; background: linear-gradient(to bottom, #ffffff 0%, #fafbfc 100%); margin: 0; box-sizing: border-box; font-size: 12px; line-height: 1.6; color: #1a1a1a;">
       
-      <!-- Header Section with Company Info and Logo -->
-      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px;">
-        <div style="flex: 1;">
-          <div style="font-weight: bold; font-size: 14px; margin-bottom: 5px;">${companyInfo.name}</div>
-          <div style="line-height: 1.4; color: #333;">
-            ${companyInfo.street}<br/>
-            ${companyInfo.postal} ${companyInfo.city}
+      <!-- Header Section with Enhanced Design -->
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 50px; padding-bottom: 25px; border-bottom: 3px solid #e5e7eb; position: relative;">
+        <div style="flex: 1; max-width: 60%;">
+          <div style="font-weight: 700; font-size: 20px; margin-bottom: 12px; color: #1e40af; letter-spacing: -0.5px;">${companyInfo.name}</div>
+          <div style="line-height: 1.8; color: #4b5563; font-size: 13px; font-weight: 400;">
+            <div style="margin-bottom: 4px;">${companyInfo.street}</div>
+            <div style="margin-bottom: 4px;">${companyInfo.postal} ${companyInfo.city}</div>
+            <div style="color: #6b7280; font-size: 12px;">${companyInfo.country || 'Germany'}</div>
           </div>
         </div>
-        <div style="text-align: right;">
-          <img src="${proposalData.logo || companyInfo.logo}" style="max-height: 80px; max-width: ${logoWidth};" onerror="this.src='https://placehold.co/200x60?text=Your+Logo'; this.onerror=null;" />
-        </div>
-      </div>
-
-      <!-- Customer Information and Proposal Details -->
-      <div style="display: flex; justify-content: space-between; margin-bottom: 40px;">
-        <div style="flex: 1; padding-right: 40px;">
-          <div style="font-weight: bold; font-size: 12px; margin-bottom: 15px;">${proposalData.customerName || proposalData.customer || 'Name Surname'}</div>
-          <div style="line-height: 1.4; margin-bottom: 10px;">
-            ${proposalData.customerAddress || 'Leidsestraat 15, 2000 Antwerpen'}<br/>
-            ${proposalData.customerEmail || 'customer@email.com'}<br/>
-            ${proposalData.customerCountry || 'Belgium'}
-          </div>
-        </div>
-        <div style="text-align: right;">
-          <div style="margin-bottom: 8px;">
-            <span style="font-weight: bold;">Proposal no.</span>
-            <span style="margin-left: 20px;">${proposalData.number || 'AN-9993'}</span>
-          </div>
-          <div style="margin-bottom: 8px;">
-            <span style="font-weight: bold;">${t.date}</span>
-            <span style="margin-left: 20px;">${new Date(proposalData.created_at || Date.now()).toLocaleDateString()}</span>
-          </div>
-          <div style="margin-bottom: 8px;">
-            <span style="font-weight: bold;">${t.customerRef}</span>
-            <span style="margin-left: 20px;">${proposalData.customerRef || proposalData.reference || ''}</span>
-          </div>
-          <div>
-            <span style="font-weight: bold;">${t.yourContact}</span>
-            <span style="margin-left: 20px;">${proposalData.yourContact || proposalData.internalContact || 'Thomas Klein'}</span>
+        <div style="text-align: right; position: relative;">
+          <div style="background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); padding: 15px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 15px;">
+            <img src="${proposalData.logo || companyInfo.logo}" style="max-height: 85px; max-width: ${logoWidth}; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));" onerror="this.src='https://placehold.co/200x60?text=Your+Logo'; this.onerror=null;" />
           </div>
         </div>
       </div>
 
-      <!-- Proposal Title -->
-      <h2 style="color: #4a90e2; margin-bottom: 15px; font-size: 16px; font-weight: bold;">
-        ${t.proposal} ${proposalData.number || 'AN-9993'}
-      </h2>
-
-      <!-- Proposal Content/Description -->
-      <div style="margin-bottom: 25px; line-height: 1.5;">
-        <strong>${proposalData.proposalTitle || proposalData.subject || 'Protect your online REPUTATION!'}</strong> 
-        ${proposalData.proposalDescription || 'Thank you for your enquiry. We will be happy to provide you with the requested non-binding offer.'}
-        ${proposalData.content ? `<br/><br/>${proposalData.content}` : ''}
+      <!-- Customer Information and Proposal Details with Enhanced Layout -->
+      <div style="display: flex; justify-content: space-between; margin-bottom: 45px; gap: 40px;">
+        <div style="flex: 1; background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); padding: 25px; border-radius: 16px; border-left: 5px solid #0ea5e9; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+          <div style="font-weight: 700; font-size: 16px; margin-bottom: 18px; color: #0c4a6e; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid #0ea5e9; padding-bottom: 8px; display: inline-block;">${t.customer}</div>
+          <div style="line-height: 1.7; font-size: 13px;">
+            <div style="font-weight: 600; margin-bottom: 12px; font-size: 15px; color: #1e40af;">${proposalData.customerName || proposalData.customer || 'Name Surname'}</div>
+            <div style="margin-bottom: 8px; color: #374151;">${proposalData.customerAddress || 'Leidsestraat 15, 2000 Antwerpen'}</div>
+            <div style="margin-bottom: 8px; color: #374151;">${proposalData.customerEmail || 'customer@email.com'}</div>
+            <div style="color: #6b7280; font-weight: 500;">${proposalData.customerCountry || 'Belgium'}</div>
+          </div>
+        </div>
+        
+        <div style="flex: 0 0 auto; min-width: 280px;">
+          <div style="background: linear-gradient(135deg, #fefce8 0%, #fef3c7 100%); padding: 25px; border-radius: 16px; border-left: 5px solid #f59e0b; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+            <div style="margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; padding-bottom: 8px; border-bottom: 1px solid #fbbf24;">
+              <span style="font-weight: 600; color: #92400e;">Proposal no.</span>
+              <span style="font-weight: 700; color: #1e40af; font-size: 14px;">${proposalData.number || 'AN-9993'}</span>
+            </div>
+            <div style="margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; padding-bottom: 8px; border-bottom: 1px solid #fbbf24;">
+              <span style="font-weight: 600; color: #92400e;">${t.date}</span>
+              <span style="color: #374151; font-weight: 500;">${new Date(proposalData.created_at || Date.now()).toLocaleDateString()}</span>
+            </div>
+            <div style="margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; padding-bottom: 8px; border-bottom: 1px solid #fbbf24;">
+              <span style="font-weight: 600; color: #92400e;">${t.customerRef}</span>
+              <span style="color: #374151; font-weight: 500;">${proposalData.customerRef || proposalData.reference || '—'}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-weight: 600; color: #92400e;">${t.yourContact}</span>
+              <span style="color: #374151; font-weight: 500;">${proposalData.yourContact || proposalData.internalContact || 'Thomas Klein'}</span>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <!-- Products/Services Table -->
-      <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px; font-size: 10px;">
-        <thead>
-          <tr style="background-color: #4a5568; color: white;">
-            <th style="padding: 12px 8px; text-align: left; font-weight: bold; border: none; width: 50%;">${t.productDescription}</th>
-            <th style="padding: 12px 8px; text-align: center; font-weight: bold; border: none; width: 16%;">${t.price}</th>
-            <th style="padding: 12px 8px; text-align: center; font-weight: bold; border: none; width: 14%;">${t.qty}</th>
-            <th style="padding: 12px 8px; text-align: right; font-weight: bold; border: none; width: 20%;">${t.total}</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${(proposalData.lineItems || []).map((item: any, index: number) => `
-            <tr style="border-bottom: 1px solid #e2e8f0; background-color: ${index % 2 === 0 ? '#f8f9fa' : 'white'};">
-              <td style="padding: 15px 8px; border: none; vertical-align: top;">
-                <div style="font-weight: bold; margin-bottom: 5px; color: #e67e22;">
-                  ${item.name || 'Product/Service Name'}
-                </div>
-                ${item.description || item.additionalInfo ? `
-                <div style="line-height: 1.4; color: #666; font-size: 9px; margin-top: 8px;">
-                  ${item.description || item.additionalInfo || ''}
-                </div>
-                ` : ''}
-              </td>
-              <td style="padding: 15px 8px; border: none; text-align: center; vertical-align: top;">
-                ${currencySymbol}${(item.unit_price || 0).toFixed(2)}
-              </td>
-              <td style="padding: 15px 8px; border: none; text-align: center; vertical-align: top;">
-                ${item.quantity || 1}
-              </td>
-              <td style="padding: 15px 8px; border: none; text-align: right; vertical-align: top; font-weight: bold;">
-                ${currencySymbol}${(item.total_price || 0).toFixed(2)}
-              </td>
+      <!-- Enhanced Proposal Title -->
+      <div style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); color: white; padding: 25px; border-radius: 16px; margin-bottom: 35px; box-shadow: 0 8px 25px rgba(30, 64, 175, 0.15);">
+        <h2 style="margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -0.5px; text-shadow: 0 1px 2px rgba(0,0,0,0.1);">
+          ${t.proposal} ${proposalData.number || 'AN-9993'}
+        </h2>
+      </div>
+
+      <!-- Enhanced Proposal Content/Description -->
+      <div style="margin-bottom: 35px; background: white; padding: 25px; border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border: 1px solid #e5e7eb;">
+        <div style="line-height: 1.8; font-size: 13px;">
+          <div style="font-weight: 700; font-size: 16px; color: #1e40af; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 0.5px;">
+            ${proposalData.proposalTitle || proposalData.subject || 'Protect your online REPUTATION!'}
+          </div>
+          <div style="color: #374151; line-height: 1.7;">
+            ${proposalData.proposalDescription || 'Thank you for your enquiry. We will be happy to provide you with the requested non-binding offer.'}
+            ${proposalData.content ? `<br/><br/>${proposalData.content}` : ''}
+          </div>
+        </div>
+      </div>
+
+      <!-- Enhanced Products/Services Table -->
+      <div style="margin-bottom: 40px; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.08); border: 1px solid #e5e7eb;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 12px; background: white;">
+          <thead>
+            <tr style="background: linear-gradient(135deg, #1e293b 0%, #334155 100%); color: white;">
+              <th style="padding: 18px 20px; text-align: left; font-weight: 700; border: none; width: 50%; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;">${t.productDescription}</th>
+              <th style="padding: 18px 20px; text-align: center; font-weight: 700; border: none; width: 16%; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;">${t.price}</th>
+              <th style="padding: 18px 20px; text-align: center; font-weight: 700; border: none; width: 14%; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;">${t.qty}</th>
+              <th style="padding: 18px 20px; text-align: right; font-weight: 700; border: none; width: 20%; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;">${t.total}</th>
             </tr>
-          `).join('')}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            ${(proposalData.lineItems || []).map((item: any, index: number) => `
+              <tr style="border-bottom: 1px solid #f1f5f9; background-color: ${index % 2 === 0 ? '#fafbfc' : 'white'}; transition: background-color 0.2s;">
+                <td style="padding: 20px; border: none; vertical-align: top;">
+                  <div style="font-weight: 700; margin-bottom: 8px; color: #1e40af; font-size: 14px; line-height: 1.4;">
+                    ${item.name || 'Product/Service Name'}
+                  </div>
+                  ${item.description || item.additionalInfo ? `
+                  <div style="line-height: 1.6; color: #6b7280; font-size: 11px; margin-top: 8px; font-style: italic;">
+                    ${item.description || item.additionalInfo || ''}
+                  </div>
+                  ` : ''}
+                </td>
+                <td style="padding: 20px; border: none; text-align: center; vertical-align: top; font-weight: 600; color: #374151;">
+                  <span style="background: #f0f9ff; padding: 6px 12px; border-radius: 8px; font-size: 13px;">
+                    ${currencySymbol}${(item.unit_price || 0).toFixed(2)}
+                  </span>
+                </td>
+                <td style="padding: 20px; border: none; text-align: center; vertical-align: top; font-weight: 600; color: #374151;">
+                  <span style="background: #f0fdf4; padding: 6px 12px; border-radius: 8px; font-size: 13px;">
+                    ${item.quantity || 1}
+                  </span>
+                </td>
+                <td style="padding: 20px; border: none; text-align: right; vertical-align: top; font-weight: 700; font-size: 14px; color: #1e40af;">
+                  ${currencySymbol}${(item.total_price || 0).toFixed(2)}
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
 
-      <!-- Totals Section -->
-      <div style="display: flex; justify-content: flex-end; margin-bottom: 30px;">
-        <div style="width: 250px;">
-          <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e2e8f0;">
-            <span>${t.subtotal}</span>
-            <span>${currencySymbol}${netAmount.toFixed(2)}</span>
+      <!-- Enhanced Totals Section -->
+      <div style="display: flex; justify-content: flex-end; margin-bottom: 40px;">
+        <div style="width: 350px; background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.08); border: 1px solid #e2e8f0;">
+          <div style="background: linear-gradient(135deg, #475569 0%, #64748b 100%); color: white; padding: 15px 25px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; font-size: 13px;">
+            Summary
           </div>
-          <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e2e8f0;">
-            <span>${t.vat} ${isVatEnabled ? `${vatRate}%` : '0%'}</span>
-            <span>${currencySymbol}${vatAmount.toFixed(2)}</span>
-          </div>
-          <div style="display: flex; justify-content: space-between; padding: 12px 0; font-weight: bold; font-size: 12px; background-color: #f8f9fa;">
-            <span>${t.totalAmount}</span>
-            <span>${currencySymbol}${totalAmount.toFixed(2)}</span>
+          <div style="padding: 20px 25px;">
+            <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #e2e8f0; font-size: 13px;">
+              <span style="color: #64748b; font-weight: 500;">${t.subtotal}</span>
+              <span style="font-weight: 600; color: #1e293b;">${currencySymbol}${netAmount.toFixed(2)}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 2px solid #e2e8f0; font-size: 13px;">
+              <span style="color: #64748b; font-weight: 500;">${t.vat} ${isVatEnabled ? `${vatRate}%` : '0%'}</span>
+              <span style="font-weight: 600; color: #1e293b;">${currencySymbol}${vatAmount.toFixed(2)}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 18px 0; font-weight: 700; font-size: 16px; background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); color: white; margin: 15px -25px -20px -25px; padding-left: 25px; padding-right: 25px;">
+              <span>${t.totalAmount}</span>
+              <span>${currencySymbol}${totalAmount.toFixed(2)}</span>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- Payment Data Section -->
-      <div style="margin-bottom: 20px; background-color: #f8f9fa; padding: 15px; border-left: 4px solid #4a90e2;">
-        <div style="font-weight: bold; margin-bottom: 8px;">${t.paymentData}</div>
-        <div style="line-height: 1.4;">
-          <div>${t.accountNr} ${paymentAccountNumber}</div>
-          <div>${t.name} ${paymentAccountName}</div>
-          <div>${t.paymentMethod} ${paymentMethodValue}</div>
+      <!-- Enhanced Payment Data Section -->
+      <div style="margin-bottom: 30px; background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); padding: 25px; border-radius: 16px; border-left: 5px solid #10b981; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+        <div style="font-weight: 700; margin-bottom: 15px; color: #065f46; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center;">
+          <span style="margin-right: 8px;">💳</span>
+          ${t.paymentData}
+        </div>
+        <div style="line-height: 1.8; font-size: 13px; color: #047857;">
+          <div style="margin-bottom: 8px;"><strong>${t.accountNr}</strong> ${paymentAccountNumber}</div>
+          <div style="margin-bottom: 8px;"><strong>${t.name}</strong> ${paymentAccountName}</div>
+          <div><strong>${t.paymentMethod}</strong> ${paymentMethodValue}</div>
         </div>
       </div>
 
-      <!-- Terms and Conditions -->
-      <div style="margin-bottom: 30px;">
-        <div style="font-weight: bold; margin-bottom: 10px; text-transform: uppercase;">${t.termsAndConditions}</div>
-        <div style="line-height: 1.4; font-size: 10px;">
+      <!-- Enhanced Terms and Conditions -->
+      <div style="margin-bottom: 40px; background: white; padding: 25px; border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border: 1px solid #e5e7eb;">
+        <div style="font-weight: 700; margin-bottom: 15px; text-transform: uppercase; color: #1e40af; font-size: 14px; letter-spacing: 0.5px; border-bottom: 2px solid #3b82f6; padding-bottom: 8px; display: inline-block;">
+          ${t.termsAndConditions}
+        </div>
+        <div style="line-height: 1.7; font-size: 12px; color: #4b5563;">
           ${proposalData.paymentTerms || proposalData.deliveryTerms || t.paymentTerms}
           ${proposalData.termsAndConditions ? `<br/><br/>${proposalData.termsAndConditions}` : ''}
         </div>
       </div>
 
-      <!-- Footer Content -->
+      <!-- Enhanced Footer Content -->
       ${proposalData.footerContent ? `
-      <div style="margin-bottom: 20px; padding: 15px; background-color: #f8f9fa; border-radius: 4px;">
-        <div style="line-height: 1.4; font-size: 10px;">
+      <div style="margin-bottom: 30px; padding: 25px; background: linear-gradient(135deg, #fef7ff 0%, #fae8ff 100%); border-radius: 16px; border-left: 5px solid #a855f7; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+        <div style="line-height: 1.7; font-size: 12px; color: #581c87;">
           ${proposalData.footerContent}
         </div>
       </div>
       ` : ''}
 
-      <!-- Signature Section -->
-      <div style="display: flex; justify-content: space-between; margin-top: 50px;">
-        <div style="width: 45%;">
-          <div style="border-top: 1px solid #333; padding-top: 8px;">
-            <div style="font-size: 10px; color: #666;">${t.placeDate}</div>
+      <!-- Enhanced Signature Section -->
+      <div style="display: flex; justify-content: space-between; margin-top: 60px; gap: 40px;">
+        <div style="width: 45%; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border: 1px solid #e5e7eb;">
+          <div style="border-top: 2px solid #1e40af; padding-top: 12px;">
+            <div style="font-size: 11px; color: #6b7280; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;">${t.placeDate}</div>
           </div>
         </div>
-        <div style="width: 45%;">
-          <div style="border-top: 1px solid #333; padding-top: 8px;">
-            <div style="font-size: 10px; color: #666;">${t.signatureStamp}</div>
-            ${proposalData.signatureUrl ? `<img src="${proposalData.signatureUrl}" style="max-height: 40px; margin-top: 8px;" />` : ''}
+        <div style="width: 45%; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border: 1px solid #e5e7eb;">
+          <div style="border-top: 2px solid #1e40af; padding-top: 12px;">
+            <div style="font-size: 11px; color: #6b7280; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;">${t.signatureStamp}</div>
+            ${proposalData.signatureUrl ? `<img src="${proposalData.signatureUrl}" style="max-height: 50px; margin-top: 12px; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.1));" />` : ''}
           </div>
         </div>
       </div>
