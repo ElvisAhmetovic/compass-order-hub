@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Layout from "@/components/layout/Layout";
 import { useAuth } from "@/context/AuthContext";
@@ -33,29 +32,31 @@ const Companies = () => {
   
   const isAdmin = user?.role === 'admin';
   
-  useEffect(() => {
-    // Load companies from orders
-    const loadCompanies = () => {
-      setIsLoading(true);
-      try {
-        const storedOrders = localStorage.getItem("orders");
-        if (!storedOrders) {
-          setIsLoading(false);
-          return;
-        }
-        
-        const orders = JSON.parse(storedOrders);
-        const companyMap = groupOrdersByCompany(orders);
-        
-        setCompanies(companyMap);
-        console.log("Companies loaded:", companyMap);
-      } catch (error) {
-        console.error("Error loading companies:", error);
-      } finally {
+  // Load companies from orders
+  const loadCompanies = () => {
+    setIsLoading(true);
+    try {
+      const storedOrders = localStorage.getItem("orders");
+      if (!storedOrders) {
+        setCompanies({});
         setIsLoading(false);
+        return;
       }
-    };
-    
+      
+      const orders = JSON.parse(storedOrders);
+      const companyMap = groupOrdersByCompany(orders);
+      
+      setCompanies(companyMap);
+      console.log("Companies loaded/refreshed:", companyMap);
+    } catch (error) {
+      console.error("Error loading companies:", error);
+      setCompanies({});
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  useEffect(() => {
     loadCompanies();
     
     // Add event listener for storage changes to refresh data when orders are updated elsewhere
@@ -65,8 +66,6 @@ const Companies = () => {
         loadCompanies();
       }
     };
-    
-    window.addEventListener('storage', handleStorageChange);
     
     // Listen for custom events when localStorage is updated from the same window
     const handleOrdersUpdate = () => {
@@ -80,6 +79,7 @@ const Companies = () => {
       loadCompanies();
     };
     
+    window.addEventListener('storage', handleStorageChange);
     window.addEventListener('ordersUpdated', handleOrdersUpdate);
     window.addEventListener('companyDataUpdated', handleCompanyDataUpdate);
     
@@ -129,13 +129,8 @@ const Companies = () => {
         window.dispatchEvent(new CustomEvent('ordersUpdated'));
       }
 
-      // Create a new companies object with the updated company
-      const updatedCompanies = {
-        ...companies,
-        [currentCompanyKey]: { ...currentCompany }
-      };
-
-      setCompanies(updatedCompanies);
+      // Reload companies immediately to reflect changes
+      loadCompanies();
 
       toast({
         title: "Company updated",
