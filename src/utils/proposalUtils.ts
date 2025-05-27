@@ -93,6 +93,7 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
 
   // Proper VAT handling with all user data
   console.log('PDF Generation - All proposal data:', proposalData);
+  console.log('PDF Generation - Company info:', companyInfo);
   const isVatEnabled = proposalData.vatEnabled === true;
   const netAmount = proposalData.netAmount || 0;
   const vatRate = proposalData.vatRate || 0;
@@ -137,7 +138,8 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
       accountNumber: paymentAccountNumber,
       accountName: paymentAccountName,
       paymentMethod: paymentMethodValue
-    }
+    },
+    companyInfo: companyInfo
   });
 
   return `
@@ -323,51 +325,65 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
         </div>
       </div>
 
-      <!-- Professional Footer Company Info -->
-      <div style="background: #2d3748; border-radius: 6px; overflow: hidden; margin-top: 40px;">
-        <!-- Header section -->
-        <div style="background: rgba(255,255,255,0.1); padding: 6px 16px; border-bottom: 1px solid rgba(255,255,255,0.1);">
-          <div style="color: white; font-weight: 600; font-size: 10px; text-align: center; letter-spacing: 0.3px;">
-            ${companyInfo.name}
+      <!-- COMPANY FOOTER WITH ALL CONTACT INFORMATION -->
+      <div style="background: #2d3748; border-radius: 6px; overflow: hidden; margin-top: 40px; page-break-inside: avoid;">
+        <!-- Company Name Header -->
+        <div style="background: rgba(255,255,255,0.1); padding: 8px 20px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+          <div style="color: white; font-weight: 600; font-size: 11px; text-align: center; letter-spacing: 0.5px;">
+            ${companyInfo.name || 'AB MEDIA TEAM LTD'}
           </div>
         </div>
         
-        <!-- Content area -->
-        <div style="padding: 8px 16px; display: flex; justify-content: space-between; align-items: center; color: white; font-size: 8px;">
+        <!-- Contact Information Grid -->
+        <div style="padding: 12px 20px; display: flex; justify-content: space-between; align-items: flex-start; color: white; font-size: 9px; gap: 20px;">
           
-          <!-- Contact Information -->
-          <div style="flex: 1; margin-right: 16px;">
-            <div style="margin-bottom: 3px;">
-              <span style="font-weight: 500; margin-right: 6px; color: #cbd5e0;">Tel:</span>
+          <!-- Phone & Fax -->
+          <div style="flex: 1;">
+            <div style="margin-bottom: 4px;">
+              <span style="font-weight: 500; margin-right: 8px; color: #cbd5e0;">Tel:</span>
               <span>${companyInfo.phone || '+49 203 70 90 72 62'}</span>
             </div>
             <div>
-              <span style="font-weight: 500; margin-right: 6px; color: #cbd5e0;">Fax:</span>
+              <span style="font-weight: 500; margin-right: 8px; color: #cbd5e0;">Fax:</span>
               <span>${companyInfo.fax || '+49 203 70 90 73 53'}</span>
             </div>
           </div>
           
-          <!-- Digital Contact -->
-          <div style="flex: 1; margin-right: 16px;">
-            <div style="margin-bottom: 3px;">
-              <span style="font-weight: 500; margin-right: 6px; color: #cbd5e0;">Email:</span>
+          <!-- Email & Website -->
+          <div style="flex: 1;">
+            <div style="margin-bottom: 4px;">
+              <span style="font-weight: 500; margin-right: 8px; color: #cbd5e0;">Email:</span>
               <span>${companyInfo.email || 'kontakt.abmedia@gmail.com'}</span>
             </div>
             <div>
-              <span style="font-weight: 500; margin-right: 6px; color: #cbd5e0;">Web:</span>
+              <span style="font-weight: 500; margin-right: 8px; color: #cbd5e0;">Web:</span>
               <span>${companyInfo.website || 'www.abmedia-team.com'}</span>
             </div>
           </div>
           
-          <!-- Company Address -->
-          <div style="flex: 1; text-align: right; padding-left: 16px; border-left: 1px solid rgba(255,255,255,0.1);">
-            <div style="font-weight: 500; margin-bottom: 2px; color: #cbd5e0; font-size: 8px;">
+          <!-- Address & Contact Person -->
+          <div style="flex: 1; text-align: right; padding-left: 20px; border-left: 1px solid rgba(255,255,255,0.1);">
+            <div style="font-weight: 500; margin-bottom: 3px; color: #cbd5e0; font-size: 9px;">
               ${companyInfo.contactPerson || 'Andreas Berger'}
             </div>
-            <div style="line-height: 1.2; font-size: 8px;">
-              ${companyInfo.street}<br/>
-              ${companyInfo.postal} ${companyInfo.city}<br/>
+            <div style="line-height: 1.3; font-size: 9px;">
+              ${companyInfo.street || 'Weseler Str.73'}<br/>
+              ${companyInfo.postal || '47169'} ${companyInfo.city || 'Duisburg'}<br/>
               ${companyInfo.country || 'Germany'}
+            </div>
+          </div>
+        </div>
+        
+        <!-- Business Information -->
+        <div style="background: rgba(255,255,255,0.05); padding: 8px 20px; border-top: 1px solid rgba(255,255,255,0.1);">
+          <div style="display: flex; justify-content: space-between; align-items: center; color: #cbd5e0; font-size: 8px;">
+            <div>
+              <span style="margin-right: 15px;">REG: ${companyInfo.registrationNumber || '15748871'}</span>
+              <span style="margin-right: 15px;">VAT: ${companyInfo.vatId || 'DE123418679'}</span>
+              <span>TAX: ${companyInfo.taxNumber || '13426 27369'}</span>
+            </div>
+            <div style="text-align: right;">
+              <span style="font-weight: 500;">Director: ${companyInfo.director || 'Andreas Berger'}</span>
             </div>
           </div>
         </div>
