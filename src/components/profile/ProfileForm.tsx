@@ -1,9 +1,9 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 import { 
   Collapsible, 
   CollapsibleContent, 
@@ -47,6 +47,7 @@ type PasswordFormValues = z.infer<typeof passwordFormSchema>;
 export function ProfileForm() {
   const { user, updateUserProfile, updatePassword, logout } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [isPasswordOpen, setIsPasswordOpen] = useState(false);
   const [isProfileLoading, setIsProfileLoading] = useState(false);
   const [isPasswordLoading, setIsPasswordLoading] = useState(false);
@@ -103,10 +104,15 @@ export function ProfileForm() {
       if (success) {
         toast({
           title: "Password updated",
-          description: "Your password has been changed successfully.",
+          description: "Your password has been changed successfully. You will be redirected to login.",
         });
         passwordForm.reset();
         setIsPasswordOpen(false);
+        
+        // Redirect to login page after password change for security
+        setTimeout(() => {
+          navigate('/login');
+        }, 2000);
       }
     } catch (error) {
       console.error("Error updating password:", error);
@@ -203,6 +209,11 @@ export function ProfileForm() {
           </CollapsibleTrigger>
         </div>
         <CollapsibleContent className="pt-2">
+          <Alert className="mb-4">
+            <AlertDescription>
+              <strong>Security Notice:</strong> After changing your password, you will be automatically logged out and redirected to the login page. You will need to log in again with your new password.
+            </AlertDescription>
+          </Alert>
           <Form {...passwordForm}>
             <form onSubmit={passwordForm.handleSubmit(handlePasswordSubmit)} className="space-y-4">
               <FormField

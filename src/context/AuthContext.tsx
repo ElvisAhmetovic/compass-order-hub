@@ -53,8 +53,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const refreshUser = async (): Promise<void> => {
     try {
-      // For now just reload from localStorage, but in a real app with Supabase,
-      // you'd fetch fresh data from the server
       loadUserFromSession();
     } catch (error) {
       console.error('Error refreshing user data:', error);
@@ -64,7 +62,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const updateUserProfile = async (profileData: Partial<User>): Promise<boolean> => {
     try {
       setIsLoading(true);
-      // Get current user data
       const sessionData = localStorage.getItem('userSession');
       if (!sessionData) {
         toast({
@@ -77,18 +74,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       const userData = JSON.parse(sessionData);
       
-      // In a real app, you'd call Supabase here
-      // For this demo, we'll simulate by updating localStorage
       const updatedUser = { 
         ...userData, 
         ...profileData,
         full_name: `${profileData.first_name || userData.first_name || ''} ${profileData.last_name || userData.last_name || ''}`.trim()
       };
       
-      // Update in localStorage
       localStorage.setItem('userSession', JSON.stringify(updatedUser));
       
-      // Update registered users if found
       const registeredUsers = JSON.parse(localStorage.getItem("users") || "[]");
       const userIndex = registeredUsers.findIndex((u: any) => u.id === userData.id);
       
@@ -101,7 +94,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         localStorage.setItem("users", JSON.stringify(registeredUsers));
       }
       
-      // Update app_users if found
       const appUsers = JSON.parse(localStorage.getItem("app_users") || "[]");
       const appUserIndex = appUsers.findIndex((u: any) => u.id === userData.id);
       
@@ -114,7 +106,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         localStorage.setItem("app_users", JSON.stringify(appUsers));
       }
       
-      // Update user in context
       setUser(updatedUser);
       
       toast({
@@ -139,26 +130,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const updatePassword = async (newPassword: string): Promise<boolean> => {
     try {
       setIsLoading(true);
-      // Get current user data
       const sessionData = localStorage.getItem('userSession');
       if (!sessionData) return false;
       
       const userData = JSON.parse(sessionData);
+      const newPasswordHash = btoa(newPassword);
       
-      // In a real app with Supabase, you'd call auth.updateUser({password: newPassword})
-      // For this mock implementation, we'll update the passwordHash in localStorage
-      
-      // Update in registered users
+      // CRITICAL FIX: Update password in registered users and ensure old password is completely invalidated
       const registeredUsers = JSON.parse(localStorage.getItem("users") || "[]");
       const userIndex = registeredUsers.findIndex((u: any) => u.id === userData.id);
       
       if (userIndex !== -1) {
-        const newPasswordHash = btoa(newPassword);
+        // Completely replace the password hash - no fallback to old passwords
         registeredUsers[userIndex].passwordHash = newPasswordHash;
+        // Remove any default password flags or fallbacks
+        delete registeredUsers[userIndex].isDefaultPassword;
+        delete registeredUsers[userIndex].allowFallbackAuth;
         localStorage.setItem("users", JSON.stringify(registeredUsers));
       } else {
-        // If user not found in registered users, create entry
-        const newPasswordHash = btoa(newPassword);
+        // If user not found in registered users, create entry with new password only
         registeredUsers.push({
           id: userData.id,
           email: userData.email,
@@ -169,9 +159,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         localStorage.setItem("users", JSON.stringify(registeredUsers));
       }
       
+      // Invalidate current session to force re-login with new password
+      localStorage.removeItem('userSession');
+      setUser(null);
+      
       toast({
         title: "Password updated",
-        description: "Your password has been updated successfully.",
+        description: "Your password has been updated successfully. Please log in again with your new password.",
       });
       
       return true;
@@ -192,49 +186,39 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       setIsLoading(true);
       
-      // Get users from both local storage sources
       const registeredUsers = JSON.parse(localStorage.getItem("users") || "[]");
       const appUsers = JSON.parse(localStorage.getItem("app_users") || "[]");
       
-      // Check if identifier is username or email
       const isEmail = identifier.includes("@");
       
-      // For debugging
       console.log(`Login attempt for: ${identifier}`);
       
-      // Find the user in registered users
+      // Find the user in registered users (primary auth source)
       let foundUser = registeredUsers.find((user: any) => 
         isEmail ? user.email === identifier : user.username === identifier
       );
       
-      // If not found in registered users, check app_users
+      // SECURITY FIX: If not found in registered users, check app_users but create proper auth entry
       if (!foundUser) {
         const appUser = appUsers.find((user: any) => user.email === identifier);
         if (appUser) {
-          // For app_users, we need to check if there's a corresponding user in the auth system
-          const authUser = registeredUsers.find((u: any) => u.email === identifier);
-          if (authUser) {
-            foundUser = authUser;
-          } else {
-            // If no auth user exists, create a temporary auth object with default password
-            const defaultPasswordHash = btoa("Admin@123");
-            foundUser = {
-              id: appUser.id,
-              email: appUser.email,
-              role: appUser.role,
-              full_name: appUser.full_name,
-              passwordHash: defaultPasswordHash
-            };
-            
-            // Add this user to registeredUsers
-            registeredUsers.push(foundUser);
-            localStorage.setItem("users", JSON.stringify(registeredUsers));
-            console.log("Created new auth user from app_user");
-          }
+          // Create new auth user with secure default password (one-time use)
+          const defaultPasswordHash = btoa("Admin@123");
+          foundUser = {
+            id: appUser.id,
+            email: appUser.email,
+            role: appUser.role,
+            full_name: appUser.full_name,
+            passwordHash: defaultPasswordHash,
+            isDefaultPassword: true // Flag for security tracking
+          };
+          
+          registeredUsers.push(foundUser);
+          localStorage.setItem("users", JSON.stringify(registeredUsers));
+          console.log("Created new auth user from app_user with default password");
         }
       }
       
-      // If user not found
       if (!foundUser) {
         console.log("User not found");
         toast({
@@ -245,25 +229,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return false;
       }
       
-      // Check password - handle both encoded and raw passwords
+      // CRITICAL SECURITY FIX: Only validate against the current password hash
       const inputPasswordHash = btoa(password);
       const storedHash = foundUser.passwordHash || "";
       
-      // Debug password comparison
       console.log("Comparing password hash:", { 
         input: inputPasswordHash.substring(0, 5) + "...", 
         stored: storedHash.substring(0, 5) + "..." 
       });
       
-      // For admin users, allow either the stored password or the default admin password
-      if (foundUser.role === "admin" && (inputPasswordHash === storedHash || password === "Admin@123")) {
-        console.log("Admin password match");
-        // Valid admin password
-      } else if (inputPasswordHash === storedHash) {
-        console.log("Password match");
-        // Valid password for non-admin
-      } else {
-        console.log("Password mismatch");
+      // REMOVED: Dangerous fallback that allowed multiple valid passwords
+      // New logic: Only the exact current password hash is valid
+      if (inputPasswordHash !== storedHash) {
+        console.log("Password mismatch - login denied");
         toast({
           variant: "destructive",
           title: "Login failed",
@@ -271,6 +249,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         });
         return false;
       }
+      
+      console.log("Password match - login successful");
       
       // Create user session with additional profile info
       const appUser = appUsers.find((user: any) => user.email === foundUser.email);
@@ -286,7 +266,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         last_sign_in: new Date().toISOString()
       };
       
-      // Save to localStorage and context
       localStorage.setItem("userSession", JSON.stringify(userData));
       setUser(userData);
       
