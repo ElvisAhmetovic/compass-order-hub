@@ -256,7 +256,7 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
       </div>
 
       <!-- Professional Totals Section -->
-      <div style="display: flex; justify-content: flex-end; margin-bottom: 35px;">
+      <div style="display: flex; justify-content: flex-end; margin-bottom: 25px;">
         <div style="width: 320px; background: white; border-radius: 6px; overflow: hidden; border: 1px solid #e2e8f0;">
           <div style="background: #4a5568; color: white; padding: 12px 20px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; font-size: 12px;">
             Summary
@@ -278,8 +278,23 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
         </div>
       </div>
 
-      <!-- Fixed Payment Data Section - Proper spacing and containment -->
-      <div style="margin-bottom: 30px; background: #f0fff4; padding: 18px 20px; border-radius: 8px; border-left: 4px solid #38a169; border: 1px solid #c6f6d5; page-break-inside: avoid; clear: both; position: relative; z-index: 1;">
+      <!-- Professional Signature Section - Moved directly under TOTAL -->
+      <div style="display: flex; justify-content: space-between; margin-bottom: 35px; gap: 30px;">
+        <div style="width: 45%; background: white; padding: 16px; border-radius: 6px; border: 1px solid #e2e8f0;">
+          <div style="border-top: 2px solid #2d3748; padding-top: 10px;">
+            <div style="font-size: 11px; color: #718096; font-weight: 500; text-transform: uppercase; letter-spacing: 0.3px;">${t.placeDate}</div>
+          </div>
+        </div>
+        <div style="width: 45%; background: white; padding: 16px; border-radius: 6px; border: 1px solid #e2e8f0;">
+          <div style="border-top: 2px solid #2d3748; padding-top: 10px;">
+            <div style="font-size: 11px; color: #718096; font-weight: 500; text-transform: uppercase; letter-spacing: 0.3px;">${t.signatureStamp}</div>
+            ${proposalData.signatureUrl ? `<img src="${proposalData.signatureUrl}" style="max-height: 40px; margin-top: 10px;" />` : ''}
+          </div>
+        </div>
+      </div>
+
+      <!-- Fixed Payment Data Section - Better positioned to prevent clipping -->
+      <div style="margin-bottom: 25px; background: #f0fff4; padding: 20px; border-radius: 8px; border-left: 4px solid #38a169; border: 1px solid #c6f6d5; box-sizing: border-box; overflow: hidden; break-inside: avoid; page-break-inside: avoid;">
         <div style="font-weight: 600; margin-bottom: 12px; color: #2f855a; font-size: 13px; text-transform: uppercase; letter-spacing: 0.3px;">
           ${t.paymentData}
         </div>
@@ -300,7 +315,7 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
       </div>
 
       <!-- Professional Terms and Conditions -->
-      <div style="margin-bottom: 35px; background: white; padding: 20px; border-radius: 6px; border: 1px solid #e2e8f0; page-break-inside: avoid;">
+      <div style="margin-bottom: 25px; background: white; padding: 20px; border-radius: 6px; border: 1px solid #e2e8f0; break-inside: avoid; page-break-inside: avoid;">
         <div style="font-weight: 600; margin-bottom: 12px; text-transform: uppercase; color: #2d3748; font-size: 13px; letter-spacing: 0.3px; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px;">
           ${t.termsAndConditions}
         </div>
@@ -312,30 +327,15 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
 
       <!-- Professional Footer Content -->
       ${proposalData.footerContent ? `
-      <div style="margin-bottom: 30px; padding: 20px; background: #faf5ff; border-radius: 6px; border-left: 4px solid #805ad5; border: 1px solid #e9d8fd; page-break-inside: avoid;">
+      <div style="margin-bottom: 25px; padding: 20px; background: #faf5ff; border-radius: 6px; border-left: 4px solid #805ad5; border: 1px solid #e9d8fd; break-inside: avoid; page-break-inside: avoid;">
         <div style="line-height: 1.6; font-size: 12px; color: #553c9a;">
           ${proposalData.footerContent}
         </div>
       </div>
       ` : ''}
 
-      <!-- Professional Signature Section -->
-      <div style="display: flex; justify-content: space-between; margin-top: 50px; margin-bottom: 50px; gap: 30px; page-break-inside: avoid;">
-        <div style="width: 45%; background: white; padding: 16px; border-radius: 6px; border: 1px solid #e2e8f0;">
-          <div style="border-top: 2px solid #2d3748; padding-top: 10px;">
-            <div style="font-size: 11px; color: #718096; font-weight: 500; text-transform: uppercase; letter-spacing: 0.3px;">${t.placeDate}</div>
-          </div>
-        </div>
-        <div style="width: 45%; background: white; padding: 16px; border-radius: 6px; border: 1px solid #e2e8f0;">
-          <div style="border-top: 2px solid #2d3748; padding-top: 10px;">
-            <div style="font-size: 11px; color: #718096; font-weight: 500; text-transform: uppercase; letter-spacing: 0.3px;">${t.signatureStamp}</div>
-            ${proposalData.signatureUrl ? `<img src="${proposalData.signatureUrl}" style="max-height: 40px; margin-top: 10px;" />` : ''}
-          </div>
-        </div>
-      </div>
-
       <!-- ESSENTIAL COMPANY FOOTER - ALWAYS VISIBLE WITH PROPER SPACING -->
-      <div style="background: #2d3748; border-radius: 6px; margin-top: 60px; width: 100%; clear: both; position: relative; z-index: 999; page-break-inside: avoid; box-sizing: border-box;">
+      <div style="background: #2d3748; border-radius: 6px; margin-top: 40px; width: 100%; clear: both; position: relative; break-inside: avoid; page-break-inside: avoid; box-sizing: border-box;">
         <!-- Company Name Header -->
         <div style="background: rgba(255,255,255,0.1); padding: 10px 20px; border-bottom: 1px solid rgba(255,255,255,0.1);">
           <div style="color: white; font-weight: 600; font-size: 12px; text-align: center; letter-spacing: 0.5px;">
