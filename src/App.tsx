@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
@@ -6,6 +5,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import { RequireAuth } from './components/auth/RequireAuth';
+import AdminGuard from './components/auth/AdminGuard';
 import Companies from './pages/Companies';
 import UserManagement from './pages/UserManagement';
 import Deleted from './pages/Deleted';
@@ -111,18 +111,12 @@ function App() {
             }
           />
           <Route
-            path="/inventory"
-            element={
-              <RequireAuth>
-                <Inventory />
-              </RequireAuth>
-            }
-          />
-          <Route
             path="/deleted"
             element={
               <RequireAuth>
-                <Deleted />
+                <AdminGuard>
+                  <Deleted />
+                </AdminGuard>
               </RequireAuth>
             }
           />

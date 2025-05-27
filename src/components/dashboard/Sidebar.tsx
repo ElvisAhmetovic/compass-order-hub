@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
@@ -13,22 +14,30 @@ import {
   UserCheck
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
-const sidebarItems = [
-  { href: '/dashboard', icon: Home, label: 'Dashboard' },
-  { href: '/companies', icon: Building2, label: 'Companies' },
-  { href: '/proposals', icon: FileText, label: 'Proposals' },
-  { href: '/invoices', icon: Receipt, label: 'Invoices' },
-  { href: '/clients', icon: UserCheck, label: 'Clients' },
-  { href: '/user-management', icon: Users, label: 'User Management' },
-  { href: '/inventory', icon: Package, label: 'Inventory' },
-  { href: '/deleted', icon: Trash2, label: 'Deleted' },
-  { href: '/reviews', icon: Star, label: 'Reviews' },
-  { href: '/support', icon: HelpCircle, label: 'Support' },
-];
+import { useAuth } from '@/context/AuthContext';
 
 const Sidebar = () => {
   const location = useLocation();
+  const { user } = useAuth();
+
+  // Define sidebar items with role restrictions
+  const sidebarItems = [
+    { href: '/dashboard', icon: Home, label: 'Dashboard', roles: ['admin', 'agent', 'user'] },
+    { href: '/companies', icon: Building2, label: 'Companies', roles: ['admin', 'agent'] },
+    { href: '/proposals', icon: FileText, label: 'Proposals', roles: ['admin', 'agent'] },
+    { href: '/invoices', icon: Receipt, label: 'Invoices', roles: ['admin', 'agent'] },
+    { href: '/clients', icon: UserCheck, label: 'Clients', roles: ['admin', 'agent'] },
+    { href: '/user-management', icon: Users, label: 'User Management', roles: ['admin'] }, // Admin only
+    { href: '/inventory', icon: Package, label: 'Inventory', roles: ['admin', 'agent'] },
+    { href: '/deleted', icon: Trash2, label: 'Deleted', roles: ['admin'] }, // Admin only
+    { href: '/reviews', icon: Star, label: 'Reviews', roles: ['admin', 'agent', 'user'] },
+    { href: '/support', icon: HelpCircle, label: 'Support', roles: ['admin', 'agent', 'user'] },
+  ];
+
+  // Filter sidebar items based on user role
+  const visibleItems = sidebarItems.filter(item => 
+    user?.role && item.roles.includes(user.role)
+  );
 
   return (
     <div className="w-64 bg-white border-r border-gray-200 min-h-screen">
@@ -36,7 +45,7 @@ const Sidebar = () => {
         <h2 className="text-xl font-semibold text-gray-800">Navigation</h2>
       </div>
       <nav className="mt-6">
-        {sidebarItems.map((item) => {
+        {visibleItems.map((item) => {
           const Icon = item.icon;
           const isActive = location.pathname === item.href || 
             (item.href !== '/dashboard' && location.pathname.startsWith(item.href));
