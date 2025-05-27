@@ -141,7 +141,7 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
   });
 
   return `
-    <div style="font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif; padding: 40px; max-width: 794px; min-height: 1123px; background: #ffffff; margin: 0; box-sizing: border-box; font-size: 13px; line-height: 1.5; color: #2d3748; position: relative; padding-bottom: 120px;">
+    <div style="font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif; padding: 40px; max-width: 794px; min-height: auto; background: #ffffff; margin: 0; box-sizing: border-box; font-size: 13px; line-height: 1.5; color: #2d3748; position: relative;">
       
       <!-- Header Section with Professional Design -->
       <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 45px; padding-bottom: 20px; border-bottom: 2px solid #e2e8f0;">
@@ -323,8 +323,8 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
         </div>
       </div>
 
-      <!-- Professional Footer Company Info - Fixed positioning -->
-      <div style="position: absolute; bottom: 12px; left: 40px; right: 40px; background: #2d3748; border-radius: 6px; overflow: hidden;">
+      <!-- Professional Footer Company Info -->
+      <div style="background: #2d3748; border-radius: 6px; overflow: hidden; margin-top: 40px;">
         <!-- Header section -->
         <div style="background: rgba(255,255,255,0.1); padding: 6px 16px; border-bottom: 1px solid rgba(255,255,255,0.1);">
           <div style="color: white; font-weight: 600; font-size: 10px; text-align: center; letter-spacing: 0.3px;">
