@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { EditUserModal } from "./EditUserModal";
 import { User } from "@/types";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/context/AuthContext";
 import { 
   DropdownMenu,
   DropdownMenuContent,
@@ -25,6 +26,10 @@ export function UserManagementTable({ users, setUsers }: UserManagementTableProp
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const { toast } = useToast();
+  const { user: currentUser } = useAuth();
+  
+  // Check if current user is the main admin who can change roles
+  const isMainAdmin = currentUser?.email === "luciferbebistar@gmail.com";
   
   const handleEditUser = (user: User) => {
     setEditingUser(user);
@@ -37,6 +42,17 @@ export function UserManagementTable({ users, setUsers }: UserManagementTableProp
   };
   
   const handleDeleteUser = (userId: string) => {
+    // Prevent deletion of the main admin account
+    const userToDelete = users.find(u => u.id === userId);
+    if (userToDelete?.email === "luciferbebistar@gmail.com") {
+      toast({
+        variant: "destructive",
+        title: "Cannot delete main admin",
+        description: "The main administrator account cannot be deleted."
+      });
+      return;
+    }
+    
     if (window.confirm("Are you sure you want to delete this user?")) {
       try {
         // Delete user from localStorage
@@ -106,7 +122,14 @@ export function UserManagementTable({ users, setUsers }: UserManagementTableProp
               <TableRow key={user.id}>
                 <TableCell>{user.email}</TableCell>
                 <TableCell>{user.full_name}</TableCell>
-                <TableCell className="capitalize">{user.role}</TableCell>
+                <TableCell className="capitalize">
+                  {user.role}
+                  {user.email === "luciferbebistar@gmail.com" && (
+                    <span className="ml-2 text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
+                      Main Admin
+                    </span>
+                  )}
+                </TableCell>
                 <TableCell>{new Date(user.created_at).toLocaleDateString()}</TableCell>
                 <TableCell className="text-right">
                   <DropdownMenu>
@@ -122,12 +145,14 @@ export function UserManagementTable({ users, setUsers }: UserManagementTableProp
                       <DropdownMenuItem onClick={() => handleAssignOrders(user)}>
                         Assign Orders
                       </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        onClick={() => handleDeleteUser(user.id)}
-                        className="text-destructive"
-                      >
-                        Delete User
-                      </DropdownMenuItem>
+                      {user.email !== "luciferbebistar@gmail.com" && (
+                        <DropdownMenuItem 
+                          onClick={() => handleDeleteUser(user.id)}
+                          className="text-destructive"
+                        >
+                          Delete User
+                        </DropdownMenuItem>
+                      )}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>
@@ -143,6 +168,7 @@ export function UserManagementTable({ users, setUsers }: UserManagementTableProp
           open={isEditModalOpen}
           onClose={() => setIsEditModalOpen(false)}
           onUpdate={handleUpdateUser}
+          canEditRole={isMainAdmin}
         />
       )}
       

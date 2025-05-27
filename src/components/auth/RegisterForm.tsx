@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -95,20 +94,21 @@ const RegisterForm = () => {
       });
       localStorage.setItem("users", JSON.stringify(users));
       
-      // Also add user to app_users for user management
+      // IMPORTANT: Always assign "user" role for new registrations
+      // Only the main admin (luciferbebistar@gmail.com) can change roles via user management
       const appUsers = JSON.parse(localStorage.getItem("app_users") || "[]");
       appUsers.push({
         id: userId,
         email: email,
         full_name: fullName,
-        role: "user", // Default role for new registrations
+        role: "user", // FORCE user role for ALL new registrations
         created_at: new Date().toISOString()
       });
       localStorage.setItem("app_users", JSON.stringify(appUsers));
       
       toast({
         title: "Registration successful",
-        description: "Your account has been created. You can now log in.",
+        description: "Your account has been created with user privileges. You can now log in.",
       });
       navigate("/login");
     } catch (error) {
@@ -247,4 +247,3 @@ const RegisterForm = () => {
 };
 
 export default RegisterForm;
-
