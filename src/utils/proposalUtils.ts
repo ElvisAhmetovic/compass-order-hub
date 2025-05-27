@@ -311,7 +311,7 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
       ` : ''}
 
       <!-- Professional Signature Section -->
-      <div style="display: flex; justify-content: space-between; margin-top: 50px; margin-bottom: 60px; gap: 30px;">
+      <div style="display: flex; justify-content: space-between; margin-top: 50px; margin-bottom: 40px; gap: 30px;">
         <div style="width: 45%; background: white; padding: 16px; border-radius: 6px; border: 1px solid #e2e8f0;">
           <div style="border-top: 2px solid #2d3748; padding-top: 10px;">
             <div style="font-size: 11px; color: #718096; font-weight: 500; text-transform: uppercase; letter-spacing: 0.3px;">${t.placeDate}</div>
@@ -325,8 +325,8 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
         </div>
       </div>
 
-      <!-- COMPANY FOOTER WITH ALL CONTACT INFORMATION -->
-      <div style="background: #2d3748; border-radius: 6px; overflow: hidden; margin-top: 40px; page-break-inside: avoid;">
+      <!-- ESSENTIAL COMPANY FOOTER - ALWAYS VISIBLE -->
+      <div style="background: #2d3748; border-radius: 6px; margin-top: 30px; width: 100%; clear: both; position: relative; z-index: 999; page-break-inside: avoid;">
         <!-- Company Name Header -->
         <div style="background: rgba(255,255,255,0.1); padding: 8px 20px; border-bottom: 1px solid rgba(255,255,255,0.1);">
           <div style="color: white; font-weight: 600; font-size: 11px; text-align: center; letter-spacing: 0.5px;">
@@ -335,54 +335,56 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
         </div>
         
         <!-- Contact Information Grid -->
-        <div style="padding: 12px 20px; display: flex; justify-content: space-between; align-items: flex-start; color: white; font-size: 9px; gap: 20px;">
+        <div style="padding: 12px 20px; color: white; font-size: 9px;">
           
           <!-- Phone & Fax -->
-          <div style="flex: 1;">
-            <div style="margin-bottom: 4px;">
-              <span style="font-weight: 500; margin-right: 8px; color: #cbd5e0;">Tel:</span>
-              <span>${companyInfo.phone || '+49 203 70 90 72 62'}</span>
+          <div style="margin-bottom: 8px;">
+            <div style="display: inline-block; width: 33%; vertical-align: top;">
+              <div style="margin-bottom: 4px;">
+                <span style="font-weight: 500; margin-right: 8px; color: #cbd5e0;">Tel:</span>
+                <span>${companyInfo.phone || '+49 203 70 90 72 62'}</span>
+              </div>
+              <div>
+                <span style="font-weight: 500; margin-right: 8px; color: #cbd5e0;">Fax:</span>
+                <span>${companyInfo.fax || '+49 203 70 90 73 53'}</span>
+              </div>
             </div>
-            <div>
-              <span style="font-weight: 500; margin-right: 8px; color: #cbd5e0;">Fax:</span>
-              <span>${companyInfo.fax || '+49 203 70 90 73 53'}</span>
+            
+            <!-- Email & Website -->
+            <div style="display: inline-block; width: 33%; vertical-align: top;">
+              <div style="margin-bottom: 4px;">
+                <span style="font-weight: 500; margin-right: 8px; color: #cbd5e0;">Email:</span>
+                <span>${companyInfo.email || 'kontakt.abmedia@gmail.com'}</span>
+              </div>
+              <div>
+                <span style="font-weight: 500; margin-right: 8px; color: #cbd5e0;">Web:</span>
+                <span>${companyInfo.website || 'www.abmedia-team.com'}</span>
+              </div>
             </div>
-          </div>
-          
-          <!-- Email & Website -->
-          <div style="flex: 1;">
-            <div style="margin-bottom: 4px;">
-              <span style="font-weight: 500; margin-right: 8px; color: #cbd5e0;">Email:</span>
-              <span>${companyInfo.email || 'kontakt.abmedia@gmail.com'}</span>
-            </div>
-            <div>
-              <span style="font-weight: 500; margin-right: 8px; color: #cbd5e0;">Web:</span>
-              <span>${companyInfo.website || 'www.abmedia-team.com'}</span>
-            </div>
-          </div>
-          
-          <!-- Address & Contact Person -->
-          <div style="flex: 1; text-align: right; padding-left: 20px; border-left: 1px solid rgba(255,255,255,0.1);">
-            <div style="font-weight: 500; margin-bottom: 3px; color: #cbd5e0; font-size: 9px;">
-              ${companyInfo.contactPerson || 'Andreas Berger'}
-            </div>
-            <div style="line-height: 1.3; font-size: 9px;">
-              ${companyInfo.street || 'Weseler Str.73'}<br/>
-              ${companyInfo.postal || '47169'} ${companyInfo.city || 'Duisburg'}<br/>
-              ${companyInfo.country || 'Germany'}
+            
+            <!-- Address & Contact Person -->
+            <div style="display: inline-block; width: 33%; vertical-align: top; text-align: right;">
+              <div style="font-weight: 500; margin-bottom: 3px; color: #cbd5e0; font-size: 9px;">
+                ${companyInfo.contactPerson || 'Andreas Berger'}
+              </div>
+              <div style="line-height: 1.3; font-size: 9px;">
+                ${companyInfo.street || 'Weseler Str.73'}<br/>
+                ${companyInfo.postal || '47169'} ${companyInfo.city || 'Duisburg'}<br/>
+                ${companyInfo.country || 'Germany'}
+              </div>
             </div>
           </div>
         </div>
         
         <!-- Business Information -->
         <div style="background: rgba(255,255,255,0.05); padding: 8px 20px; border-top: 1px solid rgba(255,255,255,0.1);">
-          <div style="display: flex; justify-content: space-between; align-items: center; color: #cbd5e0; font-size: 8px;">
-            <div>
+          <div style="color: #cbd5e0; font-size: 8px;">
+            <div style="display: inline-block; width: 70%; vertical-align: top;">
               <span style="margin-right: 15px;">REG: ${companyInfo.registrationNumber || '15748871'}</span>
               <span style="margin-right: 15px;">VAT: ${companyInfo.vatId || 'DE123418679'}</span>
               <span>TAX: ${companyInfo.taxNumber || '13426 27369'}</span>
             </div>
-            <div style="text-align: right;">
+            <div style="display: inline-block; width: 30%; text-align: right; vertical-align: top;">
               <span style="font-weight: 500;">Director: ${companyInfo.director || 'Andreas Berger'}</span>
             </div>
           </div>
@@ -392,33 +394,41 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
   `;
 };
 
-// Improved PDF generation with consistent canvas settings
+// Improved PDF generation with proper height calculation to include footer
 const generatePDFFromHTML = async (htmlContent: string): Promise<jsPDF> => {
-  // Create a temporary div to render the proposal with fixed dimensions
+  // Create a temporary div to render the proposal with dynamic height
   const tempDiv = document.createElement("div");
   tempDiv.style.position = "absolute";
   tempDiv.style.left = "-9999px";
   tempDiv.style.top = "-9999px";
   tempDiv.style.width = "794px"; // A4 width in pixels at 96 DPI
-  tempDiv.style.height = "1123px"; // A4 height in pixels at 96 DPI
+  tempDiv.style.minHeight = "1400px"; // Increased minimum height to ensure footer is captured
   tempDiv.style.backgroundColor = "white";
-  tempDiv.style.overflow = "hidden";
+  tempDiv.style.overflow = "visible"; // Changed from hidden to visible
   
   tempDiv.innerHTML = htmlContent;
   document.body.appendChild(tempDiv);
   
+  // Wait for any images to load
+  await new Promise(resolve => setTimeout(resolve, 500));
+  
   try {
-    // Convert the HTML to canvas with consistent settings
+    // Get the actual content height
+    const actualHeight = Math.max(tempDiv.scrollHeight, 1400);
+    
+    console.log('PDF Generation - Content height:', actualHeight);
+    
+    // Convert the HTML to canvas with dynamic height
     const canvas = await html2canvas(tempDiv, {
-      scale: 1.5, // Consistent scale for both preview and PDF
+      scale: 1.5,
       logging: false,
       useCORS: true,
       allowTaint: true,
       backgroundColor: '#ffffff',
       width: 794,
-      height: 1123,
+      height: actualHeight,
       windowWidth: 794,
-      windowHeight: 1123
+      windowHeight: actualHeight
     });
     
     const imgData = canvas.toDataURL('image/png');
@@ -428,11 +438,29 @@ const generatePDFFromHTML = async (htmlContent: string): Promise<jsPDF> => {
       format: 'a4'
     });
     
-    // Calculate dimensions to fit A4
+    // Calculate dimensions to fit content properly
     const pdfWidth = pdf.internal.pageSize.getWidth();
     const pdfHeight = pdf.internal.pageSize.getHeight();
+    const imgWidth = pdfWidth;
+    const imgHeight = (canvas.height * pdfWidth) / canvas.width;
     
-    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+    // If content is taller than one page, create multiple pages
+    if (imgHeight > pdfHeight) {
+      const pageCount = Math.ceil(imgHeight / pdfHeight);
+      
+      for (let i = 0; i < pageCount; i++) {
+        if (i > 0) {
+          pdf.addPage();
+        }
+        
+        const yOffset = -(i * pdfHeight);
+        pdf.addImage(imgData, 'PNG', 0, yOffset, imgWidth, imgHeight);
+      }
+    } else {
+      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+    }
+    
+    console.log('PDF Generation - Footer should be visible now');
     
     return pdf;
   } finally {
