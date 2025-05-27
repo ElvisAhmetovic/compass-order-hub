@@ -12,7 +12,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Save, FileTemplate, RotateCcw } from "lucide-react";
+import { Save, File, RotateCcw } from "lucide-react";
 
 interface ProposalTemplate {
   id: string;
@@ -212,7 +212,7 @@ const TemplateManager: React.FC<TemplateManagerProps> = ({
       <Dialog open={isLoadDialogOpen} onOpenChange={setIsLoadDialogOpen}>
         <DialogTrigger asChild>
           <Button variant="outline" size="sm">
-            <FileTemplate size={16} className="mr-2" />
+            <File size={16} className="mr-2" />
             Load Template
           </Button>
         </DialogTrigger>
