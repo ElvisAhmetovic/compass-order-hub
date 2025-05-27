@@ -119,7 +119,7 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
   if (!currentOrder) return null;
 
   // Check if current user is admin or owner of the order
-  const canEdit = userRole === "admin" || currentOrder.created_by === user?.id;
+  const canEdit = userRole === "admin" || currentOrder?.created_by === user?.id;
   const isAdmin = userRole === "admin";
 
   const getStatusColor = (status: OrderStatus) => {
@@ -196,27 +196,36 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
         );
         localStorage.setItem("orders", JSON.stringify(updatedOrders));
         
-        // Update companies if company data was changed
-        if (editedOrder.company_name || editedOrder.contact_email || editedOrder.contact_phone || editedOrder.company_address || editedOrder.company_link) {
+        // Check if company data was changed
+        const companyFieldsChanged = editedOrder.company_name || 
+                                   editedOrder.contact_email || 
+                                   editedOrder.contact_phone || 
+                                   editedOrder.company_address || 
+                                   editedOrder.company_link;
+        
+        // If company data was changed, update all orders with the same company
+        if (companyFieldsChanged) {
           const oldCompanyKey = currentOrder.company_name.trim().toLowerCase();
           const newCompanyKey = (editedOrder.company_name || currentOrder.company_name).trim().toLowerCase();
           
-          // If company name changed, we need to update all related orders
-          if (editedOrder.company_name && oldCompanyKey !== newCompanyKey) {
-            const allOrdersWithOldCompany = updatedOrders.filter((o: Order) => 
-              o.company_name.trim().toLowerCase() === oldCompanyKey
-            );
-            
-            allOrdersWithOldCompany.forEach((o: Order) => {
-              o.company_name = editedOrder.company_name || currentOrder.company_name;
-              if (editedOrder.contact_email) o.contact_email = editedOrder.contact_email;
-              if (editedOrder.contact_phone) o.contact_phone = editedOrder.contact_phone;
-              if (editedOrder.company_address) o.company_address = editedOrder.company_address;
-              if (editedOrder.company_link) o.company_link = editedOrder.company_link;
-            });
-            
-            localStorage.setItem("orders", JSON.stringify(updatedOrders));
-          }
+          // Update all orders from the same company
+          const allOrdersToUpdate = updatedOrders.filter((o: Order) => 
+            o.company_name.trim().toLowerCase() === oldCompanyKey
+          );
+          
+          allOrdersToUpdate.forEach((o: Order) => {
+            if (editedOrder.company_name) o.company_name = editedOrder.company_name;
+            if (editedOrder.contact_email) o.contact_email = editedOrder.contact_email;
+            if (editedOrder.contact_phone) o.contact_phone = editedOrder.contact_phone;
+            if (editedOrder.company_address) o.company_address = editedOrder.company_address;
+            if (editedOrder.company_link) o.company_link = editedOrder.company_link;
+            o.updated_at = new Date().toISOString();
+          });
+          
+          localStorage.setItem("orders", JSON.stringify(updatedOrders));
+          
+          // Dispatch custom event to notify Companies page and other components
+          window.dispatchEvent(new CustomEvent('ordersUpdated'));
         }
         
         // Add edit to history
@@ -526,9 +535,9 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
         <DialogHeader>
           <DialogTitle className="flex justify-between items-center">
             <div className="flex gap-2 items-center">
-              <span>Order: {currentOrder.company_name}</span>
-              <Badge className={getStatusColor(currentOrder.status)}>{currentOrder.status}</Badge>
-              <Badge className={getPriorityColor(currentOrder.priority)}>{currentOrder.priority}</Badge>
+              <span>Order: {currentOrder?.company_name}</span>
+              <Badge className={getStatusColor(currentOrder?.status || "Created")}>{currentOrder?.status}</Badge>
+              <Badge className={getPriorityColor(currentOrder?.priority || "Medium")}>{currentOrder?.priority}</Badge>
             </div>
           </DialogTitle>
         </DialogHeader>
@@ -599,11 +608,11 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
                     <dd className="col-span-2">
                       {isEditing && canEdit ? (
                         <Input 
-                          value={editedOrder.company_name !== undefined ? editedOrder.company_name : currentOrder.company_name} 
+                          value={editedOrder.company_name !== undefined ? editedOrder.company_name : currentOrder?.company_name || ""} 
                           onChange={(e) => handleEditChange('company_name', e.target.value)}
                         />
                       ) : (
-                        currentOrder.company_name
+                        currentOrder?.company_name
                       )}
                     </dd>
                   </div>
@@ -612,11 +621,11 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
                     <dd className="col-span-2">
                       {isEditing && canEdit ? (
                         <Input 
-                          value={editedOrder.contact_name !== undefined ? editedOrder.contact_name : currentOrder.contact_name} 
+                          value={editedOrder.contact_name !== undefined ? editedOrder.contact_name : currentOrder?.contact_name || ""} 
                           onChange={(e) => handleEditChange('contact_name', e.target.value)}
                         />
                       ) : (
-                        currentOrder.contact_name
+                        currentOrder?.contact_name
                       )}
                     </dd>
                   </div>
@@ -626,11 +635,11 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
                       {isEditing && canEdit ? (
                         <Input 
                           type="email"
-                          value={editedOrder.contact_email !== undefined ? editedOrder.contact_email : currentOrder.contact_email} 
+                          value={editedOrder.contact_email !== undefined ? editedOrder.contact_email : currentOrder?.contact_email || ""} 
                           onChange={(e) => handleEditChange('contact_email', e.target.value)}
                         />
                       ) : (
-                        currentOrder.contact_email
+                        currentOrder?.contact_email
                       )}
                     </dd>
                   </div>
@@ -639,11 +648,11 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
                     <dd className="col-span-2">
                       {isEditing && canEdit ? (
                         <Input 
-                          value={editedOrder.contact_phone !== undefined ? editedOrder.contact_phone : currentOrder.contact_phone || ""} 
+                          value={editedOrder.contact_phone !== undefined ? editedOrder.contact_phone : currentOrder?.contact_phone || ""} 
                           onChange={(e) => handleEditChange('contact_phone', e.target.value)}
                         />
                       ) : (
-                        currentOrder.contact_phone || "N/A"
+                        currentOrder?.contact_phone || "N/A"
                       )}
                     </dd>
                   </div>
@@ -652,11 +661,11 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
                     <dd className="col-span-2">
                       {isEditing && canEdit ? (
                         <Input 
-                          value={editedOrder.company_address !== undefined ? editedOrder.company_address : currentOrder.company_address || ""} 
+                          value={editedOrder.company_address !== undefined ? editedOrder.company_address : currentOrder?.company_address || ""} 
                           onChange={(e) => handleEditChange('company_address', e.target.value)}
                         />
                       ) : (
-                        currentOrder.company_address || "N/A"
+                        currentOrder?.company_address || "N/A"
                       )}
                     </dd>
                   </div>
@@ -666,14 +675,14 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
                       {isEditing && canEdit ? (
                         <Input 
                           placeholder="Google Maps link or will auto-generate from address"
-                          value={editedOrder.company_link !== undefined ? editedOrder.company_link : currentOrder.company_link || ""} 
+                          value={editedOrder.company_link !== undefined ? editedOrder.company_link : currentOrder?.company_link || ""} 
                           onChange={(e) => handleEditChange('company_link', e.target.value)}
                         />
                       ) : (
                         <div className="flex items-center gap-2">
-                          {currentOrder.company_address || currentOrder.company_link ? (
+                          {currentOrder?.company_address || currentOrder?.company_link ? (
                             <a 
-                              href={getGoogleMapsLink(currentOrder.company_address || "", currentOrder.company_link)}
+                              href={getGoogleMapsLink(currentOrder?.company_address || "", currentOrder?.company_link)}
                               target="_blank" 
                               rel="noopener noreferrer"
                               className="text-primary hover:underline flex items-center gap-1"
@@ -697,25 +706,25 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
                 <dl className="divide-y divide-gray-200">
                   <div className="py-2 grid grid-cols-3">
                     <dt className="font-medium">Order ID:</dt>
-                    <dd className="col-span-2">{currentOrder.id}</dd>
+                    <dd className="col-span-2">{currentOrder?.id}</dd>
                   </div>
                   <div className="py-2 grid grid-cols-3">
                     <dt className="font-medium">Price:</dt>
-                    <dd className="col-span-2">{formatCurrency(currentOrder.price)}</dd>
+                    <dd className="col-span-2">{formatCurrency(currentOrder?.price || 0)}</dd>
                   </div>
                   <div className="py-2 grid grid-cols-3">
                     <dt className="font-medium">Created:</dt>
-                    <dd className="col-span-2">{formatDateTime(currentOrder.created_at)}</dd>
+                    <dd className="col-span-2">{formatDateTime(currentOrder?.created_at || "")}</dd>
                   </div>
                   <div className="py-2 grid grid-cols-3">
                     <dt className="font-medium">Last Updated:</dt>
-                    <dd className="col-span-2">{formatDateTime(currentOrder.updated_at)}</dd>
+                    <dd className="col-span-2">{formatDateTime(currentOrder?.updated_at || "")}</dd>
                   </div>
                   <div className="py-2 grid grid-cols-3">
                     <dt className="font-medium">Assigned To:</dt>
                     <dd className="col-span-2">
-                      {currentOrder.assigned_to 
-                        ? (currentOrder.assigned_to_name || getAssigneeName(currentOrder.assigned_to))
+                      {currentOrder?.assigned_to 
+                        ? (currentOrder?.assigned_to_name || getAssigneeName(currentOrder.assigned_to))
                         : "Unassigned"}
                     </dd>
                   </div>
@@ -728,12 +737,12 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
               {isEditing && canEdit ? (
                 <Textarea 
                   className="min-h-[100px]" 
-                  value={editedOrder.description !== undefined ? editedOrder.description : currentOrder.description}
+                  value={editedOrder.description !== undefined ? editedOrder.description : currentOrder?.description || ""}
                   onChange={(e) => handleEditChange('description', e.target.value)}
                 />
               ) : (
                 <div className="bg-muted p-4 rounded-md">
-                  {currentOrder.description}
+                  {currentOrder?.description}
                 </div>
               )}
             </div>
