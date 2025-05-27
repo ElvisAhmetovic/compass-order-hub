@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
@@ -141,6 +142,15 @@ function App() {
             element={
               <RequireAuth>
                 <SupportDetail />
+              </RequireAuth>
+            }
+          />
+          {/* Inventory route */}
+          <Route
+            path="/inventory"
+            element={
+              <RequireAuth>
+                <Inventory />
               </RequireAuth>
             }
           />
