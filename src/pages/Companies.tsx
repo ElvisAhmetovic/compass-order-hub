@@ -56,6 +56,27 @@ const Companies = () => {
     };
     
     loadCompanies();
+    
+    // Add event listener for storage changes to refresh data when orders are updated elsewhere
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'orders') {
+        loadCompanies();
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Also listen for custom events when localStorage is updated from the same window
+    const handleOrdersUpdate = () => {
+      loadCompanies();
+    };
+    
+    window.addEventListener('ordersUpdated', handleOrdersUpdate);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('ordersUpdated', handleOrdersUpdate);
+    };
   }, []);
   
   // Filter companies based on search term
@@ -74,15 +95,7 @@ const Companies = () => {
     if (!currentCompany || !currentCompanyKey) return;
 
     try {
-      // Create a new companies object with the updated company
-      const updatedCompanies = {
-        ...companies,
-        [currentCompanyKey]: { ...currentCompany }
-      };
-
-      setCompanies(updatedCompanies);
-      
-      // Also update related orders
+      // Update related orders with new company information
       const storedOrders = localStorage.getItem("orders");
       if (storedOrders) {
         const orders = JSON.parse(storedOrders);
@@ -93,13 +106,25 @@ const Companies = () => {
               company_name: currentCompany.name,
               contact_email: currentCompany.email,
               contact_phone: currentCompany.phone,
-              contact_address: currentCompany.address
+              company_address: currentCompany.address,
+              company_link: currentCompany.mapLink
             };
           }
           return order;
         });
         localStorage.setItem("orders", JSON.stringify(updatedOrders));
+        
+        // Dispatch custom event to notify other components
+        window.dispatchEvent(new CustomEvent('ordersUpdated'));
       }
+
+      // Create a new companies object with the updated company
+      const updatedCompanies = {
+        ...companies,
+        [currentCompanyKey]: { ...currentCompany }
+      };
+
+      setCompanies(updatedCompanies);
 
       toast({
         title: "Company updated",
@@ -161,7 +186,8 @@ const Companies = () => {
         contact_name: "Added manually",
         contact_email: newCompany.email,
         contact_phone: newCompany.phone || "Not provided",
-        contact_address: newCompany.address || "Not provided",
+        company_address: newCompany.address || "Not provided",
+        company_link: newCompany.mapLink || "",
         description: "Company added manually",
         price: 0,
         status: "Created",
@@ -173,6 +199,9 @@ const Companies = () => {
       
       orders.push(newOrder);
       localStorage.setItem("orders", JSON.stringify(orders));
+      
+      // Dispatch custom event to notify other components
+      window.dispatchEvent(new CustomEvent('ordersUpdated'));
 
       toast({
         title: "Company created",

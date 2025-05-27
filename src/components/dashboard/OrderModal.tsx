@@ -28,6 +28,7 @@ import { formatDate } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
 import { Input } from "@/components/ui/input";
 import { Edit, Save, AlertCircle, MapPin, ExternalLink } from "lucide-react";
+import { getGoogleMapsLink } from "@/utils/companyUtils";
 
 // Mock data for demonstration
 const mockComments: OrderComment[] = [
@@ -194,6 +195,29 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
           o.id === currentOrder.id ? updatedOrder : o
         );
         localStorage.setItem("orders", JSON.stringify(updatedOrders));
+        
+        // Update companies if company data was changed
+        if (editedOrder.company_name || editedOrder.contact_email || editedOrder.contact_phone || editedOrder.company_address || editedOrder.company_link) {
+          const oldCompanyKey = currentOrder.company_name.trim().toLowerCase();
+          const newCompanyKey = (editedOrder.company_name || currentOrder.company_name).trim().toLowerCase();
+          
+          // If company name changed, we need to update all related orders
+          if (editedOrder.company_name && oldCompanyKey !== newCompanyKey) {
+            const allOrdersWithOldCompany = updatedOrders.filter((o: Order) => 
+              o.company_name.trim().toLowerCase() === oldCompanyKey
+            );
+            
+            allOrdersWithOldCompany.forEach((o: Order) => {
+              o.company_name = editedOrder.company_name || currentOrder.company_name;
+              if (editedOrder.contact_email) o.contact_email = editedOrder.contact_email;
+              if (editedOrder.contact_phone) o.contact_phone = editedOrder.contact_phone;
+              if (editedOrder.company_address) o.company_address = editedOrder.company_address;
+              if (editedOrder.company_link) o.company_link = editedOrder.company_link;
+            });
+            
+            localStorage.setItem("orders", JSON.stringify(updatedOrders));
+          }
+        }
         
         // Add edit to history
         const newStatusHistoryItem: OrderStatusHistory = {
@@ -647,12 +671,9 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
                         />
                       ) : (
                         <div className="flex items-center gap-2">
-                          {currentOrder.company_link || currentOrder.company_address ? (
+                          {currentOrder.company_address || currentOrder.company_link ? (
                             <a 
-                              href={
-                                currentOrder.company_link || 
-                                `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(currentOrder.company_address || '')}`
-                              }
+                              href={getGoogleMapsLink(currentOrder.company_address || "", currentOrder.company_link)}
                               target="_blank" 
                               rel="noopener noreferrer"
                               className="text-primary hover:underline flex items-center gap-1"
