@@ -16,6 +16,8 @@ import { useToast } from "@/hooks/use-toast";
 import { v4 as uuidv4 } from "uuid";
 import { generateProposalPDF, previewProposalPDF, loadInventoryItems, formatInventoryItemForProposal, PROPOSAL_STATUSES } from "@/utils/proposalUtils";
 import InventoryAutocomplete from "@/components/inventory/InventoryAutocomplete";
+import TemplateManager from "@/components/proposals/TemplateManager";
+import { getDefaultTemplate, createProposalFromTemplate } from "@/utils/templateUtils";
 
 interface ProposalLineItem {
   id: string;
@@ -171,16 +173,25 @@ const ProposalDetail = () => {
   const loadProposal = () => {
     try {
       if (isNewProposal) {
-        // Generate a new proposal number
-        const savedProposals = localStorage.getItem("proposals");
-        const proposals = savedProposals ? JSON.parse(savedProposals) : [];
-        const nextNumber = `AN-${(9984 + proposals.length + 1).toString()}`;
+        // Check for default template first
+        const defaultTemplate = getDefaultTemplate();
         
-        setProposalData(prev => ({
-          ...prev,
-          number: nextNumber,
-          reference: `REF-${new Date().getFullYear()}-${(proposals.length + 1).toString().padStart(3, '0')}`
-        }));
+        if (defaultTemplate) {
+          // Use default template as starting point
+          const templateProposal = createProposalFromTemplate(defaultTemplate, uuidv4());
+          setProposalData(templateProposal);
+        } else {
+          // Generate a new proposal number for blank proposal
+          const savedProposals = localStorage.getItem("proposals");
+          const proposals = savedProposals ? JSON.parse(savedProposals) : [];
+          const nextNumber = `AN-${(9984 + proposals.length + 1).toString()}`;
+          
+          setProposalData(prev => ({
+            ...prev,
+            number: nextNumber,
+            reference: `REF-${new Date().getFullYear()}-${(proposals.length + 1).toString().padStart(3, '0')}`
+          }));
+        }
       } else {
         const savedProposals = localStorage.getItem("proposals");
         if (savedProposals) {
@@ -222,6 +233,16 @@ const ProposalDetail = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleLoadTemplate = (templateData: any) => {
+    const newProposalData = createProposalFromTemplate(templateData, proposalData.id);
+    setProposalData(newProposalData);
+    
+    toast({
+      title: "Template applied",
+      description: "The template has been applied to this proposal.",
+    });
   };
 
   const calculateTotals = (lineItems: ProposalLineItem[], vatEnabled: boolean, vatRate: number) => {
@@ -557,7 +578,11 @@ const ProposalDetail = () => {
                   {isNewProposal ? "Create New Proposal" : `Edit Proposal ${proposalData.number}`}
                 </h1>
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 items-center">
+                <TemplateManager 
+                  currentProposalData={proposalData}
+                  onLoadTemplate={handleLoadTemplate}
+                />
                 <Button onClick={handlePreview} variant="outline">
                   <Eye size={16} className="mr-2" />
                   Preview
