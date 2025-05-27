@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { Invoice, Client, InvoiceLineItem, Payment, InvoiceFormData } from "@/types/invoice";
 
@@ -149,9 +150,19 @@ export class InvoiceService {
   }
 
   static async createClient(clientData: Omit<Client, 'id' | 'created_at' | 'updated_at'>): Promise<Client> {
+    // Get the current user
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    
+    if (userError || !user) {
+      throw new Error('User must be authenticated to create clients');
+    }
+
     const { data, error } = await supabase
       .from('clients')
-      .insert(clientData)
+      .insert({
+        ...clientData,
+        user_id: user.id
+      })
       .select()
       .single();
 
