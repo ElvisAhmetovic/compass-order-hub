@@ -278,20 +278,29 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
         </div>
       </div>
 
-      <!-- Professional Payment Data Section -->
-      <div style="margin-bottom: 25px; background: #f0fff4; padding: 20px; border-radius: 6px; border-left: 4px solid #38a169; border: 1px solid #c6f6d5;">
+      <!-- Fixed Payment Data Section - Proper spacing and containment -->
+      <div style="margin-bottom: 30px; background: #f0fff4; padding: 18px 20px; border-radius: 8px; border-left: 4px solid #38a169; border: 1px solid #c6f6d5; page-break-inside: avoid; clear: both; position: relative; z-index: 1;">
         <div style="font-weight: 600; margin-bottom: 12px; color: #2f855a; font-size: 13px; text-transform: uppercase; letter-spacing: 0.3px;">
           ${t.paymentData}
         </div>
-        <div style="line-height: 1.6; font-size: 12px; color: #2f855a;">
-          <div style="margin-bottom: 6px;"><strong>${t.accountNr}</strong> ${paymentAccountNumber}</div>
-          <div style="margin-bottom: 6px;"><strong>${t.name}</strong> ${paymentAccountName}</div>
-          <div><strong>${t.paymentMethod}</strong> ${paymentMethodValue}</div>
+        <div style="line-height: 1.8; font-size: 12px; color: #2f855a;">
+          <div style="margin-bottom: 8px; display: flex; align-items: center;">
+            <strong style="min-width: 120px; display: inline-block;">${t.accountNr}</strong> 
+            <span>${paymentAccountNumber}</span>
+          </div>
+          <div style="margin-bottom: 8px; display: flex; align-items: center;">
+            <strong style="min-width: 120px; display: inline-block;">${t.name}</strong> 
+            <span>${paymentAccountName}</span>
+          </div>
+          <div style="display: flex; align-items: center;">
+            <strong style="min-width: 120px; display: inline-block;">${t.paymentMethod}</strong> 
+            <span>${paymentMethodValue}</span>
+          </div>
         </div>
       </div>
 
       <!-- Professional Terms and Conditions -->
-      <div style="margin-bottom: 35px; background: white; padding: 20px; border-radius: 6px; border: 1px solid #e2e8f0;">
+      <div style="margin-bottom: 35px; background: white; padding: 20px; border-radius: 6px; border: 1px solid #e2e8f0; page-break-inside: avoid;">
         <div style="font-weight: 600; margin-bottom: 12px; text-transform: uppercase; color: #2d3748; font-size: 13px; letter-spacing: 0.3px; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px;">
           ${t.termsAndConditions}
         </div>
@@ -303,7 +312,7 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
 
       <!-- Professional Footer Content -->
       ${proposalData.footerContent ? `
-      <div style="margin-bottom: 25px; padding: 20px; background: #faf5ff; border-radius: 6px; border-left: 4px solid #805ad5; border: 1px solid #e9d8fd;">
+      <div style="margin-bottom: 30px; padding: 20px; background: #faf5ff; border-radius: 6px; border-left: 4px solid #805ad5; border: 1px solid #e9d8fd; page-break-inside: avoid;">
         <div style="line-height: 1.6; font-size: 12px; color: #553c9a;">
           ${proposalData.footerContent}
         </div>
@@ -311,7 +320,7 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
       ` : ''}
 
       <!-- Professional Signature Section -->
-      <div style="display: flex; justify-content: space-between; margin-top: 50px; margin-bottom: 40px; gap: 30px;">
+      <div style="display: flex; justify-content: space-between; margin-top: 50px; margin-bottom: 50px; gap: 30px; page-break-inside: avoid;">
         <div style="width: 45%; background: white; padding: 16px; border-radius: 6px; border: 1px solid #e2e8f0;">
           <div style="border-top: 2px solid #2d3748; padding-top: 10px;">
             <div style="font-size: 11px; color: #718096; font-weight: 500; text-transform: uppercase; letter-spacing: 0.3px;">${t.placeDate}</div>
@@ -325,22 +334,22 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
         </div>
       </div>
 
-      <!-- ESSENTIAL COMPANY FOOTER - ALWAYS VISIBLE -->
-      <div style="background: #2d3748; border-radius: 6px; margin-top: 30px; width: 100%; clear: both; position: relative; z-index: 999; page-break-inside: avoid;">
+      <!-- ESSENTIAL COMPANY FOOTER - ALWAYS VISIBLE WITH PROPER SPACING -->
+      <div style="background: #2d3748; border-radius: 6px; margin-top: 60px; width: 100%; clear: both; position: relative; z-index: 999; page-break-inside: avoid; box-sizing: border-box;">
         <!-- Company Name Header -->
-        <div style="background: rgba(255,255,255,0.1); padding: 8px 20px; border-bottom: 1px solid rgba(255,255,255,0.1);">
-          <div style="color: white; font-weight: 600; font-size: 11px; text-align: center; letter-spacing: 0.5px;">
+        <div style="background: rgba(255,255,255,0.1); padding: 10px 20px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+          <div style="color: white; font-weight: 600; font-size: 12px; text-align: center; letter-spacing: 0.5px;">
             ${companyInfo.name || 'AB MEDIA TEAM LTD'}
           </div>
         </div>
         
         <!-- Contact Information Grid -->
-        <div style="padding: 12px 20px; color: white; font-size: 9px;">
+        <div style="padding: 15px 20px; color: white; font-size: 10px;">
           
           <!-- Phone & Fax -->
-          <div style="margin-bottom: 8px;">
+          <div style="margin-bottom: 10px;">
             <div style="display: inline-block; width: 33%; vertical-align: top;">
-              <div style="margin-bottom: 4px;">
+              <div style="margin-bottom: 5px;">
                 <span style="font-weight: 500; margin-right: 8px; color: #cbd5e0;">Tel:</span>
                 <span>${companyInfo.phone || '+49 203 70 90 72 62'}</span>
               </div>
@@ -352,7 +361,7 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
             
             <!-- Email & Website -->
             <div style="display: inline-block; width: 33%; vertical-align: top;">
-              <div style="margin-bottom: 4px;">
+              <div style="margin-bottom: 5px;">
                 <span style="font-weight: 500; margin-right: 8px; color: #cbd5e0;">Email:</span>
                 <span>${companyInfo.email || 'kontakt.abmedia@gmail.com'}</span>
               </div>
@@ -364,10 +373,10 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
             
             <!-- Address & Contact Person -->
             <div style="display: inline-block; width: 33%; vertical-align: top; text-align: right;">
-              <div style="font-weight: 500; margin-bottom: 3px; color: #cbd5e0; font-size: 9px;">
+              <div style="font-weight: 500; margin-bottom: 4px; color: #cbd5e0; font-size: 10px;">
                 ${companyInfo.contactPerson || 'Andreas Berger'}
               </div>
-              <div style="line-height: 1.3; font-size: 9px;">
+              <div style="line-height: 1.4; font-size: 9px;">
                 ${companyInfo.street || 'Weseler Str.73'}<br/>
                 ${companyInfo.postal || '47169'} ${companyInfo.city || 'Duisburg'}<br/>
                 ${companyInfo.country || 'Germany'}
@@ -377,8 +386,8 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
         </div>
         
         <!-- Business Information -->
-        <div style="background: rgba(255,255,255,0.05); padding: 8px 20px; border-top: 1px solid rgba(255,255,255,0.1);">
-          <div style="color: #cbd5e0; font-size: 8px;">
+        <div style="background: rgba(255,255,255,0.05); padding: 10px 20px; border-top: 1px solid rgba(255,255,255,0.1);">
+          <div style="color: #cbd5e0; font-size: 9px;">
             <div style="display: inline-block; width: 70%; vertical-align: top;">
               <span style="margin-right: 15px;">REG: ${companyInfo.registrationNumber || '15748871'}</span>
               <span style="margin-right: 15px;">VAT: ${companyInfo.vatId || 'DE123418679'}</span>
