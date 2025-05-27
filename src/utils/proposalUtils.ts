@@ -1,4 +1,3 @@
-
 import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
 import { Proposal, ProposalLineItem, InventoryItem } from "@/types";
@@ -83,10 +82,21 @@ export const translations = {
   }
 };
 
-// Professional PDF content with refined typography and formal design
+// Professional PDF content with optimized sizing and improved layout flow
 const createPDFContent = (proposalData: any, language: string = "en") => {
   const t = translations[language as keyof typeof translations] || translations.en;
   const companyInfo = getCompanyInfo();
+
+  // Global scaling factor for better fit - reduces size by 8% for optimal fitting
+  const scaleFactor = 0.92;
+  
+  // Calculate responsive dimensions with scaling
+  const baseFontSize = Math.round(12 * scaleFactor);
+  const headerFontSize = Math.round(22 * scaleFactor);
+  const titleFontSize = Math.round(18 * scaleFactor);
+  const lineHeight = 1.4;
+  const sectionSpacing = Math.round(25 * scaleFactor);
+  const elementPadding = Math.round(16 * scaleFactor);
 
   // Calculate logo width based on logoSize
   const logoWidth = proposalData.logoSize ? `${proposalData.logoSize}%` : '33%';
@@ -120,133 +130,126 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
   // Format the proposal date properly
   const proposalDate = proposalData.proposalDate ? new Date(proposalData.proposalDate).toLocaleDateString() : new Date(proposalData.created_at || Date.now()).toLocaleDateString();
 
-  console.log('PDF Generation - Using data:', {
+  console.log('PDF Generation - Using optimized scaling and layout data:', {
+    scaleFactor,
+    baseFontSize,
+    headerFontSize,
+    titleFontSize,
     customerName: proposalData.customerName,
-    customerAddress: proposalData.customerAddress,
-    customerEmail: proposalData.customerEmail,
-    customerCountry: proposalData.customerCountry,
     proposalTitle: proposalData.proposalTitle,
-    proposalDescription: proposalData.proposalDescription,
-    yourContact: proposalData.yourContact,
     lineItems: proposalData.lineItems,
     vatEnabled: isVatEnabled,
     netAmount,
     vatAmount,
     totalAmount,
-    proposalDate,
-    paymentData: {
-      accountNumber: paymentAccountNumber,
-      accountName: paymentAccountName,
-      paymentMethod: paymentMethodValue
-    },
-    companyInfo: companyInfo
+    proposalDate
   });
 
   return `
-    <div style="font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif; padding: 40px; max-width: 794px; min-height: auto; background: #ffffff; margin: 0; box-sizing: border-box; font-size: 13px; line-height: 1.5; color: #2d3748; position: relative;">
+    <div style="font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif; padding: ${Math.round(32 * scaleFactor)}px; max-width: 794px; min-height: auto; background: #ffffff; margin: 0; box-sizing: border-box; font-size: ${baseFontSize}px; line-height: ${lineHeight}; color: #2d3748; position: relative;">
       
-      <!-- Header Section with Professional Design -->
-      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 45px; padding-bottom: 20px; border-bottom: 2px solid #e2e8f0;">
+      <!-- Header Section with Optimized Design -->
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: ${Math.round(35 * scaleFactor)}px; padding-bottom: ${Math.round(16 * scaleFactor)}px; border-bottom: 2px solid #e2e8f0;">
         <div style="flex: 1; max-width: 60%;">
-          <div style="font-weight: 600; font-size: 24px; margin-bottom: 12px; color: #1a202c; letter-spacing: -0.3px;">${companyInfo.name}</div>
-          <div style="line-height: 1.6; color: #4a5568; font-size: 14px;">
-            <div style="margin-bottom: 3px;">${companyInfo.street}</div>
-            <div style="margin-bottom: 3px;">${companyInfo.postal} ${companyInfo.city}</div>
-            <div style="color: #718096; font-size: 13px;">${companyInfo.country || 'Germany'}</div>
+          <div style="font-weight: 600; font-size: ${headerFontSize}px; margin-bottom: ${Math.round(10 * scaleFactor)}px; color: #1a202c; letter-spacing: -0.3px;">${companyInfo.name}</div>
+          <div style="line-height: ${lineHeight}; color: #4a5568; font-size: ${Math.round(13 * scaleFactor)}px;">
+            <div style="margin-bottom: 2px;">${companyInfo.street}</div>
+            <div style="margin-bottom: 2px;">${companyInfo.postal} ${companyInfo.city}</div>
+            <div style="color: #718096; font-size: ${Math.round(12 * scaleFactor)}px;">${companyInfo.country || 'Germany'}</div>
           </div>
         </div>
         <div style="text-align: right;">
-          <div style="background: #f7fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 12px;">
-            <img src="${proposalData.logo || companyInfo.logo}" style="max-height: 70px; max-width: ${logoWidth};" onerror="this.src='https://placehold.co/200x60?text=Your+Logo'; this.onerror=null;" />
+          <div style="background: #f7fafc; padding: ${Math.round(10 * scaleFactor)}px; border-radius: 6px; border: 1px solid #e2e8f0; margin-bottom: ${Math.round(10 * scaleFactor)}px;">
+            <img src="${proposalData.logo || companyInfo.logo}" style="max-height: ${Math.round(60 * scaleFactor)}px; max-width: ${logoWidth};" onerror="this.src='https://placehold.co/200x60?text=Your+Logo'; this.onerror=null;" />
           </div>
         </div>
       </div>
 
-      <!-- Customer Information and Proposal Details -->
-      <div style="display: flex; justify-content: space-between; margin-bottom: 40px; gap: 30px;">
-        <div style="flex: 1; background: #f8fafc; padding: 20px; border-radius: 8px; border: 1px solid #e2e8f0;">
-          <div style="font-weight: 600; font-size: 14px; margin-bottom: 15px; color: #2d3748; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #cbd5e0; padding-bottom: 6px;">${t.customer}</div>
-          <div style="line-height: 1.6; font-size: 13px;">
-            <div style="font-weight: 600; margin-bottom: 8px; font-size: 15px; color: #2d3748;">${proposalData.customerName || proposalData.customer || 'Name Surname'}</div>
-            <div style="margin-bottom: 6px; color: #4a5568;">${proposalData.customerAddress || 'Leidsestraat 15, 2000 Antwerpen'}</div>
-            <div style="margin-bottom: 6px; color: #4a5568;">${proposalData.customerEmail || 'customer@email.com'}</div>
+      <!-- Customer Information and Proposal Details with Better Spacing -->
+      <div style="display: flex; justify-content: space-between; margin-bottom: ${Math.round(30 * scaleFactor)}px; gap: ${Math.round(24 * scaleFactor)}px;">
+        <div style="flex: 1; background: #f8fafc; padding: ${elementPadding}px; border-radius: 6px; border: 1px solid #e2e8f0;">
+          <div style="font-weight: 600; font-size: ${Math.round(13 * scaleFactor)}px; margin-bottom: ${Math.round(12 * scaleFactor)}px; color: #2d3748; text-transform: uppercase; letter-spacing: 0.4px; border-bottom: 1px solid #cbd5e0; padding-bottom: 4px;">${t.customer}</div>
+          <div style="line-height: ${lineHeight}; font-size: ${Math.round(12 * scaleFactor)}px;">
+            <div style="font-weight: 600; margin-bottom: 6px; font-size: ${Math.round(14 * scaleFactor)}px; color: #2d3748;">${proposalData.customerName || proposalData.customer || 'Name Surname'}</div>
+            <div style="margin-bottom: 4px; color: #4a5568;">${proposalData.customerAddress || 'Leidsestraat 15, 2000 Antwerpen'}</div>
+            <div style="margin-bottom: 4px; color: #4a5568;">${proposalData.customerEmail || 'customer@email.com'}</div>
             <div style="color: #718096; font-weight: 500;">${proposalData.customerCountry || 'Belgium'}</div>
           </div>
         </div>
         
-        <div style="flex: 0 0 auto; min-width: 260px;">
-          <div style="background: #f8fafc; padding: 20px; border-radius: 8px; border: 1px solid #e2e8f0;">
-            <div style="margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; padding-bottom: 6px; border-bottom: 1px solid #e2e8f0;">
-              <span style="font-weight: 500; color: #4a5568; font-size: 12px;">Proposal no.</span>
-              <span style="font-weight: 600; color: #2d3748; font-size: 13px;">${proposalData.number || 'AN-9993'}</span>
+        <div style="flex: 0 0 auto; min-width: ${Math.round(240 * scaleFactor)}px;">
+          <div style="background: #f8fafc; padding: ${elementPadding}px; border-radius: 6px; border: 1px solid #e2e8f0;">
+            <div style="margin-bottom: ${Math.round(10 * scaleFactor)}px; display: flex; justify-content: space-between; align-items: center; padding-bottom: 4px; border-bottom: 1px solid #e2e8f0;">
+              <span style="font-weight: 500; color: #4a5568; font-size: ${Math.round(11 * scaleFactor)}px;">Proposal no.</span>
+              <span style="font-weight: 600; color: #2d3748; font-size: ${Math.round(12 * scaleFactor)}px;">${proposalData.number || 'AN-9993'}</span>
             </div>
-            <div style="margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; padding-bottom: 6px; border-bottom: 1px solid #e2e8f0;">
-              <span style="font-weight: 500; color: #4a5568; font-size: 12px;">${t.date}</span>
-              <span style="color: #4a5568; font-weight: 500; font-size: 12px;">${proposalDate}</span>
+            <div style="margin-bottom: ${Math.round(10 * scaleFactor)}px; display: flex; justify-content: space-between; align-items: center; padding-bottom: 4px; border-bottom: 1px solid #e2e8f0;">
+              <span style="font-weight: 500; color: #4a5568; font-size: ${Math.round(11 * scaleFactor)}px;">${t.date}</span>
+              <span style="color: #4a5568; font-weight: 500; font-size: ${Math.round(11 * scaleFactor)}px;">${proposalDate}</span>
             </div>
-            <div style="margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; padding-bottom: 6px; border-bottom: 1px solid #e2e8f0;">
-              <span style="font-weight: 500; color: #4a5568; font-size: 12px;">${t.customerRef}</span>
-              <span style="color: #4a5568; font-weight: 500; font-size: 12px;">${proposalData.customerRef || proposalData.reference || '—'}</span>
+            <div style="margin-bottom: ${Math.round(10 * scaleFactor)}px; display: flex; justify-content: space-between; align-items: center; padding-bottom: 4px; border-bottom: 1px solid #e2e8f0;">
+              <span style="font-weight: 500; color: #4a5568; font-size: ${Math.round(11 * scaleFactor)}px;">${t.customerRef}</span>
+              <span style="color: #4a5568; font-weight: 500; font-size: ${Math.round(11 * scaleFactor)}px;">${proposalData.customerRef || proposalData.reference || '—'}</span>
             </div>
             <div style="display: flex; justify-content: space-between; align-items: center;">
-              <span style="font-weight: 500; color: #4a5568; font-size: 12px;">${t.yourContact}</span>
-              <span style="color: #4a5568; font-weight: 500; font-size: 12px;">${proposalData.yourContact || proposalData.internalContact || 'Thomas Klein'}</span>
+              <span style="font-weight: 500; color: #4a5568; font-size: ${Math.round(11 * scaleFactor)}px;">${t.yourContact}</span>
+              <span style="color: #4a5568; font-weight: 500; font-size: ${Math.round(11 * scaleFactor)}px;">${proposalData.yourContact || proposalData.internalContact || 'Thomas Klein'}</span>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Professional Proposal Title -->
-      <div style="background: #2d3748; color: white; padding: 20px; border-radius: 6px; margin-bottom: 30px;">
-        <h2 style="margin: 0; font-size: 20px; font-weight: 600; letter-spacing: -0.3px;">
+      <!-- Optimized Proposal Title -->
+      <div style="background: #2d3748; color: white; padding: ${elementPadding}px; border-radius: 5px; margin-bottom: ${sectionSpacing}px;">
+        <h2 style="margin: 0; font-size: ${titleFontSize}px; font-weight: 600; letter-spacing: -0.2px;">
           ${t.proposal} ${proposalData.number || 'AN-9993'}
         </h2>
       </div>
 
-      <!-- Professional Proposal Content -->
-      <div style="margin-bottom: 30px; background: white; padding: 20px; border-radius: 6px; border: 1px solid #e2e8f0;">
-        <div style="line-height: 1.6; font-size: 13px;">
-          <div style="font-weight: 600; font-size: 16px; color: #2d3748; margin-bottom: 12px;">
+      <!-- Optimized Proposal Content -->
+      <div style="margin-bottom: ${sectionSpacing}px; background: white; padding: ${elementPadding}px; border-radius: 5px; border: 1px solid #e2e8f0;">
+        <div style="line-height: ${lineHeight}; font-size: ${Math.round(12 * scaleFactor)}px;">
+          <div style="font-weight: 600; font-size: ${Math.round(15 * scaleFactor)}px; color: #2d3748; margin-bottom: ${Math.round(10 * scaleFactor)}px;">
             ${proposalData.proposalTitle || proposalData.subject || 'Protect your online REPUTATION!'}
           </div>
-          <div style="color: #4a5568; line-height: 1.6;">
+          <div style="color: #4a5568; line-height: ${lineHeight};">
             ${proposalData.proposalDescription || 'Thank you for your enquiry. We will be happy to provide you with the requested non-binding offer.'}
             ${proposalData.content ? `<br/><br/>${proposalData.content}` : ''}
           </div>
         </div>
       </div>
 
-      <!-- Professional Products/Services Table -->
-      <div style="margin-bottom: 35px; border-radius: 6px; overflow: hidden; border: 1px solid #e2e8f0;">
-        <table style="width: 100%; border-collapse: collapse; font-size: 12px; background: white;">
+      <!-- Optimized Products/Services Table -->
+      <div style="margin-bottom: ${Math.round(28 * scaleFactor)}px; border-radius: 5px; overflow: hidden; border: 1px solid #e2e8f0;">
+        <table style="width: 100%; border-collapse: collapse; font-size: ${Math.round(11 * scaleFactor)}px; background: white;">
           <thead>
             <tr style="background: #2d3748; color: white;">
-              <th style="padding: 15px 18px; text-align: left; font-weight: 600; border: none; width: 50%; font-size: 12px; text-transform: uppercase; letter-spacing: 0.3px;">${t.productDescription}</th>
-              <th style="padding: 15px 18px; text-align: center; font-weight: 600; border: none; width: 16%; font-size: 12px; text-transform: uppercase; letter-spacing: 0.3px;">${t.price}</th>
-              <th style="padding: 15px 18px; text-align: center; font-weight: 600; border: none; width: 14%; font-size: 12px; text-transform: uppercase; letter-spacing: 0.3px;">${t.qty}</th>
-              <th style="padding: 15px 18px; text-align: right; font-weight: 600; border: none; width: 20%; font-size: 12px; text-transform: uppercase; letter-spacing: 0.3px;">${t.total}</th>
+              <th style="padding: ${Math.round(12 * scaleFactor)}px ${Math.round(14 * scaleFactor)}px; text-align: left; font-weight: 600; border: none; width: 50%; font-size: ${Math.round(11 * scaleFactor)}px; text-transform: uppercase; letter-spacing: 0.2px;">${t.productDescription}</th>
+              <th style="padding: ${Math.round(12 * scaleFactor)}px ${Math.round(14 * scaleFactor)}px; text-align: center; font-weight: 600; border: none; width: 16%; font-size: ${Math.round(11 * scaleFactor)}px; text-transform: uppercase; letter-spacing: 0.2px;">${t.price}</th>
+              <th style="padding: ${Math.round(12 * scaleFactor)}px ${Math.round(14 * scaleFactor)}px; text-align: center; font-weight: 600; border: none; width: 14%; font-size: ${Math.round(11 * scaleFactor)}px; text-transform: uppercase; letter-spacing: 0.2px;">${t.qty}</th>
+              <th style="padding: ${Math.round(12 * scaleFactor)}px ${Math.round(14 * scaleFactor)}px; text-align: right; font-weight: 600; border: none; width: 20%; font-size: ${Math.round(11 * scaleFactor)}px; text-transform: uppercase; letter-spacing: 0.2px;">${t.total}</th>
             </tr>
           </thead>
           <tbody>
             ${(proposalData.lineItems || []).map((item: any, index: number) => `
               <tr style="border-bottom: 1px solid #e2e8f0; background-color: ${index % 2 === 0 ? '#f8fafc' : 'white'};">
-                <td style="padding: 16px 18px; border: none; vertical-align: top;">
-                  <div style="font-weight: 600; margin-bottom: 6px; color: #2d3748; font-size: 13px; line-height: 1.4;">
+                <td style="padding: ${Math.round(13 * scaleFactor)}px ${Math.round(14 * scaleFactor)}px; border: none; vertical-align: top;">
+                  <div style="font-weight: 600; margin-bottom: 4px; color: #2d3748; font-size: ${Math.round(12 * scaleFactor)}px; line-height: 1.3;">
                     ${item.name || 'Product/Service Name'}
                   </div>
                   ${item.description || item.additionalInfo ? `
-                  <div style="line-height: 1.5; color: #718096; font-size: 11px; margin-top: 6px;">
+                  <div style="line-height: 1.4; color: #718096; font-size: ${Math.round(10 * scaleFactor)}px; margin-top: 4px;">
                     ${item.description || item.additionalInfo || ''}
                   </div>
                   ` : ''}
                 </td>
-                <td style="padding: 16px 18px; border: none; text-align: center; vertical-align: top; font-weight: 500; color: #4a5568; font-size: 12px;">
+                <td style="padding: ${Math.round(13 * scaleFactor)}px ${Math.round(14 * scaleFactor)}px; border: none; text-align: center; vertical-align: top; font-weight: 500; color: #4a5568; font-size: ${Math.round(11 * scaleFactor)}px;">
                   ${currencySymbol}${(item.unit_price || 0).toFixed(2)}
                 </td>
-                <td style="padding: 16px 18px; border: none; text-align: center; vertical-align: top; font-weight: 500; color: #4a5568; font-size: 12px;">
+                <td style="padding: ${Math.round(13 * scaleFactor)}px ${Math.round(14 * scaleFactor)}px; border: none; text-align: center; vertical-align: top; font-weight: 500; color: #4a5568; font-size: ${Math.round(11 * scaleFactor)}px;">
                   ${item.quantity || 1}
                 </td>
-                <td style="padding: 16px 18px; border: none; text-align: right; vertical-align: top; font-weight: 600; font-size: 13px; color: #2d3748;">
+                <td style="padding: ${Math.round(13 * scaleFactor)}px ${Math.round(14 * scaleFactor)}px; border: none; text-align: right; vertical-align: top; font-weight: 600; font-size: ${Math.round(12 * scaleFactor)}px; color: #2d3748;">
                   ${currencySymbol}${(item.total_price || 0).toFixed(2)}
                 </td>
               </tr>
@@ -255,22 +258,22 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
         </table>
       </div>
 
-      <!-- Professional Totals Section -->
-      <div style="display: flex; justify-content: flex-end; margin-bottom: 25px;">
-        <div style="width: 320px; background: white; border-radius: 6px; overflow: hidden; border: 1px solid #e2e8f0;">
-          <div style="background: #4a5568; color: white; padding: 12px 20px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; font-size: 12px;">
+      <!-- Optimized Totals Section -->
+      <div style="display: flex; justify-content: flex-end; margin-bottom: ${Math.round(20 * scaleFactor)}px;">
+        <div style="width: ${Math.round(290 * scaleFactor)}px; background: white; border-radius: 5px; overflow: hidden; border: 1px solid #e2e8f0;">
+          <div style="background: #4a5568; color: white; padding: ${Math.round(10 * scaleFactor)}px ${Math.round(16 * scaleFactor)}px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.2px; font-size: ${Math.round(11 * scaleFactor)}px;">
             Summary
           </div>
-          <div style="padding: 18px 20px;">
-            <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e2e8f0; font-size: 13px;">
+          <div style="padding: ${Math.round(14 * scaleFactor)}px ${Math.round(16 * scaleFactor)}px;">
+            <div style="display: flex; justify-content: space-between; padding: ${Math.round(8 * scaleFactor)}px 0; border-bottom: 1px solid #e2e8f0; font-size: ${Math.round(12 * scaleFactor)}px;">
               <span style="color: #718096; font-weight: 500;">${t.subtotal}</span>
               <span style="font-weight: 600; color: #2d3748;">${currencySymbol}${netAmount.toFixed(2)}</span>
             </div>
-            <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e2e8f0; font-size: 13px;">
+            <div style="display: flex; justify-content: space-between; padding: ${Math.round(8 * scaleFactor)}px 0; border-bottom: 1px solid #e2e8f0; font-size: ${Math.round(12 * scaleFactor)}px;">
               <span style="color: #718096; font-weight: 500;">${t.vat} ${isVatEnabled ? `${vatRate}%` : '0%'}</span>
               <span style="font-weight: 600; color: #2d3748;">${currencySymbol}${vatAmount.toFixed(2)}</span>
             </div>
-            <div style="display: flex; justify-content: space-between; padding: 15px 0; font-weight: 700; font-size: 15px; background: #2d3748; color: white; margin: 12px -20px -18px -20px; padding-left: 20px; padding-right: 20px;">
+            <div style="display: flex; justify-content: space-between; padding: ${Math.round(12 * scaleFactor)}px 0; font-weight: 700; font-size: ${Math.round(14 * scaleFactor)}px; background: #2d3748; color: white; margin: ${Math.round(10 * scaleFactor)}px -${Math.round(16 * scaleFactor)}px -${Math.round(14 * scaleFactor)}px -${Math.round(16 * scaleFactor)}px; padding-left: ${Math.round(16 * scaleFactor)}px; padding-right: ${Math.round(16 * scaleFactor)}px;">
               <span>${t.totalAmount}</span>
               <span>${currencySymbol}${totalAmount.toFixed(2)}</span>
             </div>
@@ -278,105 +281,105 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
         </div>
       </div>
 
-      <!-- Professional Signature Section - Moved directly under TOTAL -->
-      <div style="display: flex; justify-content: space-between; margin-bottom: 35px; gap: 30px;">
-        <div style="width: 45%; background: white; padding: 16px; border-radius: 6px; border: 1px solid #e2e8f0;">
-          <div style="border-top: 2px solid #2d3748; padding-top: 10px;">
-            <div style="font-size: 11px; color: #718096; font-weight: 500; text-transform: uppercase; letter-spacing: 0.3px;">${t.placeDate}</div>
+      <!-- CRITICAL FIX: Signature Section - Positioned immediately after TOTAL with proper spacing -->
+      <div style="display: flex; justify-content: space-between; margin-bottom: ${Math.round(28 * scaleFactor)}px; gap: ${Math.round(24 * scaleFactor)}px; margin-top: ${Math.round(15 * scaleFactor)}px;">
+        <div style="width: 45%; background: white; padding: ${Math.round(12 * scaleFactor)}px; border-radius: 5px; border: 1px solid #e2e8f0;">
+          <div style="border-top: 2px solid #2d3748; padding-top: ${Math.round(8 * scaleFactor)}px;">
+            <div style="font-size: ${Math.round(10 * scaleFactor)}px; color: #718096; font-weight: 500; text-transform: uppercase; letter-spacing: 0.2px;">${t.placeDate}</div>
           </div>
         </div>
-        <div style="width: 45%; background: white; padding: 16px; border-radius: 6px; border: 1px solid #e2e8f0;">
-          <div style="border-top: 2px solid #2d3748; padding-top: 10px;">
-            <div style="font-size: 11px; color: #718096; font-weight: 500; text-transform: uppercase; letter-spacing: 0.3px;">${t.signatureStamp}</div>
-            ${proposalData.signatureUrl ? `<img src="${proposalData.signatureUrl}" style="max-height: 40px; margin-top: 10px;" />` : ''}
+        <div style="width: 45%; background: white; padding: ${Math.round(12 * scaleFactor)}px; border-radius: 5px; border: 1px solid #e2e8f0;">
+          <div style="border-top: 2px solid #2d3748; padding-top: ${Math.round(8 * scaleFactor)}px;">
+            <div style="font-size: ${Math.round(10 * scaleFactor)}px; color: #718096; font-weight: 500; text-transform: uppercase; letter-spacing: 0.2px;">${t.signatureStamp}</div>
+            ${proposalData.signatureUrl ? `<img src="${proposalData.signatureUrl}" style="max-height: ${Math.round(32 * scaleFactor)}px; margin-top: ${Math.round(8 * scaleFactor)}px;" />` : ''}
           </div>
         </div>
       </div>
 
-      <!-- Fixed Payment Data Section - Better positioned to prevent clipping -->
-      <div style="margin-bottom: 25px; background: #f0fff4; padding: 20px; border-radius: 8px; border-left: 4px solid #38a169; border: 1px solid #c6f6d5; box-sizing: border-box; overflow: hidden; break-inside: avoid; page-break-inside: avoid;">
-        <div style="font-weight: 600; margin-bottom: 12px; color: #2f855a; font-size: 13px; text-transform: uppercase; letter-spacing: 0.3px;">
+      <!-- CRITICAL FIX: Payment Data Section - Properly positioned with anti-clipping measures -->
+      <div style="margin-bottom: ${Math.round(22 * scaleFactor)}px; background: #f0fff4; padding: ${elementPadding}px; border-radius: 6px; border-left: 4px solid #38a169; border: 1px solid #c6f6d5; box-sizing: border-box; overflow: visible; page-break-inside: avoid; break-inside: avoid; position: relative; z-index: 10; min-height: ${Math.round(120 * scaleFactor)}px; display: block; clear: both;">
+        <div style="font-weight: 600; margin-bottom: ${Math.round(10 * scaleFactor)}px; color: #2f855a; font-size: ${Math.round(12 * scaleFactor)}px; text-transform: uppercase; letter-spacing: 0.2px; padding-top: 2px;">
           ${t.paymentData}
         </div>
-        <div style="line-height: 1.8; font-size: 12px; color: #2f855a;">
-          <div style="margin-bottom: 8px; display: flex; align-items: center;">
-            <strong style="min-width: 120px; display: inline-block;">${t.accountNr}</strong> 
+        <div style="line-height: 1.6; font-size: ${Math.round(11 * scaleFactor)}px; color: #2f855a;">
+          <div style="margin-bottom: ${Math.round(6 * scaleFactor)}px; display: flex; align-items: center;">
+            <strong style="min-width: ${Math.round(100 * scaleFactor)}px; display: inline-block;">${t.accountNr}</strong> 
             <span>${paymentAccountNumber}</span>
           </div>
-          <div style="margin-bottom: 8px; display: flex; align-items: center;">
-            <strong style="min-width: 120px; display: inline-block;">${t.name}</strong> 
+          <div style="margin-bottom: ${Math.round(6 * scaleFactor)}px; display: flex; align-items: center;">
+            <strong style="min-width: ${Math.round(100 * scaleFactor)}px; display: inline-block;">${t.name}</strong> 
             <span>${paymentAccountName}</span>
           </div>
           <div style="display: flex; align-items: center;">
-            <strong style="min-width: 120px; display: inline-block;">${t.paymentMethod}</strong> 
+            <strong style="min-width: ${Math.round(100 * scaleFactor)}px; display: inline-block;">${t.paymentMethod}</strong> 
             <span>${paymentMethodValue}</span>
           </div>
         </div>
       </div>
 
-      <!-- Professional Terms and Conditions -->
-      <div style="margin-bottom: 25px; background: white; padding: 20px; border-radius: 6px; border: 1px solid #e2e8f0; break-inside: avoid; page-break-inside: avoid;">
-        <div style="font-weight: 600; margin-bottom: 12px; text-transform: uppercase; color: #2d3748; font-size: 13px; letter-spacing: 0.3px; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px;">
+      <!-- Optimized Terms and Conditions -->
+      <div style="margin-bottom: ${Math.round(20 * scaleFactor)}px; background: white; padding: ${elementPadding}px; border-radius: 5px; border: 1px solid #e2e8f0; page-break-inside: avoid; break-inside: avoid;">
+        <div style="font-weight: 600; margin-bottom: ${Math.round(10 * scaleFactor)}px; text-transform: uppercase; color: #2d3748; font-size: ${Math.round(12 * scaleFactor)}px; letter-spacing: 0.2px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;">
           ${t.termsAndConditions}
         </div>
-        <div style="line-height: 1.6; font-size: 12px; color: #4a5568;">
+        <div style="line-height: ${lineHeight}; font-size: ${Math.round(11 * scaleFactor)}px; color: #4a5568;">
           ${proposalData.paymentTerms || proposalData.deliveryTerms || t.paymentTerms}
           ${proposalData.termsAndConditions ? `<br/><br/>${proposalData.termsAndConditions}` : ''}
         </div>
       </div>
 
-      <!-- Professional Footer Content -->
+      <!-- Optimized Footer Content -->
       ${proposalData.footerContent ? `
-      <div style="margin-bottom: 25px; padding: 20px; background: #faf5ff; border-radius: 6px; border-left: 4px solid #805ad5; border: 1px solid #e9d8fd; break-inside: avoid; page-break-inside: avoid;">
-        <div style="line-height: 1.6; font-size: 12px; color: #553c9a;">
+      <div style="margin-bottom: ${Math.round(20 * scaleFactor)}px; padding: ${elementPadding}px; background: #faf5ff; border-radius: 5px; border-left: 4px solid #805ad5; border: 1px solid #e9d8fd; page-break-inside: avoid; break-inside: avoid;">
+        <div style="line-height: ${lineHeight}; font-size: ${Math.round(11 * scaleFactor)}px; color: #553c9a;">
           ${proposalData.footerContent}
         </div>
       </div>
       ` : ''}
 
-      <!-- ESSENTIAL COMPANY FOOTER - ALWAYS VISIBLE WITH PROPER SPACING -->
-      <div style="background: #2d3748; border-radius: 6px; margin-top: 40px; width: 100%; clear: both; position: relative; break-inside: avoid; page-break-inside: avoid; box-sizing: border-box;">
+      <!-- ESSENTIAL COMPANY FOOTER - OPTIMIZED SIZING AND GUARANTEED VISIBILITY -->
+      <div style="background: #2d3748; border-radius: 5px; margin-top: ${Math.round(30 * scaleFactor)}px; width: 100%; clear: both; position: relative; page-break-inside: avoid; break-inside: avoid; box-sizing: border-box; z-index: 20; min-height: ${Math.round(140 * scaleFactor)}px;">
         <!-- Company Name Header -->
-        <div style="background: rgba(255,255,255,0.1); padding: 10px 20px; border-bottom: 1px solid rgba(255,255,255,0.1);">
-          <div style="color: white; font-weight: 600; font-size: 12px; text-align: center; letter-spacing: 0.5px;">
+        <div style="background: rgba(255,255,255,0.1); padding: ${Math.round(8 * scaleFactor)}px ${Math.round(16 * scaleFactor)}px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+          <div style="color: white; font-weight: 600; font-size: ${Math.round(11 * scaleFactor)}px; text-align: center; letter-spacing: 0.4px;">
             ${companyInfo.name || 'AB MEDIA TEAM LTD'}
           </div>
         </div>
         
         <!-- Contact Information Grid -->
-        <div style="padding: 15px 20px; color: white; font-size: 10px;">
+        <div style="padding: ${Math.round(12 * scaleFactor)}px ${Math.round(16 * scaleFactor)}px; color: white; font-size: ${Math.round(9 * scaleFactor)}px;">
           
           <!-- Phone & Fax -->
-          <div style="margin-bottom: 10px;">
+          <div style="margin-bottom: ${Math.round(8 * scaleFactor)}px;">
             <div style="display: inline-block; width: 33%; vertical-align: top;">
-              <div style="margin-bottom: 5px;">
-                <span style="font-weight: 500; margin-right: 8px; color: #cbd5e0;">Tel:</span>
+              <div style="margin-bottom: 4px;">
+                <span style="font-weight: 500; margin-right: 6px; color: #cbd5e0;">Tel:</span>
                 <span>${companyInfo.phone || '+49 203 70 90 72 62'}</span>
               </div>
               <div>
-                <span style="font-weight: 500; margin-right: 8px; color: #cbd5e0;">Fax:</span>
+                <span style="font-weight: 500; margin-right: 6px; color: #cbd5e0;">Fax:</span>
                 <span>${companyInfo.fax || '+49 203 70 90 73 53'}</span>
               </div>
             </div>
             
             <!-- Email & Website -->
             <div style="display: inline-block; width: 33%; vertical-align: top;">
-              <div style="margin-bottom: 5px;">
-                <span style="font-weight: 500; margin-right: 8px; color: #cbd5e0;">Email:</span>
+              <div style="margin-bottom: 4px;">
+                <span style="font-weight: 500; margin-right: 6px; color: #cbd5e0;">Email:</span>
                 <span>${companyInfo.email || 'kontakt.abmedia@gmail.com'}</span>
               </div>
               <div>
-                <span style="font-weight: 500; margin-right: 8px; color: #cbd5e0;">Web:</span>
+                <span style="font-weight: 500; margin-right: 6px; color: #cbd5e0;">Web:</span>
                 <span>${companyInfo.website || 'www.abmedia-team.com'}</span>
               </div>
             </div>
             
             <!-- Address & Contact Person -->
             <div style="display: inline-block; width: 33%; vertical-align: top; text-align: right;">
-              <div style="font-weight: 500; margin-bottom: 4px; color: #cbd5e0; font-size: 10px;">
+              <div style="font-weight: 500; margin-bottom: 3px; color: #cbd5e0; font-size: ${Math.round(9 * scaleFactor)}px;">
                 ${companyInfo.contactPerson || 'Andreas Berger'}
               </div>
-              <div style="line-height: 1.4; font-size: 9px;">
+              <div style="line-height: 1.3; font-size: ${Math.round(8 * scaleFactor)}px;">
                 ${companyInfo.street || 'Weseler Str.73'}<br/>
                 ${companyInfo.postal || '47169'} ${companyInfo.city || 'Duisburg'}<br/>
                 ${companyInfo.country || 'Germany'}
@@ -386,11 +389,11 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
         </div>
         
         <!-- Business Information -->
-        <div style="background: rgba(255,255,255,0.05); padding: 10px 20px; border-top: 1px solid rgba(255,255,255,0.1);">
-          <div style="color: #cbd5e0; font-size: 9px;">
+        <div style="background: rgba(255,255,255,0.05); padding: ${Math.round(8 * scaleFactor)}px ${Math.round(16 * scaleFactor)}px; border-top: 1px solid rgba(255,255,255,0.1);">
+          <div style="color: #cbd5e0; font-size: ${Math.round(8 * scaleFactor)}px;">
             <div style="display: inline-block; width: 70%; vertical-align: top;">
-              <span style="margin-right: 15px;">REG: ${companyInfo.registrationNumber || '15748871'}</span>
-              <span style="margin-right: 15px;">VAT: ${companyInfo.vatId || 'DE123418679'}</span>
+              <span style="margin-right: 12px;">REG: ${companyInfo.registrationNumber || '15748871'}</span>
+              <span style="margin-right: 12px;">VAT: ${companyInfo.vatId || 'DE123418679'}</span>
               <span>TAX: ${companyInfo.taxNumber || '13426 27369'}</span>
             </div>
             <div style="display: inline-block; width: 30%; text-align: right; vertical-align: top;">
@@ -403,33 +406,33 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
   `;
 };
 
-// Improved PDF generation with proper height calculation to include footer
+// Improved PDF generation with better height calculation and layout handling
 const generatePDFFromHTML = async (htmlContent: string): Promise<jsPDF> => {
-  // Create a temporary div to render the proposal with dynamic height
+  // Create a temporary div to render the proposal with optimized height
   const tempDiv = document.createElement("div");
   tempDiv.style.position = "absolute";
   tempDiv.style.left = "-9999px";
   tempDiv.style.top = "-9999px";
   tempDiv.style.width = "794px"; // A4 width in pixels at 96 DPI
-  tempDiv.style.minHeight = "1400px"; // Increased minimum height to ensure footer is captured
+  tempDiv.style.minHeight = "1600px"; // Increased minimum height for better content flow
   tempDiv.style.backgroundColor = "white";
-  tempDiv.style.overflow = "visible"; // Changed from hidden to visible
+  tempDiv.style.overflow = "visible";
   
   tempDiv.innerHTML = htmlContent;
   document.body.appendChild(tempDiv);
   
-  // Wait for any images to load
-  await new Promise(resolve => setTimeout(resolve, 500));
+  // Wait for any images to load and layout to stabilize
+  await new Promise(resolve => setTimeout(resolve, 800));
   
   try {
-    // Get the actual content height
-    const actualHeight = Math.max(tempDiv.scrollHeight, 1400);
+    // Get the actual content height with buffer for footer
+    const actualHeight = Math.max(tempDiv.scrollHeight + 100, 1600);
     
-    console.log('PDF Generation - Content height:', actualHeight);
+    console.log('PDF Generation - Optimized content height:', actualHeight);
     
-    // Convert the HTML to canvas with dynamic height
+    // Convert the HTML to canvas with optimized settings
     const canvas = await html2canvas(tempDiv, {
-      scale: 1.5,
+      scale: 1.4, // Slightly reduced scale for better performance
       logging: false,
       useCORS: true,
       allowTaint: true,
@@ -437,7 +440,15 @@ const generatePDFFromHTML = async (htmlContent: string): Promise<jsPDF> => {
       width: 794,
       height: actualHeight,
       windowWidth: 794,
-      windowHeight: actualHeight
+      windowHeight: actualHeight,
+      onclone: (clonedDoc) => {
+        // Ensure all elements are properly rendered in the clone
+        const paymentSection = clonedDoc.querySelector('[style*="PAYMENT DATA"]');
+        if (paymentSection) {
+          paymentSection.style.pageBreakInside = 'avoid';
+          paymentSection.style.breakInside = 'avoid';
+        }
+      }
     });
     
     const imgData = canvas.toDataURL('image/png');
@@ -453,7 +464,7 @@ const generatePDFFromHTML = async (htmlContent: string): Promise<jsPDF> => {
     const imgWidth = pdfWidth;
     const imgHeight = (canvas.height * pdfWidth) / canvas.width;
     
-    // If content is taller than one page, create multiple pages
+    // Handle multi-page content with improved page breaks
     if (imgHeight > pdfHeight) {
       const pageCount = Math.ceil(imgHeight / pdfHeight);
       
@@ -469,7 +480,7 @@ const generatePDFFromHTML = async (htmlContent: string): Promise<jsPDF> => {
       pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
     }
     
-    console.log('PDF Generation - Footer should be visible now');
+    console.log('PDF Generation - Layout optimized with scaling and improved positioning');
     
     return pdf;
   } finally {
@@ -477,19 +488,19 @@ const generatePDFFromHTML = async (htmlContent: string): Promise<jsPDF> => {
   }
 };
 
-// Main function to generate a PDF from a proposal - now properly handles all user data
+// Main function to generate a PDF from a proposal - now with optimized layout
 export const generateProposalPDF = async (
   proposalData: any, 
   language: string = "en", 
   customFilename?: string
 ): Promise<jsPDF | boolean> => {
   try {
-    console.log('Generating PDF with data:', proposalData);
+    console.log('Generating optimized PDF with data:', proposalData);
     
-    // Generate HTML content using all editable fields
+    // Generate HTML content using optimized scaling and layout
     const htmlContent = createPDFContent(proposalData, language);
     
-    // Generate PDF
+    // Generate PDF with improved layout handling
     const pdf = await generatePDFFromHTML(htmlContent);
     
     // For preview mode, return the PDF document
