@@ -1,3 +1,4 @@
+
 import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
 import { Proposal, ProposalLineItem, InventoryItem } from "@/types";
@@ -115,6 +116,9 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
   const paymentAccountName = proposalData.accountName || companyInfo.accountHolder || 'YOUR NAME';
   const paymentMethodValue = proposalData.paymentMethod || companyInfo.paymentMethod || 'CREDIT CARD';
 
+  // Format the proposal date properly
+  const proposalDate = proposalData.proposalDate ? new Date(proposalData.proposalDate).toLocaleDateString() : new Date(proposalData.created_at || Date.now()).toLocaleDateString();
+
   console.log('PDF Generation - Using data:', {
     customerName: proposalData.customerName,
     customerAddress: proposalData.customerAddress,
@@ -128,6 +132,7 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
     netAmount,
     vatAmount,
     totalAmount,
+    proposalDate,
     paymentData: {
       accountNumber: paymentAccountNumber,
       accountName: paymentAccountName,
@@ -136,7 +141,7 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
   });
 
   return `
-    <div style="font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif; padding: 40px; max-width: 794px; min-height: 1123px; background: #ffffff; margin: 0; box-sizing: border-box; font-size: 13px; line-height: 1.5; color: #2d3748;">
+    <div style="font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif; padding: 40px; max-width: 794px; min-height: 1123px; background: #ffffff; margin: 0; box-sizing: border-box; font-size: 13px; line-height: 1.5; color: #2d3748; position: relative; padding-bottom: 120px;">
       
       <!-- Header Section with Professional Design -->
       <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 45px; padding-bottom: 20px; border-bottom: 2px solid #e2e8f0;">
@@ -175,7 +180,7 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
             </div>
             <div style="margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; padding-bottom: 6px; border-bottom: 1px solid #e2e8f0;">
               <span style="font-weight: 500; color: #4a5568; font-size: 12px;">${t.date}</span>
-              <span style="color: #4a5568; font-weight: 500; font-size: 12px;">${new Date(proposalData.created_at || Date.now()).toLocaleDateString()}</span>
+              <span style="color: #4a5568; font-weight: 500; font-size: 12px;">${proposalDate}</span>
             </div>
             <div style="margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; padding-bottom: 6px; border-bottom: 1px solid #e2e8f0;">
               <span style="font-weight: 500; color: #4a5568; font-size: 12px;">${t.customerRef}</span>
@@ -304,7 +309,7 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
       ` : ''}
 
       <!-- Professional Signature Section -->
-      <div style="display: flex; justify-content: space-between; margin-top: 50px; gap: 30px;">
+      <div style="display: flex; justify-content: space-between; margin-top: 50px; margin-bottom: 60px; gap: 30px;">
         <div style="width: 45%; background: white; padding: 16px; border-radius: 6px; border: 1px solid #e2e8f0;">
           <div style="border-top: 2px solid #2d3748; padding-top: 10px;">
             <div style="font-size: 11px; color: #718096; font-weight: 500; text-transform: uppercase; letter-spacing: 0.3px;">${t.placeDate}</div>
@@ -318,8 +323,8 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
         </div>
       </div>
 
-      <!-- Professional Footer Company Info -->
-      <div style="position: absolute; bottom: 12px; left: 12px; right: 12px; background: #2d3748; border-radius: 6px; overflow: hidden;">
+      <!-- Professional Footer Company Info - Fixed positioning -->
+      <div style="position: absolute; bottom: 12px; left: 40px; right: 40px; background: #2d3748; border-radius: 6px; overflow: hidden;">
         <!-- Header section -->
         <div style="background: rgba(255,255,255,0.1); padding: 6px 16px; border-bottom: 1px solid rgba(255,255,255,0.1);">
           <div style="color: white; font-weight: 600; font-size: 10px; text-align: center; letter-spacing: 0.3px;">
@@ -328,15 +333,15 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
         </div>
         
         <!-- Content area -->
-        <div style="padding: 10px 16px; display: flex; justify-content: space-between; align-items: center; color: white; font-size: 8px;">
+        <div style="padding: 8px 16px; display: flex; justify-content: space-between; align-items: center; color: white; font-size: 8px;">
           
           <!-- Contact Information -->
           <div style="flex: 1; margin-right: 16px;">
-            <div style="margin-bottom: 4px;">
+            <div style="margin-bottom: 3px;">
               <span style="font-weight: 500; margin-right: 6px; color: #cbd5e0;">Tel:</span>
               <span>${companyInfo.phone || '+49 203 70 90 72 62'}</span>
             </div>
-            <div style="margin-bottom: 4px;">
+            <div>
               <span style="font-weight: 500; margin-right: 6px; color: #cbd5e0;">Fax:</span>
               <span>${companyInfo.fax || '+49 203 70 90 73 53'}</span>
             </div>
@@ -344,11 +349,11 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
           
           <!-- Digital Contact -->
           <div style="flex: 1; margin-right: 16px;">
-            <div style="margin-bottom: 4px;">
+            <div style="margin-bottom: 3px;">
               <span style="font-weight: 500; margin-right: 6px; color: #cbd5e0;">Email:</span>
               <span>${companyInfo.email || 'kontakt.abmedia@gmail.com'}</span>
             </div>
-            <div style="margin-bottom: 4px;">
+            <div>
               <span style="font-weight: 500; margin-right: 6px; color: #cbd5e0;">Web:</span>
               <span>${companyInfo.website || 'www.abmedia-team.com'}</span>
             </div>
@@ -356,7 +361,7 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
           
           <!-- Company Address -->
           <div style="flex: 1; text-align: right; padding-left: 16px; border-left: 1px solid rgba(255,255,255,0.1);">
-            <div style="font-weight: 500; margin-bottom: 3px; color: #cbd5e0; font-size: 8px;">
+            <div style="font-weight: 500; margin-bottom: 2px; color: #cbd5e0; font-size: 8px;">
               ${companyInfo.contactPerson || 'Andreas Berger'}
             </div>
             <div style="line-height: 1.2; font-size: 8px;">

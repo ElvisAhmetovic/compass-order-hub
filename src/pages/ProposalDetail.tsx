@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { PlusCircle, Trash2, Save, Eye, Download, ArrowLeft } from "lucide-react";
+import { PlusCircle, Trash2, Save, Eye, Download, ArrowLeft, Calendar, Clock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { v4 as uuidv4 } from "uuid";
 import { generateProposalPDF, previewProposalPDF, loadInventoryItems, formatInventoryItemForProposal, PROPOSAL_STATUSES } from "@/utils/proposalUtils";
@@ -44,6 +44,10 @@ interface ProposalData {
   currency: string;
   vatEnabled: boolean;
   vatRate: number;
+  
+  // Date and time fields
+  proposalDate: string;
+  proposalTime: string;
   
   // Customer details
   customerName: string;
@@ -106,6 +110,10 @@ const ProposalDetail = () => {
     currency: "EUR",
     vatEnabled: true,
     vatRate: 19,
+    
+    // Date and time fields with current date/time as default
+    proposalDate: new Date().toISOString().split('T')[0],
+    proposalTime: new Date().toTimeString().slice(0, 5),
     
     // Customer details
     customerName: "",
@@ -634,6 +642,34 @@ const ProposalDetail = () => {
                           <SelectItem value="GBP">GBP</SelectItem>
                         </SelectContent>
                       </Select>
+                    </div>
+                  </div>
+                  
+                  {/* Date and Time Section */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="proposalDate" className="flex items-center gap-2">
+                        <Calendar size={16} />
+                        Proposal Date
+                      </Label>
+                      <Input
+                        id="proposalDate"
+                        type="date"
+                        value={proposalData.proposalDate}
+                        onChange={(e) => setProposalData(prev => ({ ...prev, proposalDate: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="proposalTime" className="flex items-center gap-2">
+                        <Clock size={16} />
+                        Proposal Time
+                      </Label>
+                      <Input
+                        id="proposalTime"
+                        type="time"
+                        value={proposalData.proposalTime}
+                        onChange={(e) => setProposalData(prev => ({ ...prev, proposalTime: e.target.value }))}
+                      />
                     </div>
                   </div>
                 </CardContent>
