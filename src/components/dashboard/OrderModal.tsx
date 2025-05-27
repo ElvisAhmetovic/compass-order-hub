@@ -27,7 +27,7 @@ import { Order, OrderComment, OrderStatus, OrderStatusHistory, User, UserRole } 
 import { formatDate } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
 import { Input } from "@/components/ui/input";
-import { Edit, Save, AlertCircle } from "lucide-react";
+import { Edit, Save, AlertCircle, MapPin, ExternalLink } from "lucide-react";
 
 // Mock data for demonstration
 const mockComments: OrderComment[] = [
@@ -620,6 +620,51 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
                         />
                       ) : (
                         currentOrder.contact_phone || "N/A"
+                      )}
+                    </dd>
+                  </div>
+                  <div className="py-2 grid grid-cols-3">
+                    <dt className="font-medium">Company Address:</dt>
+                    <dd className="col-span-2">
+                      {isEditing && canEdit ? (
+                        <Input 
+                          value={editedOrder.company_address !== undefined ? editedOrder.company_address : currentOrder.company_address || ""} 
+                          onChange={(e) => handleEditChange('company_address', e.target.value)}
+                        />
+                      ) : (
+                        currentOrder.company_address || "N/A"
+                      )}
+                    </dd>
+                  </div>
+                  <div className="py-2 grid grid-cols-3">
+                    <dt className="font-medium">Google Maps:</dt>
+                    <dd className="col-span-2">
+                      {isEditing && canEdit ? (
+                        <Input 
+                          placeholder="Google Maps link or will auto-generate from address"
+                          value={editedOrder.company_link !== undefined ? editedOrder.company_link : currentOrder.company_link || ""} 
+                          onChange={(e) => handleEditChange('company_link', e.target.value)}
+                        />
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          {currentOrder.company_link || currentOrder.company_address ? (
+                            <a 
+                              href={
+                                currentOrder.company_link || 
+                                `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(currentOrder.company_address || '')}`
+                              }
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-primary hover:underline flex items-center gap-1"
+                            >
+                              <MapPin className="h-4 w-4" />
+                              View on Google Maps
+                              <ExternalLink className="h-3 w-3" />
+                            </a>
+                          ) : (
+                            "N/A"
+                          )}
+                        </div>
                       )}
                     </dd>
                   </div>
