@@ -1,4 +1,3 @@
-
 import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { UserRole } from '@/types';
@@ -37,6 +36,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const sessionData = localStorage.getItem('userSession');
       if (sessionData) {
         const userData = JSON.parse(sessionData);
+        console.log('Loading user from session:', userData);
+        
+        // Ensure role is set, if missing try to get it from app_users
+        if (!userData.role) {
+          console.log('User missing role, attempting to find it in app_users');
+          const appUsers = JSON.parse(localStorage.getItem("app_users") || "[]");
+          const appUser = appUsers.find((u: any) => u.id === userData.id || u.email === userData.email);
+          
+          if (appUser && appUser.role) {
+            userData.role = appUser.role;
+            console.log('Found role in app_users:', appUser.role);
+            // Update the session with the role
+            localStorage.setItem('userSession', JSON.stringify(userData));
+          } else {
+            // Default to 'user' role if not found
+            userData.role = 'user';
+            console.log('No role found, defaulting to user');
+            localStorage.setItem('userSession', JSON.stringify(userData));
+          }
+        }
+        
+        console.log('Final user data:', userData);
         setUser(userData);
       }
     } catch (error) {
@@ -207,7 +228,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           foundUser = {
             id: appUser.id,
             email: appUser.email,
-            role: appUser.role,
+            role: appUser.role || 'user', // Ensure role is set
             full_name: appUser.full_name,
             passwordHash: defaultPasswordHash,
             isDefaultPassword: true // Flag for security tracking
@@ -258,7 +279,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const userData = {
         id: foundUser.id,
         email: foundUser.email,
-        role: foundUser.role as UserRole,
+        role: (foundUser.role || appUser?.role || 'user') as UserRole, // Ensure role is always set
         full_name: foundUser.full_name || foundUser.fullName || "User",
         first_name: appUser?.first_name || "",
         last_name: appUser?.last_name || "",
@@ -266,6 +287,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         last_sign_in: new Date().toISOString()
       };
       
+      console.log("Setting user session with role:", userData.role);
       localStorage.setItem("userSession", JSON.stringify(userData));
       setUser(userData);
       
