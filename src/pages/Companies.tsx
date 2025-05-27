@@ -48,6 +48,7 @@ const Companies = () => {
         const companyMap = groupOrdersByCompany(orders);
         
         setCompanies(companyMap);
+        console.log("Companies loaded:", companyMap);
       } catch (error) {
         console.error("Error loading companies:", error);
       } finally {
@@ -60,22 +61,32 @@ const Companies = () => {
     // Add event listener for storage changes to refresh data when orders are updated elsewhere
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'orders') {
+        console.log("Storage change detected, reloading companies");
         loadCompanies();
       }
     };
     
     window.addEventListener('storage', handleStorageChange);
     
-    // Also listen for custom events when localStorage is updated from the same window
+    // Listen for custom events when localStorage is updated from the same window
     const handleOrdersUpdate = () => {
+      console.log("Orders updated event received, reloading companies");
+      loadCompanies();
+    };
+    
+    // Listen for specific company data updates
+    const handleCompanyDataUpdate = (event: any) => {
+      console.log("Company data update event received:", event.detail);
       loadCompanies();
     };
     
     window.addEventListener('ordersUpdated', handleOrdersUpdate);
+    window.addEventListener('companyDataUpdated', handleCompanyDataUpdate);
     
     return () => {
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('ordersUpdated', handleOrdersUpdate);
+      window.removeEventListener('companyDataUpdated', handleCompanyDataUpdate);
     };
   }, []);
   
@@ -260,7 +271,7 @@ const Companies = () => {
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {filteredCompanies.map(([key, company], index) => (
                   <CompanyCard 
-                    key={index}
+                    key={`${key}-${company.name}-${index}`}
                     company={company}
                     companyKey={key}
                     isAdmin={isAdmin}

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { 
   Dialog, 
@@ -191,10 +192,6 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
         
         // Update order in localStorage
         const ordersInStorage = JSON.parse(localStorage.getItem("orders") || "[]");
-        const updatedOrders = ordersInStorage.map((o: Order) => 
-          o.id === currentOrder.id ? updatedOrder : o
-        );
-        localStorage.setItem("orders", JSON.stringify(updatedOrders));
         
         // Check if company data was changed
         const companyFieldsChanged = editedOrder.company_name || 
@@ -203,29 +200,66 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
                                    editedOrder.company_address || 
                                    editedOrder.company_link;
         
-        // If company data was changed, update all orders with the same company
         if (companyFieldsChanged) {
-          const oldCompanyKey = currentOrder.company_name.trim().toLowerCase();
-          const newCompanyKey = (editedOrder.company_name || currentOrder.company_name).trim().toLowerCase();
+          // Get the original company key for finding related orders
+          const originalCompanyKey = currentOrder.company_name.trim().toLowerCase();
           
-          // Update all orders from the same company
-          const allOrdersToUpdate = updatedOrders.filter((o: Order) => 
-            o.company_name.trim().toLowerCase() === oldCompanyKey
-          );
-          
-          allOrdersToUpdate.forEach((o: Order) => {
-            if (editedOrder.company_name) o.company_name = editedOrder.company_name;
-            if (editedOrder.contact_email) o.contact_email = editedOrder.contact_email;
-            if (editedOrder.contact_phone) o.contact_phone = editedOrder.contact_phone;
-            if (editedOrder.company_address) o.company_address = editedOrder.company_address;
-            if (editedOrder.company_link) o.company_link = editedOrder.company_link;
-            o.updated_at = new Date().toISOString();
+          // Update ALL orders with the same company name
+          const updatedOrders = ordersInStorage.map((o: Order) => {
+            if (o.company_name.trim().toLowerCase() === originalCompanyKey) {
+              const orderUpdate: Partial<Order> = {};
+              
+              // Update company fields for all orders of this company
+              if (editedOrder.company_name) orderUpdate.company_name = editedOrder.company_name;
+              if (editedOrder.contact_email) orderUpdate.contact_email = editedOrder.contact_email;
+              if (editedOrder.contact_phone) orderUpdate.contact_phone = editedOrder.contact_phone;
+              if (editedOrder.company_address) orderUpdate.company_address = editedOrder.company_address;
+              if (editedOrder.company_link !== undefined) orderUpdate.company_link = editedOrder.company_link;
+              
+              // For the current order, also update non-company fields
+              if (o.id === currentOrder.id) {
+                return {
+                  ...o,
+                  ...editedOrder,
+                  updated_at: new Date().toISOString()
+                };
+              } else {
+                return {
+                  ...o,
+                  ...orderUpdate,
+                  updated_at: new Date().toISOString()
+                };
+              }
+            }
+            return o;
           });
           
           localStorage.setItem("orders", JSON.stringify(updatedOrders));
           
+          console.log("Company data updated for all related orders");
+          
           // Dispatch custom event to notify Companies page and other components
           window.dispatchEvent(new CustomEvent('ordersUpdated'));
+          
+          // Also dispatch a more specific event for real-time updates
+          window.dispatchEvent(new CustomEvent('companyDataUpdated', {
+            detail: {
+              originalCompanyKey,
+              updatedCompanyData: {
+                name: editedOrder.company_name || currentOrder.company_name,
+                email: editedOrder.contact_email || currentOrder.contact_email,
+                phone: editedOrder.contact_phone || currentOrder.contact_phone,
+                address: editedOrder.company_address || currentOrder.company_address,
+                mapLink: editedOrder.company_link !== undefined ? editedOrder.company_link : currentOrder.company_link
+              }
+            }
+          }));
+        } else {
+          // If no company fields changed, just update the current order
+          const updatedOrders = ordersInStorage.map((o: Order) => 
+            o.id === currentOrder.id ? updatedOrder : o
+          );
+          localStorage.setItem("orders", JSON.stringify(updatedOrders));
         }
         
         // Add edit to history
@@ -673,11 +707,16 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
                     <dt className="font-medium">Google Maps:</dt>
                     <dd className="col-span-2">
                       {isEditing && canEdit ? (
-                        <Input 
-                          placeholder="Google Maps link or will auto-generate from address"
-                          value={editedOrder.company_link !== undefined ? editedOrder.company_link : currentOrder?.company_link || ""} 
-                          onChange={(e) => handleEditChange('company_link', e.target.value)}
-                        />
+                        <div className="space-y-1">
+                          <Input 
+                            placeholder="Custom Google Maps link (optional)"
+                            value={editedOrder.company_link !== undefined ? editedOrder.company_link : currentOrder?.company_link || ""} 
+                            onChange={(e) => handleEditChange('company_link', e.target.value)}
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            Optional: Add a custom Google Maps link. If empty, a link will be generated from the address.
+                          </p>
+                        </div>
                       ) : (
                         <div className="flex items-center gap-2">
                           {currentOrder?.company_address || currentOrder?.company_link ? (
