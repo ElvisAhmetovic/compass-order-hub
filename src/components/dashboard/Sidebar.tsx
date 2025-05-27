@@ -25,6 +25,7 @@ const Sidebar = () => {
     { href: '/dashboard', icon: Home, label: 'Dashboard', roles: ['admin', 'agent', 'user'] },
     { href: '/support', icon: HelpCircle, label: 'Support', roles: ['admin', 'agent', 'user'] },
     { href: '/reviews', icon: Star, label: 'Reviews', roles: ['admin', 'agent', 'user'] },
+    { href: '/active-orders', icon: FileText, label: 'My Orders', roles: ['user'] }, // User-specific orders view
     { href: '/companies', icon: Building2, label: 'Companies', roles: ['admin', 'agent'] },
     { href: '/proposals', icon: FileText, label: 'Proposals', roles: ['admin', 'agent'] },
     { href: '/invoices', icon: Receipt, label: 'Invoices', roles: ['admin', 'agent'] },
