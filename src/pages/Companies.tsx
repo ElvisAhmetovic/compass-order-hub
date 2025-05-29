@@ -22,13 +22,17 @@ const Companies = () => {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [currentCompany, setCurrentCompany] = useState<Company | null>(null);
-  const [newCompany, setNewCompany] = useState<Omit<Company, 'id' | 'created_at' | 'updated_at' | 'user_id' | 'orders'>>({
+  const [newCompany, setNewCompany] = useState<Omit<Company, 'orders'>>({
+    id: '',
     name: '',
     email: '',
     phone: '',
     address: '',
     contact_person: '',
-    map_link: ''
+    map_link: '',
+    created_at: '',
+    updated_at: '',
+    user_id: ''
   });
   
   const isAdmin = user?.role === 'admin';
@@ -107,7 +111,9 @@ const Companies = () => {
     }
 
     try {
-      await CompanyService.createCompany(newCompany);
+      // Remove the fields that shouldn't be sent to the service
+      const { id, created_at, updated_at, user_id, ...companyData } = newCompany;
+      await CompanyService.createCompany(companyData);
 
       toast({
         title: "Company created",
@@ -116,12 +122,16 @@ const Companies = () => {
       
       // Reset form and close dialog
       setNewCompany({
+        id: '',
         name: '',
         email: '',
         phone: '',
         address: '',
         contact_person: '',
-        map_link: ''
+        map_link: '',
+        created_at: '',
+        updated_at: '',
+        user_id: ''
       });
       setCreateDialogOpen(false);
       
