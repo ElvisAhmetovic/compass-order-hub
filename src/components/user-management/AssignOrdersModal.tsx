@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -7,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Order, User } from "@/types";
 import { useToast } from "@/hooks/use-toast";
+import { OrderService } from "@/services/orderService";
 
 interface AssignOrdersModalProps {
   user: User;
@@ -22,31 +24,36 @@ export function AssignOrdersModal({ user, open, onClose }: AssignOrdersModalProp
   
   const { toast } = useToast();
   
-  // Load orders from localStorage
+  // Load orders from Supabase
   useEffect(() => {
     if (open) {
-      setLoading(true);
-      try {
-        // Get orders from localStorage
-        const storedOrders = localStorage.getItem("orders");
-        if (storedOrders) {
-          const parsedOrders = JSON.parse(storedOrders);
-          setOrders(parsedOrders);
-          
-          // Pre-select orders already assigned to this user
-          const userOrders = parsedOrders
-            .filter((order: Order) => order.assigned_to === user.id)
-            .map((order: Order) => order.id);
-          
-          setSelectedOrders(userOrders);
-        }
-      } catch (error) {
-        console.error("Error loading orders:", error);
-      } finally {
-        setLoading(false);
-      }
+      loadOrders();
     }
   }, [open, user]);
+  
+  const loadOrders = async () => {
+    setLoading(true);
+    try {
+      const allOrders = await OrderService.getOrders();
+      setOrders(allOrders);
+      
+      // Pre-select orders already assigned to this user
+      const userOrders = allOrders
+        .filter((order: Order) => order.assigned_to === user.id)
+        .map((order: Order) => order.id);
+      
+      setSelectedOrders(userOrders);
+    } catch (error) {
+      console.error("Error loading orders:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to load orders from database."
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
   
   const toggleOrderSelection = (orderId: string) => {
     setSelectedOrders(prev => 
@@ -62,31 +69,22 @@ export function AssignOrdersModal({ user, open, onClose }: AssignOrdersModalProp
       // Get user's display name - prioritize full name, fall back to email
       const assigneeName = user.full_name || user.email;
       
-      // Update orders in localStorage
-      const updatedOrders = orders.map(order => {
+      // Update orders in Supabase
+      for (const order of orders) {
         if (selectedOrders.includes(order.id)) {
           // Assign to this user
-          return { 
-            ...order, 
+          await OrderService.updateOrder(order.id, { 
             assigned_to: user.id, 
-            assigned_to_name: assigneeName,
-            updated_at: new Date().toISOString() 
-          };
+            assigned_to_name: assigneeName
+          });
         } else if (order.assigned_to === user.id) {
           // Unassign if previously assigned to this user but not selected now
-          return { 
-            ...order, 
+          await OrderService.updateOrder(order.id, { 
             assigned_to: "", 
-            assigned_to_name: "",
-            updated_at: new Date().toISOString() 
-          };
+            assigned_to_name: ""
+          });
         }
-        // Don't change other orders
-        return order;
-      });
-      
-      // Save to localStorage
-      localStorage.setItem("orders", JSON.stringify(updatedOrders));
+      }
       
       toast({
         title: "Orders assigned",
@@ -118,7 +116,7 @@ export function AssignOrdersModal({ user, open, onClose }: AssignOrdersModalProp
       "Deleted": "bg-status-deleted text-white",
       "Review": "bg-status-review text-white",
     };
-    return statusClasses[status] || "bg-gray-500 text-white";
+    return statusClasses[status as keyof typeof statusClasses] || "bg-gray-500 text-white";
   };
   
   return (
@@ -168,7 +166,7 @@ export function AssignOrdersModal({ user, open, onClose }: AssignOrdersModalProp
                               {order.status}
                             </Badge>
                             <Badge variant="outline">
-                              {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(order.price)}
+                              {new Intl.NumberFormat('en-US', { style: 'currency', currency: order.currency || 'USD' }).format(order.price || 0)}
                             </Badge>
                           </div>
                         </div>

@@ -1,8 +1,8 @@
+
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { v4 as uuidv4 } from "uuid";
 import {
   Dialog,
   DialogContent,
@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/select";
 import { UserRole, User } from "@/types";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const formSchema = z.object({
   email: z.string().email({ message: "Invalid email address" }),
@@ -66,12 +67,18 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsSubmitting(true);
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      // In a real implementation, you'd create a proper Supabase user
+      // For now, we'll create a profile entry with a generated ID
+      const userId = crypto.randomUUID();
+      
+      // Split full name for first and last name
+      const nameParts = values.fullName.trim().split(' ');
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
 
       // Create new user object
       const newUser: User = {
-        id: uuidv4(),
+        id: userId,
         email: values.email,
         role: values.role,
         full_name: values.fullName,
@@ -84,7 +91,7 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({
 
       toast({
         title: "User created",
-        description: "New user has been created successfully.",
+        description: "New user has been created successfully. Note: This creates a profile entry - the user will need to register separately.",
       });
 
       // Reset form and close modal
@@ -107,7 +114,7 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({
         <DialogHeader>
           <DialogTitle>Add User</DialogTitle>
           <DialogDescription>
-            Create a new user account. Set the email, full name and role.
+            Create a new user profile. The user will need to register separately with this email.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>

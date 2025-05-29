@@ -14,13 +14,15 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { MoreHorizontal } from "lucide-react";
 import { AssignOrdersModal } from "./AssignOrdersModal";
+import { supabase } from "@/integrations/supabase/client";
 
 interface UserManagementTableProps {
   users: User[];
   setUsers: (users: User[]) => void;
+  onReload: () => Promise<void>;
 }
 
-export function UserManagementTable({ users, setUsers }: UserManagementTableProps) {
+export function UserManagementTable({ users, setUsers, onReload }: UserManagementTableProps) {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
@@ -41,7 +43,7 @@ export function UserManagementTable({ users, setUsers }: UserManagementTableProp
     setIsAssignModalOpen(true);
   };
   
-  const handleDeleteUser = (userId: string) => {
+  const handleDeleteUser = async (userId: string) => {
     // Prevent deletion of the main admin account
     const userToDelete = users.find(u => u.id === userId);
     if (userToDelete?.email === "luciferbebistar@gmail.com") {
@@ -55,15 +57,18 @@ export function UserManagementTable({ users, setUsers }: UserManagementTableProp
     
     if (window.confirm("Are you sure you want to delete this user?")) {
       try {
-        // Delete user from localStorage
-        const updatedUsers = users.filter(user => user.id !== userId);
-        localStorage.setItem("app_users", JSON.stringify(updatedUsers));
-        setUsers(updatedUsers);
-        
-        // Also delete from auth storage
-        const authUsers = JSON.parse(localStorage.getItem("users") || "[]");
-        const updatedAuthUsers = authUsers.filter((user: any) => user.id !== userId);
-        localStorage.setItem("users", JSON.stringify(updatedAuthUsers));
+        // Delete user from Supabase profiles
+        const { error } = await supabase
+          .from('profiles')
+          .delete()
+          .eq('id', userId);
+
+        if (error) {
+          throw error;
+        }
+
+        // Reload users to reflect changes
+        await onReload();
         
         toast({
           title: "User deleted",
@@ -74,19 +79,34 @@ export function UserManagementTable({ users, setUsers }: UserManagementTableProp
         toast({
           variant: "destructive",
           title: "Error deleting user",
-          description: "Could not delete the user."
+          description: "Could not delete the user from database."
         });
       }
     }
   };
   
-  const handleUpdateUser = (updatedUser: User) => {
+  const handleUpdateUser = async (updatedUser: User) => {
     try {
-      const updatedUsers = users.map(user => 
-        user.id === updatedUser.id ? updatedUser : user
-      );
-      localStorage.setItem("app_users", JSON.stringify(updatedUsers));
-      setUsers(updatedUsers);
+      const nameParts = updatedUser.full_name.split(' ');
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          first_name: firstName,
+          last_name: lastName,
+          role: updatedUser.role,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', updatedUser.id);
+
+      if (error) {
+        throw error;
+      }
+
+      // Reload users to reflect changes
+      await onReload();
       setIsEditModalOpen(false);
       setEditingUser(null);
       
@@ -99,7 +119,7 @@ export function UserManagementTable({ users, setUsers }: UserManagementTableProp
       toast({
         variant: "destructive",
         title: "Error updating user",
-        description: "Could not update the user."
+        description: "Could not update the user in database."
       });
     }
   };

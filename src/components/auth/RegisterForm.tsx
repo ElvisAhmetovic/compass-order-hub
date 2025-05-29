@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -6,15 +7,15 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Eye, EyeOff, AlertTriangle } from "lucide-react";
 import { validateFullName, validateIdentifier, validatePassword } from "@/utils/formValidation";
+import { supabase } from "@/integrations/supabase/client";
 
 const RegisterForm = () => {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
-  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [errors, setErrors] = useState<{fullName?: string, email?: string, username?: string, password?: string}>({});
+  const [errors, setErrors] = useState<{fullName?: string, email?: string, password?: string}>({});
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -34,14 +35,6 @@ const RegisterForm = () => {
     setErrors(prev => ({ ...prev, email: error }));
   };
 
-  const handleUsernameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setUsername(value);
-    
-    const error = validateIdentifier(value);
-    setErrors(prev => ({ ...prev, username: error }));
-  };
-
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setPassword(value);
@@ -51,8 +44,8 @@ const RegisterForm = () => {
   };
 
   const isFormValid = () => {
-    return !errors.fullName && !errors.email && !errors.username && !errors.password && 
-           fullName.trim() !== "" && email.trim() !== "" && username.trim() !== "" && password.trim() !== "";
+    return !errors.fullName && !errors.email && !errors.password && 
+           fullName.trim() !== "" && email.trim() !== "" && password.trim() !== "";
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -65,62 +58,58 @@ const RegisterForm = () => {
     setIsLoading(true);
 
     try {
-      /** ───────────────────────────
-       * save the new user locally
-       * (replace with real backend in production)
-       * ─────────────────────────── */
-      const users = JSON.parse(localStorage.getItem("users") || "[]");
+      // Split full name for first and last name
+      const nameParts = fullName.trim().split(' ');
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
 
-      // simple duplicate check
-      if (users.some((u: any) => u.email === email || u.username === username)) {
-        toast({ 
-          variant: "destructive", 
-          title: "User already exists" 
-        });
-        setIsLoading(false);
-        return;
+      // Register user with Supabase Auth
+      const { data, error } = await supabase.auth.signUp({
+        email: email,
+        password: password,
+        options: {
+          data: {
+            first_name: firstName,
+            last_name: lastName,
+            full_name: fullName,
+            role: 'user' // Always assign user role for new registrations
+          }
+        }
+      });
+
+      if (error) {
+        throw error;
       }
 
-      // Generate a proper UUID for the user ID
-      const userId = crypto.randomUUID();
-      console.log('🆔 Generated UUID for new user:', userId);
-      
-      // Add user to authentication storage
-      users.push({
-        id: userId,
-        fullName,
-        email,
-        username,
-        // ⚠️ store a real hash in production
-        passwordHash: btoa(password)        // base-64 "hash" for demo only
-      });
-      localStorage.setItem("users", JSON.stringify(users));
-      
-      // IMPORTANT: Always assign "user" role for new registrations
-      // Only the main admin (luciferbebistar@gmail.com) can change roles via user management
-      const appUsers = JSON.parse(localStorage.getItem("app_users") || "[]");
-      appUsers.push({
-        id: userId,
-        email: email,
-        full_name: fullName,
-        role: "user", // FORCE user role for ALL new registrations
-        created_at: new Date().toISOString()
-      });
-      localStorage.setItem("app_users", JSON.stringify(appUsers));
-      
-      console.log('✅ User registered with UUID:', userId);
-      
-      toast({
-        title: "Registration successful",
-        description: "Your account has been created with user privileges. You can now log in.",
-      });
-      navigate("/login");
-    } catch (error) {
+      if (data.user) {
+        console.log('✅ User registered successfully:', data.user.id);
+        
+        toast({
+          title: "Registration successful",
+          description: "Your account has been created with user privileges. Please check your email for verification (if enabled).",
+        });
+        
+        navigate("/login");
+      }
+    } catch (error: any) {
       console.error('Registration error:', error);
+      
+      // Handle specific Supabase error messages
+      let errorMessage = "There was a problem creating your account.";
+      if (error.message) {
+        if (error.message.includes("already registered")) {
+          errorMessage = "An account with this email already exists.";
+        } else if (error.message.includes("password")) {
+          errorMessage = "Password does not meet requirements.";
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
       toast({
         variant: "destructive",
         title: "Registration failed",
-        description: "There was a problem creating your account.",
+        description: errorMessage,
       });
     } finally {
       setIsLoading(false);
@@ -157,7 +146,7 @@ const RegisterForm = () => {
             <label htmlFor="email" className="text-sm font-medium">Email</label>
             <Input
               id="email"
-              type="text"
+              type="email"
               value={email}
               onChange={handleEmailChange}
               placeholder="name@company.com"
@@ -169,25 +158,6 @@ const RegisterForm = () => {
               <div className="text-sm text-destructive flex items-center gap-1 mt-1">
                 <AlertTriangle className="h-4 w-4" />
                 <span>{errors.email}</span>
-              </div>
-            )}
-          </div>
-          <div className="space-y-2">
-            <label htmlFor="username" className="text-sm font-medium">Username</label>
-            <Input
-              id="username"
-              type="text"
-              value={username}
-              onChange={handleUsernameChange}
-              placeholder="johndoe"
-              required
-              disabled={isLoading}
-              className={errors.username ? "border-destructive" : ""}
-            />
-            {errors.username && (
-              <div className="text-sm text-destructive flex items-center gap-1 mt-1">
-                <AlertTriangle className="h-4 w-4" />
-                <span>{errors.username}</span>
               </div>
             )}
           </div>
