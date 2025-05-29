@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Client } from "@/types/invoice";
 import { InvoiceService } from "@/services/invoiceService";
+import { useAuth } from "@/context/AuthContext";
 
 interface CreateClientDialogProps {
   open: boolean;
@@ -20,6 +21,7 @@ export const CreateClientDialog: React.FC<CreateClientDialogProps> = ({
   onClientCreated,
 }) => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
@@ -37,6 +39,18 @@ export const CreateClientDialog: React.FC<CreateClientDialogProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Check authentication first
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "You must be logged in to create clients. Please log in and try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    console.log('User attempting to create client:', { id: user.id, role: user.role });
+
     if (!formData.name || !formData.email) {
       toast({
         title: "Validation Error",
@@ -48,6 +62,8 @@ export const CreateClientDialog: React.FC<CreateClientDialogProps> = ({
 
     try {
       setLoading(true);
+      console.log('Submitting client creation request...');
+      
       const newClient = await InvoiceService.createClient(formData);
       onClientCreated(newClient);
       
@@ -69,11 +85,19 @@ export const CreateClientDialog: React.FC<CreateClientDialogProps> = ({
         vat_id: "",
         tax_id: "",
       });
+      
+      onOpenChange(false);
     } catch (error) {
       console.error("Error creating client:", error);
+      
+      let errorMessage = "Failed to create client.";
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
       toast({
         title: "Error",
-        description: "Failed to create client.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -86,6 +110,11 @@ export const CreateClientDialog: React.FC<CreateClientDialogProps> = ({
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>Create New Client</DialogTitle>
+          {user && (
+            <p className="text-sm text-muted-foreground">
+              Creating client as: {user.full_name} ({user.role})
+            </p>
+          )}
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -188,7 +217,7 @@ export const CreateClientDialog: React.FC<CreateClientDialogProps> = ({
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit" disabled={loading}>
+            <Button type="submit" disabled={loading || !user}>
               {loading ? "Creating..." : "Create Client"}
             </Button>
           </div>

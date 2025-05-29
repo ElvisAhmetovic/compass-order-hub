@@ -1,8 +1,61 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { Invoice, Client, InvoiceLineItem, Payment, InvoiceFormData } from "@/types/invoice";
 
 export class InvoiceService {
+  // Helper method to get authenticated user
+  private static async getAuthenticatedUser() {
+    try {
+      // First try to get user from localStorage (for app users)
+      const userSession = localStorage.getItem('userSession');
+      if (userSession) {
+        try {
+          const userData = JSON.parse(userSession);
+          if (userData.id) {
+            console.log('Using localStorage user ID:', userData.id);
+            return userData;
+          }
+        } catch (error) {
+          console.error('Error parsing user session:', error);
+        }
+      }
+
+      // If no user from localStorage, try Supabase auth as fallback
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (user && !userError) {
+        console.log('Using Supabase auth user ID:', user.id);
+        return user;
+      }
+
+      return null;
+    } catch (error) {
+      console.error('Error getting authenticated user:', error);
+      return null;
+    }
+  }
+
+  // Helper method to check user permissions
+  private static checkUserPermissions(user: any, action: string): boolean {
+    if (!user) {
+      console.error('No user provided for permission check');
+      return false;
+    }
+
+    console.log(`Checking permissions for user role: ${user.role}, action: ${action}`);
+    
+    // Admin users can perform all actions
+    if (user.role === 'admin') {
+      return true;
+    }
+
+    // For client creation, allow users and agents
+    if (action === 'create_client') {
+      return ['user', 'agent', 'admin'].includes(user.role);
+    }
+
+    // Default to allowing the action for authenticated users
+    return true;
+  }
+
   // Invoice operations
   static async getInvoices(): Promise<Invoice[]> {
     const { data, error } = await supabase
@@ -32,6 +85,12 @@ export class InvoiceService {
   }
 
   static async createInvoice(invoiceData: InvoiceFormData): Promise<Invoice> {
+    // Check authentication first
+    const user = await this.getAuthenticatedUser();
+    if (!user) {
+      throw new Error('Authentication required to create invoices');
+    }
+
     // Generate invoice number
     const { data: invoiceNumber, error: numberError } = await supabase
       .rpc('generate_invoice_number');
@@ -49,6 +108,7 @@ export class InvoiceService {
         payment_terms: invoiceData.payment_terms,
         notes: invoiceData.notes,
         internal_notes: invoiceData.internal_notes,
+        user_id: user.id,
       })
       .select()
       .single();
@@ -150,62 +210,62 @@ export class InvoiceService {
   }
 
   static async createClient(clientData: Omit<Client, 'id' | 'created_at' | 'updated_at'>): Promise<Client> {
-    let userId = null;
+    console.log('Creating client - checking authentication...');
     
-    // First try to get user from localStorage (for app users)
-    const userSession = localStorage.getItem('userSession');
-    if (userSession) {
-      try {
-        const userData = JSON.parse(userSession);
-        userId = userData.id;
-        console.log('Using localStorage user ID:', userId);
-      } catch (error) {
-        console.error('Error parsing user session:', error);
-      }
+    // Get authenticated user
+    const user = await this.getAuthenticatedUser();
+    if (!user) {
+      console.error('Authentication failed - no user found');
+      throw new Error('Authentication required. Please log in to create clients.');
     }
 
-    // If no user from localStorage, try Supabase auth as fallback
-    if (!userId) {
-      try {
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
-        if (user && !userError) {
-          userId = user.id;
-          console.log('Using Supabase auth user ID:', userId);
+    console.log('User authenticated:', { id: user.id, role: user.role });
+
+    // Check user permissions
+    if (!this.checkUserPermissions(user, 'create_client')) {
+      console.error('Permission denied for user:', user.role);
+      throw new Error('You do not have permission to create clients. Please contact your administrator.');
+    }
+
+    console.log('User authorized to create client');
+
+    console.log('Creating client with data:', clientData);
+    console.log('User ID for client:', user.id);
+
+    try {
+      const { data, error } = await supabase
+        .from('clients')
+        .insert({
+          ...clientData,
+          user_id: user.id
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Supabase error creating client:', error);
+        
+        // Provide more specific error messages
+        if (error.code === '23505') {
+          throw new Error('A client with this email already exists.');
+        } else if (error.code === '23503') {
+          throw new Error('Invalid user reference. Please try logging out and logging back in.');
+        } else {
+          throw new Error(`Failed to create client: ${error.message}`);
         }
-      } catch (error) {
-        console.error('Error getting Supabase user:', error);
+      }
+      
+      console.log('Successfully created client:', data);
+      return data;
+    } catch (error) {
+      console.error('Error in createClient:', error);
+      
+      if (error instanceof Error) {
+        throw error;
+      } else {
+        throw new Error('An unexpected error occurred while creating the client.');
       }
     }
-
-    // If still no user, create a temporary user ID
-    if (!userId) {
-      userId = crypto.randomUUID();
-      console.log('Creating client with temporary user ID:', userId);
-    }
-
-    if (!userId) {
-      throw new Error('User must be authenticated to create clients');
-    }
-
-    console.log('Creating client with user_id:', userId);
-    console.log('Client data:', clientData);
-
-    const { data, error } = await supabase
-      .from('clients')
-      .insert({
-        ...clientData,
-        user_id: userId
-      })
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Supabase error creating client:', error);
-      throw error;
-    }
-    
-    console.log('Successfully created client:', data);
-    return data;
   }
 
   static async updateClient(id: string, clientData: Partial<Client>): Promise<Client> {
@@ -263,6 +323,12 @@ export class InvoiceService {
 
   // Convert proposal to invoice
   static async convertProposalToInvoice(proposalId: string, clientId: string): Promise<Invoice> {
+    // Check authentication first
+    const user = await this.getAuthenticatedUser();
+    if (!user) {
+      throw new Error('Authentication required to convert proposals');
+    }
+
     const { data: proposal } = await supabase
       .from('proposals')
       .select('*')
@@ -290,6 +356,7 @@ export class InvoiceService {
         currency: 'EUR',
         payment_terms: 'Net 30',
         notes: `Generated from proposal ${proposal.number}`,
+        user_id: user.id,
       })
       .select()
       .single();
