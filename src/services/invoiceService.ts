@@ -1,6 +1,6 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { Invoice, Client, InvoiceLineItem, Payment, InvoiceFormData } from "@/types/invoice";
-import { crypto } from "crypto";
 
 export class InvoiceService {
   // Invoice operations
@@ -177,12 +177,10 @@ export class InvoiceService {
       }
     }
 
-    // If still no user, check if there's a logged in user in the auth context
+    // If still no user, create a temporary user ID
     if (!userId) {
-      // Try to get from app_users table - create a temporary user if needed
-      const tempUserId = crypto.randomUUID();
-      console.log('Creating client with temporary user ID:', tempUserId);
-      userId = tempUserId;
+      userId = crypto.randomUUID();
+      console.log('Creating client with temporary user ID:', userId);
     }
 
     if (!userId) {
