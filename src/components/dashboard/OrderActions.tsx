@@ -13,7 +13,7 @@ import { Order, OrderStatus } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
 import { InvoiceService } from "@/services/invoiceService";
-import { v4 as uuidv4 } from "uuid";
+import { OrderService } from "@/services/orderService";
 
 interface OrderActionsProps {
   order: Order;
@@ -161,36 +161,10 @@ const OrderActions = ({ order, onOrderView, onRefresh }: OrderActionsProps) => {
     setIsLoading(true);
     
     try {
-      // Get existing orders
-      const orders = JSON.parse(localStorage.getItem("orders") || "[]");
-      
-      // Find and update the order
-      const updatedOrders = orders.map((o: Order) => 
-        o.id === order.id ? { 
-          ...o, 
-          status: newStatus, 
-          updated_at: new Date().toISOString() 
-        } : o
-      );
-      
-      // Save updated orders back to localStorage
-      localStorage.setItem("orders", JSON.stringify(updatedOrders));
-      
-      // Update status history
-      const allStatusHistories = JSON.parse(localStorage.getItem("statusHistories") || "{}");
-      const orderHistory = allStatusHistories[order.id] || [];
-      
-      const newStatusHistoryItem = {
-        id: `sh${Date.now()}`,
-        order_id: order.id,
-        status: newStatus,
-        changed_by: user?.full_name || user?.email || "Unknown User",
-        changed_at: new Date().toISOString(),
-        notes: `Status changed to ${newStatus} using quick action`
-      };
-      
-      allStatusHistories[order.id] = [newStatusHistoryItem, ...orderHistory];
-      localStorage.setItem("statusHistories", JSON.stringify(allStatusHistories));
+      // Update order status using Supabase
+      await OrderService.updateOrder(order.id, { 
+        status: newStatus
+      });
       
       // Create invoice if status is invoice-related
       if (newStatus === "Invoice Sent" || newStatus === "Invoice Paid") {
@@ -234,17 +208,8 @@ const OrderActions = ({ order, onOrderView, onRefresh }: OrderActionsProps) => {
     setIsLoading(true);
     
     try {
-      // In a real app, this would be an API call
-      // For now, we'll update localStorage
-      
-      // Get existing orders
-      const orders = JSON.parse(localStorage.getItem("orders") || "[]");
-      
-      // Filter out the deleted order
-      const updatedOrders = orders.filter((o: Order) => o.id !== order.id);
-      
-      // Save updated orders back to localStorage
-      localStorage.setItem("orders", JSON.stringify(updatedOrders));
+      // Delete order using Supabase
+      await OrderService.deleteOrder(order.id);
       
       // Show success message
       toast({

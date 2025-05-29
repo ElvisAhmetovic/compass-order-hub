@@ -16,6 +16,7 @@ import { formatDate } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { InvoiceService } from "@/services/invoiceService";
+import { OrderService } from "@/services/orderService";
 
 interface OrderRowProps {
   order: Order;
@@ -169,14 +170,17 @@ const OrderRow = ({
   const handleDelete = async () => {
     setIsDeleting(true);
     try {
-      // In a real app, this would be an API call to delete the order
-      const ordersInStorage = JSON.parse(localStorage.getItem("orders") || "[]");
-      const updatedOrders = ordersInStorage.filter((o: Order) => o.id !== order.id);
-      localStorage.setItem("orders", JSON.stringify(updatedOrders));
+      // Delete order using Supabase
+      await OrderService.deleteOrder(order.id);
       
       onRefresh();
     } catch (error) {
       console.error("Error deleting order:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete order.",
+        variant: "destructive"
+      });
     } finally {
       setIsDeleting(false);
     }
@@ -185,12 +189,8 @@ const OrderRow = ({
   const handleUpdateStatus = async (newStatus: string) => {
     setIsUpdatingStatus(true);
     try {
-      // In a real app, this would be an API call to update the order status
-      const ordersInStorage = JSON.parse(localStorage.getItem("orders") || "[]");
-      const updatedOrders = ordersInStorage.map((o: Order) => 
-        o.id === order.id ? { ...o, status: newStatus, updated_at: new Date().toISOString() } : o
-      );
-      localStorage.setItem("orders", JSON.stringify(updatedOrders));
+      // Update order status using Supabase
+      await OrderService.updateOrder(order.id, { status: newStatus });
       
       // Create invoice if status is invoice-related
       if (newStatus === "Invoice Sent" || newStatus === "Invoice Paid") {
@@ -200,6 +200,11 @@ const OrderRow = ({
       onRefresh();
     } catch (error) {
       console.error("Error updating order status:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update order status.",
+        variant: "destructive"
+      });
     } finally {
       setIsUpdatingStatus(false);
     }
