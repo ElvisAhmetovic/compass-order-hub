@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { 
   DropdownMenu,
@@ -52,6 +53,16 @@ const OrderActions = ({ order, onOrderView, onRefresh }: OrderActionsProps) => {
 
   const createInvoiceFromOrder = async (orderId: string, orderData: Order, status: OrderStatus) => {
     try {
+      // Check if user is authenticated
+      if (!user) {
+        toast({
+          title: "Authentication Required",
+          description: "You must be logged in to create invoices.",
+          variant: "destructive"
+        });
+        return;
+      }
+
       // Check if invoice already exists for this order
       const existingInvoices = await InvoiceService.getInvoices();
       const existingInvoice = existingInvoices.find(inv => 
@@ -75,14 +86,24 @@ const OrderActions = ({ order, onOrderView, onRefresh }: OrderActionsProps) => {
       let clientId = clients.find(c => c.name === orderData.company_name)?.id;
       
       if (!clientId) {
-        // Create new client
-        const newClient = await InvoiceService.createClient({
-          name: orderData.company_name,
-          email: orderData.contact_email || `${orderData.company_name.toLowerCase().replace(/\s+/g, '')}@company.com`,
-          address: orderData.company_address || '',
-          phone: orderData.contact_phone || '',
-        });
-        clientId = newClient.id;
+        try {
+          // Create new client
+          const newClient = await InvoiceService.createClient({
+            name: orderData.company_name,
+            email: orderData.contact_email || `${orderData.company_name.toLowerCase().replace(/\s+/g, '')}@company.com`,
+            address: orderData.company_address || '',
+            phone: orderData.contact_phone || '',
+          });
+          clientId = newClient.id;
+        } catch (clientError) {
+          console.error("Error creating client:", clientError);
+          toast({
+            title: "Error",
+            description: "Failed to create client. Please check your authentication and try again.",
+            variant: "destructive"
+          });
+          return;
+        }
       }
 
       // Create a new invoice from the order
@@ -121,7 +142,7 @@ const OrderActions = ({ order, onOrderView, onRefresh }: OrderActionsProps) => {
       console.error("Error creating invoice from order:", error);
       toast({
         title: "Error",
-        description: "Failed to create invoice from order.",
+        description: "Failed to create invoice from order. Please check your authentication and try again.",
         variant: "destructive"
       });
     }
