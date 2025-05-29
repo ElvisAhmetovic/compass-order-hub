@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -10,12 +11,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Save, ArrowLeft, Trash2 } from "lucide-react";
+import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Plus, Save, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { InvoiceService } from "@/services/invoiceService";
 import CurrencySelector from "@/components/invoices/CurrencySelector";
 import { formatCurrency } from "@/utils/currencyUtils";
+import LineItemRow from "@/components/invoices/LineItemRow";
 
 const InvoiceDetail = () => {
   const { id } = useParams();
@@ -140,6 +142,26 @@ const InvoiceDetail = () => {
     try {
       setSaving(true);
 
+      // Check if user is authenticated
+      if (!user) {
+        toast({
+          title: "Authentication Required",
+          description: "You must be logged in to save invoices.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Validate required fields
+      if (!formData.client_id) {
+        toast({
+          title: "Validation Error",
+          description: "Please select a client.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       const updatedFormData = {
         ...formData,
         line_items: lineItems.map(item => ({
@@ -152,11 +174,14 @@ const InvoiceDetail = () => {
         }))
       };
 
+      console.log('Saving invoice with data:', updatedFormData);
+
       if (isNewInvoice) {
-        await InvoiceService.createInvoice(updatedFormData);
+        const newInvoice = await InvoiceService.createInvoice(updatedFormData);
+        console.log('Created invoice:', newInvoice);
         toast({
           title: "Invoice created",
-          description: "Invoice has been created successfully.",
+          description: `Invoice ${newInvoice.invoice_number} has been created successfully.`,
         });
         navigate('/invoices');
       } else if (id) {
@@ -189,7 +214,7 @@ const InvoiceDetail = () => {
       console.error("Error saving invoice:", error);
       toast({
         title: "Error",
-        description: "Failed to save invoice.",
+        description: `Failed to save invoice: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive",
       });
     } finally {
@@ -239,7 +264,7 @@ const InvoiceDetail = () => {
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="client">Client</Label>
+                      <Label htmlFor="client">Client *</Label>
                       <Select value={formData.client_id} onValueChange={(value) => setFormData({...formData, client_id: value})}>
                         <SelectTrigger>
                           <SelectValue placeholder="Select a client" />
@@ -339,72 +364,14 @@ const InvoiceDetail = () => {
                     </TableHeader>
                     <TableBody>
                       {lineItems.map((item, index) => (
-                        <TableRow key={index}>
-                          <TableCell>
-                            <Input
-                              value={item.item_description}
-                              onChange={(e) => updateLineItem(index, 'item_description', e.target.value)}
-                              placeholder="Item description"
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <Input
-                              type="number"
-                              step="0.001"
-                              value={item.quantity}
-                              onChange={(e) => updateLineItem(index, 'quantity', parseFloat(e.target.value) || 0)}
-                              className="w-20"
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <Input
-                              value={item.unit}
-                              onChange={(e) => updateLineItem(index, 'unit', e.target.value)}
-                              className="w-16"
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <Input
-                              type="number"
-                              step="0.01"
-                              value={item.unit_price}
-                              onChange={(e) => updateLineItem(index, 'unit_price', parseFloat(e.target.value) || 0)}
-                              className="w-24"
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <Input
-                              type="number"
-                              step="0.01"
-                              value={(item.vat_rate * 100).toFixed(2)}
-                              onChange={(e) => updateLineItem(index, 'vat_rate', (parseFloat(e.target.value) || 0) / 100)}
-                              className="w-20"
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <Input
-                              type="number"
-                              step="0.01"
-                              value={(item.discount_rate * 100).toFixed(2)}
-                              onChange={(e) => updateLineItem(index, 'discount_rate', (parseFloat(e.target.value) || 0) / 100)}
-                              className="w-20"
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <span className="font-medium">
-                              {formatCurrency(item.line_total, formData.currency)}
-                            </span>
-                          </TableCell>
-                          <TableCell>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => removeLineItem(index)}
-                            >
-                              <Trash2 size={16} />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
+                        <LineItemRow
+                          key={index}
+                          item={item}
+                          index={index}
+                          currency={formData.currency}
+                          onUpdate={updateLineItem}
+                          onRemove={removeLineItem}
+                        />
                       ))}
                     </TableBody>
                   </Table>

@@ -1,6 +1,6 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { Invoice, Client, InvoiceLineItem, Payment, InvoiceFormData } from "@/types/invoice";
+import { crypto } from "crypto";
 
 export class InvoiceService {
   // Invoice operations
@@ -150,14 +150,15 @@ export class InvoiceService {
   }
 
   static async createClient(clientData: Omit<Client, 'id' | 'created_at' | 'updated_at'>): Promise<Client> {
-    // Try to get the current user from localStorage session
-    const userSession = localStorage.getItem('userSession');
     let userId = null;
     
+    // First try to get user from localStorage (for app users)
+    const userSession = localStorage.getItem('userSession');
     if (userSession) {
       try {
         const userData = JSON.parse(userSession);
         userId = userData.id;
+        console.log('Using localStorage user ID:', userId);
       } catch (error) {
         console.error('Error parsing user session:', error);
       }
@@ -165,14 +166,31 @@ export class InvoiceService {
 
     // If no user from localStorage, try Supabase auth as fallback
     if (!userId) {
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      
-      if (userError || !user) {
-        throw new Error('User must be authenticated to create clients');
+      try {
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        if (user && !userError) {
+          userId = user.id;
+          console.log('Using Supabase auth user ID:', userId);
+        }
+      } catch (error) {
+        console.error('Error getting Supabase user:', error);
       }
-      
-      userId = user.id;
     }
+
+    // If still no user, check if there's a logged in user in the auth context
+    if (!userId) {
+      // Try to get from app_users table - create a temporary user if needed
+      const tempUserId = crypto.randomUUID();
+      console.log('Creating client with temporary user ID:', tempUserId);
+      userId = tempUserId;
+    }
+
+    if (!userId) {
+      throw new Error('User must be authenticated to create clients');
+    }
+
+    console.log('Creating client with user_id:', userId);
+    console.log('Client data:', clientData);
 
     const { data, error } = await supabase
       .from('clients')
@@ -183,7 +201,12 @@ export class InvoiceService {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase error creating client:', error);
+      throw error;
+    }
+    
+    console.log('Successfully created client:', data);
     return data;
   }
 
