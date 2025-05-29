@@ -9,8 +9,10 @@ import { InvoiceService } from "@/services/invoiceService";
 import { Invoice } from "@/types/invoice";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
-import { Send, Calendar, Mail, Trash2 } from "lucide-react";
+import { Send, Calendar, Mail, Trash2, Edit, ChevronDown, ChevronUp } from "lucide-react";
 import { formatDate } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import EmailTemplateEditor from "./EmailTemplateEditor";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,6 +30,7 @@ const PaymentReminders = () => {
   const [loading, setLoading] = useState(true);
   const [sendingReminder, setSendingReminder] = useState<string | null>(null);
   const [deletingInvoice, setDeletingInvoice] = useState<string | null>(null);
+  const [expandedRow, setExpandedRow] = useState<string | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -62,26 +65,44 @@ const PaymentReminders = () => {
     }
   };
 
-  const sendPaymentReminder = async (invoiceId: string) => {
+  const sendPaymentReminder = async (invoiceId: string, subject: string, body: string) => {
     try {
       setSendingReminder(invoiceId);
       
-      // In a real implementation, this would send an email reminder
-      // For now, we'll just update the invoice status and show a success message
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
-      
-      toast({
-        title: "Reminder sent",
-        description: "Payment reminder has been sent to the client.",
+      const invoice = overdueInvoices.find(inv => inv.id === invoiceId);
+      if (!invoice || !invoice.client) {
+        throw new Error("Invoice or client information not found");
+      }
+
+      const { data, error } = await supabase.functions.invoke('send-payment-reminder', {
+        body: {
+          to: invoice.client.email,
+          subject,
+          body,
+          invoiceId: invoice.id,
+          clientName: invoice.client.name
+        }
       });
+
+      if (error) {
+        throw error;
+      }
+
+      toast({
+        title: "Email sent successfully",
+        description: `Payment reminder sent to ${invoice.client.name}`,
+      });
+
+      // Close the expanded editor
+      setExpandedRow(null);
       
       // Refresh the list
       await loadOverdueInvoices();
-    } catch (error) {
-      console.error("Error sending reminder:", error);
+    } catch (error: any) {
+      console.error("Error sending payment reminder:", error);
       toast({
         title: "Error",
-        description: "Failed to send payment reminder.",
+        description: error.message || "Failed to send payment reminder.",
         variant: "destructive",
       });
     } finally {
@@ -112,6 +133,10 @@ const PaymentReminders = () => {
     } finally {
       setDeletingInvoice(null);
     }
+  };
+
+  const toggleExpandRow = (invoiceId: string) => {
+    setExpandedRow(expandedRow === invoiceId ? null : invoiceId);
   };
 
   const getDaysOverdue = (dueDate: string) => {
@@ -176,59 +201,50 @@ const PaymentReminders = () => {
               </AlertDescription>
             </Alert>
             
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Invoice #</TableHead>
-                  <TableHead>Client</TableHead>
-                  <TableHead>Due Date</TableHead>
-                  <TableHead>Days Overdue</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {overdueInvoices.map((invoice) => {
-                  const daysOverdue = getDaysOverdue(invoice.due_date);
-                  const canDelete = canDeleteInvoice(invoice);
-                  
-                  return (
-                    <TableRow key={invoice.id}>
-                      <TableCell className="font-medium">
-                        {invoice.invoice_number}
-                      </TableCell>
-                      <TableCell>
+            <div className="space-y-2">
+              {overdueInvoices.map((invoice) => {
+                const daysOverdue = getDaysOverdue(invoice.due_date);
+                const canDelete = canDeleteInvoice(invoice);
+                const isExpanded = expandedRow === invoice.id;
+                
+                return (
+                  <div key={invoice.id} className="border rounded-lg">
+                    {/* Main Row */}
+                    <div className="p-4">
+                      <div className="grid grid-cols-7 gap-4 items-center">
+                        <div className="font-medium">{invoice.invoice_number}</div>
                         <div>
                           <div className="font-medium">{invoice.client?.name}</div>
                           <div className="text-sm text-gray-500">{invoice.client?.email}</div>
                         </div>
-                      </TableCell>
-                      <TableCell>{formatDate(invoice.due_date)}</TableCell>
-                      <TableCell>
-                        <Badge variant={daysOverdue > 30 ? "destructive" : "secondary"}>
-                          {daysOverdue} days
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {getCurrencySymbol(invoice.currency)}
-                        {invoice.total_amount.toFixed(2)}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{invoice.status}</Badge>
-                      </TableCell>
-                      <TableCell>
+                        <div>{formatDate(invoice.due_date)}</div>
+                        <div>
+                          <Badge variant={daysOverdue > 30 ? "destructive" : "secondary"}>
+                            {daysOverdue} days
+                          </Badge>
+                        </div>
+                        <div>
+                          {getCurrencySymbol(invoice.currency)}
+                          {invoice.total_amount.toFixed(2)}
+                        </div>
+                        <div>
+                          <Badge variant="outline">{invoice.status}</Badge>
+                        </div>
                         <div className="flex gap-2">
                           <Button
                             size="sm"
-                            onClick={() => sendPaymentReminder(invoice.id)}
+                            variant={isExpanded ? "secondary" : "default"}
+                            onClick={() => toggleExpandRow(invoice.id)}
                             disabled={sendingReminder === invoice.id}
                           >
-                            {sendingReminder === invoice.id ? (
-                              "Sending..."
+                            {isExpanded ? (
+                              <>
+                                <ChevronUp className="h-4 w-4 mr-1" />
+                                Close
+                              </>
                             ) : (
                               <>
-                                <Send className="h-4 w-4 mr-1" />
+                                <Edit className="h-4 w-4 mr-1" />
                                 Send Reminder
                               </>
                             )}
@@ -273,12 +289,29 @@ const PaymentReminders = () => {
                             </AlertDialog>
                           )}
                         </div>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
+                      </div>
+                    </div>
+
+                    {/* Expanded Email Editor */}
+                    {isExpanded && (
+                      <div className="border-t p-4 bg-gray-50">
+                        <EmailTemplateEditor
+                          invoiceData={{
+                            clientName: invoice.client?.name || '',
+                            invoiceNumber: invoice.invoice_number,
+                            amount: `${getCurrencySymbol(invoice.currency)}${invoice.total_amount.toFixed(2)}`,
+                            dueDate: formatDate(invoice.due_date),
+                            daysOverdue: daysOverdue
+                          }}
+                          onSendEmail={(subject, body) => sendPaymentReminder(invoice.id, subject, body)}
+                          onCancel={() => setExpandedRow(null)}
+                        />
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </>
         )}
       </CardContent>
