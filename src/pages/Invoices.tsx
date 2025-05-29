@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import Sidebar from "@/components/dashboard/Sidebar";
@@ -9,9 +8,11 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 import { PlusCircle, FileEdit, Trash2, Download, File, CheckCircle2, XCircle, Send, Eye, Receipt } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
+import { useNotificationSound } from "@/hooks/useNotificationSound";
 import { 
   DropdownMenu,
   DropdownMenuContent,
@@ -39,6 +40,28 @@ const Invoices = () => {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterText, setFilterText] = useState("");
+  
+  // Calculate overdue invoices
+  const overdueInvoices = invoices.filter(invoice => {
+    const dueDate = new Date(invoice.due_date);
+    const now = new Date();
+    return (
+      (invoice.status === 'sent' || invoice.status === 'partially_paid') &&
+      dueDate < now
+    );
+  });
+
+  const overdueCount = overdueInvoices.length;
+  
+  // Play notification sound when there are overdue invoices (only on initial load)
+  const [hasPlayedSound, setHasPlayedSound] = useState(false);
+  useNotificationSound(overdueCount > 0 && !loading && !hasPlayedSound);
+
+  useEffect(() => {
+    if (overdueCount > 0 && !loading && !hasPlayedSound) {
+      setHasPlayedSound(true);
+    }
+  }, [overdueCount, loading, hasPlayedSound]);
   
   const loadInvoices = async () => {
     try {
@@ -171,7 +194,14 @@ const Invoices = () => {
         <Layout userRole={user?.role || "user"}>
           <div className="container mx-auto py-8">
             <div className="flex justify-between items-center mb-6">
-              <h1 className="text-2xl font-bold">Invoices</h1>
+              <div className="flex items-center gap-3">
+                <h1 className="text-2xl font-bold">Invoices</h1>
+                {overdueCount > 0 && (
+                  <Badge variant="destructive" className="animate-pulse">
+                    {overdueCount} overdue
+                  </Badge>
+                )}
+              </div>
               <Button onClick={handleCreateInvoice} className="flex items-center gap-2">
                 <PlusCircle size={16} />
                 Create Invoice
@@ -181,7 +211,17 @@ const Invoices = () => {
             <Tabs defaultValue="overview" className="space-y-6">
               <TabsList>
                 <TabsTrigger value="overview">Overview</TabsTrigger>
-                <TabsTrigger value="reminders">Payment Reminders</TabsTrigger>
+                <TabsTrigger value="reminders" className="relative">
+                  Payment Reminders
+                  {overdueCount > 0 && (
+                    <Badge 
+                      variant="destructive" 
+                      className="ml-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs"
+                    >
+                      {overdueCount}
+                    </Badge>
+                  )}
+                </TabsTrigger>
               </TabsList>
 
               <TabsContent value="overview" className="space-y-6">
