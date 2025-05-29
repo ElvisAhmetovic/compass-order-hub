@@ -15,6 +15,7 @@ import { ChevronDown, ChevronUp } from "lucide-react";
 import { Order, OrderStatus, User } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
+import { OrderService } from "@/services/orderService";
 
 interface OrderTableProps {
   onOrderClick: (order: Order) => void;
@@ -56,22 +57,20 @@ const OrderTable = ({ onOrderClick, statusFilter, refreshTrigger }: OrderTablePr
     }
   }, []);
 
-  // Fetch orders (mock from localStorage in this case)
+  // Fetch orders from Supabase
   useEffect(() => {
     const fetchOrders = async () => {
       setLoading(true);
       try {
-        // In a real app, this would be an API call
-        const storedOrders = localStorage.getItem("orders");
-        let parsedOrders = storedOrders ? JSON.parse(storedOrders) : [];
+        const supabaseOrders = await OrderService.getOrders();
         
         // Filter orders for non-admin users to only show their assigned orders
+        let filteredSupabaseOrders = supabaseOrders;
         if (!isAdmin && user) {
-          parsedOrders = parsedOrders.filter((order: Order) => order.assigned_to === user.id);
+          filteredSupabaseOrders = supabaseOrders.filter((order: Order) => order.assigned_to === user.id);
         }
-        // For admin users, show all orders (no filtering by assigned_to)
         
-        setOrders(parsedOrders);
+        setOrders(filteredSupabaseOrders);
         setError(null);
       } catch (err) {
         console.error("Error fetching orders:", err);
@@ -112,8 +111,8 @@ const OrderTable = ({ onOrderClick, statusFilter, refreshTrigger }: OrderTablePr
     
     // Apply sorting
     result.sort((a, b) => {
-      const dateA = new Date(a[sortField]).getTime();
-      const dateB = new Date(b[sortField]).getTime();
+      const dateA = new Date(a[sortField] || '').getTime();
+      const dateB = new Date(b[sortField] || '').getTime();
       
       if (sortDirection === 'asc') {
         return dateA - dateB;
@@ -215,6 +214,31 @@ const OrderTable = ({ onOrderClick, statusFilter, refreshTrigger }: OrderTablePr
       </div>
     );
   }
+
+  // Get current page of orders
+  const indexOfLastOrder = currentPage * rowsPerPage;
+  const indexOfFirstOrder = indexOfLastOrder - rowsPerPage;
+  const currentOrders = filteredOrders.slice(indexOfFirstOrder, indexOfLastOrder);
+  const totalPages = Math.ceil(filteredOrders.length / rowsPerPage);
+
+  const handlePageChange = (pageNumber: number) => {
+    setCurrentPage(pageNumber);
+  };
+
+  const toggleSort = (field: 'created_at' | 'updated_at') => {
+    if (sortField === field) {
+      // Toggle direction if already sorting by this field
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      // Set new field and default to descending
+      setSortField(field);
+      setSortDirection('desc');
+    }
+  };
+
+  const handleRefresh = () => {
+    // This will be passed down to child components
+  };
 
   return (
     <div className="space-y-4">

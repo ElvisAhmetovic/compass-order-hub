@@ -12,11 +12,15 @@ import Sidebar from "@/components/dashboard/Sidebar";
 import { useLocation } from "react-router-dom";
 import { useOrderModal } from "@/hooks/useOrderModal";
 import { useAuth } from "@/context/AuthContext";
+import { Button } from "@/components/ui/button";
+import { MigrationService } from "@/services/migrationService";
+import { toast } from "@/hooks/use-toast";
 
 const Dashboard = () => {
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("All");
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [showMigrationButton, setShowMigrationButton] = useState(false);
   const location = useLocation();
   const path = location.pathname;
   
@@ -27,6 +31,28 @@ const Dashboard = () => {
   const { user } = useAuth();
   const userRole: UserRole = user?.role || "user";
   const isAdmin = userRole === "admin";
+
+  // Check if there's localStorage data to migrate
+  useEffect(() => {
+    const checkForLocalStorageData = () => {
+      const storedOrders = localStorage.getItem("orders");
+      if (storedOrders && JSON.parse(storedOrders).length > 0) {
+        setShowMigrationButton(true);
+      }
+    };
+    
+    checkForLocalStorageData();
+  }, []);
+
+  const handleMigration = async () => {
+    try {
+      await MigrationService.performFullMigration();
+      setShowMigrationButton(false);
+      setRefreshTrigger(prev => prev + 1); // Refresh the data
+    } catch (error) {
+      console.error("Migration failed:", error);
+    }
+  };
 
   // Determine page status filter based on current route
   const getStatusFilterFromPath = (path: string): OrderStatus | null => {
@@ -93,6 +119,25 @@ const Dashboard = () => {
               }
               onCreateOrder={isAdmin ? () => setCreateModalOpen(true) : undefined}
             />
+            
+            {/* Migration button for admins if localStorage data exists */}
+            {isAdmin && showMigrationButton && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-sm font-medium text-blue-800">
+                      LocalStorage Data Detected
+                    </h3>
+                    <p className="text-sm text-blue-600 mt-1">
+                      Migrate your existing orders and companies to Supabase for better performance and reliability.
+                    </p>
+                  </div>
+                  <Button onClick={handleMigration} variant="outline" className="ml-4">
+                    Migrate to Supabase
+                  </Button>
+                </div>
+              </div>
+            )}
             
             {isDashboardHome && <DashboardCards />}
             

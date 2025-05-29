@@ -14,6 +14,7 @@ import { OrderStatus } from "@/types";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { Order } from "@/types";
+import { OrderService } from "@/services/orderService";
 
 interface OrderSummary {
   status: OrderStatus;
@@ -57,27 +58,28 @@ const SummaryCard = ({
 
 export const DashboardCards = () => {
   const [orderSummaries, setOrderSummaries] = useState<OrderSummary[]>([]);
+  const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
   
   useEffect(() => {
-    // Fetch orders from localStorage
-    const fetchOrders = () => {
+    // Fetch orders from Supabase
+    const fetchOrders = async () => {
       try {
-        const storedOrders = localStorage.getItem("orders");
-        if (!storedOrders) return [];
-        
-        let orders: Order[] = JSON.parse(storedOrders);
+        setLoading(true);
+        let orders = await OrderService.getOrders();
         
         // Filter orders for non-admin users to only show their assigned orders
         if (!isAdmin && user) {
           orders = orders.filter(order => order.assigned_to === user.id);
         }
         
-        return orders;
+        const summaries = calculateSummaries(orders);
+        setOrderSummaries(summaries);
       } catch (error) {
-        console.error("Error fetching orders:", error);
-        return [];
+        console.error("Error fetching orders for dashboard:", error);
+      } finally {
+        setLoading(false);
       }
     };
     
@@ -100,7 +102,7 @@ export const DashboardCards = () => {
         if (summaryMap.has(order.status)) {
           const summary = summaryMap.get(order.status)!;
           summary.count += 1;
-          summary.value += order.price;
+          summary.value += order.price || 0;
         }
       });
       
@@ -108,9 +110,7 @@ export const DashboardCards = () => {
       return Array.from(summaryMap.values());
     };
     
-    const orders = fetchOrders();
-    const summaries = calculateSummaries(orders);
-    setOrderSummaries(summaries);
+    fetchOrders();
   }, [isAdmin, user]);
 
   const getIcon = (status: OrderStatus) => {
@@ -160,6 +160,24 @@ export const DashboardCards = () => {
         return "text-primary";
     }
   };
+
+  if (loading) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        {[...Array(4)].map((_, i) => (
+          <Card key={i} className="border shadow-sm">
+            <CardContent className="p-6">
+              <div className="animate-pulse">
+                <div className="h-6 w-6 bg-gray-200 rounded mb-2"></div>
+                <div className="h-4 bg-gray-200 rounded mb-1"></div>
+                <div className="h-3 bg-gray-200 rounded"></div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
