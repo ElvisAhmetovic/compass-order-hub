@@ -162,21 +162,24 @@ const InvoiceDetail = () => {
         return;
       }
 
-      const updatedFormData = {
-        ...formData,
-        line_items: lineItems.map(item => ({
+      console.log('Saving invoice with data:', formData);
+
+      if (isNewInvoice) {
+        // For new invoices, prepare line items data
+        const lineItemsForCreation = lineItems.map(item => ({
           item_description: item.item_description,
           quantity: item.quantity,
           unit: item.unit,
           unit_price: item.unit_price,
           vat_rate: item.vat_rate,
           discount_rate: item.discount_rate
-        }))
-      };
+        }));
 
-      console.log('Saving invoice with data:', updatedFormData);
+        const updatedFormData = {
+          ...formData,
+          line_items: lineItemsForCreation
+        };
 
-      if (isNewInvoice) {
         const newInvoice = await InvoiceService.createInvoice(updatedFormData);
         console.log('Created invoice:', newInvoice);
         toast({
@@ -185,10 +188,33 @@ const InvoiceDetail = () => {
         });
         navigate('/invoices');
       } else if (id) {
-        await InvoiceService.updateInvoice(id, updatedFormData);
+        // For existing invoices, update invoice data without line_items
+        const invoiceUpdateData = {
+          client_id: formData.client_id,
+          issue_date: formData.issue_date,
+          due_date: formData.due_date,
+          currency: formData.currency,
+          payment_terms: formData.payment_terms,
+          notes: formData.notes,
+          internal_notes: formData.internal_notes
+        };
+
+        await InvoiceService.updateInvoice(id, invoiceUpdateData);
         
-        // Update line items
-        await Promise.all(lineItems.map(async (item) => {
+        // Handle line items separately
+        const existingLineItems = await InvoiceService.getLineItems(id);
+        const existingIds = existingLineItems.map(item => item.id);
+        
+        // Delete removed line items
+        for (const existingItem of existingLineItems) {
+          const stillExists = lineItems.find(item => item.id === existingItem.id);
+          if (!stillExists) {
+            await InvoiceService.deleteLineItem(existingItem.id);
+          }
+        }
+        
+        // Add or update line items
+        for (const item of lineItems) {
           if (item.id.startsWith('temp-')) {
             // Create new line item
             await InvoiceService.addLineItems(id, [{
@@ -199,11 +225,18 @@ const InvoiceDetail = () => {
               vat_rate: item.vat_rate,
               discount_rate: item.discount_rate
             }]);
-          } else {
+          } else if (existingIds.includes(item.id)) {
             // Update existing line item
-            await InvoiceService.updateLineItem(item.id, item);
+            await InvoiceService.updateLineItem(item.id, {
+              item_description: item.item_description,
+              quantity: item.quantity,
+              unit: item.unit,
+              unit_price: item.unit_price,
+              vat_rate: item.vat_rate,
+              discount_rate: item.discount_rate
+            });
           }
-        }));
+        }
 
         toast({
           title: "Invoice updated",
