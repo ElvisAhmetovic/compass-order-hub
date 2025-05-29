@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 import { TableRow, TableCell } from "@/components/ui/table";
-import { Order } from "@/types";
+import { Order, OrderStatus } from "@/types";
 import { formatDate } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -186,7 +186,7 @@ const OrderRow = ({
     }
   };
 
-  const handleUpdateStatus = async (newStatus: string) => {
+  const handleUpdateStatus = async (newStatus: OrderStatus) => {
     setIsUpdatingStatus(true);
     try {
       // Update order status using Supabase
