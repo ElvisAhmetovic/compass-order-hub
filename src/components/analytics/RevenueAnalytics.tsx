@@ -242,7 +242,7 @@ const RevenueAnalytics = ({ detailed = false }: RevenueAnalyticsProps) => {
               </AreaChart>
             </ChartContainer>
           </CardContent>
-        </CardContent>
+        </Card>
       )}
     </div>
   );
