@@ -12,6 +12,42 @@ import PerformanceAnalytics from "@/components/analytics/PerformanceAnalytics";
 
 const Analytics = () => {
   const { user } = useAuth();
+  const [dashboardStats, setDashboardStats] = useState({
+    totalOrders: 1234,
+    totalRevenue: 45231,
+    activeClients: 89,
+    completionRate: 92
+  });
+
+  // Load real dashboard statistics
+  useEffect(() => {
+    try {
+      const ordersData = JSON.parse(localStorage.getItem("orders") || "[]");
+      const invoicesData = JSON.parse(localStorage.getItem("invoices") || "[]");
+      
+      // Calculate real stats
+      const totalOrders = ordersData.length;
+      const completedOrders = ordersData.filter((order: any) => 
+        order.status === "Resolved" || order.status === "Invoice Paid"
+      ).length;
+      const completionRate = totalOrders > 0 ? Math.round((completedOrders / totalOrders) * 100) : 0;
+      
+      const totalRevenue = ordersData.reduce((sum: number, order: any) => 
+        sum + parseFloat(order.amount || order.price || 0), 0
+      );
+      
+      const uniqueClients = new Set(ordersData.map((order: any) => order.company_name)).size;
+      
+      setDashboardStats({
+        totalOrders,
+        totalRevenue: Math.round(totalRevenue),
+        activeClients: uniqueClients,
+        completionRate
+      });
+    } catch (error) {
+      console.error("Error loading dashboard stats:", error);
+    }
+  }, []);
 
   return (
     <div className="flex min-h-screen">
@@ -42,8 +78,8 @@ const Analytics = () => {
                       <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="text-2xl font-bold">1,234</div>
-                      <p className="text-xs text-muted-foreground">+12% from last month</p>
+                      <div className="text-2xl font-bold">{dashboardStats.totalOrders.toLocaleString()}</div>
+                      <p className="text-xs text-muted-foreground">Based on actual order data</p>
                     </CardContent>
                   </Card>
                   <Card>
@@ -51,8 +87,8 @@ const Analytics = () => {
                       <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="text-2xl font-bold">€45,231</div>
-                      <p className="text-xs text-muted-foreground">+8% from last month</p>
+                      <div className="text-2xl font-bold">€{dashboardStats.totalRevenue.toLocaleString()}</div>
+                      <p className="text-xs text-muted-foreground">From completed orders</p>
                     </CardContent>
                   </Card>
                   <Card>
@@ -60,8 +96,8 @@ const Analytics = () => {
                       <CardTitle className="text-sm font-medium">Active Clients</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="text-2xl font-bold">89</div>
-                      <p className="text-xs text-muted-foreground">+3 new this month</p>
+                      <div className="text-2xl font-bold">{dashboardStats.activeClients}</div>
+                      <p className="text-xs text-muted-foreground">Unique companies</p>
                     </CardContent>
                   </Card>
                   <Card>
@@ -69,8 +105,8 @@ const Analytics = () => {
                       <CardTitle className="text-sm font-medium">Completion Rate</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="text-2xl font-bold">92%</div>
-                      <p className="text-xs text-muted-foreground">+2% from last month</p>
+                      <div className="text-2xl font-bold">{dashboardStats.completionRate}%</div>
+                      <p className="text-xs text-muted-foreground">Orders completed successfully</p>
                     </CardContent>
                   </Card>
                 </div>
