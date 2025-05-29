@@ -8,53 +8,26 @@ export class InvoiceService {
     console.log('=== AUTHENTICATION DEBUG START ===');
     
     try {
-      // Step 1: Check localStorage session
-      console.log('Step 1: Checking localStorage for userSession...');
-      const userSession = localStorage.getItem('userSession');
-      console.log('UserSession from localStorage:', userSession ? 'Found' : 'Not found');
-      
-      if (userSession) {
-        try {
-          const userData = JSON.parse(userSession);
-          console.log('Parsed user data:', {
-            id: userData.id,
-            email: userData.email,
-            role: userData.role,
-            full_name: userData.full_name
-          });
-          
-          if (userData.id && userData.role) {
-            console.log('✅ Valid user found in localStorage');
-            console.log('User authentication successful via localStorage');
-            console.log('=== AUTHENTICATION DEBUG END ===');
-            return userData;
-          } else {
-            console.log('❌ Invalid user data - missing id or role');
-          }
-        } catch (parseError) {
-          console.error('❌ Error parsing user session:', parseError);
-        }
-      }
-
-      // Step 2: Fallback to Supabase auth
-      console.log('Step 2: Checking Supabase auth as fallback...');
+      // Check Supabase auth first
+      console.log('Checking Supabase auth...');
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       
       if (userError) {
         console.error('❌ Supabase auth error:', userError);
+        return null;
       }
       
       if (user) {
         console.log('✅ Supabase user found:', {
           id: user.id,
           email: user.email,
-          role: user.user_metadata?.role || 'No role in metadata'
+          role: user.user_metadata?.role || 'user'
         });
         console.log('=== AUTHENTICATION DEBUG END ===');
         return user;
       }
 
-      console.log('❌ No authenticated user found in either localStorage or Supabase');
+      console.log('❌ No authenticated user found in Supabase');
       console.log('=== AUTHENTICATION DEBUG END ===');
       return null;
     } catch (error) {
@@ -62,11 +35,6 @@ export class InvoiceService {
       console.log('=== AUTHENTICATION DEBUG END ===');
       return null;
     }
-  }
-
-  // Helper method to generate a valid UUID for user ID
-  private static generateValidUUID(): string {
-    return crypto.randomUUID();
   }
 
   // Helper method to check user permissions with detailed logging
@@ -81,11 +49,11 @@ export class InvoiceService {
       return false;
     }
 
-    console.log('User role detected:', user.role);
+    console.log('User role detected:', user.user_metadata?.role || 'user');
     console.log('Action requested:', action);
     
     // Admin users can perform all actions
-    if (user.role === 'admin') {
+    if (user.user_metadata?.role === 'admin') {
       console.log('✅ Permission granted: User is admin');
       console.log('=== PERMISSION CHECK DEBUG END ===');
       return true;
@@ -94,10 +62,11 @@ export class InvoiceService {
     // For client creation, allow users, agents, and admins
     if (action === 'create_client') {
       const allowedRoles = ['user', 'agent', 'admin'];
-      const hasPermission = allowedRoles.includes(user.role);
+      const userRole = user.user_metadata?.role || 'user';
+      const hasPermission = allowedRoles.includes(userRole);
       
       console.log('Allowed roles for create_client:', allowedRoles);
-      console.log('User role:', user.role);
+      console.log('User role:', userRole);
       console.log('Permission result:', hasPermission ? '✅ GRANTED' : '❌ DENIED');
       console.log('=== PERMISSION CHECK DEBUG END ===');
       
@@ -286,8 +255,7 @@ export class InvoiceService {
       console.log('Authenticated user details:', {
         id: user.id,
         email: user.email,
-        role: user.role,
-        full_name: user.full_name
+        role: user.user_metadata?.role || 'user'
       });
 
       // Step 2: Check authorization
@@ -296,7 +264,7 @@ export class InvoiceService {
       
       if (!hasPermission) {
         console.error('🚫 AUTHORIZATION FAILED: User does not have permission to create clients');
-        console.error('User role:', user.role);
+        console.error('User role:', user.user_metadata?.role || 'user');
         throw new Error('You do not have permission to create clients. Please contact your administrator.');
       }
 
@@ -311,28 +279,13 @@ export class InvoiceService {
 
       console.log('✅ Required fields validated');
 
-      // Step 4: Handle user ID format - generate valid UUID if needed
-      console.log('Step 4: Handling user ID format...');
-      let userId = user.id;
-      
-      // Check if the user ID is not a valid UUID format
-      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-      if (!uuidRegex.test(userId)) {
-        console.log('⚠️ User ID is not in UUID format:', userId);
-        console.log('Generating new UUID for database insertion...');
-        userId = this.generateValidUUID();
-        console.log('Generated UUID:', userId);
-      } else {
-        console.log('✅ User ID is already in valid UUID format:', userId);
-      }
-
-      // Step 5: Prepare data for insertion
+      // Step 4: Prepare data for insertion
       const insertData = {
         ...clientData,
-        user_id: userId
+        user_id: user.id
       };
 
-      console.log('Step 5: Preparing data for Supabase insertion...');
+      console.log('Step 4: Preparing data for Supabase insertion...');
       console.log('Insert data:', {
         name: insertData.name,
         email: insertData.email,
@@ -340,8 +293,8 @@ export class InvoiceService {
         contact_person: insertData.contact_person
       });
 
-      // Step 6: Insert into Supabase
-      console.log('Step 6: Inserting client into Supabase...');
+      // Step 5: Insert into Supabase
+      console.log('Step 5: Inserting client into Supabase...');
       const { data, error } = await supabase
         .from('clients')
         .insert(insertData)
