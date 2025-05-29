@@ -11,7 +11,8 @@ import {
   HelpCircle,
   FileText,
   Receipt,
-  UserCheck
+  UserCheck,
+  BarChart3
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
@@ -27,6 +28,7 @@ const Sidebar = () => {
   // Define sidebar items with role restrictions
   const sidebarItems = [
     { href: '/dashboard', icon: Home, label: 'Dashboard', roles: ['admin', 'agent', 'user'] },
+    { href: '/analytics', icon: BarChart3, label: 'Analytics', roles: ['admin', 'agent'] },
     { href: '/support', icon: HelpCircle, label: 'Support', roles: ['admin', 'agent', 'user'] },
     { href: '/reviews', icon: Star, label: 'Reviews', roles: ['admin', 'agent', 'user'] },
     { href: '/active-orders', icon: FileText, label: 'My Orders', roles: ['user'] }, // User-specific orders view

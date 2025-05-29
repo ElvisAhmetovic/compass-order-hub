@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
@@ -22,6 +21,7 @@ import InvoiceDetail from './pages/InvoiceDetail';
 import Clients from './pages/Clients';
 import ProfilePage from './pages/Profile';
 import SettingsPage from './pages/Settings';
+import Analytics from './pages/Analytics';
 
 function App() {
   return (
@@ -228,6 +228,15 @@ function App() {
             element={
               <RequireAuth>
                 <SettingsPage />
+              </RequireAuth>
+            }
+          />
+          {/* Analytics route */}
+          <Route
+            path="/analytics"
+            element={
+              <RequireAuth>
+                <Analytics />
               </RequireAuth>
             }
           />
