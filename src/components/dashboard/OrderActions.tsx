@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { 
   DropdownMenu,
@@ -12,6 +11,8 @@ import { MoreHorizontal, FileText, AlertTriangle } from "lucide-react";
 import { Order, OrderStatus } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
+import { InvoiceService } from "@/services/invoiceService";
+import { v4 as uuidv4 } from "uuid";
 
 interface OrderActionsProps {
   order: Order;
@@ -49,6 +50,67 @@ const OrderActions = ({ order, onOrderView, onRefresh }: OrderActionsProps) => {
     );
   }
 
+  const createInvoiceFromOrder = async (orderId: string, orderData: Order, status: OrderStatus) => {
+    try {
+      // Check if invoice already exists for this order
+      const existingInvoices = await InvoiceService.getInvoices();
+      const existingInvoice = existingInvoices.find(inv => 
+        inv.notes && inv.notes.includes(`Order ID: ${orderId}`)
+      );
+
+      if (existingInvoice) {
+        // Update existing invoice status
+        const invoiceStatus = status === "Invoice Sent" ? "sent" : "paid";
+        await InvoiceService.updateInvoice(existingInvoice.id, { status: invoiceStatus });
+        
+        toast({
+          title: "Invoice updated",
+          description: `Existing invoice ${existingInvoice.invoice_number} status updated to ${invoiceStatus}.`,
+        });
+        return;
+      }
+
+      // Create a new invoice from the order
+      const invoiceData = {
+        client: {
+          name: orderData.company_name,
+          email: orderData.contact_email || `${orderData.company_name.toLowerCase().replace(/\s+/g, '')}@company.com`,
+          address: orderData.company_address || '',
+          phone: orderData.contact_phone || '',
+        },
+        issue_date: new Date().toISOString().split('T')[0],
+        due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days from now
+        currency: 'EUR',
+        status: status === "Invoice Sent" ? "sent" : "paid" as const,
+        payment_terms: 'Net 30',
+        notes: `Invoice created from order. Order ID: ${orderId}`,
+        line_items: [
+          {
+            item_description: orderData.description || 'Service provided',
+            quantity: 1,
+            unit_price: orderData.price || 0,
+            unit: 'pcs'
+          }
+        ]
+      };
+
+      const newInvoice = await InvoiceService.createInvoice(invoiceData);
+      
+      toast({
+        title: "Invoice created",
+        description: `Invoice ${newInvoice.invoice_number} has been created and status set to ${invoiceData.status}.`,
+      });
+
+    } catch (error) {
+      console.error("Error creating invoice from order:", error);
+      toast({
+        title: "Error",
+        description: "Failed to create invoice from order.",
+        variant: "destructive"
+      });
+    }
+  };
+
   const handleStatusChange = async (newStatus: OrderStatus) => {
     if (!isAdmin) {
       toast({
@@ -62,9 +124,6 @@ const OrderActions = ({ order, onOrderView, onRefresh }: OrderActionsProps) => {
     setIsLoading(true);
     
     try {
-      // In a real app, this would be an API call
-      // For now, we'll update localStorage
-      
       // Get existing orders
       const orders = JSON.parse(localStorage.getItem("orders") || "[]");
       
@@ -96,12 +155,10 @@ const OrderActions = ({ order, onOrderView, onRefresh }: OrderActionsProps) => {
       allStatusHistories[order.id] = [newStatusHistoryItem, ...orderHistory];
       localStorage.setItem("statusHistories", JSON.stringify(allStatusHistories));
       
-      // Create a new order object with the updated status to refresh the UI
-      const updatedOrder = {
-        ...order,
-        status: newStatus,
-        updated_at: new Date().toISOString()
-      };
+      // Create invoice if status is invoice-related
+      if (newStatus === "Invoice Sent" || newStatus === "Invoice Paid") {
+        await createInvoiceFromOrder(order.id, order, newStatus);
+      }
       
       // Show success message
       toast({

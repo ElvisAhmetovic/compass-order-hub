@@ -14,6 +14,8 @@ import { TableRow, TableCell } from "@/components/ui/table";
 import { Order } from "@/types";
 import { formatDate } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
+import { useToast } from "@/hooks/use-toast";
+import { InvoiceService } from "@/services/invoiceService";
 
 interface OrderRowProps {
   order: Order;
@@ -33,7 +35,9 @@ const OrderRow = ({
   hidePriority = false 
 }: OrderRowProps) => {
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const { user } = useAuth();
+  const { toast } = useToast();
   const isAdmin = user?.role === "admin";
 
   const formatCurrency = (amount: number) => {
@@ -65,6 +69,67 @@ const OrderRow = ({
     return priorityClasses[priority] || "bg-gray-500 text-white";
   };
 
+  const createInvoiceFromOrder = async (orderId: string, orderData: Order, status: string) => {
+    try {
+      // Check if invoice already exists for this order
+      const existingInvoices = await InvoiceService.getInvoices();
+      const existingInvoice = existingInvoices.find(inv => 
+        inv.notes && inv.notes.includes(`Order ID: ${orderId}`)
+      );
+
+      if (existingInvoice) {
+        // Update existing invoice status
+        const invoiceStatus = status === "Invoice Sent" ? "sent" : "paid";
+        await InvoiceService.updateInvoice(existingInvoice.id, { status: invoiceStatus });
+        
+        toast({
+          title: "Invoice updated",
+          description: `Existing invoice ${existingInvoice.invoice_number} status updated to ${invoiceStatus}.`,
+        });
+        return;
+      }
+
+      // Create a new invoice from the order
+      const invoiceData = {
+        client: {
+          name: orderData.company_name,
+          email: orderData.contact_email || `${orderData.company_name.toLowerCase().replace(/\s+/g, '')}@company.com`,
+          address: orderData.company_address || '',
+          phone: orderData.contact_phone || '',
+        },
+        issue_date: new Date().toISOString().split('T')[0],
+        due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days from now
+        currency: 'EUR',
+        status: status === "Invoice Sent" ? "sent" : "paid" as const,
+        payment_terms: 'Net 30',
+        notes: `Invoice created from order. Order ID: ${orderId}`,
+        line_items: [
+          {
+            item_description: orderData.description || 'Service provided',
+            quantity: 1,
+            unit_price: orderData.price || 0,
+            unit: 'pcs'
+          }
+        ]
+      };
+
+      const newInvoice = await InvoiceService.createInvoice(invoiceData);
+      
+      toast({
+        title: "Invoice created",
+        description: `Invoice ${newInvoice.invoice_number} has been created and status set to ${invoiceData.status}.`,
+      });
+
+    } catch (error) {
+      console.error("Error creating invoice from order:", error);
+      toast({
+        title: "Error",
+        description: "Failed to create invoice from order.",
+        variant: "destructive"
+      });
+    }
+  };
+
   const handleDelete = async () => {
     setIsDeleting(true);
     try {
@@ -82,6 +147,7 @@ const OrderRow = ({
   };
 
   const handleUpdateStatus = async (newStatus: string) => {
+    setIsUpdatingStatus(true);
     try {
       // In a real app, this would be an API call to update the order status
       const ordersInStorage = JSON.parse(localStorage.getItem("orders") || "[]");
@@ -90,9 +156,16 @@ const OrderRow = ({
       );
       localStorage.setItem("orders", JSON.stringify(updatedOrders));
       
+      // Create invoice if status is invoice-related
+      if (newStatus === "Invoice Sent" || newStatus === "Invoice Paid") {
+        await createInvoiceFromOrder(order.id, order, newStatus);
+      }
+      
       onRefresh();
     } catch (error) {
       console.error("Error updating order status:", error);
+    } finally {
+      setIsUpdatingStatus(false);
     }
   };
 
@@ -142,7 +215,7 @@ const OrderRow = ({
         {!hideActions && isAdmin ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="p-0 h-8 w-8">
+              <Button variant="ghost" size="sm" className="p-0 h-8 w-8" disabled={isUpdatingStatus}>
                 <MoreHorizontal className="h-4 w-4" />
                 <span className="sr-only">Open menu</span>
               </Button>
