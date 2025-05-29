@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import Layout from "@/components/layout/Layout";
 import { useAuth } from "@/context/AuthContext";
@@ -13,12 +14,14 @@ import CreateCompanyDialog from "@/components/companies/CreateCompanyDialog";
 import { getGoogleMapsLink } from "@/utils/companyUtils";
 import { CompanyService } from "@/services/companyService";
 import { SupabaseCompanySyncService } from "@/services/supabaseCompanySyncService";
+import { MigrationService } from "@/services/migrationService";
 
 const Companies = () => {
   const { user } = useAuth();
   const [companies, setCompanies] = useState<Company[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [isMigrating, setIsMigrating] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [currentCompany, setCurrentCompany] = useState<Company | null>(null);
@@ -57,6 +60,32 @@ const Companies = () => {
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Handle migration from localStorage to Supabase
+  const handleMigration = async () => {
+    setIsMigrating(true);
+    try {
+      console.log("Starting migration from localStorage to Supabase...");
+      await MigrationService.performFullMigration();
+      
+      // Reload companies after migration
+      await loadCompanies();
+      
+      toast({
+        title: "Migration completed",
+        description: "Successfully migrated all data from localStorage to Supabase."
+      });
+    } catch (error) {
+      console.error("Migration failed:", error);
+      toast({
+        variant: "destructive",
+        title: "Migration failed",
+        description: "There was an error migrating data to Supabase."
+      });
+    } finally {
+      setIsMigrating(false);
     }
   };
   
@@ -158,6 +187,14 @@ const Companies = () => {
               
               {isAdmin && (
                 <div className="flex gap-2">
+                  <Button 
+                    onClick={handleMigration}
+                    disabled={isMigrating}
+                    variant="outline"
+                    className="flex items-center gap-2"
+                  >
+                    {isMigrating ? "🔄 Migrating..." : "📦 Migrate from localStorage"}
+                  </Button>
                   <Button 
                     onClick={() => SupabaseCompanySyncService.performFullSync()} 
                     variant="outline"

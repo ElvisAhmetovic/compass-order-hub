@@ -14,12 +14,14 @@ import { InvoiceService } from "@/services/invoiceService";
 import { CreateClientDialog } from "@/components/clients/CreateClientDialog";
 import { EditClientDialog } from "@/components/clients/EditClientDialog";
 import { CompanySyncService } from "@/services/companySyncService";
+import { MigrationService } from "@/services/migrationService";
 
 const Clients = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isMigrating, setIsMigrating] = useState(false);
   const [filterText, setFilterText] = useState("");
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
@@ -43,6 +45,32 @@ const Clients = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Handle migration from localStorage to Supabase
+  const handleMigration = async () => {
+    setIsMigrating(true);
+    try {
+      console.log("Starting migration from localStorage to Supabase...");
+      await MigrationService.performFullMigration();
+      
+      // Reload clients after migration
+      await loadClients();
+      
+      toast({
+        title: "Migration completed",
+        description: "Successfully migrated all data from localStorage to Supabase."
+      });
+    } catch (error) {
+      console.error("Migration failed:", error);
+      toast({
+        variant: "destructive",
+        title: "Migration failed",
+        description: "There was an error migrating data to Supabase."
+      });
+    } finally {
+      setIsMigrating(false);
     }
   };
 
@@ -102,6 +130,14 @@ const Clients = () => {
             <div className="flex justify-between items-center mb-6">
               <h1 className="text-2xl font-bold">Clients</h1>
               <div className="flex gap-2">
+                <Button 
+                  onClick={handleMigration}
+                  disabled={isMigrating}
+                  variant="outline"
+                  className="flex items-center gap-2"
+                >
+                  {isMigrating ? "🔄 Migrating..." : "📦 Migrate from localStorage"}
+                </Button>
                 <Button 
                   onClick={() => CompanySyncService.performFullSync()} 
                   variant="outline"
