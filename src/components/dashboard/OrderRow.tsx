@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { MoreHorizontal, FileText } from "lucide-react";
@@ -89,35 +88,51 @@ const OrderRow = ({
         return;
       }
 
-      // Create a new invoice from the order
-      const invoiceData = {
-        client: {
+      // First, create or find the client
+      const clients = await InvoiceService.getClients();
+      let clientId = clients.find(c => c.name === orderData.company_name)?.id;
+      
+      if (!clientId) {
+        // Create new client
+        const newClient = await InvoiceService.createClient({
           name: orderData.company_name,
           email: orderData.contact_email || `${orderData.company_name.toLowerCase().replace(/\s+/g, '')}@company.com`,
           address: orderData.company_address || '',
           phone: orderData.contact_phone || '',
-        },
+        });
+        clientId = newClient.id;
+      }
+
+      // Create a new invoice from the order
+      const invoiceData = {
+        client_id: clientId,
         issue_date: new Date().toISOString().split('T')[0],
         due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days from now
         currency: 'EUR',
-        status: status === "Invoice Sent" ? "sent" : "paid" as const,
         payment_terms: 'Net 30',
         notes: `Invoice created from order. Order ID: ${orderId}`,
+        internal_notes: `Automatically generated from order ${orderId}`,
         line_items: [
           {
             item_description: orderData.description || 'Service provided',
             quantity: 1,
             unit_price: orderData.price || 0,
-            unit: 'pcs'
+            unit: 'pcs',
+            vat_rate: 0.19,
+            discount_rate: 0
           }
         ]
       };
 
       const newInvoice = await InvoiceService.createInvoice(invoiceData);
       
+      // Update the invoice status to match the order status
+      const invoiceStatus = status === "Invoice Sent" ? "sent" : "paid";
+      await InvoiceService.updateInvoice(newInvoice.id, { status: invoiceStatus });
+      
       toast({
         title: "Invoice created",
-        description: `Invoice ${newInvoice.invoice_number} has been created and status set to ${invoiceData.status}.`,
+        description: `Invoice ${newInvoice.invoice_number} has been created and status set to ${invoiceStatus}.`,
       });
 
     } catch (error) {
