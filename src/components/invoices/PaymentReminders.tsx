@@ -8,14 +8,28 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { InvoiceService } from "@/services/invoiceService";
 import { Invoice } from "@/types/invoice";
 import { useToast } from "@/hooks/use-toast";
-import { Send, Calendar, Mail } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
+import { Send, Calendar, Mail, Trash2 } from "lucide-react";
 import { formatDate } from "@/lib/utils";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const PaymentReminders = () => {
   const [overdueInvoices, setOverdueInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [sendingReminder, setSendingReminder] = useState<string | null>(null);
+  const [deletingInvoice, setDeletingInvoice] = useState<string | null>(null);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   useEffect(() => {
     loadOverdueInvoices();
@@ -75,6 +89,31 @@ const PaymentReminders = () => {
     }
   };
 
+  const deleteInvoice = async (invoiceId: string) => {
+    try {
+      setDeletingInvoice(invoiceId);
+      
+      await InvoiceService.deleteInvoice(invoiceId);
+      
+      // Remove from local state
+      setOverdueInvoices(prev => prev.filter(invoice => invoice.id !== invoiceId));
+      
+      toast({
+        title: "Invoice deleted",
+        description: "The invoice has been successfully deleted.",
+      });
+    } catch (error) {
+      console.error("Error deleting invoice:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete invoice.",
+        variant: "destructive",
+      });
+    } finally {
+      setDeletingInvoice(null);
+    }
+  };
+
   const getDaysOverdue = (dueDate: string) => {
     const due = new Date(dueDate);
     const now = new Date();
@@ -96,6 +135,11 @@ const PaymentReminders = () => {
       case 'EUR':
       default: return '€';
     }
+  };
+
+  // Check if user can delete invoices (admin or owner)
+  const canDeleteInvoice = (invoice: Invoice) => {
+    return user?.role === 'admin' || invoice.user_id === user?.id;
   };
 
   if (loading) {
@@ -141,12 +185,14 @@ const PaymentReminders = () => {
                   <TableHead>Days Overdue</TableHead>
                   <TableHead>Amount</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Action</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {overdueInvoices.map((invoice) => {
                   const daysOverdue = getDaysOverdue(invoice.due_date);
+                  const canDelete = canDeleteInvoice(invoice);
+                  
                   return (
                     <TableRow key={invoice.id}>
                       <TableCell className="font-medium">
@@ -172,20 +218,61 @@ const PaymentReminders = () => {
                         <Badge variant="outline">{invoice.status}</Badge>
                       </TableCell>
                       <TableCell>
-                        <Button
-                          size="sm"
-                          onClick={() => sendPaymentReminder(invoice.id)}
-                          disabled={sendingReminder === invoice.id}
-                        >
-                          {sendingReminder === invoice.id ? (
-                            "Sending..."
-                          ) : (
-                            <>
-                              <Send className="h-4 w-4 mr-1" />
-                              Send Reminder
-                            </>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            onClick={() => sendPaymentReminder(invoice.id)}
+                            disabled={sendingReminder === invoice.id}
+                          >
+                            {sendingReminder === invoice.id ? (
+                              "Sending..."
+                            ) : (
+                              <>
+                                <Send className="h-4 w-4 mr-1" />
+                                Send Reminder
+                              </>
+                            )}
+                          </Button>
+                          
+                          {canDelete && (
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  disabled={deletingInvoice === invoice.id}
+                                >
+                                  {deletingInvoice === invoice.id ? (
+                                    "Deleting..."
+                                  ) : (
+                                    <>
+                                      <Trash2 className="h-4 w-4 mr-1" />
+                                      Delete
+                                    </>
+                                  )}
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Delete Invoice</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Are you sure you want to delete invoice {invoice.invoice_number}? 
+                                    This action cannot be undone.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => deleteInvoice(invoice.id)}
+                                    className="bg-red-600 hover:bg-red-700"
+                                  >
+                                    Delete Invoice
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
                           )}
-                        </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   );
