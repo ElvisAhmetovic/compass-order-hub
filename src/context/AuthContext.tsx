@@ -31,12 +31,58 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
+  // Helper function to migrate old user IDs to UUIDs
+  const migrateUserIdToUUID = (oldUserId: string): string => {
+    // Check if it's already a valid UUID
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (uuidRegex.test(oldUserId)) {
+      return oldUserId;
+    }
+
+    console.log('🔄 Migrating old user ID to UUID:', oldUserId);
+    
+    // Generate a new UUID for this user
+    const newUUID = crypto.randomUUID();
+    console.log('🆔 Generated new UUID:', newUUID);
+
+    // Update users storage
+    const users = JSON.parse(localStorage.getItem("users") || "[]");
+    const userIndex = users.findIndex((u: any) => u.id === oldUserId);
+    if (userIndex !== -1) {
+      users[userIndex].id = newUUID;
+      localStorage.setItem("users", JSON.stringify(users));
+      console.log('✅ Updated user ID in users storage');
+    }
+
+    // Update app_users storage
+    const appUsers = JSON.parse(localStorage.getItem("app_users") || "[]");
+    const appUserIndex = appUsers.findIndex((u: any) => u.id === oldUserId);
+    if (appUserIndex !== -1) {
+      appUsers[appUserIndex].id = newUUID;
+      localStorage.setItem("app_users", JSON.stringify(appUsers));
+      console.log('✅ Updated user ID in app_users storage');
+    }
+
+    return newUUID;
+  };
+
   const loadUserFromSession = () => {
     try {
       const sessionData = localStorage.getItem('userSession');
       if (sessionData) {
         const userData = JSON.parse(sessionData);
         console.log('Loading user from session:', userData);
+        
+        // Migrate user ID to UUID if needed
+        if (userData.id) {
+          const migratedId = migrateUserIdToUUID(userData.id);
+          if (migratedId !== userData.id) {
+            userData.id = migratedId;
+            // Update session with new UUID
+            localStorage.setItem('userSession', JSON.stringify(userData));
+            console.log('🔄 Session updated with new UUID');
+          }
+        }
         
         // Ensure role is set, if missing try to get it from app_users
         if (!userData.role) {
@@ -225,8 +271,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (appUser) {
           // Create new auth user with secure default password (one-time use)
           const defaultPasswordHash = btoa("Admin@123");
+          const newUserId = crypto.randomUUID(); // Generate proper UUID
           foundUser = {
-            id: appUser.id,
+            id: newUserId,
             email: appUser.email,
             role: appUser.role || 'user', // Ensure role is set
             full_name: appUser.full_name,
@@ -234,9 +281,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             isDefaultPassword: true // Flag for security tracking
           };
           
+          // Update the appUser with the new UUID
+          appUser.id = newUserId;
+          localStorage.setItem("app_users", JSON.stringify(appUsers));
+          
           registeredUsers.push(foundUser);
           localStorage.setItem("users", JSON.stringify(registeredUsers));
-          console.log("Created new auth user from app_user with default password");
+          console.log("Created new auth user from app_user with default password and UUID:", newUserId);
+        }
+      } else {
+        // Migrate existing user ID to UUID if needed
+        const migratedId = migrateUserIdToUUID(foundUser.id);
+        if (migratedId !== foundUser.id) {
+          foundUser.id = migratedId;
         }
       }
       

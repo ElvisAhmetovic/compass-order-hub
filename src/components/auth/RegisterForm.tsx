@@ -81,7 +81,9 @@ const RegisterForm = () => {
         return;
       }
 
+      // Generate a proper UUID for the user ID
       const userId = crypto.randomUUID();
+      console.log('🆔 Generated UUID for new user:', userId);
       
       // Add user to authentication storage
       users.push({
@@ -106,12 +108,15 @@ const RegisterForm = () => {
       });
       localStorage.setItem("app_users", JSON.stringify(appUsers));
       
+      console.log('✅ User registered with UUID:', userId);
+      
       toast({
         title: "Registration successful",
         description: "Your account has been created with user privileges. You can now log in.",
       });
       navigate("/login");
     } catch (error) {
+      console.error('Registration error:', error);
       toast({
         variant: "destructive",
         title: "Registration failed",

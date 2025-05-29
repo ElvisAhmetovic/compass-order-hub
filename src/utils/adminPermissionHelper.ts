@@ -1,3 +1,4 @@
+
 import { v4 as uuidv4 } from 'uuid';
 import { User, UserRole } from '@/types';
 
@@ -17,9 +18,13 @@ export const createNewUser = (userObj: any) => {
   const password = generatePassword();
   const passwordHash = btoa(password); // Simple encoding, not for production
 
+  // Generate a proper UUID for the user ID
+  const userId = crypto.randomUUID();
+  console.log('🆔 Generated UUID for new admin user:', userId);
+
   // Create user object
   const newUser: User = {
-    id: uuidv4(),
+    id: userId,
     email: userObj.email,
     role: userObj.role,
     full_name: userObj.full_name || userObj.email.split('@')[0],
@@ -43,6 +48,8 @@ export const createNewUser = (userObj: any) => {
       updated_at: newUser.updated_at
     });
   localStorage.setItem("app_users", JSON.stringify(appUsers));
+
+  console.log('✅ Admin user created with UUID:', userId);
 
   return { ...newUser, password };
 };
