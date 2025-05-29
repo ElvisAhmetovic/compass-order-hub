@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { InvoiceService } from "./invoiceService";
 import { CompanyService } from "./companyService";
@@ -89,7 +88,7 @@ export class SupabaseCompanySyncService {
               description: "Auto-created from client",
               price: 0,
               status: "Created",
-              priority: "Low",
+              priority: "low",
               currency: "EUR"
             });
             console.log(`✅ Created company order for client: ${client.name}`);

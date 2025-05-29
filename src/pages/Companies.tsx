@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Layout from "@/components/layout/Layout";
 import { useAuth } from "@/context/AuthContext";
@@ -23,7 +22,7 @@ const Companies = () => {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [currentCompany, setCurrentCompany] = useState<Company | null>(null);
-  const [newCompany, setNewCompany] = useState<Omit<Company, 'id' | 'created_at' | 'updated_at' | 'user_id'>>({
+  const [newCompany, setNewCompany] = useState<Omit<Company, 'id' | 'created_at' | 'updated_at' | 'user_id' | 'orders'>>({
     name: '',
     email: '',
     phone: '',

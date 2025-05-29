@@ -1,4 +1,3 @@
-
 import { InvoiceService } from "./invoiceService";
 import { OrderService } from "./orderService";
 import { toast } from "@/hooks/use-toast";
@@ -87,7 +86,7 @@ export class CompanySyncService {
               description: "Auto-created from client",
               price: 0,
               status: "Created",
-              priority: "Low",
+              priority: "low",
               currency: "EUR"
             });
             console.log(`✅ Created company order for client: ${client.name}`);
