@@ -34,15 +34,23 @@ const Dashboard = () => {
 
   // Check if there's localStorage data to migrate
   useEffect(() => {
-    const checkForLocalStorageData = () => {
+    const checkForLocalStorageData = async () => {
+      if (!isAdmin) return;
+      
       const storedOrders = localStorage.getItem("orders");
-      if (storedOrders && JSON.parse(storedOrders).length > 0) {
+      const storedCompanies = localStorage.getItem("companies");
+      
+      // Only show migration if there's actual data and user is authenticated
+      if (user && (
+        (storedOrders && JSON.parse(storedOrders).length > 0) ||
+        (storedCompanies && JSON.parse(storedCompanies).length > 0)
+      )) {
         setShowMigrationButton(true);
       }
     };
     
     checkForLocalStorageData();
-  }, []);
+  }, [isAdmin, user]);
 
   // Listen for order status changes to refresh all data
   useEffect(() => {
@@ -58,12 +66,30 @@ const Dashboard = () => {
   }, []);
 
   const handleMigration = async () => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to perform migration.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
       await MigrationService.performFullMigration();
       setShowMigrationButton(false);
       setRefreshTrigger(prev => prev + 1); // Refresh the data
+      toast({
+        title: "Migration Successful",
+        description: "Your data has been successfully migrated to Supabase.",
+      });
     } catch (error) {
       console.error("Migration failed:", error);
+      toast({
+        title: "Migration Failed",
+        description: "There was an error migrating your data. Please try again.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -116,6 +142,22 @@ const Dashboard = () => {
     // Force refresh when path changes to ensure correct orders are displayed
     setRefreshTrigger(prev => prev + 1);
   }, [path]);
+
+  // Show loading state if user is not authenticated
+  if (!user) {
+    return (
+      <div className="flex min-h-screen">
+        <Sidebar />
+        <div className="flex-1">
+          <Layout userRole={userRole}>
+            <div className="flex justify-center items-center h-64">
+              <p className="text-muted-foreground">Please log in to access the dashboard.</p>
+            </div>
+          </Layout>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen">

@@ -168,6 +168,15 @@ const OrderRow = ({
   };
 
   const handleDelete = async () => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to delete orders.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsDeleting(true);
     try {
       // Delete order using Supabase
@@ -179,7 +188,7 @@ const OrderRow = ({
       console.error("Error deleting order:", error);
       toast({
         title: "Error",
-        description: "Failed to delete order.",
+        description: "Failed to delete order. Please check your connection and try again.",
         variant: "destructive"
       });
     } finally {
@@ -188,6 +197,15 @@ const OrderRow = ({
   };
 
   const handleUpdateStatus = async (newStatus: OrderStatus) => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to update order status.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsUpdatingStatus(true);
     try {
       // Update order status using Supabase
@@ -204,7 +222,7 @@ const OrderRow = ({
       console.error("Error updating order status:", error);
       toast({
         title: "Error",
-        description: "Failed to update order status.",
+        description: "Failed to update order status. Please check your connection and try again.",
         variant: "destructive"
       });
     } finally {

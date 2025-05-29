@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import {
   Table,
@@ -28,7 +27,6 @@ const OrderTable = ({ onOrderClick, statusFilter, refreshTrigger }: OrderTablePr
   const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [users, setUsers] = useState<User[]>([]);
   
   // Sorting state
   const [sortField, setSortField] = useState<'created_at' | 'updated_at'>('created_at');
@@ -45,21 +43,15 @@ const OrderTable = ({ onOrderClick, statusFilter, refreshTrigger }: OrderTablePr
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
 
-  // Load users
-  useEffect(() => {
-    try {
-      const storedUsers = localStorage.getItem("app_users");
-      if (storedUsers) {
-        setUsers(JSON.parse(storedUsers));
-      }
-    } catch (error) {
-      console.error("Error loading users:", error);
-    }
-  }, []);
-
-  // Fetch orders from Supabase
+  // Fetch orders from Supabase only
   useEffect(() => {
     const fetchOrders = async () => {
+      if (!user) {
+        setOrders([]);
+        setLoading(false);
+        return;
+      }
+
       setLoading(true);
       try {
         const supabaseOrders = await OrderService.getOrders();
@@ -74,10 +66,10 @@ const OrderTable = ({ onOrderClick, statusFilter, refreshTrigger }: OrderTablePr
         setError(null);
       } catch (err) {
         console.error("Error fetching orders:", err);
-        setError("Failed to load orders. Please try again.");
+        setError("Failed to load orders. Please check your connection and try again.");
         toast({
           title: "Error",
-          description: "Failed to load orders. Please try again.",
+          description: "Failed to load orders. Please check your connection and try again.",
           variant: "destructive"
         });
       } finally {
@@ -142,14 +134,14 @@ const OrderTable = ({ onOrderClick, statusFilter, refreshTrigger }: OrderTablePr
   };
 
   const handleRefresh = () => {
-    // Force a complete refresh by incrementing the refreshTrigger parent component
+    // Trigger parent component refresh
     window.dispatchEvent(new CustomEvent('orderStatusChanged'));
   };
 
   const getAssigneeName = (userId: string): string => {
     if (!userId) return "Unassigned";
-    const assigneeUser = users.find(u => u.id === userId);
-    return assigneeUser?.full_name || assigneeUser?.email || userId;
+    // For now, show generic labels since we're using Supabase auth
+    return "Assigned User";
   };
 
   // Always render the filters regardless of data state, but only for admins
@@ -165,6 +157,18 @@ const OrderTable = ({ onOrderClick, statusFilter, refreshTrigger }: OrderTablePr
       </div>
     );
   };
+
+  // Show authentication message if user is not logged in
+  if (!user) {
+    return (
+      <div>
+        {renderFilters()}
+        <div className="p-8 text-center border rounded-md">
+          <p className="text-muted-foreground text-lg">Please log in to view orders.</p>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -185,7 +189,7 @@ const OrderTable = ({ onOrderClick, statusFilter, refreshTrigger }: OrderTablePr
           <p className="text-destructive">{error}</p>
           <button 
             className="mt-2 px-4 py-2 bg-primary text-primary-foreground rounded"
-            onClick={() => window.location.reload()}
+            onClick={handleRefresh}
           >
             Retry
           </button>

@@ -158,6 +158,15 @@ const OrderActions = ({ order, onOrderView, onRefresh }: OrderActionsProps) => {
       return;
     }
 
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to update order status.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsLoading(true);
     
     try {
@@ -184,7 +193,7 @@ const OrderActions = ({ order, onOrderView, onRefresh }: OrderActionsProps) => {
       console.error("Error updating status:", error);
       toast({
         title: "Error",
-        description: "Failed to update order status.",
+        description: "Failed to update order status. Please check your connection and try again.",
         variant: "destructive"
       });
     } finally {
@@ -197,6 +206,15 @@ const OrderActions = ({ order, onOrderView, onRefresh }: OrderActionsProps) => {
       toast({
         title: "Permission Denied",
         description: "Only administrators can delete orders.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to delete orders.",
         variant: "destructive"
       });
       return;
@@ -225,7 +243,7 @@ const OrderActions = ({ order, onOrderView, onRefresh }: OrderActionsProps) => {
       console.error("Error deleting order:", error);
       toast({
         title: "Error",
-        description: "Failed to delete the order.",
+        description: "Failed to delete the order. Please check your connection and try again.",
         variant: "destructive"
       });
     } finally {
