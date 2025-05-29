@@ -1,13 +1,15 @@
 
+import { supabase } from "@/integrations/supabase/client";
 import { InvoiceService } from "./invoiceService";
+import { CompanyService } from "./companyService";
 import { OrderService } from "./orderService";
 import { toast } from "@/hooks/use-toast";
 
-export class CompanySyncService {
+export class SupabaseCompanySyncService {
   // Sync companies from Supabase orders to Supabase clients
   static async syncCompaniesToClients(): Promise<void> {
     try {
-      console.log('🔄 Starting companies to clients sync...');
+      console.log('🔄 Starting companies to clients sync (Supabase)...');
       
       // Get existing clients from Supabase
       const existingClients = await InvoiceService.getClients();
@@ -54,16 +56,16 @@ export class CompanySyncService {
         }
       }
       
-      console.log('✅ Companies to clients sync completed');
+      console.log('✅ Companies to clients sync completed (Supabase)');
     } catch (error) {
-      console.error('❌ Error syncing companies to clients:', error);
+      console.error('❌ Error syncing companies to clients (Supabase):', error);
     }
   }
 
   // Sync clients from Supabase to Supabase orders
   static async syncClientsToCompanies(): Promise<void> {
     try {
-      console.log('🔄 Starting clients to companies sync...');
+      console.log('🔄 Starting clients to companies sync (Supabase)...');
       
       const clients = await InvoiceService.getClients();
       const orders = await OrderService.getOrders();
@@ -97,9 +99,9 @@ export class CompanySyncService {
         }
       }
       
-      console.log('✅ Clients to companies sync completed');
+      console.log('✅ Clients to companies sync completed (Supabase)');
     } catch (error) {
-      console.error('❌ Error syncing clients to companies:', error);
+      console.error('❌ Error syncing clients to companies (Supabase):', error);
     }
   }
 
@@ -114,7 +116,7 @@ export class CompanySyncService {
         description: "Companies and clients have been synchronized successfully.",
       });
     } catch (error) {
-      console.error('❌ Full sync failed:', error);
+      console.error('❌ Full sync failed (Supabase):', error);
       toast({
         title: "Sync failed",
         description: "There was an error synchronizing companies and clients.",
