@@ -460,6 +460,8 @@ export type Database = {
         Row: {
           agent_name: string | null
           amount: number | null
+          assigned_to: string | null
+          assigned_to_name: string | null
           company_address: string | null
           company_id: string | null
           company_link: string | null
@@ -467,6 +469,7 @@ export type Database = {
           contact_email: string | null
           contact_phone: string | null
           created_at: string
+          created_by: string | null
           currency: string | null
           description: string | null
           id: string
@@ -479,6 +482,8 @@ export type Database = {
         Insert: {
           agent_name?: string | null
           amount?: number | null
+          assigned_to?: string | null
+          assigned_to_name?: string | null
           company_address?: string | null
           company_id?: string | null
           company_link?: string | null
@@ -486,6 +491,7 @@ export type Database = {
           contact_email?: string | null
           contact_phone?: string | null
           created_at?: string
+          created_by?: string | null
           currency?: string | null
           description?: string | null
           id?: string
@@ -498,6 +504,8 @@ export type Database = {
         Update: {
           agent_name?: string | null
           amount?: number | null
+          assigned_to?: string | null
+          assigned_to_name?: string | null
           company_address?: string | null
           company_id?: string | null
           company_link?: string | null
@@ -505,6 +513,7 @@ export type Database = {
           contact_email?: string | null
           contact_phone?: string | null
           created_at?: string
+          created_by?: string | null
           currency?: string | null
           description?: string | null
           id?: string

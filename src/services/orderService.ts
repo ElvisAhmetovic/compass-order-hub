@@ -28,14 +28,9 @@ export class OrderService {
 
   // Create new order
   static async createOrder(orderData: Omit<Order, 'id' | 'created_at' | 'updated_at'>): Promise<Order> {
-    const user = await supabase.auth.getUser();
-    
     const { data, error } = await supabase
       .from('orders')
-      .insert({
-        ...orderData,
-        created_by: user.data.user?.id
-      })
+      .insert(orderData)
       .select()
       .single();
 
