@@ -70,7 +70,7 @@ const OrderRow = ({
     return priorityClasses[priority] || "bg-gray-500 text-white";
   };
 
-  const createInvoiceFromOrder = async (orderId: string, orderData: Order, status: string) => {
+  const createInvoiceFromOrder = async (orderId: string, orderData: Order, status: OrderStatus) => {
     try {
       // Check if user is authenticated
       if (!user) {
@@ -174,6 +174,7 @@ const OrderRow = ({
       await OrderService.deleteOrder(order.id);
       
       onRefresh();
+      window.dispatchEvent(new CustomEvent('orderStatusChanged'));
     } catch (error) {
       console.error("Error deleting order:", error);
       toast({
@@ -198,6 +199,7 @@ const OrderRow = ({
       }
       
       onRefresh();
+      window.dispatchEvent(new CustomEvent('orderStatusChanged'));
     } catch (error) {
       console.error("Error updating order status:", error);
       toast({

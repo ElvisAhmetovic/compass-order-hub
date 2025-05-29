@@ -44,6 +44,19 @@ const Dashboard = () => {
     checkForLocalStorageData();
   }, []);
 
+  // Listen for order status changes to refresh all data
+  useEffect(() => {
+    const handleOrderStatusChange = () => {
+      setRefreshTrigger(prev => prev + 1);
+    };
+
+    window.addEventListener('orderStatusChanged', handleOrderStatusChange);
+    
+    return () => {
+      window.removeEventListener('orderStatusChanged', handleOrderStatusChange);
+    };
+  }, []);
+
   const handleMigration = async () => {
     try {
       await MigrationService.performFullMigration();

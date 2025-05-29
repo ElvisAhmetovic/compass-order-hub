@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import {
   Table,
@@ -141,7 +142,8 @@ const OrderTable = ({ onOrderClick, statusFilter, refreshTrigger }: OrderTablePr
   };
 
   const handleRefresh = () => {
-    // This will be passed down to child components
+    // Force a complete refresh by incrementing the refreshTrigger parent component
+    window.dispatchEvent(new CustomEvent('orderStatusChanged'));
   };
 
   const getAssigneeName = (userId: string): string => {

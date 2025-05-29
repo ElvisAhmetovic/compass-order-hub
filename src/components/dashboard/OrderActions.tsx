@@ -177,8 +177,9 @@ const OrderActions = ({ order, onOrderView, onRefresh }: OrderActionsProps) => {
         description: `Order status changed to "${newStatus}".`
       });
       
-      // Trigger refresh
+      // Trigger refresh and notify about the status change
       onRefresh();
+      window.dispatchEvent(new CustomEvent('orderStatusChanged'));
     } catch (error) {
       console.error("Error updating status:", error);
       toast({
@@ -217,8 +218,9 @@ const OrderActions = ({ order, onOrderView, onRefresh }: OrderActionsProps) => {
         description: "The order has been deleted successfully."
       });
       
-      // Trigger refresh
+      // Trigger refresh and notify about the change
       onRefresh();
+      window.dispatchEvent(new CustomEvent('orderStatusChanged'));
     } catch (error) {
       console.error("Error deleting order:", error);
       toast({
