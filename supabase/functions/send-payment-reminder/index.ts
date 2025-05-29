@@ -34,7 +34,7 @@ const handler = async (req: Request): Promise<Response> => {
       .replace(/•/g, '&bull;');
 
     const emailResponse = await resend.emails.send({
-      from: "AB Media Team <noreply@resend.dev>", // You can change this to your domain once verified
+      from: "AB Media Team <noreply@resend.dev>", // Change this to your verified domain once set up
       to: [to],
       subject: subject,
       html: `
@@ -67,6 +67,22 @@ const handler = async (req: Request): Promise<Response> => {
     });
 
     console.log("Email sent successfully:", emailResponse);
+
+    // Check if there was an error in the response
+    if (emailResponse.error) {
+      console.error("Resend API error:", emailResponse.error);
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: emailResponse.error.message,
+        details: "Resend API returned an error. Check if you need to verify a domain for sending to external recipients."
+      }), {
+        status: 400,
+        headers: {
+          "Content-Type": "application/json",
+          ...corsHeaders,
+        },
+      });
+    }
 
     return new Response(JSON.stringify({ 
       success: true, 
