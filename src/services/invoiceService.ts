@@ -1,58 +1,107 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { Invoice, Client, InvoiceLineItem, Payment, InvoiceFormData } from "@/types/invoice";
 
 export class InvoiceService {
-  // Helper method to get authenticated user
+  // Helper method to get authenticated user with extensive logging
   private static async getAuthenticatedUser() {
+    console.log('=== AUTHENTICATION DEBUG START ===');
+    
     try {
-      // First try to get user from localStorage (for app users)
+      // Step 1: Check localStorage session
+      console.log('Step 1: Checking localStorage for userSession...');
       const userSession = localStorage.getItem('userSession');
+      console.log('UserSession from localStorage:', userSession ? 'Found' : 'Not found');
+      
       if (userSession) {
         try {
           const userData = JSON.parse(userSession);
-          if (userData.id) {
-            console.log('Using localStorage user ID:', userData.id);
+          console.log('Parsed user data:', {
+            id: userData.id,
+            email: userData.email,
+            role: userData.role,
+            full_name: userData.full_name
+          });
+          
+          if (userData.id && userData.role) {
+            console.log('✅ Valid user found in localStorage');
+            console.log('User authentication successful via localStorage');
+            console.log('=== AUTHENTICATION DEBUG END ===');
             return userData;
+          } else {
+            console.log('❌ Invalid user data - missing id or role');
           }
-        } catch (error) {
-          console.error('Error parsing user session:', error);
+        } catch (parseError) {
+          console.error('❌ Error parsing user session:', parseError);
         }
       }
 
-      // If no user from localStorage, try Supabase auth as fallback
+      // Step 2: Fallback to Supabase auth
+      console.log('Step 2: Checking Supabase auth as fallback...');
       const { data: { user }, error: userError } = await supabase.auth.getUser();
-      if (user && !userError) {
-        console.log('Using Supabase auth user ID:', user.id);
+      
+      if (userError) {
+        console.error('❌ Supabase auth error:', userError);
+      }
+      
+      if (user) {
+        console.log('✅ Supabase user found:', {
+          id: user.id,
+          email: user.email,
+          role: user.user_metadata?.role || 'No role in metadata'
+        });
+        console.log('=== AUTHENTICATION DEBUG END ===');
         return user;
       }
 
+      console.log('❌ No authenticated user found in either localStorage or Supabase');
+      console.log('=== AUTHENTICATION DEBUG END ===');
       return null;
     } catch (error) {
-      console.error('Error getting authenticated user:', error);
+      console.error('❌ Critical error in getAuthenticatedUser:', error);
+      console.log('=== AUTHENTICATION DEBUG END ===');
       return null;
     }
   }
 
-  // Helper method to check user permissions
+  // Helper method to check user permissions with detailed logging
   private static checkUserPermissions(user: any, action: string): boolean {
+    console.log('=== PERMISSION CHECK DEBUG START ===');
+    console.log('Checking permissions for action:', action);
+    console.log('User object received:', user);
+    
     if (!user) {
-      console.error('No user provided for permission check');
+      console.error('❌ Permission check failed: No user provided');
+      console.log('=== PERMISSION CHECK DEBUG END ===');
       return false;
     }
 
-    console.log(`Checking permissions for user role: ${user.role}, action: ${action}`);
+    console.log('User role detected:', user.role);
+    console.log('Action requested:', action);
     
     // Admin users can perform all actions
     if (user.role === 'admin') {
+      console.log('✅ Permission granted: User is admin');
+      console.log('=== PERMISSION CHECK DEBUG END ===');
       return true;
     }
 
-    // For client creation, allow users and agents
+    // For client creation, allow users, agents, and admins
     if (action === 'create_client') {
-      return ['user', 'agent', 'admin'].includes(user.role);
+      const allowedRoles = ['user', 'agent', 'admin'];
+      const hasPermission = allowedRoles.includes(user.role);
+      
+      console.log('Allowed roles for create_client:', allowedRoles);
+      console.log('User role:', user.role);
+      console.log('Permission result:', hasPermission ? '✅ GRANTED' : '❌ DENIED');
+      console.log('=== PERMISSION CHECK DEBUG END ===');
+      
+      return hasPermission;
     }
 
     // Default to allowing the action for authenticated users
+    console.log('✅ Permission granted: Default allow for authenticated users');
+    console.log('=== PERMISSION CHECK DEBUG END ===');
     return true;
   }
 
@@ -210,59 +259,112 @@ export class InvoiceService {
   }
 
   static async createClient(clientData: Omit<Client, 'id' | 'created_at' | 'updated_at'>): Promise<Client> {
-    console.log('Creating client - checking authentication...');
+    console.log('🚀 CLIENT CREATION REQUEST STARTED');
+    console.log('Request timestamp:', new Date().toISOString());
+    console.log('Client data received:', {
+      name: clientData.name,
+      email: clientData.email,
+      contact_person: clientData.contact_person
+    });
     
-    // Get authenticated user
-    const user = await this.getAuthenticatedUser();
-    if (!user) {
-      console.error('Authentication failed - no user found');
-      throw new Error('Authentication required. Please log in to create clients.');
-    }
-
-    console.log('User authenticated:', { id: user.id, role: user.role });
-
-    // Check user permissions
-    if (!this.checkUserPermissions(user, 'create_client')) {
-      console.error('Permission denied for user:', user.role);
-      throw new Error('You do not have permission to create clients. Please contact your administrator.');
-    }
-
-    console.log('User authorized to create client');
-
-    console.log('Creating client with data:', clientData);
-    console.log('User ID for client:', user.id);
-
     try {
+      // Step 1: Authenticate user
+      console.log('Step 1: Authenticating user...');
+      const user = await this.getAuthenticatedUser();
+      
+      if (!user) {
+        console.error('🚫 AUTHENTICATION FAILED: No user found');
+        throw new Error('Authentication required. Please log in to create clients.');
+      }
+
+      console.log('✅ User authenticated successfully');
+      console.log('Authenticated user details:', {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        full_name: user.full_name
+      });
+
+      // Step 2: Check authorization
+      console.log('Step 2: Checking user authorization...');
+      const hasPermission = this.checkUserPermissions(user, 'create_client');
+      
+      if (!hasPermission) {
+        console.error('🚫 AUTHORIZATION FAILED: User does not have permission to create clients');
+        console.error('User role:', user.role);
+        throw new Error('You do not have permission to create clients. Please contact your administrator.');
+      }
+
+      console.log('✅ User authorized to create clients');
+
+      // Step 3: Validate required fields
+      console.log('Step 3: Validating required fields...');
+      if (!clientData.name || !clientData.email) {
+        console.error('🚫 VALIDATION FAILED: Missing required fields');
+        throw new Error('Name and email are required fields.');
+      }
+
+      console.log('✅ Required fields validated');
+
+      // Step 4: Prepare data for insertion
+      const insertData = {
+        ...clientData,
+        user_id: user.id
+      };
+
+      console.log('Step 4: Preparing data for Supabase insertion...');
+      console.log('Insert data:', {
+        name: insertData.name,
+        email: insertData.email,
+        user_id: insertData.user_id,
+        contact_person: insertData.contact_person
+      });
+
+      // Step 5: Insert into Supabase
+      console.log('Step 5: Inserting client into Supabase...');
       const { data, error } = await supabase
         .from('clients')
-        .insert({
-          ...clientData,
-          user_id: user.id
-        })
+        .insert(insertData)
         .select()
         .single();
 
       if (error) {
-        console.error('Supabase error creating client:', error);
+        console.error('🚫 SUPABASE ERROR:', error);
+        console.error('Error code:', error.code);
+        console.error('Error message:', error.message);
+        console.error('Error details:', error.details);
         
-        // Provide more specific error messages
+        // Provide specific error messages based on error codes
         if (error.code === '23505') {
           throw new Error('A client with this email already exists.');
         } else if (error.code === '23503') {
           throw new Error('Invalid user reference. Please try logging out and logging back in.');
+        } else if (error.code === '42501') {
+          throw new Error('Permission denied. You do not have access to create clients.');
         } else {
           throw new Error(`Failed to create client: ${error.message}`);
         }
       }
       
-      console.log('Successfully created client:', data);
+      console.log('✅ CLIENT CREATION SUCCESSFUL');
+      console.log('Created client:', {
+        id: data.id,
+        name: data.name,
+        email: data.email
+      });
+      console.log('🎉 CLIENT CREATION REQUEST COMPLETED SUCCESSFULLY');
+      
       return data;
+
     } catch (error) {
-      console.error('Error in createClient:', error);
+      console.error('💥 CLIENT CREATION REQUEST FAILED');
+      console.error('Error details:', error);
       
       if (error instanceof Error) {
+        console.error('Error message:', error.message);
         throw error;
       } else {
+        console.error('Unknown error type:', typeof error);
         throw new Error('An unexpected error occurred while creating the client.');
       }
     }

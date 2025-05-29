@@ -39,8 +39,12 @@ export const CreateClientDialog: React.FC<CreateClientDialogProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log('🎬 CREATE CLIENT DIALOG: Form submission started');
+    console.log('Current user from AuthContext:', user);
+    
     // Check authentication first
     if (!user) {
+      console.error('❌ No user in AuthContext');
       toast({
         title: "Authentication Required",
         description: "You must be logged in to create clients. Please log in and try again.",
@@ -49,9 +53,16 @@ export const CreateClientDialog: React.FC<CreateClientDialogProps> = ({
       return;
     }
 
-    console.log('User attempting to create client:', { id: user.id, role: user.role });
+    console.log('✅ User found in AuthContext:', {
+      id: user.id,
+      role: user.role,
+      email: user.email,
+      full_name: user.full_name
+    });
 
+    // Validate required fields
     if (!formData.name || !formData.email) {
+      console.error('❌ Validation failed: Missing required fields');
       toast({
         title: "Validation Error",
         description: "Name and email are required.",
@@ -60,11 +71,20 @@ export const CreateClientDialog: React.FC<CreateClientDialogProps> = ({
       return;
     }
 
+    console.log('✅ Form validation passed');
+    console.log('Form data to submit:', {
+      name: formData.name,
+      email: formData.email,
+      contact_person: formData.contact_person
+    });
+
     try {
       setLoading(true);
-      console.log('Submitting client creation request...');
+      console.log('📡 Calling InvoiceService.createClient...');
       
       const newClient = await InvoiceService.createClient(formData);
+      
+      console.log('✅ Client created successfully:', newClient);
       onClientCreated(newClient);
       
       toast({
@@ -87,16 +107,37 @@ export const CreateClientDialog: React.FC<CreateClientDialogProps> = ({
       });
       
       onOpenChange(false);
+      
     } catch (error) {
-      console.error("Error creating client:", error);
+      console.error("💥 Error creating client:", error);
       
       let errorMessage = "Failed to create client.";
+      let errorTitle = "Error";
+      
       if (error instanceof Error) {
         errorMessage = error.message;
+        
+        // Provide more specific error handling
+        if (error.message.includes('Authentication required')) {
+          errorTitle = "Authentication Error";
+          errorMessage = "Please log out and log back in, then try again.";
+        } else if (error.message.includes('permission')) {
+          errorTitle = "Permission Denied";
+          errorMessage = `Your role (${user.role}) does not have permission to create clients. Please contact your administrator.`;
+        } else if (error.message.includes('already exists')) {
+          errorTitle = "Duplicate Client";
+        }
       }
       
+      console.error('Error details for user:', {
+        title: errorTitle,
+        message: errorMessage,
+        userRole: user.role,
+        userId: user.id
+      });
+      
       toast({
-        title: "Error",
+        title: errorTitle,
         description: errorMessage,
         variant: "destructive",
       });
@@ -111,9 +152,10 @@ export const CreateClientDialog: React.FC<CreateClientDialogProps> = ({
         <DialogHeader>
           <DialogTitle>Create New Client</DialogTitle>
           {user && (
-            <p className="text-sm text-muted-foreground">
-              Creating client as: {user.full_name} ({user.role})
-            </p>
+            <div className="text-sm text-muted-foreground space-y-1">
+              <p>Creating client as: {user.full_name} ({user.role})</p>
+              <p className="text-xs">User ID: {user.id}</p>
+            </div>
           )}
         </DialogHeader>
         
