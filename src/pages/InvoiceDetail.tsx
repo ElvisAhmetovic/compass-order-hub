@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -15,6 +14,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Plus, Save, ArrowLeft, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { InvoiceService } from "@/services/invoiceService";
+import CurrencySelector from "@/components/invoices/CurrencySelector";
+import { formatCurrency } from "@/utils/currencyUtils";
 
 const InvoiceDetail = () => {
   const { id } = useParams();
@@ -255,16 +256,10 @@ const InvoiceDetail = () => {
                     
                     <div>
                       <Label htmlFor="currency">Currency</Label>
-                      <Select value={formData.currency} onValueChange={(value) => setFormData({...formData, currency: value})}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="EUR">EUR (€)</SelectItem>
-                          <SelectItem value="USD">USD ($)</SelectItem>
-                          <SelectItem value="GBP">GBP (£)</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <CurrencySelector
+                        value={formData.currency}
+                        onValueChange={(value) => setFormData({...formData, currency: value})}
+                      />
                     </div>
 
                     <div>
@@ -396,7 +391,9 @@ const InvoiceDetail = () => {
                             />
                           </TableCell>
                           <TableCell>
-                            <span className="font-medium">€{item.line_total.toFixed(2)}</span>
+                            <span className="font-medium">
+                              {formatCurrency(item.line_total, formData.currency)}
+                            </span>
                           </TableCell>
                           <TableCell>
                             <Button
@@ -417,15 +414,15 @@ const InvoiceDetail = () => {
                     <div className="w-64 space-y-2">
                       <div className="flex justify-between">
                         <span>Net Amount:</span>
-                        <span>€{netAmount.toFixed(2)}</span>
+                        <span>{formatCurrency(netAmount, formData.currency)}</span>
                       </div>
                       <div className="flex justify-between">
                         <span>VAT Amount:</span>
-                        <span>€{vatAmount.toFixed(2)}</span>
+                        <span>{formatCurrency(vatAmount, formData.currency)}</span>
                       </div>
                       <div className="flex justify-between font-bold text-lg border-t pt-2">
                         <span>Total Amount:</span>
-                        <span>€{totalAmount.toFixed(2)}</span>
+                        <span>{formatCurrency(totalAmount, formData.currency)}</span>
                       </div>
                     </div>
                   </div>

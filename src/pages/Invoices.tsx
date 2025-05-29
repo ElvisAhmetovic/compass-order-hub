@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import Sidebar from "@/components/dashboard/Sidebar";
@@ -7,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PlusCircle, FileEdit, Trash2, Download, File, CheckCircle2, XCircle, Send, Eye, Receipt } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
@@ -17,6 +19,8 @@ import {
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 import { InvoiceService } from "@/services/invoiceService";
+import PaymentReminders from "@/components/invoices/PaymentReminders";
+import { formatCurrency } from "@/utils/currencyUtils";
 
 const INVOICE_STATUSES = [
   "draft",
@@ -27,15 +31,6 @@ const INVOICE_STATUSES = [
   "cancelled",
   "refunded"
 ];
-
-const getCurrencySymbol = (currency: string = 'EUR') => {
-  switch (currency) {
-    case 'USD': return '$';
-    case 'GBP': return '£';
-    case 'EUR':
-    default: return '€';
-  }
-};
 
 const Invoices = () => {
   const { user } = useAuth();
@@ -183,159 +178,171 @@ const Invoices = () => {
               </Button>
             </div>
 
-            {/* Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-gray-600">Total Outstanding</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">€{totalOutstanding.toFixed(2)}</div>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-gray-600">Paid This Month</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-green-600">€{totalPaidThisMonth.toFixed(2)}</div>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-gray-600">Total Invoices</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{invoices.length}</div>
-                </CardContent>
-              </Card>
-            </div>
+            <Tabs defaultValue="overview" className="space-y-6">
+              <TabsList>
+                <TabsTrigger value="overview">Overview</TabsTrigger>
+                <TabsTrigger value="reminders">Payment Reminders</TabsTrigger>
+              </TabsList>
 
-            <Card>
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <CardTitle>Manage Invoices</CardTitle>
-                  <div className="w-72">
-                    <Input
-                      placeholder="Search invoices..."
-                      value={filterText}
-                      onChange={(e) => setFilterText(e.target.value)}
-                      className="max-w-sm"
-                    />
-                  </div>
+              <TabsContent value="overview" className="space-y-6">
+                {/* Summary Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-medium text-gray-600">Total Outstanding</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">€{totalOutstanding.toFixed(2)}</div>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-medium text-gray-600">Paid This Month</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold text-green-600">€{totalPaidThisMonth.toFixed(2)}</div>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-medium text-gray-600">Total Invoices</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">{invoices.length}</div>
+                    </CardContent>
+                  </Card>
                 </div>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Invoice #</TableHead>
-                      <TableHead>Client</TableHead>
-                      <TableHead>Issue Date</TableHead>
-                      <TableHead>Due Date</TableHead>
-                      <TableHead>Amount</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="w-[120px]">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {loading ? (
-                      <TableRow>
-                        <TableCell colSpan={7} className="text-center py-8">Loading invoices...</TableCell>
-                      </TableRow>
-                    ) : filteredInvoices.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={7} className="text-center py-8">No invoices found</TableCell>
-                      </TableRow>
-                    ) : (
-                      filteredInvoices.map((invoice) => (
-                        <TableRow key={invoice.id}>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <Receipt size={16} className="text-gray-400" />
-                              <a 
-                                href={`/invoices/${invoice.id}`}
-                                className="text-primary hover:underline"
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  navigate(`/invoices/${invoice.id}`);
-                                }}
-                              >
-                                {invoice.invoice_number}
-                              </a>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div>
-                              <div className="font-medium">{invoice.client?.name}</div>
-                              <div className="text-sm text-gray-500">{invoice.client?.email}</div>
-                            </div>
-                          </TableCell>
-                          <TableCell>{new Date(invoice.issue_date).toLocaleDateString()}</TableCell>
-                          <TableCell>{new Date(invoice.due_date).toLocaleDateString()}</TableCell>
-                          <TableCell>
-                            {getCurrencySymbol(invoice.currency)}
-                            {invoice.total_amount.toFixed(2)}
-                          </TableCell>
-                          <TableCell>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium cursor-pointer ${
-                                  getStatusColor(invoice.status)}`}>
-                                  {getStatusIcon(invoice.status)} {invoice.status.replace('_', ' ')}
-                                </span>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="start">
-                                {INVOICE_STATUSES.map((status) => (
-                                  <DropdownMenuItem 
-                                    key={status} 
-                                    onClick={() => handleUpdateStatus(invoice.id, status)}
-                                    className="cursor-pointer"
-                                  >
-                                    <span className={`h-2 w-2 rounded-full mr-2 ${getStatusColor(status)}`} />
-                                    {status.replace('_', ' ')}
-                                  </DropdownMenuItem>
-                                ))}
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex space-x-1">
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                onClick={() => navigate(`/invoices/${invoice.id}`)}
-                                title="View/Edit"
-                              >
-                                <Eye size={16} />
-                              </Button>
-                              <Button 
-                                variant="ghost" 
-                                size="icon"
-                                onClick={() => handleDeleteInvoice(invoice.id)}
-                                title="Delete"
-                              >
-                                <Trash2 size={16} />
-                              </Button>
-                              <Button 
-                                variant="ghost" 
-                                size="icon"
-                                onClick={() => {/* TODO: Implement PDF download */}}
-                                title="Download PDF"
-                              >
-                                <Download size={16} />
-                              </Button>
-                            </div>
-                          </TableCell>
+
+                <Card>
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <CardTitle>Manage Invoices</CardTitle>
+                      <div className="w-72">
+                        <Input
+                          placeholder="Search invoices..."
+                          value={filterText}
+                          onChange={(e) => setFilterText(e.target.value)}
+                          className="max-w-sm"
+                        />
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Invoice #</TableHead>
+                          <TableHead>Client</TableHead>
+                          <TableHead>Issue Date</TableHead>
+                          <TableHead>Due Date</TableHead>
+                          <TableHead>Amount</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead className="w-[120px]">Actions</TableHead>
                         </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
+                      </TableHeader>
+                      <TableBody>
+                        {loading ? (
+                          <TableRow>
+                            <TableCell colSpan={7} className="text-center py-8">Loading invoices...</TableCell>
+                          </TableRow>
+                        ) : filteredInvoices.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={7} className="text-center py-8">No invoices found</TableCell>
+                          </TableRow>
+                        ) : (
+                          filteredInvoices.map((invoice) => (
+                            <TableRow key={invoice.id}>
+                              <TableCell>
+                                <div className="flex items-center gap-2">
+                                  <Receipt size={16} className="text-gray-400" />
+                                  <a 
+                                    href={`/invoices/${invoice.id}`}
+                                    className="text-primary hover:underline"
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      navigate(`/invoices/${invoice.id}`);
+                                    }}
+                                  >
+                                    {invoice.invoice_number}
+                                  </a>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div>
+                                  <div className="font-medium">{invoice.client?.name}</div>
+                                  <div className="text-sm text-gray-500">{invoice.client?.email}</div>
+                                </div>
+                              </TableCell>
+                              <TableCell>{new Date(invoice.issue_date).toLocaleDateString()}</TableCell>
+                              <TableCell>{new Date(invoice.due_date).toLocaleDateString()}</TableCell>
+                              <TableCell>
+                                {formatCurrency(invoice.total_amount, invoice.currency)}
+                              </TableCell>
+                              <TableCell>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium cursor-pointer ${
+                                      getStatusColor(invoice.status)}`}>
+                                      {getStatusIcon(invoice.status)} {invoice.status.replace('_', ' ')}
+                                    </span>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="start">
+                                    {INVOICE_STATUSES.map((status) => (
+                                      <DropdownMenuItem 
+                                        key={status} 
+                                        onClick={() => handleUpdateStatus(invoice.id, status)}
+                                        className="cursor-pointer"
+                                      >
+                                        <span className={`h-2 w-2 rounded-full mr-2 ${getStatusColor(status)}`} />
+                                        {status.replace('_', ' ')}
+                                      </DropdownMenuItem>
+                                    ))}
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex space-x-1">
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    onClick={() => navigate(`/invoices/${invoice.id}`)}
+                                    title="View/Edit"
+                                  >
+                                    <Eye size={16} />
+                                  </Button>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon"
+                                    onClick={() => handleDeleteInvoice(invoice.id)}
+                                    title="Delete"
+                                  >
+                                    <Trash2 size={16} />
+                                  </Button>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon"
+                                    onClick={() => {/* TODO: Implement PDF download */}}
+                                    title="Download PDF"
+                                  >
+                                    <Download size={16} />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="reminders">
+                <PaymentReminders />
+              </TabsContent>
+            </Tabs>
           </div>
         </Layout>
       </div>
