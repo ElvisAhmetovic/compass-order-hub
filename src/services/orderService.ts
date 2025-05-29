@@ -1,29 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
-
-export interface Order {
-  id: string;
-  company_id?: string;
-  company_name: string;
-  contact_name?: string;
-  contact_email?: string;
-  contact_phone?: string;
-  company_address?: string;
-  company_link?: string;
-  description?: string;
-  price?: number;
-  status: string;
-  priority?: string;
-  created_at?: string;
-  updated_at?: string;
-  created_by?: string;
-  assigned_to?: string;
-  assigned_to_name?: string;
-  amount?: number;
-  currency?: string;
-  agent_name?: string;
-  status_date?: string;
-}
+import { Order } from "@/types";
 
 export class OrderService {
   // Get all orders

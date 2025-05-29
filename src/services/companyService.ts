@@ -1,18 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
-
-export interface Company {
-  id: string;
-  name: string;
-  email: string;
-  phone?: string;
-  address?: string;
-  contact_person: string;
-  map_link?: string;
-  created_at?: string;
-  updated_at?: string;
-  user_id?: string;
-}
+import { Company } from "@/types";
 
 export class CompanyService {
   // Get all companies

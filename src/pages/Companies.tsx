@@ -23,7 +23,7 @@ const Companies = () => {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [currentCompany, setCurrentCompany] = useState<Company | null>(null);
-  const [newCompany, setNewCompany] = useState<Omit<Company, 'id' | 'created_at' | 'updated_at'>>({
+  const [newCompany, setNewCompany] = useState<Omit<Company, 'id' | 'created_at' | 'updated_at' | 'user_id'>>({
     name: '',
     email: '',
     phone: '',
