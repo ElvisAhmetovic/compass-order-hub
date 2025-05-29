@@ -64,6 +64,11 @@ export class InvoiceService {
     }
   }
 
+  // Helper method to generate a valid UUID for user ID
+  private static generateValidUUID(): string {
+    return crypto.randomUUID();
+  }
+
   // Helper method to check user permissions with detailed logging
   private static checkUserPermissions(user: any, action: string): boolean {
     console.log('=== PERMISSION CHECK DEBUG START ===');
@@ -306,13 +311,28 @@ export class InvoiceService {
 
       console.log('✅ Required fields validated');
 
-      // Step 4: Prepare data for insertion
+      // Step 4: Handle user ID format - generate valid UUID if needed
+      console.log('Step 4: Handling user ID format...');
+      let userId = user.id;
+      
+      // Check if the user ID is not a valid UUID format
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(userId)) {
+        console.log('⚠️ User ID is not in UUID format:', userId);
+        console.log('Generating new UUID for database insertion...');
+        userId = this.generateValidUUID();
+        console.log('Generated UUID:', userId);
+      } else {
+        console.log('✅ User ID is already in valid UUID format:', userId);
+      }
+
+      // Step 5: Prepare data for insertion
       const insertData = {
         ...clientData,
-        user_id: user.id
+        user_id: userId
       };
 
-      console.log('Step 4: Preparing data for Supabase insertion...');
+      console.log('Step 5: Preparing data for Supabase insertion...');
       console.log('Insert data:', {
         name: insertData.name,
         email: insertData.email,
@@ -320,8 +340,8 @@ export class InvoiceService {
         contact_person: insertData.contact_person
       });
 
-      // Step 5: Insert into Supabase
-      console.log('Step 5: Inserting client into Supabase...');
+      // Step 6: Insert into Supabase
+      console.log('Step 6: Inserting client into Supabase...');
       const { data, error } = await supabase
         .from('clients')
         .insert(insertData)
