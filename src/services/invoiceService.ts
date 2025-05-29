@@ -150,18 +150,35 @@ export class InvoiceService {
   }
 
   static async createClient(clientData: Omit<Client, 'id' | 'created_at' | 'updated_at'>): Promise<Client> {
-    // Get the current user
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    // Try to get the current user from localStorage session
+    const userSession = localStorage.getItem('userSession');
+    let userId = null;
     
-    if (userError || !user) {
-      throw new Error('User must be authenticated to create clients');
+    if (userSession) {
+      try {
+        const userData = JSON.parse(userSession);
+        userId = userData.id;
+      } catch (error) {
+        console.error('Error parsing user session:', error);
+      }
+    }
+
+    // If no user from localStorage, try Supabase auth as fallback
+    if (!userId) {
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError || !user) {
+        throw new Error('User must be authenticated to create clients');
+      }
+      
+      userId = user.id;
     }
 
     const { data, error } = await supabase
       .from('clients')
       .insert({
         ...clientData,
-        user_id: user.id
+        user_id: userId
       })
       .select()
       .single();
