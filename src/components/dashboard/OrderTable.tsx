@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import {
   Table,
@@ -126,12 +125,6 @@ const OrderTable = ({ onOrderClick, statusFilter, refreshTrigger }: OrderTablePr
     setCurrentPage(1);
   }, [orders, statusFilter, priorityFilter, sortField, sortDirection, isAdmin]);
 
-  // Get current page of orders
-  const indexOfLastOrder = currentPage * rowsPerPage;
-  const indexOfFirstOrder = indexOfLastOrder - rowsPerPage;
-  const currentOrders = filteredOrders.slice(indexOfFirstOrder, indexOfLastOrder);
-  const totalPages = Math.ceil(filteredOrders.length / rowsPerPage);
-
   const handlePageChange = (pageNumber: number) => {
     setCurrentPage(pageNumber);
   };
@@ -220,25 +213,6 @@ const OrderTable = ({ onOrderClick, statusFilter, refreshTrigger }: OrderTablePr
   const indexOfFirstOrder = indexOfLastOrder - rowsPerPage;
   const currentOrders = filteredOrders.slice(indexOfFirstOrder, indexOfLastOrder);
   const totalPages = Math.ceil(filteredOrders.length / rowsPerPage);
-
-  const handlePageChange = (pageNumber: number) => {
-    setCurrentPage(pageNumber);
-  };
-
-  const toggleSort = (field: 'created_at' | 'updated_at') => {
-    if (sortField === field) {
-      // Toggle direction if already sorting by this field
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
-    } else {
-      // Set new field and default to descending
-      setSortField(field);
-      setSortDirection('desc');
-    }
-  };
-
-  const handleRefresh = () => {
-    // This will be passed down to child components
-  };
 
   return (
     <div className="space-y-4">

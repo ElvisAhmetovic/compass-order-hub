@@ -1,4 +1,3 @@
-
 export type UserRole = "admin" | "user" | "agent";
 
 export interface User {
@@ -25,22 +24,27 @@ export type OrderStatus =
 
 export interface Order {
   id: string;
+  company_id?: string;
   company_name: string;
-  contact_name: string;
-  contact_email: string;
+  contact_name?: string;
+  contact_email?: string;
   contact_phone?: string;
   company_address?: string;
   company_link?: string;
-  price: number;
-  description: string;
+  price?: number;
+  description?: string;
   status: OrderStatus;
-  priority: OrderPriority;
-  created_at: string;
-  updated_at: string;
+  priority?: OrderPriority;
+  created_at?: string;
+  updated_at?: string;
   created_by?: string;
   assigned_to?: string;
   assigned_to_name?: string;
   invoice_details?: InvoiceDetails;
+  amount?: number;
+  currency?: string;
+  agent_name?: string;
+  status_date?: string;
 }
 
 export interface InvoiceDetails {
@@ -62,12 +66,18 @@ export interface InvoiceDetails {
 }
 
 export interface Company {
+  id: string;
   name: string;
   email: string;
-  phone: string;
-  address: string;
-  mapLink: string;
-  orders: Order[];
+  phone?: string;
+  address?: string;
+  contact_person: string;
+  map_link?: string;
+  mapLink?: string; // Keep for backward compatibility
+  orders?: Order[]; // Keep for backward compatibility
+  created_at?: string;
+  updated_at?: string;
+  user_id?: string;
 }
 
 export interface OrderComment {
