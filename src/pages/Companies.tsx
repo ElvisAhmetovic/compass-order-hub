@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import Layout from "@/components/layout/Layout";
 import { useAuth } from "@/context/AuthContext";
@@ -12,6 +13,8 @@ import CompanySearch from "@/components/companies/CompanySearch";
 import EditCompanyDialog from "@/components/companies/EditCompanyDialog";
 import CreateCompanyDialog from "@/components/companies/CreateCompanyDialog";
 import { getGoogleMapsLink, groupOrdersByCompany } from "@/utils/companyUtils";
+import { CompanySyncService } from "@/services/companySyncService";
+import { InvoiceService } from "@/services/invoiceService";
 
 const Companies = () => {
   const { user } = useAuth();
@@ -32,10 +35,14 @@ const Companies = () => {
   
   const isAdmin = user?.role === 'admin';
   
-  // Load companies from orders
-  const loadCompanies = () => {
+  // Load companies from orders and sync with clients
+  const loadCompanies = async () => {
     setIsLoading(true);
     try {
+      // First sync companies and clients
+      await CompanySyncService.performFullSync();
+      
+      // Then load companies from orders
       const storedOrders = localStorage.getItem("orders");
       if (!storedOrders) {
         setCompanies({});
@@ -67,13 +74,11 @@ const Companies = () => {
       }
     };
     
-    // Listen for custom events when localStorage is updated from the same window
     const handleOrdersUpdate = () => {
       console.log("Orders updated event received, reloading companies");
       loadCompanies();
     };
     
-    // Listen for specific company data updates
     const handleCompanyDataUpdate = (event: any) => {
       console.log("Company data update event received:", event.detail);
       loadCompanies();
@@ -102,7 +107,7 @@ const Companies = () => {
     setEditDialogOpen(true);
   };
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (!currentCompany || !currentCompanyKey) return;
 
     try {
@@ -129,6 +134,26 @@ const Companies = () => {
         window.dispatchEvent(new CustomEvent('ordersUpdated'));
       }
 
+      // Also update the corresponding client in Supabase
+      try {
+        const clients = await InvoiceService.getClients();
+        const existingClient = clients.find(c => 
+          c.email.toLowerCase() === currentCompany.email.toLowerCase() ||
+          c.name.toLowerCase() === currentCompanyKey
+        );
+        
+        if (existingClient) {
+          await InvoiceService.updateClient(existingClient.id, {
+            name: currentCompany.name,
+            email: currentCompany.email,
+            phone: currentCompany.phone,
+            address: currentCompany.address
+          });
+        }
+      } catch (error) {
+        console.error("Error updating client:", error);
+      }
+
       // Reload companies immediately to reflect changes
       loadCompanies();
 
@@ -148,7 +173,7 @@ const Companies = () => {
     }
   };
 
-  const handleCreateCompany = () => {
+  const handleCreateCompany = async () => {
     if (!newCompany.name || !newCompany.email) {
       toast({
         variant: "destructive",
@@ -171,17 +196,25 @@ const Companies = () => {
         return;
       }
 
-      // Add new company to state
-      const updatedCompanies = {
-        ...companies,
-        [companyKey]: {
-          ...newCompany,
-          orders: []
-        }
-      };
+      // Create client in Supabase first
+      try {
+        await InvoiceService.createClient({
+          name: newCompany.name,
+          email: newCompany.email,
+          phone: newCompany.phone || "",
+          address: newCompany.address || "",
+          contact_person: "",
+          city: "",
+          zip_code: "",
+          country: "",
+          vat_id: "",
+          tax_id: ""
+        });
+      } catch (error) {
+        console.error("Error creating client:", error);
+        // Continue with order creation even if client creation fails
+      }
 
-      setCompanies(updatedCompanies);
-      
       // Create a placeholder order for this company to maintain data structure
       const storedOrders = localStorage.getItem("orders") || "[]";
       const orders = JSON.parse(storedOrders);
@@ -223,6 +256,9 @@ const Companies = () => {
         mapLink: ''
       });
       setCreateDialogOpen(false);
+      
+      // Reload companies to show the new one
+      loadCompanies();
     } catch (error) {
       console.error("Error creating company:", error);
       toast({
@@ -243,13 +279,22 @@ const Companies = () => {
               <h1 className="text-2xl font-bold tracking-tight">Companies</h1>
               
               {isAdmin && (
-                <Button 
-                  onClick={() => setCreateDialogOpen(true)} 
-                  className="flex items-center gap-2"
-                >
-                  <Plus className="h-4 w-4" />
-                  Add Company
-                </Button>
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={() => CompanySyncService.performFullSync()} 
+                    variant="outline"
+                    className="flex items-center gap-2"
+                  >
+                    🔄 Sync with Clients
+                  </Button>
+                  <Button 
+                    onClick={() => setCreateDialogOpen(true)} 
+                    className="flex items-center gap-2"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Add Company
+                  </Button>
+                </div>
               )}
             </div>
             
@@ -287,7 +332,6 @@ const Companies = () => {
         </Layout>
       </div>
 
-      {/* Edit Company Dialog */}
       <EditCompanyDialog
         open={editDialogOpen}
         onOpenChange={setEditDialogOpen}
@@ -296,7 +340,6 @@ const Companies = () => {
         onSaveEdit={handleSaveEdit}
       />
 
-      {/* Create Company Dialog */}
       <CreateCompanyDialog
         open={createDialogOpen}
         onOpenChange={setCreateDialogOpen}

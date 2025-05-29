@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { InvoiceService } from "@/services/invoiceService";
 import { CreateClientDialog } from "@/components/clients/CreateClientDialog";
 import { EditClientDialog } from "@/components/clients/EditClientDialog";
+import { CompanySyncService } from "@/services/companySyncService";
 
 const Clients = () => {
   const { user } = useAuth();
@@ -26,6 +27,11 @@ const Clients = () => {
   const loadClients = async () => {
     try {
       setLoading(true);
+      
+      // First sync companies and clients
+      await CompanySyncService.performFullSync();
+      
+      // Then load clients
       const data = await InvoiceService.getClients();
       setClients(data);
     } catch (error) {
@@ -63,16 +69,22 @@ const Clients = () => {
     }
   };
 
-  const handleClientCreated = (newClient: Client) => {
+  const handleClientCreated = async (newClient: Client) => {
     setClients([...clients, newClient]);
     setShowCreateDialog(false);
+    
+    // Sync the new client to companies
+    await CompanySyncService.syncClientsToCompanies();
   };
 
-  const handleClientUpdated = (updatedClient: Client) => {
+  const handleClientUpdated = async (updatedClient: Client) => {
     setClients(clients.map(client => 
       client.id === updatedClient.id ? updatedClient : client
     ));
     setEditingClient(null);
+    
+    // Sync the updated client to companies
+    await CompanySyncService.syncClientsToCompanies();
   };
 
   const filteredClients = clients.filter(client => 
@@ -89,10 +101,19 @@ const Clients = () => {
           <div className="container mx-auto py-8">
             <div className="flex justify-between items-center mb-6">
               <h1 className="text-2xl font-bold">Clients</h1>
-              <Button onClick={() => setShowCreateDialog(true)} className="flex items-center gap-2">
-                <PlusCircle size={16} />
-                Add Client
-              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  onClick={() => CompanySyncService.performFullSync()} 
+                  variant="outline"
+                  className="flex items-center gap-2"
+                >
+                  🔄 Sync with Companies
+                </Button>
+                <Button onClick={() => setShowCreateDialog(true)} className="flex items-center gap-2">
+                  <PlusCircle size={16} />
+                  Add Client
+                </Button>
+              </div>
             </div>
 
             <Card>
