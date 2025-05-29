@@ -341,8 +341,7 @@ const ProposalDetail = () => {
   };
 
   const handleAddFromInventory = (inventoryItem: any) => {
-    const formattedItem = formatInventoryItemForProposal(inventoryItem, 1);
-    formattedItem.proposal_id = proposalData.id;
+    const formattedItem = formatInventoryItemForProposal(inventoryItem, 1, proposalData.id);
     
     const updatedLineItems = [...proposalData.lineItems, formattedItem];
     const { netAmount, vatAmount, totalAmount } = calculateTotals(updatedLineItems, proposalData.vatEnabled, proposalData.vatRate);
