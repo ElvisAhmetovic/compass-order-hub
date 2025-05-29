@@ -20,13 +20,17 @@ export class MigrationService {
       
       for (const order of orders) {
         try {
-          // Check if order already exists in Supabase
-          const existingOrder = await OrderService.getOrder(order.id);
+          // Check if order already exists in Supabase by looking for similar data
+          const existingOrders = await OrderService.getOrders();
+          const existingOrder = existingOrders.find(o => 
+            o.company_name === order.company_name && 
+            o.contact_email === order.contact_email &&
+            o.description === order.description
+          );
           
           if (!existingOrder) {
-            // Create order in Supabase
+            // Create order in Supabase (without id - it will be auto-generated)
             await OrderService.createOrder({
-              id: order.id,
               company_name: order.company_name,
               contact_name: order.contact_name,
               contact_email: order.contact_email,
@@ -41,10 +45,10 @@ export class MigrationService {
               currency: order.currency || 'EUR',
               agent_name: order.agent_name
             });
-            console.log(`✅ Migrated order: ${order.id}`);
+            console.log(`✅ Migrated order: ${order.company_name}`);
           }
         } catch (error) {
-          console.error(`❌ Failed to migrate order ${order.id}:`, error);
+          console.error(`❌ Failed to migrate order ${order.company_name}:`, error);
         }
       }
       
