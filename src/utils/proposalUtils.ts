@@ -1,4 +1,3 @@
-
 import { v4 as uuidv4 } from "uuid";
 
 // Define the available proposal statuses
@@ -276,12 +275,21 @@ export const generateProposalPDF = async (proposalData: any, language: string = 
       yPosition += 15;
     }
     
-    // Always move to second page for payment data
-    doc.addPage();
-    yPosition = 50; // Start payment data lower on second page
+    // Move to second page before payment data to avoid splitting
+    if (yPosition > pageHeight * 0.4) { // If we're past 40% of first page
+      doc.addPage();
+      yPosition = 30;
+    } else {
+      // Add enough space to push payment data to second page
+      yPosition = pageHeight - 40; // Position near bottom to force page break
+      doc.addPage();
+      yPosition = 30;
+    }
     
     // Payment Data Section (now guaranteed to be on second page)
     if (proposalData.accountNumber || proposalData.accountName || proposalData.paymentMethod) {
+      yPosition += 20; // Extra spacing before payment section
+      
       doc.setFontSize(14);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(darkBlue[0], darkBlue[1], darkBlue[2]);
@@ -366,6 +374,7 @@ export const generateProposalPDF = async (proposalData: any, language: string = 
     // Footer content at the bottom of the last page
     if (proposalData.footerContent) {
       // Move to bottom of current page
+      const currentPage = doc.internal.getCurrentPageInfo().pageNumber;
       const footerY = pageHeight - 40;
       
       doc.setFontSize(9);
@@ -641,12 +650,21 @@ export const previewProposalPDF = async (proposalData: any, language: string = '
       yPosition += 15;
     }
     
-    // Always move to second page for payment data
-    doc.addPage();
-    yPosition = 50; // Start payment data lower on second page
+    // Move to second page before payment data to avoid splitting
+    if (yPosition > pageHeight * 0.4) { // If we're past 40% of first page
+      doc.addPage();
+      yPosition = 30;
+    } else {
+      // Add enough space to push payment data to second page
+      yPosition = pageHeight - 40; // Position near bottom to force page break
+      doc.addPage();
+      yPosition = 30;
+    }
     
     // Payment Data Section (now guaranteed to be on second page)
     if (proposalData.accountNumber || proposalData.accountName || proposalData.paymentMethod) {
+      yPosition += 20; // Extra spacing before payment section
+      
       doc.setFontSize(14);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(darkBlue[0], darkBlue[1], darkBlue[2]);
@@ -731,6 +749,7 @@ export const previewProposalPDF = async (proposalData: any, language: string = '
     // Footer content at the bottom of the last page
     if (proposalData.footerContent) {
       // Move to bottom of current page
+      const currentPage = doc.internal.getCurrentPageInfo().pageNumber;
       const footerY = pageHeight - 40;
       
       doc.setFontSize(9);
@@ -767,7 +786,7 @@ export const loadInventoryItems = () => {
 };
 
 // Format inventory item for proposal line item
-export const formatInventoryItemForProposal = (inventoryItem: any, quantity: number = 1, proposalId?: string) => {
+export const formatInventoryItemForProposal = (inventoryItem: any, quantity: number = 1) => {
   const parsePrice = (priceStr: string) => {
     if (!priceStr) return 0;
     const numStr = priceStr.replace(/[^\d.,]/g, '').replace(',', '.');
@@ -778,7 +797,6 @@ export const formatInventoryItemForProposal = (inventoryItem: any, quantity: num
   
   return {
     id: uuidv4(),
-    proposal_id: proposalId || '',
     item_id: inventoryItem.id,
     name: inventoryItem.name,
     description: inventoryItem.description || '',
