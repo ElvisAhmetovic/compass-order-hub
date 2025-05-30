@@ -36,34 +36,53 @@ const UserManagement = () => {
 
       console.log('Profiles data:', profiles);
 
-      // Get user emails from auth.users via a separate query
-      let authUsersData: any[] = [];
-      try {
-        const { data: authResponse, error: authError } = await supabase.auth.admin.listUsers();
-        
-        if (authError) {
-          console.warn('Could not fetch auth users:', authError.message);
-        } else {
-          authUsersData = authResponse?.users || [];
-        }
-      } catch (authErr) {
-        console.warn('Auth users fetch failed:', authErr);
-      }
-
       // Convert profiles to User format
       const formattedUsers: User[] = (profiles || []).map(profile => {
-        // Try to find matching auth user for email
-        const authUser = authUsersData.find((u: any) => u?.id === profile.id);
+        // For the email, we'll try to get it from the current user if it matches
+        let userEmail = 'No email available';
+        if (currentUser && currentUser.id === profile.id) {
+          userEmail = currentUser.email;
+        }
+        
+        const fullName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim();
         
         return {
           id: profile.id,
-          email: authUser?.email || 'No email available',
+          email: userEmail,
           role: profile.role,
-          full_name: `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'No Name',
-          created_at: authUser?.created_at || new Date().toISOString(),
+          full_name: fullName || 'No Name',
+          created_at: new Date().toISOString(), // We don't have this from profiles
           updated_at: profile.updated_at || new Date().toISOString()
         };
       });
+
+      // If current user is not in profiles, add them
+      if (currentUser && !formattedUsers.find(u => u.id === currentUser.id)) {
+        const currentUserFormatted: User = {
+          id: currentUser.id,
+          email: currentUser.email,
+          role: currentUser.role,
+          full_name: currentUser.full_name || 'Admin User',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+        formattedUsers.unshift(currentUserFormatted);
+        
+        // Also add to profiles table if missing
+        try {
+          const nameParts = currentUser.full_name?.split(' ') || ['', ''];
+          await supabase
+            .from('profiles')
+            .insert({
+              id: currentUser.id,
+              first_name: nameParts[0] || 'Admin',
+              last_name: nameParts.slice(1).join(' ') || 'User',
+              role: currentUser.role
+            });
+        } catch (insertError) {
+          console.log('Could not insert current user profile:', insertError);
+        }
+      }
 
       console.log('Formatted users:', formattedUsers);
       setUsers(formattedUsers);
@@ -75,8 +94,19 @@ const UserManagement = () => {
         description: error.message || "Could not load the user data from database."
       });
       
-      // Set empty array on error to prevent infinite loading
-      setUsers([]);
+      // If we can't load from database, at least show current user
+      if (currentUser) {
+        setUsers([{
+          id: currentUser.id,
+          email: currentUser.email,
+          role: currentUser.role,
+          full_name: currentUser.full_name || 'Current User',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }]);
+      } else {
+        setUsers([]);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -84,20 +114,21 @@ const UserManagement = () => {
 
   useEffect(() => {
     loadUsers();
-  }, []);
+  }, [currentUser]);
   
   const handleAddUser = async (newUser: User) => {
     try {
       console.log('Adding new user:', newUser);
       
+      // For now, we'll just add to profiles table
       // In a real implementation, you'd use Supabase Admin API or invite system
-      // For now, we'll just add to profiles table (assuming auth user already exists)
+      const nameParts = newUser.full_name.split(' ');
       const { error } = await supabase
         .from('profiles')
         .insert({
           id: newUser.id,
-          first_name: newUser.full_name.split(' ')[0] || '',
-          last_name: newUser.full_name.split(' ').slice(1).join(' ') || '',
+          first_name: nameParts[0] || '',
+          last_name: nameParts.slice(1).join(' ') || '',
           role: newUser.role
         });
 
