@@ -40,7 +40,7 @@ const Sidebar = () => {
     { href: '/user-management', icon: Users, label: 'User Management', roles: ['admin'] }, // Admin only
     { href: '/deleted', icon: Trash2, label: 'Deleted', roles: ['admin'] }, // Admin only
     {
-      title: "Team Collaboration",
+      title: "Team Chat",
       icon: MessageSquare,
       href: "/team-collaboration",
       requiresAuth: true,
@@ -89,7 +89,7 @@ const Sidebar = () => {
                 )}
               >
                 <Icon className="w-5 h-5 mr-3" />
-                {item.label}
+                {item.label || item.title}
               </Link>
             );
           })
