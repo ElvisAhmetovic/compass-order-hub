@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
@@ -21,6 +22,7 @@ import InvoiceDetail from './pages/InvoiceDetail';
 import Clients from './pages/Clients';
 import ProfilePage from './pages/Profile';
 import SettingsPage from './pages/Settings';
+import SecurityPage from './pages/Security';
 import Analytics from './pages/Analytics';
 import TeamCollaboration from './pages/TeamCollaboration';
 
@@ -146,7 +148,6 @@ function App() {
               </RequireAuth>
             }
           />
-          {/* Inventory route */}
           <Route
             path="/inventory"
             element={
@@ -155,7 +156,6 @@ function App() {
               </RequireAuth>
             }
           />
-          {/* Proposal routes */}
           <Route
             path="/proposals"
             element={
@@ -180,7 +180,6 @@ function App() {
               </RequireAuth>
             }
           />
-          {/* Invoice routes */}
           <Route
             path="/invoices"
             element={
@@ -205,7 +204,6 @@ function App() {
               </RequireAuth>
             }
           />
-          {/* Clients route */}
           <Route
             path="/clients"
             element={
@@ -214,7 +212,6 @@ function App() {
               </RequireAuth>
             }
           />
-          {/* Profile route */}
           <Route
             path="/profile"
             element={
@@ -223,7 +220,6 @@ function App() {
               </RequireAuth>
             }
           />
-          {/* Settings route */}
           <Route
             path="/settings"
             element={
@@ -232,7 +228,14 @@ function App() {
               </RequireAuth>
             }
           />
-          {/* Analytics route */}
+          <Route
+            path="/security"
+            element={
+              <RequireAuth>
+                <SecurityPage />
+              </RequireAuth>
+            }
+          />
           <Route
             path="/analytics"
             element={

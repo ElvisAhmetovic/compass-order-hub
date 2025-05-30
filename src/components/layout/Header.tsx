@@ -1,86 +1,84 @@
 
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
-import { LogoutButton } from "@/components/auth/LogoutButton";
-import {
+import { 
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuTrigger,
+  DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
-import { UserRole } from "@/types";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { LogOut, User, Settings, Shield } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 interface HeaderProps {
-  userRole?: UserRole;
+  userRole?: string;
 }
 
-interface UserSession {
-  id: string;
-  email: string;
-  role: UserRole;
-  full_name: string;
-}
-
-export default function Header({ userRole: defaultRole = "admin" }: HeaderProps) {
+export default function Header({ userRole }: HeaderProps) {
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const [user, setUser] = useState<UserSession | null>(null);
-  
-  useEffect(() => {
-    try {
-      const sessionData = localStorage.getItem('userSession');
-      if (sessionData) {
-        const session = JSON.parse(sessionData);
-        setUser(session);
-      }
-    } catch (error) {
-      console.error('Error loading user session:', error);
-    }
-  }, []);
-  
-  const actualRole = user?.role || defaultRole;
+
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(word => word[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
 
   return (
-    <header className="border-b">
-      <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-        {/* logo + role badge */}
-        <div className="flex items-center gap-2">
-          <h1 className="text-2xl font-bold text-primary">Order Flow Compass</h1>
-          <RoleBadge role={actualRole} />
+    <header className="border-b bg-white">
+      <div className="flex h-16 items-center justify-between px-6">
+        <div>
+          <h1 className="text-xl font-semibold">Order Flow Compass</h1>
         </div>
-
-        {/* actions */}
+        
         <div className="flex items-center gap-4">
-          <LogoutButton />
-
-          {/* user dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
-                {user?.full_name || 'User'}
+              <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                <Avatar className="h-10 w-10">
+                  <AvatarFallback>
+                    {user?.full_name ? getInitials(user.full_name) : 'U'}
+                  </AvatarFallback>
+                </Avatar>
               </Button>
             </DropdownMenuTrigger>
-
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>
-                {user?.email || (actualRole === "admin" ? "Admin User" : "Agent User")}
-              </DropdownMenuLabel>
-
+            <DropdownMenuContent className="w-56" align="end" forceMount>
+              <div className="flex flex-col space-y-1 p-2">
+                <p className="text-sm font-medium leading-none">{user?.full_name}</p>
+                <p className="text-xs leading-none text-muted-foreground">
+                  {user?.email}
+                </p>
+                <p className="text-xs leading-none text-muted-foreground capitalize">
+                  {user?.role}
+                </p>
+              </div>
               <DropdownMenuSeparator />
-
-              <DropdownMenuItem onClick={() => navigate("/profile")}>
+              <DropdownMenuItem onClick={() => navigate('/profile')}>
+                <User className="mr-2 h-4 w-4" />
                 Profile
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate("/settings")}>
+              <DropdownMenuItem onClick={() => navigate('/settings')}>
+                <Settings className="mr-2 h-4 w-4" />
                 Settings
               </DropdownMenuItem>
-
+              <DropdownMenuItem onClick={() => navigate('/security')}>
+                <Shield className="mr-2 h-4 w-4" />
+                Security
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
-
-              <DropdownMenuItem onClick={() => navigate("/login")}>
-                Logout
+              <DropdownMenuItem onClick={handleLogout}>
+                <LogOut className="mr-2 h-4 w-4" />
+                Log out
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -88,18 +86,4 @@ export default function Header({ userRole: defaultRole = "admin" }: HeaderProps)
       </div>
     </header>
   );
-}
-
-/* small badge component */
-function RoleBadge({ role }: { role: UserRole }) {
-  const common = "px-2 py-0.5 text-xs rounded-full";
-  const admin  = "bg-purple-100 text-purple-800";
-  const agent  = "bg-blue-100 text-blue-800";
-  const user   = "bg-green-100 text-green-800";
-
-  let roleClass = admin;
-  if (role === "agent") roleClass = agent;
-  if (role === "user") roleClass = user;
-
-  return <span className={`${common} ${roleClass}`}>{role}</span>;
 }
