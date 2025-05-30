@@ -22,6 +22,7 @@ import Clients from './pages/Clients';
 import ProfilePage from './pages/Profile';
 import SettingsPage from './pages/Settings';
 import Analytics from './pages/Analytics';
+import TeamCollaboration from './pages/TeamCollaboration';
 
 function App() {
   return (
@@ -237,6 +238,14 @@ function App() {
             element={
               <RequireAuth>
                 <Analytics />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/team-collaboration"
+            element={
+              <RequireAuth>
+                <TeamCollaboration />
               </RequireAuth>
             }
           />

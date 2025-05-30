@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
@@ -12,7 +11,8 @@ import {
   FileText,
   Receipt,
   UserCheck,
-  BarChart3
+  BarChart3,
+  MessageSquare
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
@@ -26,7 +26,7 @@ const Sidebar = () => {
   console.log('User role:', user?.role);
 
   // Define sidebar items with role restrictions
-  const sidebarItems = [
+  const menuItems = [
     { href: '/dashboard', icon: Home, label: 'Dashboard', roles: ['admin', 'agent', 'user'] },
     { href: '/analytics', icon: BarChart3, label: 'Analytics', roles: ['admin', 'agent'] },
     { href: '/support', icon: HelpCircle, label: 'Support', roles: ['admin', 'agent', 'user'] },
@@ -39,10 +39,17 @@ const Sidebar = () => {
     { href: '/inventory', icon: Package, label: 'Inventory', roles: ['admin', 'agent'] },
     { href: '/user-management', icon: Users, label: 'User Management', roles: ['admin'] }, // Admin only
     { href: '/deleted', icon: Trash2, label: 'Deleted', roles: ['admin'] }, // Admin only
+    {
+      title: "Team Collaboration",
+      icon: MessageSquare,
+      href: "/team-collaboration",
+      requiresAuth: true,
+      roles: ["admin", "agent", "user"]
+    }
   ];
 
   // Filter sidebar items based on user role - make sure user and user.role exist
-  const visibleItems = sidebarItems.filter(item => {
+  const visibleItems = menuItems.filter(item => {
     if (!user || !user.role) {
       console.log('No user or role found');
       return false;
