@@ -37,16 +37,23 @@ const UserManagement = () => {
       console.log('Profiles data:', profiles);
 
       // Get user emails from auth.users via a separate query
-      const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
-      
-      if (authError) {
-        console.warn('Could not fetch auth users:', authError.message);
+      let authUsersData: any[] = [];
+      try {
+        const { data: authResponse, error: authError } = await supabase.auth.admin.listUsers();
+        
+        if (authError) {
+          console.warn('Could not fetch auth users:', authError.message);
+        } else {
+          authUsersData = authResponse?.users || [];
+        }
+      } catch (authErr) {
+        console.warn('Auth users fetch failed:', authErr);
       }
 
       // Convert profiles to User format
-      const formattedUsers: User[] = profiles.map(profile => {
+      const formattedUsers: User[] = (profiles || []).map(profile => {
         // Try to find matching auth user for email
-        const authUser = authUsers?.users?.find(u => u.id === profile.id);
+        const authUser = authUsersData.find((u: any) => u?.id === profile.id);
         
         return {
           id: profile.id,
@@ -60,7 +67,7 @@ const UserManagement = () => {
 
       console.log('Formatted users:', formattedUsers);
       setUsers(formattedUsers);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error loading users:", error);
       toast({
         variant: "destructive",
@@ -105,7 +112,7 @@ const UserManagement = () => {
         title: "User added",
         description: "New user has been added successfully."
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error adding user:", error);
       toast({
         variant: "destructive",
