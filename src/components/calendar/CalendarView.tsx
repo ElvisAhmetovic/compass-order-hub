@@ -13,6 +13,7 @@ import { useAuth } from '@/context/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { CalendarIcon, Plus } from 'lucide-react';
 import { format, isSameDay } from 'date-fns';
+import { supabase } from '@/integrations/supabase/client';
 
 interface CalendarViewProps {
   orderId?: string;
@@ -32,60 +33,61 @@ const CalendarView = ({ orderId }: CalendarViewProps) => {
   });
   const { user } = useAuth();
 
-  // Mock data for demonstration
+  // Fetch events
   useEffect(() => {
-    const mockEvents: CalendarEvent[] = [
-      {
-        id: '1',
-        title: 'Client Meeting',
-        description: 'Initial consultation with the client',
-        start_date: new Date(Date.now() + 86400000).toISOString(),
-        end_date: new Date(Date.now() + 86400000 + 3600000).toISOString(),
-        type: 'appointment',
-        order_id: orderId,
-        created_by: 'user1',
-        created_by_name: 'John Doe',
-        location: 'Conference Room A',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      },
-      {
-        id: '2',
-        title: 'Project Deadline',
-        description: 'Final submission deadline for the project',
-        start_date: new Date(Date.now() + 604800000).toISOString(),
-        end_date: new Date(Date.now() + 604800000).toISOString(),
-        type: 'deadline',
-        order_id: orderId,
-        created_by: 'user1',
-        created_by_name: 'John Doe',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+    const fetchEvents = async () => {
+      let query = supabase
+        .from('calendar_events')
+        .select('*')
+        .order('start_date', { ascending: true });
+
+      if (orderId) {
+        query = query.eq('order_id', orderId);
       }
-    ];
 
-    setEvents(mockEvents);
-  }, [orderId]);
+      const { data, error } = await query;
 
-  const createEvent = () => {
-    if (!newEvent.title.trim() || !user) return;
+      if (error) {
+        console.error('Error fetching events:', error);
+        return;
+      }
 
-    const event: CalendarEvent = {
-      id: Date.now().toString(),
-      title: newEvent.title,
-      description: newEvent.description,
-      start_date: newEvent.start_date.toISOString(),
-      end_date: newEvent.end_date.toISOString(),
-      type: newEvent.type,
-      order_id: orderId,
-      created_by: user.id,
-      created_by_name: user.full_name,
-      location: newEvent.location,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      setEvents(data || []);
     };
 
-    setEvents(prev => [...prev, event]);
+    fetchEvents();
+  }, [orderId]);
+
+  const createEvent = async () => {
+    if (!newEvent.title.trim() || !user) return;
+
+    const { data, error } = await supabase
+      .from('calendar_events')
+      .insert({
+        title: newEvent.title,
+        description: newEvent.description,
+        start_date: newEvent.start_date.toISOString(),
+        end_date: newEvent.end_date.toISOString(),
+        type: newEvent.type,
+        order_id: orderId,
+        created_by: user.id,
+        created_by_name: user.full_name,
+        location: newEvent.location
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating event:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create event",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setEvents(prev => [data, ...prev]);
     setNewEvent({
       title: '',
       description: '',
@@ -162,16 +164,22 @@ const CalendarView = ({ orderId }: CalendarViewProps) => {
                     onChange={(e) => setNewEvent({ ...newEvent, location: e.target.value })}
                   />
                   <div className="grid grid-cols-2 gap-2">
-                    <Input
-                      type="datetime-local"
-                      value={format(newEvent.start_date, "yyyy-MM-dd'T'HH:mm")}
-                      onChange={(e) => setNewEvent({ ...newEvent, start_date: new Date(e.target.value) })}
-                    />
-                    <Input
-                      type="datetime-local"
-                      value={format(newEvent.end_date, "yyyy-MM-dd'T'HH:mm")}
-                      onChange={(e) => setNewEvent({ ...newEvent, end_date: new Date(e.target.value) })}
-                    />
+                    <div>
+                      <label className="text-sm font-medium">Start Date & Time</label>
+                      <Input
+                        type="datetime-local"
+                        value={format(newEvent.start_date, "yyyy-MM-dd'T'HH:mm")}
+                        onChange={(e) => setNewEvent({ ...newEvent, start_date: new Date(e.target.value) })}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">End Date & Time</label>
+                      <Input
+                        type="datetime-local"
+                        value={format(newEvent.end_date, "yyyy-MM-dd'T'HH:mm")}
+                        onChange={(e) => setNewEvent({ ...newEvent, end_date: new Date(e.target.value) })}
+                      />
+                    </div>
                   </div>
                   <Button onClick={createEvent} className="w-full">
                     Create Event

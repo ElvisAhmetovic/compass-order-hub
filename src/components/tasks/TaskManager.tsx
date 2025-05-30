@@ -12,8 +12,9 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Task } from '@/types/tasks';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from '@/hooks/use-toast';
-import { CalendarIcon, Plus } from 'lucide-react';
+import { CalendarIcon, Plus, Edit3 } from 'lucide-react';
 import { format } from 'date-fns';
+import { supabase } from '@/integrations/supabase/client';
 
 interface TaskManagerProps {
   orderId: string;
@@ -22,6 +23,7 @@ interface TaskManagerProps {
 const TaskManager = ({ orderId }: TaskManagerProps) => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [newTask, setNewTask] = useState({
     title: '',
     description: '',
@@ -30,75 +32,80 @@ const TaskManager = ({ orderId }: TaskManagerProps) => {
     due_date: undefined as Date | undefined
   });
   const { user } = useAuth();
+  const [teamMembers, setTeamMembers] = useState<any[]>([]);
 
-  // Mock users for assignment
-  const mockUsers = [
-    { id: 'user1', name: 'John Doe', role: 'admin' },
-    { id: 'user2', name: 'Jane Smith', role: 'agent' },
-    { id: 'user3', name: 'Bob Johnson', role: 'user' }
-  ];
-
-  // Mock data for demonstration
+  // Fetch team members
   useEffect(() => {
-    const mockTasks: Task[] = [
-      {
-        id: '1',
-        title: 'Review customer requirements',
-        description: 'Go through the detailed requirements provided by the customer',
-        order_id: orderId,
-        assigned_to: 'user2',
-        assigned_to_name: 'Jane Smith',
-        assigned_by: 'user1',
-        assigned_by_name: 'John Doe',
-        status: 'in_progress',
-        priority: 'high',
-        due_date: new Date(Date.now() + 86400000).toISOString(),
-        created_at: new Date(Date.now() - 3600000).toISOString(),
-        updated_at: new Date(Date.now() - 3600000).toISOString()
-      },
-      {
-        id: '2',
-        title: 'Prepare initial proposal',
-        description: 'Create the first draft of the proposal based on requirements',
-        order_id: orderId,
-        assigned_to: 'user3',
-        assigned_to_name: 'Bob Johnson',
-        assigned_by: 'user1',
-        assigned_by_name: 'John Doe',
-        status: 'pending',
-        priority: 'medium',
-        due_date: new Date(Date.now() + 172800000).toISOString(),
-        created_at: new Date(Date.now() - 1800000).toISOString(),
-        updated_at: new Date(Date.now() - 1800000).toISOString()
+    const fetchTeamMembers = async () => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name, role');
+      
+      if (data) {
+        setTeamMembers(data.map(member => ({
+          id: member.id,
+          name: `${member.first_name} ${member.last_name}`.trim(),
+          role: member.role
+        })));
       }
-    ];
+    };
+    fetchTeamMembers();
+  }, []);
 
-    setTasks(mockTasks);
-  }, [orderId]);
+  // Fetch tasks
+  useEffect(() => {
+    const fetchTasks = async () => {
+      const { data, error } = await supabase
+        .from('tasks')
+        .select('*')
+        .eq('order_id', orderId)
+        .order('created_at', { ascending: false });
 
-  const createTask = () => {
-    if (!newTask.title.trim() || !newTask.assigned_to || !user) return;
+      if (error) {
+        console.error('Error fetching tasks:', error);
+        return;
+      }
 
-    const assignedUser = mockUsers.find(u => u.id === newTask.assigned_to);
-    if (!assignedUser) return;
-
-    const task: Task = {
-      id: Date.now().toString(),
-      title: newTask.title,
-      description: newTask.description,
-      order_id: orderId,
-      assigned_to: newTask.assigned_to,
-      assigned_to_name: assignedUser.name,
-      assigned_by: user.id,
-      assigned_by_name: user.full_name,
-      status: 'pending',
-      priority: newTask.priority,
-      due_date: newTask.due_date?.toISOString(),
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      setTasks(data || []);
     };
 
-    setTasks(prev => [...prev, task]);
+    fetchTasks();
+  }, [orderId]);
+
+  const createTask = async () => {
+    if (!newTask.title.trim() || !newTask.assigned_to || !user) return;
+
+    const assignedUser = teamMembers.find(u => u.id === newTask.assigned_to);
+    if (!assignedUser) return;
+
+    const { data, error } = await supabase
+      .from('tasks')
+      .insert({
+        title: newTask.title,
+        description: newTask.description,
+        order_id: orderId,
+        assigned_to: newTask.assigned_to,
+        assigned_to_name: assignedUser.name,
+        assigned_by: user.id,
+        assigned_by_name: user.full_name,
+        status: 'pending',
+        priority: newTask.priority,
+        due_date: newTask.due_date?.toISOString()
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating task:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create task",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setTasks(prev => [data, ...prev]);
     setNewTask({
       title: '',
       description: '',
@@ -114,16 +121,75 @@ const TaskManager = ({ orderId }: TaskManagerProps) => {
     });
   };
 
-  const updateTaskStatus = (taskId: string, status: Task['status']) => {
+  const updateTask = async (taskId: string, updates: Partial<Task>) => {
+    const { data, error } = await supabase
+      .from('tasks')
+      .update({
+        ...updates,
+        completed_at: updates.status === 'completed' ? new Date().toISOString() : null
+      })
+      .eq('id', taskId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating task:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update task",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setTasks(prev => prev.map(task => 
-      task.id === taskId 
-        ? { ...task, status, updated_at: new Date().toISOString() }
-        : task
+      task.id === taskId ? data : task
     ));
     
     toast({
       title: "Task updated",
-      description: `Task status changed to ${status}`,
+      description: `Task status changed to ${updates.status}`,
+    });
+  };
+
+  const saveEditedTask = async () => {
+    if (!editingTask) return;
+
+    const assignedUser = teamMembers.find(u => u.id === editingTask.assigned_to);
+    
+    const { data, error } = await supabase
+      .from('tasks')
+      .update({
+        title: editingTask.title,
+        description: editingTask.description,
+        assigned_to: editingTask.assigned_to,
+        assigned_to_name: assignedUser?.name || editingTask.assigned_to_name,
+        priority: editingTask.priority,
+        due_date: editingTask.due_date,
+        status: editingTask.status
+      })
+      .eq('id', editingTask.id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating task:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update task",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setTasks(prev => prev.map(task => 
+      task.id === editingTask.id ? data : task
+    ));
+    setEditingTask(null);
+    
+    toast({
+      title: "Task updated",
+      description: "Task has been updated successfully",
     });
   };
 
@@ -177,9 +243,9 @@ const TaskManager = ({ orderId }: TaskManagerProps) => {
                     <SelectValue placeholder="Assign to..." />
                   </SelectTrigger>
                   <SelectContent>
-                    {mockUsers.map(user => (
-                      <SelectItem key={user.id} value={user.id}>
-                        {user.name} ({user.role})
+                    {teamMembers.map(member => (
+                      <SelectItem key={member.id} value={member.id}>
+                        {member.name} ({member.role})
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -229,6 +295,13 @@ const TaskManager = ({ orderId }: TaskManagerProps) => {
                 <div className="flex items-center justify-between">
                   <h4 className="font-semibold">{task.title}</h4>
                   <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setEditingTask(task)}
+                    >
+                      <Edit3 className="h-4 w-4" />
+                    </Button>
                     <Badge className={getPriorityColor(task.priority)}>
                       {task.priority}
                     </Badge>
@@ -250,12 +323,12 @@ const TaskManager = ({ orderId }: TaskManagerProps) => {
                   {task.status !== 'completed' && (
                     <>
                       {task.status === 'pending' && (
-                        <Button size="sm" variant="outline" onClick={() => updateTaskStatus(task.id, 'in_progress')}>
+                        <Button size="sm" variant="outline" onClick={() => updateTask(task.id, { status: 'in_progress' })}>
                           Start
                         </Button>
                       )}
                       {task.status === 'in_progress' && (
-                        <Button size="sm" variant="outline" onClick={() => updateTaskStatus(task.id, 'completed')}>
+                        <Button size="sm" variant="outline" onClick={() => updateTask(task.id, { status: 'completed' })}>
                           Complete
                         </Button>
                       )}
@@ -267,6 +340,66 @@ const TaskManager = ({ orderId }: TaskManagerProps) => {
           )}
         </div>
       </CardContent>
+
+      {/* Edit Task Dialog */}
+      <Dialog open={!!editingTask} onOpenChange={() => setEditingTask(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Task</DialogTitle>
+          </DialogHeader>
+          {editingTask && (
+            <div className="space-y-4">
+              <Input
+                placeholder="Task title"
+                value={editingTask.title}
+                onChange={(e) => setEditingTask({ ...editingTask, title: e.target.value })}
+              />
+              <Textarea
+                placeholder="Task description"
+                value={editingTask.description || ''}
+                onChange={(e) => setEditingTask({ ...editingTask, description: e.target.value })}
+              />
+              <Select value={editingTask.assigned_to} onValueChange={(value) => setEditingTask({ ...editingTask, assigned_to: value })}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Assign to..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {teamMembers.map(member => (
+                    <SelectItem key={member.id} value={member.id}>
+                      {member.name} ({member.role})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={editingTask.priority} onValueChange={(value: any) => setEditingTask({ ...editingTask, priority: value })}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="low">Low</SelectItem>
+                  <SelectItem value="medium">Medium</SelectItem>
+                  <SelectItem value="high">High</SelectItem>
+                  <SelectItem value="urgent">Urgent</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={editingTask.status} onValueChange={(value: any) => setEditingTask({ ...editingTask, status: value })}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="in_progress">In Progress</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button onClick={saveEditedTask} className="w-full">
+                Save Changes
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };

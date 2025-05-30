@@ -9,6 +9,9 @@ export interface Message {
   channel_id?: string;
   order_id?: string;
   reply_to?: string;
+  file_url?: string;
+  file_name?: string;
+  file_type?: string;
 }
 
 export interface Channel {

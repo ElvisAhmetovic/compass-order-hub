@@ -3,7 +3,7 @@ export interface Task {
   id: string;
   title: string;
   description?: string;
-  order_id: string;
+  order_id?: string;
   assigned_to: string;
   assigned_to_name: string;
   assigned_by: string;
