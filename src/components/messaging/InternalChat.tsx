@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -75,9 +74,25 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
     };
 
     fetchChannels();
+
+    // Subscribe to real-time updates for channels
+    const channelSubscription = supabase
+      .channel('channels-changes')
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'channels'
+      }, (payload) => {
+        setChannels(prev => [...prev, payload.new as Channel]);
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channelSubscription);
+    };
   }, [channelId]);
 
-  // Fetch messages for active channel
+  // Fetch messages for active channel and setup real-time subscription
   useEffect(() => {
     if (!activeChannel) return;
 
@@ -98,8 +113,8 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
 
     fetchMessages();
 
-    // Subscribe to real-time updates
-    const channel = supabase
+    // Subscribe to real-time updates for messages in this channel
+    const messagesSubscription = supabase
       .channel(`messages-${activeChannel}`)
       .on('postgres_changes', {
         event: 'INSERT',
@@ -107,12 +122,33 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
         table: 'messages',
         filter: `channel_id=eq.${activeChannel}`
       }, (payload) => {
+        console.log('New message received:', payload.new);
         setMessages(prev => [...prev, payload.new as Message]);
+      })
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'messages',
+        filter: `channel_id=eq.${activeChannel}`
+      }, (payload) => {
+        console.log('Message updated:', payload.new);
+        setMessages(prev => prev.map(msg => 
+          msg.id === payload.new.id ? payload.new as Message : msg
+        ));
+      })
+      .on('postgres_changes', {
+        event: 'DELETE',
+        schema: 'public',
+        table: 'messages',
+        filter: `channel_id=eq.${activeChannel}`
+      }, (payload) => {
+        console.log('Message deleted:', payload.old);
+        setMessages(prev => prev.filter(msg => msg.id !== payload.old.id));
       })
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(messagesSubscription);
     };
   }, [activeChannel]);
 
@@ -120,6 +156,7 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // ... keep existing code (uploadFile function)
   const uploadFile = async (file: File) => {
     const fileExt = file.name.split('.').pop();
     const fileName = `${user?.id}/${Date.now()}.${fileExt}`;
@@ -196,6 +233,7 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
     });
   };
 
+  // ... keep existing code (createChannel function)
   const createChannel = async () => {
     if (!newChannelName.trim() || !user) return;
 
@@ -233,6 +271,7 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
     });
   };
 
+  // ... keep existing code (formatTime, getRoleBadgeColor functions)
   const formatTime = (dateString: string) => {
     return new Date(dateString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
