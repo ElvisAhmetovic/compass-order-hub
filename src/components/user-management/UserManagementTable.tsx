@@ -57,6 +57,8 @@ export function UserManagementTable({ users, setUsers, onReload }: UserManagemen
     
     if (window.confirm("Are you sure you want to delete this user?")) {
       try {
+        console.log('Deleting user:', userId);
+        
         // Delete user from Supabase profiles
         const { error } = await supabase
           .from('profiles')
@@ -64,6 +66,7 @@ export function UserManagementTable({ users, setUsers, onReload }: UserManagemen
           .eq('id', userId);
 
         if (error) {
+          console.error('Delete error:', error);
           throw error;
         }
 
@@ -79,7 +82,7 @@ export function UserManagementTable({ users, setUsers, onReload }: UserManagemen
         toast({
           variant: "destructive",
           title: "Error deleting user",
-          description: "Could not delete the user from database."
+          description: error.message || "Could not delete the user from database."
         });
       }
     }
@@ -87,6 +90,8 @@ export function UserManagementTable({ users, setUsers, onReload }: UserManagemen
   
   const handleUpdateUser = async (updatedUser: User) => {
     try {
+      console.log('Updating user:', updatedUser);
+      
       const nameParts = updatedUser.full_name.split(' ');
       const firstName = nameParts[0] || '';
       const lastName = nameParts.slice(1).join(' ') || '';
@@ -102,6 +107,7 @@ export function UserManagementTable({ users, setUsers, onReload }: UserManagemen
         .eq('id', updatedUser.id);
 
       if (error) {
+        console.error('Update error:', error);
         throw error;
       }
 
@@ -119,10 +125,18 @@ export function UserManagementTable({ users, setUsers, onReload }: UserManagemen
       toast({
         variant: "destructive",
         title: "Error updating user",
-        description: "Could not update the user in database."
+        description: error.message || "Could not update the user in database."
       });
     }
   };
+  
+  if (users.length === 0) {
+    return (
+      <div className="text-center p-8">
+        <p className="text-muted-foreground">No users to display.</p>
+      </div>
+    );
+  }
   
   return (
     <div className="space-y-4">

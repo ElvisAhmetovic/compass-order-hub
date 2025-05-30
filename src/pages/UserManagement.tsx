@@ -22,33 +22,54 @@ const UserManagement = () => {
   const loadUsers = async () => {
     setIsLoading(true);
     try {
+      console.log('Loading users from profiles table...');
+      
       const { data: profiles, error } = await supabase
         .from('profiles')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .select('id, first_name, last_name, role, updated_at')
+        .order('updated_at', { ascending: false });
 
       if (error) {
+        console.error('Supabase error:', error);
         throw error;
       }
 
-      // Convert profiles to User format
-      const formattedUsers: User[] = profiles.map(profile => ({
-        id: profile.id,
-        email: profile.email || '',
-        role: profile.role,
-        full_name: `${profile.first_name} ${profile.last_name}`.trim() || 'No Name',
-        created_at: profile.created_at || new Date().toISOString(),
-        updated_at: profile.updated_at || new Date().toISOString()
-      }));
+      console.log('Profiles data:', profiles);
 
+      // Get user emails from auth.users via a separate query
+      const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
+      
+      if (authError) {
+        console.warn('Could not fetch auth users:', authError.message);
+      }
+
+      // Convert profiles to User format
+      const formattedUsers: User[] = profiles.map(profile => {
+        // Try to find matching auth user for email
+        const authUser = authUsers?.users?.find(u => u.id === profile.id);
+        
+        return {
+          id: profile.id,
+          email: authUser?.email || 'No email available',
+          role: profile.role,
+          full_name: `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'No Name',
+          created_at: authUser?.created_at || new Date().toISOString(),
+          updated_at: profile.updated_at || new Date().toISOString()
+        };
+      });
+
+      console.log('Formatted users:', formattedUsers);
       setUsers(formattedUsers);
     } catch (error) {
       console.error("Error loading users:", error);
       toast({
         variant: "destructive",
         title: "Error loading users",
-        description: "Could not load the user data from database."
+        description: error.message || "Could not load the user data from database."
       });
+      
+      // Set empty array on error to prevent infinite loading
+      setUsers([]);
     } finally {
       setIsLoading(false);
     }
@@ -56,12 +77,14 @@ const UserManagement = () => {
 
   useEffect(() => {
     loadUsers();
-  }, [toast]);
+  }, []);
   
   const handleAddUser = async (newUser: User) => {
     try {
-      // Since we can't directly create auth users, we'll just add to profiles
+      console.log('Adding new user:', newUser);
+      
       // In a real implementation, you'd use Supabase Admin API or invite system
+      // For now, we'll just add to profiles table (assuming auth user already exists)
       const { error } = await supabase
         .from('profiles')
         .insert({
@@ -87,7 +110,7 @@ const UserManagement = () => {
       toast({
         variant: "destructive",
         title: "Error adding user",
-        description: "Could not add the new user to database."
+        description: error.message || "Could not add the new user to database."
       });
     }
   };
@@ -114,6 +137,13 @@ const UserManagement = () => {
               {isLoading ? (
                 <div className="flex justify-center p-8">
                   <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
+                </div>
+              ) : users.length === 0 ? (
+                <div className="text-center p-8">
+                  <p className="text-muted-foreground">No users found in the database.</p>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Users will appear here after they sign up or are added to the system.
+                  </p>
                 </div>
               ) : (
                 <UserManagementTable users={users} setUsers={setUsers} onReload={loadUsers} />
