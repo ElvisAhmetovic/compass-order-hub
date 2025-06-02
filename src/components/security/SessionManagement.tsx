@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -47,8 +46,17 @@ export function SessionManagement() {
 
   const loadActiveSessions = async () => {
     try {
+      // Get session token for authorization
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        return;
+      }
+
       const response = await supabase.functions.invoke('get-active-sessions', {
-        body: { userId: user?.id }
+        body: { userId: user?.id },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
       });
 
       if (response.error) {
@@ -90,8 +98,17 @@ export function SessionManagement() {
 
   const terminateSession = async (sessionId: string) => {
     try {
+      // Get session token for authorization
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('No active session');
+      }
+
       const response = await supabase.functions.invoke('terminate-session', {
-        body: { sessionId, userId: user?.id }
+        body: { sessionId, userId: user?.id },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
       });
 
       if (response.error) {
@@ -116,8 +133,17 @@ export function SessionManagement() {
 
   const terminateAllSessions = async () => {
     try {
+      // Get session token for authorization
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('No active session');
+      }
+
       const response = await supabase.functions.invoke('terminate-all-sessions', {
-        body: { userId: user?.id }
+        body: { userId: user?.id },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
       });
 
       if (response.error) {

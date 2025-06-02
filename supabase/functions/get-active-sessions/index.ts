@@ -31,35 +31,33 @@ serve(async (req) => {
       throw new Error('Invalid authentication')
     }
 
-    const { email } = await req.json()
+    const { userId } = await req.json()
     
-    // Verify the email matches the authenticated user
-    if (email !== user.email) {
-      throw new Error('Unauthorized: Email does not match authenticated user')
+    // Verify the user can only view their own sessions
+    if (userId !== user.id) {
+      throw new Error('Unauthorized access')
     }
-    
-    // Generate a random secret (32 characters)
-    const secret = Array.from(crypto.getRandomValues(new Uint8Array(20)))
-      .map(b => b.toString(36))
-      .join('')
-      .substring(0, 32)
-    
-    // Generate QR code URL for Google Authenticator
-    const serviceName = 'Order Flow Compass'
-    const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=otpauth://totp/${encodeURIComponent(serviceName)}:${encodeURIComponent(email)}?secret=${secret}&issuer=${encodeURIComponent(serviceName)}`
-    
+
+    // Mock session data (in production, implement proper session tracking)
+    const sessions = [
+      {
+        id: 'current-session',
+        device: 'Current Browser',
+        location: 'Unknown Location',
+        last_active: new Date().toISOString(),
+        is_current: true
+      }
+    ]
+
     return new Response(
-      JSON.stringify({
-        secret,
-        qrCode: qrCodeUrl
-      }),
+      JSON.stringify(sessions),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
       },
     )
   } catch (error) {
-    console.error('Generate TOTP secret error:', error)
+    console.error('Get active sessions error:', error)
     return new Response(
       JSON.stringify({ error: error.message }),
       {

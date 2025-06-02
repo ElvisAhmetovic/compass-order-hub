@@ -27,8 +27,17 @@ export function GDPRCompliance() {
   const exportUserData = async () => {
     setIsLoading(true);
     try {
+      // Get session token for authorization
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('No active session');
+      }
+
       const response = await supabase.functions.invoke('export-user-data', {
-        body: { userId: user?.id }
+        body: { userId: user?.id },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
       });
 
       if (response.error) {
@@ -65,8 +74,17 @@ export function GDPRCompliance() {
   const deleteUserData = async () => {
     setIsLoading(true);
     try {
+      // Get session token for authorization
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('No active session');
+      }
+
       const response = await supabase.functions.invoke('delete-user-data', {
-        body: { userId: user?.id }
+        body: { userId: user?.id },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
       });
 
       if (response.error) {
@@ -97,8 +115,17 @@ export function GDPRCompliance() {
 
   const viewDataProcessing = async () => {
     try {
+      // Get session token for authorization
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('No active session');
+      }
+
       const response = await supabase.functions.invoke('get-data-processing-info', {
-        body: { userId: user?.id }
+        body: { userId: user?.id },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
       });
 
       if (response.error) {

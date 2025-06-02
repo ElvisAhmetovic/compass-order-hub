@@ -44,9 +44,18 @@ export function TwoFactorAuth() {
   const enableTwoFactor = async () => {
     setIsLoading(true);
     try {
-      // Generate TOTP secret
+      // Get session token for authorization
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('No active session');
+      }
+
+      // Generate TOTP secret with proper authorization
       const response = await supabase.functions.invoke('generate-totp-secret', {
-        body: { email: user?.email }
+        body: { email: user?.email },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
       });
 
       if (response.error) {
@@ -84,11 +93,20 @@ export function TwoFactorAuth() {
 
     setIsLoading(true);
     try {
+      // Get session token for authorization
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('No active session');
+      }
+
       const response = await supabase.functions.invoke('verify-totp', {
         body: { 
           secret, 
           token: verificationCode,
           userId: user?.id 
+        },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
         }
       });
 

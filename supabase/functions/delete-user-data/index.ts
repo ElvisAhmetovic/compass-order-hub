@@ -13,12 +13,30 @@ serve(async (req) => {
   }
 
   try {
+    const authHeader = req.headers.get('authorization')
+    if (!authHeader) {
+      throw new Error('No authorization header')
+    }
+
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
+    // Verify the user's JWT token
+    const token = authHeader.replace('Bearer ', '')
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token)
+    
+    if (authError || !user) {
+      throw new Error('Invalid authentication')
+    }
+
     const { userId } = await req.json()
+    
+    // Verify the user can only delete their own data
+    if (userId !== user.id) {
+      throw new Error('Unauthorized: You can only delete your own data')
+    }
     
     // Delete user data from all tables (in order to respect foreign keys)
     const tables = [
@@ -42,10 +60,10 @@ serve(async (req) => {
     }
 
     // Finally, delete the auth user
-    const { error: authError } = await supabaseClient.auth.admin.deleteUser(userId)
+    const { error: authError2 } = await supabaseClient.auth.admin.deleteUser(userId)
     
-    if (authError) {
-      throw authError
+    if (authError2) {
+      throw authError2
     }
 
     return new Response(
@@ -56,6 +74,7 @@ serve(async (req) => {
       },
     )
   } catch (error) {
+    console.error('Delete user data error:', error)
     return new Response(
       JSON.stringify({ error: error.message }),
       {

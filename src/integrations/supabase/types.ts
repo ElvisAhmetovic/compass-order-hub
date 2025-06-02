@@ -1125,31 +1125,46 @@ export type Database = {
         Row: {
           api_key: string | null
           created_at: string | null
+          data_encryption_enabled: boolean | null
           email_alerts_enabled: boolean | null
           id: string
           language: string | null
+          max_concurrent_sessions: number | null
           notifications_enabled: boolean | null
+          session_timeout_minutes: number | null
           theme: string | null
+          two_factor_enabled: boolean | null
+          two_factor_secret: string | null
           updated_at: string | null
         }
         Insert: {
           api_key?: string | null
           created_at?: string | null
+          data_encryption_enabled?: boolean | null
           email_alerts_enabled?: boolean | null
           id: string
           language?: string | null
+          max_concurrent_sessions?: number | null
           notifications_enabled?: boolean | null
+          session_timeout_minutes?: number | null
           theme?: string | null
+          two_factor_enabled?: boolean | null
+          two_factor_secret?: string | null
           updated_at?: string | null
         }
         Update: {
           api_key?: string | null
           created_at?: string | null
+          data_encryption_enabled?: boolean | null
           email_alerts_enabled?: boolean | null
           id?: string
           language?: string | null
+          max_concurrent_sessions?: number | null
           notifications_enabled?: boolean | null
+          session_timeout_minutes?: number | null
           theme?: string | null
+          two_factor_enabled?: boolean | null
+          two_factor_secret?: string | null
           updated_at?: string | null
         }
         Relationships: []
@@ -1184,6 +1199,10 @@ export type Database = {
           actor_name: string
           details: string
         }[]
+      }
+      get_user_role: {
+        Args: { user_id: string }
+        Returns: string
       }
       is_admin: {
         Args: Record<PropertyKey, never>

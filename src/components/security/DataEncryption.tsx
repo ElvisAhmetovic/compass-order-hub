@@ -70,8 +70,17 @@ export function DataEncryption() {
 
   const generateEncryptionReport = async () => {
     try {
+      // Get session token for authorization
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('No active session');
+      }
+
       const response = await supabase.functions.invoke('generate-encryption-report', {
-        body: { userId: user?.id }
+        body: { userId: user?.id },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
       });
 
       if (response.error) {

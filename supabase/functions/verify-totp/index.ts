@@ -7,6 +7,31 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Simple TOTP verification (in production, use a proper TOTP library)
+function verifyTOTP(secret: string, token: string): boolean {
+  // This is a simplified implementation
+  // In production, use a proper TOTP library like @noble/otp
+  const timeStep = Math.floor(Date.now() / 1000 / 30);
+  
+  // Check current time step and ±1 for clock drift
+  for (let i = -1; i <= 1; i++) {
+    const testTimeStep = timeStep + i;
+    const hash = generateTOTP(secret, testTimeStep);
+    if (hash === token) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function generateTOTP(secret: string, timeStep: number): string {
+  // Simplified TOTP generation - use proper crypto library in production
+  const combined = secret + timeStep.toString();
+  const hash = Array.from(new TextEncoder().encode(combined))
+    .reduce((acc, byte) => acc + byte, 0);
+  return (hash % 1000000).toString().padStart(6, '0');
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -31,35 +56,28 @@ serve(async (req) => {
       throw new Error('Invalid authentication')
     }
 
-    const { email } = await req.json()
+    const { secret, token: totpToken, userId } = await req.json()
     
-    // Verify the email matches the authenticated user
-    if (email !== user.email) {
-      throw new Error('Unauthorized: Email does not match authenticated user')
+    // Verify the user can only validate their own TOTP
+    if (userId !== user.id) {
+      throw new Error('Unauthorized access')
     }
     
-    // Generate a random secret (32 characters)
-    const secret = Array.from(crypto.getRandomValues(new Uint8Array(20)))
-      .map(b => b.toString(36))
-      .join('')
-      .substring(0, 32)
+    const isValid = verifyTOTP(secret, totpToken)
     
-    // Generate QR code URL for Google Authenticator
-    const serviceName = 'Order Flow Compass'
-    const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=otpauth://totp/${encodeURIComponent(serviceName)}:${encodeURIComponent(email)}?secret=${secret}&issuer=${encodeURIComponent(serviceName)}`
-    
+    if (!isValid) {
+      throw new Error('Invalid TOTP token')
+    }
+
     return new Response(
-      JSON.stringify({
-        secret,
-        qrCode: qrCodeUrl
-      }),
+      JSON.stringify({ valid: true }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
       },
     )
   } catch (error) {
-    console.error('Generate TOTP secret error:', error)
+    console.error('TOTP verification error:', error)
     return new Response(
       JSON.stringify({ error: error.message }),
       {

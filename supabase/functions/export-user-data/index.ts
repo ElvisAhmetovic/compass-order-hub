@@ -13,12 +13,30 @@ serve(async (req) => {
   }
 
   try {
+    const authHeader = req.headers.get('authorization')
+    if (!authHeader) {
+      throw new Error('No authorization header')
+    }
+
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
+    // Verify the user's JWT token
+    const token = authHeader.replace('Bearer ', '')
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token)
+    
+    if (authError || !user) {
+      throw new Error('Invalid authentication')
+    }
+
     const { userId } = await req.json()
+    
+    // Verify the user can only export their own data
+    if (userId !== user.id) {
+      throw new Error('Unauthorized: You can only export your own data')
+    }
     
     // Collect user data from all relevant tables
     const userData: any = {
@@ -92,6 +110,7 @@ serve(async (req) => {
       },
     )
   } catch (error) {
+    console.error('Export user data error:', error)
     return new Response(
       JSON.stringify({ error: error.message }),
       {
