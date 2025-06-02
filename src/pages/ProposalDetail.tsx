@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -14,7 +15,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { PlusCircle, Trash2, Save, Eye, Download, ArrowLeft, Calendar, Clock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { v4 as uuidv4 } from "uuid";
-import { generateProposalPDF, previewProposalPDF, PROPOSAL_STATUSES } from "@/utils/proposalUtils";
+import { generateProposalPDF, previewProposalPDF, PROPOSAL_STATUSES, formatInventoryItemForProposal } from "@/utils/proposalUtils";
 import InventoryAutocomplete from "@/components/inventory/InventoryAutocomplete";
 import TemplateManager from "@/components/proposals/TemplateManager";
 import { getDefaultTemplate, createProposalFromTemplate } from "@/utils/templateUtils";
