@@ -14,10 +14,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { PlusCircle, Trash2, Save, Eye, Download, ArrowLeft, Calendar, Clock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { v4 as uuidv4 } from "uuid";
-import { generateProposalPDF, previewProposalPDF, loadInventoryItems, formatInventoryItemForProposal, PROPOSAL_STATUSES } from "@/utils/proposalUtils";
+import { generateProposalPDF, previewProposalPDF, PROPOSAL_STATUSES } from "@/utils/proposalUtils";
 import InventoryAutocomplete from "@/components/inventory/InventoryAutocomplete";
 import TemplateManager from "@/components/proposals/TemplateManager";
 import { getDefaultTemplate, createProposalFromTemplate } from "@/utils/templateUtils";
+import { useInventory } from "@/hooks/useInventory";
 
 interface ProposalLineItem {
   id: string;
@@ -97,6 +98,7 @@ const ProposalDetail = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
+  const { inventoryData, loading: inventoryLoading } = useInventory();
   const isNewProposal = id === "new" || !id;
 
   const [proposalData, setProposalData] = useState<ProposalData>({
@@ -156,19 +158,12 @@ const ProposalDetail = () => {
     totalAmount: 0
   });
 
-  const [inventoryItems, setInventoryItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     loadProposal();
-    loadInventory();
   }, [id]);
-
-  const loadInventory = () => {
-    const items = loadInventoryItems();
-    setInventoryItems(items);
-  };
 
   const loadProposal = () => {
     try {
@@ -284,15 +279,18 @@ const ProposalDetail = () => {
       return parseFloat(numStr) || 0;
     };
 
+    const unitPrice = parsePrice(inventoryItem.price);
+    const quantity = updatedLineItems[index].quantity || 1;
+
     updatedLineItems[index] = {
       ...updatedLineItems[index],
       item_id: inventoryItem.id,
       name: inventoryItem.name,
       description: inventoryItem.description || '',
-      unit_price: parsePrice(inventoryItem.price),
-      total_price: updatedLineItems[index].quantity * parsePrice(inventoryItem.price),
+      unit_price: unitPrice,
+      total_price: quantity * unitPrice,
       category: inventoryItem.category,
-      unit: inventoryItem.unit
+      unit: inventoryItem.unit || 'unit'
     };
 
     const { netAmount, vatAmount, totalAmount } = calculateTotals(updatedLineItems, proposalData.vatEnabled, proposalData.vatRate);
@@ -547,7 +545,7 @@ const ProposalDetail = () => {
     }
   };
 
-  if (loading) {
+  if (loading || inventoryLoading) {
     return (
       <div className="flex min-h-screen">
         <Sidebar />
@@ -904,7 +902,7 @@ const ProposalDetail = () => {
                                 value={item.name}
                                 onChange={(value) => handleLineItemChange(index, 'name', value)}
                                 onSelect={(inventoryItem) => handleInventoryItemSelect(index, inventoryItem)}
-                                inventoryItems={inventoryItems}
+                                inventoryItems={inventoryData || []}
                                 placeholder="Type to search products..."
                               />
                             </TableCell>
