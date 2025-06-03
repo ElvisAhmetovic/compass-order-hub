@@ -50,7 +50,17 @@ const RegisterForm = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!isFormValid()) {
+    // Validate form first
+    const fullNameError = validateFullName(fullName);
+    const emailError = validateEmail(email);
+    const passwordError = validatePassword(password);
+    
+    if (fullNameError || emailError || passwordError) {
+      setErrors({
+        fullName: fullNameError,
+        email: emailError,
+        password: passwordError
+      });
       toast({
         variant: "destructive",
         title: "Form validation failed",
@@ -74,7 +84,7 @@ const RegisterForm = () => {
         email: email.trim(),
         password: password,
         options: {
-          emailRedirectTo: `${window.location.origin}/`,
+          emailRedirectTo: `${window.location.origin}/dashboard`,
           data: {
             first_name: firstName,
             last_name: lastName,
@@ -88,12 +98,16 @@ const RegisterForm = () => {
         console.error('Registration error:', error);
         
         let errorMessage = "There was a problem creating your account.";
-        if (error.message.includes("already registered") || error.message.includes("already been registered")) {
+        
+        // Handle specific error messages
+        if (error.message.includes("User already registered")) {
           errorMessage = "An account with this email already exists. Please try logging in instead.";
-        } else if (error.message.includes("Password")) {
-          errorMessage = "Password must be at least 6 characters long.";
-        } else if (error.message.includes("email")) {
+        } else if (error.message.includes("Invalid email")) {
           errorMessage = "Please enter a valid email address.";
+        } else if (error.message.includes("Password should be at least")) {
+          errorMessage = "Password must be at least 6 characters long.";
+        } else if (error.message.includes("only letters")) {
+          errorMessage = "Please check your input and try again.";
         } else {
           errorMessage = error.message;
         }
@@ -112,17 +126,18 @@ const RegisterForm = () => {
         // Check if email confirmation is required
         if (!data.session && data.user && !data.user.email_confirmed_at) {
           toast({
-            title: "Registration successful",
-            description: "Please check your email for a confirmation link before signing in.",
+            title: "Registration successful!",
+            description: "Please check your email for a confirmation link to complete your registration, then try logging in.",
           });
+          navigate("/login");
         } else {
+          // User is automatically logged in
           toast({
-            title: "Registration successful",
-            description: "Your account has been created successfully.",
+            title: "Registration successful!",
+            description: "Welcome! You have been logged in automatically.",
           });
+          navigate("/dashboard");
         }
-        
-        navigate("/login");
       }
     } catch (error: any) {
       console.error('Unexpected registration error:', error);
@@ -176,6 +191,7 @@ const RegisterForm = () => {
             isPassword={true}
             showPassword={showPassword}
             toggleShowPassword={() => setShowPassword(!showPassword)}
+            placeholder="Enter your password"
           />
         </CardContent>
         <CardFooter className="flex flex-col">
