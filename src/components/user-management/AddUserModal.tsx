@@ -31,7 +31,6 @@ import {
 } from "@/components/ui/select";
 import { UserRole, User } from "@/types";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 
 const formSchema = z.object({
   email: z.string().email({ message: "Invalid email address" }),
@@ -67,8 +66,7 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsSubmitting(true);
     try {
-      // In a real implementation, you'd create a proper Supabase user
-      // For now, we'll create a profile entry with a generated ID
+      // Generate a UUID for the user profile
       const userId = crypto.randomUUID();
       
       // Split full name for first and last name
@@ -90,8 +88,8 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({
       onAddUser(newUser);
 
       toast({
-        title: "User created",
-        description: "New user has been created successfully. Note: This creates a profile entry - the user will need to register separately.",
+        title: "User profile created",
+        description: "New user profile has been created successfully. Note: This creates a profile entry - the user will need to register separately with this email.",
       });
 
       // Reset form and close modal
@@ -100,7 +98,7 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Failed to create user",
+        title: "Failed to create user profile",
         description: "Something went wrong. Please try again later.",
       });
     } finally {
@@ -112,7 +110,7 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Add User</DialogTitle>
+          <DialogTitle>Add User Profile</DialogTitle>
           <DialogDescription>
             Create a new user profile. The user will need to register separately with this email.
           </DialogDescription>
@@ -174,7 +172,7 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({
                 </Button>
               </DialogClose>
               <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Submitting..." : "Create"}
+                {isSubmitting ? "Creating..." : "Create Profile"}
               </Button>
             </DialogFooter>
           </form>

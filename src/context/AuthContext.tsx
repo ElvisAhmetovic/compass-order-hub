@@ -201,18 +201,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return false;
       }
 
-      // Update user metadata in Supabase
-      const { error } = await supabase.auth.updateUser({
+      // Update profile in the profiles table
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({
+          first_name: profileData.first_name || user.first_name,
+          last_name: profileData.last_name || user.last_name,
+          role: profileData.role || user.role
+        })
+        .eq('id', user.id);
+
+      if (profileError) {
+        throw profileError;
+      }
+
+      // Update user metadata in Supabase Auth
+      const { error: authError } = await supabase.auth.updateUser({
         data: {
-          full_name: profileData.full_name,
-          first_name: profileData.first_name,
-          last_name: profileData.last_name,
-          role: profileData.role
+          full_name: profileData.full_name || user.full_name,
+          first_name: profileData.first_name || user.first_name,
+          last_name: profileData.last_name || user.last_name
         }
       });
 
-      if (error) {
-        throw error;
+      if (authError) {
+        console.warn('Could not update auth metadata:', authError);
       }
 
       // Refresh user data
@@ -275,7 +288,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
       console.log(`Login attempt for: ${email}`);
-      setIsLoading(true);
       
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -312,8 +324,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         description: "An unexpected error occurred. Please try again later.",
       });
       return false;
-    } finally {
-      setIsLoading(false);
     }
   };
 

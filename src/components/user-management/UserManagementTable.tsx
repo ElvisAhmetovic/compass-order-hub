@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -54,11 +55,11 @@ export function UserManagementTable({ users, setUsers, onReload }: UserManagemen
       return;
     }
     
-    if (window.confirm("Are you sure you want to delete this user?")) {
+    if (window.confirm("Are you sure you want to delete this user profile?")) {
       try {
-        console.log('Deleting user:', userId);
+        console.log('Deleting user profile:', userId);
         
-        // Delete user from Supabase profiles
+        // Delete user profile from Supabase profiles
         const { error } = await supabase
           .from('profiles')
           .delete()
@@ -73,15 +74,15 @@ export function UserManagementTable({ users, setUsers, onReload }: UserManagemen
         await onReload();
         
         toast({
-          title: "User deleted",
-          description: "User has been successfully deleted."
+          title: "User profile deleted",
+          description: "User profile has been successfully deleted."
         });
       } catch (error: any) {
         console.error("Error deleting user:", error);
         toast({
           variant: "destructive",
           title: "Error deleting user",
-          description: error.message || "Could not delete the user from database."
+          description: error.message || "Could not delete the user profile from database."
         });
       }
     }
@@ -89,13 +90,13 @@ export function UserManagementTable({ users, setUsers, onReload }: UserManagemen
   
   const handleUpdateUser = async (updatedUser: User) => {
     try {
-      console.log('Updating user:', updatedUser);
+      console.log('Updating user profile:', updatedUser);
       
       const nameParts = updatedUser.full_name.split(' ');
       const firstName = nameParts[0] || '';
       const lastName = nameParts.slice(1).join(' ') || '';
 
-      // Update the profiles table FIRST
+      // Update the profiles table
       const { error: profileError } = await supabase
         .from('profiles')
         .update({
@@ -113,17 +114,10 @@ export function UserManagementTable({ users, setUsers, onReload }: UserManagemen
 
       console.log('Successfully updated profiles table');
 
-      // If the current user's role was updated, refresh their session IMMEDIATELY
+      // If the current user's role was updated, refresh their session
       if (currentUser?.id === updatedUser.id) {
-        console.log('Current user role updated, refreshing session immediately...');
-        
-        // First refresh the user context
+        console.log('Current user role updated, refreshing session...');
         await refreshUser();
-        
-        // Then reload the page to ensure all components get the new role
-        setTimeout(() => {
-          window.location.reload();
-        }, 500);
       }
 
       // Reload the users list to reflect changes
@@ -133,7 +127,7 @@ export function UserManagementTable({ users, setUsers, onReload }: UserManagemen
       
       toast({
         title: "User updated",
-        description: "User has been successfully updated."
+        description: "User profile has been successfully updated."
       });
 
     } catch (error: any) {
@@ -141,7 +135,7 @@ export function UserManagementTable({ users, setUsers, onReload }: UserManagemen
       toast({
         variant: "destructive",
         title: "Error updating user",
-        description: error.message || "Could not update the user in database."
+        description: error.message || "Could not update the user profile in database."
       });
     }
   };
@@ -200,7 +194,7 @@ export function UserManagementTable({ users, setUsers, onReload }: UserManagemen
                           onClick={() => handleDeleteUser(user.id)}
                           className="text-destructive"
                         >
-                          Delete User
+                          Delete Profile
                         </DropdownMenuItem>
                       )}
                     </DropdownMenuContent>

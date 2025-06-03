@@ -18,16 +18,16 @@ const UserManagement = () => {
   const { toast } = useToast();
   const { user: currentUser } = useAuth();
   
-  // Load users from Supabase profiles table and auth.users
+  // Load users from Supabase profiles table
   const loadUsers = async () => {
     setIsLoading(true);
     try {
-      console.log('Loading users from profiles and auth tables...');
+      console.log('Loading users from profiles table...');
       
-      // First get all profiles
+      // Get all profiles with user data from auth.users
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
-        .select('id, first_name, last_name, role, updated_at')
+        .select('*')
         .order('updated_at', { ascending: false });
 
       if (profilesError) {
@@ -37,26 +37,18 @@ const UserManagement = () => {
 
       console.log('Profiles data:', profiles);
 
-      // Get auth users with admin permissions to fetch emails
-      let authUsersArray: any[] = [];
-      try {
-        const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
-        
-        if (authError) {
-          console.log('Could not fetch auth users, using profile data only:', authError);
-        } else {
-          authUsersArray = authUsers?.users || [];
-        }
-      } catch (error) {
-        console.log('Auth users fetch failed:', error);
+      // Get auth users data
+      const { data: { users: authUsers }, error: authError } = await supabase.auth.admin.listUsers();
+      
+      if (authError) {
+        console.error('Auth users error:', authError);
+        // Continue without auth data if we can't fetch it
       }
-
-      console.log('Auth users data:', authUsersArray);
 
       // Convert profiles to User format with emails from auth
       const formattedUsers: User[] = (profiles || []).map(profile => {
         // Find corresponding auth user for email
-        const authUser = authUsersArray.find((user: any) => user.id === profile.id);
+        const authUser = authUsers?.find((user: any) => user.id === profile.id);
         const userEmail = authUser?.email || 'No email available';
         
         const fullName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim();
@@ -70,34 +62,6 @@ const UserManagement = () => {
           updated_at: profile.updated_at || new Date().toISOString()
         };
       });
-
-      // If current user is not in profiles, add them
-      if (currentUser && !formattedUsers.find(u => u.id === currentUser.id)) {
-        const currentUserFormatted: User = {
-          id: currentUser.id,
-          email: currentUser.email,
-          role: currentUser.role,
-          full_name: currentUser.full_name || 'Admin User',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        };
-        formattedUsers.unshift(currentUserFormatted);
-        
-        // Also add to profiles table if missing
-        try {
-          const nameParts = currentUser.full_name?.split(' ') || ['', ''];
-          await supabase
-            .from('profiles')
-            .insert({
-              id: currentUser.id,
-              first_name: nameParts[0] || 'Admin',
-              last_name: nameParts.slice(1).join(' ') || 'User',
-              role: currentUser.role
-            });
-        } catch (insertError) {
-          console.log('Could not insert current user profile:', insertError);
-        }
-      }
 
       console.log('Formatted users:', formattedUsers);
       setUsers(formattedUsers);
@@ -133,7 +97,7 @@ const UserManagement = () => {
   
   const handleAddUser = async (newUser: User) => {
     try {
-      console.log('Adding new user:', newUser);
+      console.log('Adding new user profile:', newUser);
       
       const nameParts = newUser.full_name.split(' ');
       const { error } = await supabase
@@ -153,8 +117,8 @@ const UserManagement = () => {
       await loadUsers();
       
       toast({
-        title: "User added",
-        description: "New user has been added successfully."
+        title: "User profile created",
+        description: "New user profile has been added successfully."
       });
     } catch (error: any) {
       console.error("Error adding user:", error);
@@ -181,7 +145,7 @@ const UserManagement = () => {
                   </p>
                 </div>
                 <Button onClick={() => setIsAddUserModalOpen(true)}>
-                  Add User
+                  Add User Profile
                 </Button>
               </div>
               
@@ -193,7 +157,7 @@ const UserManagement = () => {
                 <div className="text-center p-8">
                   <p className="text-muted-foreground">No users found in the database.</p>
                   <p className="text-sm text-muted-foreground mt-2">
-                    Users will appear here after they sign up or are added to the system.
+                    Users will appear here after they sign up or profiles are created.
                   </p>
                 </div>
               ) : (
