@@ -63,6 +63,11 @@ const FormInput = ({
           <span>{error}</span>
         </div>
       )}
+      {isPassword && !error && (
+        <div className="text-xs text-muted-foreground">
+          Password must be at least 8 characters with uppercase, lowercase, number, and special character
+        </div>
+      )}
     </div>
   );
 };

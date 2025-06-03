@@ -1,4 +1,3 @@
-
 /**
  * Validates an email address
  * @param email The email to validate
@@ -18,7 +17,7 @@ export const validateEmail = (email: string): string | undefined => {
 };
 
 /**
- * Validates a password
+ * Validates a password with stronger requirements to match Supabase
  * @param password The password to validate
  * @returns Error message if invalid, undefined if valid
  */
@@ -27,8 +26,38 @@ export const validatePassword = (password: string): string | undefined => {
     return "Password is required";
   }
   
-  if (password.length < 6) {
-    return "Password must be at least 6 characters";
+  if (password.length < 8) {
+    return "Password must be at least 8 characters";
+  }
+  
+  // Check for at least one uppercase letter
+  if (!/[A-Z]/.test(password)) {
+    return "Password must contain at least one uppercase letter";
+  }
+  
+  // Check for at least one lowercase letter
+  if (!/[a-z]/.test(password)) {
+    return "Password must contain at least one lowercase letter";
+  }
+  
+  // Check for at least one number
+  if (!/\d/.test(password)) {
+    return "Password must contain at least one number";
+  }
+  
+  // Check for at least one special character
+  if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+    return "Password must contain at least one special character (!@#$%^&*(),.?\":{}|<>)";
+  }
+  
+  // Check against common weak passwords
+  const commonPasswords = [
+    'password', 'password123', '123456', '123456789', 'qwerty', 
+    'abc123', 'password1', 'admin', 'letmein', 'welcome'
+  ];
+  
+  if (commonPasswords.includes(password.toLowerCase())) {
+    return "This password is too common. Please choose a more unique password";
   }
   
   return undefined;
