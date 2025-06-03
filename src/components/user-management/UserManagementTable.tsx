@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -96,7 +95,7 @@ export function UserManagementTable({ users, setUsers, onReload }: UserManagemen
       const firstName = nameParts[0] || '';
       const lastName = nameParts.slice(1).join(' ') || '';
 
-      // Update the profiles table
+      // Update the profiles table FIRST
       const { error: profileError } = await supabase
         .from('profiles')
         .update({
@@ -112,39 +111,22 @@ export function UserManagementTable({ users, setUsers, onReload }: UserManagemen
         throw profileError;
       }
 
-      // Update the user's auth metadata to ensure role is reflected in session
-      try {
-        const { error: authError } = await supabase.auth.admin.updateUserById(updatedUser.id, {
-          user_metadata: {
-            full_name: updatedUser.full_name,
-            first_name: firstName,
-            last_name: lastName,
-            role: updatedUser.role
-          }
-        });
+      console.log('Successfully updated profiles table');
 
-        if (authError) {
-          console.log('Auth metadata update failed, but profile was updated:', authError);
-          // Don't throw here as the profile update succeeded
-        } else {
-          console.log('Successfully updated auth metadata');
-        }
-      } catch (authError) {
-        console.log('Could not update auth metadata:', authError);
-        // Don't throw here as the profile update succeeded
-      }
-
-      // If the current user's role was updated, refresh their session
+      // If the current user's role was updated, refresh their session IMMEDIATELY
       if (currentUser?.id === updatedUser.id) {
-        console.log('Current user role updated, refreshing session...');
-        // Wait a moment for the database to update
-        setTimeout(async () => {
-          await refreshUser();
-          window.location.reload(); // Force a page reload to ensure all components refresh
-        }, 1000);
+        console.log('Current user role updated, refreshing session immediately...');
+        
+        // First refresh the user context
+        await refreshUser();
+        
+        // Then reload the page to ensure all components get the new role
+        setTimeout(() => {
+          window.location.reload();
+        }, 500);
       }
 
-      // Reload users to reflect changes
+      // Reload the users list to reflect changes
       await onReload();
       setIsEditModalOpen(false);
       setEditingUser(null);
@@ -153,6 +135,7 @@ export function UserManagementTable({ users, setUsers, onReload }: UserManagemen
         title: "User updated",
         description: "User has been successfully updated."
       });
+
     } catch (error: any) {
       console.error("Error updating user:", error);
       toast({

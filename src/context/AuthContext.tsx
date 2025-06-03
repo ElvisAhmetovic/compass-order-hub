@@ -1,4 +1,3 @@
-
 import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { UserRole } from '@/types';
@@ -35,41 +34,66 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
-  // Convert Supabase user to our AuthUser format with role from profiles table
+  // Convert Supabase user to our AuthUser format - ALWAYS fetch role from profiles table
   const convertToAuthUser = async (supabaseUser: User): Promise<AuthUser> => {
-    // First try to get role from profiles table (most up-to-date)
+    console.log('Converting user to AuthUser:', supabaseUser.email);
+    
     let userRole: UserRole = 'user';
     let fullName = supabaseUser.user_metadata?.full_name || supabaseUser.email?.split('@')[0] || 'User';
+    let firstName = supabaseUser.user_metadata?.first_name || '';
+    let lastName = supabaseUser.user_metadata?.last_name || '';
     
     try {
-      const { data: profile } = await supabase
+      // ALWAYS fetch the most current role from profiles table
+      const { data: profile, error } = await supabase
         .from('profiles')
         .select('role, first_name, last_name')
         .eq('id', supabaseUser.id)
         .single();
       
-      if (profile) {
+      if (error) {
+        console.error('Error fetching profile:', error);
+        // If profile doesn't exist, create it with default role
+        const nameParts = fullName.split(' ');
+        const { error: insertError } = await supabase
+          .from('profiles')
+          .insert({
+            id: supabaseUser.id,
+            first_name: nameParts[0] || '',
+            last_name: nameParts.slice(1).join(' ') || '',
+            role: 'user'
+          });
+        
+        if (insertError) {
+          console.error('Error creating profile:', insertError);
+        }
+      } else {
+        // Use role from profiles table (most authoritative)
         userRole = profile.role as UserRole;
         if (profile.first_name || profile.last_name) {
-          fullName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim();
+          firstName = profile.first_name || '';
+          lastName = profile.last_name || '';
+          fullName = `${firstName} ${lastName}`.trim();
         }
+        console.log('User role from profiles table:', userRole);
       }
     } catch (error) {
-      console.log('Could not fetch profile role, using metadata role:', error);
-      // Fallback to user metadata role
-      userRole = (supabaseUser.user_metadata?.role || 'user') as UserRole;
+      console.error('Error in convertToAuthUser:', error);
     }
 
-    return {
+    const authUser: AuthUser = {
       id: supabaseUser.id,
       email: supabaseUser.email || '',
       role: userRole,
       full_name: fullName,
-      first_name: supabaseUser.user_metadata?.first_name || '',
-      last_name: supabaseUser.user_metadata?.last_name || '',
+      first_name: firstName,
+      last_name: lastName,
       created_at: supabaseUser.created_at,
       last_sign_in: supabaseUser.last_sign_in_at
     };
+
+    console.log('Final AuthUser:', authUser);
+    return authUser;
   };
 
   useEffect(() => {
@@ -106,6 +130,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const refreshUser = async (): Promise<void> => {
     try {
+      console.log('Refreshing user data...');
       const { data: { session } } = await supabase.auth.getSession();
       setSession(session);
       if (session?.user) {
