@@ -51,9 +51,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         .eq('id', supabaseUser.id)
         .single();
       
-      if (error) {
+      if (error && error.code !== 'PGRST116') {
         console.error('Error fetching profile:', error);
+      } else if (profile) {
+        userRole = profile.role as UserRole;
+        if (profile.first_name || profile.last_name) {
+          firstName = profile.first_name || '';
+          lastName = profile.last_name || '';
+          fullName = `${firstName} ${lastName}`.trim();
+        }
+        console.log('User role from profiles table:', userRole);
+      } else {
         // If profile doesn't exist, create it with default role
+        console.log('Creating new profile for user');
         const nameParts = fullName.split(' ');
         const { error: insertError } = await supabase
           .from('profiles')
@@ -67,14 +77,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (insertError) {
           console.error('Error creating profile:', insertError);
         }
-      } else {
-        userRole = profile.role as UserRole;
-        if (profile.first_name || profile.last_name) {
-          firstName = profile.first_name || '';
-          lastName = profile.last_name || '';
-          fullName = `${firstName} ${lastName}`.trim();
-        }
-        console.log('User role from profiles table:', userRole);
       }
     } catch (error) {
       console.error('Error in convertToAuthUser:', error);
@@ -98,38 +100,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     let mounted = true;
 
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('Auth state changed:', event, session?.user?.email);
-        if (!mounted) return;
-        
-        if (session?.user) {
-          try {
-            const authUser = await convertToAuthUser(session.user);
-            if (mounted) {
-              setUser(authUser);
-              setIsLoading(false);
-            }
-          } catch (error) {
-            console.error('Error converting user:', error);
-            if (mounted) {
-              setUser(null);
-              setIsLoading(false);
-            }
-          }
-        } else {
-          if (mounted) {
-            setUser(null);
-            setIsLoading(false);
-          }
-        }
-      }
-    );
-
-    // Check for existing session
+    // Check for existing session first
     const initializeAuth = async () => {
       try {
+        console.log('Initializing auth...');
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
@@ -143,6 +117,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
         if (mounted) {
           if (session?.user) {
+            console.log('Found existing session');
             try {
               const authUser = await convertToAuthUser(session.user);
               setUser(authUser);
@@ -151,6 +126,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               setUser(null);
             }
           } else {
+            console.log('No existing session');
             setUser(null);
           }
           setIsLoading(false);
@@ -165,6 +141,39 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
 
     initializeAuth();
+
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        console.log('Auth state changed:', event, session?.user?.email);
+        if (!mounted) return;
+        
+        if (session?.user) {
+          // Don't call convertToAuthUser here to avoid infinite loops
+          // Just update the loading state, the session check above will handle user conversion
+          setTimeout(async () => {
+            try {
+              const authUser = await convertToAuthUser(session.user);
+              if (mounted) {
+                setUser(authUser);
+                setIsLoading(false);
+              }
+            } catch (error) {
+              console.error('Error converting user in auth state change:', error);
+              if (mounted) {
+                setUser(null);
+                setIsLoading(false);
+              }
+            }
+          }, 0);
+        } else {
+          if (mounted) {
+            setUser(null);
+            setIsLoading(false);
+          }
+        }
+      }
+    );
 
     return () => {
       mounted = false;
