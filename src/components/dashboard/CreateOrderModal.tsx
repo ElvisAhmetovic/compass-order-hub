@@ -72,6 +72,17 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
     },
   });
 
+  // Validate and format URL
+  const formatUrl = (url: string): string => {
+    if (!url) return url;
+    
+    // Remove any existing protocol
+    let cleanUrl = url.replace(/^https?:\/\//, '');
+    
+    // Add https protocol
+    return `https://${cleanUrl}`;
+  };
+
   const onSubmit = async (values: FormValues) => {
     if (!user) {
       toast({
@@ -85,20 +96,29 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
     setIsSubmitting(true);
     
     try {
+      // Format and validate the company link
+      let formattedLink = '';
+      if (values.companyLink) {
+        formattedLink = formatUrl(values.companyLink);
+        console.log('Formatted company link:', formattedLink);
+      }
+
       // Create order data for Supabase
       const orderData = {
-        company_name: values.companyName,
-        contact_email: values.contactEmail,
-        contact_phone: values.contactPhone,
-        company_address: values.companyAddress,
-        company_link: values.companyLink,
-        description: values.description,
+        company_name: values.companyName.trim(),
+        contact_email: values.contactEmail.trim(),
+        contact_phone: values.contactPhone?.trim() || null,
+        company_address: values.companyAddress?.trim() || null,
+        company_link: formattedLink || null,
+        description: values.description.trim(),
         price: values.price,
         currency: values.currency,
         status: "Created" as const,
         priority: values.priority as OrderPriority,
         created_by: user.id,
       };
+      
+      console.log('Creating order with data:', orderData);
       
       // Save the new order to Supabase
       await OrderService.createOrder(orderData);
@@ -111,12 +131,15 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
       
       form.reset();
       onClose();
-    } catch (error) {
+      
+      // Trigger a refresh of the orders list
+      window.dispatchEvent(new CustomEvent('orderStatusChanged'));
+    } catch (error: any) {
       console.error("Error creating order:", error);
       toast({
         variant: "destructive",
         title: "Error creating order",
-        description: "An error occurred while saving the order. Please try again.",
+        description: error.message || "An error occurred while saving the order. Please try again.",
       });
     } finally {
       setIsSubmitting(false);
@@ -128,7 +151,7 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold">Create New Order</DialogTitle>
         </DialogHeader>
@@ -159,27 +182,6 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
                   )}
                 />
 
-                {/* Company Address */}
-                <FormField
-                  control={form.control}
-                  name="companyAddress"
-                  render={({ field }) => (
-                    <FormItem>
-                      <div className="flex items-center gap-1">
-                        <FormLabel className="text-sm">Company Address</FormLabel>
-                        <span className="text-red-500">*</span>
-                        <div className="ml-1 tooltip" title="Company's physical address">
-                          <Info className="h-4 w-4 text-muted-foreground" />
-                        </div>
-                      </div>
-                      <FormControl>
-                        <Input placeholder="Full Address" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
                 {/* Contact Email */}
                 <FormField
                   control={form.control}
@@ -192,6 +194,26 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
                       </div>
                       <FormControl>
                         <Input type="email" placeholder="Email Address" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Company Address */}
+                <FormField
+                  control={form.control}
+                  name="companyAddress"
+                  render={({ field }) => (
+                    <FormItem>
+                      <div className="flex items-center gap-1">
+                        <FormLabel className="text-sm">Company Address</FormLabel>
+                        <div className="ml-1 tooltip" title="Company's physical address">
+                          <Info className="h-4 w-4 text-muted-foreground" />
+                        </div>
+                      </div>
+                      <FormControl>
+                        <Input placeholder="Full Address" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -219,32 +241,34 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
                 />
 
                 {/* Company Link */}
-                <FormField
-                  control={form.control}
-                  name="companyLink"
-                  render={({ field }) => (
-                    <FormItem>
-                      <div className="flex items-center gap-1">
-                        <FormLabel className="text-sm">Company Link</FormLabel>
-                        <div className="ml-1 tooltip" title="Website or social media page">
-                          <Info className="h-4 w-4 text-muted-foreground" />
+                <div className="md:col-span-2">
+                  <FormField
+                    control={form.control}
+                    name="companyLink"
+                    render={({ field }) => (
+                      <FormItem>
+                        <div className="flex items-center gap-1">
+                          <FormLabel className="text-sm">Company Link</FormLabel>
+                          <div className="ml-1 tooltip" title="Website or social media page">
+                            <Info className="h-4 w-4 text-muted-foreground" />
+                          </div>
                         </div>
-                      </div>
-                      <FormControl>
-                        <Input 
-                          placeholder="https://example.com" 
-                          {...field} 
-                        />
-                      </FormControl>
-                      <FormMessage />
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Paste Google Maps, website, or Facebook page URL
-                      </p>
-                    </FormItem>
-                  )}
-                />
+                        <FormControl>
+                          <Input 
+                            placeholder="example.com or maps.google.com/..." 
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormMessage />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Enter website URL, Google Maps link, or social media page (https:// will be added automatically)
+                        </p>
+                      </FormItem>
+                    )}
+                  />
+                </div>
 
-                {/* Price */}
+                {/* Price and Currency */}
                 <div className="grid grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
@@ -262,6 +286,8 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
                           <Input 
                             type="number" 
                             placeholder="0" 
+                            min="0"
+                            step="0.01"
                             {...field} 
                           />
                         </FormControl>
@@ -293,9 +319,9 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="EUR">EUR</SelectItem>
-                            <SelectItem value="USD">USD</SelectItem>
-                            <SelectItem value="GBP">GBP</SelectItem>
+                            <SelectItem value="EUR">EUR (€)</SelectItem>
+                            <SelectItem value="USD">USD ($)</SelectItem>
+                            <SelectItem value="GBP">GBP (£)</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -324,7 +350,7 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
                       <SelectContent>
                         {priorities.map((priority) => (
                           <SelectItem key={priority} value={priority}>
-                            {priority}
+                            {priority.charAt(0).toUpperCase() + priority.slice(1)}
                           </SelectItem>
                         ))}
                       </SelectContent>
