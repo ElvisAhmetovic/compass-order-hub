@@ -96,7 +96,8 @@ export function UserManagementTable({ users, setUsers, onReload }: UserManagemen
       const firstName = nameParts[0] || '';
       const lastName = nameParts.slice(1).join(' ') || '';
 
-      const { error } = await supabase
+      // Update the profiles table
+      const { error: profileError } = await supabase
         .from('profiles')
         .update({
           first_name: firstName,
@@ -106,14 +107,14 @@ export function UserManagementTable({ users, setUsers, onReload }: UserManagemen
         })
         .eq('id', updatedUser.id);
 
-      if (error) {
-        console.error('Update error:', error);
-        throw error;
+      if (profileError) {
+        console.error('Profile update error:', profileError);
+        throw profileError;
       }
 
-      // Also update the user's auth metadata if possible
+      // Update the user's auth metadata to ensure role is reflected in session
       try {
-        await supabase.auth.admin.updateUserById(updatedUser.id, {
+        const { error: authError } = await supabase.auth.admin.updateUserById(updatedUser.id, {
           user_metadata: {
             full_name: updatedUser.full_name,
             first_name: firstName,
@@ -121,8 +122,16 @@ export function UserManagementTable({ users, setUsers, onReload }: UserManagemen
             role: updatedUser.role
           }
         });
+
+        if (authError) {
+          console.log('Auth metadata update failed, but profile was updated:', authError);
+          // Don't throw here as the profile update succeeded
+        } else {
+          console.log('Successfully updated auth metadata');
+        }
       } catch (authError) {
         console.log('Could not update auth metadata:', authError);
+        // Don't throw here as the profile update succeeded
       }
 
       // Reload users to reflect changes
