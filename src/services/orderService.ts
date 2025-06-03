@@ -192,4 +192,32 @@ export class OrderService {
       throw error;
     }
   }
+
+  // Unassign order
+  static async unassignOrder(orderId: string): Promise<Order> {
+    try {
+      console.log(`Unassigning order ${orderId}`);
+
+      const { data, error } = await supabase
+        .from('orders')
+        .update({
+          assigned_to: null,
+          assigned_to_name: null,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', orderId)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error unassigning order:', error);
+        throw error;
+      }
+      
+      return data;
+    } catch (error) {
+      console.error('Failed to unassign order:', error);
+      throw error;
+    }
+  }
 }

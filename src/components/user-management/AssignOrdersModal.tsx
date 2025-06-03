@@ -9,6 +9,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Order, User } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { OrderService } from "@/services/orderService";
+import { supabase } from "@/integrations/supabase/client";
 
 interface AssignOrdersModalProps {
   user: User;
@@ -66,29 +67,25 @@ export function AssignOrdersModal({ user, open, onClose }: AssignOrdersModalProp
   const handleAssignOrders = async () => {
     setIsSubmitting(true);
     try {
-      // Get user's display name - prioritize full name, fall back to email
-      const assigneeName = user.full_name || user.email;
+      // Get user's display name from the user object
+      const assigneeName = user.full_name || user.email || 'Unknown User';
       
-      // Update orders in Supabase
+      // Process each order
       for (const order of orders) {
         if (selectedOrders.includes(order.id)) {
-          // Assign to this user
-          await OrderService.updateOrder(order.id, { 
-            assigned_to: user.id, 
-            assigned_to_name: assigneeName
-          });
+          // Assign to this user if not already assigned
+          if (order.assigned_to !== user.id) {
+            await OrderService.assignOrder(order.id, user.id, assigneeName);
+          }
         } else if (order.assigned_to === user.id) {
           // Unassign if previously assigned to this user but not selected now
-          await OrderService.updateOrder(order.id, { 
-            assigned_to: "", 
-            assigned_to_name: ""
-          });
+          await OrderService.unassignOrder(order.id);
         }
       }
       
       toast({
         title: "Orders assigned",
-        description: `Successfully assigned orders to ${assigneeName}.`,
+        description: `Successfully updated order assignments for ${assigneeName}.`,
       });
       
       onClose();
@@ -158,7 +155,9 @@ export function AssignOrdersModal({ user, open, onClose }: AssignOrdersModalProp
                             className="flex-1 cursor-pointer text-sm"
                           >
                             <span className="font-medium">{order.company_name}</span>
-                            <span className="ml-2 text-muted-foreground">{order.contact_name}</span>
+                            {order.contact_email && (
+                              <span className="ml-2 text-muted-foreground">{order.contact_email}</span>
+                            )}
                           </Label>
                           
                           <div className="flex items-center gap-2">
@@ -166,7 +165,10 @@ export function AssignOrdersModal({ user, open, onClose }: AssignOrdersModalProp
                               {order.status}
                             </Badge>
                             <Badge variant="outline">
-                              {new Intl.NumberFormat('en-US', { style: 'currency', currency: order.currency || 'USD' }).format(order.price || 0)}
+                              {new Intl.NumberFormat('en-US', { 
+                                style: 'currency', 
+                                currency: order.currency || 'USD' 
+                              }).format(order.price || 0)}
                             </Badge>
                           </div>
                         </div>
