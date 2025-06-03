@@ -282,8 +282,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
-      setIsLoading(true);
-      
       console.log(`Login attempt for: ${email}`);
       
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -303,13 +301,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       if (data.user && data.session) {
         console.log("Login successful for:", data.user.email);
-        setSession(data.session);
-        const authUser = await convertToAuthUser(data.user);
-        setUser(authUser);
+        // Don't set session/user here - let the auth state change handler do it
         
         toast({
           title: "Login successful",
-          description: `Welcome back${authUser.full_name ? ', ' + authUser.full_name : ''}!`,
+          description: `Welcome back!`,
         });
         
         return true;
@@ -324,8 +320,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         description: "An unexpected error occurred. Please try again later.",
       });
       return false;
-    } finally {
-      setIsLoading(false);
     }
   };
 

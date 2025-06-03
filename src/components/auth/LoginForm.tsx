@@ -5,26 +5,38 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertTriangle } from "lucide-react";
 import FormInput from "./FormInput";
-import { validateIdentifier, validatePassword } from "@/utils/formValidation";
 import { useAuth } from "@/context/AuthContext";
 
 const LoginForm = () => {
-  const [identifier, setIdentifier] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errors, setErrors] = useState<{identifier?: string, password?: string, auth?: string}>({});
+  const [errors, setErrors] = useState<{email?: string, password?: string, auth?: string}>({});
   const navigate = useNavigate();
   const { login, isLoading: authLoading } = useAuth();
   
   const isLoading = isSubmitting || authLoading;
 
-  const handleIdentifierChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const validateEmail = (email: string): string | undefined => {
+    if (!email.trim()) return "Email is required";
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) return "Please enter a valid email address";
+    return undefined;
+  };
+
+  const validatePassword = (password: string): string | undefined => {
+    if (!password.trim()) return "Password is required";
+    if (password.length < 6) return "Password must be at least 6 characters";
+    return undefined;
+  };
+
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    setIdentifier(value);
+    setEmail(value);
     
-    const error = validateIdentifier(value);
-    setErrors(prev => ({ ...prev, identifier: error, auth: undefined }));
+    const error = validateEmail(value);
+    setErrors(prev => ({ ...prev, email: error, auth: undefined }));
   };
 
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -36,13 +48,21 @@ const LoginForm = () => {
   };
 
   const isFormValid = () => {
-    return !errors.identifier && !errors.password && identifier.trim() !== "" && password.trim() !== "";
+    return !errors.email && !errors.password && email.trim() !== "" && password.trim() !== "";
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!isFormValid()) {
+    // Validate form before submitting
+    const emailError = validateEmail(email);
+    const passwordError = validatePassword(password);
+    
+    if (emailError || passwordError) {
+      setErrors({
+        email: emailError,
+        password: passwordError
+      });
       return;
     }
     
@@ -50,13 +70,14 @@ const LoginForm = () => {
     setErrors({});
 
     try {
-      console.log(`Attempting to log in with: ${identifier}, password: ${password.replace(/./g, '*')}`);
-      const success = await login(identifier, password);
+      console.log(`Attempting to log in with: ${email}`);
+      const success = await login(email, password);
       
       if (success) {
+        console.log("Login successful, navigating to dashboard");
         navigate("/dashboard");
       } else {
-        setErrors(prev => ({ ...prev, auth: "Invalid email/username or password" }));
+        setErrors(prev => ({ ...prev, auth: "Invalid email or password" }));
       }
     } catch (error) {
       console.error("Login error:", error);
@@ -83,13 +104,13 @@ const LoginForm = () => {
           )}
           
           <FormInput
-            id="identifier"
-            label="Username or Email"
-            type="text"
-            value={identifier}
-            onChange={handleIdentifierChange}
-            placeholder="johndoe or name@company.com"
-            error={errors.identifier}
+            id="email"
+            label="Email"
+            type="email"
+            value={email}
+            onChange={handleEmailChange}
+            placeholder="name@company.com"
+            error={errors.email}
             disabled={isLoading}
           />
           
