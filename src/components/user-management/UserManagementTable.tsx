@@ -28,7 +28,7 @@ export function UserManagementTable({ users, setUsers, onReload }: UserManagemen
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const { toast } = useToast();
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, refreshUser } = useAuth();
   
   // Check if current user is the main admin who can change roles
   const isMainAdmin = currentUser?.email === "luciferbebistar@gmail.com";
@@ -139,7 +139,7 @@ export function UserManagementTable({ users, setUsers, onReload }: UserManagemen
         console.log('Current user role updated, refreshing session...');
         // Wait a moment for the database to update
         setTimeout(async () => {
-          await currentUser?.refreshUser?.();
+          await refreshUser();
           window.location.reload(); // Force a page reload to ensure all components refresh
         }, 1000);
       }
