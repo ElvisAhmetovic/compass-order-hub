@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
@@ -12,7 +13,12 @@ import {
   Receipt,
   UserCheck,
   BarChart3,
-  MessageSquare
+  MessageSquare,
+  AlertTriangle,
+  CheckCircle,
+  XCircle,
+  Clock,
+  Eye
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
@@ -30,8 +36,14 @@ const Sidebar = () => {
     { href: '/dashboard', icon: Home, label: 'Dashboard', roles: ['admin', 'agent', 'user'] },
     { href: '/analytics', icon: BarChart3, label: 'Analytics', roles: ['admin', 'agent'] },
     { href: '/support', icon: HelpCircle, label: 'Support', roles: ['admin', 'agent', 'user'] },
-    { href: '/reviews', icon: Star, label: 'Reviews', roles: ['admin', 'agent', 'user'] },
     { href: '/active-orders', icon: FileText, label: 'My Orders', roles: ['user'] }, // User-specific orders view
+    { href: '/active-orders', icon: Clock, label: 'Active Orders', roles: ['admin', 'agent'] }, // Admin/agent view
+    { href: '/complaints', icon: AlertTriangle, label: 'Complaints', roles: ['admin', 'agent'] },
+    { href: '/completed', icon: CheckCircle, label: 'Completed', roles: ['admin', 'agent'] },
+    { href: '/cancelled', icon: XCircle, label: 'Cancelled', roles: ['admin', 'agent'] },
+    { href: '/reviews', icon: Eye, label: 'Reviews', roles: ['admin', 'agent', 'user'] },
+    { href: '/invoice-sent', icon: Receipt, label: 'Invoice Sent', roles: ['admin', 'agent'] },
+    { href: '/invoice-paid', icon: Receipt, label: 'Invoice Paid', roles: ['admin', 'agent'] },
     { href: '/companies', icon: Building2, label: 'Companies', roles: ['admin', 'agent'] },
     { href: '/proposals', icon: FileText, label: 'Proposals', roles: ['admin', 'agent'] },
     { href: '/invoices', icon: Receipt, label: 'Invoices', roles: ['admin', 'agent'] },
@@ -40,10 +52,9 @@ const Sidebar = () => {
     { href: '/user-management', icon: Users, label: 'User Management', roles: ['admin'] }, // Admin only
     { href: '/deleted', icon: Trash2, label: 'Deleted', roles: ['admin'] }, // Admin only
     {
-      title: "Team Chat",
-      icon: MessageSquare,
       href: "/team-collaboration",
-      requiresAuth: true,
+      icon: MessageSquare,
+      label: "Team Chat",
       roles: ["admin", "agent", "user"]
     }
   ];
@@ -81,7 +92,7 @@ const Sidebar = () => {
             
             return (
               <Link
-                key={item.href}
+                key={`${item.href}-${item.label}`}
                 to={item.href}
                 className={cn(
                   "flex items-center px-6 py-3 text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors",
@@ -89,7 +100,7 @@ const Sidebar = () => {
                 )}
               >
                 <Icon className="w-5 h-5 mr-3" />
-                {item.label || item.title}
+                {item.label}
               </Link>
             );
           })

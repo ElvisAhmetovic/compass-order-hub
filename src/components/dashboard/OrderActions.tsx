@@ -170,10 +170,15 @@ const OrderActions = ({ order, onOrderView, onRefresh }: OrderActionsProps) => {
     setIsLoading(true);
     
     try {
+      console.log(`Updating order ${order.id} status from ${order.status} to ${newStatus}`);
+      
       // Update order status using Supabase
-      await OrderService.updateOrder(order.id, { 
-        status: newStatus
+      const updatedOrder = await OrderService.updateOrder(order.id, { 
+        status: newStatus,
+        updated_at: new Date().toISOString()
       });
+      
+      console.log('Order updated successfully:', updatedOrder);
       
       // Create invoice if status is invoice-related
       if (newStatus === "Invoice Sent" || newStatus === "Invoice Paid") {
@@ -189,6 +194,12 @@ const OrderActions = ({ order, onOrderView, onRefresh }: OrderActionsProps) => {
       // Trigger refresh and notify about the status change
       onRefresh();
       window.dispatchEvent(new CustomEvent('orderStatusChanged'));
+      
+      // Force a page refresh to ensure sidebar updates correctly
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+      
     } catch (error) {
       console.error("Error updating status:", error);
       toast({
@@ -287,6 +298,9 @@ const OrderActions = ({ order, onOrderView, onRefresh }: OrderActionsProps) => {
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => handleStatusChange("Resolved")}>
           Mark as Resolved
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => handleStatusChange("Review")}>
+          Send to Review
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => handleStatusChange("Cancelled")}>
           Mark as Cancelled

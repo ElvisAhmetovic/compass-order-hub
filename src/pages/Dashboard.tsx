@@ -55,6 +55,7 @@ const Dashboard = () => {
   // Listen for order status changes to refresh all data
   useEffect(() => {
     const handleOrderStatusChange = () => {
+      console.log('Order status change detected, refreshing data...');
       setRefreshTrigger(prev => prev + 1);
     };
 
@@ -95,6 +96,7 @@ const Dashboard = () => {
 
   // Determine page status filter based on current route
   const getStatusFilterFromPath = (path: string): OrderStatus | null => {
+    console.log('Getting status filter for path:', path);
     switch (path) {
       case "/complaints":
         return "Complaint";
@@ -118,6 +120,9 @@ const Dashboard = () => {
   const pathStatusFilter = getStatusFilterFromPath(path);
   const isDashboardHome = path === "/dashboard";
 
+  console.log('Current path:', path);
+  console.log('Path status filter:', pathStatusFilter);
+
   // Get page title based on current route
   const getPageTitle = () => {
     if (isDashboardHome) return "Dashboard";
@@ -130,11 +135,13 @@ const Dashboard = () => {
 
   const handleRefresh = () => {
     // Trigger a refresh to update our data
+    console.log('Manual refresh triggered');
     setRefreshTrigger(prev => prev + 1);
   };
 
   // Reset active tab when path changes and trigger a refresh
   useEffect(() => {
+    console.log('Path changed to:', path);
     // Only apply tabs for active orders
     if (path === "/active-orders") {
       setActiveTab("All");
