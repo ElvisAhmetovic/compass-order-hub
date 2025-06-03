@@ -3,11 +3,10 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Eye, EyeOff, AlertTriangle } from "lucide-react";
-import { validateFullName, validateIdentifier, validatePassword } from "@/utils/formValidation";
 import { supabase } from "@/integrations/supabase/client";
+import FormInput from "./FormInput";
+import { validateFullName, validateEmail, validatePassword } from "@/utils/formValidation";
 
 const RegisterForm = () => {
   const [fullName, setFullName] = useState("");
@@ -31,7 +30,7 @@ const RegisterForm = () => {
     const value = e.target.value;
     setEmail(value);
     
-    const error = validateIdentifier(value);
+    const error = validateEmail(value);
     setErrors(prev => ({ ...prev, email: error }));
   };
 
@@ -87,7 +86,24 @@ const RegisterForm = () => {
 
       if (error) {
         console.error('Registration error:', error);
-        throw error;
+        
+        let errorMessage = "There was a problem creating your account.";
+        if (error.message.includes("already registered") || error.message.includes("already been registered")) {
+          errorMessage = "An account with this email already exists. Please try logging in instead.";
+        } else if (error.message.includes("Password")) {
+          errorMessage = "Password must be at least 6 characters long.";
+        } else if (error.message.includes("email")) {
+          errorMessage = "Please enter a valid email address.";
+        } else {
+          errorMessage = error.message;
+        }
+        
+        toast({
+          variant: "destructive",
+          title: "Registration failed",
+          description: errorMessage,
+        });
+        return;
       }
 
       if (data.user) {
@@ -109,25 +125,12 @@ const RegisterForm = () => {
         navigate("/login");
       }
     } catch (error: any) {
-      console.error('Registration error:', error);
-      
-      let errorMessage = "There was a problem creating your account.";
-      if (error.message) {
-        if (error.message.includes("already registered") || error.message.includes("already been registered")) {
-          errorMessage = "An account with this email already exists. Please try logging in instead.";
-        } else if (error.message.includes("password")) {
-          errorMessage = "Password does not meet requirements. Please ensure it's at least 8 characters with uppercase, lowercase, and numbers.";
-        } else if (error.message.includes("email")) {
-          errorMessage = "Please enter a valid email address.";
-        } else {
-          errorMessage = error.message;
-        }
-      }
+      console.error('Unexpected registration error:', error);
       
       toast({
         variant: "destructive",
         title: "Registration failed",
-        description: errorMessage,
+        description: "An unexpected error occurred. Please try again.",
       });
     } finally {
       setIsLoading(false);
@@ -142,75 +145,38 @@ const RegisterForm = () => {
       </CardHeader>
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <label htmlFor="fullName" className="text-sm font-medium">Full Name</label>
-            <Input
-              id="fullName"
-              value={fullName}
-              onChange={handleFullNameChange}
-              placeholder="John Doe"
-              required
-              disabled={isLoading}
-              className={errors.fullName ? "border-destructive" : ""}
-            />
-            {errors.fullName && (
-              <div className="text-sm text-destructive flex items-center gap-1 mt-1">
-                <AlertTriangle className="h-4 w-4" />
-                <span>{errors.fullName}</span>
-              </div>
-            )}
-          </div>
-          <div className="space-y-2">
-            <label htmlFor="email" className="text-sm font-medium">Email</label>
-            <Input
-              id="email"
-              type="email"
-              value={email}
-              onChange={handleEmailChange}
-              placeholder="name@company.com"
-              required
-              disabled={isLoading}
-              className={errors.email ? "border-destructive" : ""}
-            />
-            {errors.email && (
-              <div className="text-sm text-destructive flex items-center gap-1 mt-1">
-                <AlertTriangle className="h-4 w-4" />
-                <span>{errors.email}</span>
-              </div>
-            )}
-          </div>
-          <div className="space-y-2">
-            <label htmlFor="password" className="text-sm font-medium">Password</label>
-            <div className="relative">
-              <Input
-                id="password"
-                type={showPassword ? "text" : "password"}
-                value={password}
-                onChange={handlePasswordChange}
-                required
-                disabled={isLoading}
-                className={errors.password ? "border-destructive pr-10" : "pr-10"}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                tabIndex={-1}
-              >
-                {showPassword ? (
-                  <EyeOff className="h-4 w-4" />
-                ) : (
-                  <Eye className="h-4 w-4" />
-                )}
-              </button>
-            </div>
-            {errors.password && (
-              <div className="text-sm text-destructive flex items-center gap-1 mt-1">
-                <AlertTriangle className="h-4 w-4" />
-                <span>{errors.password}</span>
-              </div>
-            )}
-          </div>
+          <FormInput
+            id="fullName"
+            label="Full Name"
+            type="text"
+            value={fullName}
+            onChange={handleFullNameChange}
+            placeholder="John Doe"
+            disabled={isLoading}
+            error={errors.fullName}
+          />
+          <FormInput
+            id="email"
+            label="Email"
+            type="email"
+            value={email}
+            onChange={handleEmailChange}
+            placeholder="name@company.com"
+            disabled={isLoading}
+            error={errors.email}
+          />
+          <FormInput
+            id="password"
+            label="Password"
+            type="password"
+            value={password}
+            onChange={handlePasswordChange}
+            disabled={isLoading}
+            error={errors.password}
+            isPassword={true}
+            showPassword={showPassword}
+            toggleShowPassword={() => setShowPassword(!showPassword)}
+          />
         </CardContent>
         <CardFooter className="flex flex-col">
           <Button
