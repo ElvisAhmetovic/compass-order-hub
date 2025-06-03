@@ -1,7 +1,6 @@
-
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
-import { MoreHorizontal, FileText } from "lucide-react";
+import { MoreHorizontal, FileText, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -37,6 +36,7 @@ const OrderRow = ({
 }: OrderRowProps) => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [isSendingToReview, setIsSendingToReview] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
   const isAdmin = user?.role === "admin";
@@ -230,6 +230,51 @@ const OrderRow = ({
     }
   };
 
+  const handleSendToReview = async () => {
+    if (!isAdmin) {
+      toast({
+        title: "Permission Denied",
+        description: "Only administrators can send orders to review.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to send orders to review.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsSendingToReview(true);
+    try {
+      await OrderService.updateOrder(order.id, { 
+        status: "Review",
+        updated_at: new Date().toISOString()
+      });
+      
+      toast({
+        title: "Order sent to review",
+        description: `Order has been sent to the Reviews section.`,
+      });
+      
+      onRefresh();
+      window.dispatchEvent(new CustomEvent('orderStatusChanged'));
+    } catch (error) {
+      console.error("Error sending order to review:", error);
+      toast({
+        title: "Error",
+        description: "Failed to send order to review. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSendingToReview(false);
+    }
+  };
+
   return (
     <TableRow>
       <TableCell>
@@ -273,55 +318,71 @@ const OrderRow = ({
         {formatDate(order.updated_at)}
       </TableCell>
       <TableCell>
-        {!hideActions && isAdmin ? (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="p-0 h-8 w-8" disabled={isUpdatingStatus}>
-                <MoreHorizontal className="h-4 w-4" />
-                <span className="sr-only">Open menu</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => onOrderClick(order)}>
-                View Details
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => handleUpdateStatus("In Progress")}>
-                Mark as In Progress
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleUpdateStatus("Resolved")}>
-                Mark as Resolved
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleUpdateStatus("Invoice Sent")}>
-                Mark as Invoice Sent
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleUpdateStatus("Invoice Paid")}>
-                Mark as Invoice Paid
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleUpdateStatus("Complaint")}>
-                Mark as Complaint
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem 
-                onClick={handleDelete}
-                className="text-destructive"
-                disabled={isDeleting}
-              >
-                {isDeleting ? "Deleting..." : "Delete Order"}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        ) : (
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="p-0 h-8 w-8"
-            onClick={() => onOrderClick(order)}
-          >
-            <FileText className="h-4 w-4" />
-            <span className="sr-only">View Details</span>
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {/* Send to Review button - visible for admins on orders not already in Review status */}
+          {isAdmin && order.status !== "Review" && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleSendToReview}
+              disabled={isSendingToReview}
+              className="h-8 px-2"
+            >
+              <Send className="h-4 w-4 mr-1" />
+              {isSendingToReview ? "Sending..." : "Review"}
+            </Button>
+          )}
+          
+          {!hideActions && isAdmin ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="p-0 h-8 w-8" disabled={isUpdatingStatus}>
+                  <MoreHorizontal className="h-4 w-4" />
+                  <span className="sr-only">Open menu</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => onOrderClick(order)}>
+                  View Details
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => handleUpdateStatus("In Progress")}>
+                  Mark as In Progress
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleUpdateStatus("Resolved")}>
+                  Mark as Resolved
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleUpdateStatus("Invoice Sent")}>
+                  Mark as Invoice Sent
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleUpdateStatus("Invoice Paid")}>
+                  Mark as Invoice Paid
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleUpdateStatus("Complaint")}>
+                  Mark as Complaint
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem 
+                  onClick={handleDelete}
+                  className="text-destructive"
+                  disabled={isDeleting}
+                >
+                  {isDeleting ? "Deleting..." : "Delete Order"}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="p-0 h-8 w-8"
+              onClick={() => onOrderClick(order)}
+            >
+              <FileText className="h-4 w-4" />
+              <span className="sr-only">View Details</span>
+            </Button>
+          )}
+        </div>
       </TableCell>
     </TableRow>
   );
