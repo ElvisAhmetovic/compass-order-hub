@@ -52,6 +52,11 @@ const RegisterForm = () => {
     e.preventDefault();
     
     if (!isFormValid()) {
+      toast({
+        variant: "destructive",
+        title: "Form validation failed",
+        description: "Please fix the errors above before submitting.",
+      });
       return;
     }
     
@@ -63,44 +68,57 @@ const RegisterForm = () => {
       const firstName = nameParts[0] || '';
       const lastName = nameParts.slice(1).join(' ') || '';
 
+      console.log('Attempting registration for:', email);
+
       // Register user with Supabase Auth
       const { data, error } = await supabase.auth.signUp({
-        email: email,
+        email: email.trim(),
         password: password,
         options: {
+          emailRedirectTo: `${window.location.origin}/`,
           data: {
             first_name: firstName,
             last_name: lastName,
-            full_name: fullName,
-            role: 'user' // Always assign user role for new registrations
+            full_name: fullName.trim(),
+            role: 'user'
           }
         }
       });
 
       if (error) {
+        console.error('Registration error:', error);
         throw error;
       }
 
       if (data.user) {
         console.log('✅ User registered successfully:', data.user.id);
         
-        toast({
-          title: "Registration successful",
-          description: "Your account has been created with user privileges. Please check your email for verification (if enabled).",
-        });
+        // Check if email confirmation is required
+        if (!data.session && data.user && !data.user.email_confirmed_at) {
+          toast({
+            title: "Registration successful",
+            description: "Please check your email for a confirmation link before signing in.",
+          });
+        } else {
+          toast({
+            title: "Registration successful",
+            description: "Your account has been created successfully.",
+          });
+        }
         
         navigate("/login");
       }
     } catch (error: any) {
       console.error('Registration error:', error);
       
-      // Handle specific Supabase error messages
       let errorMessage = "There was a problem creating your account.";
       if (error.message) {
-        if (error.message.includes("already registered")) {
-          errorMessage = "An account with this email already exists.";
+        if (error.message.includes("already registered") || error.message.includes("already been registered")) {
+          errorMessage = "An account with this email already exists. Please try logging in instead.";
         } else if (error.message.includes("password")) {
-          errorMessage = "Password does not meet requirements.";
+          errorMessage = "Password does not meet requirements. Please ensure it's at least 8 characters with uppercase, lowercase, and numbers.";
+        } else if (error.message.includes("email")) {
+          errorMessage = "Please enter a valid email address.";
         } else {
           errorMessage = error.message;
         }
