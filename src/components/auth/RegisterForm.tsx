@@ -50,12 +50,16 @@ const RegisterForm = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log('🔵 Register button clicked');
+    console.log('🔵 Form data:', { fullName: fullName.trim(), email: email.trim(), passwordLength: password.length });
+    
     // Validate form first
     const fullNameError = validateFullName(fullName);
     const emailError = validateEmail(email);
     const passwordError = validatePassword(password);
     
     if (fullNameError || emailError || passwordError) {
+      console.log('❌ Form validation failed:', { fullNameError, emailError, passwordError });
       setErrors({
         fullName: fullNameError,
         email: emailError,
@@ -70,6 +74,7 @@ const RegisterForm = () => {
     }
     
     setIsLoading(true);
+    console.log('🔵 Starting registration process...');
 
     try {
       // Split full name for first and last name
@@ -77,8 +82,16 @@ const RegisterForm = () => {
       const firstName = nameParts[0] || '';
       const lastName = nameParts.slice(1).join(' ') || '';
 
-      console.log('Attempting registration for:', email);
-      console.log('User metadata:', { firstName, lastName, fullName: fullName.trim() });
+      console.log('🔵 Calling supabase.auth.signUp with:', {
+        email: email.trim(),
+        firstName,
+        lastName,
+        fullName: fullName.trim()
+      });
+
+      // Test Supabase connection first
+      const { data: connectionTest } = await supabase.from('profiles').select('count').limit(1);
+      console.log('🔵 Supabase connection test:', connectionTest ? 'SUCCESS' : 'FAILED');
 
       // Register user with Supabase Auth
       const { data, error } = await supabase.auth.signUp({
@@ -94,10 +107,14 @@ const RegisterForm = () => {
         }
       });
 
-      console.log('Signup response:', { data, error });
+      console.log('🔵 Supabase signup response:', {
+        user: data.user ? `User created with ID: ${data.user.id}` : 'No user',
+        session: data.session ? 'Session created' : 'No session',
+        error: error ? error.message : 'No error'
+      });
 
       if (error) {
-        console.error('Registration error:', error);
+        console.error('❌ Registration error:', error);
         
         let errorMessage = "There was a problem creating your account.";
         
@@ -123,23 +140,26 @@ const RegisterForm = () => {
       }
 
       if (data.user) {
-        console.log('✅ User registered successfully:', data.user.id);
-        console.log('Session created:', !!data.session);
-        console.log('Email confirmed:', data.user.email_confirmed_at);
+        console.log('✅ User registered successfully:', {
+          userId: data.user.id,
+          email: data.user.email,
+          emailConfirmed: data.user.email_confirmed_at,
+          hasSession: !!data.session
+        });
         
-        // Small delay to ensure trigger has time to execute
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Wait a moment for any database triggers to complete
+        await new Promise(resolve => setTimeout(resolve, 500));
         
         // Check if email confirmation is required
         if (!data.session && data.user && !data.user.email_confirmed_at) {
+          console.log('📧 Email confirmation required');
           toast({
             title: "Registration successful!",
             description: "Please check your email for a confirmation link to complete your registration.",
           });
-          // Stay on register page or redirect to login
           navigate("/login");
         } else {
-          // User is automatically logged in
+          console.log('✅ User logged in automatically');
           toast({
             title: "Registration successful!",
             description: "Welcome! Your account has been created successfully.",
@@ -147,7 +167,7 @@ const RegisterForm = () => {
           navigate("/dashboard");
         }
       } else {
-        console.error('No user data returned from signup');
+        console.error('❌ No user data returned from signup');
         toast({
           variant: "destructive",
           title: "Registration failed",
@@ -155,7 +175,7 @@ const RegisterForm = () => {
         });
       }
     } catch (error: any) {
-      console.error('Unexpected registration error:', error);
+      console.error('❌ Unexpected registration error:', error);
       
       toast({
         variant: "destructive",
@@ -164,6 +184,7 @@ const RegisterForm = () => {
       });
     } finally {
       setIsLoading(false);
+      console.log('🔵 Registration process completed');
     }
   };
 
