@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import Sidebar from "@/components/dashboard/Sidebar";
@@ -49,7 +48,7 @@ const UserManagement = () => {
       // Convert profiles to User format with emails from auth
       const formattedUsers: User[] = (profiles || []).map(profile => {
         // Find corresponding auth user for email
-        const authUser = authUsers?.users?.find(user => user.id === profile.id);
+        const authUser = authUsers?.users ? authUsers.users.find(user => user.id === profile.id) : undefined;
         const userEmail = authUser?.email || 'No email available';
         
         const fullName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim();
