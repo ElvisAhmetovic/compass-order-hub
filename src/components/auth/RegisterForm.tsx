@@ -78,8 +78,9 @@ const RegisterForm = () => {
       const lastName = nameParts.slice(1).join(' ') || '';
 
       console.log('Attempting registration for:', email);
+      console.log('User metadata:', { firstName, lastName, fullName: fullName.trim() });
 
-      // Register user with Supabase Auth - let the trigger handle profile creation
+      // Register user with Supabase Auth
       const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
         password: password,
@@ -93,20 +94,22 @@ const RegisterForm = () => {
         }
       });
 
+      console.log('Signup response:', { data, error });
+
       if (error) {
         console.error('Registration error:', error);
         
         let errorMessage = "There was a problem creating your account.";
         
         // Handle specific error messages
-        if (error.message.includes("User already registered")) {
+        if (error.message.includes("User already registered") || error.message.includes("already been registered")) {
           errorMessage = "An account with this email already exists. Please try logging in instead.";
         } else if (error.message.includes("Invalid email")) {
           errorMessage = "Please enter a valid email address.";
         } else if (error.message.includes("Password should be at least")) {
           errorMessage = "Password must be at least 6 characters long.";
-        } else if (error.message.includes("signup")) {
-          errorMessage = "Registration failed. Please try again.";
+        } else if (error.message.includes("signup is disabled")) {
+          errorMessage = "Registration is currently disabled. Please contact support.";
         } else {
           errorMessage = error.message;
         }
@@ -121,22 +124,35 @@ const RegisterForm = () => {
 
       if (data.user) {
         console.log('✅ User registered successfully:', data.user.id);
+        console.log('Session created:', !!data.session);
+        console.log('Email confirmed:', data.user.email_confirmed_at);
+        
+        // Small delay to ensure trigger has time to execute
+        await new Promise(resolve => setTimeout(resolve, 1000));
         
         // Check if email confirmation is required
         if (!data.session && data.user && !data.user.email_confirmed_at) {
           toast({
             title: "Registration successful!",
-            description: "Please check your email for a confirmation link to complete your registration, then try logging in.",
+            description: "Please check your email for a confirmation link to complete your registration.",
           });
+          // Stay on register page or redirect to login
           navigate("/login");
         } else {
           // User is automatically logged in
           toast({
             title: "Registration successful!",
-            description: "Welcome! You have been logged in automatically.",
+            description: "Welcome! Your account has been created successfully.",
           });
           navigate("/dashboard");
         }
+      } else {
+        console.error('No user data returned from signup');
+        toast({
+          variant: "destructive",
+          title: "Registration failed",
+          description: "Registration failed. Please try again.",
+        });
       }
     } catch (error: any) {
       console.error('Unexpected registration error:', error);
