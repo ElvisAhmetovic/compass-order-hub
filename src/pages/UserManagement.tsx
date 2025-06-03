@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import Sidebar from "@/components/dashboard/Sidebar";
@@ -37,18 +38,25 @@ const UserManagement = () => {
       console.log('Profiles data:', profiles);
 
       // Get auth users with admin permissions to fetch emails
-      const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
-      
-      if (authError) {
-        console.log('Could not fetch auth users, using profile data only:', authError);
+      let authUsersArray: any[] = [];
+      try {
+        const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
+        
+        if (authError) {
+          console.log('Could not fetch auth users, using profile data only:', authError);
+        } else {
+          authUsersArray = authUsers?.users || [];
+        }
+      } catch (error) {
+        console.log('Auth users fetch failed:', error);
       }
 
-      console.log('Auth users data:', authUsers?.users);
+      console.log('Auth users data:', authUsersArray);
 
       // Convert profiles to User format with emails from auth
       const formattedUsers: User[] = (profiles || []).map(profile => {
         // Find corresponding auth user for email
-        const authUser = authUsers?.users ? authUsers.users.find(user => user.id === profile.id) : undefined;
+        const authUser = authUsersArray.find((user: any) => user.id === profile.id);
         const userEmail = authUser?.email || 'No email available';
         
         const fullName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim();
