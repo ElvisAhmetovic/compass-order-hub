@@ -79,7 +79,7 @@ const RegisterForm = () => {
 
       console.log('Attempting registration for:', email);
 
-      // Register user with Supabase Auth
+      // Register user with Supabase Auth - let the trigger handle profile creation
       const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
         password: password,
@@ -88,8 +88,7 @@ const RegisterForm = () => {
           data: {
             first_name: firstName,
             last_name: lastName,
-            full_name: fullName.trim(),
-            role: 'user'
+            full_name: fullName.trim()
           }
         }
       });
@@ -106,8 +105,8 @@ const RegisterForm = () => {
           errorMessage = "Please enter a valid email address.";
         } else if (error.message.includes("Password should be at least")) {
           errorMessage = "Password must be at least 6 characters long.";
-        } else if (error.message.includes("only letters")) {
-          errorMessage = "Please check your input and try again.";
+        } else if (error.message.includes("signup")) {
+          errorMessage = "Registration failed. Please try again.";
         } else {
           errorMessage = error.message;
         }
