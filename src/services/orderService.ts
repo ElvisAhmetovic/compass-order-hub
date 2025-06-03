@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { Order } from "@/types";
 
@@ -44,7 +43,7 @@ export class OrderService {
     }
   }
 
-  // Create new order with validation
+  // Create new order with validation and auto-categorization
   static async createOrder(orderData: Omit<Order, 'id' | 'created_at' | 'updated_at'>): Promise<Order> {
     try {
       // Validate required fields
@@ -64,15 +63,24 @@ export class OrderService {
         formattedLink = 'https://' + formattedLink;
       }
 
+      // Auto-detect if this is a review order and set status accordingly
+      const reviewKeywords = ['review', 'reviews', 'recenzija', 'recenzije', 'ocjena', 'ocjene'];
+      const isReviewOrder = reviewKeywords.some(keyword => 
+        orderData.description.toLowerCase().includes(keyword.toLowerCase())
+      );
+
       const cleanOrderData = {
         ...orderData,
         company_link: formattedLink,
         price: orderData.price || 0,
-        status: orderData.status || 'Created',
+        status: isReviewOrder ? 'Review' : (orderData.status || 'Created'),
         priority: orderData.priority || 'medium'
       };
 
       console.log('Creating order with data:', cleanOrderData);
+      if (isReviewOrder) {
+        console.log('Auto-detected review order, setting status to Review');
+      }
 
       const { data, error } = await supabase
         .from('orders')

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { 
   DropdownMenu,
@@ -290,6 +289,9 @@ const OrderActions = ({ order, onOrderView, onRefresh }: OrderActionsProps) => {
         <DropdownMenuItem onClick={() => handleStatusChange("Complaint")}>
           Register Complaint
         </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => handleStatusChange("Review")}>
+          Send to Review
+        </DropdownMenuItem>
         <DropdownMenuItem onClick={() => handleStatusChange("Invoice Sent")}>
           Mark as Invoice Sent
         </DropdownMenuItem>
@@ -298,9 +300,6 @@ const OrderActions = ({ order, onOrderView, onRefresh }: OrderActionsProps) => {
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => handleStatusChange("Resolved")}>
           Mark as Resolved
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => handleStatusChange("Review")}>
-          Send to Review
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => handleStatusChange("Cancelled")}>
           Mark as Cancelled
