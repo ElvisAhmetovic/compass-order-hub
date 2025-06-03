@@ -134,6 +134,16 @@ export function UserManagementTable({ users, setUsers, onReload }: UserManagemen
         // Don't throw here as the profile update succeeded
       }
 
+      // If the current user's role was updated, refresh their session
+      if (currentUser?.id === updatedUser.id) {
+        console.log('Current user role updated, refreshing session...');
+        // Wait a moment for the database to update
+        setTimeout(async () => {
+          await currentUser?.refreshUser?.();
+          window.location.reload(); // Force a page reload to ensure all components refresh
+        }, 1000);
+      }
+
       // Reload users to reflect changes
       await onReload();
       setIsEditModalOpen(false);

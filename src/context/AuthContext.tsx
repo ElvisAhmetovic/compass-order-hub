@@ -35,13 +35,36 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
-  // Convert Supabase user to our AuthUser format
-  const convertToAuthUser = (supabaseUser: User): AuthUser => {
+  // Convert Supabase user to our AuthUser format with role from profiles table
+  const convertToAuthUser = async (supabaseUser: User): Promise<AuthUser> => {
+    // First try to get role from profiles table (most up-to-date)
+    let userRole: UserRole = 'user';
+    let fullName = supabaseUser.user_metadata?.full_name || supabaseUser.email?.split('@')[0] || 'User';
+    
+    try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role, first_name, last_name')
+        .eq('id', supabaseUser.id)
+        .single();
+      
+      if (profile) {
+        userRole = profile.role as UserRole;
+        if (profile.first_name || profile.last_name) {
+          fullName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim();
+        }
+      }
+    } catch (error) {
+      console.log('Could not fetch profile role, using metadata role:', error);
+      // Fallback to user metadata role
+      userRole = (supabaseUser.user_metadata?.role || 'user') as UserRole;
+    }
+
     return {
       id: supabaseUser.id,
       email: supabaseUser.email || '',
-      role: (supabaseUser.user_metadata?.role || 'user') as UserRole,
-      full_name: supabaseUser.user_metadata?.full_name || supabaseUser.email?.split('@')[0] || 'User',
+      role: userRole,
+      full_name: fullName,
       first_name: supabaseUser.user_metadata?.first_name || '',
       last_name: supabaseUser.user_metadata?.last_name || '',
       created_at: supabaseUser.created_at,
@@ -52,18 +75,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         console.log('Auth state changed:', event, session?.user?.email);
         setSession(session);
-        setUser(session?.user ? convertToAuthUser(session.user) : null);
+        
+        if (session?.user) {
+          const authUser = await convertToAuthUser(session.user);
+          setUser(authUser);
+        } else {
+          setUser(null);
+        }
         setIsLoading(false);
       }
     );
 
     // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
-      setUser(session?.user ? convertToAuthUser(session.user) : null);
+      if (session?.user) {
+        const authUser = await convertToAuthUser(session.user);
+        setUser(authUser);
+      } else {
+        setUser(null);
+      }
       setIsLoading(false);
     });
 
@@ -74,7 +108,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       setSession(session);
-      setUser(session?.user ? convertToAuthUser(session.user) : null);
+      if (session?.user) {
+        const authUser = await convertToAuthUser(session.user);
+        setUser(authUser);
+        console.log('User refreshed with role:', authUser.role);
+      } else {
+        setUser(null);
+      }
     } catch (error) {
       console.error('Error refreshing user data:', error);
     }
@@ -188,11 +228,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (data.user && data.session) {
         console.log("Login successful for:", data.user.email);
         setSession(data.session);
-        setUser(convertToAuthUser(data.user));
+        const authUser = await convertToAuthUser(data.user);
+        setUser(authUser);
         
         toast({
           title: "Login successful",
-          description: `Welcome back${data.user.user_metadata?.full_name ? ', ' + data.user.user_metadata.full_name : ''}!`,
+          description: `Welcome back${authUser.full_name ? ', ' + authUser.full_name : ''}!`,
         });
         
         return true;
