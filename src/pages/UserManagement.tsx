@@ -18,31 +18,39 @@ const UserManagement = () => {
   const { toast } = useToast();
   const { user: currentUser } = useAuth();
   
-  // Load users from Supabase profiles table
+  // Load users from Supabase profiles table and auth.users
   const loadUsers = async () => {
     setIsLoading(true);
     try {
-      console.log('Loading users from profiles table...');
+      console.log('Loading users from profiles and auth tables...');
       
-      const { data: profiles, error } = await supabase
+      // First get all profiles
+      const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('id, first_name, last_name, role, updated_at')
         .order('updated_at', { ascending: false });
 
-      if (error) {
-        console.error('Supabase error:', error);
-        throw error;
+      if (profilesError) {
+        console.error('Profiles error:', profilesError);
+        throw profilesError;
       }
 
       console.log('Profiles data:', profiles);
 
-      // Convert profiles to User format
+      // Get auth users with admin permissions to fetch emails
+      const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
+      
+      if (authError) {
+        console.log('Could not fetch auth users, using profile data only:', authError);
+      }
+
+      console.log('Auth users data:', authUsers?.users);
+
+      // Convert profiles to User format with emails from auth
       const formattedUsers: User[] = (profiles || []).map(profile => {
-        // For the email, we'll try to get it from the current user if it matches
-        let userEmail = 'No email available';
-        if (currentUser && currentUser.id === profile.id) {
-          userEmail = currentUser.email;
-        }
+        // Find corresponding auth user for email
+        const authUser = authUsers?.users?.find(user => user.id === profile.id);
+        const userEmail = authUser?.email || 'No email available';
         
         const fullName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim();
         
@@ -51,7 +59,7 @@ const UserManagement = () => {
           email: userEmail,
           role: profile.role,
           full_name: fullName || 'No Name',
-          created_at: new Date().toISOString(), // We don't have this from profiles
+          created_at: authUser?.created_at || new Date().toISOString(),
           updated_at: profile.updated_at || new Date().toISOString()
         };
       });
@@ -120,8 +128,6 @@ const UserManagement = () => {
     try {
       console.log('Adding new user:', newUser);
       
-      // For now, we'll just add to profiles table
-      // In a real implementation, you'd use Supabase Admin API or invite system
       const nameParts = newUser.full_name.split(' ');
       const { error } = await supabase
         .from('profiles')

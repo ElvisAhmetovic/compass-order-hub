@@ -77,7 +77,7 @@ export function UserManagementTable({ users, setUsers, onReload }: UserManagemen
           title: "User deleted",
           description: "User has been successfully deleted."
         });
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error deleting user:", error);
         toast({
           variant: "destructive",
@@ -111,6 +111,20 @@ export function UserManagementTable({ users, setUsers, onReload }: UserManagemen
         throw error;
       }
 
+      // Also update the user's auth metadata if possible
+      try {
+        await supabase.auth.admin.updateUserById(updatedUser.id, {
+          user_metadata: {
+            full_name: updatedUser.full_name,
+            first_name: firstName,
+            last_name: lastName,
+            role: updatedUser.role
+          }
+        });
+      } catch (authError) {
+        console.log('Could not update auth metadata:', authError);
+      }
+
       // Reload users to reflect changes
       await onReload();
       setIsEditModalOpen(false);
@@ -120,7 +134,7 @@ export function UserManagementTable({ users, setUsers, onReload }: UserManagemen
         title: "User updated",
         description: "User has been successfully updated."
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error updating user:", error);
       toast({
         variant: "destructive",
