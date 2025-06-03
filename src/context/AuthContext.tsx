@@ -97,35 +97,86 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
+    let mounted = true;
+
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('Auth state changed:', event, session?.user?.email);
+        if (!mounted) return;
+        
         setSession(session);
         
         if (session?.user) {
-          const authUser = await convertToAuthUser(session.user);
-          setUser(authUser);
+          try {
+            const authUser = await convertToAuthUser(session.user);
+            if (mounted) {
+              setUser(authUser);
+            }
+          } catch (error) {
+            console.error('Error converting user:', error);
+            if (mounted) {
+              setUser(null);
+            }
+          }
         } else {
-          setUser(null);
+          if (mounted) {
+            setUser(null);
+          }
         }
-        setIsLoading(false);
+        
+        if (mounted) {
+          setIsLoading(false);
+        }
       }
     );
 
     // Check for existing session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      setSession(session);
-      if (session?.user) {
-        const authUser = await convertToAuthUser(session.user);
-        setUser(authUser);
-      } else {
-        setUser(null);
-      }
-      setIsLoading(false);
-    });
+    const initializeAuth = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('Error getting session:', error);
+          if (mounted) {
+            setSession(null);
+            setUser(null);
+            setIsLoading(false);
+          }
+          return;
+        }
 
-    return () => subscription.unsubscribe();
+        if (mounted) {
+          setSession(session);
+          if (session?.user) {
+            try {
+              const authUser = await convertToAuthUser(session.user);
+              setUser(authUser);
+            } catch (error) {
+              console.error('Error converting user:', error);
+              setUser(null);
+            }
+          } else {
+            setUser(null);
+          }
+          setIsLoading(false);
+        }
+      } catch (error) {
+        console.error('Error initializing auth:', error);
+        if (mounted) {
+          setSession(null);
+          setUser(null);
+          setIsLoading(false);
+        }
+      }
+    };
+
+    initializeAuth();
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const refreshUser = async (): Promise<void> => {
