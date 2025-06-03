@@ -1,8 +1,9 @@
+
 import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { UserRole } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
-import { User, Session } from '@supabase/supabase-js';
+import { User } from '@supabase/supabase-js';
 
 interface AuthUser {
   id: string;
@@ -30,11 +31,10 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<AuthUser | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
-  // Convert Supabase user to our AuthUser format - ALWAYS fetch role from profiles table
+  // Convert Supabase user to our AuthUser format
   const convertToAuthUser = async (supabaseUser: User): Promise<AuthUser> => {
     console.log('Converting user to AuthUser:', supabaseUser.email);
     
@@ -44,7 +44,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     let lastName = supabaseUser.user_metadata?.last_name || '';
     
     try {
-      // ALWAYS fetch the most current role from profiles table
+      // Fetch the most current role from profiles table
       const { data: profile, error } = await supabase
         .from('profiles')
         .select('role, first_name, last_name')
@@ -68,7 +68,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           console.error('Error creating profile:', insertError);
         }
       } else {
-        // Use role from profiles table (most authoritative)
         userRole = profile.role as UserRole;
         if (profile.first_name || profile.last_name) {
           firstName = profile.first_name || '';
@@ -105,28 +104,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         console.log('Auth state changed:', event, session?.user?.email);
         if (!mounted) return;
         
-        setSession(session);
-        
         if (session?.user) {
           try {
             const authUser = await convertToAuthUser(session.user);
             if (mounted) {
               setUser(authUser);
+              setIsLoading(false);
             }
           } catch (error) {
             console.error('Error converting user:', error);
             if (mounted) {
               setUser(null);
+              setIsLoading(false);
             }
           }
         } else {
           if (mounted) {
             setUser(null);
+            setIsLoading(false);
           }
-        }
-        
-        if (mounted) {
-          setIsLoading(false);
         }
       }
     );
@@ -139,7 +135,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (error) {
           console.error('Error getting session:', error);
           if (mounted) {
-            setSession(null);
             setUser(null);
             setIsLoading(false);
           }
@@ -147,7 +142,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
 
         if (mounted) {
-          setSession(session);
           if (session?.user) {
             try {
               const authUser = await convertToAuthUser(session.user);
@@ -164,7 +158,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } catch (error) {
         console.error('Error initializing auth:', error);
         if (mounted) {
-          setSession(null);
           setUser(null);
           setIsLoading(false);
         }
@@ -183,7 +176,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       console.log('Refreshing user data...');
       const { data: { session } } = await supabase.auth.getSession();
-      setSession(session);
       if (session?.user) {
         const authUser = await convertToAuthUser(session.user);
         setUser(authUser);
@@ -200,7 +192,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       setIsLoading(true);
       
-      if (!session?.user) {
+      if (!user) {
         toast({
           variant: "destructive",
           title: "Update failed",
@@ -249,7 +241,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       setIsLoading(true);
       
-      if (!session?.user) {
+      if (!user) {
         return false;
       }
 
@@ -283,6 +275,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
       console.log(`Login attempt for: ${email}`);
+      setIsLoading(true);
       
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -299,9 +292,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return false;
       }
 
-      if (data.user && data.session) {
+      if (data.user) {
         console.log("Login successful for:", data.user.email);
-        // Don't set session/user here - let the auth state change handler do it
         
         toast({
           title: "Login successful",
@@ -320,6 +312,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         description: "An unexpected error occurred. Please try again later.",
       });
       return false;
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -331,7 +325,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         throw error;
       }
       
-      setSession(null);
       setUser(null);
       
       toast({

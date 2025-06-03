@@ -6,30 +6,15 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { AlertTriangle } from "lucide-react";
 import FormInput from "./FormInput";
 import { useAuth } from "@/context/AuthContext";
+import { validateEmail, validatePassword } from "@/utils/formValidation";
 
 const LoginForm = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<{email?: string, password?: string, auth?: string}>({});
   const navigate = useNavigate();
-  const { login, isLoading: authLoading } = useAuth();
-  
-  const isLoading = isSubmitting || authLoading;
-
-  const validateEmail = (email: string): string | undefined => {
-    if (!email.trim()) return "Email is required";
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) return "Please enter a valid email address";
-    return undefined;
-  };
-
-  const validatePassword = (password: string): string | undefined => {
-    if (!password.trim()) return "Password is required";
-    if (password.length < 6) return "Password must be at least 6 characters";
-    return undefined;
-  };
+  const { login, isLoading } = useAuth();
 
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -54,6 +39,9 @@ const LoginForm = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Clear any previous auth errors
+    setErrors(prev => ({ ...prev, auth: undefined }));
+    
     // Validate form before submitting
     const emailError = validateEmail(email);
     const passwordError = validatePassword(password);
@@ -65,9 +53,6 @@ const LoginForm = () => {
       });
       return;
     }
-    
-    setIsSubmitting(true);
-    setErrors({});
 
     try {
       console.log(`Attempting to log in with: ${email}`);
@@ -82,8 +67,6 @@ const LoginForm = () => {
     } catch (error) {
       console.error("Login error:", error);
       setErrors(prev => ({ ...prev, auth: "An unexpected error occurred." }));
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -95,7 +78,6 @@ const LoginForm = () => {
       </CardHeader>
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
-          {/* Authentication error message */}
           {errors.auth && (
             <div className="p-3 rounded-md bg-destructive/15 text-destructive flex items-center gap-2">
               <AlertTriangle className="h-5 w-4" />
