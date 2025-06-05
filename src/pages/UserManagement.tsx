@@ -24,7 +24,7 @@ const UserManagement = () => {
     try {
       console.log('Loading users from profiles table...');
       
-      // Get all profiles with user data from auth.users
+      // Get all profiles with user data
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('*')
@@ -37,19 +37,31 @@ const UserManagement = () => {
 
       console.log('Profiles data:', profiles);
 
-      // Get auth users data
-      const { data: { users: authUsers }, error: authError } = await supabase.auth.admin.listUsers();
-      
-      if (authError) {
-        console.error('Auth users error:', authError);
-        // Continue without auth data if we can't fetch it
+      // Try to get auth users data, but don't fail if we can't
+      let authUsers: any[] = [];
+      try {
+        const { data: authData, error: authError } = await supabase.auth.admin.listUsers();
+        if (!authError && authData.users) {
+          authUsers = authData.users;
+          console.log('Successfully fetched auth users');
+        }
+      } catch (error) {
+        console.log('Could not fetch auth users, continuing without emails:', error);
       }
 
-      // Convert profiles to User format with emails from auth
+      // Convert profiles to User format
       const formattedUsers: User[] = (profiles || []).map(profile => {
-        // Find corresponding auth user for email
-        const authUser = authUsers?.find((user: any) => user.id === profile.id);
-        const userEmail = authUser?.email || 'No email available';
+        // Try to find corresponding auth user for email
+        const authUser = authUsers.find((user: any) => user.id === profile.id);
+        
+        // Use available email sources in order of preference
+        let userEmail = 'Email not available';
+        if (authUser?.email) {
+          userEmail = authUser.email;
+        } else if (profile.id === currentUser?.id && currentUser?.email) {
+          // If it's the current user, use their email from context
+          userEmail = currentUser.email;
+        }
         
         const fullName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim();
         
