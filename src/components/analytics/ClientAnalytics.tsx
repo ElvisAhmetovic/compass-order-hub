@@ -5,60 +5,76 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Edit, Users } from "lucide-react";
+import { OrderService } from "@/services/orderService";
+import { Order } from "@/types";
 
 const ClientAnalytics = () => {
   const [clientAcquisitionData, setClientAcquisitionData] = useState([
-    { month: "Jan", new: 8, returning: 45 },
-    { month: "Feb", new: 12, returning: 52 },
-    { month: "Mar", new: 15, returning: 48 },
-    { month: "Apr", new: 9, returning: 61 },
-    { month: "May", new: 18, returning: 57 },
-    { month: "Jun", new: 11, returning: 63 },
+    { month: "Jan", new: 0, returning: 0 },
+    { month: "Feb", new: 0, returning: 0 },
+    { month: "Mar", new: 0, returning: 0 },
+    { month: "Apr", new: 0, returning: 0 },
+    { month: "May", new: 0, returning: 0 },
+    { month: "Jun", new: 0, returning: 0 },
   ]);
 
   const [topClients, setTopClients] = useState([
-    { name: "TechCorp Solutions", orders: 34, revenue: 15640, avgOrder: 460 },
-    { name: "Global Industries", orders: 28, revenue: 12890, avgOrder: 460 },
-    { name: "Innovation Hub", orders: 25, revenue: 11250, avgOrder: 450 },
-    { name: "Future Systems", orders: 22, revenue: 9980, avgOrder: 454 },
-    { name: "Digital Dynamics", orders: 19, revenue: 8550, avgOrder: 450 },
+    { name: "No clients yet", orders: 0, revenue: 0, avgOrder: 0 },
   ]);
 
   const [clientMetrics, setClientMetrics] = useState({
-    totalActive: 89,
-    avgOrderValue: 456,
-    retentionRate: 76,
-    avgOrdersPerClient: 14
+    totalActive: 0,
+    avgOrderValue: 0,
+    retentionRate: 0,
+    avgOrdersPerClient: 0
   });
 
-  // Load real client data
+  const [loading, setLoading] = useState(true);
+
+  // Load real client data from Supabase
   useEffect(() => {
-    try {
-      const ordersData = JSON.parse(localStorage.getItem("orders") || "[]");
-      const clientsData = JSON.parse(localStorage.getItem("clients") || "[]");
-      
-      if (ordersData.length > 0) {
-        const processedData = processClientData(ordersData, clientsData);
-        setTopClients(processedData.topClients);
-        setClientMetrics(processedData.metrics);
-        setClientAcquisitionData(processedData.acquisition);
+    const fetchClientData = async () => {
+      try {
+        setLoading(true);
+        const orders = await OrderService.getOrders();
+        
+        if (orders.length > 0) {
+          const processedData = processClientData(orders);
+          setTopClients(processedData.topClients);
+          setClientMetrics(processedData.metrics);
+          setClientAcquisitionData(processedData.acquisition);
+        }
+      } catch (error) {
+        console.error("Error loading client data for analytics:", error);
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error("Error loading client data:", error);
-    }
+    };
+
+    fetchClientData();
+
+    // Listen for order changes to refresh data
+    const handleOrderStatusChange = () => {
+      console.log('Order status change detected in ClientAnalytics, refreshing data...');
+      fetchClientData();
+    };
+
+    window.addEventListener('orderStatusChanged', handleOrderStatusChange);
+    
+    return () => {
+      window.removeEventListener('orderStatusChanged', handleOrderStatusChange);
+    };
   }, []);
 
-  const processClientData = (orders: any[], clients: any[]) => {
+  const processClientData = (orders: Order[]) => {
     // Group orders by company
     const companyStats: { [key: string]: { orders: number, revenue: number, firstOrder: Date } } = {};
     
     orders.forEach(order => {
       const company = order.company_name;
-      const amount = parseFloat(order.amount || order.price || 0);
+      const amount = parseFloat(order.price?.toString() || '0');
       const orderDate = new Date(order.created_at);
       
       if (!companyStats[company]) {
@@ -84,6 +100,11 @@ const ClientAnalytics = () => {
       .sort((a, b) => b.revenue - a.revenue)
       .slice(0, 5);
 
+    // If no clients, show default message
+    if (topClients.length === 0) {
+      topClients.push({ name: "No clients yet", orders: 0, revenue: 0, avgOrder: 0 });
+    }
+
     // Calculate metrics
     const totalRevenue = Object.values(companyStats).reduce((sum, stats) => sum + stats.revenue, 0);
     const totalOrders = Object.values(companyStats).reduce((sum, stats) => sum + stats.orders, 0);
@@ -92,19 +113,62 @@ const ClientAnalytics = () => {
     const metrics = {
       totalActive: totalClients,
       avgOrderValue: totalOrders > 0 ? Math.round(totalRevenue / totalOrders) : 0,
-      retentionRate: 76, // This would need more complex calculation
+      retentionRate: calculateRetentionRate(orders),
       avgOrdersPerClient: totalClients > 0 ? Math.round(totalOrders / totalClients) : 0
     };
 
-    // Process acquisition data (simplified)
-    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"];
-    const acquisition = monthNames.map(month => ({
-      month,
-      new: Math.floor(Math.random() * 15) + 5,
-      returning: Math.floor(Math.random() * 20) + 40
-    }));
+    // Process acquisition data based on actual orders
+    const acquisition = processAcquisitionData(orders);
 
     return { topClients, metrics, acquisition };
+  };
+
+  const calculateRetentionRate = (orders: Order[]) => {
+    const clientOrderCounts: { [key: string]: number } = {};
+    
+    orders.forEach(order => {
+      const company = order.company_name;
+      clientOrderCounts[company] = (clientOrderCounts[company] || 0) + 1;
+    });
+    
+    const totalClients = Object.keys(clientOrderCounts).length;
+    const returningClients = Object.values(clientOrderCounts).filter(count => count > 1).length;
+    
+    return totalClients > 0 ? Math.round((returningClients / totalClients) * 100) : 0;
+  };
+
+  const processAcquisitionData = (orders: Order[]) => {
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const monthlyClientData: { [key: string]: { new: Set<string>, returning: Set<string> } } = {};
+    const allTimeClients = new Set<string>();
+    
+    // Initialize months
+    monthNames.forEach(month => {
+      monthlyClientData[month] = { new: new Set(), returning: new Set() };
+    });
+    
+    // Sort orders by date
+    const sortedOrders = orders.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+    
+    // Process orders chronologically
+    sortedOrders.forEach(order => {
+      const date = new Date(order.created_at);
+      const monthKey = monthNames[date.getMonth()];
+      const company = order.company_name;
+      
+      if (allTimeClients.has(company)) {
+        monthlyClientData[monthKey].returning.add(company);
+      } else {
+        monthlyClientData[monthKey].new.add(company);
+        allTimeClients.add(company);
+      }
+    });
+
+    return monthNames.map(month => ({
+      month,
+      new: monthlyClientData[month].new.size,
+      returning: monthlyClientData[month].returning.size,
+    })).slice(0, 6);
   };
 
   const chartConfig = {
@@ -118,14 +182,33 @@ const ClientAnalytics = () => {
     },
   };
 
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <div className="grid gap-4 md:grid-cols-2">
+          {[...Array(2)].map((_, i) => (
+            <Card key={i}>
+              <CardContent className="p-6">
+                <div className="animate-pulse">
+                  <div className="h-6 bg-gray-200 rounded mb-4"></div>
+                  <div className="h-[300px] bg-gray-200 rounded"></div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-4">
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
+    <div className="space-y-6">
+      <div className="grid gap-6 md:grid-cols-2">
+        <Card className="overflow-hidden">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <div>
-              <CardTitle>Client Acquisition</CardTitle>
-              <CardDescription>New vs returning clients monthly</CardDescription>
+              <CardTitle className="text-lg">Client Acquisition</CardTitle>
+              <CardDescription>New vs returning clients monthly from live data</CardDescription>
             </div>
             <Dialog>
               <DialogTrigger asChild>
@@ -139,15 +222,15 @@ const ClientAnalytics = () => {
                   <DialogTitle>Edit Client Acquisition Data</DialogTitle>
                 </DialogHeader>
                 <div className="text-sm text-gray-500">
-                  Client acquisition data is automatically calculated from your orders and client data.
+                  Client acquisition data is automatically calculated from your live orders data.
                   Manual editing will be available in a future update.
                 </div>
               </DialogContent>
             </Dialog>
           </CardHeader>
-          <CardContent>
-            <ChartContainer config={chartConfig} className="h-[300px]">
-              <BarChart data={clientAcquisitionData}>
+          <CardContent className="pt-2">
+            <ChartContainer config={chartConfig} className="h-[280px] w-full">
+              <BarChart data={clientAcquisitionData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" />
                 <YAxis />
@@ -159,11 +242,11 @@ const ClientAnalytics = () => {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
+        <Card className="overflow-hidden">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <div>
-              <CardTitle>Client Metrics Summary</CardTitle>
-              <CardDescription>Key client performance indicators</CardDescription>
+              <CardTitle className="text-lg">Client Metrics Summary</CardTitle>
+              <CardDescription>Key client performance indicators from live data</CardDescription>
             </div>
             <Dialog>
               <DialogTrigger asChild>
@@ -199,21 +282,21 @@ const ClientAnalytics = () => {
               </DialogContent>
             </Dialog>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="pt-2">
             <div className="grid grid-cols-2 gap-4">
-              <div>
+              <div className="text-center">
                 <div className="text-2xl font-bold">{clientMetrics.totalActive}</div>
                 <p className="text-xs text-muted-foreground">Total Active Clients</p>
               </div>
-              <div>
+              <div className="text-center">
                 <div className="text-2xl font-bold">€{clientMetrics.avgOrderValue}</div>
                 <p className="text-xs text-muted-foreground">Average Order Value</p>
               </div>
-              <div>
+              <div className="text-center">
                 <div className="text-2xl font-bold">{clientMetrics.retentionRate}%</div>
                 <p className="text-xs text-muted-foreground">Client Retention Rate</p>
               </div>
-              <div>
+              <div className="text-center">
                 <div className="text-2xl font-bold">{clientMetrics.avgOrdersPerClient}</div>
                 <p className="text-xs text-muted-foreground">Avg Orders per Client</p>
               </div>
@@ -225,29 +308,31 @@ const ClientAnalytics = () => {
       <Card>
         <CardHeader>
           <CardTitle>Top Clients by Revenue</CardTitle>
-          <CardDescription>Your most valuable clients this period</CardDescription>
+          <CardDescription>Your most valuable clients based on live data</CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Client Name</TableHead>
-                <TableHead className="text-right">Orders</TableHead>
-                <TableHead className="text-right">Revenue</TableHead>
-                <TableHead className="text-right">Avg Order Value</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {topClients.map((client, index) => (
-                <TableRow key={index}>
-                  <TableCell className="font-medium">{client.name}</TableCell>
-                  <TableCell className="text-right">{client.orders}</TableCell>
-                  <TableCell className="text-right">€{client.revenue.toLocaleString()}</TableCell>
-                  <TableCell className="text-right">€{client.avgOrder}</TableCell>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Client Name</TableHead>
+                  <TableHead className="text-right">Orders</TableHead>
+                  <TableHead className="text-right">Revenue</TableHead>
+                  <TableHead className="text-right">Avg Order Value</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {topClients.map((client, index) => (
+                  <TableRow key={index}>
+                    <TableCell className="font-medium">{client.name}</TableCell>
+                    <TableCell className="text-right">{client.orders}</TableCell>
+                    <TableCell className="text-right">€{client.revenue.toLocaleString()}</TableCell>
+                    <TableCell className="text-right">€{client.avgOrder}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
     </div>
