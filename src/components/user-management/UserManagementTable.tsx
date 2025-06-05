@@ -90,29 +90,13 @@ export function UserManagementTable({ users, setUsers, onReload }: UserManagemen
   
   const handleUpdateUser = async (updatedUser: User) => {
     try {
-      console.log('Updating user profile:', updatedUser);
-      
-      const nameParts = updatedUser.full_name.split(' ');
-      const firstName = nameParts[0] || '';
-      const lastName = nameParts.slice(1).join(' ') || '';
+      console.log('Handling user update in table:', updatedUser);
 
-      // Update the profiles table
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({
-          first_name: firstName,
-          last_name: lastName,
-          role: updatedUser.role,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', updatedUser.id);
-
-      if (profileError) {
-        console.error('Profile update error:', profileError);
-        throw profileError;
-      }
-
-      console.log('Successfully updated profiles table');
+      // Update the local users state immediately with the new data
+      const updatedUsers = users.map(u => 
+        u.id === updatedUser.id ? updatedUser : u
+      );
+      setUsers(updatedUsers);
 
       // If the current user's role was updated, refresh their session
       if (currentUser?.id === updatedUser.id) {
@@ -120,7 +104,7 @@ export function UserManagementTable({ users, setUsers, onReload }: UserManagemen
         await refreshUser();
       }
 
-      // Reload the users list to reflect changes
+      // Reload the users list to get fresh data from the database
       await onReload();
       setIsEditModalOpen(false);
       setEditingUser(null);

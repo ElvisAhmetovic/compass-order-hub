@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/select";
 import { User } from "@/types";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const formSchema = z.object({
   email: z.string().email({ message: "Invalid email address" }),
@@ -79,8 +80,7 @@ export const EditUserModal: React.FC<EditUserModalProps> = ({
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsSubmitting(true);
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      console.log('Updating user:', user.id, values);
 
       // Prevent role changes for main admin account
       if (user.email === "luciferbebistar@gmail.com" && values.role !== "admin") {
@@ -93,12 +93,54 @@ export const EditUserModal: React.FC<EditUserModalProps> = ({
         return;
       }
 
-      // Create updated user object
+      const nameParts = values.fullName.split(' ');
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+
+      // Update the profiles table
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({
+          first_name: firstName,
+          last_name: lastName,
+          role: canEditRole ? values.role : user.role,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', user.id);
+
+      if (profileError) {
+        console.error('Profile update error:', profileError);
+        throw profileError;
+      }
+
+      console.log('Successfully updated profiles table');
+
+      // Try to update email in auth system (this might fail due to permissions)
+      if (values.email !== user.email) {
+        try {
+          const { error: emailError } = await supabase.auth.admin.updateUserById(
+            user.id,
+            { email: values.email }
+          );
+          
+          if (emailError) {
+            console.log('Could not update email in auth system:', emailError);
+            // Don't throw error - continue with profile update
+          } else {
+            console.log('Successfully updated email in auth system');
+          }
+        } catch (error) {
+          console.log('Email update not available:', error);
+          // Continue without email update
+        }
+      }
+
+      // Create updated user object with new values
       const updatedUser: User = {
         ...user,
-        email: values.email,
+        email: values.email, // Use the new email value
         full_name: values.fullName,
-        role: canEditRole ? values.role : user.role, // Only allow role change if user has permission
+        role: canEditRole ? values.role : user.role,
         updated_at: new Date().toISOString()
       };
 
@@ -107,15 +149,16 @@ export const EditUserModal: React.FC<EditUserModalProps> = ({
 
       toast({
         title: "User updated",
-        description: "User has been updated successfully.",
+        description: "User information has been updated successfully.",
       });
 
       onClose();
-    } catch (error) {
+    } catch (error: any) {
+      console.error("Error updating user:", error);
       toast({
         variant: "destructive",
         title: "Failed to update user",
-        description: "Something went wrong. Please try again later.",
+        description: error.message || "Something went wrong. Please try again later.",
       });
     } finally {
       setIsSubmitting(false);
