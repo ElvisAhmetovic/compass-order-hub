@@ -3,11 +3,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Edit } from "lucide-react";
+import { OrderService } from "@/services/orderService";
+import { Order } from "@/types";
 
 interface OrderAnalyticsProps {
   detailed?: boolean;
@@ -15,52 +12,69 @@ interface OrderAnalyticsProps {
 
 const OrderAnalytics = ({ detailed = false }: OrderAnalyticsProps) => {
   const [monthlyData, setMonthlyData] = useState([
-    { month: "Jan", orders: 65, completed: 45, cancelled: 8 },
-    { month: "Feb", orders: 78, completed: 62, cancelled: 5 },
-    { month: "Mar", orders: 82, completed: 71, cancelled: 6 },
-    { month: "Apr", orders: 91, completed: 79, cancelled: 7 },
-    { month: "May", orders: 95, completed: 83, cancelled: 4 },
-    { month: "Jun", orders: 88, completed: 76, cancelled: 9 },
+    { month: "Jan", orders: 0, completed: 0, cancelled: 0 },
+    { month: "Feb", orders: 0, completed: 0, cancelled: 0 },
+    { month: "Mar", orders: 0, completed: 0, cancelled: 0 },
+    { month: "Apr", orders: 0, completed: 0, cancelled: 0 },
+    { month: "May", orders: 0, completed: 0, cancelled: 0 },
+    { month: "Jun", orders: 0, completed: 0, cancelled: 0 },
   ]);
 
   const [statusData, setStatusData] = useState([
-    { name: "Completed", value: 426, color: "#22c55e" },
-    { name: "In Progress", value: 89, color: "#3b82f6" },
-    { name: "Cancelled", value: 39, color: "#ef4444" },
-    { name: "Pending", value: 23, color: "#f59e0b" },
+    { name: "Completed", value: 0, color: "#22c55e" },
+    { name: "In Progress", value: 0, color: "#3b82f6" },
+    { name: "Cancelled", value: 0, color: "#ef4444" },
+    { name: "Review", value: 0, color: "#8b5cf6" },
   ]);
 
-  const [editingIndex, setEditingIndex] = useState<number | null>(null);
-  const [editForm, setEditForm] = useState({ month: "", orders: 0, completed: 0, cancelled: 0 });
+  const [loading, setLoading] = useState(true);
 
-  // Load real orders data from localStorage
+  // Load real orders data from Supabase
   useEffect(() => {
-    try {
-      const ordersData = JSON.parse(localStorage.getItem("orders") || "[]");
-      if (ordersData.length > 0) {
-        // Process real orders data into monthly stats
-        const monthlyStats = processOrdersIntoMonthlyStats(ordersData);
+    const fetchOrdersData = async () => {
+      try {
+        setLoading(true);
+        const orders = await OrderService.getOrders();
+        
+        const monthlyStats = processOrdersIntoMonthlyStats(orders);
         setMonthlyData(monthlyStats);
         
-        const statusStats = processOrdersIntoStatusStats(ordersData);
+        const statusStats = processOrdersIntoStatusStats(orders);
         setStatusData(statusStats);
+      } catch (error) {
+        console.error("Error loading orders data for analytics:", error);
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error("Error loading orders data:", error);
-    }
+    };
+
+    fetchOrdersData();
+
+    // Listen for order changes to refresh data
+    const handleOrderStatusChange = () => {
+      console.log('Order status change detected in OrderAnalytics, refreshing data...');
+      fetchOrdersData();
+    };
+
+    window.addEventListener('orderStatusChanged', handleOrderStatusChange);
+    
+    return () => {
+      window.removeEventListener('orderStatusChanged', handleOrderStatusChange);
+    };
   }, []);
 
-  const processOrdersIntoMonthlyStats = (orders: any[]) => {
+  const processOrdersIntoMonthlyStats = (orders: Order[]) => {
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     const stats: { [key: string]: { orders: number, completed: number, cancelled: number } } = {};
+    
+    // Initialize all months with 0
+    monthNames.forEach(month => {
+      stats[month] = { orders: 0, completed: 0, cancelled: 0 };
+    });
     
     orders.forEach(order => {
       const date = new Date(order.created_at);
       const monthKey = monthNames[date.getMonth()];
-      
-      if (!stats[monthKey]) {
-        stats[monthKey] = { orders: 0, completed: 0, cancelled: 0 };
-      }
       
       stats[monthKey].orders++;
       if (order.status === "Resolved" || order.status === "Invoice Paid") {
@@ -72,13 +86,13 @@ const OrderAnalytics = ({ detailed = false }: OrderAnalyticsProps) => {
 
     return monthNames.map(month => ({
       month,
-      orders: stats[month]?.orders || 0,
-      completed: stats[month]?.completed || 0,
-      cancelled: stats[month]?.cancelled || 0,
+      orders: stats[month].orders,
+      completed: stats[month].completed,
+      cancelled: stats[month].cancelled,
     })).slice(0, 6); // Show last 6 months
   };
 
-  const processOrdersIntoStatusStats = (orders: any[]) => {
+  const processOrdersIntoStatusStats = (orders: Order[]) => {
     const statusCounts: { [key: string]: number } = {};
     
     orders.forEach(order => {
@@ -90,22 +104,8 @@ const OrderAnalytics = ({ detailed = false }: OrderAnalyticsProps) => {
       { name: "Completed", value: (statusCounts["Resolved"] || 0) + (statusCounts["Invoice Paid"] || 0), color: "#22c55e" },
       { name: "In Progress", value: statusCounts["In Progress"] || 0, color: "#3b82f6" },
       { name: "Cancelled", value: statusCounts["Cancelled"] || 0, color: "#ef4444" },
-      { name: "Pending", value: statusCounts["Pending"] || 0, color: "#f59e0b" },
+      { name: "Review", value: statusCounts["Review"] || 0, color: "#8b5cf6" },
     ];
-  };
-
-  const handleEdit = (index: number) => {
-    setEditingIndex(index);
-    setEditForm(monthlyData[index]);
-  };
-
-  const handleSave = () => {
-    if (editingIndex !== null) {
-      const newData = [...monthlyData];
-      newData[editingIndex] = editForm;
-      setMonthlyData(newData);
-      setEditingIndex(null);
-    }
   };
 
   const chartConfig = {
@@ -123,73 +123,27 @@ const OrderAnalytics = ({ detailed = false }: OrderAnalyticsProps) => {
     },
   };
 
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <Card>
+          <CardContent className="p-6">
+            <div className="animate-pulse">
+              <div className="h-6 bg-gray-200 rounded mb-4"></div>
+              <div className="h-[300px] bg-gray-200 rounded"></div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle>Orders Over Time</CardTitle>
-            <CardDescription>Monthly order trends and completion rates</CardDescription>
-          </div>
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button variant="outline" size="sm">
-                <Edit className="h-4 w-4 mr-2" />
-                Edit Data
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Edit Monthly Data</DialogTitle>
-                <DialogDescription>Click on any month to edit its values</DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4">
-                {monthlyData.map((data, index) => (
-                  <div key={data.month} className="flex items-center gap-4 p-2 border rounded">
-                    <span className="w-12 font-medium">{data.month}</span>
-                    <Button variant="outline" size="sm" onClick={() => handleEdit(index)}>
-                      Edit
-                    </Button>
-                    <span className="text-sm text-gray-500">
-                      Orders: {data.orders}, Completed: {data.completed}, Cancelled: {data.cancelled}
-                    </span>
-                  </div>
-                ))}
-              </div>
-              {editingIndex !== null && (
-                <div className="mt-4 p-4 border rounded space-y-3">
-                  <h4 className="font-medium">Editing {editForm.month}</h4>
-                  <div className="grid grid-cols-3 gap-3">
-                    <div>
-                      <Label>Orders</Label>
-                      <Input
-                        type="number"
-                        value={editForm.orders}
-                        onChange={(e) => setEditForm({...editForm, orders: parseInt(e.target.value) || 0})}
-                      />
-                    </div>
-                    <div>
-                      <Label>Completed</Label>
-                      <Input
-                        type="number"
-                        value={editForm.completed}
-                        onChange={(e) => setEditForm({...editForm, completed: parseInt(e.target.value) || 0})}
-                      />
-                    </div>
-                    <div>
-                      <Label>Cancelled</Label>
-                      <Input
-                        type="number"
-                        value={editForm.cancelled}
-                        onChange={(e) => setEditForm({...editForm, cancelled: parseInt(e.target.value) || 0})}
-                      />
-                    </div>
-                  </div>
-                  <Button onClick={handleSave} className="w-full">Save Changes</Button>
-                </div>
-              )}
-            </DialogContent>
-          </Dialog>
+        <CardHeader>
+          <CardTitle>Orders Over Time</CardTitle>
+          <CardDescription>Monthly order trends and completion rates from live data</CardDescription>
         </CardHeader>
         <CardContent>
           <ChartContainer config={chartConfig} className="h-[300px]">
@@ -210,7 +164,7 @@ const OrderAnalytics = ({ detailed = false }: OrderAnalyticsProps) => {
         <Card>
           <CardHeader>
             <CardTitle>Order Status Distribution</CardTitle>
-            <CardDescription>Current breakdown of order statuses</CardDescription>
+            <CardDescription>Current breakdown of order statuses from live data</CardDescription>
           </CardHeader>
           <CardContent>
             <ChartContainer config={chartConfig} className="h-[300px]">

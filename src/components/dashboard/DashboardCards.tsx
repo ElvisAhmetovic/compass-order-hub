@@ -102,7 +102,7 @@ export const DashboardCards = () => {
         if (summaryMap.has(order.status)) {
           const summary = summaryMap.get(order.status)!;
           summary.count += 1;
-          summary.value += order.price || 0;
+          summary.value += parseFloat(order.price?.toString() || '0');
         }
       });
       
@@ -111,6 +111,18 @@ export const DashboardCards = () => {
     };
     
     fetchOrders();
+
+    // Listen for order changes to refresh data
+    const handleOrderStatusChange = () => {
+      console.log('Order status change detected in DashboardCards, refreshing data...');
+      fetchOrders();
+    };
+
+    window.addEventListener('orderStatusChanged', handleOrderStatusChange);
+    
+    return () => {
+      window.removeEventListener('orderStatusChanged', handleOrderStatusChange);
+    };
   }, [isAdmin, user]);
 
   const getIcon = (status: OrderStatus) => {
