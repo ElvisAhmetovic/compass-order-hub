@@ -22,29 +22,46 @@ const RegisterForm = () => {
     const value = e.target.value;
     setFullName(value);
     
-    const error = validateFullName(value);
-    setErrors(prev => ({ ...prev, fullName: error }));
+    // Only show error if user has started typing and field is not empty
+    if (value.trim() !== "") {
+      const error = validateFullName(value);
+      setErrors(prev => ({ ...prev, fullName: error }));
+    } else {
+      setErrors(prev => ({ ...prev, fullName: undefined }));
+    }
   };
 
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setEmail(value);
     
-    const error = validateEmail(value);
-    setErrors(prev => ({ ...prev, email: error }));
+    // Only show error if user has started typing and field is not empty
+    if (value.trim() !== "") {
+      const error = validateEmail(value);
+      setErrors(prev => ({ ...prev, email: error }));
+    } else {
+      setErrors(prev => ({ ...prev, email: undefined }));
+    }
   };
 
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setPassword(value);
     
-    const error = validatePassword(value);
-    setErrors(prev => ({ ...prev, password: error }));
+    // Only show error if user has started typing and field is not empty
+    if (value.trim() !== "") {
+      const error = validatePassword(value);
+      setErrors(prev => ({ ...prev, password: error }));
+    } else {
+      setErrors(prev => ({ ...prev, password: undefined }));
+    }
   };
 
   const isFormValid = () => {
-    return !errors.fullName && !errors.email && !errors.password && 
-           fullName.trim() !== "" && email.trim() !== "" && password.trim() !== "";
+    // Check if all fields have values and no errors
+    const hasAllFields = fullName.trim() !== "" && email.trim() !== "" && password.trim() !== "";
+    const hasNoErrors = !errors.fullName && !errors.email && !errors.password;
+    return hasAllFields && hasNoErrors;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -53,7 +70,7 @@ const RegisterForm = () => {
     console.log('🔵 Register button clicked');
     console.log('🔵 Form data:', { fullName: fullName.trim(), email: email.trim(), passwordLength: password.length });
     
-    // Validate form first
+    // Final validation before submission
     const fullNameError = validateFullName(fullName);
     const emailError = validateEmail(email);
     const passwordError = validatePassword(password);
@@ -88,10 +105,6 @@ const RegisterForm = () => {
         lastName,
         fullName: fullName.trim()
       });
-
-      // Test Supabase connection first
-      const { data: connectionTest } = await supabase.from('profiles').select('count').limit(1);
-      console.log('🔵 Supabase connection test:', connectionTest ? 'SUCCESS' : 'FAILED');
 
       // Register user with Supabase Auth
       const { data, error } = await supabase.auth.signUp({
@@ -146,9 +159,6 @@ const RegisterForm = () => {
           emailConfirmed: data.user.email_confirmed_at,
           hasSession: !!data.session
         });
-        
-        // Wait a moment for any database triggers to complete
-        await new Promise(resolve => setTimeout(resolve, 500));
         
         // Check if email confirmation is required
         if (!data.session && data.user && !data.user.email_confirmed_at) {
