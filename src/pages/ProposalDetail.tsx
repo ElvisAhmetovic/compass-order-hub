@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -12,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { PlusCircle, Trash2, Save, Eye, Download, ArrowLeft, Calendar, Clock } from "lucide-react";
+import { PlusCircle, Trash2, Save, Eye, Download, ArrowLeft, Calendar, Clock, Languages } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { v4 as uuidv4 } from "uuid";
 import { generateProposalPDF, previewProposalPDF, PROPOSAL_STATUSES, formatInventoryItemForProposal } from "@/utils/proposalUtils";
@@ -20,6 +19,7 @@ import InventoryAutocomplete from "@/components/inventory/InventoryAutocomplete"
 import TemplateManager from "@/components/proposals/TemplateManager";
 import { getDefaultTemplate, createProposalFromTemplate } from "@/utils/templateUtils";
 import { useInventory } from "@/hooks/useInventory";
+import { SUPPORTED_LANGUAGES, getTranslation } from "@/utils/proposalTranslations";
 
 interface ProposalLineItem {
   id: string;
@@ -101,6 +101,9 @@ const ProposalDetail = () => {
   const { toast } = useToast();
   const { inventoryData, loading: inventoryLoading } = useInventory();
   const isNewProposal = id === "new" || !id;
+
+  // Add language state
+  const [selectedLanguage, setSelectedLanguage] = useState('en');
 
   const [proposalData, setProposalData] = useState<ProposalData>({
     id: isNewProposal ? uuidv4() : id || "",
@@ -216,6 +219,11 @@ const ProposalDetail = () => {
             };
             
             setProposalData(mergedData);
+            
+            // Load saved language if available
+            if (detailedProposal?.language) {
+              setSelectedLanguage(detailedProposal.language);
+            }
           }
         }
       }
@@ -441,13 +449,14 @@ const ProposalDetail = () => {
       
       localStorage.setItem("proposals", JSON.stringify(proposals));
       
-      // Save detailed proposal data
+      // Save detailed proposal data with language
       const savedDetailedProposals = localStorage.getItem("detailedProposals");
       const detailedProposals = savedDetailedProposals ? JSON.parse(savedDetailedProposals) : [];
       
       const detailedExistingIndex = detailedProposals.findIndex((p: any) => p.id === proposalData.id);
       const updatedProposalData = {
         ...proposalData,
+        language: selectedLanguage,
         updated_at: new Date().toISOString()
       };
       
@@ -486,6 +495,7 @@ const ProposalDetail = () => {
     // Prepare proposal data for PDF generation with all editable fields
     const pdfProposalData = {
       ...proposalData,
+      language: selectedLanguage,
       // Ensure customer data is properly mapped
       customer: proposalData.customerName || proposalData.customer,
       // Map internal contact properly
@@ -500,7 +510,7 @@ const ProposalDetail = () => {
     
     console.log('Preview data being sent:', pdfProposalData);
     
-    const success = await previewProposalPDF(pdfProposalData, 'en');
+    const success = await previewProposalPDF(pdfProposalData, selectedLanguage);
     if (!success) {
       toast({
         title: "Preview failed",
@@ -517,6 +527,7 @@ const ProposalDetail = () => {
     // Prepare proposal data for PDF generation with all editable fields
     const pdfProposalData = {
       ...proposalData,
+      language: selectedLanguage,
       // Ensure customer data is properly mapped
       customer: proposalData.customerName || proposalData.customer,
       // Map internal contact properly
@@ -531,7 +542,7 @@ const ProposalDetail = () => {
     
     console.log('Download data being sent:', pdfProposalData);
     
-    const success = await generateProposalPDF(pdfProposalData, 'en', `proposal-${proposalData.number}.pdf`);
+    const success = await generateProposalPDF(pdfProposalData, selectedLanguage, `proposal-${proposalData.number}.pdf`);
     if (success) {
       toast({
         title: "Proposal downloaded",
@@ -571,28 +582,43 @@ const ProposalDetail = () => {
               <div className="flex items-center gap-4">
                 <Button variant="ghost" onClick={() => navigate("/proposals")}>
                   <ArrowLeft size={16} className="mr-2" />
-                  Back to Proposals
+                  {getTranslation(selectedLanguage, 'backToProposals')}
                 </Button>
                 <h1 className="text-2xl font-bold">
-                  {isNewProposal ? "Create New Proposal" : `Edit Proposal ${proposalData.number}`}
+                  {isNewProposal ? getTranslation(selectedLanguage, 'createNewProposal') : `${getTranslation(selectedLanguage, 'editProposal')} ${proposalData.number}`}
                 </h1>
               </div>
               <div className="flex gap-2 items-center">
+                <div className="flex items-center gap-2">
+                  <Languages size={16} />
+                  <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
+                    <SelectTrigger className="w-40">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SUPPORTED_LANGUAGES.map((lang) => (
+                        <SelectItem key={lang.code} value={lang.code}>
+                          {lang.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
                 <TemplateManager 
                   currentProposalData={proposalData}
                   onLoadTemplate={handleLoadTemplate}
                 />
                 <Button onClick={handlePreview} variant="outline">
                   <Eye size={16} className="mr-2" />
-                  Preview
+                  {getTranslation(selectedLanguage, 'preview')}
                 </Button>
                 <Button onClick={handleDownload} variant="outline">
                   <Download size={16} className="mr-2" />
-                  Download PDF
+                  {getTranslation(selectedLanguage, 'downloadPdf')}
                 </Button>
                 <Button onClick={saveProposal} disabled={saving}>
                   <Save size={16} className="mr-2" />
-                  {saving ? "Saving..." : "Save"}
+                  {saving ? getTranslation(selectedLanguage, 'saving') : getTranslation(selectedLanguage, 'save')}
                 </Button>
               </div>
             </div>
@@ -601,12 +627,12 @@ const ProposalDetail = () => {
               {/* Basic Information */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Basic Information</CardTitle>
+                  <CardTitle>{getTranslation(selectedLanguage, 'basicInformation')}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="number">Proposal Number</Label>
+                      <Label htmlFor="number">{getTranslation(selectedLanguage, 'proposalNumber')}</Label>
                       <Input
                         id="number"
                         value={proposalData.number}
@@ -614,7 +640,7 @@ const ProposalDetail = () => {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="reference">Reference</Label>
+                      <Label htmlFor="reference">{getTranslation(selectedLanguage, 'reference')}</Label>
                       <Input
                         id="reference"
                         value={proposalData.reference}
@@ -624,7 +650,7 @@ const ProposalDetail = () => {
                   </div>
                   
                   <div>
-                    <Label htmlFor="subject">Subject</Label>
+                    <Label htmlFor="subject">{getTranslation(selectedLanguage, 'subject')}</Label>
                     <Input
                       id="subject"
                       value={proposalData.subject}
@@ -634,7 +660,7 @@ const ProposalDetail = () => {
                   
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="status">Status</Label>
+                      <Label htmlFor="status">{getTranslation(selectedLanguage, 'status')}</Label>
                       <Select 
                         value={proposalData.status} 
                         onValueChange={(value) => setProposalData(prev => ({ ...prev, status: value }))}
@@ -652,7 +678,7 @@ const ProposalDetail = () => {
                       </Select>
                     </div>
                     <div>
-                      <Label htmlFor="currency">Currency</Label>
+                      <Label htmlFor="currency">{getTranslation(selectedLanguage, 'currency')}</Label>
                       <Select 
                         value={proposalData.currency} 
                         onValueChange={(value) => setProposalData(prev => ({ ...prev, currency: value }))}
@@ -674,7 +700,7 @@ const ProposalDetail = () => {
                     <div>
                       <Label htmlFor="proposalDate" className="flex items-center gap-2">
                         <Calendar size={16} />
-                        Proposal Date
+                        {getTranslation(selectedLanguage, 'proposalDate')}
                       </Label>
                       <Input
                         id="proposalDate"
@@ -686,7 +712,7 @@ const ProposalDetail = () => {
                     <div>
                       <Label htmlFor="proposalTime" className="flex items-center gap-2">
                         <Clock size={16} />
-                        Proposal Time
+                        {getTranslation(selectedLanguage, 'proposalTime')}
                       </Label>
                       <Input
                         id="proposalTime"
@@ -702,11 +728,11 @@ const ProposalDetail = () => {
               {/* Company Logo Section */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Company Logo</CardTitle>
+                  <CardTitle>{getTranslation(selectedLanguage, 'companyLogo')}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <Label htmlFor="logoUpload">Upload Company Logo</Label>
+                    <Label htmlFor="logoUpload">{getTranslation(selectedLanguage, 'uploadCompanyLogo')}</Label>
                     <div className="flex items-center gap-4 mt-2">
                       <Input
                         id="logoUpload"
@@ -721,7 +747,7 @@ const ProposalDetail = () => {
                   {proposalData.logo && (
                     <div className="space-y-4">
                       <div>
-                        <Label>Logo Preview</Label>
+                        <Label>{getTranslation(selectedLanguage, 'logoPreview')}</Label>
                         <div className="mt-2 p-4 border rounded-lg bg-gray-50">
                           <img
                             src={proposalData.logo}
@@ -733,7 +759,7 @@ const ProposalDetail = () => {
                       </div>
                       
                       <div>
-                        <Label htmlFor="logoSize">Logo Size: {proposalData.logoSize || 33}%</Label>
+                        <Label htmlFor="logoSize">{getTranslation(selectedLanguage, 'logoSize')}: {proposalData.logoSize || 33}%</Label>
                         <div className="flex items-center gap-4 mt-2">
                           <Button
                             variant="outline"
@@ -769,11 +795,11 @@ const ProposalDetail = () => {
               {/* Customer Information */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Customer Information</CardTitle>
+                  <CardTitle>{getTranslation(selectedLanguage, 'customerInformation')}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <Label htmlFor="customerName">Customer Name</Label>
+                    <Label htmlFor="customerName">{getTranslation(selectedLanguage, 'customerName')}</Label>
                     <Input
                       id="customerName"
                       value={proposalData.customerName}
@@ -782,7 +808,7 @@ const ProposalDetail = () => {
                   </div>
                   
                   <div>
-                    <Label htmlFor="customerAddress">Customer Address</Label>
+                    <Label htmlFor="customerAddress">{getTranslation(selectedLanguage, 'customerAddress')}</Label>
                     <Textarea
                       id="customerAddress"
                       value={proposalData.customerAddress}
@@ -793,7 +819,7 @@ const ProposalDetail = () => {
                   
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="customerEmail">Customer Email</Label>
+                      <Label htmlFor="customerEmail">{getTranslation(selectedLanguage, 'customerEmail')}</Label>
                       <Input
                         id="customerEmail"
                         type="email"
@@ -802,7 +828,7 @@ const ProposalDetail = () => {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="customerCountry">Country</Label>
+                      <Label htmlFor="customerCountry">{getTranslation(selectedLanguage, 'country')}</Label>
                       <Input
                         id="customerCountry"
                         value={proposalData.customerCountry}
@@ -813,7 +839,7 @@ const ProposalDetail = () => {
                   
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="customerRef">Customer Reference</Label>
+                      <Label htmlFor="customerRef">{getTranslation(selectedLanguage, 'customerReference')}</Label>
                       <Input
                         id="customerRef"
                         value={proposalData.customerRef}
@@ -821,7 +847,7 @@ const ProposalDetail = () => {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="internalContact">Internal Contact Person</Label>
+                      <Label htmlFor="internalContact">{getTranslation(selectedLanguage, 'internalContactPerson')}</Label>
                       <Input
                         id="internalContact"
                         value={proposalData.internalContact}
@@ -835,11 +861,11 @@ const ProposalDetail = () => {
               {/* Proposal Content */}
               <Card className="lg:col-span-2">
                 <CardHeader>
-                  <CardTitle>Proposal Content</CardTitle>
+                  <CardTitle>{getTranslation(selectedLanguage, 'proposalContent')}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <Label htmlFor="proposalTitle">Proposal Title</Label>
+                    <Label htmlFor="proposalTitle">{getTranslation(selectedLanguage, 'proposalTitle')}</Label>
                     <Input
                       id="proposalTitle"
                       value={proposalData.proposalTitle}
@@ -849,7 +875,7 @@ const ProposalDetail = () => {
                   </div>
                   
                   <div>
-                    <Label htmlFor="proposalDescription">Proposal Description</Label>
+                    <Label htmlFor="proposalDescription">{getTranslation(selectedLanguage, 'proposalDescription')}</Label>
                     <Textarea
                       id="proposalDescription"
                       value={proposalData.proposalDescription}
@@ -860,7 +886,7 @@ const ProposalDetail = () => {
                   </div>
                   
                   <div>
-                    <Label htmlFor="content">Additional Content</Label>
+                    <Label htmlFor="content">{getTranslation(selectedLanguage, 'additionalContent')}</Label>
                     <Textarea
                       id="content"
                       value={proposalData.content}
@@ -875,10 +901,10 @@ const ProposalDetail = () => {
               <Card className="lg:col-span-2">
                 <CardHeader>
                   <CardTitle className="flex justify-between items-center">
-                    Products/Services
+                    {getTranslation(selectedLanguage, 'productsServices')}
                     <Button onClick={handleAddLineItem} size="sm">
                       <PlusCircle size={16} className="mr-2" />
-                      Add Line Item
+                      {getTranslation(selectedLanguage, 'addLineItem')}
                     </Button>
                   </CardTitle>
                 </CardHeader>
@@ -887,12 +913,12 @@ const ProposalDetail = () => {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Product/Service Name</TableHead>
-                          <TableHead>Description</TableHead>
-                          <TableHead>Quantity</TableHead>
-                          <TableHead>Unit Price</TableHead>
-                          <TableHead>Total</TableHead>
-                          <TableHead>Actions</TableHead>
+                          <TableHead>{getTranslation(selectedLanguage, 'productServiceName')}</TableHead>
+                          <TableHead>{getTranslation(selectedLanguage, 'description')}</TableHead>
+                          <TableHead>{getTranslation(selectedLanguage, 'quantity')}</TableHead>
+                          <TableHead>{getTranslation(selectedLanguage, 'unitPrice')}</TableHead>
+                          <TableHead>{getTranslation(selectedLanguage, 'total')}</TableHead>
+                          <TableHead>{getTranslation(selectedLanguage, 'actions')}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -957,7 +983,7 @@ const ProposalDetail = () => {
               {/* VAT and Pricing */}
               <Card>
                 <CardHeader>
-                  <CardTitle>VAT & Pricing</CardTitle>
+                  <CardTitle>{getTranslation(selectedLanguage, 'vatPricing')}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="flex items-center space-x-2">
@@ -966,12 +992,12 @@ const ProposalDetail = () => {
                       checked={proposalData.vatEnabled}
                       onCheckedChange={handleVatToggle}
                     />
-                    <Label htmlFor="vatEnabled">VAT Enabled</Label>
+                    <Label htmlFor="vatEnabled">{getTranslation(selectedLanguage, 'vatEnabled')}</Label>
                   </div>
                   
                   {proposalData.vatEnabled && (
                     <div>
-                      <Label htmlFor="vatRate">VAT Rate (%)</Label>
+                      <Label htmlFor="vatRate">{getTranslation(selectedLanguage, 'vatRate')}</Label>
                       <Input
                         id="vatRate"
                         type="number"
@@ -986,7 +1012,7 @@ const ProposalDetail = () => {
                   
                   <div className="space-y-2 pt-4 border-t">
                     <div className="flex justify-between">
-                      <span>Net Amount:</span>
+                      <span>{getTranslation(selectedLanguage, 'netAmount')}:</span>
                       <span>{proposalData.currency === 'USD' ? '$' : proposalData.currency === 'GBP' ? '£' : '€'}{proposalData.netAmount.toFixed(2)}</span>
                     </div>
                     {proposalData.vatEnabled && (
@@ -996,7 +1022,7 @@ const ProposalDetail = () => {
                       </div>
                     )}
                     <div className="flex justify-between font-bold text-lg border-t pt-2">
-                      <span>Total Amount:</span>
+                      <span>{getTranslation(selectedLanguage, 'totalAmount')}:</span>
                       <span>{proposalData.currency === 'USD' ? '$' : proposalData.currency === 'GBP' ? '£' : '€'}{proposalData.totalAmount.toFixed(2)}</span>
                     </div>
                   </div>
@@ -1006,11 +1032,11 @@ const ProposalDetail = () => {
               {/* Terms and Conditions */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Terms & Conditions</CardTitle>
+                  <CardTitle>{getTranslation(selectedLanguage, 'termsConditions')}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <Label htmlFor="deliveryTerms">Delivery Terms</Label>
+                    <Label htmlFor="deliveryTerms">{getTranslation(selectedLanguage, 'deliveryTerms')}</Label>
                     <Input
                       id="deliveryTerms"
                       value={proposalData.deliveryTerms}
@@ -1019,7 +1045,7 @@ const ProposalDetail = () => {
                   </div>
                   
                   <div>
-                    <Label htmlFor="paymentTerms">Payment Terms</Label>
+                    <Label htmlFor="paymentTerms">{getTranslation(selectedLanguage, 'paymentTerms')}</Label>
                     <Textarea
                       id="paymentTerms"
                       value={proposalData.paymentTerms}
@@ -1029,7 +1055,7 @@ const ProposalDetail = () => {
                   </div>
                   
                   <div>
-                    <Label htmlFor="termsAndConditions">Additional Terms</Label>
+                    <Label htmlFor="termsAndConditions">{getTranslation(selectedLanguage, 'additionalTerms')}</Label>
                     <Textarea
                       id="termsAndConditions"
                       value={proposalData.termsAndConditions}
@@ -1039,7 +1065,7 @@ const ProposalDetail = () => {
                   </div>
                   
                   <div>
-                    <Label htmlFor="footerContent">Footer Content</Label>
+                    <Label htmlFor="footerContent">{getTranslation(selectedLanguage, 'footerContent')}</Label>
                     <Textarea
                       id="footerContent"
                       value={proposalData.footerContent}
@@ -1054,12 +1080,12 @@ const ProposalDetail = () => {
               {/* Payment Data */}
               <Card className="lg:col-span-2">
                 <CardHeader>
-                  <CardTitle>Payment Data</CardTitle>
+                  <CardTitle>{getTranslation(selectedLanguage, 'paymentData')}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                      <Label htmlFor="accountNumber">Account Number</Label>
+                      <Label htmlFor="accountNumber">{getTranslation(selectedLanguage, 'accountNumber')}</Label>
                       <Input
                         id="accountNumber"
                         value={proposalData.accountNumber}
@@ -1069,7 +1095,7 @@ const ProposalDetail = () => {
                     </div>
                     
                     <div>
-                      <Label htmlFor="accountName">Account Name</Label>
+                      <Label htmlFor="accountName">{getTranslation(selectedLanguage, 'accountName')}</Label>
                       <Input
                         id="accountName"
                         value={proposalData.accountName}
@@ -1079,7 +1105,7 @@ const ProposalDetail = () => {
                     </div>
                     
                     <div>
-                      <Label htmlFor="paymentMethod">Payment Method</Label>
+                      <Label htmlFor="paymentMethod">{getTranslation(selectedLanguage, 'paymentMethod')}</Label>
                       <Select 
                         value={proposalData.paymentMethod} 
                         onValueChange={(value) => setProposalData(prev => ({ ...prev, paymentMethod: value }))}
