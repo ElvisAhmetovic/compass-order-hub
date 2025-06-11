@@ -16,7 +16,7 @@ const EditModeHeader = ({ isSaving, hasErrors, onSave, onCancel }: EditModeHeade
         <p className="text-sm font-medium text-blue-800">Editing Mode</p>
         <p className="text-sm text-blue-600">
           {hasErrors 
-            ? "Please fix the errors below before saving" 
+            ? "Please fix the company name before saving" 
             : "Make your changes and click Save to update the order"
           }
         </p>

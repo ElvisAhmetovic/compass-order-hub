@@ -27,7 +27,7 @@ export const useOrderEdit = (order: Order | null, onRefresh: () => void) => {
     
     setIsEditing(true);
     setEditedOrder({
-      company_name: order.company_name,
+      company_name: order.company_name || "",
       company_address: order.company_address || "",
       contact_email: order.contact_email || "",
       contact_phone: order.contact_phone || "",
@@ -58,17 +58,24 @@ export const useOrderEdit = (order: Order | null, onRefresh: () => void) => {
     
     const errors = validateOrderForm(editedOrder);
     
-    if (Object.keys(errors).length > 0) {
+    // Only block save if there are critical errors
+    const criticalErrors = Object.keys(errors).filter(key => 
+      key === 'company_name' // Only company name is truly critical
+    );
+    
+    if (criticalErrors.length > 0) {
       setValidationErrors(errors);
       toast({
         title: "Validation Error",
-        description: "Please fix the errors below before saving.",
+        description: "Company name is required.",
         variant: "destructive"
       });
       return;
     }
 
     setIsSaving(true);
+    setValidationErrors({}); // Clear all errors if we're proceeding
+    
     try {
       // Cast to Partial<Order> to ensure type compatibility
       const updateData: Partial<Order> = {
@@ -122,7 +129,9 @@ export const useOrderEdit = (order: Order | null, onRefresh: () => void) => {
     setValidationErrors({});
   }, []);
 
-  const hasErrors = Object.keys(validationErrors).length > 0;
+  const hasErrors = Object.keys(validationErrors).filter(key => 
+    key === 'company_name' // Only critical errors should block saving
+  ).length > 0;
 
   return {
     isEditing,

@@ -5,12 +5,12 @@
  * @returns Error message if invalid, undefined if valid
  */
 export const validateEmail = (email: string): string | undefined => {
-  if (!email.trim()) {
-    return "Email is required";
+  if (!email || !email.trim()) {
+    return undefined; // Don't require email
   }
   
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email)) {
+  if (!emailRegex.test(email.trim())) {
     return "Please enter a valid email address";
   }
   
