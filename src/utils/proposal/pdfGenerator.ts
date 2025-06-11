@@ -3,10 +3,57 @@ import html2canvas from "html2canvas";
 import { getCompanyInfo } from "./companyInfo";
 import { translations, SUPPORTED_LANGUAGES } from "../proposalTranslations";
 
+// Get appropriate font family for each language
+const getLanguageFont = (language: string) => {
+  switch (language) {
+    case 'ar':
+      return "'Noto Sans Arabic', 'Arial Unicode MS', Arial, sans-serif";
+    case 'zh':
+      return "'Noto Sans SC', 'Microsoft YaHei', 'SimHei', sans-serif";
+    case 'ja':
+      return "'Noto Sans JP', 'Yu Gothic', 'Hiragino Sans', sans-serif";
+    case 'ko':
+      return "'Noto Sans KR', 'Malgun Gothic', 'Apple Gothic', sans-serif";
+    case 'ru':
+      return "'Noto Sans', 'Roboto', 'DejaVu Sans', Arial, sans-serif";
+    case 'hi':
+      return "'Noto Sans Devanagari', 'Mangal', 'Lohit Devanagari', sans-serif";
+    case 'th':
+      return "'Noto Sans Thai', 'Leelawadee UI', 'Tahoma', sans-serif";
+    case 'vi':
+      return "'Noto Sans Vietnamese', 'Segoe UI', 'Tahoma', sans-serif";
+    case 'tr':
+      return "'Noto Sans', 'Segoe UI', 'Roboto', Arial, sans-serif";
+    case 'pt':
+    case 'es':
+    case 'fr':
+    case 'it':
+    case 'pl':
+    case 'nl':
+    case 'sv':
+    case 'da':
+    case 'no':
+    case 'fi':
+    case 'de':
+    case 'en':
+    default:
+      return "'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Roboto', sans-serif";
+  }
+};
+
+// Get text direction for languages that need RTL
+const getTextDirection = (language: string) => {
+  return language === 'ar' ? 'rtl' : 'ltr';
+};
+
 // Enhanced PDF content with proper page break handling
 const createPDFContent = (proposalData: any, language: string = "en") => {
   const t = translations[language as keyof typeof translations] || translations.en;
   const companyInfo = getCompanyInfo();
+  
+  // Get language-specific styling
+  const fontFamily = getLanguageFont(language);
+  const textDirection = getTextDirection(language);
 
   // Original font sizes restored
   const baseFontSize = 12;
@@ -52,11 +99,13 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
     proposal: t.createNewProposal,
     date: t.proposalDate,
     language,
+    fontFamily,
+    textDirection,
     availableKeys: Object.keys(t)
   });
 
   return `
-    <div style="font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif; padding: ${elementPadding}px; max-width: 794px; background: #ffffff; margin: 0; box-sizing: border-box; font-size: ${baseFontSize}px; line-height: ${lineHeight}; color: #2d3748; position: relative;">
+    <div style="font-family: ${fontFamily}; direction: ${textDirection}; padding: ${elementPadding}px; max-width: 794px; background: #ffffff; margin: 0; box-sizing: border-box; font-size: ${baseFontSize}px; line-height: ${lineHeight}; color: #2d3748; position: relative;">
       
       <!-- PAGE 1 CONTENT -->
       
@@ -329,7 +378,7 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
   `;
 };
 
-// Enhanced PDF generation with readable fonts
+// Enhanced PDF generation with readable fonts and better canvas settings
 const generatePDFFromHTML = async (htmlContent: string): Promise<jsPDF> => {
   // Create a temporary div to render the proposal with proper dimensions
   const tempDiv = document.createElement("div");
@@ -344,18 +393,18 @@ const generatePDFFromHTML = async (htmlContent: string): Promise<jsPDF> => {
   tempDiv.innerHTML = htmlContent;
   document.body.appendChild(tempDiv);
   
-  // Wait for layout to stabilize and images to load
-  await new Promise(resolve => setTimeout(resolve, 1000));
+  // Wait for layout to stabilize and fonts to load
+  await new Promise(resolve => setTimeout(resolve, 1500)); // Increased wait time for font loading
   
   try {
     // Get the actual content height with proper buffer
     const actualHeight = Math.max(tempDiv.scrollHeight + 120, 1800);
     
-    console.log('PDF Generation - Readable content height:', actualHeight);
+    console.log('PDF Generation - Enhanced font rendering for crisp text');
     
-    // Convert the HTML to canvas with settings optimized for readability
+    // Convert the HTML to canvas with settings optimized for font rendering
     const canvas = await html2canvas(tempDiv, {
-      scale: 1.0, // Normal scale for better readability
+      scale: 2.0, // Higher scale for better font rendering
       logging: false,
       useCORS: true,
       allowTaint: true,
@@ -364,6 +413,9 @@ const generatePDFFromHTML = async (htmlContent: string): Promise<jsPDF> => {
       height: actualHeight,
       windowWidth: 794,
       windowHeight: actualHeight,
+      // Enhanced font rendering options
+      foreignObjectRendering: true,
+      imageTimeout: 30000,
       onclone: (clonedDoc) => {
         // Ensure payment section renders properly in the clone
         const paymentSections = clonedDoc.querySelectorAll('[style*="PAYMENT DATA"], [style*="ZAHLUNGSDATEN"], [style*="DATOS DE PAGO"]');
@@ -386,10 +438,21 @@ const generatePDFFromHTML = async (htmlContent: string): Promise<jsPDF> => {
             text.style.color = '#2d6b4f !important';
           }
         });
+
+        // Force font loading and rendering for better quality
+        const allText = clonedDoc.querySelectorAll('*');
+        allText.forEach(element => {
+          if (element instanceof HTMLElement) {
+            element.style.fontSmooth = 'always';
+            element.style.webkitFontSmoothing = 'antialiased';
+            element.style.mozOsxFontSmoothing = 'grayscale';
+            element.style.textRendering = 'optimizeLegibility';
+          }
+        });
       }
     });
     
-    const imgData = canvas.toDataURL('image/png', 0.95); // High quality PNG
+    const imgData = canvas.toDataURL('image/png', 1.0); // Maximum quality PNG
     const pdf = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',
@@ -418,7 +481,7 @@ const generatePDFFromHTML = async (htmlContent: string): Promise<jsPDF> => {
       pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
     }
     
-    console.log('PDF Generation - Readable layout with proper fonts and spacing');
+    console.log('PDF Generation - Enhanced font rendering complete with crisp text quality');
     
     return pdf;
   } finally {
@@ -426,19 +489,19 @@ const generatePDFFromHTML = async (htmlContent: string): Promise<jsPDF> => {
   }
 };
 
-// Main function to generate a PDF from a proposal - now with readable layout
+// Main function to generate a PDF from a proposal - now with language-specific fonts
 export const generateProposalPDF = async (
   proposalData: any, 
   language: string = "en", 
   customFilename?: string
 ): Promise<jsPDF | boolean> => {
   try {
-    console.log('Generating readable PDF with larger fonts:', proposalData);
+    console.log('Generating PDF with language-specific fonts for:', language, proposalData);
     
-    // Generate HTML content using readable layout
+    // Generate HTML content using language-specific fonts
     const htmlContent = createPDFContent(proposalData, language);
     
-    // Generate PDF with enhanced readability
+    // Generate PDF with enhanced font rendering
     const pdf = await generatePDFFromHTML(htmlContent);
     
     // For preview mode, return the PDF document
@@ -610,7 +673,7 @@ export const previewProposalPDF = async (proposalData: any, language: string = "
     iframe.style.boxShadow = "0 0 10px rgba(0, 0, 0, 0.5)";
     iframe.style.borderRadius = "0 0 8px 8px";
 
-    // Handler for logo size adjustment - regenerates readable PDF
+    // Handler for logo size adjustment - regenerates with language-specific fonts
     let currentLogoSize = proposalData.logoSize || 33;
 
     const updatePreview = async (newLogoSize: number, newLanguage: string) => {
@@ -620,7 +683,7 @@ export const previewProposalPDF = async (proposalData: any, language: string = "
         logoSize: newLogoSize
       };
       
-      // Generate new PDF with readable settings
+      // Generate new PDF with language-specific fonts
       const newPdfResult = await generateProposalPDF(updatedProposalData, newLanguage);
       
       if (newPdfResult && typeof newPdfResult !== 'boolean') {
@@ -641,7 +704,7 @@ export const previewProposalPDF = async (proposalData: any, language: string = "
       await updatePreview(currentLogoSize, languageSelector.value);
     };
     
-    // Add event listener to language selector - regenerates readable PDF
+    // Add event listener to language selector - regenerates with language-specific fonts
     languageSelector.addEventListener("change", async () => {
       await updatePreview(currentLogoSize, languageSelector.value);
     });
