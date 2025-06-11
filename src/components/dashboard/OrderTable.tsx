@@ -84,15 +84,34 @@ const OrderTable = ({ onOrderClick, statusFilter, refreshTrigger }: OrderTablePr
   useEffect(() => {
     let result = [...orders];
     
-    // Apply status filter
+    // Apply status filter using the new multi-status system
     if (statusFilter) {
       if (statusFilter === "All") {
-        // Keep all orders, but filter out specific statuses if needed
+        // For "All", show orders that don't have resolved, cancelled, or deleted status
         result = result.filter(order => 
-          !["Resolved", "Cancelled", "Deleted"].includes(order.status)
+          !order.status_resolved && !order.status_cancelled && !order.status_deleted
         );
       } else {
-        result = result.filter(order => order.status === statusFilter);
+        // Filter by specific status using the boolean fields
+        const statusFieldMap: Record<string, keyof Order> = {
+          "Created": "status_created",
+          "In Progress": "status_in_progress",
+          "Complaint": "status_complaint",
+          "Invoice Sent": "status_invoice_sent",
+          "Invoice Paid": "status_invoice_paid",
+          "Resolved": "status_resolved",
+          "Cancelled": "status_cancelled",
+          "Deleted": "status_deleted",
+          "Review": "status_review"
+        };
+
+        const statusField = statusFieldMap[statusFilter];
+        if (statusField) {
+          result = result.filter(order => order[statusField] === true);
+        } else {
+          // Fallback to old status field for backward compatibility
+          result = result.filter(order => order.status === statusFilter);
+        }
       }
     }
     

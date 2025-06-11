@@ -44,7 +44,7 @@ const Reviews = () => {
           <div className="space-y-6">
             <DashboardHeader 
               title="Reviews"
-              description="Manage and track all review orders in the system. Use the 'Review' button next to orders to send them here."
+              description="Manage and track all review orders in the system. Orders can have multiple statuses - an order can be in Review and also have other statuses like Invoice Sent or Complaint."
             />
             
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -54,7 +54,7 @@ const Reviews = () => {
                     Review Orders
                   </h3>
                   <p className="text-sm text-blue-600 mt-1">
-                    Orders that have been manually sent to the review section. Team: Admin, Fudo, Elvis.
+                    Orders that have been manually sent to the review section. These orders may also have other statuses active simultaneously.
                   </p>
                 </div>
               </div>
