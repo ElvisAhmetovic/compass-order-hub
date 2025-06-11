@@ -104,6 +104,10 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
     return priorityClasses[priority.toLowerCase()] || "bg-gray-500 text-white";
   };
 
+  const formatPriorityDisplay = (priority: string) => {
+    return priority.charAt(0).toUpperCase() + priority.slice(1);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
@@ -112,7 +116,7 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
             <div className="flex items-center gap-4 mb-2">
               <h2 className="text-xl font-semibold">{order.company_name}</h2>
               <Badge className={getPriorityColor(order.priority || "medium")}>
-                {order.priority || "medium"}
+                {formatPriorityDisplay(order.priority || "medium")}
               </Badge>
             </div>
             <MultiStatusBadges order={order} onRefresh={handleRefresh} />
@@ -328,7 +332,7 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
                         </Select>
                       ) : (
                         <Badge className={getPriorityColor(order.priority || "medium")}>
-                          {order.priority || "medium"}
+                          {formatPriorityDisplay(order.priority || "medium")}
                         </Badge>
                       )}
                     </div>
