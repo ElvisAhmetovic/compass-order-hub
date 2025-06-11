@@ -1,3 +1,4 @@
+
 import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
 import { getCompanyInfo } from "./companyInfo";
@@ -443,10 +444,10 @@ const generatePDFFromHTML = async (htmlContent: string): Promise<jsPDF> => {
         const allText = clonedDoc.querySelectorAll('*');
         allText.forEach(element => {
           if (element instanceof HTMLElement) {
-            element.style.fontSmooth = 'always';
-            element.style.webkitFontSmoothing = 'antialiased';
-            element.style.mozOsxFontSmoothing = 'grayscale';
+            // Use proper CSS properties that TypeScript recognizes
             element.style.textRendering = 'optimizeLegibility';
+            (element.style as any).webkitFontSmoothing = 'antialiased';
+            (element.style as any).mozOsxFontSmoothing = 'grayscale';
           }
         });
       }
