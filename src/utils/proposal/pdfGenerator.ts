@@ -738,7 +738,7 @@ export const previewProposalPDF = async (proposalData: any, language: string = "
     decreaseButton.style.cssText = "padding: 4px 8px; border-radius: 4px; border: 1px solid #ccc; margin-right: 8px; cursor: pointer;";
     
     const logoSizeValue = document.createElement("span");
-    logoSizeValue.textContent = `${proposalData.logoSize || 33}%`;
+    logoSizeValue.textContent = `${proposalData.logoSize || 50}%`;
     logoSizeValue.style.cssText = "margin-right: 8px; min-width: 40px; text-align: center;";
     
     const increaseButton = document.createElement("button");
@@ -764,7 +764,7 @@ export const previewProposalPDF = async (proposalData: any, language: string = "
     downloadButton.textContent = "Download PDF";
     downloadButton.style.cssText = "padding: 8px 16px; background-color: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; margin-right: 8px;";
     downloadButton.onclick = async () => {
-      await generateProposalPDF({...proposalData, logoSize: parseInt(logoSizeValue.textContent || '33')}, languageSelector.value);
+      await generateProposalPDF({...proposalData, logoSize: parseInt(logoSizeValue.textContent || '50')}, languageSelector.value);
     };
     
     const closeButton = document.createElement("button");
@@ -794,7 +794,7 @@ export const previewProposalPDF = async (proposalData: any, language: string = "
     `;
 
     // Update preview function
-    let currentLogoSize = proposalData.logoSize || 33;
+    let currentLogoSize = proposalData.logoSize || 50;
 
     const updatePreview = async (newLogoSize: number, newLanguage: string) => {
       const updatedProposalData = {
