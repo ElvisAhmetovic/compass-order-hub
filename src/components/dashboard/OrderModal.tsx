@@ -24,14 +24,11 @@ interface OrderModalProps {
 const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-  if (!order) return null;
-
-  const isAdmin = userRole === "admin";
-
   const handleRefresh = () => {
     setRefreshTrigger(prev => prev + 1);
   };
 
+  // Move useOrderEdit hook call before early return to follow Rules of Hooks
   const {
     isEditing,
     editedOrder,
@@ -43,6 +40,11 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
     handleSave,
     handleCancel
   } = useOrderEdit(order, handleRefresh);
+
+  // Early return after all hooks are called
+  if (!order) return null;
+
+  const isAdmin = userRole === "admin";
 
   const getPriorityColor = (priority: string) => {
     const priorityClasses = {

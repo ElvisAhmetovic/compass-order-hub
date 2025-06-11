@@ -5,7 +5,7 @@ import { OrderService } from "@/services/orderService";
 import { useToast } from "@/hooks/use-toast";
 import { OrderFormData, ValidationErrors, validateOrderForm } from "./validation";
 
-export const useOrderEdit = (order: Order, onRefresh: () => void) => {
+export const useOrderEdit = (order: Order | null, onRefresh: () => void) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedOrder, setEditedOrder] = useState<OrderFormData>({
     company_name: "",
@@ -23,6 +23,8 @@ export const useOrderEdit = (order: Order, onRefresh: () => void) => {
   const { toast } = useToast();
 
   const handleEdit = useCallback(() => {
+    if (!order) return;
+    
     setIsEditing(true);
     setEditedOrder({
       company_name: order.company_name,
@@ -52,6 +54,8 @@ export const useOrderEdit = (order: Order, onRefresh: () => void) => {
   }, [validationErrors]);
 
   const handleSave = useCallback(async () => {
+    if (!order) return;
+    
     const errors = validateOrderForm(editedOrder);
     
     if (Object.keys(errors).length > 0) {
@@ -100,7 +104,7 @@ export const useOrderEdit = (order: Order, onRefresh: () => void) => {
     } finally {
       setIsSaving(false);
     }
-  }, [editedOrder, order.id, toast, onRefresh]);
+  }, [editedOrder, order, toast, onRefresh]);
 
   const handleCancel = useCallback(() => {
     setIsEditing(false);
