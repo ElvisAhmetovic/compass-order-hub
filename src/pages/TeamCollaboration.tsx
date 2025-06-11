@@ -9,8 +9,10 @@ import Sidebar from '@/components/dashboard/Sidebar';
 import { useAuth } from '@/context/AuthContext';
 
 const TeamCollaboration = () => {
+  // ALL HOOKS MUST BE CALLED FIRST - before any early returns or conditional logic
   const { user } = useAuth();
 
+  // NOW we can do conditional logic after all hooks are called
   if (!user) {
     return (
       <div className="flex min-h-screen">

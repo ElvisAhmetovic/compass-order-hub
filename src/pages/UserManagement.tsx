@@ -12,6 +12,7 @@ import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 
 const UserManagement = () => {
+  // ALL HOOKS MUST BE CALLED FIRST - before any early returns or conditional logic
   const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);

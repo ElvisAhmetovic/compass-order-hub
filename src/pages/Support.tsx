@@ -10,9 +10,12 @@ import { Plus } from "lucide-react";
 import Sidebar from "@/components/dashboard/Sidebar";
 
 const Support = () => {
+  // ALL HOOKS MUST BE CALLED FIRST - before any early returns or conditional logic
   const [activeTab, setActiveTab] = useState<string>("inquiries");
   const [showNewInquiryForm, setShowNewInquiryForm] = useState(false);
   const { user } = useAuth();
+  
+  // Now we can use the hook values in conditional logic
   const isAdmin = user?.role === "admin";
 
   const handleCreateInquiry = () => {

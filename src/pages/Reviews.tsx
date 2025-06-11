@@ -10,12 +10,13 @@ import { useOrderModal } from "@/hooks/useOrderModal";
 import { useAuth } from "@/context/AuthContext";
 
 const Reviews = () => {
+  // ALL HOOKS MUST BE CALLED FIRST - before any early returns or conditional logic
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const { user } = useAuth();
-  const userRole: UserRole = user?.role || "user";
-  
-  // Use the order modal hook
   const { currentOrder, isOpen, open, close } = useOrderModal();
+  
+  // Now we can use the hook values in conditional logic
+  const userRole: UserRole = user?.role || "user";
 
   // Listen for order status changes to refresh data
   useEffect(() => {
