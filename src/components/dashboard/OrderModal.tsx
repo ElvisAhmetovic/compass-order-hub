@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { X, ExternalLink, MessageSquare, User, Calendar, DollarSign, Building2, Mail, Phone, MapPin, Clock, Edit, Save, Cancel } from "lucide-react";
+import { X, ExternalLink, MessageSquare, User, Calendar, DollarSign, Building2, Mail, Phone, MapPin, Clock, Edit, Save } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Order, UserRole } from "@/types";
+import { Order, UserRole, OrderPriority } from "@/types";
 import { formatDate } from "@/lib/utils";
 import { formatCurrency } from "@/utils/currencyUtils";
 import { OrderService } from "@/services/orderService";
@@ -47,7 +47,7 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
       description: order.description || "",
       price: order.price || 0,
       currency: order.currency || "EUR",
-      priority: order.priority || "Medium"
+      priority: (order.priority || "medium") as OrderPriority
     });
   };
 
@@ -96,12 +96,12 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
 
   const getPriorityColor = (priority: string) => {
     const priorityClasses = {
-      "Low": "bg-priority-low text-white",
-      "Medium": "bg-priority-medium text-white", 
-      "High": "bg-priority-high text-white",
-      "Urgent": "bg-priority-urgent text-white",
+      "low": "bg-priority-low text-white",
+      "medium": "bg-priority-medium text-white", 
+      "high": "bg-priority-high text-white",
+      "urgent": "bg-priority-urgent text-white",
     };
-    return priorityClasses[priority] || "bg-gray-500 text-white";
+    return priorityClasses[priority.toLowerCase()] || "bg-gray-500 text-white";
   };
 
   return (
@@ -111,8 +111,8 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
           <div className="flex-1">
             <div className="flex items-center gap-4 mb-2">
               <h2 className="text-xl font-semibold">{order.company_name}</h2>
-              <Badge className={getPriorityColor(order.priority)}>
-                {order.priority}
+              <Badge className={getPriorityColor(order.priority || "medium")}>
+                {order.priority || "medium"}
               </Badge>
             </div>
             <MultiStatusBadges order={order} onRefresh={handleRefresh} />
@@ -150,7 +150,7 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
                       {isSaving ? "Saving..." : "Save"}
                     </Button>
                     <Button size="sm" variant="outline" onClick={handleCancel} disabled={isSaving}>
-                      <Cancel className="h-4 w-4 mr-1" />
+                      <X className="h-4 w-4 mr-1" />
                       Cancel
                     </Button>
                   </div>
@@ -312,20 +312,23 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
                     <div>
                       <label className="text-sm font-medium text-muted-foreground">Priority</label>
                       {isEditing ? (
-                        <Select value={editedOrder.priority || "Medium"} onValueChange={(value) => setEditedOrder(prev => ({ ...prev, priority: value }))}>
+                        <Select 
+                          value={editedOrder.priority || "medium"} 
+                          onValueChange={(value) => setEditedOrder(prev => ({ ...prev, priority: value as OrderPriority }))}
+                        >
                           <SelectTrigger className="mt-1">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="Low">Low</SelectItem>
-                            <SelectItem value="Medium">Medium</SelectItem>
-                            <SelectItem value="High">High</SelectItem>
-                            <SelectItem value="Urgent">Urgent</SelectItem>
+                            <SelectItem value="low">Low</SelectItem>
+                            <SelectItem value="medium">Medium</SelectItem>
+                            <SelectItem value="high">High</SelectItem>
+                            <SelectItem value="urgent">Urgent</SelectItem>
                           </SelectContent>
                         </Select>
                       ) : (
-                        <Badge className={getPriorityColor(order.priority)}>
-                          {order.priority}
+                        <Badge className={getPriorityColor(order.priority || "medium")}>
+                          {order.priority || "medium"}
                         </Badge>
                       )}
                     </div>
