@@ -240,48 +240,76 @@ export class OrderService {
   }
 
   // New method to toggle a specific status on an order
-  static async toggleOrderStatus(orderId: string, statusType: OrderStatus, enabled: boolean): Promise<Order> {
-    try {
-      console.log(`Toggling order ${orderId} status ${statusType} to ${enabled}`);
+  static async toggleOrderStatus(orderId: string, status: OrderStatus, enabled: boolean): Promise<void> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
 
-      const statusColumnMap: Record<string, string> = {
-        'Created': 'status_created',
-        'In Progress': 'status_in_progress',
-        'Complaint': 'status_complaint', 
-        'Invoice Sent': 'status_invoice_sent',
-        'Invoice Paid': 'status_invoice_paid',
-        'Resolved': 'status_resolved',
-        'Cancelled': 'status_cancelled',
-        'Deleted': 'status_deleted',
-        'Review': 'status_review'
-      };
+    // Get current order to check existing status
+    const { data: currentOrder, error: fetchError } = await supabase
+      .from('orders')
+      .select('*')
+      .eq('id', orderId)
+      .single();
 
-      const statusColumn = statusColumnMap[statusType];
-      if (!statusColumn) {
-        throw new Error(`Invalid status type: ${statusType}`);
-      }
+    if (fetchError) throw fetchError;
 
-      const updateData = {
-        [statusColumn]: enabled,
+    // Map status to database field
+    const statusFieldMap: Record<OrderStatus, string> = {
+      "Created": "status_created",
+      "In Progress": "status_in_progress", 
+      "Complaint": "status_complaint",
+      "Invoice Sent": "status_invoice_sent",
+      "Invoice Paid": "status_invoice_paid",
+      "Resolved": "status_resolved",
+      "Cancelled": "status_cancelled",
+      "Deleted": "status_deleted",
+      "Review": "status_review"
+    };
+
+    const statusField = statusFieldMap[status];
+    if (!statusField) throw new Error(`Invalid status: ${status}`);
+
+    // Update the status field
+    const { error: updateError } = await supabase
+      .from('orders')
+      .update({ 
+        [statusField]: enabled,
         updated_at: new Date().toISOString()
-      };
+      })
+      .eq('id', orderId);
 
-      const { data, error } = await supabase
-        .from('orders')
-        .update(updateData)
-        .eq('id', orderId)
-        .select()
-        .single();
+    if (updateError) throw updateError;
 
-      if (error) {
-        console.error('Error toggling order status:', error);
-        throw error;
+    // Log the status change in order_status_history
+    const { error: historyError } = await supabase
+      .from('order_status_history')
+      .insert({
+        order_id: orderId,
+        status: status,
+        actor_id: user.id,
+        actor_name: user.user_metadata?.full_name || user.email || 'Unknown',
+        details: enabled ? `Status "${status}" added` : `Status "${status}" removed`
+      });
+
+    if (historyError) {
+      console.error('Error logging status history:', historyError);
+    }
+
+    // Create notification for assigned user if order is assigned to someone else
+    if (currentOrder.assigned_to && currentOrder.assigned_to !== user.id) {
+      try {
+        const { NotificationService } = await import('./notificationService');
+        await NotificationService.createNotification({
+          user_id: currentOrder.assigned_to,
+          title: 'Order Status Updated',
+          message: `Order for ${currentOrder.company_name} status changed: ${status} ${enabled ? 'added' : 'removed'}`,
+          type: 'info',
+          order_id: orderId,
+          action_url: `/dashboard?order=${orderId}`
+        });
+      } catch (notificationError) {
+        console.error('Error creating notification:', notificationError);
       }
-      
-      return data;
-    } catch (error) {
-      console.error('Failed to toggle order status:', error);
-      throw error;
     }
   }
 
