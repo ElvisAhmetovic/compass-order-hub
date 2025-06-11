@@ -22,13 +22,14 @@ interface OrderModalProps {
 }
 
 const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
+  // ALL HOOKS MUST BE CALLED FIRST - before any early returns or conditional logic
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const handleRefresh = () => {
     setRefreshTrigger(prev => prev + 1);
   };
 
-  // Move useOrderEdit hook call before early return to follow Rules of Hooks
+  // Call useOrderEdit hook BEFORE any conditional returns
   const {
     isEditing,
     editedOrder,
@@ -41,7 +42,7 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
     handleCancel
   } = useOrderEdit(order, handleRefresh);
 
-  // Early return after all hooks are called
+  // NOW we can do early returns after all hooks are called
   if (!order) return null;
 
   const isAdmin = userRole === "admin";
