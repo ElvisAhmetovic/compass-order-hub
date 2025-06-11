@@ -1,4 +1,3 @@
-
 import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
 import { getCompanyInfo } from "./companyInfo";
@@ -99,6 +98,22 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
     new Date(proposalData.created_at || Date.now()).toLocaleDateString();
 
   return `
+    <style>
+      @media print {
+        .page-break-inside-avoid {
+          page-break-inside: avoid !important;
+          break-inside: avoid !important;
+        }
+        .page-break-before {
+          page-break-before: always !important;
+          break-before: page !important;
+        }
+        .keep-together {
+          page-break-inside: avoid !important;
+          break-inside: avoid !important;
+        }
+      }
+    </style>
     <div style="
       font-family: ${fontFamily}; 
       direction: ${textDirection}; 
@@ -113,7 +128,7 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
     ">
       
       <!-- Header Section -->
-      <div style="
+      <div class="keep-together" style="
         display: flex; 
         justify-content: space-between; 
         align-items: flex-start; 
@@ -154,7 +169,7 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
       </div>
 
       <!-- Customer and Proposal Info -->
-      <div style="
+      <div class="keep-together" style="
         display: flex; 
         justify-content: space-between; 
         margin-bottom: ${sectionSpacing}px; 
@@ -213,7 +228,7 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
       </div>
 
       <!-- Proposal Title -->
-      <div style="
+      <div class="keep-together" style="
         background: #2d3748; 
         color: white; 
         padding: ${elementPadding}px; 
@@ -226,7 +241,7 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
       </div>
 
       <!-- Proposal Content -->
-      <div style="
+      <div class="keep-together" style="
         margin-bottom: ${sectionSpacing}px; 
         background: white; 
         padding: ${elementPadding}px; 
@@ -243,7 +258,7 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
       </div>
 
       <!-- Line Items Table -->
-      <div style="
+      <div class="keep-together" style="
         margin-bottom: ${sectionSpacing}px; 
         border-radius: 6px; 
         overflow: hidden; 
@@ -298,7 +313,7 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
       </div>
 
       <!-- Totals Section -->
-      <div style="display: flex; justify-content: flex-end; margin-bottom: ${sectionSpacing}px;">
+      <div class="keep-together" style="display: flex; justify-content: flex-end; margin-bottom: ${sectionSpacing}px;">
         <div style="
           width: 280px; 
           background: white; 
@@ -351,7 +366,7 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
       </div>
 
       <!-- Terms and Conditions -->
-      <div style="
+      <div class="keep-together" style="
         margin-bottom: ${sectionSpacing}px; 
         background: white; 
         padding: ${elementPadding}px; 
@@ -373,11 +388,12 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
       </div>
 
       <!-- Signature Section -->
-      <div style="
+      <div class="page-break-inside-avoid keep-together" style="
         display: flex; 
         justify-content: space-between; 
         margin-bottom: ${sectionSpacing}px; 
         gap: 20px;
+        min-height: 80px;
       ">
         <div style="
           width: 45%; 
@@ -404,11 +420,11 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
         </div>
       </div>
 
-      <!-- Page Break -->
-      <div style="page-break-before: always; height: 1px;"></div>
+      <!-- Page Break for Second Page -->
+      <div class="page-break-before" style="height: 1px;"></div>
 
       <!-- Payment Data Section -->
-      <div style="
+      <div class="keep-together" style="
         margin-bottom: ${sectionSpacing}px; 
         background: #e6fffa; 
         padding: ${elementPadding}px; 
@@ -439,7 +455,7 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
 
       <!-- Footer Content -->
       ${proposalData.footerContent ? `
-      <div style="
+      <div class="keep-together" style="
         margin-bottom: ${sectionSpacing}px; 
         padding: ${elementPadding}px; 
         background: #faf5ff; 
@@ -451,7 +467,7 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
       ` : ''}
 
       <!-- Company Footer -->
-      <div style="
+      <div class="keep-together" style="
         background: #2d3748; 
         border-radius: 6px; 
         margin-top: ${sectionSpacing}px; 
@@ -530,9 +546,9 @@ const generatePDFFromHTML = async (htmlContent: string): Promise<jsPDF> => {
   try {
     console.log('Converting HTML to canvas');
     
-    // Convert to canvas with basic settings
+    // Convert to canvas with improved settings
     const canvas = await html2canvas(tempDiv, {
-      scale: 1.5,
+      scale: 2,
       logging: false,
       useCORS: true,
       allowTaint: true,
