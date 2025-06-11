@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { 
   DropdownMenu,
@@ -13,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
 import { InvoiceService } from "@/services/invoiceService";
 import { OrderService } from "@/services/orderService";
+import { WorkflowService } from "@/services/workflowService";
 
 interface OrderActionsProps {
   order: Order;
@@ -132,6 +134,9 @@ const OrderActions = ({ order, onOrderView, onRefresh }: OrderActionsProps) => {
       const invoiceStatus = status === "Invoice Sent" ? "sent" : "paid";
       await InvoiceService.updateInvoice(newInvoice.id, { status: invoiceStatus });
       
+      // Trigger workflow automation
+      await WorkflowService.handleInvoiceCreated(orderId);
+      
       toast({
         title: "Invoice created",
         description: `Invoice ${newInvoice.invoice_number} has been created and status set to ${invoiceStatus}.`,
@@ -176,9 +181,22 @@ const OrderActions = ({ order, onOrderView, onRefresh }: OrderActionsProps) => {
       
       console.log('Order status toggled successfully');
       
-      // Create invoice if status is invoice-related and being enabled
-      if (enabled && (newStatus === "Invoice Sent" || newStatus === "Invoice Paid")) {
-        await createInvoiceFromOrder(order.id, order, newStatus);
+      // Trigger workflow automation based on status change
+      if (enabled) {
+        switch (newStatus) {
+          case "Invoice Sent":
+          case "Invoice Paid":
+            await createInvoiceFromOrder(order.id, order, newStatus);
+            break;
+          case "Resolved":
+            if (OrderService.getActiveStatuses(order).includes("Complaint")) {
+              await WorkflowService.handleComplaintResolved(order.id);
+            }
+            break;
+          case "Invoice Paid":
+            await WorkflowService.handlePaymentReceived(order.id);
+            break;
+        }
       }
       
       // Show success message
@@ -253,6 +271,40 @@ const OrderActions = ({ order, onOrderView, onRefresh }: OrderActionsProps) => {
     }
   };
 
+  const handleAutoAssign = async () => {
+    if (!isAdmin) {
+      toast({
+        title: "Permission Denied",
+        description: "Only administrators can assign orders.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    
+    try {
+      await WorkflowService.autoAssignOrder(order.id);
+      
+      toast({
+        title: "Order Auto-Assigned",
+        description: "Order has been automatically assigned based on workload.",
+      });
+      
+      onRefresh();
+      window.dispatchEvent(new CustomEvent('orderStatusChanged'));
+    } catch (error) {
+      console.error("Error auto-assigning order:", error);
+      toast({
+        title: "Error",
+        description: "Failed to auto-assign order. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Get currently active statuses
   const activeStatuses = OrderService.getActiveStatuses(order);
 
@@ -275,6 +327,15 @@ const OrderActions = ({ order, onOrderView, onRefresh }: OrderActionsProps) => {
         <DropdownMenuItem onClick={() => onOrderView(order)}>
           View Details
         </DropdownMenuItem>
+        
+        <DropdownMenuSeparator />
+        
+        {/* Workflow automation actions */}
+        {!order.assigned_to && (
+          <DropdownMenuItem onClick={handleAutoAssign}>
+            Auto-Assign Order
+          </DropdownMenuItem>
+        )}
         
         <DropdownMenuSeparator />
         

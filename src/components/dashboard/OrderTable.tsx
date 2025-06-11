@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import {
   Table,
@@ -8,13 +9,14 @@ import {
   TableCell
 } from "@/components/ui/table";
 import OrderRow from "./OrderRow";
-import OrderFilters from "./OrderFilters";
 import OrderPagination from "./OrderPagination";
+import AdvancedSearch from "./AdvancedSearch";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { Order, OrderStatus, User } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
 import { OrderService } from "@/services/orderService";
+import { SearchService, SearchFilters } from "@/services/searchService";
 
 interface OrderTableProps {
   onOrderClick: (order: Order) => void;
@@ -36,8 +38,8 @@ const OrderTable = ({ onOrderClick, statusFilter, refreshTrigger }: OrderTablePr
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage] = useState(10);
   
-  // Additional filters
-  const [priorityFilter, setPriorityFilter] = useState<string | null>(null);
+  // Search and filter state
+  const [searchFilters, setSearchFilters] = useState<SearchFilters>({});
   
   const { toast } = useToast();
   const { user } = useAuth();
@@ -82,60 +84,98 @@ const OrderTable = ({ onOrderClick, statusFilter, refreshTrigger }: OrderTablePr
 
   // Apply filters and sorting whenever orders or filter criteria change
   useEffect(() => {
-    let result = [...orders];
-    
-    // Apply status filter using the new multi-status system
-    if (statusFilter) {
-      if (statusFilter === "All") {
-        // For "All", show orders that don't have resolved, cancelled, or deleted status
-        result = result.filter(order => 
-          !order.status_resolved && !order.status_cancelled && !order.status_deleted
-        );
-      } else {
-        // Filter by specific status using the boolean fields
-        const statusFieldMap: Record<string, keyof Order> = {
-          "Created": "status_created",
-          "In Progress": "status_in_progress",
-          "Complaint": "status_complaint",
-          "Invoice Sent": "status_invoice_sent",
-          "Invoice Paid": "status_invoice_paid",
-          "Resolved": "status_resolved",
-          "Cancelled": "status_cancelled",
-          "Deleted": "status_deleted",
-          "Review": "status_review"
-        };
-
-        const statusField = statusFieldMap[statusFilter];
-        if (statusField) {
-          result = result.filter(order => order[statusField] === true);
+    const applyFiltersAndSort = async () => {
+      let result = [...orders];
+      
+      // Apply status filter using the new multi-status system
+      if (statusFilter) {
+        if (statusFilter === "All") {
+          // For "All", show orders that don't have resolved, cancelled, or deleted status
+          result = result.filter(order => 
+            !order.status_resolved && !order.status_cancelled && !order.status_deleted
+          );
         } else {
-          // Fallback to old status field for backward compatibility
-          result = result.filter(order => order.status === statusFilter);
+          // Filter by specific status using the boolean fields
+          const statusFieldMap: Record<string, keyof Order> = {
+            "Created": "status_created",
+            "In Progress": "status_in_progress",
+            "Complaint": "status_complaint",
+            "Invoice Sent": "status_invoice_sent",
+            "Invoice Paid": "status_invoice_paid",
+            "Resolved": "status_resolved",
+            "Cancelled": "status_cancelled",
+            "Deleted": "status_deleted",
+            "Review": "status_review"
+          };
+
+          const statusField = statusFieldMap[statusFilter];
+          if (statusField) {
+            result = result.filter(order => order[statusField] === true);
+          } else {
+            // Fallback to old status field for backward compatibility
+            result = result.filter(order => order.status === statusFilter);
+          }
         }
       }
-    }
-    
-    // Apply priority filter - only for admins
-    if (isAdmin && priorityFilter) {
-      result = result.filter(order => order.priority === priorityFilter);
-    }
-    
-    // Apply sorting
-    result.sort((a, b) => {
-      const dateA = new Date(a[sortField] || '').getTime();
-      const dateB = new Date(b[sortField] || '').getTime();
       
-      if (sortDirection === 'asc') {
-        return dateA - dateB;
-      } else {
-        return dateB - dateA;
+      // Apply advanced search filters
+      if (Object.keys(searchFilters).length > 0) {
+        result = await SearchService.advancedSearch({
+          ...searchFilters,
+          // Use the already filtered result as the base
+        });
+        
+        // Re-apply status filter if needed since advanced search works on all orders
+        if (statusFilter) {
+          if (statusFilter === "All") {
+            result = result.filter(order => 
+              !order.status_resolved && !order.status_cancelled && !order.status_deleted
+            );
+          } else {
+            const statusFieldMap: Record<string, keyof Order> = {
+              "Created": "status_created",
+              "In Progress": "status_in_progress",
+              "Complaint": "status_complaint",
+              "Invoice Sent": "status_invoice_sent",
+              "Invoice Paid": "status_invoice_paid",
+              "Resolved": "status_resolved",
+              "Cancelled": "status_cancelled",
+              "Deleted": "status_deleted",
+              "Review": "status_review"
+            };
+
+            const statusField = statusFieldMap[statusFilter];
+            if (statusField) {
+              result = result.filter(order => order[statusField] === true);
+            }
+          }
+        }
+        
+        // Filter for non-admin users
+        if (!isAdmin && user) {
+          result = result.filter(order => order.assigned_to === user.id);
+        }
       }
-    });
-    
-    setFilteredOrders(result);
-    // Reset to first page when filters change
-    setCurrentPage(1);
-  }, [orders, statusFilter, priorityFilter, sortField, sortDirection, isAdmin]);
+      
+      // Apply sorting
+      result.sort((a, b) => {
+        const dateA = new Date(a[sortField] || '').getTime();
+        const dateB = new Date(b[sortField] || '').getTime();
+        
+        if (sortDirection === 'asc') {
+          return dateA - dateB;
+        } else {
+          return dateB - dateA;
+        }
+      });
+      
+      setFilteredOrders(result);
+      // Reset to first page when filters change
+      setCurrentPage(1);
+    };
+
+    applyFiltersAndSort();
+  }, [orders, statusFilter, searchFilters, sortField, sortDirection, isAdmin, user]);
 
   const handlePageChange = (pageNumber: number) => {
     setCurrentPage(pageNumber);
@@ -157,31 +197,20 @@ const OrderTable = ({ onOrderClick, statusFilter, refreshTrigger }: OrderTablePr
     window.dispatchEvent(new CustomEvent('orderStatusChanged'));
   };
 
-  const getAssigneeName = (userId: string): string => {
-    if (!userId) return "Unassigned";
-    // For now, show generic labels since we're using Supabase auth
-    return "Assigned User";
-  };
-
-  // Always render the filters regardless of data state, but only for admins
-  const renderFilters = () => {
-    if (!isAdmin) return null;
-    
-    return (
-      <div className="space-y-4 mb-4">
-        <OrderFilters 
-          onStatusChange={(status) => setPriorityFilter(status)} 
-          selectedStatus={priorityFilter}
-        />
-      </div>
-    );
+  const handleFiltersChange = (filters: SearchFilters) => {
+    setSearchFilters(filters);
   };
 
   // Show authentication message if user is not logged in
   if (!user) {
     return (
       <div>
-        {renderFilters()}
+        <div className="space-y-4 mb-4">
+          <AdvancedSearch 
+            onFiltersChange={handleFiltersChange}
+            currentFilters={searchFilters}
+          />
+        </div>
         <div className="p-8 text-center border rounded-md">
           <p className="text-muted-foreground text-lg">Please log in to view orders.</p>
         </div>
@@ -192,7 +221,12 @@ const OrderTable = ({ onOrderClick, statusFilter, refreshTrigger }: OrderTablePr
   if (loading) {
     return (
       <div>
-        {renderFilters()}
+        <div className="space-y-4 mb-4">
+          <AdvancedSearch 
+            onFiltersChange={handleFiltersChange}
+            currentFilters={searchFilters}
+          />
+        </div>
         <div className="flex justify-center items-center h-64">
           <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
         </div>
@@ -203,7 +237,12 @@ const OrderTable = ({ onOrderClick, statusFilter, refreshTrigger }: OrderTablePr
   if (error) {
     return (
       <div>
-        {renderFilters()}
+        <div className="space-y-4 mb-4">
+          <AdvancedSearch 
+            onFiltersChange={handleFiltersChange}
+            currentFilters={searchFilters}
+          />
+        </div>
         <div className="p-4 text-center">
           <p className="text-destructive">{error}</p>
           <button 
@@ -220,12 +259,17 @@ const OrderTable = ({ onOrderClick, statusFilter, refreshTrigger }: OrderTablePr
   if (filteredOrders.length === 0) {
     return (
       <div>
-        {renderFilters()}
+        <div className="space-y-4 mb-4">
+          <AdvancedSearch 
+            onFiltersChange={handleFiltersChange}
+            currentFilters={searchFilters}
+          />
+        </div>
         <div className="p-8 text-center border rounded-md">
           <p className="text-muted-foreground text-lg">No orders found.</p>
           <p className="text-sm text-muted-foreground mt-1">
             {isAdmin 
-              ? (statusFilter || priorityFilter ? "Try changing your filters or create a new order." : "Start by creating your first order.")
+              ? (statusFilter || Object.keys(searchFilters).length > 0 ? "Try changing your filters or create a new order." : "Start by creating your first order.")
               : "You have no orders assigned to you."}
           </p>
         </div>
@@ -241,7 +285,10 @@ const OrderTable = ({ onOrderClick, statusFilter, refreshTrigger }: OrderTablePr
 
   return (
     <div className="space-y-4">
-      {renderFilters()}
+      <AdvancedSearch 
+        onFiltersChange={handleFiltersChange}
+        currentFilters={searchFilters}
+      />
       
       <div className="rounded-md border overflow-hidden">
         <Table>
@@ -288,7 +335,7 @@ const OrderTable = ({ onOrderClick, statusFilter, refreshTrigger }: OrderTablePr
                 order={order}
                 onOrderClick={onOrderClick}
                 onRefresh={handleRefresh}
-                assigneeName={order.assigned_to_name || getAssigneeName(order.assigned_to || "")}
+                assigneeName={order.assigned_to_name || "Unassigned"}
                 hideActions={!isAdmin}
                 hidePriority={!isAdmin}
               />
