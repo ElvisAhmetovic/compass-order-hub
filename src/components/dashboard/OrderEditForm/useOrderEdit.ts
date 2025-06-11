@@ -66,7 +66,20 @@ export const useOrderEdit = (order: Order, onRefresh: () => void) => {
 
     setIsSaving(true);
     try {
-      await OrderService.updateOrder(order.id, editedOrder);
+      // Cast to Partial<Order> to ensure type compatibility
+      const updateData: Partial<Order> = {
+        company_name: editedOrder.company_name,
+        company_address: editedOrder.company_address,
+        contact_email: editedOrder.contact_email,
+        contact_phone: editedOrder.contact_phone,
+        company_link: editedOrder.company_link,
+        description: editedOrder.description,
+        price: editedOrder.price,
+        currency: editedOrder.currency,
+        priority: editedOrder.priority
+      };
+      
+      await OrderService.updateOrder(order.id, updateData);
       
       toast({
         title: "Order Updated",

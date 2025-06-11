@@ -1,5 +1,6 @@
 
 import { validateEmail } from "@/utils/formValidation";
+import { OrderPriority } from "@/types";
 
 export interface OrderFormData {
   company_name: string;
@@ -10,7 +11,7 @@ export interface OrderFormData {
   description: string;
   price: number;
   currency: string;
-  priority: string;
+  priority: OrderPriority;
 }
 
 export interface ValidationErrors {
