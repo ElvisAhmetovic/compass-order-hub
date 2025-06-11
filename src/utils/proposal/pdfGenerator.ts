@@ -4,24 +4,24 @@ import html2canvas from "html2canvas";
 import { translations, PROPOSAL_LANGUAGES } from "./constants";
 import { getCompanyInfo } from "./companyInfo";
 
-// Reverted PDF content with larger, more readable fonts and better spacing
+// Enhanced PDF content with much larger, more readable fonts
 const createPDFContent = (proposalData: any, language: string = "en") => {
   const t = translations[language as keyof typeof translations] || translations.en;
   const companyInfo = getCompanyInfo();
 
-  // Larger, more readable sizing
-  const baseFontSize = 14;
-  const headerFontSize = 24;
-  const titleFontSize = 20;
-  const lineHeight = 1.5;
-  const sectionSpacing = 24;
-  const elementPadding = 16;
+  // Much larger, more readable sizing
+  const baseFontSize = 16;
+  const headerFontSize = 28;
+  const titleFontSize = 24;
+  const lineHeight = 1.6;
+  const sectionSpacing = 32;
+  const elementPadding = 20;
 
   // Calculate logo width based on logoSize
   const logoWidth = proposalData.logoSize ? `${proposalData.logoSize}%` : '33%';
 
   // Proper VAT handling with all user data
-  console.log('PDF Generation - Readable layout with larger fonts:', proposalData);
+  console.log('PDF Generation - Large readable fonts:', proposalData);
   const isVatEnabled = proposalData.vatEnabled === true;
   const netAmount = proposalData.netAmount || 0;
   const vatRate = proposalData.vatRate || 0;
@@ -48,7 +48,7 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
   // Format the proposal date properly
   const proposalDate = proposalData.proposalDate ? new Date(proposalData.proposalDate).toLocaleDateString() : new Date(proposalData.created_at || Date.now()).toLocaleDateString();
 
-  console.log('PDF Generation - Readable layout with improved readability:', {
+  console.log('PDF Generation - Extra large readable fonts:', {
     baseFontSize,
     headerFontSize,
     titleFontSize,
@@ -67,108 +67,108 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
       
       <!-- PAGE 1 CONTENT -->
       
-      <!-- Header Section with Readable Design -->
+      <!-- Header Section with Large Readable Design -->
       <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: ${sectionSpacing + 10}px; padding-bottom: ${elementPadding}px; border-bottom: 2px solid #e2e8f0;">
         <div style="flex: 1; max-width: 62%;">
-          <div style="font-weight: 600; font-size: ${headerFontSize}px; margin-bottom: 10px; color: #1a202c; letter-spacing: -0.3px;">${companyInfo.name}</div>
+          <div style="font-weight: 600; font-size: ${headerFontSize}px; margin-bottom: 12px; color: #1a202c; letter-spacing: -0.3px;">${companyInfo.name}</div>
           <div style="line-height: ${lineHeight}; color: #4a5568; font-size: ${baseFontSize}px;">
-            <div style="margin-bottom: 4px;">${companyInfo.street}</div>
-            <div style="margin-bottom: 4px;">${companyInfo.postal} ${companyInfo.city}</div>
+            <div style="margin-bottom: 6px;">${companyInfo.street}</div>
+            <div style="margin-bottom: 6px;">${companyInfo.postal} ${companyInfo.city}</div>
             <div style="color: #718096; font-size: ${baseFontSize - 1}px;">${companyInfo.country || 'Germany'}</div>
           </div>
         </div>
         <div style="text-align: right;">
-          <div style="background: #f7fafc; padding: 12px; border-radius: 6px; border: 1px solid #e2e8f0; margin-bottom: 10px;">
-            <img src="${proposalData.logo || companyInfo.logo}" style="max-height: 60px; max-width: ${logoWidth};" onerror="this.src='https://placehold.co/200x60?text=Your+Logo'; this.onerror=null;" />
+          <div style="background: #f7fafc; padding: 14px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 12px;">
+            <img src="${proposalData.logo || companyInfo.logo}" style="max-height: 70px; max-width: ${logoWidth};" onerror="this.src='https://placehold.co/200x60?text=Your+Logo'; this.onerror=null;" />
           </div>
         </div>
       </div>
 
-      <!-- Customer Information and Proposal Details with Better Spacing -->
-      <div style="display: flex; justify-content: space-between; margin-bottom: ${sectionSpacing}px; gap: 24px;">
-        <div style="flex: 1; background: #f8fafc; padding: ${elementPadding}px; border-radius: 6px; border: 1px solid #e2e8f0;">
-          <div style="font-weight: 600; font-size: ${baseFontSize}px; margin-bottom: 12px; color: #2d3748; text-transform: uppercase; letter-spacing: 0.4px; border-bottom: 1px solid #cbd5e0; padding-bottom: 6px;">${t.customer}</div>
-          <div style="line-height: ${lineHeight}; font-size: ${baseFontSize - 1}px;">
-            <div style="font-weight: 600; margin-bottom: 6px; font-size: ${baseFontSize + 1}px; color: #2d3748;">${proposalData.customerName || proposalData.customer || 'Name Surname'}</div>
-            <div style="margin-bottom: 4px; color: #4a5568;">${proposalData.customerAddress || 'Leidsestraat 15, 2000 Antwerpen'}</div>
-            <div style="margin-bottom: 4px; color: #4a5568;">${proposalData.customerEmail || 'customer@email.com'}</div>
+      <!-- Customer Information and Proposal Details with Large Spacing -->
+      <div style="display: flex; justify-content: space-between; margin-bottom: ${sectionSpacing}px; gap: 28px;">
+        <div style="flex: 1; background: #f8fafc; padding: ${elementPadding}px; border-radius: 8px; border: 1px solid #e2e8f0;">
+          <div style="font-weight: 600; font-size: ${baseFontSize + 1}px; margin-bottom: 14px; color: #2d3748; text-transform: uppercase; letter-spacing: 0.4px; border-bottom: 1px solid #cbd5e0; padding-bottom: 8px;">${t.customer}</div>
+          <div style="line-height: ${lineHeight}; font-size: ${baseFontSize}px;">
+            <div style="font-weight: 600; margin-bottom: 8px; font-size: ${baseFontSize + 2}px; color: #2d3748;">${proposalData.customerName || proposalData.customer || 'Name Surname'}</div>
+            <div style="margin-bottom: 6px; color: #4a5568;">${proposalData.customerAddress || 'Leidsestraat 15, 2000 Antwerpen'}</div>
+            <div style="margin-bottom: 6px; color: #4a5568;">${proposalData.customerEmail || 'customer@email.com'}</div>
             <div style="color: #718096; font-weight: 500;">${proposalData.customerCountry || 'Belgium'}</div>
           </div>
         </div>
         
-        <div style="flex: 0 0 auto; min-width: 260px;">
-          <div style="background: #f8fafc; padding: ${elementPadding}px; border-radius: 6px; border: 1px solid #e2e8f0;">
-            <div style="margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; padding-bottom: 4px; border-bottom: 1px solid #e2e8f0;">
-              <span style="font-weight: 500; color: #4a5568; font-size: ${baseFontSize - 2}px;">Proposal no.</span>
-              <span style="font-weight: 600; color: #2d3748; font-size: ${baseFontSize - 1}px;">${proposalData.number || 'AN-9993'}</span>
+        <div style="flex: 0 0 auto; min-width: 280px;">
+          <div style="background: #f8fafc; padding: ${elementPadding}px; border-radius: 8px; border: 1px solid #e2e8f0;">
+            <div style="margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; padding-bottom: 6px; border-bottom: 1px solid #e2e8f0;">
+              <span style="font-weight: 500; color: #4a5568; font-size: ${baseFontSize - 1}px;">Proposal no.</span>
+              <span style="font-weight: 600; color: #2d3748; font-size: ${baseFontSize}px;">${proposalData.number || 'AN-9993'}</span>
             </div>
-            <div style="margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; padding-bottom: 4px; border-bottom: 1px solid #e2e8f0;">
-              <span style="font-weight: 500; color: #4a5568; font-size: ${baseFontSize - 2}px;">${t.date}</span>
-              <span style="color: #4a5568; font-weight: 500; font-size: ${baseFontSize - 2}px;">${proposalDate}</span>
+            <div style="margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; padding-bottom: 6px; border-bottom: 1px solid #e2e8f0;">
+              <span style="font-weight: 500; color: #4a5568; font-size: ${baseFontSize - 1}px;">${t.date}</span>
+              <span style="color: #4a5568; font-weight: 500; font-size: ${baseFontSize - 1}px;">${proposalDate}</span>
             </div>
-            <div style="margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; padding-bottom: 4px; border-bottom: 1px solid #e2e8f0;">
-              <span style="font-weight: 500; color: #4a5568; font-size: ${baseFontSize - 2}px;">${t.customerRef}</span>
-              <span style="color: #4a5568; font-weight: 500; font-size: ${baseFontSize - 2}px;">${proposalData.customerRef || proposalData.reference || '—'}</span>
+            <div style="margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; padding-bottom: 6px; border-bottom: 1px solid #e2e8f0;">
+              <span style="font-weight: 500; color: #4a5568; font-size: ${baseFontSize - 1}px;">${t.customerRef}</span>
+              <span style="color: #4a5568; font-weight: 500; font-size: ${baseFontSize - 1}px;">${proposalData.customerRef || proposalData.reference || '—'}</span>
             </div>
             <div style="display: flex; justify-content: space-between; align-items: center;">
-              <span style="font-weight: 500; color: #4a5568; font-size: ${baseFontSize - 2}px;">${t.yourContact}</span>
-              <span style="color: #4a5568; font-weight: 500; font-size: ${baseFontSize - 2}px;">${proposalData.yourContact || proposalData.internalContact || 'Thomas Klein'}</span>
+              <span style="font-weight: 500; color: #4a5568; font-size: ${baseFontSize - 1}px;">${t.yourContact}</span>
+              <span style="color: #4a5568; font-weight: 500; font-size: ${baseFontSize - 1}px;">${proposalData.yourContact || proposalData.internalContact || 'Thomas Klein'}</span>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Readable Proposal Title -->
-      <div style="background: #2d3748; color: white; padding: ${elementPadding}px; border-radius: 5px; margin-bottom: ${sectionSpacing}px;">
+      <!-- Large Readable Proposal Title -->
+      <div style="background: #2d3748; color: white; padding: ${elementPadding + 4}px; border-radius: 8px; margin-bottom: ${sectionSpacing}px;">
         <h2 style="margin: 0; font-size: ${titleFontSize}px; font-weight: 600; letter-spacing: -0.2px;">
           ${t.proposal} ${proposalData.number || 'AN-9993'}
         </h2>
       </div>
 
-      <!-- Readable Proposal Content -->
-      <div style="margin-bottom: ${sectionSpacing}px; background: white; padding: ${elementPadding}px; border-radius: 5px; border: 1px solid #e2e8f0;">
-        <div style="line-height: ${lineHeight}; font-size: ${baseFontSize - 1}px;">
-          <div style="font-weight: 600; font-size: ${baseFontSize + 2}px; color: #2d3748; margin-bottom: 10px;">
+      <!-- Large Readable Proposal Content -->
+      <div style="margin-bottom: ${sectionSpacing}px; background: white; padding: ${elementPadding + 4}px; border-radius: 8px; border: 1px solid #e2e8f0;">
+        <div style="line-height: ${lineHeight}; font-size: ${baseFontSize}px;">
+          <div style="font-weight: 600; font-size: ${baseFontSize + 4}px; color: #2d3748; margin-bottom: 12px;">
             ${proposalData.proposalTitle || proposalData.subject || 'Protect your online REPUTATION!'}
           </div>
-          <div style="color: #4a5568; line-height: ${lineHeight};">
+          <div style="color: #4a5568; line-height: ${lineHeight}; font-size: ${baseFontSize}px;">
             ${proposalData.proposalDescription || 'Thank you for your enquiry. We will be happy to provide you with the requested non-binding offer.'}
             ${proposalData.content ? `<br/><br/>${proposalData.content}` : ''}
           </div>
         </div>
       </div>
 
-      <!-- Readable Products/Services Table -->
-      <div style="margin-bottom: ${sectionSpacing}px; border-radius: 5px; overflow: hidden; border: 1px solid #e2e8f0;">
-        <table style="width: 100%; border-collapse: collapse; font-size: ${baseFontSize - 2}px; background: white;">
+      <!-- Large Readable Products/Services Table -->
+      <div style="margin-bottom: ${sectionSpacing}px; border-radius: 8px; overflow: hidden; border: 1px solid #e2e8f0;">
+        <table style="width: 100%; border-collapse: collapse; font-size: ${baseFontSize}px; background: white;">
           <thead>
             <tr style="background: #2d3748; color: white;">
-              <th style="padding: 12px 16px; text-align: left; font-weight: 600; border: none; width: 50%; font-size: ${baseFontSize - 2}px; text-transform: uppercase; letter-spacing: 0.2px;">${t.productDescription}</th>
-              <th style="padding: 12px 16px; text-align: center; font-weight: 600; border: none; width: 16%; font-size: ${baseFontSize - 2}px; text-transform: uppercase; letter-spacing: 0.2px;">${t.price}</th>
-              <th style="padding: 12px 16px; text-align: center; font-weight: 600; border: none; width: 14%; font-size: ${baseFontSize - 2}px; text-transform: uppercase; letter-spacing: 0.2px;">${t.qty}</th>
-              <th style="padding: 12px 16px; text-align: right; font-weight: 600; border: none; width: 20%; font-size: ${baseFontSize - 2}px; text-transform: uppercase; letter-spacing: 0.2px;">${t.total}</th>
+              <th style="padding: 16px 20px; text-align: left; font-weight: 600; border: none; width: 50%; font-size: ${baseFontSize}px; text-transform: uppercase; letter-spacing: 0.2px;">${t.productDescription}</th>
+              <th style="padding: 16px 20px; text-align: center; font-weight: 600; border: none; width: 16%; font-size: ${baseFontSize}px; text-transform: uppercase; letter-spacing: 0.2px;">${t.price}</th>
+              <th style="padding: 16px 20px; text-align: center; font-weight: 600; border: none; width: 14%; font-size: ${baseFontSize}px; text-transform: uppercase; letter-spacing: 0.2px;">${t.qty}</th>
+              <th style="padding: 16px 20px; text-align: right; font-weight: 600; border: none; width: 20%; font-size: ${baseFontSize}px; text-transform: uppercase; letter-spacing: 0.2px;">${t.total}</th>
             </tr>
           </thead>
           <tbody>
             ${(proposalData.lineItems || []).map((item: any, index: number) => `
               <tr style="border-bottom: 1px solid #e2e8f0; background-color: ${index % 2 === 0 ? '#f8fafc' : 'white'};">
-                <td style="padding: 14px 16px; border: none; vertical-align: top;">
-                  <div style="font-weight: 600; margin-bottom: 4px; color: #2d3748; font-size: ${baseFontSize - 1}px; line-height: 1.3;">
+                <td style="padding: 18px 20px; border: none; vertical-align: top;">
+                  <div style="font-weight: 600; margin-bottom: 6px; color: #2d3748; font-size: ${baseFontSize + 1}px; line-height: 1.3;">
                     ${item.name || 'Product/Service Name'}
                   </div>
                   ${item.description || item.additionalInfo ? `
-                  <div style="line-height: 1.4; color: #718096; font-size: ${baseFontSize - 3}px; margin-top: 4px;">
+                  <div style="line-height: 1.4; color: #718096; font-size: ${baseFontSize - 1}px; margin-top: 6px;">
                     ${item.description || item.additionalInfo || ''}
                   </div>
                   ` : ''}
                 </td>
-                <td style="padding: 14px 16px; border: none; text-align: center; vertical-align: top; font-weight: 500; color: #4a5568; font-size: ${baseFontSize - 2}px;">
+                <td style="padding: 18px 20px; border: none; text-align: center; vertical-align: top; font-weight: 500; color: #4a5568; font-size: ${baseFontSize}px;">
                   ${currencySymbol}${(item.unit_price || 0).toFixed(2)}
                 </td>
-                <td style="padding: 14px 16px; border: none; text-align: center; vertical-align: top; font-weight: 500; color: #4a5568; font-size: ${baseFontSize - 2}px;">
+                <td style="padding: 18px 20px; border: none; text-align: center; vertical-align: top; font-weight: 500; color: #4a5568; font-size: ${baseFontSize}px;">
                   ${item.quantity || 1}
                 </td>
-                <td style="padding: 14px 16px; border: none; text-align: right; vertical-align: top; font-weight: 600; font-size: ${baseFontSize - 1}px; color: #2d3748;">
+                <td style="padding: 18px 20px; border: none; text-align: right; vertical-align: top; font-weight: 600; font-size: ${baseFontSize + 1}px; color: #2d3748;">
                   ${currencySymbol}${(item.total_price || 0).toFixed(2)}
                 </td>
               </tr>
@@ -177,22 +177,22 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
         </table>
       </div>
 
-      <!-- Readable Totals Section -->
+      <!-- Large Readable Totals Section -->
       <div style="display: flex; justify-content: flex-end; margin-bottom: ${sectionSpacing}px;">
-        <div style="width: 300px; background: white; border-radius: 5px; overflow: hidden; border: 1px solid #e2e8f0;">
-          <div style="background: #4a5568; color: white; padding: 10px 16px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.2px; font-size: ${baseFontSize - 2}px;">
+        <div style="width: 320px; background: white; border-radius: 8px; overflow: hidden; border: 1px solid #e2e8f0;">
+          <div style="background: #4a5568; color: white; padding: 12px 20px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.2px; font-size: ${baseFontSize}px;">
             Summary
           </div>
-          <div style="padding: 14px 16px;">
-            <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e2e8f0; font-size: ${baseFontSize - 1}px;">
+          <div style="padding: 18px 20px;">
+            <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e2e8f0; font-size: ${baseFontSize}px;">
               <span style="color: #718096; font-weight: 500;">${t.subtotal}</span>
               <span style="font-weight: 600; color: #2d3748;">${currencySymbol}${netAmount.toFixed(2)}</span>
             </div>
-            <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e2e8f0; font-size: ${baseFontSize - 1}px;">
+            <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e2e8f0; font-size: ${baseFontSize}px;">
               <span style="color: #718096; font-weight: 500;">${t.vat} ${isVatEnabled ? `${vatRate}%` : '0%'}</span>
               <span style="font-weight: 600; color: #2d3748;">${currencySymbol}${vatAmount.toFixed(2)}</span>
             </div>
-            <div style="display: flex; justify-content: space-between; padding: 12px 0; font-weight: 700; font-size: ${baseFontSize + 1}px; background: #2d3748; color: white; margin: 10px -16px -14px -16px; padding-left: 16px; padding-right: 16px;">
+            <div style="display: flex; justify-content: space-between; padding: 14px 0; font-weight: 700; font-size: ${baseFontSize + 2}px; background: #2d3748; color: white; margin: 12px -20px -18px -20px; padding-left: 20px; padding-right: 20px;">
               <span>${t.totalAmount}</span>
               <span>${currencySymbol}${totalAmount.toFixed(2)}</span>
             </div>
@@ -200,28 +200,28 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
         </div>
       </div>
 
-      <!-- TERMS AND CONDITIONS - Readable -->
-      <div style="margin-bottom: ${sectionSpacing - 2}px; background: white; padding: ${elementPadding}px; border-radius: 5px; border: 1px solid #e2e8f0; page-break-inside: avoid; break-inside: avoid;">
-        <div style="font-weight: 600; margin-bottom: 10px; text-transform: uppercase; color: #2d3748; font-size: ${baseFontSize - 1}px; letter-spacing: 0.2px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;">
+      <!-- TERMS AND CONDITIONS - Large Readable -->
+      <div style="margin-bottom: ${sectionSpacing}px; background: white; padding: ${elementPadding + 4}px; border-radius: 8px; border: 1px solid #e2e8f0; page-break-inside: avoid; break-inside: avoid;">
+        <div style="font-weight: 600; margin-bottom: 14px; text-transform: uppercase; color: #2d3748; font-size: ${baseFontSize + 1}px; letter-spacing: 0.2px; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px;">
           ${t.termsAndConditions}
         </div>
-        <div style="line-height: ${lineHeight}; font-size: ${baseFontSize - 2}px; color: #4a5568;">
+        <div style="line-height: ${lineHeight}; font-size: ${baseFontSize}px; color: #4a5568;">
           ${proposalData.paymentTerms || proposalData.deliveryTerms || t.paymentTerms}
           ${proposalData.termsAndConditions ? `<br/><br/>${proposalData.termsAndConditions}` : ''}
         </div>
       </div>
 
-      <!-- Signature Section - Readable -->
-      <div style="display: flex; justify-content: space-between; margin-bottom: ${sectionSpacing}px; gap: 24px;">
-        <div style="width: 45%; background: white; padding: 12px; border-radius: 5px; border: 1px solid #e2e8f0;">
-          <div style="border-top: 2px solid #2d3748; padding-top: 8px;">
-            <div style="font-size: ${baseFontSize - 3}px; color: #718096; font-weight: 500; text-transform: uppercase; letter-spacing: 0.2px;">${t.placeDate}</div>
+      <!-- Signature Section - Large Readable -->
+      <div style="display: flex; justify-content: space-between; margin-bottom: ${sectionSpacing}px; gap: 28px;">
+        <div style="width: 45%; background: white; padding: 16px; border-radius: 8px; border: 1px solid #e2e8f0;">
+          <div style="border-top: 2px solid #2d3748; padding-top: 12px;">
+            <div style="font-size: ${baseFontSize - 1}px; color: #718096; font-weight: 500; text-transform: uppercase; letter-spacing: 0.2px;">${t.placeDate}</div>
           </div>
         </div>
-        <div style="width: 45%; background: white; padding: 12px; border-radius: 5px; border: 1px solid #e2e8f0;">
-          <div style="border-top: 2px solid #2d3748; padding-top: 8px;">
-            <div style="font-size: ${baseFontSize - 3}px; color: #718096; font-weight: 500; text-transform: uppercase; letter-spacing: 0.2px;">${t.signatureStamp}</div>
-            ${proposalData.signatureUrl ? `<img src="${proposalData.signatureUrl}" style="max-height: 32px; margin-top: 8px;" />` : ''}
+        <div style="width: 45%; background: white; padding: 16px; border-radius: 8px; border: 1px solid #e2e8f0;">
+          <div style="border-top: 2px solid #2d3748; padding-top: 12px;">
+            <div style="font-size: ${baseFontSize - 1}px; color: #718096; font-weight: 500; text-transform: uppercase; letter-spacing: 0.2px;">${t.signatureStamp}</div>
+            ${proposalData.signatureUrl ? `<img src="${proposalData.signatureUrl}" style="max-height: 40px; margin-top: 10px;" />` : ''}
           </div>
         </div>
       </div>
@@ -232,81 +232,81 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
       <!-- PAGE 2 CONTENT STARTS HERE -->
       
       <!-- Top spacing for second page -->
-      <div style="height: 40px; width: 100%; clear: both; display: block; margin: 0; padding: 0;"></div>
+      <div style="height: 50px; width: 100%; clear: both; display: block; margin: 0; padding: 0;"></div>
 
-      <!-- READABLE PAYMENT DATA Section - Green background -->
-      <div style="margin-bottom: ${sectionSpacing}px; background: #e6fffa !important; padding: ${elementPadding + 2}px !important; border-radius: 6px; border-left: 4px solid #38a169 !important; border: 1px solid #81e6d9 !important; box-sizing: border-box; page-break-inside: avoid; break-inside: avoid; position: relative; display: block; clear: both; width: 100%; min-height: 120px; overflow: visible;">
-        <div style="font-weight: 600; margin-bottom: 12px; color: #2d6b4f !important; font-size: ${baseFontSize}px; text-transform: uppercase; letter-spacing: 0.2px; line-height: 1.3;">
+      <!-- LARGE READABLE PAYMENT DATA Section - Green background -->
+      <div style="margin-bottom: ${sectionSpacing}px; background: #e6fffa !important; padding: ${elementPadding + 4}px !important; border-radius: 8px; border-left: 4px solid #38a169 !important; border: 1px solid #81e6d9 !important; box-sizing: border-box; page-break-inside: avoid; break-inside: avoid; position: relative; display: block; clear: both; width: 100%; min-height: 140px; overflow: visible;">
+        <div style="font-weight: 600; margin-bottom: 16px; color: #2d6b4f !important; font-size: ${baseFontSize + 2}px; text-transform: uppercase; letter-spacing: 0.2px; line-height: 1.3;">
           ${t.paymentData}
         </div>
-        <div style="line-height: 1.6; font-size: ${baseFontSize - 1}px; color: #2d6b4f !important;">
-          <div style="margin-bottom: 8px; display: flex; align-items: center;">
-            <strong style="min-width: 120px; display: inline-block; color: #2d6b4f !important;">${t.accountNr}</strong> 
+        <div style="line-height: 1.7; font-size: ${baseFontSize + 1}px; color: #2d6b4f !important;">
+          <div style="margin-bottom: 10px; display: flex; align-items: center;">
+            <strong style="min-width: 140px; display: inline-block; color: #2d6b4f !important;">${t.accountNr}</strong> 
             <span style="color: #2d6b4f !important;">${paymentAccountNumber}</span>
           </div>
-          <div style="margin-bottom: 8px; display: flex; align-items: center;">
-            <strong style="min-width: 120px; display: inline-block; color: #2d6b4f !important;">${t.name}</strong> 
+          <div style="margin-bottom: 10px; display: flex; align-items: center;">
+            <strong style="min-width: 140px; display: inline-block; color: #2d6b4f !important;">${t.name}</strong> 
             <span style="color: #2d6b4f !important;">${paymentAccountName}</span>
           </div>
           <div style="display: flex; align-items: center;">
-            <strong style="min-width: 120px; display: inline-block; color: #2d6b4f !important;">${t.paymentMethod}</strong> 
+            <strong style="min-width: 140px; display: inline-block; color: #2d6b4f !important;">${t.paymentMethod}</strong> 
             <span style="color: #2d6b4f !important;">${paymentMethodValue}</span>
           </div>
         </div>
       </div>
 
-      <!-- Footer Content - Readable -->
+      <!-- Footer Content - Large Readable -->
       ${proposalData.footerContent ? `
-      <div style="margin-bottom: ${sectionSpacing - 2}px; padding: ${elementPadding}px; background: #faf5ff; border-radius: 5px; border-left: 4px solid #805ad5; border: 1px solid #e9d8fd; page-break-inside: avoid; break-inside: avoid;">
-        <div style="line-height: ${lineHeight}; font-size: ${baseFontSize - 2}px; color: #553c9a;">
+      <div style="margin-bottom: ${sectionSpacing}px; padding: ${elementPadding + 4}px; background: #faf5ff; border-radius: 8px; border-left: 4px solid #805ad5; border: 1px solid #e9d8fd; page-break-inside: avoid; break-inside: avoid;">
+        <div style="line-height: ${lineHeight}; font-size: ${baseFontSize}px; color: #553c9a;">
           ${proposalData.footerContent}
         </div>
       </div>
       ` : ''}
 
-      <!-- COMPANY FOOTER - Readable -->
-      <div style="background: #2d3748; border-radius: 5px; margin-top: ${sectionSpacing}px; width: 100%; clear: both; position: relative; page-break-inside: avoid; break-inside: avoid; box-sizing: border-box; min-height: 140px; display: block;">
+      <!-- COMPANY FOOTER - Large Readable -->
+      <div style="background: #2d3748; border-radius: 8px; margin-top: ${sectionSpacing}px; width: 100%; clear: both; position: relative; page-break-inside: avoid; break-inside: avoid; box-sizing: border-box; min-height: 160px; display: block;">
         <!-- Company Name Header -->
-        <div style="background: rgba(255,255,255,0.1); padding: 8px 16px; border-bottom: 1px solid rgba(255,255,255,0.1);">
-          <div style="color: white; font-weight: 600; font-size: ${baseFontSize - 2}px; text-align: center; letter-spacing: 0.4px;">
+        <div style="background: rgba(255,255,255,0.1); padding: 10px 20px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+          <div style="color: white; font-weight: 600; font-size: ${baseFontSize}px; text-align: center; letter-spacing: 0.4px;">
             ${companyInfo.name || 'AB MEDIA TEAM LTD'}
           </div>
         </div>
         
         <!-- Contact Information Grid -->
-        <div style="padding: 12px 16px; color: white; font-size: ${baseFontSize - 4}px;">
+        <div style="padding: 16px 20px; color: white; font-size: ${baseFontSize - 2}px;">
           
           <!-- Phone & Fax -->
-          <div style="margin-bottom: 8px;">
+          <div style="margin-bottom: 12px;">
             <div style="display: inline-block; width: 33%; vertical-align: top;">
-              <div style="margin-bottom: 4px;">
-                <span style="font-weight: 500; margin-right: 6px; color: #cbd5e0;">Tel:</span>
+              <div style="margin-bottom: 6px;">
+                <span style="font-weight: 500; margin-right: 8px; color: #cbd5e0;">Tel:</span>
                 <span>${companyInfo.phone || '+49 203 70 90 72 62'}</span>
               </div>
               <div>
-                <span style="font-weight: 500; margin-right: 6px; color: #cbd5e0;">Fax:</span>
+                <span style="font-weight: 500; margin-right: 8px; color: #cbd5e0;">Fax:</span>
                 <span>${companyInfo.fax || '+49 203 70 90 73 53'}</span>
               </div>
             </div>
             
             <!-- Email & Website -->
             <div style="display: inline-block; width: 33%; vertical-align: top;">
-              <div style="margin-bottom: 4px;">
-                <span style="font-weight: 500; margin-right: 6px; color: #cbd5e0;">Email:</span>
+              <div style="margin-bottom: 6px;">
+                <span style="font-weight: 500; margin-right: 8px; color: #cbd5e0;">Email:</span>
                 <span>${companyInfo.email || 'kontakt.abmedia@gmail.com'}</span>
               </div>
               <div>
-                <span style="font-weight: 500; margin-right: 6px; color: #cbd5e0;">Web:</span>
+                <span style="font-weight: 500; margin-right: 8px; color: #cbd5e0;">Web:</span>
                 <span>${companyInfo.website || 'www.abmedia-team.com'}</span>
               </div>
             </div>
             
             <!-- Address & Contact Person -->
             <div style="display: inline-block; width: 33%; vertical-align: top; text-align: right;">
-              <div style="font-weight: 500; margin-bottom: 3px; color: #cbd5e0; font-size: ${baseFontSize - 4}px;">
+              <div style="font-weight: 500; margin-bottom: 4px; color: #cbd5e0; font-size: ${baseFontSize - 2}px;">
                 ${companyInfo.contactPerson || 'Andreas Berger'}
               </div>
-              <div style="line-height: 1.3; font-size: ${baseFontSize - 5}px;">
+              <div style="line-height: 1.4; font-size: ${baseFontSize - 3}px;">
                 ${companyInfo.street || 'Weseler Str.73'}<br/>
                 ${companyInfo.postal || '47169'} ${companyInfo.city || 'Duisburg'}<br/>
                 ${companyInfo.country || 'Germany'}
@@ -316,11 +316,11 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
         </div>
         
         <!-- Business Information -->
-        <div style="background: rgba(255,255,255,0.05); padding: 8px 16px; border-top: 1px solid rgba(255,255,255,0.1);">
-          <div style="color: #cbd5e0; font-size: ${baseFontSize - 5}px;">
+        <div style="background: rgba(255,255,255,0.05); padding: 10px 20px; border-top: 1px solid rgba(255,255,255,0.1);">
+          <div style="color: #cbd5e0; font-size: ${baseFontSize - 3}px;">
             <div style="display: inline-block; width: 70%; vertical-align: top;">
-              <span style="margin-right: 12px;">REG: ${companyInfo.registrationNumber || '15748871'}</span>
-              <span style="margin-right: 12px;">VAT: ${companyInfo.vatId || 'DE123418679'}</span>
+              <span style="margin-right: 14px;">REG: ${companyInfo.registrationNumber || '15748871'}</span>
+              <span style="margin-right: 14px;">VAT: ${companyInfo.vatId || 'DE123418679'}</span>
               <span>TAX: ${companyInfo.taxNumber || '13426 27369'}</span>
             </div>
             <div style="display: inline-block; width: 30%; text-align: right; vertical-align: top;">
