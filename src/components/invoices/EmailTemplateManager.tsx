@@ -21,7 +21,7 @@ const EmailTemplateManager: React.FC = () => {
     name: "",
     subject: "",
     body: "",
-    type: "invoice" as const,
+    type: "invoice" as 'invoice' | 'payment_reminder' | 'order_status' | 'general',
     isDefault: false
   });
   const { toast } = useToast();
@@ -156,7 +156,7 @@ AB Media Team`
   const handleTemplateTypeChange = (type: string) => {
     setFormData(prev => ({
       ...prev,
-      type: type as any,
+      type: type as 'invoice' | 'payment_reminder' | 'order_status' | 'general',
       body: prev.body || defaultTemplates[type as keyof typeof defaultTemplates] || ""
     }));
   };
