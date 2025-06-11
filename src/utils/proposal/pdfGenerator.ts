@@ -1,8 +1,7 @@
 import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
-import { PROPOSAL_LANGUAGES } from "./constants";
 import { getCompanyInfo } from "./companyInfo";
-import { translations } from "../proposalTranslations";
+import { translations, SUPPORTED_LANGUAGES } from "../proposalTranslations";
 
 // Enhanced PDF content with proper page break handling
 const createPDFContent = (proposalData: any, language: string = "en") => {
@@ -510,8 +509,8 @@ export const previewProposalPDF = async (proposalData: any, language: string = "
     languageSelector.style.borderRadius = "4px";
     languageSelector.style.marginRight = "8px";
     
-    // Add language options
-    PROPOSAL_LANGUAGES.forEach(lang => {
+    // Add language options using SUPPORTED_LANGUAGES from proposalTranslations
+    SUPPORTED_LANGUAGES.forEach(lang => {
       const option = document.createElement("option");
       option.value = lang.code;
       option.text = lang.name;
