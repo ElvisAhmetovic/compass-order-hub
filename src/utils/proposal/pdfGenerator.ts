@@ -1,4 +1,3 @@
-
 import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
 import { getCompanyInfo } from "./companyInfo";
@@ -47,7 +46,7 @@ const getTextDirection = (language: string) => {
   return language === 'ar' ? 'rtl' : 'ltr';
 };
 
-// Create first page content - ALWAYS includes header, customer info, proposal content, and line items
+// Create first page content - ALWAYS includes header, customer info, proposal content, line items, and signature
 const createFirstPageContent = (proposalData: any, language: string = "en") => {
   const t = translations[language as keyof typeof translations] || translations.en;
   const companyInfo = getCompanyInfo();
@@ -288,13 +287,49 @@ const createFirstPageContent = (proposalData: any, language: string = "en") => {
       </div>
 
       <!-- Totals Section -->
-      <div class="section" style="display: flex; justify-content: flex-end;">
+      <div class="section" style="display: flex; justify-content: space-between; align-items: flex-end;">
+        <div style="flex: 1;">
+          <!-- Signature Section - Now on first page -->
+          <div style="
+            display: flex; 
+            justify-content: space-between; 
+            gap: 20px;
+            min-height: 80px;
+            margin-top: 20px;
+          ">
+            <div style="
+              width: 45%; 
+              background: white; 
+              padding: 12px; 
+              border-radius: 6px; 
+              border: 1px solid #e2e8f0;
+            ">
+              <div style="border-top: 2px solid #2d3748; padding-top: 8px;">
+                <div style="font-size: 12px; color: #718096; font-weight: 500;">Place & Date</div>
+              </div>
+            </div>
+            <div style="
+              width: 45%; 
+              background: white; 
+              padding: 12px; 
+              border-radius: 6px; 
+              border: 1px solid #e2e8f0;
+            ">
+              <div style="border-top: 2px solid #2d3748; padding-top: 8px;">
+                <div style="font-size: 12px; color: #718096; font-weight: 500;">Signature & Stamp</div>
+                ${proposalData.signatureUrl ? `<img src="${proposalData.signatureUrl}" style="max-height: 30px; margin-top: 8px;" />` : ''}
+              </div>
+            </div>
+          </div>
+        </div>
+        
         <div style="
           width: 260px; 
           background: white; 
           border-radius: 6px; 
           border: 1px solid #e2e8f0;
           font-size: 13px;
+          margin-left: 20px;
         ">
           <div style="
             background: #4a5568; 
@@ -344,7 +379,7 @@ const createFirstPageContent = (proposalData: any, language: string = "en") => {
   `;
 };
 
-// Create second page content - ALWAYS includes terms, payment data, and signature
+// Create second page content - Terms and conditionally payment data
 const createSecondPageContent = (proposalData: any, language: string = "en") => {
   const t = translations[language as keyof typeof translations] || translations.en;
   const companyInfo = getCompanyInfo();
@@ -353,7 +388,7 @@ const createSecondPageContent = (proposalData: any, language: string = "en") => 
   const fontFamily = getLanguageFont(language);
   const textDirection = getTextDirection(language);
 
-  // Payment data
+  // Payment data (only if enabled)
   const paymentAccountNumber = proposalData.accountNumber || companyInfo.accountNumber || '12345678901234567';
   const paymentAccountName = proposalData.accountName || companyInfo.accountHolder || 'YOUR NAME';
   const paymentMethodValue = proposalData.paymentMethod || companyInfo.paymentMethod || 'CREDIT CARD';
@@ -411,7 +446,8 @@ const createSecondPageContent = (proposalData: any, language: string = "en") => 
         </div>
       </div>
 
-      <!-- Payment Data Section -->
+      <!-- Payment Data Section - Only if enabled -->
+      ${proposalData.includePaymentData !== false ? `
       <div class="section" style="
         background: #e6fffa; 
         padding: 15px; 
@@ -439,38 +475,7 @@ const createSecondPageContent = (proposalData: any, language: string = "en") => 
           </div>
         </div>
       </div>
-
-      <!-- Signature Section -->
-      <div class="section" style="
-        display: flex; 
-        justify-content: space-between; 
-        gap: 20px;
-        min-height: 80px;
-      ">
-        <div style="
-          width: 45%; 
-          background: white; 
-          padding: 12px; 
-          border-radius: 6px; 
-          border: 1px solid #e2e8f0;
-        ">
-          <div style="border-top: 2px solid #2d3748; padding-top: 8px;">
-            <div style="font-size: 12px; color: #718096; font-weight: 500;">Place & Date</div>
-          </div>
-        </div>
-        <div style="
-          width: 45%; 
-          background: white; 
-          padding: 12px; 
-          border-radius: 6px; 
-          border: 1px solid #e2e8f0;
-        ">
-          <div style="border-top: 2px solid #2d3748; padding-top: 8px;">
-            <div style="font-size: 12px; color: #718096; font-weight: 500;">Signature & Stamp</div>
-            ${proposalData.signatureUrl ? `<img src="${proposalData.signatureUrl}" style="max-height: 30px; margin-top: 8px;" />` : ''}
-          </div>
-        </div>
-      </div>
+      ` : ''}
 
       <!-- Footer Content -->
       ${proposalData.footerContent ? `

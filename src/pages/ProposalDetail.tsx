@@ -84,6 +84,7 @@ interface ProposalData {
   logo?: string;
   logoSize?: number;
   signatureUrl?: string;
+  includePaymentData: boolean; // New property for payment data toggle
   
   // Line items
   lineItems: ProposalLineItem[];
@@ -152,6 +153,7 @@ const ProposalDetail = () => {
     // Footer and company info
     footerContent: "",
     logoSize: 33,
+    includePaymentData: true, // Default to including payment data
     
     // Line items
     lineItems: [],
@@ -613,6 +615,21 @@ const ProposalDetail = () => {
                     </SelectContent>
                   </Select>
                 </div>
+                
+                {/* Payment Data Toggle */}
+                <div className="flex items-center gap-2 bg-muted/50 px-3 py-2 rounded-lg">
+                  <Switch
+                    id="includePaymentData"
+                    checked={proposalData.includePaymentData}
+                    onCheckedChange={(checked) => 
+                      setProposalData(prev => ({ ...prev, includePaymentData: checked }))
+                    }
+                  />
+                  <Label htmlFor="includePaymentData" className="text-sm font-medium">
+                    Include Payment Data in PDF
+                  </Label>
+                </div>
+                
                 <TemplateManager 
                   currentProposalData={proposalData}
                   onLoadTemplate={handleLoadTemplate}
