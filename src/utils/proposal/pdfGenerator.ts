@@ -1,4 +1,3 @@
-
 import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
 import { getCompanyInfo } from "./companyInfo";
@@ -56,8 +55,8 @@ const createFirstPageContent = (proposalData: any, language: string = "en") => {
   const fontFamily = getLanguageFont(language);
   const textDirection = getTextDirection(language);
 
-  // Calculate logo width
-  const logoWidth = proposalData.logoSize ? `${proposalData.logoSize}%` : '33%';
+  // Calculate logo width - increased default from 50% to 80%
+  const logoWidth = proposalData.logoSize ? `${proposalData.logoSize}%` : '80%';
 
   // Currency symbol
   const getCurrencySymbol = (currency: string) => {
@@ -111,7 +110,7 @@ const createFirstPageContent = (proposalData: any, language: string = "en") => {
         padding-bottom: 12px; 
         border-bottom: 2px solid #e2e8f0;
       ">
-        <div style="flex: 1; max-width: 62%;">
+        <div style="flex: 1; max-width: 45%;">
           <div style="
             font-weight: 600; 
             font-size: 22px; 
@@ -126,17 +125,20 @@ const createFirstPageContent = (proposalData: any, language: string = "en") => {
             <div>${companyInfo.country || 'Germany'}</div>
           </div>
         </div>
-        <div style="text-align: right;">
+        <div style="text-align: right; flex: 1; max-width: 55%;">
           ${proposalData.logo || companyInfo.logo ? `
           <div style="
             background: #f7fafc; 
-            padding: 8px; 
+            padding: 12px; 
             border-radius: 6px; 
             border: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: center;
           ">
             <img src="${proposalData.logo || companyInfo.logo}" style="
-              max-height: 45px; 
+              max-height: 80px; 
               max-width: ${logoWidth};
+              object-fit: contain;
             " />
           </div>
           ` : ''}
@@ -738,7 +740,7 @@ export const previewProposalPDF = async (proposalData: any, language: string = "
     decreaseButton.style.cssText = "padding: 4px 8px; border-radius: 4px; border: 1px solid #ccc; margin-right: 8px; cursor: pointer;";
     
     const logoSizeValue = document.createElement("span");
-    logoSizeValue.textContent = `${proposalData.logoSize || 50}%`;
+    logoSizeValue.textContent = `${proposalData.logoSize || 80}%`;
     logoSizeValue.style.cssText = "margin-right: 8px; min-width: 40px; text-align: center;";
     
     const increaseButton = document.createElement("button");
@@ -764,7 +766,7 @@ export const previewProposalPDF = async (proposalData: any, language: string = "
     downloadButton.textContent = "Download PDF";
     downloadButton.style.cssText = "padding: 8px 16px; background-color: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; margin-right: 8px;";
     downloadButton.onclick = async () => {
-      await generateProposalPDF({...proposalData, logoSize: parseInt(logoSizeValue.textContent || '50')}, languageSelector.value);
+      await generateProposalPDF({...proposalData, logoSize: parseInt(logoSizeValue.textContent || '80')}, languageSelector.value);
     };
     
     const closeButton = document.createElement("button");
@@ -794,7 +796,7 @@ export const previewProposalPDF = async (proposalData: any, language: string = "
     `;
 
     // Update preview function
-    let currentLogoSize = proposalData.logoSize || 50;
+    let currentLogoSize = proposalData.logoSize || 80;
 
     const updatePreview = async (newLogoSize: number, newLanguage: string) => {
       const updatedProposalData = {
@@ -810,15 +812,15 @@ export const previewProposalPDF = async (proposalData: any, language: string = "
       }
     };
 
-    // Event handlers
+    // Event handlers - increased step size from 5 to 10 and max from 100 to 150
     decreaseButton.onclick = async () => {
-      currentLogoSize = Math.max(10, currentLogoSize - 5);
+      currentLogoSize = Math.max(20, currentLogoSize - 10);
       logoSizeValue.textContent = `${currentLogoSize}%`;
       await updatePreview(currentLogoSize, languageSelector.value);
     };
 
     increaseButton.onclick = async () => {
-      currentLogoSize = Math.min(100, currentLogoSize + 5);
+      currentLogoSize = Math.min(150, currentLogoSize + 10);
       logoSizeValue.textContent = `${currentLogoSize}%`;
       await updatePreview(currentLogoSize, languageSelector.value);
     };
