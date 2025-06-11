@@ -47,12 +47,10 @@ const getTextDirection = (language: string) => {
   return language === 'ar' ? 'rtl' : 'ltr';
 };
 
-// Create PDF content with proper styling
-const createPDFContent = (proposalData: any, language: string = "en") => {
+// Create first page content
+const createFirstPageContent = (proposalData: any, language: string = "en") => {
   const t = translations[language as keyof typeof translations] || translations.en;
   const companyInfo = getCompanyInfo();
-  
-  console.log('Creating PDF content with:', { proposalData, language, translations: t });
   
   // Get language-specific styling
   const fontFamily = getLanguageFont(language);
@@ -88,11 +86,6 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
 
   const currencySymbol = getCurrencySymbol(proposalData.currency || 'EUR');
 
-  // Payment data
-  const paymentAccountNumber = proposalData.accountNumber || companyInfo.accountNumber || '12345678901234567';
-  const paymentAccountName = proposalData.accountName || companyInfo.accountHolder || 'YOUR NAME';
-  const paymentMethodValue = proposalData.paymentMethod || companyInfo.paymentMethod || 'CREDIT CARD';
-
   // Format date
   const proposalDate = proposalData.proposalDate ? 
     new Date(proposalData.proposalDate).toLocaleDateString() : 
@@ -104,20 +97,15 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
         box-sizing: border-box;
       }
       
-      @page {
-        size: A4;
-        margin: 0;
-      }
-      
       body, html {
         margin: 0;
         padding: 0;
         background: white;
       }
       
-      .pdf-container {
+      .pdf-page {
         width: 794px;
-        min-height: 1123px;
+        height: 1123px;
         background: white;
         margin: 0;
         padding: 20px;
@@ -126,22 +114,7 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
         line-height: ${lineHeight};
         color: #2d3748;
         direction: ${textDirection};
-      }
-      
-      .page-1 {
-        min-height: 950px;
-        max-height: 950px;
         overflow: hidden;
-      }
-      
-      .page-2 {
-        margin-top: 50px;
-        min-height: 600px;
-      }
-      
-      .keep-together {
-        break-inside: avoid;
-        page-break-inside: avoid;
       }
       
       .section {
@@ -149,245 +122,56 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
       }
     </style>
     
-    <div class="pdf-container">
-      <!-- PAGE 1 CONTENT -->
-      <div class="page-1">
-        <!-- Header Section -->
-        <div class="keep-together section" style="
-          display: flex; 
-          justify-content: space-between; 
-          align-items: flex-start; 
-          padding-bottom: ${elementPadding}px; 
-          border-bottom: 2px solid #e2e8f0;
-        ">
-          <div style="flex: 1; max-width: 62%;">
-            <div style="
-              font-weight: 600; 
-              font-size: ${headerFontSize}px; 
-              margin-bottom: 8px; 
-              color: #1a202c;
-            ">
-              ${companyInfo.name || 'AB MEDIA TEAM LTD'}
-            </div>
-            <div style="line-height: ${lineHeight}; color: #4a5568;">
-              <div>${companyInfo.street || 'Weseler Str.73'}</div>
-              <div>${companyInfo.postal || '47169'} ${companyInfo.city || 'Duisburg'}</div>
-              <div>${companyInfo.country || 'Germany'}</div>
-            </div>
+    <div class="pdf-page">
+      <!-- Header Section -->
+      <div class="section" style="
+        display: flex; 
+        justify-content: space-between; 
+        align-items: flex-start; 
+        padding-bottom: ${elementPadding}px; 
+        border-bottom: 2px solid #e2e8f0;
+      ">
+        <div style="flex: 1; max-width: 62%;">
+          <div style="
+            font-weight: 600; 
+            font-size: ${headerFontSize}px; 
+            margin-bottom: 8px; 
+            color: #1a202c;
+          ">
+            ${companyInfo.name || 'AB MEDIA TEAM LTD'}
           </div>
-          <div style="text-align: right;">
-            ${proposalData.logo || companyInfo.logo ? `
-            <div style="
-              background: #f7fafc; 
-              padding: 10px; 
-              border-radius: 6px; 
-              border: 1px solid #e2e8f0;
-            ">
-              <img src="${proposalData.logo || companyInfo.logo}" style="
-                max-height: 50px; 
-                max-width: ${logoWidth};
-              " />
-            </div>
-            ` : ''}
+          <div style="line-height: ${lineHeight}; color: #4a5568;">
+            <div>${companyInfo.street || 'Weseler Str.73'}</div>
+            <div>${companyInfo.postal || '47169'} ${companyInfo.city || 'Duisburg'}</div>
+            <div>${companyInfo.country || 'Germany'}</div>
           </div>
         </div>
-
-        <!-- Customer and Proposal Info -->
-        <div class="keep-together section" style="
-          display: flex; 
-          justify-content: space-between; 
-          gap: 20px;
-        ">
+        <div style="text-align: right;">
+          ${proposalData.logo || companyInfo.logo ? `
           <div style="
-            flex: 1; 
-            background: #f8fafc; 
-            padding: ${elementPadding}px; 
+            background: #f7fafc; 
+            padding: 10px; 
             border-radius: 6px; 
             border: 1px solid #e2e8f0;
           ">
-            <div style="
-              font-weight: 600; 
-              margin-bottom: 10px; 
-              color: #2d3748; 
-              text-transform: uppercase;
-            ">
-              ${t.customerInformation || 'Customer Information'}
-            </div>
-            <div>
-              <div style="font-weight: 600; margin-bottom: 6px;">
-                ${proposalData.customerName || proposalData.customer || 'Name Surname'}
-              </div>
-              <div>${proposalData.customerAddress || 'Customer Address'}</div>
-              <div>${proposalData.customerEmail || 'customer@email.com'}</div>
-              <div>${proposalData.customerCountry || 'Country'}</div>
-            </div>
+            <img src="${proposalData.logo || companyInfo.logo}" style="
+              max-height: 50px; 
+              max-width: ${logoWidth};
+            " />
           </div>
-          
-          <div style="flex: 0 0 auto; min-width: 250px;">
-            <div style="
-              background: #f8fafc; 
-              padding: ${elementPadding}px; 
-              border-radius: 6px; 
-              border: 1px solid #e2e8f0;
-            ">
-              <div style="margin-bottom: 8px;">
-                <span style="font-weight: 500; color: #4a5568;">${t.proposalNumber || 'Proposal No.'}</span>
-                <span style="float: right; font-weight: 600;">${proposalData.number || 'AN-9993'}</span>
-              </div>
-              <div style="margin-bottom: 8px;">
-                <span style="font-weight: 500; color: #4a5568;">${t.proposalDate || 'Date'}</span>
-                <span style="float: right;">${proposalDate}</span>
-              </div>
-              <div style="margin-bottom: 8px;">
-                <span style="font-weight: 500; color: #4a5568;">${t.customerReference || 'Reference'}</span>
-                <span style="float: right;">${proposalData.customerRef || proposalData.reference || '—'}</span>
-              </div>
-              <div>
-                <span style="font-weight: 500; color: #4a5568;">${t.internalContactPerson || 'Contact'}</span>
-                <span style="float: right;">${proposalData.yourContact || proposalData.internalContact || 'Thomas Klein'}</span>
-              </div>
-            </div>
-          </div>
+          ` : ''}
         </div>
+      </div>
 
-        <!-- Proposal Title -->
-        <div class="keep-together section" style="
-          background: #2d3748; 
-          color: white; 
-          padding: ${elementPadding}px; 
-          border-radius: 6px;
-        ">
-          <h2 style="margin: 0; font-size: ${titleFontSize}px; font-weight: 600;">
-            ${t.createNewProposal || 'Proposal'} ${proposalData.number || 'AN-9993'}
-          </h2>
-        </div>
-
-        <!-- Proposal Content -->
-        <div class="keep-together section" style="
-          background: white; 
-          padding: ${elementPadding}px; 
-          border-radius: 6px; 
-          border: 1px solid #e2e8f0;
-        ">
-          <div style="font-weight: 600; font-size: 18px; margin-bottom: 8px;">
-            ${proposalData.proposalTitle || proposalData.subject || 'Proposal Title'}
-          </div>
-          <div>
-            ${proposalData.proposalDescription || 'Thank you for your enquiry.'}
-            ${proposalData.content ? `<br/><br/>${proposalData.content}` : ''}
-          </div>
-        </div>
-
-        <!-- Line Items Table -->
-        <div class="keep-together section" style="
-          border-radius: 6px; 
-          overflow: hidden; 
-          border: 1px solid #e2e8f0;
-        ">
-          <table style="width: 100%; border-collapse: collapse;">
-            <thead>
-              <tr style="background: #2d3748; color: white;">
-                <th style="padding: 12px; text-align: left; width: 50%;">
-                  ${t.productServiceName || t.description || 'Product/Service'}
-                </th>
-                <th style="padding: 12px; text-align: center; width: 16%;">
-                  ${t.unitPrice || 'Price'}
-                </th>
-                <th style="padding: 12px; text-align: center; width: 14%;">
-                  ${t.quantity || 'Qty'}
-                </th>
-                <th style="padding: 12px; text-align: right; width: 20%;">
-                  ${t.total || 'Total'}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              ${(proposalData.lineItems || []).map((item: any, index: number) => `
-                <tr style="
-                  border-bottom: 1px solid #e2e8f0; 
-                  background-color: ${index % 2 === 0 ? '#f8fafc' : 'white'};
-                ">
-                  <td style="padding: 12px; vertical-align: top;">
-                    <div style="font-weight: 600; margin-bottom: 4px;">
-                      ${item.name || 'Product/Service Name'}
-                    </div>
-                    ${item.description ? `
-                    <div style="color: #718096; font-size: 12px;">
-                      ${item.description}
-                    </div>
-                    ` : ''}
-                  </td>
-                  <td style="padding: 12px; text-align: center;">
-                    ${currencySymbol}${(item.unit_price || 0).toFixed(2)}
-                  </td>
-                  <td style="padding: 12px; text-align: center;">
-                    ${item.quantity || 1}
-                  </td>
-                  <td style="padding: 12px; text-align: right; font-weight: 600;">
-                    ${currencySymbol}${(item.total_price || 0).toFixed(2)}
-                  </td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        </div>
-
-        <!-- Totals Section -->
-        <div class="keep-together section" style="display: flex; justify-content: flex-end;">
-          <div style="
-            width: 280px; 
-            background: white; 
-            border-radius: 6px; 
-            border: 1px solid #e2e8f0;
-          ">
-            <div style="
-              background: #4a5568; 
-              color: white; 
-              padding: 10px 15px; 
-              font-weight: 600;
-            ">
-              ${t.total || 'Summary'}
-            </div>
-            <div style="padding: 15px;">
-              <div style="
-                display: flex; 
-                justify-content: space-between; 
-                padding: 8px 0; 
-                border-bottom: 1px solid #e2e8f0;
-              ">
-                <span>${t.netAmount || 'Subtotal'}</span>
-                <span style="font-weight: 600;">${currencySymbol}${netAmount.toFixed(2)}</span>
-              </div>
-              <div style="
-                display: flex; 
-                justify-content: space-between; 
-                padding: 8px 0; 
-                border-bottom: 1px solid #e2e8f0;
-              ">
-                <span>${t.vatPricing || 'VAT'} ${isVatEnabled ? `${vatRate}%` : '0%'}</span>
-                <span style="font-weight: 600;">${currencySymbol}${vatAmount.toFixed(2)}</span>
-              </div>
-              <div style="
-                display: flex; 
-                justify-content: space-between; 
-                padding: 10px 0; 
-                font-weight: 700; 
-                background: #2d3748; 
-                color: white; 
-                margin: 10px -15px -15px -15px; 
-                padding-left: 15px; 
-                padding-right: 15px;
-              ">
-                <span>${t.totalAmount || 'Total Amount'}</span>
-                <span>${currencySymbol}${totalAmount.toFixed(2)}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Terms and Conditions -->
-        <div class="keep-together section" style="
-          background: white; 
+      <!-- Customer and Proposal Info -->
+      <div class="section" style="
+        display: flex; 
+        justify-content: space-between; 
+        gap: 20px;
+      ">
+        <div style="
+          flex: 1; 
+          background: #f8fafc; 
           padding: ${elementPadding}px; 
           border-radius: 6px; 
           border: 1px solid #e2e8f0;
@@ -395,145 +179,232 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
           <div style="
             font-weight: 600; 
             margin-bottom: 10px; 
-            text-transform: uppercase; 
-            color: #2d3748;
+            color: #2d3748; 
+            text-transform: uppercase;
           ">
-            ${t.termsConditions || 'Terms and Conditions'}
+            ${t.customerInformation || 'Customer Information'}
           </div>
           <div>
-            ${proposalData.paymentTerms || proposalData.deliveryTerms || t.paymentTerms || 'Payment terms will be specified here.'}
-            ${proposalData.termsAndConditions ? `<br/><br/>${proposalData.termsAndConditions}` : ''}
+            <div style="font-weight: 600; margin-bottom: 6px;">
+              ${proposalData.customerName || proposalData.customer || 'Name Surname'}
+            </div>
+            <div>${proposalData.customerAddress || 'Customer Address'}</div>
+            <div>${proposalData.customerEmail || 'customer@email.com'}</div>
+            <div>${proposalData.customerCountry || 'Country'}</div>
           </div>
         </div>
-
-        <!-- Signature Section -->
-        <div class="keep-together section" style="
-          display: flex; 
-          justify-content: space-between; 
-          gap: 20px;
-          min-height: 80px;
-        ">
+        
+        <div style="flex: 0 0 auto; min-width: 250px;">
           <div style="
-            width: 45%; 
-            background: white; 
-            padding: 12px; 
+            background: #f8fafc; 
+            padding: ${elementPadding}px; 
             border-radius: 6px; 
             border: 1px solid #e2e8f0;
           ">
-            <div style="border-top: 2px solid #2d3748; padding-top: 8px;">
-              <div style="font-size: 12px; color: #718096; font-weight: 500;">Place & Date</div>
+            <div style="margin-bottom: 8px;">
+              <span style="font-weight: 500; color: #4a5568;">${t.proposalNumber || 'Proposal No.'}</span>
+              <span style="float: right; font-weight: 600;">${proposalData.number || 'AN-9993'}</span>
             </div>
-          </div>
-          <div style="
-            width: 45%; 
-            background: white; 
-            padding: 12px; 
-            border-radius: 6px; 
-            border: 1px solid #e2e8f0;
-          ">
-            <div style="border-top: 2px solid #2d3748; padding-top: 8px;">
-              <div style="font-size: 12px; color: #718096; font-weight: 500;">Signature & Stamp</div>
-              ${proposalData.signatureUrl ? `<img src="${proposalData.signatureUrl}" style="max-height: 30px; margin-top: 8px;" />` : ''}
+            <div style="margin-bottom: 8px;">
+              <span style="font-weight: 500; color: #4a5568;">${t.proposalDate || 'Date'}</span>
+              <span style="float: right;">${proposalDate}</span>
+            </div>
+            <div style="margin-bottom: 8px;">
+              <span style="font-weight: 500; color: #4a5568;">${t.customerReference || 'Reference'}</span>
+              <span style="float: right;">${proposalData.customerRef || proposalData.reference || '—'}</span>
+            </div>
+            <div>
+              <span style="font-weight: 500; color: #4a5568;">${t.internalContactPerson || 'Contact'}</span>
+              <span style="float: right;">${proposalData.yourContact || proposalData.internalContact || 'Thomas Klein'}</span>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- PAGE 2 CONTENT -->
-      <div class="page-2">
-        <!-- Payment Data Section -->
-        <div class="keep-together section" style="
-          background: #e6fffa; 
-          padding: ${elementPadding}px; 
+      <!-- Proposal Title -->
+      <div class="section" style="
+        background: #2d3748; 
+        color: white; 
+        padding: ${elementPadding}px; 
+        border-radius: 6px;
+      ">
+        <h2 style="margin: 0; font-size: ${titleFontSize}px; font-weight: 600;">
+          ${t.createNewProposal || 'Proposal'} ${proposalData.number || 'AN-9993'}
+        </h2>
+      </div>
+
+      <!-- Proposal Content -->
+      <div class="section" style="
+        background: white; 
+        padding: ${elementPadding}px; 
+        border-radius: 6px; 
+        border: 1px solid #e2e8f0;
+      ">
+        <div style="font-weight: 600; font-size: 18px; margin-bottom: 8px;">
+          ${proposalData.proposalTitle || proposalData.subject || 'Proposal Title'}
+        </div>
+        <div>
+          ${proposalData.proposalDescription || 'Thank you for your enquiry.'}
+          ${proposalData.content ? `<br/><br/>${proposalData.content}` : ''}
+        </div>
+      </div>
+
+      <!-- Line Items Table -->
+      <div class="section" style="
+        border-radius: 6px; 
+        overflow: hidden; 
+        border: 1px solid #e2e8f0;
+      ">
+        <table style="width: 100%; border-collapse: collapse;">
+          <thead>
+            <tr style="background: #2d3748; color: white;">
+              <th style="padding: 12px; text-align: left; width: 50%;">
+                ${t.productServiceName || t.description || 'Product/Service'}
+              </th>
+              <th style="padding: 12px; text-align: center; width: 16%;">
+                ${t.unitPrice || 'Price'}
+              </th>
+              <th style="padding: 12px; text-align: center; width: 14%;">
+                ${t.quantity || 'Qty'}
+              </th>
+              <th style="padding: 12px; text-align: right; width: 20%;">
+                ${t.total || 'Total'}
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            ${(proposalData.lineItems || []).map((item: any, index: number) => `
+              <tr style="
+                border-bottom: 1px solid #e2e8f0; 
+                background-color: ${index % 2 === 0 ? '#f8fafc' : 'white'};
+              ">
+                <td style="padding: 12px; vertical-align: top;">
+                  <div style="font-weight: 600; margin-bottom: 4px;">
+                    ${item.name || 'Product/Service Name'}
+                  </div>
+                  ${item.description ? `
+                  <div style="color: #718096; font-size: 12px;">
+                    ${item.description}
+                  </div>
+                  ` : ''}
+                </td>
+                <td style="padding: 12px; text-align: center;">
+                  ${currencySymbol}${(item.unit_price || 0).toFixed(2)}
+                </td>
+                <td style="padding: 12px; text-align: center;">
+                  ${item.quantity || 1}
+                </td>
+                <td style="padding: 12px; text-align: right; font-weight: 600;">
+                  ${currencySymbol}${(item.total_price || 0).toFixed(2)}
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Totals Section -->
+      <div class="section" style="display: flex; justify-content: flex-end;">
+        <div style="
+          width: 280px; 
+          background: white; 
           border-radius: 6px; 
-          border-left: 4px solid #38a169; 
-          border: 1px solid #81e6d9;
+          border: 1px solid #e2e8f0;
         ">
           <div style="
-            font-weight: 600; 
-            margin-bottom: 12px; 
-            color: #2d6b4f; 
-            text-transform: uppercase;
-          ">
-            ${t.paymentData || 'Payment Data'}
-          </div>
-          <div style="color: #2d6b4f;">
-            <div style="margin-bottom: 8px;">
-              <strong>${t.accountNumber || 'Account Nr'}:</strong> ${paymentAccountNumber}
-            </div>
-            <div style="margin-bottom: 8px;">
-              <strong>${t.accountName || 'Name'}:</strong> ${paymentAccountName}
-            </div>
-            <div>
-              <strong>${t.paymentMethod || 'Payment Method'}:</strong> ${paymentMethodValue}
-            </div>
-          </div>
-        </div>
-
-        <!-- Footer Content -->
-        ${proposalData.footerContent ? `
-        <div class="keep-together section" style="
-          padding: ${elementPadding}px; 
-          background: #faf5ff; 
-          border-radius: 6px; 
-          border-left: 4px solid #805ad5;
-        ">
-          ${proposalData.footerContent}
-        </div>
-        ` : ''}
-
-        <!-- Company Footer -->
-        <div class="keep-together section" style="
-          background: #2d3748; 
-          border-radius: 6px; 
-          color: white;
-        ">
-          <div style="
-            background: rgba(255,255,255,0.1); 
-            padding: 8px 15px; 
-            text-align: center; 
+            background: #4a5568; 
+            color: white; 
+            padding: 10px 15px; 
             font-weight: 600;
           ">
-            ${companyInfo.name || 'AB MEDIA TEAM LTD'}
+            ${t.total || 'Summary'}
           </div>
-          
-          <div style="padding: 12px 15px; font-size: 12px;">
-            <div style="margin-bottom: 10px;">
-              <div style="display: inline-block; width: 33%; vertical-align: top;">
-                <div><strong>Tel:</strong> ${companyInfo.phone || '+49 203 70 90 72 62'}</div>
-                <div><strong>Fax:</strong> ${companyInfo.fax || '+49 203 70 90 73 53'}</div>
-              </div>
-              <div style="display: inline-block; width: 33%; vertical-align: top;">
-                <div><strong>Email:</strong> ${companyInfo.email || 'kontakt.abmedia@gmail.com'}</div>
-                <div><strong>Web:</strong> ${companyInfo.website || 'www.abmedia-team.com'}</div>
-              </div>
-              <div style="display: inline-block; width: 33%; vertical-align: top; text-align: right;">
-                <div style="font-weight: 500; margin-bottom: 3px;">
-                  ${companyInfo.contactPerson || 'Andreas Berger'}
-                </div>
-                <div style="font-size: 11px;">
-                  ${companyInfo.street || 'Weseler Str.73'}<br/>
-                  ${companyInfo.postal || '47169'} ${companyInfo.city || 'Duisburg'}<br/>
-                  ${companyInfo.country || 'Germany'}
-                </div>
-              </div>
+          <div style="padding: 15px;">
+            <div style="
+              display: flex; 
+              justify-content: space-between; 
+              padding: 8px 0; 
+              border-bottom: 1px solid #e2e8f0;
+            ">
+              <span>${t.netAmount || 'Subtotal'}</span>
+              <span style="font-weight: 600;">${currencySymbol}${netAmount.toFixed(2)}</span>
+            </div>
+            <div style="
+              display: flex; 
+              justify-content: space-between; 
+              padding: 8px 0; 
+              border-bottom: 1px solid #e2e8f0;
+            ">
+              <span>${t.vatPricing || 'VAT'} ${isVatEnabled ? `${vatRate}%` : '0%'}</span>
+              <span style="font-weight: 600;">${currencySymbol}${vatAmount.toFixed(2)}</span>
+            </div>
+            <div style="
+              display: flex; 
+              justify-content: space-between; 
+              padding: 10px 0; 
+              font-weight: 700; 
+              background: #2d3748; 
+              color: white; 
+              margin: 10px -15px -15px -15px; 
+              padding-left: 15px; 
+              padding-right: 15px;
+            ">
+              <span>${t.totalAmount || 'Total Amount'}</span>
+              <span>${currencySymbol}${totalAmount.toFixed(2)}</span>
             </div>
           </div>
-          
-          <div style="
-            background: rgba(255,255,255,0.05); 
-            padding: 8px 15px; 
-            font-size: 11px; 
-            color: #cbd5e0;
-          ">
-            <div style="display: inline-block; width: 70%;">
-              REG: ${companyInfo.registrationNumber || '15748871'} | 
-              VAT: ${companyInfo.vatId || 'DE123418679'} | 
-              TAX: ${companyInfo.taxNumber || '13426 27369'}
-            </div>
-            <div style="display: inline-block; width: 30%; text-align: right;">
-              Director: ${companyInfo.director || 'Andreas Berger'}
-            </div>
+        </div>
+      </div>
+
+      <!-- Terms and Conditions -->
+      <div class="section" style="
+        background: white; 
+        padding: ${elementPadding}px; 
+        border-radius: 6px; 
+        border: 1px solid #e2e8f0;
+      ">
+        <div style="
+          font-weight: 600; 
+          margin-bottom: 10px; 
+          text-transform: uppercase; 
+          color: #2d3748;
+        ">
+          ${t.termsConditions || 'Terms and Conditions'}
+        </div>
+        <div>
+          ${proposalData.paymentTerms || proposalData.deliveryTerms || t.paymentTerms || 'Payment terms will be specified here.'}
+          ${proposalData.termsAndConditions ? `<br/><br/>${proposalData.termsAndConditions}` : ''}
+        </div>
+      </div>
+
+      <!-- Signature Section -->
+      <div class="section" style="
+        display: flex; 
+        justify-content: space-between; 
+        gap: 20px;
+        min-height: 80px;
+      ">
+        <div style="
+          width: 45%; 
+          background: white; 
+          padding: 12px; 
+          border-radius: 6px; 
+          border: 1px solid #e2e8f0;
+        ">
+          <div style="border-top: 2px solid #2d3748; padding-top: 8px;">
+            <div style="font-size: 12px; color: #718096; font-weight: 500;">Place & Date</div>
+          </div>
+        </div>
+        <div style="
+          width: 45%; 
+          background: white; 
+          padding: 12px; 
+          border-radius: 6px; 
+          border: 1px solid #e2e8f0;
+        ">
+          <div style="border-top: 2px solid #2d3748; padding-top: 8px;">
+            <div style="font-size: 12px; color: #718096; font-weight: 500;">Signature & Stamp</div>
+            ${proposalData.signatureUrl ? `<img src="${proposalData.signatureUrl}" style="max-height: 30px; margin-top: 8px;" />` : ''}
           </div>
         </div>
       </div>
@@ -541,72 +412,230 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
   `;
 };
 
-// Simplified PDF generation function
-const generatePDFFromHTML = async (htmlContent: string): Promise<jsPDF> => {
-  console.log('Starting PDF generation from HTML');
+// Create second page content
+const createSecondPageContent = (proposalData: any, language: string = "en") => {
+  const t = translations[language as keyof typeof translations] || translations.en;
+  const companyInfo = getCompanyInfo();
   
-  // Create temporary div
-  const tempDiv = document.createElement("div");
-  tempDiv.style.position = "absolute";
-  tempDiv.style.left = "-9999px";
-  tempDiv.style.top = "-9999px";
-  tempDiv.style.width = "794px";
-  tempDiv.style.backgroundColor = "white";
+  // Get language-specific styling
+  const fontFamily = getLanguageFont(language);
+  const textDirection = getTextDirection(language);
+
+  const baseFontSize = 14;
+  const lineHeight = 1.5;
+  const elementPadding = 15;
+
+  // Payment data
+  const paymentAccountNumber = proposalData.accountNumber || companyInfo.accountNumber || '12345678901234567';
+  const paymentAccountName = proposalData.accountName || companyInfo.accountHolder || 'YOUR NAME';
+  const paymentMethodValue = proposalData.paymentMethod || companyInfo.paymentMethod || 'CREDIT CARD';
+
+  return `
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      
+      body, html {
+        margin: 0;
+        padding: 0;
+        background: white;
+      }
+      
+      .pdf-page {
+        width: 794px;
+        height: 1123px;
+        background: white;
+        margin: 0;
+        padding: 20px;
+        font-family: ${fontFamily};
+        font-size: ${baseFontSize}px;
+        line-height: ${lineHeight};
+        color: #2d3748;
+        direction: ${textDirection};
+        overflow: hidden;
+      }
+      
+      .section {
+        margin-bottom: 20px;
+      }
+    </style>
+    
+    <div class="pdf-page">
+      <!-- Payment Data Section -->
+      <div class="section" style="
+        background: #e6fffa; 
+        padding: ${elementPadding}px; 
+        border-radius: 6px; 
+        border-left: 4px solid #38a169; 
+        border: 1px solid #81e6d9;
+      ">
+        <div style="
+          font-weight: 600; 
+          margin-bottom: 12px; 
+          color: #2d6b4f; 
+          text-transform: uppercase;
+        ">
+          ${t.paymentData || 'Payment Data'}
+        </div>
+        <div style="color: #2d6b4f;">
+          <div style="margin-bottom: 8px;">
+            <strong>${t.accountNumber || 'Account Nr'}:</strong> ${paymentAccountNumber}
+          </div>
+          <div style="margin-bottom: 8px;">
+            <strong>${t.accountName || 'Name'}:</strong> ${paymentAccountName}
+          </div>
+          <div>
+            <strong>${t.paymentMethod || 'Payment Method'}:</strong> ${paymentMethodValue}
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer Content -->
+      ${proposalData.footerContent ? `
+      <div class="section" style="
+        padding: ${elementPadding}px; 
+        background: #faf5ff; 
+        border-radius: 6px; 
+        border-left: 4px solid #805ad5;
+      ">
+        ${proposalData.footerContent}
+      </div>
+      ` : ''}
+
+      <!-- Company Footer -->
+      <div class="section" style="
+        background: #2d3748; 
+        border-radius: 6px; 
+        color: white;
+      ">
+        <div style="
+          background: rgba(255,255,255,0.1); 
+          padding: 8px 15px; 
+          text-align: center; 
+          font-weight: 600;
+        ">
+          ${companyInfo.name || 'AB MEDIA TEAM LTD'}
+        </div>
+        
+        <div style="padding: 12px 15px; font-size: 12px;">
+          <div style="margin-bottom: 10px;">
+            <div style="display: inline-block; width: 33%; vertical-align: top;">
+              <div><strong>Tel:</strong> ${companyInfo.phone || '+49 203 70 90 72 62'}</div>
+              <div><strong>Fax:</strong> ${companyInfo.fax || '+49 203 70 90 73 53'}</div>
+            </div>
+            <div style="display: inline-block; width: 33%; vertical-align: top;">
+              <div><strong>Email:</strong> ${companyInfo.email || 'kontakt.abmedia@gmail.com'}</div>
+              <div><strong>Web:</strong> ${companyInfo.website || 'www.abmedia-team.com'}</div>
+            </div>
+            <div style="display: inline-block; width: 33%; vertical-align: top; text-align: right;">
+              <div style="font-weight: 500; margin-bottom: 3px;">
+                ${companyInfo.contactPerson || 'Andreas Berger'}
+              </div>
+              <div style="font-size: 11px;">
+                ${companyInfo.street || 'Weseler Str.73'}<br/>
+                ${companyInfo.postal || '47169'} ${companyInfo.city || 'Duisburg'}<br/>
+                ${companyInfo.country || 'Germany'}
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div style="
+          background: rgba(255,255,255,0.05); 
+          padding: 8px 15px; 
+          font-size: 11px; 
+          color: #cbd5e0;
+        ">
+          <div style="display: inline-block; width: 70%;">
+            REG: ${companyInfo.registrationNumber || '15748871'} | 
+            VAT: ${companyInfo.vatId || 'DE123418679'} | 
+            TAX: ${companyInfo.taxNumber || '13426 27369'}
+          </div>
+          <div style="display: inline-block; width: 30%; text-align: right;">
+            Director: ${companyInfo.director || 'Andreas Berger'}
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+};
+
+// Generate PDF with separate pages
+const generateMultiPagePDF = async (firstPageHtml: string, secondPageHtml: string): Promise<jsPDF> => {
+  console.log('Starting multi-page PDF generation');
   
-  tempDiv.innerHTML = htmlContent;
-  document.body.appendChild(tempDiv);
+  // Create temporary divs for both pages
+  const tempDiv1 = document.createElement("div");
+  tempDiv1.style.position = "absolute";
+  tempDiv1.style.left = "-9999px";
+  tempDiv1.style.top = "-9999px";
+  tempDiv1.innerHTML = firstPageHtml;
+  document.body.appendChild(tempDiv1);
+  
+  const tempDiv2 = document.createElement("div");
+  tempDiv2.style.position = "absolute";
+  tempDiv2.style.left = "-9999px";
+  tempDiv2.style.top = "-9999px";
+  tempDiv2.innerHTML = secondPageHtml;
+  document.body.appendChild(tempDiv2);
   
   // Wait for rendering
   await new Promise(resolve => setTimeout(resolve, 1000));
   
   try {
-    console.log('Converting HTML to canvas');
-    
-    // Convert to canvas with improved settings
-    const canvas = await html2canvas(tempDiv, {
-      scale: 2,
-      logging: false,
-      useCORS: true,
-      allowTaint: true,
-      backgroundColor: '#ffffff',
-      width: 794,
-      height: Math.max(1600, tempDiv.scrollHeight)
-    });
-    
-    console.log('Canvas created, generating PDF');
-    
-    const imgData = canvas.toDataURL('image/png');
+    // Create PDF
     const pdf = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',
       format: 'a4'
     });
     
-    // Calculate dimensions
     const pdfWidth = pdf.internal.pageSize.getWidth();
     const pdfHeight = pdf.internal.pageSize.getHeight();
-    const imgWidth = pdfWidth;
-    const imgHeight = (canvas.height * pdfWidth) / canvas.width;
     
-    // Split into pages if needed
-    if (imgHeight > pdfHeight) {
-      const pageCount = Math.ceil(imgHeight / pdfHeight);
-      
-      for (let i = 0; i < pageCount; i++) {
-        if (i > 0) {
-          pdf.addPage();
-        }
-        const yOffset = -(i * pdfHeight);
-        pdf.addImage(imgData, 'PNG', 0, yOffset, imgWidth, imgHeight);
-      }
-    } else {
-      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
-    }
+    // Generate first page
+    console.log('Converting first page to canvas');
+    const canvas1 = await html2canvas(tempDiv1, {
+      scale: 2,
+      logging: false,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: '#ffffff',
+      width: 794,
+      height: 1123
+    });
     
-    console.log('PDF generation completed successfully');
+    const imgData1 = canvas1.toDataURL('image/png');
+    const imgWidth1 = pdfWidth;
+    const imgHeight1 = (canvas1.height * pdfWidth) / canvas1.width;
+    
+    pdf.addImage(imgData1, 'PNG', 0, 0, imgWidth1, imgHeight1);
+    
+    // Generate second page
+    console.log('Converting second page to canvas');
+    const canvas2 = await html2canvas(tempDiv2, {
+      scale: 2,
+      logging: false,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: '#ffffff',
+      width: 794,
+      height: 1123
+    });
+    
+    const imgData2 = canvas2.toDataURL('image/png');
+    const imgWidth2 = pdfWidth;
+    const imgHeight2 = (canvas2.height * pdfWidth) / canvas2.width;
+    
+    pdf.addPage();
+    pdf.addImage(imgData2, 'PNG', 0, 0, imgWidth2, imgHeight2);
+    
+    console.log('Multi-page PDF generation completed successfully');
     return pdf;
   } finally {
-    document.body.removeChild(tempDiv);
+    document.body.removeChild(tempDiv1);
+    document.body.removeChild(tempDiv2);
   }
 };
 
@@ -619,16 +648,17 @@ export const generateProposalPDF = async (
   try {
     console.log('Generating PDF for proposal:', proposalData.number, 'Language:', language);
     
-    // Generate HTML content
-    const htmlContent = createPDFContent(proposalData, language);
+    // Generate HTML content for both pages
+    const firstPageHtml = createFirstPageContent(proposalData, language);
+    const secondPageHtml = createSecondPageContent(proposalData, language);
     
-    if (!htmlContent || htmlContent.trim() === '') {
+    if (!firstPageHtml || !secondPageHtml) {
       console.error('HTML content is empty');
       return false;
     }
     
-    // Generate PDF
-    const pdf = await generatePDFFromHTML(htmlContent);
+    // Generate PDF with separate pages
+    const pdf = await generateMultiPagePDF(firstPageHtml, secondPageHtml);
     
     // For preview mode, return the PDF document
     if (proposalData.previewMode) {
