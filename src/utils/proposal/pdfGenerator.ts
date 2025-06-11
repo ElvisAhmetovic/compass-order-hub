@@ -47,7 +47,29 @@ const getTextDirection = (language: string) => {
   return language === 'ar' ? 'rtl' : 'ltr';
 };
 
-// Create first page content
+// Calculate estimated content height for sections
+const calculateSectionHeight = (proposalData: any) => {
+  const baseHeight = 200; // Header + customer info
+  const titleHeight = 80;
+  const contentHeight = Math.max(120, (proposalData.proposalDescription?.length || 0) * 0.8);
+  const lineItemsHeight = 60 + (proposalData.lineItems?.length || 1) * 40; // Header + rows
+  const totalsHeight = 180;
+  const termsHeight = Math.max(80, (proposalData.paymentTerms?.length || 0) * 0.6);
+  const signatureHeight = 100;
+  
+  return {
+    baseHeight,
+    titleHeight,
+    contentHeight,
+    lineItemsHeight,
+    totalsHeight,
+    termsHeight,
+    signatureHeight,
+    total: baseHeight + titleHeight + contentHeight + lineItemsHeight + totalsHeight + termsHeight + signatureHeight
+  };
+};
+
+// Create first page content with intelligent height management
 const createFirstPageContent = (proposalData: any, language: string = "en") => {
   const t = translations[language as keyof typeof translations] || translations.en;
   const companyInfo = getCompanyInfo();
@@ -55,6 +77,16 @@ const createFirstPageContent = (proposalData: any, language: string = "en") => {
   // Get language-specific styling
   const fontFamily = getLanguageFont(language);
   const textDirection = getTextDirection(language);
+
+  // Calculate heights
+  const heights = calculateSectionHeight(proposalData);
+  const maxPageHeight = 1000; // Leave room for page margins
+  
+  // Determine what fits on first page
+  let currentHeight = heights.baseHeight + heights.titleHeight + heights.contentHeight + heights.lineItemsHeight + heights.totalsHeight;
+  
+  const showTermsOnFirstPage = currentHeight + heights.termsHeight < maxPageHeight;
+  const showSignatureOnFirstPage = showTermsOnFirstPage && (currentHeight + heights.termsHeight + heights.signatureHeight < maxPageHeight);
 
   // Font sizes and spacing
   const baseFontSize = 14;
@@ -356,6 +388,7 @@ const createFirstPageContent = (proposalData: any, language: string = "en") => {
         </div>
       </div>
 
+      ${showTermsOnFirstPage ? `
       <!-- Terms and Conditions -->
       <div class="section" style="
         background: white; 
@@ -376,7 +409,9 @@ const createFirstPageContent = (proposalData: any, language: string = "en") => {
           ${proposalData.termsAndConditions ? `<br/><br/>${proposalData.termsAndConditions}` : ''}
         </div>
       </div>
+      ` : ''}
 
+      ${showSignatureOnFirstPage ? `
       <!-- Signature Section -->
       <div class="section" style="
         display: flex; 
@@ -408,11 +443,12 @@ const createFirstPageContent = (proposalData: any, language: string = "en") => {
           </div>
         </div>
       </div>
+      ` : ''}
     </div>
   `;
 };
 
-// Create second page content
+// Create second page content with remaining sections
 const createSecondPageContent = (proposalData: any, language: string = "en") => {
   const t = translations[language as keyof typeof translations] || translations.en;
   const companyInfo = getCompanyInfo();
@@ -424,6 +460,14 @@ const createSecondPageContent = (proposalData: any, language: string = "en") => 
   const baseFontSize = 14;
   const lineHeight = 1.5;
   const elementPadding = 15;
+
+  // Calculate what should be on second page
+  const heights = calculateSectionHeight(proposalData);
+  const maxPageHeight = 1000;
+  let currentHeight = heights.baseHeight + heights.titleHeight + heights.contentHeight + heights.lineItemsHeight + heights.totalsHeight;
+  
+  const showTermsOnFirstPage = currentHeight + heights.termsHeight < maxPageHeight;
+  const showSignatureOnFirstPage = showTermsOnFirstPage && (currentHeight + heights.termsHeight + heights.signatureHeight < maxPageHeight);
 
   // Payment data
   const paymentAccountNumber = proposalData.accountNumber || companyInfo.accountNumber || '12345678901234567';
@@ -462,7 +506,7 @@ const createSecondPageContent = (proposalData: any, language: string = "en") => 
     </style>
     
     <div class="pdf-page">
-      <!-- Payment Data Section -->
+      <!-- Payment Data Section - ALWAYS at top of page 2 -->
       <div class="section" style="
         background: #e6fffa; 
         padding: ${elementPadding}px; 
@@ -490,6 +534,63 @@ const createSecondPageContent = (proposalData: any, language: string = "en") => 
           </div>
         </div>
       </div>
+
+      ${!showTermsOnFirstPage ? `
+      <!-- Terms and Conditions -->
+      <div class="section" style="
+        background: white; 
+        padding: ${elementPadding}px; 
+        border-radius: 6px; 
+        border: 1px solid #e2e8f0;
+      ">
+        <div style="
+          font-weight: 600; 
+          margin-bottom: 10px; 
+          text-transform: uppercase; 
+          color: #2d3748;
+        ">
+          ${t.termsConditions || 'Terms and Conditions'}
+        </div>
+        <div>
+          ${proposalData.paymentTerms || proposalData.deliveryTerms || t.paymentTerms || 'Payment terms will be specified here.'}
+          ${proposalData.termsAndConditions ? `<br/><br/>${proposalData.termsAndConditions}` : ''}
+        </div>
+      </div>
+      ` : ''}
+
+      ${!showSignatureOnFirstPage ? `
+      <!-- Signature Section -->
+      <div class="section" style="
+        display: flex; 
+        justify-content: space-between; 
+        gap: 20px;
+        min-height: 80px;
+      ">
+        <div style="
+          width: 45%; 
+          background: white; 
+          padding: 12px; 
+          border-radius: 6px; 
+          border: 1px solid #e2e8f0;
+        ">
+          <div style="border-top: 2px solid #2d3748; padding-top: 8px;">
+            <div style="font-size: 12px; color: #718096; font-weight: 500;">Place & Date</div>
+          </div>
+        </div>
+        <div style="
+          width: 45%; 
+          background: white; 
+          padding: 12px; 
+          border-radius: 6px; 
+          border: 1px solid #e2e8f0;
+        ">
+          <div style="border-top: 2px solid #2d3748; padding-top: 8px;">
+            <div style="font-size: 12px; color: #718096; font-weight: 500;">Signature & Stamp</div>
+            ${proposalData.signatureUrl ? `<img src="${proposalData.signatureUrl}" style="max-height: 30px; margin-top: 8px;" />` : ''}
+          </div>
+        </div>
+      </div>
+      ` : ''}
 
       <!-- Footer Content -->
       ${proposalData.footerContent ? `
@@ -648,7 +749,7 @@ export const generateProposalPDF = async (
   try {
     console.log('Generating PDF for proposal:', proposalData.number, 'Language:', language);
     
-    // Generate HTML content for both pages
+    // Generate HTML content for both pages with intelligent height management
     const firstPageHtml = createFirstPageContent(proposalData, language);
     const secondPageHtml = createSecondPageContent(proposalData, language);
     
