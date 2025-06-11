@@ -1,3 +1,4 @@
+
 import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
 import { getCompanyInfo } from "./companyInfo";
@@ -110,7 +111,7 @@ const createFirstPageContent = (proposalData: any, language: string = "en") => {
         padding-bottom: 12px; 
         border-bottom: 2px solid #e2e8f0;
       ">
-        <div style="flex: 1; max-width: 45%;">
+        <div style="flex: 1; max-width: 60%;">
           <div style="
             font-weight: 600; 
             font-size: 22px; 
@@ -125,20 +126,28 @@ const createFirstPageContent = (proposalData: any, language: string = "en") => {
             <div>${companyInfo.country || 'Germany'}</div>
           </div>
         </div>
-        <div style="text-align: right; flex: 1; max-width: 55%;">
+        <div style="
+          display: flex; 
+          justify-content: flex-end; 
+          align-items: flex-start;
+          flex: 0 0 auto;
+        ">
           ${proposalData.logo || companyInfo.logo ? `
           <div style="
             background: #f7fafc; 
-            padding: 12px; 
+            padding: 8px; 
             border-radius: 6px; 
             border: 1px solid #e2e8f0;
-            display: flex;
-            justify-content: center;
+            display: inline-block;
+            width: auto;
+            height: auto;
           ">
             <img src="${proposalData.logo || companyInfo.logo}" style="
               max-height: 80px; 
-              max-width: ${logoWidth};
+              width: auto;
+              height: auto;
               object-fit: contain;
+              display: block;
             " />
           </div>
           ` : ''}
