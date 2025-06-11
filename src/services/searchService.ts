@@ -80,85 +80,93 @@ export class SearchService {
     }
   }
 
-  // Advanced filtering with multiple criteria
+  // Apply filters to a given array of orders (used by OrderTable)
+  static applyFiltersToOrders(orders: Order[], filters: SearchFilters): Order[] {
+    let result = [...orders];
+
+    // Apply global search filter
+    if (filters.globalSearch?.trim()) {
+      const query = filters.globalSearch.toLowerCase();
+      result = result.filter(order =>
+        order.company_name?.toLowerCase().includes(query) ||
+        order.contact_email?.toLowerCase().includes(query) ||
+        order.description?.toLowerCase().includes(query) ||
+        order.company_address?.toLowerCase().includes(query) ||
+        order.assigned_to_name?.toLowerCase().includes(query)
+      );
+    }
+
+    // Apply company name filter
+    if (filters.companyName?.trim()) {
+      const query = filters.companyName.toLowerCase();
+      result = result.filter(order =>
+        order.company_name?.toLowerCase().includes(query)
+      );
+    }
+
+    // Apply contact email filter
+    if (filters.contactEmail?.trim()) {
+      const query = filters.contactEmail.toLowerCase();
+      result = result.filter(order =>
+        order.contact_email?.toLowerCase().includes(query)
+      );
+    }
+
+    // Apply status filters
+    if (filters.status && filters.status.length > 0) {
+      result = result.filter(order => {
+        const activeStatuses = OrderService.getActiveStatuses(order);
+        return filters.status!.some(status => activeStatuses.includes(status as any));
+      });
+    }
+
+    // Apply priority filters
+    if (filters.priority && filters.priority.length > 0) {
+      result = result.filter(order =>
+        filters.priority!.includes(order.priority || 'Medium')
+      );
+    }
+
+    // Apply assigned to filters
+    if (filters.assignedTo && filters.assignedTo.length > 0) {
+      result = result.filter(order =>
+        filters.assignedTo!.includes(order.assigned_to || 'unassigned')
+      );
+    }
+
+    // Apply date range filter
+    if (filters.dateRange?.from && filters.dateRange?.to) {
+      result = result.filter(order => {
+        const orderDate = new Date(order.created_at || '');
+        return orderDate >= filters.dateRange!.from && orderDate <= filters.dateRange!.to;
+      });
+    }
+
+    // Apply price range filter
+    if (filters.priceRange && (filters.priceRange.min > 0 || filters.priceRange.max > 0)) {
+      result = result.filter(order => {
+        const price = order.price || 0;
+        const minPrice = filters.priceRange!.min || 0;
+        const maxPrice = filters.priceRange!.max || Infinity;
+        return price >= minPrice && price <= maxPrice;
+      });
+    }
+
+    // Apply currency filter
+    if (filters.currency && filters.currency.length > 0) {
+      result = result.filter(order =>
+        filters.currency!.includes(order.currency || 'EUR')
+      );
+    }
+
+    return result;
+  }
+
+  // Advanced filtering with multiple criteria (now uses applyFiltersToOrders)
   static async advancedSearch(filters: SearchFilters): Promise<Order[]> {
     try {
-      let orders = await OrderService.getOrders();
-
-      // Apply global search filter
-      if (filters.globalSearch) {
-        const query = filters.globalSearch.toLowerCase();
-        orders = orders.filter(order =>
-          order.company_name?.toLowerCase().includes(query) ||
-          order.contact_email?.toLowerCase().includes(query) ||
-          order.description?.toLowerCase().includes(query) ||
-          order.company_address?.toLowerCase().includes(query) ||
-          order.assigned_to_name?.toLowerCase().includes(query)
-        );
-      }
-
-      // Apply company name filter
-      if (filters.companyName) {
-        const query = filters.companyName.toLowerCase();
-        orders = orders.filter(order =>
-          order.company_name?.toLowerCase().includes(query)
-        );
-      }
-
-      // Apply contact email filter
-      if (filters.contactEmail) {
-        const query = filters.contactEmail.toLowerCase();
-        orders = orders.filter(order =>
-          order.contact_email?.toLowerCase().includes(query)
-        );
-      }
-
-      // Apply status filters
-      if (filters.status && filters.status.length > 0) {
-        orders = orders.filter(order => {
-          const activeStatuses = OrderService.getActiveStatuses(order);
-          return filters.status!.some(status => activeStatuses.includes(status as any));
-        });
-      }
-
-      // Apply priority filters
-      if (filters.priority && filters.priority.length > 0) {
-        orders = orders.filter(order =>
-          filters.priority!.includes(order.priority || 'Medium')
-        );
-      }
-
-      // Apply assigned to filters
-      if (filters.assignedTo && filters.assignedTo.length > 0) {
-        orders = orders.filter(order =>
-          filters.assignedTo!.includes(order.assigned_to || 'unassigned')
-        );
-      }
-
-      // Apply date range filter
-      if (filters.dateRange) {
-        orders = orders.filter(order => {
-          const orderDate = new Date(order.created_at || '');
-          return orderDate >= filters.dateRange!.from && orderDate <= filters.dateRange!.to;
-        });
-      }
-
-      // Apply price range filter
-      if (filters.priceRange) {
-        orders = orders.filter(order => {
-          const price = order.price || 0;
-          return price >= filters.priceRange!.min && price <= filters.priceRange!.max;
-        });
-      }
-
-      // Apply currency filter
-      if (filters.currency && filters.currency.length > 0) {
-        orders = orders.filter(order =>
-          filters.currency!.includes(order.currency || 'EUR')
-        );
-      }
-
-      return orders;
+      const orders = await OrderService.getOrders();
+      return this.applyFiltersToOrders(orders, filters);
     } catch (error) {
       console.error('Error in advanced search:', error);
       return [];
@@ -227,11 +235,14 @@ export class SearchService {
       const orders = await OrderService.getOrders();
       
       // Get unique assigned users
-      const assignedUsers = Array.from(new Set(
-        orders
-          .filter(order => order.assigned_to && order.assigned_to_name)
-          .map(order => ({ id: order.assigned_to!, name: order.assigned_to_name! }))
-      ));
+      const assignedUsersMap = new Map<string, string>();
+      orders.forEach(order => {
+        if (order.assigned_to && order.assigned_to_name) {
+          assignedUsersMap.set(order.assigned_to, order.assigned_to_name);
+        }
+      });
+      
+      const assignedUsers = Array.from(assignedUsersMap.entries()).map(([id, name]) => ({ id, name }));
 
       // Get unique currencies
       const currencies = Array.from(new Set(

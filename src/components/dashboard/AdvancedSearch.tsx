@@ -46,6 +46,11 @@ const AdvancedSearch = ({ onFiltersChange, currentFilters }: AdvancedSearchProps
   
   const { user } = useAuth();
 
+  // Sync internal state with props
+  useEffect(() => {
+    setFilters(currentFilters);
+  }, [currentFilters]);
+
   useEffect(() => {
     if (user) {
       loadSavedFilters();
@@ -71,6 +76,7 @@ const AdvancedSearch = ({ onFiltersChange, currentFilters }: AdvancedSearchProps
   };
 
   const applyFilters = () => {
+    console.log('Applying filters:', filters);
     onFiltersChange(filters);
     setIsOpen(false);
   };
@@ -109,16 +115,23 @@ const AdvancedSearch = ({ onFiltersChange, currentFilters }: AdvancedSearchProps
 
   const getActiveFilterCount = () => {
     let count = 0;
-    if (filters.globalSearch) count++;
-    if (filters.companyName) count++;
-    if (filters.contactEmail) count++;
+    if (filters.globalSearch?.trim()) count++;
+    if (filters.companyName?.trim()) count++;
+    if (filters.contactEmail?.trim()) count++;
     if (filters.status?.length) count++;
     if (filters.priority?.length) count++;
     if (filters.assignedTo?.length) count++;
-    if (filters.dateRange) count++;
-    if (filters.priceRange) count++;
+    if (filters.dateRange?.from && filters.dateRange?.to) count++;
+    if (filters.priceRange && (filters.priceRange.min > 0 || filters.priceRange.max > 0)) count++;
     if (filters.currency?.length) count++;
     return count;
+  };
+
+  // Apply global search immediately when typing
+  const handleGlobalSearchChange = (value: string) => {
+    const newFilters = { ...filters, globalSearch: value };
+    setFilters(newFilters);
+    onFiltersChange(newFilters);
   };
 
   return (
@@ -128,7 +141,7 @@ const AdvancedSearch = ({ onFiltersChange, currentFilters }: AdvancedSearchProps
         <Input
           placeholder="Search orders, companies, clients..."
           value={filters.globalSearch || ''}
-          onChange={(e) => handleFilterChange('globalSearch', e.target.value)}
+          onChange={(e) => handleGlobalSearchChange(e.target.value)}
           className="pl-10"
         />
       </div>

@@ -45,7 +45,7 @@ const OrderTable = ({ onOrderClick, statusFilter, refreshTrigger }: OrderTablePr
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
 
-  // Fetch orders from Supabase only
+  // Fetch orders from Supabase
   useEffect(() => {
     const fetchOrders = async () => {
       if (!user) {
@@ -84,98 +84,57 @@ const OrderTable = ({ onOrderClick, statusFilter, refreshTrigger }: OrderTablePr
 
   // Apply filters and sorting whenever orders or filter criteria change
   useEffect(() => {
-    const applyFiltersAndSort = async () => {
-      let result = [...orders];
-      
-      // Apply status filter using the new multi-status system
-      if (statusFilter) {
-        if (statusFilter === "All") {
-          // For "All", show orders that don't have resolved, cancelled, or deleted status
-          result = result.filter(order => 
-            !order.status_resolved && !order.status_cancelled && !order.status_deleted
-          );
-        } else {
-          // Filter by specific status using the boolean fields
-          const statusFieldMap: Record<string, keyof Order> = {
-            "Created": "status_created",
-            "In Progress": "status_in_progress",
-            "Complaint": "status_complaint",
-            "Invoice Sent": "status_invoice_sent",
-            "Invoice Paid": "status_invoice_paid",
-            "Resolved": "status_resolved",
-            "Cancelled": "status_cancelled",
-            "Deleted": "status_deleted",
-            "Review": "status_review"
-          };
+    let result = [...orders];
+    
+    // Apply status filter first
+    if (statusFilter && statusFilter !== "All") {
+      const statusFieldMap: Record<string, keyof Order> = {
+        "Created": "status_created",
+        "In Progress": "status_in_progress",
+        "Complaint": "status_complaint",
+        "Invoice Sent": "status_invoice_sent",
+        "Invoice Paid": "status_invoice_paid",
+        "Resolved": "status_resolved",
+        "Cancelled": "status_cancelled",
+        "Deleted": "status_deleted",
+        "Review": "status_review"
+      };
 
-          const statusField = statusFieldMap[statusFilter];
-          if (statusField) {
-            result = result.filter(order => order[statusField] === true);
-          } else {
-            // Fallback to old status field for backward compatibility
-            result = result.filter(order => order.status === statusFilter);
-          }
-        }
+      const statusField = statusFieldMap[statusFilter];
+      if (statusField) {
+        result = result.filter(order => order[statusField] === true);
+      } else {
+        // Fallback to old status field for backward compatibility
+        result = result.filter(order => order.status === statusFilter);
       }
+    } else if (statusFilter === "All") {
+      // For "All", show orders that don't have resolved, cancelled, or deleted status
+      result = result.filter(order => 
+        !order.status_resolved && !order.status_cancelled && !order.status_deleted
+      );
+    }
+    
+    // Apply advanced search filters using the new method
+    if (Object.keys(searchFilters).length > 0) {
+      result = SearchService.applyFiltersToOrders(result, searchFilters);
+    }
+    
+    // Apply sorting
+    result.sort((a, b) => {
+      const dateA = new Date(a[sortField] || '').getTime();
+      const dateB = new Date(b[sortField] || '').getTime();
       
-      // Apply advanced search filters
-      if (Object.keys(searchFilters).length > 0) {
-        result = await SearchService.advancedSearch({
-          ...searchFilters,
-          // Use the already filtered result as the base
-        });
-        
-        // Re-apply status filter if needed since advanced search works on all orders
-        if (statusFilter) {
-          if (statusFilter === "All") {
-            result = result.filter(order => 
-              !order.status_resolved && !order.status_cancelled && !order.status_deleted
-            );
-          } else {
-            const statusFieldMap: Record<string, keyof Order> = {
-              "Created": "status_created",
-              "In Progress": "status_in_progress",
-              "Complaint": "status_complaint",
-              "Invoice Sent": "status_invoice_sent",
-              "Invoice Paid": "status_invoice_paid",
-              "Resolved": "status_resolved",
-              "Cancelled": "status_cancelled",
-              "Deleted": "status_deleted",
-              "Review": "status_review"
-            };
-
-            const statusField = statusFieldMap[statusFilter];
-            if (statusField) {
-              result = result.filter(order => order[statusField] === true);
-            }
-          }
-        }
-        
-        // Filter for non-admin users
-        if (!isAdmin && user) {
-          result = result.filter(order => order.assigned_to === user.id);
-        }
+      if (sortDirection === 'asc') {
+        return dateA - dateB;
+      } else {
+        return dateB - dateA;
       }
-      
-      // Apply sorting
-      result.sort((a, b) => {
-        const dateA = new Date(a[sortField] || '').getTime();
-        const dateB = new Date(b[sortField] || '').getTime();
-        
-        if (sortDirection === 'asc') {
-          return dateA - dateB;
-        } else {
-          return dateB - dateA;
-        }
-      });
-      
-      setFilteredOrders(result);
-      // Reset to first page when filters change
-      setCurrentPage(1);
-    };
-
-    applyFiltersAndSort();
-  }, [orders, statusFilter, searchFilters, sortField, sortDirection, isAdmin, user]);
+    });
+    
+    setFilteredOrders(result);
+    // Reset to first page when filters change
+    setCurrentPage(1);
+  }, [orders, statusFilter, searchFilters, sortField, sortDirection]);
 
   const handlePageChange = (pageNumber: number) => {
     setCurrentPage(pageNumber);
@@ -198,6 +157,7 @@ const OrderTable = ({ onOrderClick, statusFilter, refreshTrigger }: OrderTablePr
   };
 
   const handleFiltersChange = (filters: SearchFilters) => {
+    console.log('Applying new filters:', filters);
     setSearchFilters(filters);
   };
 
