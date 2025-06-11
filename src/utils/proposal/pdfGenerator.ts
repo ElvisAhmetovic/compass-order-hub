@@ -1,3 +1,4 @@
+
 import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
 import { getCompanyInfo } from "./companyInfo";
@@ -46,29 +47,7 @@ const getTextDirection = (language: string) => {
   return language === 'ar' ? 'rtl' : 'ltr';
 };
 
-// Calculate estimated content height for sections - FIXED VERSION
-const calculateSectionHeight = (proposalData: any) => {
-  const baseHeight = 200; // Header + customer info
-  const titleHeight = 80;
-  const contentHeight = Math.max(120, (proposalData.proposalDescription?.length || 0) * 0.8);
-  const lineItemsHeight = 60 + (proposalData.lineItems?.length || 1) * 40; // Header + rows
-  const totalsHeight = 180;
-  const termsHeight = Math.max(100, (proposalData.paymentTerms?.length || 0) * 0.6 + (proposalData.termsAndConditions?.length || 0) * 0.6);
-  const signatureHeight = 120;
-  
-  return {
-    baseHeight,
-    titleHeight,
-    contentHeight,
-    lineItemsHeight,
-    totalsHeight,
-    termsHeight,
-    signatureHeight,
-    total: baseHeight + titleHeight + contentHeight + lineItemsHeight + totalsHeight + termsHeight + signatureHeight
-  };
-};
-
-// Create first page content with intelligent height management - FIXED VERSION
+// Create first page content - ALWAYS includes header, customer info, proposal content, and line items
 const createFirstPageContent = (proposalData: any, language: string = "en") => {
   const t = translations[language as keyof typeof translations] || translations.en;
   const companyInfo = getCompanyInfo();
@@ -77,41 +56,8 @@ const createFirstPageContent = (proposalData: any, language: string = "en") => {
   const fontFamily = getLanguageFont(language);
   const textDirection = getTextDirection(language);
 
-  // Calculate heights
-  const heights = calculateSectionHeight(proposalData);
-  const maxPageHeight = 950; // Conservative page height to avoid clipping
-  
-  // Calculate what fits on first page (excluding payment data which is always on page 2)
-  let currentHeight = heights.baseHeight + heights.titleHeight + heights.contentHeight + heights.lineItemsHeight + heights.totalsHeight;
-  
-  const showTermsOnFirstPage = currentHeight + heights.termsHeight < maxPageHeight;
-  const showSignatureOnFirstPage = showTermsOnFirstPage && (currentHeight + heights.termsHeight + heights.signatureHeight < maxPageHeight);
-
-  console.log('Page 1 height calculation:', {
-    currentHeight,
-    termsHeight: heights.termsHeight,
-    signatureHeight: heights.signatureHeight,
-    showTermsOnFirstPage,
-    showSignatureOnFirstPage
-  });
-
-  // Font sizes and spacing
-  const baseFontSize = 14;
-  const headerFontSize = 24;
-  const titleFontSize = 20;
-  const lineHeight = 1.5;
-  const sectionSpacing = 20;
-  const elementPadding = 15;
-
   // Calculate logo width
   const logoWidth = proposalData.logoSize ? `${proposalData.logoSize}%` : '33%';
-
-  // VAT calculations
-  const isVatEnabled = proposalData.vatEnabled === true;
-  const netAmount = proposalData.netAmount || 0;
-  const vatRate = proposalData.vatRate || 0;
-  const vatAmount = isVatEnabled ? (netAmount * vatRate / 100) : 0;
-  const totalAmount = isVatEnabled ? (netAmount + vatAmount) : netAmount;
 
   // Currency symbol
   const getCurrencySymbol = (currency: string) => {
@@ -124,11 +70,6 @@ const createFirstPageContent = (proposalData: any, language: string = "en") => {
   };
 
   const currencySymbol = getCurrencySymbol(proposalData.currency || 'EUR');
-
-  // Format date
-  const proposalDate = proposalData.proposalDate ? 
-    new Date(proposalData.proposalDate).toLocaleDateString() : 
-    new Date(proposalData.created_at || Date.now()).toLocaleDateString();
 
   return `
     <style>
@@ -144,20 +85,20 @@ const createFirstPageContent = (proposalData: any, language: string = "en") => {
       
       .pdf-page {
         width: 794px;
-        height: 1123px;
+        height: 1100px;
         background: white;
         margin: 0;
         padding: 20px;
         font-family: ${fontFamily};
         font-size: 14px;
-        line-height: 1.5;
+        line-height: 1.4;
         color: #2d3748;
         direction: ${textDirection};
         overflow: hidden;
       }
       
       .section {
-        margin-bottom: 20px;
+        margin-bottom: 16px;
       }
     </style>
     
@@ -167,19 +108,19 @@ const createFirstPageContent = (proposalData: any, language: string = "en") => {
         display: flex; 
         justify-content: space-between; 
         align-items: flex-start; 
-        padding-bottom: 15px; 
+        padding-bottom: 12px; 
         border-bottom: 2px solid #e2e8f0;
       ">
         <div style="flex: 1; max-width: 62%;">
           <div style="
             font-weight: 600; 
-            font-size: 24px; 
-            margin-bottom: 8px; 
+            font-size: 22px; 
+            margin-bottom: 6px; 
             color: #1a202c;
           ">
             ${companyInfo.name || 'AB MEDIA TEAM LTD'}
           </div>
-          <div style="line-height: 1.5; color: #4a5568;">
+          <div style="line-height: 1.4; color: #4a5568; font-size: 13px;">
             <div>${companyInfo.street || 'Weseler Str.73'}</div>
             <div>${companyInfo.postal || '47169'} ${companyInfo.city || 'Duisburg'}</div>
             <div>${companyInfo.country || 'Germany'}</div>
@@ -189,13 +130,13 @@ const createFirstPageContent = (proposalData: any, language: string = "en") => {
           ${proposalData.logo || companyInfo.logo ? `
           <div style="
             background: #f7fafc; 
-            padding: 10px; 
+            padding: 8px; 
             border-radius: 6px; 
             border: 1px solid #e2e8f0;
           ">
             <img src="${proposalData.logo || companyInfo.logo}" style="
-              max-height: 50px; 
-              max-width: ${proposalData.logoSize ? `${proposalData.logoSize}%` : '33%'};
+              max-height: 45px; 
+              max-width: ${logoWidth};
             " />
           </div>
           ` : ''}
@@ -206,25 +147,27 @@ const createFirstPageContent = (proposalData: any, language: string = "en") => {
       <div class="section" style="
         display: flex; 
         justify-content: space-between; 
-        gap: 20px;
+        gap: 16px;
       ">
         <div style="
           flex: 1; 
           background: #f8fafc; 
-          padding: 15px; 
+          padding: 12px; 
           border-radius: 6px; 
           border: 1px solid #e2e8f0;
+          font-size: 13px;
         ">
           <div style="
             font-weight: 600; 
-            margin-bottom: 10px; 
+            margin-bottom: 8px; 
             color: #2d3748; 
             text-transform: uppercase;
+            font-size: 12px;
           ">
             ${t.customerInformation || 'Customer Information'}
           </div>
           <div>
-            <div style="font-weight: 600; margin-bottom: 6px;">
+            <div style="font-weight: 600; margin-bottom: 4px;">
               ${proposalData.customerName || proposalData.customer || 'Name Surname'}
             </div>
             <div>${proposalData.customerAddress || 'Customer Address'}</div>
@@ -233,22 +176,23 @@ const createFirstPageContent = (proposalData: any, language: string = "en") => {
           </div>
         </div>
         
-        <div style="flex: 0 0 auto; min-width: 250px;">
+        <div style="flex: 0 0 auto; min-width: 240px;">
           <div style="
             background: #f8fafc; 
-            padding: 15px; 
+            padding: 12px; 
             border-radius: 6px; 
             border: 1px solid #e2e8f0;
+            font-size: 13px;
           ">
-            <div style="margin-bottom: 8px;">
+            <div style="margin-bottom: 6px;">
               <span style="font-weight: 500; color: #4a5568;">${t.proposalNumber || 'Proposal No.'}</span>
               <span style="float: right; font-weight: 600;">${proposalData.number || 'AN-9993'}</span>
             </div>
-            <div style="margin-bottom: 8px;">
+            <div style="margin-bottom: 6px;">
               <span style="font-weight: 500; color: #4a5568;">${t.proposalDate || 'Date'}</span>
               <span style="float: right;">${proposalData.proposalDate ? new Date(proposalData.proposalDate).toLocaleDateString() : new Date(proposalData.created_at || Date.now()).toLocaleDateString()}</span>
             </div>
-            <div style="margin-bottom: 8px;">
+            <div style="margin-bottom: 6px;">
               <span style="font-weight: 500; color: #4a5568;">${t.customerReference || 'Reference'}</span>
               <span style="float: right;">${proposalData.customerRef || proposalData.reference || '—'}</span>
             </div>
@@ -264,10 +208,10 @@ const createFirstPageContent = (proposalData: any, language: string = "en") => {
       <div class="section" style="
         background: #2d3748; 
         color: white; 
-        padding: 15px; 
+        padding: 12px; 
         border-radius: 6px;
       ">
-        <h2 style="margin: 0; font-size: 20px; font-weight: 600;">
+        <h2 style="margin: 0; font-size: 18px; font-weight: 600;">
           ${t.createNewProposal || 'Proposal'} ${proposalData.number || 'AN-9993'}
         </h2>
       </div>
@@ -275,11 +219,12 @@ const createFirstPageContent = (proposalData: any, language: string = "en") => {
       <!-- Proposal Content -->
       <div class="section" style="
         background: white; 
-        padding: 15px; 
+        padding: 12px; 
         border-radius: 6px; 
         border: 1px solid #e2e8f0;
+        font-size: 13px;
       ">
-        <div style="font-weight: 600; font-size: 18px; margin-bottom: 8px;">
+        <div style="font-weight: 600; font-size: 16px; margin-bottom: 6px;">
           ${proposalData.proposalTitle || proposalData.subject || 'Proposal Title'}
         </div>
         <div>
@@ -294,19 +239,19 @@ const createFirstPageContent = (proposalData: any, language: string = "en") => {
         overflow: hidden; 
         border: 1px solid #e2e8f0;
       ">
-        <table style="width: 100%; border-collapse: collapse;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
           <thead>
             <tr style="background: #2d3748; color: white;">
-              <th style="padding: 12px; text-align: left; width: 50%;">
+              <th style="padding: 10px; text-align: left; width: 50%;">
                 ${t.productServiceName || t.description || 'Product/Service'}
               </th>
-              <th style="padding: 12px; text-align: center; width: 16%;">
+              <th style="padding: 10px; text-align: center; width: 16%;">
                 ${t.unitPrice || 'Price'}
               </th>
-              <th style="padding: 12px; text-align: center; width: 14%;">
+              <th style="padding: 10px; text-align: center; width: 14%;">
                 ${t.quantity || 'Qty'}
               </th>
-              <th style="padding: 12px; text-align: right; width: 20%;">
+              <th style="padding: 10px; text-align: right; width: 20%;">
                 ${t.total || 'Total'}
               </th>
             </tr>
@@ -317,24 +262,24 @@ const createFirstPageContent = (proposalData: any, language: string = "en") => {
                 border-bottom: 1px solid #e2e8f0; 
                 background-color: ${index % 2 === 0 ? '#f8fafc' : 'white'};
               ">
-                <td style="padding: 12px; vertical-align: top;">
-                  <div style="font-weight: 600; margin-bottom: 4px;">
+                <td style="padding: 10px; vertical-align: top;">
+                  <div style="font-weight: 600; margin-bottom: 3px;">
                     ${item.name || 'Product/Service Name'}
                   </div>
                   ${item.description ? `
-                  <div style="color: #718096; font-size: 12px;">
+                  <div style="color: #718096; font-size: 11px;">
                     ${item.description}
                   </div>
                   ` : ''}
                 </td>
-                <td style="padding: 12px; text-align: center;">
-                  ${proposalData.currency === 'USD' ? '$' : proposalData.currency === 'GBP' ? '£' : '€'}${(item.unit_price || 0).toFixed(2)}
+                <td style="padding: 10px; text-align: center;">
+                  ${currencySymbol}${(item.unit_price || 0).toFixed(2)}
                 </td>
-                <td style="padding: 12px; text-align: center;">
+                <td style="padding: 10px; text-align: center;">
                   ${item.quantity || 1}
                 </td>
-                <td style="padding: 12px; text-align: right; font-weight: 600;">
-                  ${proposalData.currency === 'USD' ? '$' : proposalData.currency === 'GBP' ? '£' : '€'}${(item.total_price || 0).toFixed(2)}
+                <td style="padding: 10px; text-align: right; font-weight: 600;">
+                  ${currencySymbol}${(item.total_price || 0).toFixed(2)}
                 </td>
               </tr>
             `).join('')}
@@ -345,57 +290,106 @@ const createFirstPageContent = (proposalData: any, language: string = "en") => {
       <!-- Totals Section -->
       <div class="section" style="display: flex; justify-content: flex-end;">
         <div style="
-          width: 280px; 
+          width: 260px; 
           background: white; 
           border-radius: 6px; 
           border: 1px solid #e2e8f0;
+          font-size: 13px;
         ">
           <div style="
             background: #4a5568; 
             color: white; 
-            padding: 10px 15px; 
+            padding: 8px 12px; 
             font-weight: 600;
           ">
             ${t.total || 'Summary'}
           </div>
-          <div style="padding: 15px;">
+          <div style="padding: 12px;">
             <div style="
               display: flex; 
               justify-content: space-between; 
-              padding: 8px 0; 
+              padding: 6px 0; 
               border-bottom: 1px solid #e2e8f0;
             ">
               <span>${t.netAmount || 'Subtotal'}</span>
-              <span style="font-weight: 600;">${proposalData.currency === 'USD' ? '$' : proposalData.currency === 'GBP' ? '£' : '€'}${(proposalData.netAmount || 0).toFixed(2)}</span>
+              <span style="font-weight: 600;">${currencySymbol}${(proposalData.netAmount || 0).toFixed(2)}</span>
+            </div>
+            <div style="
+              display: flex; 
+              justify-content: space-between; 
+              padding: 6px 0; 
+              border-bottom: 1px solid #e2e8f0;
+            ">
+              <span>${t.vatPricing || 'VAT'} ${proposalData.vatEnabled ? `${proposalData.vatRate || 0}%` : '0%'}</span>
+              <span style="font-weight: 600;">${currencySymbol}${(proposalData.vatEnabled ? ((proposalData.netAmount || 0) * (proposalData.vatRate || 0) / 100) : 0).toFixed(2)}</span>
             </div>
             <div style="
               display: flex; 
               justify-content: space-between; 
               padding: 8px 0; 
-              border-bottom: 1px solid #e2e8f0;
-            ">
-              <span>${t.vatPricing || 'VAT'} ${proposalData.vatEnabled ? `${proposalData.vatRate || 0}%` : '0%'}</span>
-              <span style="font-weight: 600;">${proposalData.currency === 'USD' ? '$' : proposalData.currency === 'GBP' ? '£' : '€'}${(proposalData.vatEnabled ? ((proposalData.netAmount || 0) * (proposalData.vatRate || 0) / 100) : 0).toFixed(2)}</span>
-            </div>
-            <div style="
-              display: flex; 
-              justify-content: space-between; 
-              padding: 10px 0; 
               font-weight: 700; 
               background: #2d3748; 
               color: white; 
-              margin: 10px -15px -15px -15px; 
-              padding-left: 15px; 
-              padding-right: 15px;
+              margin: 8px -12px -12px -12px; 
+              padding-left: 12px; 
+              padding-right: 12px;
             ">
               <span>${t.totalAmount || 'Total Amount'}</span>
-              <span>${proposalData.currency === 'USD' ? '$' : proposalData.currency === 'GBP' ? '£' : '€'}${(proposalData.vatEnabled ? ((proposalData.netAmount || 0) + ((proposalData.netAmount || 0) * (proposalData.vatRate || 0) / 100)) : (proposalData.netAmount || 0)).toFixed(2)}</span>
+              <span>${currencySymbol}${(proposalData.vatEnabled ? ((proposalData.netAmount || 0) + ((proposalData.netAmount || 0) * (proposalData.vatRate || 0) / 100)) : (proposalData.netAmount || 0)).toFixed(2)}</span>
             </div>
           </div>
         </div>
       </div>
+    </div>
+  `;
+};
 
-      ${showTermsOnFirstPage ? `
+// Create second page content - ALWAYS includes terms, payment data, and signature
+const createSecondPageContent = (proposalData: any, language: string = "en") => {
+  const t = translations[language as keyof typeof translations] || translations.en;
+  const companyInfo = getCompanyInfo();
+  
+  // Get language-specific styling
+  const fontFamily = getLanguageFont(language);
+  const textDirection = getTextDirection(language);
+
+  // Payment data
+  const paymentAccountNumber = proposalData.accountNumber || companyInfo.accountNumber || '12345678901234567';
+  const paymentAccountName = proposalData.accountName || companyInfo.accountHolder || 'YOUR NAME';
+  const paymentMethodValue = proposalData.paymentMethod || companyInfo.paymentMethod || 'CREDIT CARD';
+
+  return `
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      
+      body, html {
+        margin: 0;
+        padding: 0;
+        background: white;
+      }
+      
+      .pdf-page {
+        width: 794px;
+        height: 1100px;
+        background: white;
+        margin: 0;
+        padding: 20px;
+        font-family: ${fontFamily};
+        font-size: 14px;
+        line-height: 1.4;
+        color: #2d3748;
+        direction: ${textDirection};
+        overflow: hidden;
+      }
+      
+      .section {
+        margin-bottom: 20px;
+      }
+    </style>
+    
+    <div class="pdf-page">
       <!-- Terms and Conditions -->
       <div class="section" style="
         background: white; 
@@ -416,9 +410,36 @@ const createFirstPageContent = (proposalData: any, language: string = "en") => {
           ${proposalData.termsAndConditions ? `<br/><br/>${proposalData.termsAndConditions}` : ''}
         </div>
       </div>
-      ` : ''}
 
-      ${showSignatureOnFirstPage ? `
+      <!-- Payment Data Section -->
+      <div class="section" style="
+        background: #e6fffa; 
+        padding: 15px; 
+        border-radius: 6px; 
+        border-left: 4px solid #38a169; 
+        border: 1px solid #81e6d9;
+      ">
+        <div style="
+          font-weight: 600; 
+          margin-bottom: 12px; 
+          color: #2d6b4f; 
+          text-transform: uppercase;
+        ">
+          ${t.paymentData || 'Payment Data'}
+        </div>
+        <div style="color: #2d6b4f;">
+          <div style="margin-bottom: 8px;">
+            <strong>${t.accountNumber || 'Account Nr'}:</strong> ${paymentAccountNumber}
+          </div>
+          <div style="margin-bottom: 8px;">
+            <strong>${t.accountName || 'Name'}:</strong> ${paymentAccountName}
+          </div>
+          <div>
+            <strong>${t.paymentMethod || 'Payment Method'}:</strong> ${paymentMethodValue}
+          </div>
+        </div>
+      </div>
+
       <!-- Signature Section -->
       <div class="section" style="
         display: flex; 
@@ -450,157 +471,6 @@ const createFirstPageContent = (proposalData: any, language: string = "en") => {
           </div>
         </div>
       </div>
-      ` : ''}
-    </div>
-  `;
-};
-
-// Create second page content with remaining sections - FIXED VERSION
-const createSecondPageContent = (proposalData: any, language: string = "en") => {
-  const t = translations[language as keyof typeof translations] || translations.en;
-  const companyInfo = getCompanyInfo();
-  
-  // Get language-specific styling
-  const fontFamily = getLanguageFont(language);
-  const textDirection = getTextDirection(language);
-
-  // Calculate what should be on second page
-  const heights = calculateSectionHeight(proposalData);
-  const maxPageHeight = 950;
-  let currentHeight = heights.baseHeight + heights.titleHeight + heights.contentHeight + heights.lineItemsHeight + heights.totalsHeight;
-  
-  const showTermsOnFirstPage = currentHeight + heights.termsHeight < maxPageHeight;
-  const showSignatureOnFirstPage = showTermsOnFirstPage && (currentHeight + heights.termsHeight + heights.signatureHeight < maxPageHeight);
-
-  console.log('Page 2 content:', {
-    showTermsOnFirstPage,
-    showSignatureOnFirstPage,
-    willShowTermsOnPage2: !showTermsOnFirstPage,
-    willShowSignatureOnPage2: !showSignatureOnFirstPage
-  });
-
-  // Payment data
-  const paymentAccountNumber = proposalData.accountNumber || companyInfo.accountNumber || '12345678901234567';
-  const paymentAccountName = proposalData.accountName || companyInfo.accountHolder || 'YOUR NAME';
-  const paymentMethodValue = proposalData.paymentMethod || companyInfo.paymentMethod || 'CREDIT CARD';
-
-  return `
-    <style>
-      * {
-        box-sizing: border-box;
-      }
-      
-      body, html {
-        margin: 0;
-        padding: 0;
-        background: white;
-      }
-      
-      .pdf-page {
-        width: 794px;
-        height: 1123px;
-        background: white;
-        margin: 0;
-        padding: 20px;
-        font-family: ${fontFamily};
-        font-size: 14px;
-        line-height: 1.5;
-        color: #2d3748;
-        direction: ${textDirection};
-        overflow: hidden;
-      }
-      
-      .section {
-        margin-bottom: 20px;
-      }
-    </style>
-    
-    <div class="pdf-page">
-      <!-- Payment Data Section - ALWAYS at top of page 2 -->
-      <div class="section" style="
-        background: #e6fffa; 
-        padding: 15px; 
-        border-radius: 6px; 
-        border-left: 4px solid #38a169; 
-        border: 1px solid #81e6d9;
-      ">
-        <div style="
-          font-weight: 600; 
-          margin-bottom: 12px; 
-          color: #2d6b4f; 
-          text-transform: uppercase;
-        ">
-          ${t.paymentData || 'Payment Data'}
-        </div>
-        <div style="color: #2d6b4f;">
-          <div style="margin-bottom: 8px;">
-            <strong>${t.accountNumber || 'Account Nr'}:</strong> ${paymentAccountNumber}
-          </div>
-          <div style="margin-bottom: 8px;">
-            <strong>${t.accountName || 'Name'}:</strong> ${paymentAccountName}
-          </div>
-          <div>
-            <strong>${t.paymentMethod || 'Payment Method'}:</strong> ${paymentMethodValue}
-          </div>
-        </div>
-      </div>
-
-      ${!showTermsOnFirstPage ? `
-      <!-- Terms and Conditions - Show on page 2 if didn't fit on page 1 -->
-      <div class="section" style="
-        background: white; 
-        padding: 15px; 
-        border-radius: 6px; 
-        border: 1px solid #e2e8f0;
-      ">
-        <div style="
-          font-weight: 600; 
-          margin-bottom: 10px; 
-          text-transform: uppercase; 
-          color: #2d3748;
-        ">
-          ${t.termsConditions || 'Terms and Conditions'}
-        </div>
-        <div>
-          ${proposalData.paymentTerms || proposalData.deliveryTerms || t.paymentTerms || 'Payment terms will be specified here.'}
-          ${proposalData.termsAndConditions ? `<br/><br/>${proposalData.termsAndConditions}` : ''}
-        </div>
-      </div>
-      ` : ''}
-
-      ${!showSignatureOnFirstPage ? `
-      <!-- Signature Section - Show on page 2 if didn't fit on page 1 -->
-      <div class="section" style="
-        display: flex; 
-        justify-content: space-between; 
-        gap: 20px;
-        min-height: 80px;
-      ">
-        <div style="
-          width: 45%; 
-          background: white; 
-          padding: 12px; 
-          border-radius: 6px; 
-          border: 1px solid #e2e8f0;
-        ">
-          <div style="border-top: 2px solid #2d3748; padding-top: 8px;">
-            <div style="font-size: 12px; color: #718096; font-weight: 500;">Place & Date</div>
-          </div>
-        </div>
-        <div style="
-          width: 45%; 
-          background: white; 
-          padding: 12px; 
-          border-radius: 6px; 
-          border: 1px solid #e2e8f0;
-        ">
-          <div style="border-top: 2px solid #2d3748; padding-top: 8px;">
-            <div style="font-size: 12px; color: #718096; font-weight: 500;">Signature & Stamp</div>
-            ${proposalData.signatureUrl ? `<img src="${proposalData.signatureUrl}" style="max-height: 30px; margin-top: 8px;" />` : ''}
-          </div>
-        </div>
-      </div>
-      ` : ''}
 
       <!-- Footer Content -->
       ${proposalData.footerContent ? `
@@ -714,7 +584,7 @@ const generateMultiPagePDF = async (firstPageHtml: string, secondPageHtml: strin
       allowTaint: true,
       backgroundColor: '#ffffff',
       width: 794,
-      height: 1123
+      height: 1100
     });
     
     const imgData1 = canvas1.toDataURL('image/png');
@@ -732,7 +602,7 @@ const generateMultiPagePDF = async (firstPageHtml: string, secondPageHtml: strin
       allowTaint: true,
       backgroundColor: '#ffffff',
       width: 794,
-      height: 1123
+      height: 1100
     });
     
     const imgData2 = canvas2.toDataURL('image/png');
@@ -759,7 +629,7 @@ export const generateProposalPDF = async (
   try {
     console.log('Generating PDF for proposal:', proposalData.number, 'Language:', language);
     
-    // Generate HTML content for both pages with intelligent height management
+    // Generate HTML content for both pages - SIMPLE APPROACH
     const firstPageHtml = createFirstPageContent(proposalData, language);
     const secondPageHtml = createSecondPageContent(proposalData, language);
     
