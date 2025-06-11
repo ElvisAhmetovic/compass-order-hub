@@ -1,8 +1,8 @@
-
 import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
-import { translations, PROPOSAL_LANGUAGES } from "./constants";
+import { PROPOSAL_LANGUAGES } from "./constants";
 import { getCompanyInfo } from "./companyInfo";
+import { translations } from "../proposalTranslations";
 
 // Enhanced PDF content with proper page break handling
 const createPDFContent = (proposalData: any, language: string = "en") => {
@@ -21,7 +21,7 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
   const logoWidth = proposalData.logoSize ? `${proposalData.logoSize}%` : '33%';
 
   // Proper VAT handling with all user data
-  console.log('PDF Generation - Original fonts with better page breaks:', proposalData);
+  console.log('PDF Generation - Using comprehensive translations for language:', language, proposalData);
   const isVatEnabled = proposalData.vatEnabled === true;
   const netAmount = proposalData.netAmount || 0;
   const vatRate = proposalData.vatRate || 0;
@@ -48,18 +48,12 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
   // Format the proposal date properly
   const proposalDate = proposalData.proposalDate ? new Date(proposalData.proposalDate).toLocaleDateString() : new Date(proposalData.created_at || Date.now()).toLocaleDateString();
 
-  console.log('PDF Generation - Original fonts with smart page breaks:', {
-    baseFontSize,
-    headerFontSize,
-    titleFontSize,
-    customerName: proposalData.customerName,
-    proposalTitle: proposalData.proposalTitle,
-    lineItems: proposalData.lineItems,
-    vatEnabled: isVatEnabled,
-    netAmount,
-    vatAmount,
-    totalAmount,
-    proposalDate
+  console.log('PDF Generation - Using translation keys:', {
+    customer: t.customerInformation,
+    proposal: t.createNewProposal,
+    date: t.proposalDate,
+    language,
+    availableKeys: Object.keys(t)
   });
 
   return `
@@ -87,7 +81,7 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
       <!-- Customer Information and Proposal Details -->
       <div style="display: flex; justify-content: space-between; margin-bottom: ${sectionSpacing}px; gap: 20px; page-break-inside: avoid;">
         <div style="flex: 1; background: #f8fafc; padding: ${elementPadding}px; border-radius: 6px; border: 1px solid #e2e8f0;">
-          <div style="font-weight: 600; font-size: ${baseFontSize}px; margin-bottom: 10px; color: #2d3748; text-transform: uppercase; letter-spacing: 0.4px; border-bottom: 1px solid #cbd5e0; padding-bottom: 6px;">${t.customer}</div>
+          <div style="font-weight: 600; font-size: ${baseFontSize}px; margin-bottom: 10px; color: #2d3748; text-transform: uppercase; letter-spacing: 0.4px; border-bottom: 1px solid #cbd5e0; padding-bottom: 6px;">${t.customerInformation || 'Customer'}</div>
           <div style="line-height: ${lineHeight}; font-size: ${baseFontSize}px;">
             <div style="font-weight: 600; margin-bottom: 6px; font-size: ${baseFontSize + 1}px; color: #2d3748;">${proposalData.customerName || proposalData.customer || 'Name Surname'}</div>
             <div style="margin-bottom: 4px; color: #4a5568;">${proposalData.customerAddress || 'Leidsestraat 15, 2000 Antwerpen'}</div>
@@ -99,19 +93,19 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
         <div style="flex: 0 0 auto; min-width: 250px;">
           <div style="background: #f8fafc; padding: ${elementPadding}px; border-radius: 6px; border: 1px solid #e2e8f0;">
             <div style="margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; padding-bottom: 4px; border-bottom: 1px solid #e2e8f0;">
-              <span style="font-weight: 500; color: #4a5568; font-size: ${baseFontSize - 1}px;">Proposal no.</span>
+              <span style="font-weight: 500; color: #4a5568; font-size: ${baseFontSize - 1}px;">${t.proposalNumber || 'Proposal no.'}</span>
               <span style="font-weight: 600; color: #2d3748; font-size: ${baseFontSize}px;">${proposalData.number || 'AN-9993'}</span>
             </div>
             <div style="margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; padding-bottom: 4px; border-bottom: 1px solid #e2e8f0;">
-              <span style="font-weight: 500; color: #4a5568; font-size: ${baseFontSize - 1}px;">${t.date}</span>
+              <span style="font-weight: 500; color: #4a5568; font-size: ${baseFontSize - 1}px;">${t.proposalDate || 'Date'}</span>
               <span style="color: #4a5568; font-weight: 500; font-size: ${baseFontSize - 1}px;">${proposalDate}</span>
             </div>
             <div style="margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; padding-bottom: 4px; border-bottom: 1px solid #e2e8f0;">
-              <span style="font-weight: 500; color: #4a5568; font-size: ${baseFontSize - 1}px;">${t.customerRef}</span>
+              <span style="font-weight: 500; color: #4a5568; font-size: ${baseFontSize - 1}px;">${t.customerReference || t.reference || 'Customer Ref'}</span>
               <span style="color: #4a5568; font-weight: 500; font-size: ${baseFontSize - 1}px;">${proposalData.customerRef || proposalData.reference || '—'}</span>
             </div>
             <div style="display: flex; justify-content: space-between; align-items: center;">
-              <span style="font-weight: 500; color: #4a5568; font-size: ${baseFontSize - 1}px;">${t.yourContact}</span>
+              <span style="font-weight: 500; color: #4a5568; font-size: ${baseFontSize - 1}px;">${t.internalContactPerson || 'Your Contact'}</span>
               <span style="color: #4a5568; font-weight: 500; font-size: ${baseFontSize - 1}px;">${proposalData.yourContact || proposalData.internalContact || 'Thomas Klein'}</span>
             </div>
           </div>
@@ -121,7 +115,7 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
       <!-- Proposal Title -->
       <div style="background: #2d3748; color: white; padding: ${elementPadding}px; border-radius: 6px; margin-bottom: ${sectionSpacing}px; page-break-inside: avoid;">
         <h2 style="margin: 0; font-size: ${titleFontSize}px; font-weight: 600; letter-spacing: -0.2px;">
-          ${t.proposal} ${proposalData.number || 'AN-9993'}
+          ${t.createNewProposal || 'Proposal'} ${proposalData.number || 'AN-9993'}
         </h2>
       </div>
 
@@ -143,10 +137,10 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
         <table style="width: 100%; border-collapse: collapse; font-size: ${baseFontSize}px; background: white;">
           <thead>
             <tr style="background: #2d3748; color: white;">
-              <th style="padding: 12px 15px; text-align: left; font-weight: 600; border: none; width: 50%; font-size: ${baseFontSize}px; text-transform: uppercase; letter-spacing: 0.2px;">${t.productDescription}</th>
-              <th style="padding: 12px 15px; text-align: center; font-weight: 600; border: none; width: 16%; font-size: ${baseFontSize}px; text-transform: uppercase; letter-spacing: 0.2px;">${t.price}</th>
-              <th style="padding: 12px 15px; text-align: center; font-weight: 600; border: none; width: 14%; font-size: ${baseFontSize}px; text-transform: uppercase; letter-spacing: 0.2px;">${t.qty}</th>
-              <th style="padding: 12px 15px; text-align: right; font-weight: 600; border: none; width: 20%; font-size: ${baseFontSize}px; text-transform: uppercase; letter-spacing: 0.2px;">${t.total}</th>
+              <th style="padding: 12px 15px; text-align: left; font-weight: 600; border: none; width: 50%; font-size: ${baseFontSize}px; text-transform: uppercase; letter-spacing: 0.2px;">${t.productServiceName || t.description || 'Product/Service'}</th>
+              <th style="padding: 12px 15px; text-align: center; font-weight: 600; border: none; width: 16%; font-size: ${baseFontSize}px; text-transform: uppercase; letter-spacing: 0.2px;">${t.unitPrice || 'Price'}</th>
+              <th style="padding: 12px 15px; text-align: center; font-weight: 600; border: none; width: 14%; font-size: ${baseFontSize}px; text-transform: uppercase; letter-spacing: 0.2px;">${t.quantity || 'Qty'}</th>
+              <th style="padding: 12px 15px; text-align: right; font-weight: 600; border: none; width: 20%; font-size: ${baseFontSize}px; text-transform: uppercase; letter-spacing: 0.2px;">${t.total || 'Total'}</th>
             </tr>
           </thead>
           <tbody>
@@ -181,19 +175,19 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
       <div style="display: flex; justify-content: flex-end; margin-bottom: ${sectionSpacing}px; page-break-inside: avoid;">
         <div style="width: 280px; background: white; border-radius: 6px; overflow: hidden; border: 1px solid #e2e8f0;">
           <div style="background: #4a5568; color: white; padding: 10px 15px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.2px; font-size: ${baseFontSize}px;">
-            Summary
+            ${t.total || 'Summary'}
           </div>
           <div style="padding: 15px;">
             <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e2e8f0; font-size: ${baseFontSize}px;">
-              <span style="color: #718096; font-weight: 500;">${t.subtotal}</span>
+              <span style="color: #718096; font-weight: 500;">${t.netAmount || 'Subtotal'}</span>
               <span style="font-weight: 600; color: #2d3748;">${currencySymbol}${netAmount.toFixed(2)}</span>
             </div>
             <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e2e8f0; font-size: ${baseFontSize}px;">
-              <span style="color: #718096; font-weight: 500;">${t.vat} ${isVatEnabled ? `${vatRate}%` : '0%'}</span>
+              <span style="color: #718096; font-weight: 500;">${t.vatPricing || 'VAT'} ${isVatEnabled ? `${vatRate}%` : '0%'}</span>
               <span style="font-weight: 600; color: #2d3748;">${currencySymbol}${vatAmount.toFixed(2)}</span>
             </div>
             <div style="display: flex; justify-content: space-between; padding: 10px 0; font-weight: 700; font-size: ${baseFontSize + 1}px; background: #2d3748; color: white; margin: 10px -15px -15px -15px; padding-left: 15px; padding-right: 15px;">
-              <span>${t.totalAmount}</span>
+              <span>${t.totalAmount || 'Total Amount'}</span>
               <span>${currencySymbol}${totalAmount.toFixed(2)}</span>
             </div>
           </div>
@@ -205,10 +199,10 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
         <!-- TERMS AND CONDITIONS -->
         <div style="margin-bottom: ${sectionSpacing}px; background: white; padding: ${elementPadding}px; border-radius: 6px; border: 1px solid #e2e8f0; page-break-inside: avoid;">
           <div style="font-weight: 600; margin-bottom: 10px; text-transform: uppercase; color: #2d3748; font-size: ${baseFontSize}px; letter-spacing: 0.2px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;">
-            ${t.termsAndConditions}
+            ${t.termsConditions || 'Terms and Conditions'}
           </div>
           <div style="line-height: ${lineHeight}; font-size: ${baseFontSize}px; color: #4a5568;">
-            ${proposalData.paymentTerms || proposalData.deliveryTerms || t.paymentTerms}
+            ${proposalData.paymentTerms || proposalData.deliveryTerms || t.paymentTerms || 'Payment terms will be specified here.'}
             ${proposalData.termsAndConditions ? `<br/><br/>${proposalData.termsAndConditions}` : ''}
           </div>
         </div>
@@ -217,12 +211,12 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
         <div style="display: flex; justify-content: space-between; margin-bottom: ${sectionSpacing}px; gap: 20px; page-break-inside: avoid;">
           <div style="width: 45%; background: white; padding: 12px; border-radius: 6px; border: 1px solid #e2e8f0;">
             <div style="border-top: 2px solid #2d3748; padding-top: 8px;">
-              <div style="font-size: ${baseFontSize - 1}px; color: #718096; font-weight: 500; text-transform: uppercase; letter-spacing: 0.2px;">${t.placeDate}</div>
+              <div style="font-size: ${baseFontSize - 1}px; color: #718096; font-weight: 500; text-transform: uppercase; letter-spacing: 0.2px;">Place & Date</div>
             </div>
           </div>
           <div style="width: 45%; background: white; padding: 12px; border-radius: 6px; border: 1px solid #e2e8f0;">
             <div style="border-top: 2px solid #2d3748; padding-top: 8px;">
-              <div style="font-size: ${baseFontSize - 1}px; color: #718096; font-weight: 500; text-transform: uppercase; letter-spacing: 0.2px;">${t.signatureStamp}</div>
+              <div style="font-size: ${baseFontSize - 1}px; color: #718096; font-weight: 500; text-transform: uppercase; letter-spacing: 0.2px;">Signature & Stamp</div>
               ${proposalData.signatureUrl ? `<img src="${proposalData.signatureUrl}" style="max-height: 30px; margin-top: 8px;" />` : ''}
             </div>
           </div>
@@ -240,19 +234,19 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
       <!-- PAYMENT DATA Section - Green background -->
       <div style="margin-bottom: ${sectionSpacing}px; background: #e6fffa !important; padding: ${elementPadding}px !important; border-radius: 6px; border-left: 4px solid #38a169 !important; border: 1px solid #81e6d9 !important; box-sizing: border-box; page-break-inside: avoid; break-inside: avoid; position: relative; display: block; clear: both; width: 100%; min-height: 120px; overflow: visible;">
         <div style="font-weight: 600; margin-bottom: 12px; color: #2d6b4f !important; font-size: ${baseFontSize + 1}px; text-transform: uppercase; letter-spacing: 0.2px; line-height: 1.3;">
-          ${t.paymentData}
+          ${t.paymentData || 'Payment Data'}
         </div>
         <div style="line-height: 1.5; font-size: ${baseFontSize}px; color: #2d6b4f !important;">
           <div style="margin-bottom: 8px; display: flex; align-items: center;">
-            <strong style="min-width: 120px; display: inline-block; color: #2d6b4f !important;">${t.accountNr}</strong> 
+            <strong style="min-width: 120px; display: inline-block; color: #2d6b4f !important;">${t.accountNumber || 'Account Nr'}</strong> 
             <span style="color: #2d6b4f !important;">${paymentAccountNumber}</span>
           </div>
           <div style="margin-bottom: 8px; display: flex; align-items: center;">
-            <strong style="min-width: 120px; display: inline-block; color: #2d6b4f !important;">${t.name}</strong> 
+            <strong style="min-width: 120px; display: inline-block; color: #2d6b4f !important;">${t.accountName || 'Name'}</strong> 
             <span style="color: #2d6b4f !important;">${paymentAccountName}</span>
           </div>
           <div style="display: flex; align-items: center;">
-            <strong style="min-width: 120px; display: inline-block; color: #2d6b4f !important;">${t.paymentMethod}</strong> 
+            <strong style="min-width: 120px; display: inline-block; color: #2d6b4f !important;">${t.paymentMethod || 'Payment Method'}</strong> 
             <span style="color: #2d6b4f !important;">${paymentMethodValue}</span>
           </div>
         </div>
