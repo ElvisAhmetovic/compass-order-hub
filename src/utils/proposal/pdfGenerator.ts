@@ -4,25 +4,24 @@ import html2canvas from "html2canvas";
 import { translations, PROPOSAL_LANGUAGES } from "./constants";
 import { getCompanyInfo } from "./companyInfo";
 
-// Improved PDF content with better page break handling and fixed green section
+// Reverted PDF content with larger, more readable fonts and better spacing
 const createPDFContent = (proposalData: any, language: string = "en") => {
   const t = translations[language as keyof typeof translations] || translations.en;
   const companyInfo = getCompanyInfo();
 
-  // Optimized scaling and sizing for better content flow
-  const scaleFactor = 0.88; // Slightly smaller to ensure better fitting
-  const baseFontSize = Math.round(11 * scaleFactor);
-  const headerFontSize = Math.round(20 * scaleFactor);
-  const titleFontSize = Math.round(16 * scaleFactor);
-  const lineHeight = 1.35;
-  const sectionSpacing = Math.round(20 * scaleFactor);
-  const elementPadding = Math.round(14 * scaleFactor);
+  // Larger, more readable sizing
+  const baseFontSize = 14;
+  const headerFontSize = 24;
+  const titleFontSize = 20;
+  const lineHeight = 1.5;
+  const sectionSpacing = 24;
+  const elementPadding = 16;
 
   // Calculate logo width based on logoSize
   const logoWidth = proposalData.logoSize ? `${proposalData.logoSize}%` : '33%';
 
   // Proper VAT handling with all user data
-  console.log('PDF Generation - Fixed layout with proper page breaks:', proposalData);
+  console.log('PDF Generation - Readable layout with larger fonts:', proposalData);
   const isVatEnabled = proposalData.vatEnabled === true;
   const netAmount = proposalData.netAmount || 0;
   const vatRate = proposalData.vatRate || 0;
@@ -49,8 +48,7 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
   // Format the proposal date properly
   const proposalDate = proposalData.proposalDate ? new Date(proposalData.proposalDate).toLocaleDateString() : new Date(proposalData.created_at || Date.now()).toLocaleDateString();
 
-  console.log('PDF Generation - Fixed layout with improved page handling:', {
-    scaleFactor,
+  console.log('PDF Generation - Readable layout with improved readability:', {
     baseFontSize,
     headerFontSize,
     titleFontSize,
@@ -65,72 +63,72 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
   });
 
   return `
-    <div style="font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif; padding: ${Math.round(28 * scaleFactor)}px; max-width: 794px; background: #ffffff; margin: 0; box-sizing: border-box; font-size: ${baseFontSize}px; line-height: ${lineHeight}; color: #2d3748; position: relative;">
+    <div style="font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif; padding: ${elementPadding * 2}px; max-width: 794px; background: #ffffff; margin: 0; box-sizing: border-box; font-size: ${baseFontSize}px; line-height: ${lineHeight}; color: #2d3748; position: relative;">
       
       <!-- PAGE 1 CONTENT -->
       
-      <!-- Header Section with Optimized Design -->
-      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: ${Math.round(30 * scaleFactor)}px; padding-bottom: ${Math.round(14 * scaleFactor)}px; border-bottom: 2px solid #e2e8f0;">
+      <!-- Header Section with Readable Design -->
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: ${sectionSpacing + 10}px; padding-bottom: ${elementPadding}px; border-bottom: 2px solid #e2e8f0;">
         <div style="flex: 1; max-width: 62%;">
-          <div style="font-weight: 600; font-size: ${headerFontSize}px; margin-bottom: ${Math.round(8 * scaleFactor)}px; color: #1a202c; letter-spacing: -0.3px;">${companyInfo.name}</div>
-          <div style="line-height: ${lineHeight}; color: #4a5568; font-size: ${Math.round(12 * scaleFactor)}px;">
-            <div style="margin-bottom: 2px;">${companyInfo.street}</div>
-            <div style="margin-bottom: 2px;">${companyInfo.postal} ${companyInfo.city}</div>
-            <div style="color: #718096; font-size: ${Math.round(11 * scaleFactor)}px;">${companyInfo.country || 'Germany'}</div>
+          <div style="font-weight: 600; font-size: ${headerFontSize}px; margin-bottom: 10px; color: #1a202c; letter-spacing: -0.3px;">${companyInfo.name}</div>
+          <div style="line-height: ${lineHeight}; color: #4a5568; font-size: ${baseFontSize}px;">
+            <div style="margin-bottom: 4px;">${companyInfo.street}</div>
+            <div style="margin-bottom: 4px;">${companyInfo.postal} ${companyInfo.city}</div>
+            <div style="color: #718096; font-size: ${baseFontSize - 1}px;">${companyInfo.country || 'Germany'}</div>
           </div>
         </div>
         <div style="text-align: right;">
-          <div style="background: #f7fafc; padding: ${Math.round(8 * scaleFactor)}px; border-radius: 6px; border: 1px solid #e2e8f0; margin-bottom: ${Math.round(8 * scaleFactor)}px;">
-            <img src="${proposalData.logo || companyInfo.logo}" style="max-height: ${Math.round(55 * scaleFactor)}px; max-width: ${logoWidth};" onerror="this.src='https://placehold.co/200x60?text=Your+Logo'; this.onerror=null;" />
+          <div style="background: #f7fafc; padding: 12px; border-radius: 6px; border: 1px solid #e2e8f0; margin-bottom: 10px;">
+            <img src="${proposalData.logo || companyInfo.logo}" style="max-height: 60px; max-width: ${logoWidth};" onerror="this.src='https://placehold.co/200x60?text=Your+Logo'; this.onerror=null;" />
           </div>
         </div>
       </div>
 
       <!-- Customer Information and Proposal Details with Better Spacing -->
-      <div style="display: flex; justify-content: space-between; margin-bottom: ${Math.round(25 * scaleFactor)}px; gap: ${Math.round(20 * scaleFactor)}px;">
-        <div style="flex: 1; background: #f8fafc; padding: ${Math.round(14 * scaleFactor)}px; border-radius: 6px; border: 1px solid #e2e8f0;">
-          <div style="font-weight: 600; font-size: ${Math.round(12 * scaleFactor)}px; margin-bottom: ${Math.round(10 * scaleFactor)}px; color: #2d3748; text-transform: uppercase; letter-spacing: 0.4px; border-bottom: 1px solid #cbd5e0; padding-bottom: 4px;">${t.customer}</div>
-          <div style="line-height: ${lineHeight}; font-size: ${Math.round(11 * scaleFactor)}px;">
-            <div style="font-weight: 600; margin-bottom: 5px; font-size: ${Math.round(13 * scaleFactor)}px; color: #2d3748;">${proposalData.customerName || proposalData.customer || 'Name Surname'}</div>
-            <div style="margin-bottom: 3px; color: #4a5568;">${proposalData.customerAddress || 'Leidsestraat 15, 2000 Antwerpen'}</div>
-            <div style="margin-bottom: 3px; color: #4a5568;">${proposalData.customerEmail || 'customer@email.com'}</div>
+      <div style="display: flex; justify-content: space-between; margin-bottom: ${sectionSpacing}px; gap: 24px;">
+        <div style="flex: 1; background: #f8fafc; padding: ${elementPadding}px; border-radius: 6px; border: 1px solid #e2e8f0;">
+          <div style="font-weight: 600; font-size: ${baseFontSize}px; margin-bottom: 12px; color: #2d3748; text-transform: uppercase; letter-spacing: 0.4px; border-bottom: 1px solid #cbd5e0; padding-bottom: 6px;">${t.customer}</div>
+          <div style="line-height: ${lineHeight}; font-size: ${baseFontSize - 1}px;">
+            <div style="font-weight: 600; margin-bottom: 6px; font-size: ${baseFontSize + 1}px; color: #2d3748;">${proposalData.customerName || proposalData.customer || 'Name Surname'}</div>
+            <div style="margin-bottom: 4px; color: #4a5568;">${proposalData.customerAddress || 'Leidsestraat 15, 2000 Antwerpen'}</div>
+            <div style="margin-bottom: 4px; color: #4a5568;">${proposalData.customerEmail || 'customer@email.com'}</div>
             <div style="color: #718096; font-weight: 500;">${proposalData.customerCountry || 'Belgium'}</div>
           </div>
         </div>
         
-        <div style="flex: 0 0 auto; min-width: ${Math.round(220 * scaleFactor)}px;">
-          <div style="background: #f8fafc; padding: ${Math.round(14 * scaleFactor)}px; border-radius: 6px; border: 1px solid #e2e8f0;">
-            <div style="margin-bottom: ${Math.round(8 * scaleFactor)}px; display: flex; justify-content: space-between; align-items: center; padding-bottom: 3px; border-bottom: 1px solid #e2e8f0;">
-              <span style="font-weight: 500; color: #4a5568; font-size: ${Math.round(10 * scaleFactor)}px;">Proposal no.</span>
-              <span style="font-weight: 600; color: #2d3748; font-size: ${Math.round(11 * scaleFactor)}px;">${proposalData.number || 'AN-9993'}</span>
+        <div style="flex: 0 0 auto; min-width: 260px;">
+          <div style="background: #f8fafc; padding: ${elementPadding}px; border-radius: 6px; border: 1px solid #e2e8f0;">
+            <div style="margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; padding-bottom: 4px; border-bottom: 1px solid #e2e8f0;">
+              <span style="font-weight: 500; color: #4a5568; font-size: ${baseFontSize - 2}px;">Proposal no.</span>
+              <span style="font-weight: 600; color: #2d3748; font-size: ${baseFontSize - 1}px;">${proposalData.number || 'AN-9993'}</span>
             </div>
-            <div style="margin-bottom: ${Math.round(8 * scaleFactor)}px; display: flex; justify-content: space-between; align-items: center; padding-bottom: 3px; border-bottom: 1px solid #e2e8f0;">
-              <span style="font-weight: 500; color: #4a5568; font-size: ${Math.round(10 * scaleFactor)}px;">${t.date}</span>
-              <span style="color: #4a5568; font-weight: 500; font-size: ${Math.round(10 * scaleFactor)}px;">${proposalDate}</span>
+            <div style="margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; padding-bottom: 4px; border-bottom: 1px solid #e2e8f0;">
+              <span style="font-weight: 500; color: #4a5568; font-size: ${baseFontSize - 2}px;">${t.date}</span>
+              <span style="color: #4a5568; font-weight: 500; font-size: ${baseFontSize - 2}px;">${proposalDate}</span>
             </div>
-            <div style="margin-bottom: ${Math.round(8 * scaleFactor)}px; display: flex; justify-content: space-between; align-items: center; padding-bottom: 3px; border-bottom: 1px solid #e2e8f0;">
-              <span style="font-weight: 500; color: #4a5568; font-size: ${Math.round(10 * scaleFactor)}px;">${t.customerRef}</span>
-              <span style="color: #4a5568; font-weight: 500; font-size: ${Math.round(10 * scaleFactor)}px;">${proposalData.customerRef || proposalData.reference || '—'}</span>
+            <div style="margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; padding-bottom: 4px; border-bottom: 1px solid #e2e8f0;">
+              <span style="font-weight: 500; color: #4a5568; font-size: ${baseFontSize - 2}px;">${t.customerRef}</span>
+              <span style="color: #4a5568; font-weight: 500; font-size: ${baseFontSize - 2}px;">${proposalData.customerRef || proposalData.reference || '—'}</span>
             </div>
             <div style="display: flex; justify-content: space-between; align-items: center;">
-              <span style="font-weight: 500; color: #4a5568; font-size: ${Math.round(10 * scaleFactor)}px;">${t.yourContact}</span>
-              <span style="color: #4a5568; font-weight: 500; font-size: ${Math.round(10 * scaleFactor)}px;">${proposalData.yourContact || proposalData.internalContact || 'Thomas Klein'}</span>
+              <span style="font-weight: 500; color: #4a5568; font-size: ${baseFontSize - 2}px;">${t.yourContact}</span>
+              <span style="color: #4a5568; font-weight: 500; font-size: ${baseFontSize - 2}px;">${proposalData.yourContact || proposalData.internalContact || 'Thomas Klein'}</span>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Optimized Proposal Title -->
-      <div style="background: #2d3748; color: white; padding: ${Math.round(14 * scaleFactor)}px; border-radius: 5px; margin-bottom: ${Math.round(20 * scaleFactor)}px;">
+      <!-- Readable Proposal Title -->
+      <div style="background: #2d3748; color: white; padding: ${elementPadding}px; border-radius: 5px; margin-bottom: ${sectionSpacing}px;">
         <h2 style="margin: 0; font-size: ${titleFontSize}px; font-weight: 600; letter-spacing: -0.2px;">
           ${t.proposal} ${proposalData.number || 'AN-9993'}
         </h2>
       </div>
 
-      <!-- Optimized Proposal Content -->
-      <div style="margin-bottom: ${Math.round(20 * scaleFactor)}px; background: white; padding: ${Math.round(14 * scaleFactor)}px; border-radius: 5px; border: 1px solid #e2e8f0;">
-        <div style="line-height: ${lineHeight}; font-size: ${Math.round(11 * scaleFactor)}px;">
-          <div style="font-weight: 600; font-size: ${Math.round(14 * scaleFactor)}px; color: #2d3748; margin-bottom: ${Math.round(8 * scaleFactor)}px;">
+      <!-- Readable Proposal Content -->
+      <div style="margin-bottom: ${sectionSpacing}px; background: white; padding: ${elementPadding}px; border-radius: 5px; border: 1px solid #e2e8f0;">
+        <div style="line-height: ${lineHeight}; font-size: ${baseFontSize - 1}px;">
+          <div style="font-weight: 600; font-size: ${baseFontSize + 2}px; color: #2d3748; margin-bottom: 10px;">
             ${proposalData.proposalTitle || proposalData.subject || 'Protect your online REPUTATION!'}
           </div>
           <div style="color: #4a5568; line-height: ${lineHeight};">
@@ -140,37 +138,37 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
         </div>
       </div>
 
-      <!-- Optimized Products/Services Table -->
-      <div style="margin-bottom: ${Math.round(22 * scaleFactor)}px; border-radius: 5px; overflow: hidden; border: 1px solid #e2e8f0;">
-        <table style="width: 100%; border-collapse: collapse; font-size: ${Math.round(10 * scaleFactor)}px; background: white;">
+      <!-- Readable Products/Services Table -->
+      <div style="margin-bottom: ${sectionSpacing}px; border-radius: 5px; overflow: hidden; border: 1px solid #e2e8f0;">
+        <table style="width: 100%; border-collapse: collapse; font-size: ${baseFontSize - 2}px; background: white;">
           <thead>
             <tr style="background: #2d3748; color: white;">
-              <th style="padding: ${Math.round(10 * scaleFactor)}px ${Math.round(12 * scaleFactor)}px; text-align: left; font-weight: 600; border: none; width: 50%; font-size: ${Math.round(10 * scaleFactor)}px; text-transform: uppercase; letter-spacing: 0.2px;">${t.productDescription}</th>
-              <th style="padding: ${Math.round(10 * scaleFactor)}px ${Math.round(12 * scaleFactor)}px; text-align: center; font-weight: 600; border: none; width: 16%; font-size: ${Math.round(10 * scaleFactor)}px; text-transform: uppercase; letter-spacing: 0.2px;">${t.price}</th>
-              <th style="padding: ${Math.round(10 * scaleFactor)}px ${Math.round(12 * scaleFactor)}px; text-align: center; font-weight: 600; border: none; width: 14%; font-size: ${Math.round(10 * scaleFactor)}px; text-transform: uppercase; letter-spacing: 0.2px;">${t.qty}</th>
-              <th style="padding: ${Math.round(10 * scaleFactor)}px ${Math.round(12 * scaleFactor)}px; text-align: right; font-weight: 600; border: none; width: 20%; font-size: ${Math.round(10 * scaleFactor)}px; text-transform: uppercase; letter-spacing: 0.2px;">${t.total}</th>
+              <th style="padding: 12px 16px; text-align: left; font-weight: 600; border: none; width: 50%; font-size: ${baseFontSize - 2}px; text-transform: uppercase; letter-spacing: 0.2px;">${t.productDescription}</th>
+              <th style="padding: 12px 16px; text-align: center; font-weight: 600; border: none; width: 16%; font-size: ${baseFontSize - 2}px; text-transform: uppercase; letter-spacing: 0.2px;">${t.price}</th>
+              <th style="padding: 12px 16px; text-align: center; font-weight: 600; border: none; width: 14%; font-size: ${baseFontSize - 2}px; text-transform: uppercase; letter-spacing: 0.2px;">${t.qty}</th>
+              <th style="padding: 12px 16px; text-align: right; font-weight: 600; border: none; width: 20%; font-size: ${baseFontSize - 2}px; text-transform: uppercase; letter-spacing: 0.2px;">${t.total}</th>
             </tr>
           </thead>
           <tbody>
             ${(proposalData.lineItems || []).map((item: any, index: number) => `
               <tr style="border-bottom: 1px solid #e2e8f0; background-color: ${index % 2 === 0 ? '#f8fafc' : 'white'};">
-                <td style="padding: ${Math.round(11 * scaleFactor)}px ${Math.round(12 * scaleFactor)}px; border: none; vertical-align: top;">
-                  <div style="font-weight: 600; margin-bottom: 3px; color: #2d3748; font-size: ${Math.round(11 * scaleFactor)}px; line-height: 1.3;">
+                <td style="padding: 14px 16px; border: none; vertical-align: top;">
+                  <div style="font-weight: 600; margin-bottom: 4px; color: #2d3748; font-size: ${baseFontSize - 1}px; line-height: 1.3;">
                     ${item.name || 'Product/Service Name'}
                   </div>
                   ${item.description || item.additionalInfo ? `
-                  <div style="line-height: 1.4; color: #718096; font-size: ${Math.round(9 * scaleFactor)}px; margin-top: 3px;">
+                  <div style="line-height: 1.4; color: #718096; font-size: ${baseFontSize - 3}px; margin-top: 4px;">
                     ${item.description || item.additionalInfo || ''}
                   </div>
                   ` : ''}
                 </td>
-                <td style="padding: ${Math.round(11 * scaleFactor)}px ${Math.round(12 * scaleFactor)}px; border: none; text-align: center; vertical-align: top; font-weight: 500; color: #4a5568; font-size: ${Math.round(10 * scaleFactor)}px;">
+                <td style="padding: 14px 16px; border: none; text-align: center; vertical-align: top; font-weight: 500; color: #4a5568; font-size: ${baseFontSize - 2}px;">
                   ${currencySymbol}${(item.unit_price || 0).toFixed(2)}
                 </td>
-                <td style="padding: ${Math.round(11 * scaleFactor)}px ${Math.round(12 * scaleFactor)}px; border: none; text-align: center; vertical-align: top; font-weight: 500; color: #4a5568; font-size: ${Math.round(10 * scaleFactor)}px;">
+                <td style="padding: 14px 16px; border: none; text-align: center; vertical-align: top; font-weight: 500; color: #4a5568; font-size: ${baseFontSize - 2}px;">
                   ${item.quantity || 1}
                 </td>
-                <td style="padding: ${Math.round(11 * scaleFactor)}px ${Math.round(12 * scaleFactor)}px; border: none; text-align: right; vertical-align: top; font-weight: 600; font-size: ${Math.round(11 * scaleFactor)}px; color: #2d3748;">
+                <td style="padding: 14px 16px; border: none; text-align: right; vertical-align: top; font-weight: 600; font-size: ${baseFontSize - 1}px; color: #2d3748;">
                   ${currencySymbol}${(item.total_price || 0).toFixed(2)}
                 </td>
               </tr>
@@ -179,22 +177,22 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
         </table>
       </div>
 
-      <!-- Optimized Totals Section -->
-      <div style="display: flex; justify-content: flex-end; margin-bottom: ${Math.round(20 * scaleFactor)}px;">
-        <div style="width: ${Math.round(260 * scaleFactor)}px; background: white; border-radius: 5px; overflow: hidden; border: 1px solid #e2e8f0;">
-          <div style="background: #4a5568; color: white; padding: ${Math.round(8 * scaleFactor)}px ${Math.round(14 * scaleFactor)}px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.2px; font-size: ${Math.round(10 * scaleFactor)}px;">
+      <!-- Readable Totals Section -->
+      <div style="display: flex; justify-content: flex-end; margin-bottom: ${sectionSpacing}px;">
+        <div style="width: 300px; background: white; border-radius: 5px; overflow: hidden; border: 1px solid #e2e8f0;">
+          <div style="background: #4a5568; color: white; padding: 10px 16px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.2px; font-size: ${baseFontSize - 2}px;">
             Summary
           </div>
-          <div style="padding: ${Math.round(12 * scaleFactor)}px ${Math.round(14 * scaleFactor)}px;">
-            <div style="display: flex; justify-content: space-between; padding: ${Math.round(6 * scaleFactor)}px 0; border-bottom: 1px solid #e2e8f0; font-size: ${Math.round(11 * scaleFactor)}px;">
+          <div style="padding: 14px 16px;">
+            <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e2e8f0; font-size: ${baseFontSize - 1}px;">
               <span style="color: #718096; font-weight: 500;">${t.subtotal}</span>
               <span style="font-weight: 600; color: #2d3748;">${currencySymbol}${netAmount.toFixed(2)}</span>
             </div>
-            <div style="display: flex; justify-content: space-between; padding: ${Math.round(6 * scaleFactor)}px 0; border-bottom: 1px solid #e2e8f0; font-size: ${Math.round(11 * scaleFactor)}px;">
+            <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e2e8f0; font-size: ${baseFontSize - 1}px;">
               <span style="color: #718096; font-weight: 500;">${t.vat} ${isVatEnabled ? `${vatRate}%` : '0%'}</span>
               <span style="font-weight: 600; color: #2d3748;">${currencySymbol}${vatAmount.toFixed(2)}</span>
             </div>
-            <div style="display: flex; justify-content: space-between; padding: ${Math.round(10 * scaleFactor)}px 0; font-weight: 700; font-size: ${Math.round(13 * scaleFactor)}px; background: #2d3748; color: white; margin: ${Math.round(8 * scaleFactor)}px -${Math.round(14 * scaleFactor)}px -${Math.round(12 * scaleFactor)}px -${Math.round(14 * scaleFactor)}px; padding-left: ${Math.round(14 * scaleFactor)}px; padding-right: ${Math.round(14 * scaleFactor)}px;">
+            <div style="display: flex; justify-content: space-between; padding: 12px 0; font-weight: 700; font-size: ${baseFontSize + 1}px; background: #2d3748; color: white; margin: 10px -16px -14px -16px; padding-left: 16px; padding-right: 16px;">
               <span>${t.totalAmount}</span>
               <span>${currencySymbol}${totalAmount.toFixed(2)}</span>
             </div>
@@ -202,113 +200,113 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
         </div>
       </div>
 
-      <!-- TERMS AND CONDITIONS - Positioned on First Page -->
-      <div style="margin-bottom: ${Math.round(18 * scaleFactor)}px; background: white; padding: ${Math.round(14 * scaleFactor)}px; border-radius: 5px; border: 1px solid #e2e8f0; page-break-inside: avoid; break-inside: avoid;">
-        <div style="font-weight: 600; margin-bottom: ${Math.round(8 * scaleFactor)}px; text-transform: uppercase; color: #2d3748; font-size: ${Math.round(11 * scaleFactor)}px; letter-spacing: 0.2px; border-bottom: 1px solid #e2e8f0; padding-bottom: 3px;">
+      <!-- TERMS AND CONDITIONS - Readable -->
+      <div style="margin-bottom: ${sectionSpacing - 2}px; background: white; padding: ${elementPadding}px; border-radius: 5px; border: 1px solid #e2e8f0; page-break-inside: avoid; break-inside: avoid;">
+        <div style="font-weight: 600; margin-bottom: 10px; text-transform: uppercase; color: #2d3748; font-size: ${baseFontSize - 1}px; letter-spacing: 0.2px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;">
           ${t.termsAndConditions}
         </div>
-        <div style="line-height: ${lineHeight}; font-size: ${Math.round(10 * scaleFactor)}px; color: #4a5568;">
+        <div style="line-height: ${lineHeight}; font-size: ${baseFontSize - 2}px; color: #4a5568;">
           ${proposalData.paymentTerms || proposalData.deliveryTerms || t.paymentTerms}
           ${proposalData.termsAndConditions ? `<br/><br/>${proposalData.termsAndConditions}` : ''}
         </div>
       </div>
 
-      <!-- Signature Section - Positioned on First Page after Terms -->
-      <div style="display: flex; justify-content: space-between; margin-bottom: ${Math.round(25 * scaleFactor)}px; gap: ${Math.round(20 * scaleFactor)}px;">
-        <div style="width: 45%; background: white; padding: ${Math.round(10 * scaleFactor)}px; border-radius: 5px; border: 1px solid #e2e8f0;">
-          <div style="border-top: 2px solid #2d3748; padding-top: ${Math.round(6 * scaleFactor)}px;">
-            <div style="font-size: ${Math.round(9 * scaleFactor)}px; color: #718096; font-weight: 500; text-transform: uppercase; letter-spacing: 0.2px;">${t.placeDate}</div>
+      <!-- Signature Section - Readable -->
+      <div style="display: flex; justify-content: space-between; margin-bottom: ${sectionSpacing}px; gap: 24px;">
+        <div style="width: 45%; background: white; padding: 12px; border-radius: 5px; border: 1px solid #e2e8f0;">
+          <div style="border-top: 2px solid #2d3748; padding-top: 8px;">
+            <div style="font-size: ${baseFontSize - 3}px; color: #718096; font-weight: 500; text-transform: uppercase; letter-spacing: 0.2px;">${t.placeDate}</div>
           </div>
         </div>
-        <div style="width: 45%; background: white; padding: ${Math.round(10 * scaleFactor)}px; border-radius: 5px; border: 1px solid #e2e8f0;">
-          <div style="border-top: 2px solid #2d3748; padding-top: ${Math.round(6 * scaleFactor)}px;">
-            <div style="font-size: ${Math.round(9 * scaleFactor)}px; color: #718096; font-weight: 500; text-transform: uppercase; letter-spacing: 0.2px;">${t.signatureStamp}</div>
-            ${proposalData.signatureUrl ? `<img src="${proposalData.signatureUrl}" style="max-height: ${Math.round(28 * scaleFactor)}px; margin-top: ${Math.round(6 * scaleFactor)}px;" />` : ''}
+        <div style="width: 45%; background: white; padding: 12px; border-radius: 5px; border: 1px solid #e2e8f0;">
+          <div style="border-top: 2px solid #2d3748; padding-top: 8px;">
+            <div style="font-size: ${baseFontSize - 3}px; color: #718096; font-weight: 500; text-transform: uppercase; letter-spacing: 0.2px;">${t.signatureStamp}</div>
+            ${proposalData.signatureUrl ? `<img src="${proposalData.signatureUrl}" style="max-height: 32px; margin-top: 8px;" />` : ''}
           </div>
         </div>
       </div>
 
-      <!-- CONTROLLED PAGE BREAK - Ensures proper page separation -->
+      <!-- CONTROLLED PAGE BREAK -->
       <div style="page-break-before: always; break-before: page; height: 1px; overflow: hidden; margin: 0; padding: 0; border: none; visibility: hidden; clear: both; display: block; width: 100%;"><!-- FORCED PAGE BREAK --></div>
 
-      <!-- PAGE 2 CONTENT STARTS HERE - Fixed positioning and green section -->
+      <!-- PAGE 2 CONTENT STARTS HERE -->
       
-      <!-- Top spacing for second page to ensure proper positioning -->
-      <div style="height: ${Math.round(40 * scaleFactor)}px; width: 100%; clear: both; display: block; margin: 0; padding: 0;"></div>
+      <!-- Top spacing for second page -->
+      <div style="height: 40px; width: 100%; clear: both; display: block; margin: 0; padding: 0;"></div>
 
-      <!-- FIXED PAYMENT DATA Section - Green background with proper rendering -->
-      <div style="margin-bottom: ${Math.round(25 * scaleFactor)}px; background: #e6fffa !important; padding: ${Math.round(16 * scaleFactor)}px !important; border-radius: 6px; border-left: 4px solid #38a169 !important; border: 1px solid #81e6d9 !important; box-sizing: border-box; page-break-inside: avoid; break-inside: avoid; position: relative; display: block; clear: both; width: 100%; min-height: ${Math.round(100 * scaleFactor)}px; overflow: visible;">
-        <div style="font-weight: 600; margin-bottom: ${Math.round(10 * scaleFactor)}px; color: #2d6b4f !important; font-size: ${Math.round(12 * scaleFactor)}px; text-transform: uppercase; letter-spacing: 0.2px; line-height: 1.3;">
+      <!-- READABLE PAYMENT DATA Section - Green background -->
+      <div style="margin-bottom: ${sectionSpacing}px; background: #e6fffa !important; padding: ${elementPadding + 2}px !important; border-radius: 6px; border-left: 4px solid #38a169 !important; border: 1px solid #81e6d9 !important; box-sizing: border-box; page-break-inside: avoid; break-inside: avoid; position: relative; display: block; clear: both; width: 100%; min-height: 120px; overflow: visible;">
+        <div style="font-weight: 600; margin-bottom: 12px; color: #2d6b4f !important; font-size: ${baseFontSize}px; text-transform: uppercase; letter-spacing: 0.2px; line-height: 1.3;">
           ${t.paymentData}
         </div>
-        <div style="line-height: 1.6; font-size: ${Math.round(11 * scaleFactor)}px; color: #2d6b4f !important;">
-          <div style="margin-bottom: ${Math.round(6 * scaleFactor)}px; display: flex; align-items: center;">
-            <strong style="min-width: ${Math.round(100 * scaleFactor)}px; display: inline-block; color: #2d6b4f !important;">${t.accountNr}</strong> 
+        <div style="line-height: 1.6; font-size: ${baseFontSize - 1}px; color: #2d6b4f !important;">
+          <div style="margin-bottom: 8px; display: flex; align-items: center;">
+            <strong style="min-width: 120px; display: inline-block; color: #2d6b4f !important;">${t.accountNr}</strong> 
             <span style="color: #2d6b4f !important;">${paymentAccountNumber}</span>
           </div>
-          <div style="margin-bottom: ${Math.round(6 * scaleFactor)}px; display: flex; align-items: center;">
-            <strong style="min-width: ${Math.round(100 * scaleFactor)}px; display: inline-block; color: #2d6b4f !important;">${t.name}</strong> 
+          <div style="margin-bottom: 8px; display: flex; align-items: center;">
+            <strong style="min-width: 120px; display: inline-block; color: #2d6b4f !important;">${t.name}</strong> 
             <span style="color: #2d6b4f !important;">${paymentAccountName}</span>
           </div>
           <div style="display: flex; align-items: center;">
-            <strong style="min-width: ${Math.round(100 * scaleFactor)}px; display: inline-block; color: #2d6b4f !important;">${t.paymentMethod}</strong> 
+            <strong style="min-width: 120px; display: inline-block; color: #2d6b4f !important;">${t.paymentMethod}</strong> 
             <span style="color: #2d6b4f !important;">${paymentMethodValue}</span>
           </div>
         </div>
       </div>
 
-      <!-- Footer Content - On Second Page if Present -->
+      <!-- Footer Content - Readable -->
       ${proposalData.footerContent ? `
-      <div style="margin-bottom: ${Math.round(18 * scaleFactor)}px; padding: ${Math.round(14 * scaleFactor)}px; background: #faf5ff; border-radius: 5px; border-left: 4px solid #805ad5; border: 1px solid #e9d8fd; page-break-inside: avoid; break-inside: avoid;">
-        <div style="line-height: ${lineHeight}; font-size: ${Math.round(10 * scaleFactor)}px; color: #553c9a;">
+      <div style="margin-bottom: ${sectionSpacing - 2}px; padding: ${elementPadding}px; background: #faf5ff; border-radius: 5px; border-left: 4px solid #805ad5; border: 1px solid #e9d8fd; page-break-inside: avoid; break-inside: avoid;">
+        <div style="line-height: ${lineHeight}; font-size: ${baseFontSize - 2}px; color: #553c9a;">
           ${proposalData.footerContent}
         </div>
       </div>
       ` : ''}
 
-      <!-- COMPANY FOOTER - Fixed positioning on Second Page -->
-      <div style="background: #2d3748; border-radius: 5px; margin-top: ${Math.round(25 * scaleFactor)}px; width: 100%; clear: both; position: relative; page-break-inside: avoid; break-inside: avoid; box-sizing: border-box; min-height: ${Math.round(120 * scaleFactor)}px; display: block;">
+      <!-- COMPANY FOOTER - Readable -->
+      <div style="background: #2d3748; border-radius: 5px; margin-top: ${sectionSpacing}px; width: 100%; clear: both; position: relative; page-break-inside: avoid; break-inside: avoid; box-sizing: border-box; min-height: 140px; display: block;">
         <!-- Company Name Header -->
-        <div style="background: rgba(255,255,255,0.1); padding: ${Math.round(6 * scaleFactor)}px ${Math.round(14 * scaleFactor)}px; border-bottom: 1px solid rgba(255,255,255,0.1);">
-          <div style="color: white; font-weight: 600; font-size: ${Math.round(10 * scaleFactor)}px; text-align: center; letter-spacing: 0.4px;">
+        <div style="background: rgba(255,255,255,0.1); padding: 8px 16px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+          <div style="color: white; font-weight: 600; font-size: ${baseFontSize - 2}px; text-align: center; letter-spacing: 0.4px;">
             ${companyInfo.name || 'AB MEDIA TEAM LTD'}
           </div>
         </div>
         
         <!-- Contact Information Grid -->
-        <div style="padding: ${Math.round(10 * scaleFactor)}px ${Math.round(14 * scaleFactor)}px; color: white; font-size: ${Math.round(8 * scaleFactor)}px;">
+        <div style="padding: 12px 16px; color: white; font-size: ${baseFontSize - 4}px;">
           
           <!-- Phone & Fax -->
-          <div style="margin-bottom: ${Math.round(6 * scaleFactor)}px;">
+          <div style="margin-bottom: 8px;">
             <div style="display: inline-block; width: 33%; vertical-align: top;">
-              <div style="margin-bottom: 3px;">
-                <span style="font-weight: 500; margin-right: 5px; color: #cbd5e0;">Tel:</span>
+              <div style="margin-bottom: 4px;">
+                <span style="font-weight: 500; margin-right: 6px; color: #cbd5e0;">Tel:</span>
                 <span>${companyInfo.phone || '+49 203 70 90 72 62'}</span>
               </div>
               <div>
-                <span style="font-weight: 500; margin-right: 5px; color: #cbd5e0;">Fax:</span>
+                <span style="font-weight: 500; margin-right: 6px; color: #cbd5e0;">Fax:</span>
                 <span>${companyInfo.fax || '+49 203 70 90 73 53'}</span>
               </div>
             </div>
             
             <!-- Email & Website -->
             <div style="display: inline-block; width: 33%; vertical-align: top;">
-              <div style="margin-bottom: 3px;">
-                <span style="font-weight: 500; margin-right: 5px; color: #cbd5e0;">Email:</span>
+              <div style="margin-bottom: 4px;">
+                <span style="font-weight: 500; margin-right: 6px; color: #cbd5e0;">Email:</span>
                 <span>${companyInfo.email || 'kontakt.abmedia@gmail.com'}</span>
               </div>
               <div>
-                <span style="font-weight: 500; margin-right: 5px; color: #cbd5e0;">Web:</span>
+                <span style="font-weight: 500; margin-right: 6px; color: #cbd5e0;">Web:</span>
                 <span>${companyInfo.website || 'www.abmedia-team.com'}</span>
               </div>
             </div>
             
             <!-- Address & Contact Person -->
             <div style="display: inline-block; width: 33%; vertical-align: top; text-align: right;">
-              <div style="font-weight: 500; margin-bottom: 2px; color: #cbd5e0; font-size: ${Math.round(8 * scaleFactor)}px;">
+              <div style="font-weight: 500; margin-bottom: 3px; color: #cbd5e0; font-size: ${baseFontSize - 4}px;">
                 ${companyInfo.contactPerson || 'Andreas Berger'}
               </div>
-              <div style="line-height: 1.3; font-size: ${Math.round(7 * scaleFactor)}px;">
+              <div style="line-height: 1.3; font-size: ${baseFontSize - 5}px;">
                 ${companyInfo.street || 'Weseler Str.73'}<br/>
                 ${companyInfo.postal || '47169'} ${companyInfo.city || 'Duisburg'}<br/>
                 ${companyInfo.country || 'Germany'}
@@ -318,11 +316,11 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
         </div>
         
         <!-- Business Information -->
-        <div style="background: rgba(255,255,255,0.05); padding: ${Math.round(6 * scaleFactor)}px ${Math.round(14 * scaleFactor)}px; border-top: 1px solid rgba(255,255,255,0.1);">
-          <div style="color: #cbd5e0; font-size: ${Math.round(7 * scaleFactor)}px;">
+        <div style="background: rgba(255,255,255,0.05); padding: 8px 16px; border-top: 1px solid rgba(255,255,255,0.1);">
+          <div style="color: #cbd5e0; font-size: ${baseFontSize - 5}px;">
             <div style="display: inline-block; width: 70%; vertical-align: top;">
-              <span style="margin-right: 10px;">REG: ${companyInfo.registrationNumber || '15748871'}</span>
-              <span style="margin-right: 10px;">VAT: ${companyInfo.vatId || 'DE123418679'}</span>
+              <span style="margin-right: 12px;">REG: ${companyInfo.registrationNumber || '15748871'}</span>
+              <span style="margin-right: 12px;">VAT: ${companyInfo.vatId || 'DE123418679'}</span>
               <span>TAX: ${companyInfo.taxNumber || '13426 27369'}</span>
             </div>
             <div style="display: inline-block; width: 30%; text-align: right; vertical-align: top;">
@@ -335,7 +333,7 @@ const createPDFContent = (proposalData: any, language: string = "en") => {
   `;
 };
 
-// Enhanced PDF generation with fixed page break and content handling
+// Enhanced PDF generation with readable fonts
 const generatePDFFromHTML = async (htmlContent: string): Promise<jsPDF> => {
   // Create a temporary div to render the proposal with proper dimensions
   const tempDiv = document.createElement("div");
@@ -357,11 +355,11 @@ const generatePDFFromHTML = async (htmlContent: string): Promise<jsPDF> => {
     // Get the actual content height with proper buffer
     const actualHeight = Math.max(tempDiv.scrollHeight + 120, 1800);
     
-    console.log('PDF Generation - Fixed content height calculation:', actualHeight);
+    console.log('PDF Generation - Readable content height:', actualHeight);
     
-    // Convert the HTML to canvas with optimized settings for better rendering
+    // Convert the HTML to canvas with settings optimized for readability
     const canvas = await html2canvas(tempDiv, {
-      scale: 1.2, // Balanced scale for quality vs performance
+      scale: 1.0, // Normal scale for better readability
       logging: false,
       useCORS: true,
       allowTaint: true,
@@ -424,7 +422,7 @@ const generatePDFFromHTML = async (htmlContent: string): Promise<jsPDF> => {
       pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
     }
     
-    console.log('PDF Generation - Fixed layout with proper page breaks and green section rendering');
+    console.log('PDF Generation - Readable layout with proper fonts and spacing');
     
     return pdf;
   } finally {
@@ -432,19 +430,19 @@ const generatePDFFromHTML = async (htmlContent: string): Promise<jsPDF> => {
   }
 };
 
-// Main function to generate a PDF from a proposal - now with optimized layout
+// Main function to generate a PDF from a proposal - now with readable layout
 export const generateProposalPDF = async (
   proposalData: any, 
   language: string = "en", 
   customFilename?: string
 ): Promise<jsPDF | boolean> => {
   try {
-    console.log('Generating fixed PDF with improved layout:', proposalData);
+    console.log('Generating readable PDF with larger fonts:', proposalData);
     
-    // Generate HTML content using fixed layout
+    // Generate HTML content using readable layout
     const htmlContent = createPDFContent(proposalData, language);
     
-    // Generate PDF with enhanced handling
+    // Generate PDF with enhanced readability
     const pdf = await generatePDFFromHTML(htmlContent);
     
     // For preview mode, return the PDF document
@@ -616,7 +614,7 @@ export const previewProposalPDF = async (proposalData: any, language: string = "
     iframe.style.boxShadow = "0 0 10px rgba(0, 0, 0, 0.5)";
     iframe.style.borderRadius = "0 0 8px 8px";
 
-    // Handler for logo size adjustment - regenerates identical PDF
+    // Handler for logo size adjustment - regenerates readable PDF
     let currentLogoSize = proposalData.logoSize || 33;
 
     const updatePreview = async (newLogoSize: number, newLanguage: string) => {
@@ -626,7 +624,7 @@ export const previewProposalPDF = async (proposalData: any, language: string = "
         logoSize: newLogoSize
       };
       
-      // Generate new PDF with identical settings
+      // Generate new PDF with readable settings
       const newPdfResult = await generateProposalPDF(updatedProposalData, newLanguage);
       
       if (newPdfResult && typeof newPdfResult !== 'boolean') {
@@ -647,7 +645,7 @@ export const previewProposalPDF = async (proposalData: any, language: string = "
       await updatePreview(currentLogoSize, languageSelector.value);
     };
     
-    // Add event listener to language selector - regenerates identical PDF
+    // Add event listener to language selector - regenerates readable PDF
     languageSelector.addEventListener("change", async () => {
       await updatePreview(currentLogoSize, languageSelector.value);
     });
