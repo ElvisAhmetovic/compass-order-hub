@@ -33,7 +33,7 @@ export interface Order {
   company_link?: string;
   price?: number;
   description?: string;
-  status: OrderStatus;
+  status: OrderStatus; // Keep for backward compatibility
   priority?: OrderPriority;
   created_at?: string;
   updated_at?: string;
@@ -45,6 +45,16 @@ export interface Order {
   currency?: string;
   agent_name?: string;
   status_date?: string;
+  // New multi-status fields
+  status_created?: boolean;
+  status_in_progress?: boolean;
+  status_complaint?: boolean;
+  status_invoice_sent?: boolean;
+  status_invoice_paid?: boolean;
+  status_resolved?: boolean;
+  status_cancelled?: boolean;
+  status_deleted?: boolean;
+  status_review?: boolean;
 }
 
 export interface InvoiceDetails {

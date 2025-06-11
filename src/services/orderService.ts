@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { Order } from "@/types";
+import { Order, OrderStatus } from "@/types";
 
 export class OrderService {
   // Get all orders with proper error handling
@@ -91,7 +91,7 @@ export class OrderService {
     }
   }
 
-  // Update order with validation
+  // Update order with validation - now handles multiple statuses
   static async updateOrder(id: string, orderData: Partial<Order>): Promise<Order> {
     try {
       // Clean the data before updating
@@ -143,14 +143,33 @@ export class OrderService {
     }
   }
 
-  // Get orders by status
+  // Get orders by status - now supports multiple status filtering
   static async getOrdersByStatus(status: string): Promise<Order[]> {
     try {
-      const { data, error } = await supabase
-        .from('orders')
-        .select('*')
-        .eq('status', status)
-        .order('created_at', { ascending: false });
+      let query = supabase.from('orders').select('*');
+      
+      // Map old status names to new boolean columns
+      const statusColumnMap: Record<string, string> = {
+        'Created': 'status_created',
+        'In Progress': 'status_in_progress', 
+        'Complaint': 'status_complaint',
+        'Invoice Sent': 'status_invoice_sent',
+        'Invoice Paid': 'status_invoice_paid',
+        'Resolved': 'status_resolved',
+        'Cancelled': 'status_cancelled',
+        'Deleted': 'status_deleted',
+        'Review': 'status_review'
+      };
+
+      const statusColumn = statusColumnMap[status];
+      if (statusColumn) {
+        query = query.eq(statusColumn, true);
+      } else {
+        // Fallback to old status column for backward compatibility
+        query = query.eq('status', status);
+      }
+      
+      const { data, error } = await query.order('created_at', { ascending: false });
 
       if (error) {
         console.error('Error fetching orders by status:', error);
@@ -218,5 +237,68 @@ export class OrderService {
       console.error('Failed to unassign order:', error);
       throw error;
     }
+  }
+
+  // New method to toggle a specific status on an order
+  static async toggleOrderStatus(orderId: string, statusType: OrderStatus, enabled: boolean): Promise<Order> {
+    try {
+      console.log(`Toggling order ${orderId} status ${statusType} to ${enabled}`);
+
+      const statusColumnMap: Record<string, string> = {
+        'Created': 'status_created',
+        'In Progress': 'status_in_progress',
+        'Complaint': 'status_complaint', 
+        'Invoice Sent': 'status_invoice_sent',
+        'Invoice Paid': 'status_invoice_paid',
+        'Resolved': 'status_resolved',
+        'Cancelled': 'status_cancelled',
+        'Deleted': 'status_deleted',
+        'Review': 'status_review'
+      };
+
+      const statusColumn = statusColumnMap[statusType];
+      if (!statusColumn) {
+        throw new Error(`Invalid status type: ${statusType}`);
+      }
+
+      const updateData = {
+        [statusColumn]: enabled,
+        updated_at: new Date().toISOString()
+      };
+
+      const { data, error } = await supabase
+        .from('orders')
+        .update(updateData)
+        .eq('id', orderId)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error toggling order status:', error);
+        throw error;
+      }
+      
+      return data;
+    } catch (error) {
+      console.error('Failed to toggle order status:', error);
+      throw error;
+    }
+  }
+
+  // Get all active statuses for an order
+  static getActiveStatuses(order: Order): OrderStatus[] {
+    const statuses: OrderStatus[] = [];
+    
+    if (order.status_created) statuses.push('Created');
+    if (order.status_in_progress) statuses.push('In Progress');
+    if (order.status_complaint) statuses.push('Complaint');
+    if (order.status_invoice_sent) statuses.push('Invoice Sent');
+    if (order.status_invoice_paid) statuses.push('Invoice Paid');
+    if (order.status_resolved) statuses.push('Resolved');
+    if (order.status_cancelled) statuses.push('Cancelled');
+    if (order.status_deleted) statuses.push('Deleted');
+    if (order.status_review) statuses.push('Review');
+    
+    return statuses;
   }
 }

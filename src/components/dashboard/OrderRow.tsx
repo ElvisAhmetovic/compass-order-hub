@@ -16,6 +16,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { InvoiceService } from "@/services/invoiceService";
 import { OrderService } from "@/services/orderService";
+import MultiStatusBadges from "./MultiStatusBadges";
 
 interface OrderRowProps {
   order: Order;
@@ -208,8 +209,8 @@ const OrderRow = ({
 
     setIsUpdatingStatus(true);
     try {
-      // Update order status using Supabase
-      await OrderService.updateOrder(order.id, { status: newStatus });
+      // Toggle the status instead of replacing it
+      await OrderService.toggleOrderStatus(order.id, newStatus, true);
       
       // Create invoice if status is invoice-related
       if (newStatus === "Invoice Sent" || newStatus === "Invoice Paid") {
@@ -242,7 +243,7 @@ const OrderRow = ({
 
     if (!user) {
       toast({
-        title: "Authentication Required",
+        title: "Authentication Required", 
         description: "Please log in to send orders to review.",
         variant: "destructive"
       });
@@ -251,10 +252,7 @@ const OrderRow = ({
 
     setIsSendingToReview(true);
     try {
-      await OrderService.updateOrder(order.id, { 
-        status: "Review",
-        updated_at: new Date().toISOString()
-      });
+      await OrderService.toggleOrderStatus(order.id, "Review", true);
       
       toast({
         title: "Order sent to review",
@@ -312,7 +310,7 @@ const OrderRow = ({
         {formatCurrency(order.price)}
       </TableCell>
       <TableCell>
-        <Badge className={getStatusColor(order.status)}>{order.status}</Badge>
+        <MultiStatusBadges order={order} onRefresh={onRefresh} compact={true} />
       </TableCell>
       <TableCell>
         {formatDate(order.updated_at)}
@@ -320,7 +318,7 @@ const OrderRow = ({
       <TableCell>
         <div className="flex items-center gap-2">
           {/* Send to Review button - visible for admins on orders not already in Review status */}
-          {isAdmin && order.status !== "Review" && (
+          {isAdmin && !order.status_review && (
             <Button
               variant="outline"
               size="sm"
@@ -347,19 +345,19 @@ const OrderRow = ({
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => handleUpdateStatus("In Progress")}>
-                  Mark as In Progress
+                  Add In Progress Status
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => handleUpdateStatus("Resolved")}>
-                  Mark as Resolved
+                  Add Resolved Status
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => handleUpdateStatus("Invoice Sent")}>
-                  Mark as Invoice Sent
+                  Add Invoice Sent Status
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => handleUpdateStatus("Invoice Paid")}>
-                  Mark as Invoice Paid
+                  Add Invoice Paid Status
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => handleUpdateStatus("Complaint")}>
-                  Mark as Complaint
+                  Add Complaint Status
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem 

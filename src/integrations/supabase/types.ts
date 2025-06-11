@@ -671,7 +671,16 @@ export type Database = {
           price: number | null
           priority: string | null
           status: string
+          status_cancelled: boolean | null
+          status_complaint: boolean | null
+          status_created: boolean | null
           status_date: string | null
+          status_deleted: boolean | null
+          status_in_progress: boolean | null
+          status_invoice_paid: boolean | null
+          status_invoice_sent: boolean | null
+          status_resolved: boolean | null
+          status_review: boolean | null
           updated_at: string | null
         }
         Insert: {
@@ -693,7 +702,16 @@ export type Database = {
           price?: number | null
           priority?: string | null
           status: string
+          status_cancelled?: boolean | null
+          status_complaint?: boolean | null
+          status_created?: boolean | null
           status_date?: string | null
+          status_deleted?: boolean | null
+          status_in_progress?: boolean | null
+          status_invoice_paid?: boolean | null
+          status_invoice_sent?: boolean | null
+          status_resolved?: boolean | null
+          status_review?: boolean | null
           updated_at?: string | null
         }
         Update: {
@@ -715,7 +733,16 @@ export type Database = {
           price?: number | null
           priority?: string | null
           status?: string
+          status_cancelled?: boolean | null
+          status_complaint?: boolean | null
+          status_created?: boolean | null
           status_date?: string | null
+          status_deleted?: boolean | null
+          status_in_progress?: boolean | null
+          status_invoice_paid?: boolean | null
+          status_invoice_sent?: boolean | null
+          status_resolved?: boolean | null
+          status_review?: boolean | null
           updated_at?: string | null
         }
         Relationships: [

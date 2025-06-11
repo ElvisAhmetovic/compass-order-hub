@@ -147,7 +147,7 @@ const OrderActions = ({ order, onOrderView, onRefresh }: OrderActionsProps) => {
     }
   };
 
-  const handleStatusChange = async (newStatus: OrderStatus) => {
+  const handleStatusToggle = async (newStatus: OrderStatus, enabled: boolean) => {
     if (!isAdmin) {
       toast({
         title: "Permission Denied",
@@ -169,35 +169,27 @@ const OrderActions = ({ order, onOrderView, onRefresh }: OrderActionsProps) => {
     setIsLoading(true);
     
     try {
-      console.log(`Updating order ${order.id} status from ${order.status} to ${newStatus}`);
+      console.log(`Toggling order ${order.id} status ${newStatus} to ${enabled}`);
       
       // Update order status using Supabase
-      const updatedOrder = await OrderService.updateOrder(order.id, { 
-        status: newStatus,
-        updated_at: new Date().toISOString()
-      });
+      await OrderService.toggleOrderStatus(order.id, newStatus, enabled);
       
-      console.log('Order updated successfully:', updatedOrder);
+      console.log('Order status toggled successfully');
       
-      // Create invoice if status is invoice-related
-      if (newStatus === "Invoice Sent" || newStatus === "Invoice Paid") {
+      // Create invoice if status is invoice-related and being enabled
+      if (enabled && (newStatus === "Invoice Sent" || newStatus === "Invoice Paid")) {
         await createInvoiceFromOrder(order.id, order, newStatus);
       }
       
       // Show success message
       toast({
-        title: "Status updated",
-        description: `Order status changed to "${newStatus}".`
+        title: enabled ? "Status Added" : "Status Removed",
+        description: `Order ${enabled ? 'marked as' : 'unmarked as'} "${newStatus}".`
       });
       
       // Trigger refresh and notify about the status change
       onRefresh();
       window.dispatchEvent(new CustomEvent('orderStatusChanged'));
-      
-      // Force a page refresh to ensure sidebar updates correctly
-      setTimeout(() => {
-        window.location.reload();
-      }, 1000);
       
     } catch (error) {
       console.error("Error updating status:", error);
@@ -261,6 +253,9 @@ const OrderActions = ({ order, onOrderView, onRefresh }: OrderActionsProps) => {
     }
   };
 
+  // Get currently active statuses
+  const activeStatuses = OrderService.getActiveStatuses(order);
+
   if (!isAdmin) {
     return (
       <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onOrderView(order)}>
@@ -283,26 +278,27 @@ const OrderActions = ({ order, onOrderView, onRefresh }: OrderActionsProps) => {
         
         <DropdownMenuSeparator />
         
-        <DropdownMenuItem onClick={() => handleStatusChange("In Progress")}>
-          Mark as In Progress
+        {/* Add/Remove status options */}
+        <DropdownMenuItem onClick={() => handleStatusToggle("In Progress", !activeStatuses.includes("In Progress"))}>
+          {activeStatuses.includes("In Progress") ? "Remove" : "Add"} In Progress
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => handleStatusChange("Complaint")}>
-          Register Complaint
+        <DropdownMenuItem onClick={() => handleStatusToggle("Complaint", !activeStatuses.includes("Complaint"))}>
+          {activeStatuses.includes("Complaint") ? "Remove" : "Add"} Complaint
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => handleStatusChange("Review")}>
-          Send to Review
+        <DropdownMenuItem onClick={() => handleStatusToggle("Review", !activeStatuses.includes("Review"))}>
+          {activeStatuses.includes("Review") ? "Remove" : "Add"} Review
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => handleStatusChange("Invoice Sent")}>
-          Mark as Invoice Sent
+        <DropdownMenuItem onClick={() => handleStatusToggle("Invoice Sent", !activeStatuses.includes("Invoice Sent"))}>
+          {activeStatuses.includes("Invoice Sent") ? "Remove" : "Add"} Invoice Sent
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => handleStatusChange("Invoice Paid")}>
-          Mark as Invoice Paid
+        <DropdownMenuItem onClick={() => handleStatusToggle("Invoice Paid", !activeStatuses.includes("Invoice Paid"))}>
+          {activeStatuses.includes("Invoice Paid") ? "Remove" : "Add"} Invoice Paid
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => handleStatusChange("Resolved")}>
-          Mark as Resolved
+        <DropdownMenuItem onClick={() => handleStatusToggle("Resolved", !activeStatuses.includes("Resolved"))}>
+          {activeStatuses.includes("Resolved") ? "Remove" : "Add"} Resolved
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => handleStatusChange("Cancelled")}>
-          Mark as Cancelled
+        <DropdownMenuItem onClick={() => handleStatusToggle("Cancelled", !activeStatuses.includes("Cancelled"))}>
+          {activeStatuses.includes("Cancelled") ? "Remove" : "Add"} Cancelled
         </DropdownMenuItem>
         
         <DropdownMenuSeparator />
