@@ -1,4 +1,3 @@
-
 export const SUPPORTED_LANGUAGES = [
   { code: 'en', name: 'English' },
   { code: 'de', name: 'German' },
@@ -84,7 +83,11 @@ export const translations = {
     paymentData: "Payment Data",
     accountNumber: "Account Number",
     accountName: "Account Name",
-    paymentMethod: "Payment Method"
+    paymentMethod: "Payment Method",
+    
+    // Signature section
+    placeAndDate: "Place & Date",
+    signatureAndStamp: "Signature & Stamp"
   },
   de: {
     // Page titles
@@ -158,7 +161,11 @@ export const translations = {
     paymentData: "Zahlungsdaten",
     accountNumber: "Kontonummer",
     accountName: "Kontoname",
-    paymentMethod: "Zahlungsmethode"
+    paymentMethod: "Zahlungsmethode",
+    
+    // Signature section
+    placeAndDate: "Ort & Datum",
+    signatureAndStamp: "Unterschrift & Stempel"
   },
   fr: {
     // Page titles
@@ -232,7 +239,11 @@ export const translations = {
     paymentData: "Données de paiement",
     accountNumber: "Numéro de compte",
     accountName: "Nom du compte",
-    paymentMethod: "Méthode de paiement"
+    paymentMethod: "Méthode de paiement",
+    
+    // Signature section
+    placeAndDate: "Lieu et date",
+    signatureAndStamp: "Signature et tampon"
   },
   cs: {
     // Page titles
@@ -306,7 +317,11 @@ export const translations = {
     paymentData: "Platební údaje",
     accountNumber: "Číslo účtu",
     accountName: "Název účtu",
-    paymentMethod: "Způsob platby"
+    paymentMethod: "Způsob platby",
+    
+    // Signature section
+    placeAndDate: "Místo a datum",
+    signatureAndStamp: "Podpis a razítko"
   },
   sv: {
     // Page titles
@@ -380,7 +395,11 @@ export const translations = {
     paymentData: "Betalningsdata",
     accountNumber: "Kontonummer",
     accountName: "Kontonamn",
-    paymentMethod: "Betalningsmetod"
+    paymentMethod: "Betalningsmetod",
+    
+    // Signature section
+    placeAndDate: "Plats och datum",
+    signatureAndStamp: "Signatur och stämpel"
   },
   es: {
     // Page titles
@@ -454,7 +473,11 @@ export const translations = {
     paymentData: "Datos de pago",
     accountNumber: "Número de cuenta",
     accountName: "Nombre de cuenta",
-    paymentMethod: "Método de pago"
+    paymentMethod: "Método de pago",
+    
+    // Signature section
+    placeAndDate: "Lugar y fecha",
+    signatureAndStamp: "Firma y sello"
   },
   nl: {
     // Page titles
@@ -528,7 +551,11 @@ export const translations = {
     paymentData: "Betalingsgegevens",
     accountNumber: "Rekeningnummer",
     accountName: "Rekeningnaam",
-    paymentMethod: "Betaalmethode"
+    paymentMethod: "Betaalmethode",
+    
+    // Signature section
+    placeAndDate: "Plaats en datum",
+    signatureAndStamp: "Handtekening en stempel"
   },
   no: {
     // Page titles
@@ -602,7 +629,11 @@ export const translations = {
     paymentData: "Betalingsdata",
     accountNumber: "Kontonummer",
     accountName: "Kontonavn",
-    paymentMethod: "Betalingsmetode"
+    paymentMethod: "Betalingsmetode",
+    
+    // Signature section
+    placeAndDate: "Sted og dato",
+    signatureAndStamp: "Signatur og stempel"
   },
   da: {
     // Page titles
@@ -676,7 +707,11 @@ export const translations = {
     paymentData: "Betalingsdata",
     accountNumber: "Kontonummer",
     accountName: "Kontonavn",
-    paymentMethod: "Betalingsmetode"
+    paymentMethod: "Betalingsmetode",
+    
+    // Signature section
+    placeAndDate: "Sted og dato",
+    signatureAndStamp: "Signatur og stempel"
   }
 };
 

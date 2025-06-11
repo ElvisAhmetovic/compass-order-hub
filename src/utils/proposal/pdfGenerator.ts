@@ -1,3 +1,4 @@
+
 import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
 import { getCompanyInfo } from "./companyInfo";
@@ -286,10 +287,10 @@ const createFirstPageContent = (proposalData: any, language: string = "en") => {
         </table>
       </div>
 
-      <!-- Totals Section -->
+      <!-- Totals and Signature Section -->
       <div class="section" style="display: flex; justify-content: space-between; align-items: flex-end;">
         <div style="flex: 1;">
-          <!-- Signature Section - Now on first page -->
+          <!-- Signature Section -->
           <div style="
             display: flex; 
             justify-content: space-between; 
@@ -305,7 +306,7 @@ const createFirstPageContent = (proposalData: any, language: string = "en") => {
               border: 1px solid #e2e8f0;
             ">
               <div style="border-top: 2px solid #2d3748; padding-top: 8px;">
-                <div style="font-size: 12px; color: #718096; font-weight: 500;">Place & Date</div>
+                <div style="font-size: 12px; color: #718096; font-weight: 500;">${t.placeAndDate || 'Place & Date'}</div>
               </div>
             </div>
             <div style="
@@ -316,7 +317,7 @@ const createFirstPageContent = (proposalData: any, language: string = "en") => {
               border: 1px solid #e2e8f0;
             ">
               <div style="border-top: 2px solid #2d3748; padding-top: 8px;">
-                <div style="font-size: 12px; color: #718096; font-weight: 500;">Signature & Stamp</div>
+                <div style="font-size: 12px; color: #718096; font-weight: 500;">${t.signatureAndStamp || 'Signature & Stamp'}</div>
                 ${proposalData.signatureUrl ? `<img src="${proposalData.signatureUrl}" style="max-height: 30px; margin-top: 8px;" />` : ''}
               </div>
             </div>
