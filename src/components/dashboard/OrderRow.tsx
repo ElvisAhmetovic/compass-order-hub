@@ -276,24 +276,24 @@ const OrderRow = ({
 
   return (
     <TableRow>
-      <TableCell>
-        <div className="flex items-center gap-2">
+      <TableCell className="min-w-0">
+        <div className="flex items-start gap-2">
           <Button 
             variant="ghost" 
             size="sm" 
             onClick={() => onOrderClick(order)}
-            className="px-2 h-7"
+            className="px-2 h-7 flex-shrink-0 mt-0.5"
           >
             <FileText className="h-4 w-4 mr-1" />
             <span className="sr-only">View Details</span>
           </Button>
-          <div className="font-medium truncate max-w-[120px]">
+          <div className="font-medium break-words leading-tight min-w-0 flex-1">
             {order.company_name}
           </div>
         </div>
       </TableCell>
       <TableCell>
-        <div className="font-medium truncate max-w-[100px]">
+        <div className="font-medium break-words leading-tight">
           {assigneeName && assigneeName !== "Unknown User" && assigneeName !== "Admin User" ? 
             assigneeName : 
             order.assigned_to ? "Assigned User" : "Unassigned"}

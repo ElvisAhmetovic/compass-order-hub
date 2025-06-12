@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import {
   Table,
@@ -252,6 +251,16 @@ const OrderTable = ({ onOrderClick, statusFilter, refreshTrigger }: OrderTablePr
       
       <div className="rounded-md border overflow-hidden">
         <Table>
+          <colgroup>
+            <col className="w-[25%]" />
+            <col className="w-[15%]" />
+            <col className="w-[12%]" />
+            {isAdmin && <col className="w-[10%]" />}
+            <col className="w-[10%]" />
+            <col className="w-[15%]" />
+            <col className="w-[12%]" />
+            <col className="w-[13%]" />
+          </colgroup>
           <TableHeader>
             <TableRow>
               <TableHead>Company</TableHead>
