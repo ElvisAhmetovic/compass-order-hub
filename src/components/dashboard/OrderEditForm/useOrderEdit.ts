@@ -25,8 +25,8 @@ export const useOrderEdit = (order: Order | null, onRefresh: () => void) => {
   const handleEdit = useCallback(() => {
     if (!order) return;
     
-    setIsEditing(true);
-    setEditedOrder({
+    // Safeguard: Create a backup of original data to prevent data loss
+    const safeOrderData = {
       company_name: order.company_name || "",
       company_address: order.company_address || "",
       contact_email: order.contact_email || "",
@@ -36,12 +36,27 @@ export const useOrderEdit = (order: Order | null, onRefresh: () => void) => {
       price: order.price || 0,
       currency: order.currency || "EUR",
       priority: (order.priority || "medium") as OrderPriority
-    });
+    };
+    
+    console.log('Starting edit mode with safe data:', safeOrderData);
+    
+    setIsEditing(true);
+    setEditedOrder(safeOrderData);
     setValidationErrors({});
   }, [order]);
 
   const handleFieldChange = useCallback((field: keyof OrderFormData, value: string | number) => {
-    setEditedOrder(prev => ({ ...prev, [field]: value }));
+    console.log(`Updating field ${field} with value:`, value);
+    
+    // Safeguard: Ensure we never set undefined or null values
+    const safeValue = value === null || value === undefined ? 
+      (typeof value === 'number' ? 0 : "") : value;
+    
+    setEditedOrder(prev => {
+      const newData = { ...prev, [field]: safeValue };
+      console.log('Updated form data:', newData);
+      return newData;
+    });
     
     // Clear validation error for this field when user starts typing
     if (validationErrors[field as keyof ValidationErrors]) {
@@ -55,6 +70,8 @@ export const useOrderEdit = (order: Order | null, onRefresh: () => void) => {
 
   const handleSave = useCallback(async () => {
     if (!order) return;
+    
+    console.log('Attempting to save order with data:', editedOrder);
     
     const errors = validateOrderForm(editedOrder);
     
@@ -77,18 +94,20 @@ export const useOrderEdit = (order: Order | null, onRefresh: () => void) => {
     setValidationErrors({}); // Clear all errors if we're proceeding
     
     try {
-      // Cast to Partial<Order> to ensure type compatibility
+      // Safeguard: Ensure all values are properly defined before sending to API
       const updateData: Partial<Order> = {
-        company_name: editedOrder.company_name,
-        company_address: editedOrder.company_address,
-        contact_email: editedOrder.contact_email,
-        contact_phone: editedOrder.contact_phone,
-        company_link: editedOrder.company_link,
-        description: editedOrder.description,
-        price: editedOrder.price,
-        currency: editedOrder.currency,
-        priority: editedOrder.priority
+        company_name: editedOrder.company_name || order.company_name || "",
+        company_address: editedOrder.company_address || "",
+        contact_email: editedOrder.contact_email || "",
+        contact_phone: editedOrder.contact_phone || "",
+        company_link: editedOrder.company_link || "",
+        description: editedOrder.description || "",
+        price: editedOrder.price !== undefined ? editedOrder.price : 0,
+        currency: editedOrder.currency || "EUR",
+        priority: editedOrder.priority || "medium"
       };
+      
+      console.log('Sending update data to API:', updateData);
       
       await OrderService.updateOrder(order.id, updateData);
       
@@ -96,6 +115,8 @@ export const useOrderEdit = (order: Order | null, onRefresh: () => void) => {
         title: "Order Updated",
         description: "Order details have been successfully updated.",
       });
+      
+      console.log('Order updated successfully');
       
       setIsEditing(false);
       setValidationErrors({});
@@ -108,12 +129,17 @@ export const useOrderEdit = (order: Order | null, onRefresh: () => void) => {
         description: "Failed to save changes. Please check your connection and try again.",
         variant: "destructive"
       });
+      
+      // Safeguard: Don't exit edit mode on save failure to prevent data loss
+      console.log('Save failed, keeping edit mode active to prevent data loss');
     } finally {
       setIsSaving(false);
     }
   }, [editedOrder, order, toast, onRefresh]);
 
   const handleCancel = useCallback(() => {
+    console.log('Canceling edit mode');
+    
     setIsEditing(false);
     setEditedOrder({
       company_name: "",

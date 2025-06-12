@@ -21,16 +21,30 @@ interface OrderDetailsSectionProps {
 const OrderDetailsSection = ({ order, data, errors, isEditing, onChange }: OrderDetailsSectionProps) => {
   const getPriorityColor = (priority: string) => {
     const priorityClasses = {
-      "low": "bg-priority-low text-white",
-      "medium": "bg-priority-medium text-white", 
-      "high": "bg-priority-high text-white",
-      "urgent": "bg-priority-urgent text-white",
+      "low": "bg-priority-low text-white border-priority-low",
+      "medium": "bg-priority-medium text-white border-priority-medium", 
+      "high": "bg-priority-high text-white border-priority-high",
+      "urgent": "bg-priority-urgent text-white border-priority-urgent",
     };
-    return priorityClasses[priority.toLowerCase()] || "bg-gray-500 text-white";
+    return priorityClasses[priority.toLowerCase()] || "bg-priority-medium text-white border-priority-medium";
   };
 
   const formatPriorityDisplay = (priority: string) => {
     return priority.charAt(0).toUpperCase() + priority.slice(1);
+  };
+
+  // Safeguard: Always ensure we have valid data and prevent null/undefined values
+  const safeData = {
+    ...data,
+    company_name: data.company_name || order.company_name || "",
+    company_address: data.company_address || order.company_address || "",
+    contact_email: data.contact_email || order.contact_email || "",
+    contact_phone: data.contact_phone || order.contact_phone || "",
+    company_link: data.company_link || order.company_link || "",
+    description: data.description || order.description || "",
+    price: data.price !== undefined ? data.price : (order.price || 0),
+    currency: data.currency || order.currency || "EUR",
+    priority: data.priority || order.priority || "medium"
   };
 
   return (
@@ -45,8 +59,11 @@ const OrderDetailsSection = ({ order, data, errors, isEditing, onChange }: Order
             <Input
               type="number"
               step="0.01"
-              value={data.price || 0}
-              onChange={(e) => onChange('price', parseFloat(e.target.value) || 0)}
+              value={safeData.price || 0}
+              onChange={(e) => {
+                const value = parseFloat(e.target.value) || 0;
+                onChange('price', Math.max(0, value)); // Prevent negative values
+              }}
               placeholder="0.00"
               className={`mt-1 ${errors.price ? 'border-destructive' : ''}`}
             />
@@ -62,7 +79,10 @@ const OrderDetailsSection = ({ order, data, errors, isEditing, onChange }: Order
       <div>
         <Label className="text-sm font-medium text-muted-foreground">Currency</Label>
         {isEditing ? (
-          <Select value={data.currency} onValueChange={(value) => onChange('currency', value)}>
+          <Select 
+            value={safeData.currency} 
+            onValueChange={(value) => onChange('currency', value || "EUR")}
+          >
             <SelectTrigger className="mt-1">
               <SelectValue />
             </SelectTrigger>
@@ -82,21 +102,41 @@ const OrderDetailsSection = ({ order, data, errors, isEditing, onChange }: Order
         <Label className="text-sm font-medium text-muted-foreground">Priority</Label>
         {isEditing ? (
           <Select 
-            value={data.priority} 
-            onValueChange={(value) => onChange('priority', value)}
+            value={safeData.priority} 
+            onValueChange={(value) => onChange('priority', value || "medium")}
           >
             <SelectTrigger className="mt-1">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="low">Low</SelectItem>
-              <SelectItem value="medium">Medium</SelectItem>
-              <SelectItem value="high">High</SelectItem>
-              <SelectItem value="urgent">Urgent</SelectItem>
+              <SelectItem value="low">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-priority-low"></div>
+                  Low
+                </div>
+              </SelectItem>
+              <SelectItem value="medium">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-priority-medium"></div>
+                  Medium
+                </div>
+              </SelectItem>
+              <SelectItem value="high">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-priority-high"></div>
+                  High
+                </div>
+              </SelectItem>
+              <SelectItem value="urgent">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-priority-urgent"></div>
+                  Urgent
+                </div>
+              </SelectItem>
             </SelectContent>
           </Select>
         ) : (
-          <Badge className={getPriorityColor(order.priority || "medium")}>
+          <Badge className={`${getPriorityColor(order.priority || "medium")} font-medium`}>
             {formatPriorityDisplay(order.priority || "medium")}
           </Badge>
         )}
@@ -106,8 +146,8 @@ const OrderDetailsSection = ({ order, data, errors, isEditing, onChange }: Order
         <Label className="text-sm font-medium text-muted-foreground">Description</Label>
         {isEditing ? (
           <Textarea
-            value={data.description}
-            onChange={(e) => onChange('description', e.target.value)}
+            value={safeData.description}
+            onChange={(e) => onChange('description', e.target.value || "")}
             placeholder="Order description"
             className="mt-1"
             rows={3}
