@@ -12,7 +12,6 @@ import { useAuth } from '@/context/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Plus, Paperclip, Bell, Users, Volume2 } from 'lucide-react';
-import { useNotificationSound } from '@/hooks/useNotificationSound';
 import { NotificationService } from '@/services/notificationService';
 
 interface InternalChatProps {
@@ -135,7 +134,7 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
     // Subscribe to real-time updates for channels
     console.log('🔔 Setting up channel real-time subscription');
     const channelSubscription = supabase
-      .channel('channels-realtime-v2')
+      .channel('channels-realtime-v3')
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',
@@ -153,25 +152,6 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
           title: "New Channel",
           description: `Channel "${newChannel.name}" has been created`,
         });
-      })
-      .on('postgres_changes', {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'channels'
-      }, (payload) => {
-        console.log('📝 Channel updated:', payload.new);
-        const updatedChannel = payload.new as Channel;
-        setChannels(prev => prev.map(ch => 
-          ch.id === updatedChannel.id ? updatedChannel : ch
-        ));
-      })
-      .on('postgres_changes', {
-        event: 'DELETE',
-        schema: 'public',
-        table: 'channels'
-      }, (payload) => {
-        console.log('🗑️ Channel deleted:', payload.old);
-        setChannels(prev => prev.filter(ch => ch.id !== payload.old.id));
       })
       .subscribe((status) => {
         console.log('📺 Channel subscription status:', status);
@@ -266,57 +246,70 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
     // Subscribe to real-time updates for messages in this channel
     console.log('🔔 Setting up message real-time subscription for channel:', activeChannel);
     const messagesSubscription = supabase
-      .channel(`messages-realtime-${activeChannel}-v4`)
+      .channel(`messages-realtime-${activeChannel}-v5`)
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',
         table: 'messages',
         filter: `channel_id=eq.${activeChannel}`
       }, (payload) => {
-        console.log('🆕 New message received in active channel:', payload.new);
         const newMessage = payload.new as Message;
+        console.log('🆕 REALTIME: New message received:', {
+          id: newMessage.id,
+          content: newMessage.content.substring(0, 50),
+          sender: newMessage.sender_name,
+          channel: newMessage.channel_id,
+          timestamp: new Date().toISOString()
+        });
         
-        // Add message to local state immediately
-        setMessages(prev => {
-          const exists = prev.find(msg => msg.id === newMessage.id);
-          if (exists) {
-            console.log('⏭️ Message already exists, skipping');
-            return prev;
+        // Add message to local state - use functional update to ensure we have latest state
+        setMessages(prevMessages => {
+          // Check if message already exists by ID
+          const messageExists = prevMessages.some(msg => msg.id === newMessage.id);
+          if (messageExists) {
+            console.log('⏭️ Message already exists in local state, skipping');
+            return prevMessages;
           }
+          
           console.log('✅ Adding new message to local state');
-          return [...prev, newMessage];
+          return [...prevMessages, newMessage];
         });
 
-        // Show local toast for new message (in addition to global notification)
-        if (newMessage.sender_id !== user?.id) {
-          console.log('📢 Showing toast for message from:', newMessage.sender_name);
+        // Play sound and show toast for messages from other users
+        if (newMessage.sender_id !== user?.id && soundEnabled) {
+          console.log('🔊 Playing sound for incoming message from:', newMessage.sender_name);
+          
+          // Trigger sound
+          try {
+            const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            // Create a pleasant notification sound
+            oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+            oscillator.type = 'sine';
+            
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+            
+            oscillator.start();
+            oscillator.stop(audioContext.currentTime + 0.3);
+            
+            console.log('✅ Notification sound played');
+          } catch (error) {
+            console.error('❌ Error playing notification sound:', error);
+          }
+
+          // Show toast
           toast({
             title: `💬 ${newMessage.sender_name}`,
             description: newMessage.content.substring(0, 80) + (newMessage.content.length > 80 ? '...' : ''),
             duration: 3000,
           });
         }
-      })
-      .on('postgres_changes', {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'messages',
-        filter: `channel_id=eq.${activeChannel}`
-      }, (payload) => {
-        console.log('📝 Message updated:', payload.new);
-        const updatedMessage = payload.new as Message;
-        setMessages(prev => prev.map(msg => 
-          msg.id === updatedMessage.id ? updatedMessage : msg
-        ));
-      })
-      .on('postgres_changes', {
-        event: 'DELETE',
-        schema: 'public',
-        table: 'messages',
-        filter: `channel_id=eq.${activeChannel}`
-      }, (payload) => {
-        console.log('🗑️ Message deleted:', payload.old);
-        setMessages(prev => prev.filter(msg => msg.id !== payload.old.id));
       })
       .subscribe((status) => {
         console.log('💬 Message subscription status:', status);
@@ -338,7 +331,7 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
         messageSubscriptionRef.current = null;
       }
     };
-  }, [activeChannel, user]);
+  }, [activeChannel, user, soundEnabled]);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -613,7 +606,7 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
             {activeChannelData.type === 'private' && ` • ${activeChannelData.participants?.length || 0} participants`}
             {soundEnabled && <span className="ml-2">🔊 Notifications On</span>}
             <span className="ml-2 text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
-              🔔 Real-time updates active
+              🔔 Real-time active
             </span>
             {isSending && <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
               📤 Sending...
