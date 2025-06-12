@@ -7,11 +7,12 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Message, Channel } from '@/types/messaging';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Plus, Paperclip, Bell, Users, Volume2 } from 'lucide-react';
+import { Plus, Paperclip, Bell, Users, Volume2, Trash2 } from 'lucide-react';
 import { NotificationService } from '@/services/notificationService';
 
 interface InternalChatProps {
@@ -31,6 +32,8 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
   const [fileUpload, setFileUpload] = useState<File | null>(null);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [isSending, setIsSending] = useState(false);
+  const [isPurging, setIsPurging] = useState(false);
+  const [purgeCount, setPurgeCount] = useState<string>('50');
   const { user } = useAuth();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -339,6 +342,108 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
     };
   };
 
+  // Purge chat messages function
+  const purgeMessages = async (messageCount: number) => {
+    if (!activeChannel || !user || isPurging) return;
+
+    setIsPurging(true);
+    console.log(`🗑️ Purging last ${messageCount} messages from channel:`, activeChannel);
+
+    try {
+      // Get the last N messages from the current channel
+      const { data: messagesToDelete, error: fetchError } = await supabase
+        .from('messages')
+        .select('id')
+        .eq('channel_id', activeChannel)
+        .order('created_at', { ascending: false })
+        .limit(messageCount);
+
+      if (fetchError) {
+        console.error('❌ Error fetching messages to delete:', fetchError);
+        toast({
+          title: "Error",
+          description: "Failed to fetch messages for deletion",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      if (!messagesToDelete || messagesToDelete.length === 0) {
+        toast({
+          title: "No messages to purge",
+          description: "There are no messages to delete in this channel",
+        });
+        return;
+      }
+
+      const messageIds = messagesToDelete.map(msg => msg.id);
+      console.log(`🗑️ Deleting ${messageIds.length} messages:`, messageIds);
+
+      // Delete the messages
+      const { error: deleteError } = await supabase
+        .from('messages')
+        .delete()
+        .in('id', messageIds);
+
+      if (deleteError) {
+        console.error('❌ Error deleting messages:', deleteError);
+        toast({
+          title: "Error",
+          description: "Failed to purge messages",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      console.log('✅ Messages purged successfully');
+
+      // Update local state immediately
+      setMessages(prevMessages => 
+        prevMessages.filter(msg => !messageIds.includes(msg.id))
+      );
+
+      // Get channel name for notification
+      const activeChannelData = channels.find(ch => ch.id === activeChannel);
+      const channelName = activeChannelData?.name || 'Unknown Channel';
+
+      // Create notifications for all team members about the purge
+      if (teamMembers.length > 0) {
+        console.log('📬 Creating purge notifications for all team members...');
+        
+        const notificationPromises = teamMembers
+          .filter(member => member.id !== user.id)
+          .map(member => {
+            console.log(`📨 Creating purge notification for user: ${member.id}`);
+            return NotificationService.createNotification({
+              user_id: member.id,
+              title: `💬 Chat purged in ${channelName}`,
+              message: `${user.full_name} purged ${messageIds.length} messages from ${channelName}`,
+              type: 'info' as const,
+              action_url: '/team-collaboration'
+            });
+          });
+
+        await Promise.all(notificationPromises);
+        console.log('✅ All purge notifications created successfully');
+      }
+      
+      toast({
+        title: "Messages purged",
+        description: `Successfully deleted ${messageIds.length} messages from the chat`,
+      });
+
+    } catch (error) {
+      console.error('❌ Unexpected error during purge:', error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred while purging messages",
+        variant: "destructive"
+      });
+    } finally {
+      setIsPurging(false);
+    }
+  };
+
   const sendMessage = async () => {
     if ((!newMessage.trim() && !fileUpload) || !user || !activeChannel || isSending) return;
 
@@ -502,6 +607,57 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
             >
               <Bell className="h-4 w-4" />
             </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  disabled={!activeChannel || isPurging}
+                  title="Purge chat messages"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  {isPurging ? 'Purging...' : 'Purge Chat'}
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Purge Chat Messages</AlertDialogTitle>
+                  <AlertDialogDescription className="space-y-4">
+                    <p>How many recent messages would you like to delete from this channel?</p>
+                    <p className="text-sm text-muted-foreground">
+                      This action cannot be undone and will permanently remove the selected messages for all users.
+                    </p>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm">Delete last</span>
+                      <Select value={purgeCount} onValueChange={setPurgeCount}>
+                        <SelectTrigger className="w-24">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="10">10</SelectItem>
+                          <SelectItem value="25">25</SelectItem>
+                          <SelectItem value="50">50</SelectItem>
+                          <SelectItem value="100">100</SelectItem>
+                          <SelectItem value="200">200</SelectItem>
+                          <SelectItem value="500">500</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <span className="text-sm">messages</span>
+                    </div>
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction 
+                    onClick={() => purgeMessages(parseInt(purgeCount))}
+                    className="bg-red-600 hover:bg-red-700"
+                    disabled={isPurging}
+                  >
+                    {isPurging ? 'Purging...' : `Purge ${purgeCount} Messages`}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
             <Dialog open={isCreateChannelOpen} onOpenChange={setIsCreateChannelOpen}>
               <DialogTrigger asChild>
                 <Button size="sm" variant="outline">
@@ -585,6 +741,9 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
             </span>
             {isSending && <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
               📤 Sending...
+            </span>}
+            {isPurging && <span className="ml-2 text-xs bg-red-100 text-red-800 px-2 py-1 rounded">
+              🗑️ Purging...
             </span>}
           </p>
         )}
