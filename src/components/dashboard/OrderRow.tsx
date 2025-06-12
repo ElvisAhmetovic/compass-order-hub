@@ -63,12 +63,16 @@ const OrderRow = ({
 
   const getPriorityColor = (priority: string) => {
     const priorityClasses = {
-      "Low": "bg-priority-low text-white",
-      "Medium": "bg-priority-medium text-white",
-      "High": "bg-priority-high text-white",
-      "Urgent": "bg-priority-urgent text-white",
+      "low": "bg-priority-low text-white border-priority-low",
+      "medium": "bg-priority-medium text-white border-priority-medium", 
+      "high": "bg-priority-high text-white border-priority-high",
+      "urgent": "bg-priority-urgent text-white border-priority-urgent",
     };
-    return priorityClasses[priority] || "bg-gray-500 text-white";
+    return priorityClasses[priority.toLowerCase()] || "bg-priority-medium text-white border-priority-medium";
+  };
+
+  const formatPriorityDisplay = (priority: string) => {
+    return priority.charAt(0).toUpperCase() + priority.slice(1);
   };
 
   const createInvoiceFromOrder = async (orderId: string, orderData: Order, status: OrderStatus) => {
@@ -303,7 +307,9 @@ const OrderRow = ({
       </TableCell>
       {!hidePriority && (
         <TableCell>
-          <Badge className={getPriorityColor(order.priority)}>{order.priority}</Badge>
+          <Badge className={getPriorityColor(order.priority || "medium")}>
+            {formatPriorityDisplay(order.priority || "medium")}
+          </Badge>
         </TableCell>
       )}
       <TableCell>
