@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -72,7 +71,14 @@ const LoginForm = () => {
 
   return (
     <Card className="w-[350px] mx-auto">
-      <CardHeader>
+      <CardHeader className="text-center">
+        <div className="flex justify-center mb-2">
+          <img 
+            src="/lovable-uploads/2d4259f4-7fb1-4221-9e23-4bec4378d055.png" 
+            alt="AB Media Team Logo" 
+            className="h-10 w-auto"
+          />
+        </div>
         <CardTitle>Login</CardTitle>
         <CardDescription>Enter your credentials to access your account</CardDescription>
       </CardHeader>
