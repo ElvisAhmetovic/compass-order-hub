@@ -15,7 +15,7 @@ const Header = ({ userRole = "admin" }: HeaderProps) => {
           <img 
             src="/lovable-uploads/2d4259f4-7fb1-4221-9e23-4bec4378d055.png" 
             alt="AB Media Team Logo" 
-            className="h-8 w-auto"
+            className="h-12 w-auto"
           />
           <h1 className="text-xl font-semibold">Order Management System</h1>
         </div>
