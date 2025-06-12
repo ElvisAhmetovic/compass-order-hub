@@ -24,7 +24,7 @@ export const useGlobalChatNotifications = () => {
 
     // Subscribe to ALL new messages in team chat
     const messagesSubscription = supabase
-      .channel('global-team-messages-v6') // Updated channel version
+      .channel('global-team-messages-v7') // Updated channel version
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',
@@ -45,29 +45,41 @@ export const useGlobalChatNotifications = () => {
         if (newMessage.sender_id !== user.id) {
           console.log('🔊 PLAYING GLOBAL SOUND! Message from:', newMessage.sender_name, 'to user:', user.id);
           
-          // Play notification sound immediately
-          try {
-            const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-            const oscillator = audioContext.createOscillator();
-            const gainNode = audioContext.createGain();
-            
-            oscillator.connect(gainNode);
-            gainNode.connect(audioContext.destination);
-            
-            // Create distinctive double beep
-            oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
-            oscillator.type = 'sine';
-            
-            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
-            
-            oscillator.start();
-            oscillator.stop(audioContext.currentTime + 0.3);
-            
-            console.log('✅ Global notification sound played successfully');
-          } catch (error) {
-            console.error('❌ Error playing global notification sound:', error);
-          }
+          // Play notification sound immediately using a more direct approach
+          const playSound = async () => {
+            try {
+              // Create audio context each time to avoid suspended state issues
+              const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+              
+              // Resume context if suspended
+              if (audioContext.state === 'suspended') {
+                await audioContext.resume();
+              }
+              
+              const oscillator = audioContext.createOscillator();
+              const gainNode = audioContext.createGain();
+              
+              oscillator.connect(gainNode);
+              gainNode.connect(audioContext.destination);
+              
+              // Create distinctive double beep
+              oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+              oscillator.type = 'sine';
+              
+              gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+              gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+              
+              oscillator.start();
+              oscillator.stop(audioContext.currentTime + 0.3);
+              
+              console.log('✅ Global notification sound played successfully');
+            } catch (error) {
+              console.error('❌ Error playing global notification sound:', error);
+            }
+          };
+          
+          // Play sound immediately
+          playSound();
           
           // Show global toast notification
           toast({
@@ -100,9 +112,7 @@ export const useGlobalChatNotifications = () => {
     return () => {
       console.log('🧹 Cleaning up GLOBAL chat notification listener');
       if (subscriptionRef.current) {
-        supabase.remove
-
-(subscriptionRef.current);
+        supabase.removeChannel(subscriptionRef.current);
         subscriptionRef.current = null;
       }
     };
