@@ -31,6 +31,7 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
   const [selectedParticipants, setSelectedParticipants] = useState<string[]>([]);
   const [fileUpload, setFileUpload] = useState<File | null>(null);
   const [soundEnabled, setSoundEnabled] = useState(true);
+  const [isSending, setIsSending] = useState(false);
   const { user } = useAuth();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -265,7 +266,7 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
     // Subscribe to real-time updates for messages in this channel
     console.log('🔔 Setting up message real-time subscription for channel:', activeChannel);
     const messagesSubscription = supabase
-      .channel(`messages-realtime-${activeChannel}-v3`)
+      .channel(`messages-realtime-${activeChannel}-v4`)
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',
@@ -275,14 +276,20 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
         console.log('🆕 New message received in active channel:', payload.new);
         const newMessage = payload.new as Message;
         
+        // Add message to local state immediately
         setMessages(prev => {
           const exists = prev.find(msg => msg.id === newMessage.id);
-          if (exists) return prev;
+          if (exists) {
+            console.log('⏭️ Message already exists, skipping');
+            return prev;
+          }
+          console.log('✅ Adding new message to local state');
           return [...prev, newMessage];
         });
 
         // Show local toast for new message (in addition to global notification)
         if (newMessage.sender_id !== user?.id) {
+          console.log('📢 Showing toast for message from:', newMessage.sender_name);
           toast({
             title: `💬 ${newMessage.sender_name}`,
             description: newMessage.content.substring(0, 80) + (newMessage.content.length > 80 ? '...' : ''),
@@ -313,6 +320,13 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
       })
       .subscribe((status) => {
         console.log('💬 Message subscription status:', status);
+        if (status === 'SUBSCRIBED') {
+          console.log('✅ Successfully subscribed to message updates for channel:', activeChannel);
+        } else if (status === 'CLOSED') {
+          console.log('❌ Message subscription closed for channel:', activeChannel);
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('❌ Message subscription error for channel:', activeChannel);
+        }
       });
 
     messageSubscriptionRef.current = messagesSubscription;
@@ -358,29 +372,32 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
   };
 
   const sendMessage = async () => {
-    if ((!newMessage.trim() && !fileUpload) || !user || !activeChannel) return;
+    if ((!newMessage.trim() && !fileUpload) || !user || !activeChannel || isSending) return;
 
-    let fileData = null;
-    if (fileUpload) {
-      fileData = await uploadFile(fileUpload);
-      if (!fileData) {
-        toast({
-          title: "Error",
-          description: "Failed to upload file",
-          variant: "destructive"
-        });
-        return;
+    setIsSending(true);
+    console.log('📤 Starting to send message...');
+
+    try {
+      let fileData = null;
+      if (fileUpload) {
+        console.log('📎 Uploading file...');
+        fileData = await uploadFile(fileUpload);
+        if (!fileData) {
+          toast({
+            title: "Error",
+            description: "Failed to upload file",
+            variant: "destructive"
+          });
+          return;
+        }
       }
-    }
 
-    const messageContent = newMessage || `Shared file: ${fileData?.name}`;
-    const activeChannelData = channels.find(ch => ch.id === activeChannel);
+      const messageContent = newMessage || `Shared file: ${fileData?.name}`;
+      const activeChannelData = channels.find(ch => ch.id === activeChannel);
 
-    console.log('📤 Sending message:', messageContent);
+      console.log('📤 Sending message to database:', messageContent);
 
-    const { data: insertedMessage, error } = await supabase
-      .from('messages')
-      .insert({
+      const messageData = {
         sender_id: user.id,
         sender_name: user.full_name,
         sender_role: user.role,
@@ -390,38 +407,56 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
         file_url: fileData?.url,
         file_name: fileData?.name,
         file_type: fileData?.type
-      })
-      .select()
-      .single();
+      };
 
-    if (error) {
-      console.error('❌ Error sending message:', error);
+      console.log('📨 Message data being sent:', messageData);
+
+      const { data: insertedMessage, error } = await supabase
+        .from('messages')
+        .insert(messageData)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('❌ Error sending message:', error);
+        toast({
+          title: "Error",
+          description: "Failed to send message",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      console.log('✅ Message sent successfully:', insertedMessage);
+
+      // Create notifications for ALL team members
+      if (insertedMessage && activeChannelData) {
+        console.log('📬 Creating notifications for all team members...');
+        await createMessageNotifications(insertedMessage, activeChannelData.name);
+      }
+
+      // Clear form
+      setNewMessage('');
+      setFileUpload(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      
+      toast({
+        title: "Message sent",
+        description: "Your message has been sent to the team.",
+      });
+
+    } catch (error) {
+      console.error('❌ Unexpected error sending message:', error);
       toast({
         title: "Error",
-        description: "Failed to send message",
+        description: "An unexpected error occurred while sending your message",
         variant: "destructive"
       });
-      return;
+    } finally {
+      setIsSending(false);
     }
-
-    console.log('✅ Message sent successfully:', insertedMessage.id);
-
-    // Create notifications for ALL team members
-    if (insertedMessage && activeChannelData) {
-      console.log('📬 Creating notifications for all team members...');
-      await createMessageNotifications(insertedMessage, activeChannelData.name);
-    }
-
-    setNewMessage('');
-    setFileUpload(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-    
-    toast({
-      title: "Message sent",
-      description: "Your message has been sent to the team.",
-    });
   };
 
   const createChannel = async () => {
@@ -580,6 +615,9 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
             <span className="ml-2 text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
               🔔 Real-time updates active
             </span>
+            {isSending && <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+              📤 Sending...
+            </span>}
           </p>
         )}
       </CardHeader>
@@ -652,6 +690,7 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
               size="sm"
               variant="outline"
               onClick={() => fileInputRef.current?.click()}
+              disabled={isSending}
             >
               <Paperclip className="h-4 w-4" />
             </Button>
@@ -659,11 +698,15 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
               placeholder="Type your message..."
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+              onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && sendMessage()}
               className="flex-1"
+              disabled={isSending}
             />
-            <Button onClick={sendMessage} disabled={!newMessage.trim() && !fileUpload}>
-              Send
+            <Button 
+              onClick={sendMessage} 
+              disabled={(!newMessage.trim() && !fileUpload) || isSending}
+            >
+              {isSending ? 'Sending...' : 'Send'}
             </Button>
           </div>
         </div>
