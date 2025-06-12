@@ -371,197 +371,179 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
     };
   };
 
-  // Enhanced purge chat messages function with better debugging
+  // COMPLETELY REWRITTEN purge function with direct database approach
   const purgeMessages = async (messageCount: number) => {
     if (!activeChannel || !user || isPurging) return;
 
     setIsPurging(true);
     
-    // Create a comprehensive log entry that I can see
-    const logData = {
-      timestamp: new Date().toISOString(),
-      action: 'PURGE_ATTEMPT',
-      user: {
-        id: user.id,
-        name: user.full_name,
-        role: user.role
-      },
-      channel: {
-        id: activeChannel,
-        messagesBeforePurge: messages.length
-      },
-      requestedDeleteCount: messageCount
-    };
-    
-    console.log('🚀 PURGE LOG ENTRY:', JSON.stringify(logData, null, 2));
+    console.log('🚀 PURGE DEBUG: Starting purge process', {
+      channel: activeChannel,
+      requestedCount: messageCount,
+      currentMessages: messages.length,
+      userId: user.id,
+      timestamp: new Date().toISOString()
+    });
 
     try {
-      // Step 1: First verify we can access the messages table
-      console.log('🔍 PURGE STEP 1: Testing database connection...');
-      const { data: testData, error: testError } = await supabase
+      // Step 1: Get ALL messages in this channel first to see what we're working with
+      console.log('🔍 STEP 1: Getting all messages in channel');
+      const { data: allMessages, error: getAllError } = await supabase
         .from('messages')
-        .select('count')
-        .eq('channel_id', activeChannel);
-      
-      if (testError) {
-        console.error('❌ PURGE ERROR: Cannot access messages table:', testError);
-        throw new Error(`Database access failed: ${testError.message}`);
-      }
-      
-      console.log('✅ PURGE STEP 1: Database connection successful');
-
-      // Step 2: Get the exact messages we want to delete with detailed logging
-      console.log('🔍 PURGE STEP 2: Fetching messages to delete...');
-      const { data: messagesToDelete, error: fetchError } = await supabase
-        .from('messages')
-        .select('id, created_at, content, sender_name')
+        .select('id, created_at, sender_name, content')
         .eq('channel_id', activeChannel)
-        .order('created_at', { ascending: false })
-        .limit(messageCount);
+        .order('created_at', { ascending: false });
 
-      if (fetchError) {
-        console.error('❌ PURGE ERROR: Failed to fetch messages:', fetchError);
-        throw new Error(`Fetch failed: ${fetchError.message}`);
+      if (getAllError) {
+        console.error('❌ STEP 1 ERROR:', getAllError);
+        throw new Error(`Cannot fetch messages: ${getAllError.message}`);
       }
 
-      const fetchLog = {
-        step: 2,
-        messagesFound: messagesToDelete?.length || 0,
-        requestedCount: messageCount,
-        channelId: activeChannel,
-        messages: messagesToDelete?.map(m => ({
+      console.log('📊 STEP 1 RESULT:', {
+        totalMessagesInChannel: allMessages?.length || 0,
+        requestedToDelete: messageCount,
+        messagesPreview: allMessages?.slice(0, 3).map(m => ({
           id: m.id,
           sender: m.sender_name,
-          preview: m.content?.substring(0, 30),
-          created: m.created_at
+          preview: m.content?.substring(0, 30)
         }))
-      };
-      console.log('📋 PURGE STEP 2 DETAILS:', JSON.stringify(fetchLog, null, 2));
+      });
 
-      if (!messagesToDelete || messagesToDelete.length === 0) {
-        console.log('⚠️ PURGE END: No messages found to delete');
+      if (!allMessages || allMessages.length === 0) {
+        console.log('⚠️ No messages found to purge');
         toast({
           title: "No messages to purge",
-          description: "There are no messages to delete in this channel",
+          description: "There are no messages in this channel",
         });
         return;
       }
 
+      // Step 2: Take only the number we want to delete
+      const messagesToDelete = allMessages.slice(0, messageCount);
       const messageIds = messagesToDelete.map(msg => msg.id);
       
-      // Step 3: Attempt deletion with detailed error handling
-      console.log('🗑️ PURGE STEP 3: Executing deletion...');
-      const deleteLog = {
-        step: 3,
-        idsToDelete: messageIds,
-        count: messageIds.length
-      };
-      console.log('🗑️ PURGE STEP 3 DETAILS:', JSON.stringify(deleteLog, null, 2));
+      console.log('🎯 STEP 2: Messages targeted for deletion', {
+        count: messagesToDelete.length,
+        ids: messageIds,
+        firstMessage: messagesToDelete[0]?.content?.substring(0, 30),
+        lastMessage: messagesToDelete[messagesToDelete.length - 1]?.content?.substring(0, 30)
+      });
 
-      const { error: deleteError, count: deletedCount } = await supabase
-        .from('messages')
-        .delete({ count: 'exact' })
-        .in('id', messageIds);
+      // Step 3: Delete messages ONE BY ONE to avoid any bulk operation issues
+      console.log('🗑️ STEP 3: Starting individual deletions');
+      let successfulDeletions = 0;
+      let failedDeletions = 0;
 
-      if (deleteError) {
-        console.error('❌ PURGE ERROR: Database deletion failed:', deleteError);
-        throw new Error(`Deletion failed: ${deleteError.message}`);
+      for (const messageId of messageIds) {
+        try {
+          console.log(`🗑️ Deleting message: ${messageId}`);
+          const { error: deleteError } = await supabase
+            .from('messages')
+            .delete()
+            .eq('id', messageId);
+
+          if (deleteError) {
+            console.error(`❌ Failed to delete message ${messageId}:`, deleteError);
+            failedDeletions++;
+          } else {
+            console.log(`✅ Successfully deleted message: ${messageId}`);
+            successfulDeletions++;
+            
+            // Remove from local state immediately
+            setMessages(prev => prev.filter(msg => msg.id !== messageId));
+          }
+        } catch (error) {
+          console.error(`❌ Exception deleting message ${messageId}:`, error);
+          failedDeletions++;
+        }
       }
 
-      const deleteResultLog = {
-        step: 3,
-        result: 'SUCCESS',
-        deletedCount: deletedCount,
-        expectedCount: messageIds.length
-      };
-      console.log('✅ PURGE STEP 3 RESULT:', JSON.stringify(deleteResultLog, null, 2));
+      console.log('📈 STEP 3 RESULTS:', {
+        successful: successfulDeletions,
+        failed: failedDeletions,
+        total: messageIds.length
+      });
 
-      // Step 4: Verify deletion worked
-      console.log('🔍 PURGE STEP 4: Verifying deletion...');
+      // Step 4: Verify the deletions worked
+      console.log('🔍 STEP 4: Verifying deletions');
       const { data: remainingMessages, error: verifyError } = await supabase
         .from('messages')
         .select('id')
-        .eq('channel_id', activeChannel)
-        .in('id', messageIds);
+        .eq('channel_id', activeChannel);
 
       if (verifyError) {
-        console.error('❌ PURGE ERROR: Verification failed:', verifyError);
+        console.error('❌ STEP 4 ERROR:', verifyError);
       } else {
-        const verifyLog = {
-          step: 4,
-          remainingDeletedMessages: remainingMessages?.length || 0,
-          expectedZero: true
-        };
-        console.log('🔍 PURGE STEP 4 VERIFICATION:', JSON.stringify(verifyLog, null, 2));
+        console.log('✅ STEP 4 VERIFICATION:', {
+          remainingMessagesInDB: remainingMessages?.length || 0,
+          originalCount: allMessages.length,
+          expectedAfterDeletion: allMessages.length - successfulDeletions
+        });
       }
 
       // Step 5: Force refresh local state
-      console.log('🔄 PURGE STEP 5: Refreshing local state...');
-      setTimeout(async () => {
-        const { data: refreshedMessages, error: refreshError } = await supabase
-          .from('messages')
-          .select('*')
-          .eq('channel_id', activeChannel)
-          .order('created_at', { ascending: true });
+      console.log('🔄 STEP 5: Force refreshing local state');
+      const { data: refreshedMessages, error: refreshError } = await supabase
+        .from('messages')
+        .select('*')
+        .eq('channel_id', activeChannel)
+        .order('created_at', { ascending: true });
 
-        if (!refreshError && refreshedMessages) {
-          const refreshLog = {
-            step: 5,
-            refreshedCount: refreshedMessages.length,
-            previousCount: messages.length
-          };
-          console.log('🔄 PURGE STEP 5 REFRESH:', JSON.stringify(refreshLog, null, 2));
-          setMessages(refreshedMessages);
-        }
-      }, 1000);
-
-      // Step 6: Notifications
-      const activeChannelData = channels.find(ch => ch.id === activeChannel);
-      const channelName = activeChannelData?.name || 'Unknown Channel';
-
-      if (teamMembers.length > 0) {
-        console.log('📬 PURGE STEP 6: Creating notifications...');
-        
-        const notificationPromises = teamMembers
-          .filter(member => member.id !== user.id)
-          .map(member => {
-            return NotificationService.createNotification({
-              user_id: member.id,
-              title: `💬 Chat purged in ${channelName}`,
-              message: `${user.full_name} purged ${deletedCount || messageIds.length} messages from ${channelName}`,
-              type: 'info' as const,
-              action_url: '/team-collaboration'
-            });
-          });
-
-        await Promise.all(notificationPromises);
-        console.log('✅ PURGE STEP 6: Notifications sent');
+      if (!refreshError && refreshedMessages) {
+        console.log('🔄 STEP 5 REFRESH SUCCESS:', {
+          newMessageCount: refreshedMessages.length,
+          previousLocalCount: messages.length
+        });
+        setMessages(refreshedMessages);
+      } else {
+        console.error('❌ STEP 5 REFRESH ERROR:', refreshError);
       }
-      
-      // Final log entry
-      const finalLog = {
-        timestamp: new Date().toISOString(),
-        action: 'PURGE_COMPLETED',
-        success: true,
-        deletedCount: deletedCount || messageIds.length,
-        channelId: activeChannel
-      };
-      console.log('🎉 PURGE COMPLETED:', JSON.stringify(finalLog, null, 2));
-      
-      toast({
-        title: "Messages purged",
-        description: `Successfully deleted ${deletedCount || messageIds.length} messages from the chat`,
-      });
+
+      // Step 6: Send notifications
+      if (successfulDeletions > 0) {
+        const activeChannelData = channels.find(ch => ch.id === activeChannel);
+        const channelName = activeChannelData?.name || 'Unknown Channel';
+
+        console.log('📬 STEP 6: Sending purge notifications');
+        if (teamMembers.length > 0) {
+          const notificationPromises = teamMembers
+            .filter(member => member.id !== user.id)
+            .map(member => {
+              return NotificationService.createNotification({
+                user_id: member.id,
+                title: `💬 Chat purged in ${channelName}`,
+                message: `${user.full_name} purged ${successfulDeletions} messages from ${channelName}`,
+                type: 'info' as const,
+                action_url: '/team-collaboration'
+              });
+            });
+
+          await Promise.all(notificationPromises);
+          console.log('✅ STEP 6: Notifications sent');
+        }
+
+        toast({
+          title: "Messages purged",
+          description: `Successfully deleted ${successfulDeletions} messages${failedDeletions > 0 ? ` (${failedDeletions} failed)` : ''}`,
+        });
+
+        console.log('🎉 PURGE COMPLETED SUCCESSFULLY:', {
+          deletedCount: successfulDeletions,
+          failedCount: failedDeletions,
+          channelId: activeChannel,
+          timestamp: new Date().toISOString()
+        });
+      } else {
+        throw new Error('No messages were successfully deleted');
+      }
 
     } catch (error) {
-      const errorLog = {
-        timestamp: new Date().toISOString(),
-        action: 'PURGE_FAILED',
+      console.error('❌ PURGE FAILED COMPLETELY:', {
         error: error instanceof Error ? error.message : 'Unknown error',
         channelId: activeChannel,
-        userId: user.id
-      };
-      console.error('❌ PURGE FAILED:', JSON.stringify(errorLog, null, 2));
+        userId: user.id,
+        timestamp: new Date().toISOString()
+      });
       
       toast({
         title: "Purge failed",
