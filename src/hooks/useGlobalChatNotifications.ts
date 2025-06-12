@@ -4,63 +4,120 @@ import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
-// Enhanced global audio context management
+// Enhanced global audio context management with better error handling
 let globalAudioContext: AudioContext | null = null;
 let isAudioInitialized = false;
+let audioInitPromise: Promise<AudioContext | null> | null = null;
 
-const initializeAudioContext = async () => {
+const initializeAudioContext = async (): Promise<AudioContext | null> => {
+  // Return existing promise if initialization is in progress
+  if (audioInitPromise) return audioInitPromise;
+  
   if (isAudioInitialized && globalAudioContext) return globalAudioContext;
   
-  try {
-    globalAudioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-    
-    // Resume context if suspended
-    if (globalAudioContext.state === 'suspended') {
-      await globalAudioContext.resume();
-      console.log('🔊 Audio context resumed');
+  audioInitPromise = (async () => {
+    try {
+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioContextClass) {
+        console.warn('⚠️ AudioContext not supported in this browser');
+        return null;
+      }
+
+      globalAudioContext = new AudioContextClass();
+      
+      // Resume context if suspended
+      if (globalAudioContext.state === 'suspended') {
+        await globalAudioContext.resume();
+        console.log('🔊 Audio context resumed from suspended state');
+      }
+      
+      isAudioInitialized = true;
+      console.log('🔊 Audio context initialized successfully:', globalAudioContext.state);
+      return globalAudioContext;
+    } catch (error) {
+      console.error('❌ Failed to initialize audio context:', error);
+      globalAudioContext = null;
+      isAudioInitialized = false;
+      return null;
+    } finally {
+      audioInitPromise = null;
     }
-    
-    isAudioInitialized = true;
-    console.log('🔊 Audio context initialized successfully');
-    return globalAudioContext;
-  } catch (error) {
-    console.error('❌ Failed to initialize audio context:', error);
-    return null;
-  }
+  })();
+  
+  return audioInitPromise;
 };
 
-// Initialize on user interaction
+// Enhanced user interaction setup with multiple event types
 const setupAudioOnInteraction = () => {
-  const handleInteraction = async () => {
-    await initializeAudioContext();
-    // Remove listeners after first interaction
-    document.removeEventListener('click', handleInteraction);
-    document.removeEventListener('keydown', handleInteraction);
-    document.removeEventListener('touchstart', handleInteraction);
+  let isHandlerActive = true;
+
+  const handleInteraction = async (event: Event) => {
+    if (!isHandlerActive) return;
+    
+    console.log('🖱️ User interaction detected:', event.type);
+    const context = await initializeAudioContext();
+    
+    if (context && isHandlerActive) {
+      // Test audio capability immediately
+      try {
+        const testOscillator = context.createOscillator();
+        const testGain = context.createGain();
+        testOscillator.connect(testGain);
+        testGain.connect(context.destination);
+        testGain.gain.value = 0; // Silent test
+        testOscillator.start();
+        testOscillator.stop(context.currentTime + 0.001);
+        console.log('✅ Audio test successful after user interaction');
+      } catch (error) {
+        console.warn('⚠️ Audio test failed:', error);
+      }
+      
+      // Remove all listeners after successful initialization
+      isHandlerActive = false;
+      document.removeEventListener('click', handleInteraction);
+      document.removeEventListener('keydown', handleInteraction);
+      document.removeEventListener('touchstart', handleInteraction);
+      document.removeEventListener('mousedown', handleInteraction);
+      document.removeEventListener('scroll', handleInteraction);
+    }
   };
 
-  document.addEventListener('click', handleInteraction);
-  document.addEventListener('keydown', handleInteraction);
-  document.addEventListener('touchstart', handleInteraction);
+  // Add multiple event listeners to catch various user interactions
+  document.addEventListener('click', handleInteraction, { once: false });
+  document.addEventListener('keydown', handleInteraction, { once: false });
+  document.addEventListener('touchstart', handleInteraction, { once: false });
+  document.addEventListener('mousedown', handleInteraction, { once: false });
+  document.addEventListener('scroll', handleInteraction, { once: false, passive: true });
 };
 
-// Initialize immediately
+// Initialize immediately when module loads (browser environment)
 if (typeof window !== 'undefined') {
   setupAudioOnInteraction();
 }
 
-const playNotificationSound = async () => {
+const playNotificationSound = async (): Promise<boolean> => {
   try {
-    console.log('🔊 SOUND TRIGGER: Starting notification sound');
+    console.log('🔊 SOUND TRIGGER: Starting enhanced notification sound');
     
     const audioContext = await initializeAudioContext();
     if (!audioContext) {
-      console.warn('⚠️ Audio context not available');
-      return;
+      console.warn('⚠️ Audio context not available, trying fallback');
+      return tryFallbackSound();
     }
 
-    // Create enhanced notification sound (double beep)
-    const createBeep = (frequency: number, startTime: number, duration: number) => {
+    // Ensure context is running
+    if (audioContext.state === 'suspended') {
+      await audioContext.resume();
+      console.log('🔊 Resumed suspended audio context');
+    }
+
+    if (audioContext.state !== 'running') {
+      console.warn('⚠️ Audio context not in running state:', audioContext.state);
+      return tryFallbackSound();
+    }
+
+    // Create enhanced notification sound with better parameters
+    const createBeep = (frequency: number, startTime: number, duration: number, volume: number = 0.3) => {
       const oscillator = audioContext.createOscillator();
       const gainNode = audioContext.createGain();
       
@@ -70,47 +127,72 @@ const playNotificationSound = async () => {
       oscillator.frequency.setValueAtTime(frequency, startTime);
       oscillator.type = 'sine';
       
-      // Volume envelope
+      // Enhanced volume envelope for smoother sound
       gainNode.gain.setValueAtTime(0, startTime);
-      gainNode.gain.linearRampToValueAtTime(0.3, startTime + 0.01);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+      gainNode.gain.linearRampToValueAtTime(volume, startTime + 0.01);
+      gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + duration - 0.01);
+      gainNode.gain.setValueAtTime(0, startTime + duration);
       
       oscillator.start(startTime);
       oscillator.stop(startTime + duration);
       
-      return oscillator;
+      return { oscillator, gainNode };
     };
 
     const currentTime = audioContext.currentTime;
     
-    // Create double beep notification
-    createBeep(800, currentTime, 0.15);        // First beep (higher)
-    createBeep(600, currentTime + 0.2, 0.15);  // Second beep (lower)
+    // Create pleasant double beep notification
+    createBeep(880, currentTime + 0.05, 0.15, 0.25);      // First beep (higher pitch)
+    createBeep(660, currentTime + 0.25, 0.15, 0.25);      // Second beep (lower pitch)
     
-    console.log('✅ SOUND SUCCESS: Notification sound played');
+    console.log('✅ SOUND SUCCESS: Enhanced notification sound played');
+    return true;
+    
   } catch (error) {
     console.error('❌ SOUND ERROR:', error);
+    return tryFallbackSound();
+  }
+};
+
+// Improved fallback sound function
+const tryFallbackSound = async (): Promise<boolean> => {
+  try {
+    console.log('🔄 Attempting fallback sound method');
     
-    // Fallback with simpler approach
-    try {
-      const fallbackContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const oscillator = fallbackContext.createOscillator();
-      const gainNode = fallbackContext.createGain();
-      
-      oscillator.connect(gainNode);
-      gainNode.connect(fallbackContext.destination);
-      
-      oscillator.frequency.value = 800;
-      oscillator.type = 'sine';
-      gainNode.gain.value = 0.2;
-      
-      oscillator.start();
-      oscillator.stop(fallbackContext.currentTime + 0.3);
-      
-      console.log('✅ SOUND FALLBACK: Simple beep played');
-    } catch (fallbackError) {
-      console.error('❌ SOUND FALLBACK FAILED:', fallbackError);
+    // Try creating a new temporary context
+    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioContextClass) return false;
+    
+    const tempContext = new AudioContextClass();
+    
+    if (tempContext.state === 'suspended') {
+      await tempContext.resume();
     }
+    
+    const oscillator = tempContext.createOscillator();
+    const gainNode = tempContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(tempContext.destination);
+    
+    oscillator.frequency.value = 800;
+    oscillator.type = 'sine';
+    gainNode.gain.value = 0.2;
+    
+    oscillator.start();
+    oscillator.stop(tempContext.currentTime + 0.3);
+    
+    // Clean up temporary context after a short delay
+    setTimeout(() => {
+      tempContext.close().catch(console.warn);
+    }, 1000);
+    
+    console.log('✅ SOUND FALLBACK: Simple beep played successfully');
+    return true;
+    
+  } catch (fallbackError) {
+    console.error('❌ SOUND FALLBACK FAILED:', fallbackError);
+    return false;
   }
 };
 
@@ -118,15 +200,16 @@ export const useGlobalChatNotifications = () => {
   const { user } = useAuth();
   const subscriptionRef = useRef<any>(null);
   const [isConnected, setIsConnected] = useState(false);
+  const [lastMessageId, setLastMessageId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) {
-      console.log('🔔 GLOBAL CHAT: No user found, skipping setup');
+      console.log('🔔 GLOBAL CHAT: No user found, skipping notification setup');
       setIsConnected(false);
       return;
     }
 
-    console.log('🔔 GLOBAL CHAT: Setting up global notification listener for user:', user.id);
+    console.log('🔔 GLOBAL CHAT: Setting up enhanced global notification listener for user:', user.id);
 
     // Clean up existing subscription
     if (subscriptionRef.current) {
@@ -134,9 +217,9 @@ export const useGlobalChatNotifications = () => {
       supabase.removeChannel(subscriptionRef.current);
     }
 
-    // Subscribe to ALL new messages with enhanced channel name
-    const channelName = `global-team-messages-enhanced-v2-${Date.now()}`;
-    console.log('🔔 GLOBAL CHAT: Creating subscription channel:', channelName);
+    // Create unique channel name with timestamp to avoid conflicts
+    const channelName = `global-team-messages-v3-${user.id.slice(-8)}-${Date.now()}`;
+    console.log('🔔 GLOBAL CHAT: Creating enhanced subscription channel:', channelName);
     
     const messagesSubscription = supabase
       .channel(channelName)
@@ -144,8 +227,16 @@ export const useGlobalChatNotifications = () => {
         event: 'INSERT',
         schema: 'public',
         table: 'messages'
-      }, (payload) => {
+      }, async (payload) => {
         const newMessage = payload.new as any;
+        
+        // Prevent duplicate processing
+        if (lastMessageId === newMessage.id) {
+          console.log('⏭️ GLOBAL CHAT: Duplicate message detected, skipping');
+          return;
+        }
+        
+        setLastMessageId(newMessage.id);
         
         console.log('🔔 GLOBAL CHAT: New message detected!', {
           messageId: newMessage.id,
@@ -161,18 +252,19 @@ export const useGlobalChatNotifications = () => {
         if (newMessage.sender_id !== user.id) {
           console.log('🔊 GLOBAL CHAT: Processing notification for message from:', newMessage.sender_name);
           
-          // Play sound immediately
-          playNotificationSound();
+          // Play sound with enhanced error handling
+          const soundPlayed = await playNotificationSound();
+          console.log('🔊 Sound notification result:', soundPlayed ? 'Success' : 'Failed');
           
-          // Show toast notification
+          // Show toast notification with better formatting
           toast({
             title: `💬 ${newMessage.sender_name}`,
             description: newMessage.content ? 
-              (newMessage.content.length > 80 ? 
-                newMessage.content.substring(0, 80) + '...' : 
+              (newMessage.content.length > 100 ? 
+                newMessage.content.substring(0, 100) + '...' : 
                 newMessage.content
-              ) : 'New message',
-            duration: 5000,
+              ) : 'New message received',
+            duration: 4000,
           });
 
         } else {
@@ -180,10 +272,10 @@ export const useGlobalChatNotifications = () => {
         }
       })
       .subscribe((status) => {
-        console.log('🔔 GLOBAL CHAT: Subscription status:', status);
+        console.log('🔔 GLOBAL CHAT: Enhanced subscription status:', status);
         
         if (status === 'SUBSCRIBED') {
-          console.log('✅ GLOBAL CHAT: Successfully subscribed to global notifications');
+          console.log('✅ GLOBAL CHAT: Successfully subscribed to enhanced global notifications');
           setIsConnected(true);
         } else if (status === 'CLOSED') {
           console.log('❌ GLOBAL CHAT: Subscription closed');
@@ -197,19 +289,20 @@ export const useGlobalChatNotifications = () => {
     subscriptionRef.current = messagesSubscription;
 
     return () => {
-      console.log('🧹 GLOBAL CHAT: Cleaning up subscription');
+      console.log('🧹 GLOBAL CHAT: Cleaning up enhanced subscription');
       if (subscriptionRef.current) {
         supabase.removeChannel(subscriptionRef.current);
         subscriptionRef.current = null;
       }
       setIsConnected(false);
+      setLastMessageId(null);
     };
   }, [user]);
 
   return {
     isConnected,
     userId: user?.id,
-    playTestSound: playNotificationSound
+    playTestSound: () => playNotificationSound()
   };
 };
 

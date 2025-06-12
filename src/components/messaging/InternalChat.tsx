@@ -199,19 +199,23 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
 
     const fetchMessages = async () => {
       console.log('📨 REALTIME: Fetching initial messages for channel:', activeChannel);
-      const { data, error } = await supabase
-        .from('messages')
-        .select('*')
-        .eq('channel_id', activeChannel)
-        .order('created_at', { ascending: true });
+      try {
+        const { data, error } = await supabase
+          .from('messages')
+          .select('*')
+          .eq('channel_id', activeChannel)
+          .order('created_at', { ascending: true });
 
-      if (error) {
-        console.error('❌ REALTIME: Error fetching messages:', error);
-        return;
+        if (error) {
+          console.error('❌ REALTIME: Error fetching messages:', error);
+          return;
+        }
+
+        console.log('✅ REALTIME: Initial messages loaded:', data?.length || 0);
+        setMessages(data || []);
+      } catch (error) {
+        console.error('❌ REALTIME: Exception fetching messages:', error);
       }
-
-      console.log('✅ REALTIME: Initial messages loaded:', data?.length || 0);
-      setMessages(data || []);
     };
 
     fetchMessages();
@@ -222,9 +226,9 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
       supabase.removeChannel(messageSubscriptionRef.current);
     }
 
-    // Create enhanced subscription with unique channel name
-    const subscriptionChannelName = `messages-realtime-enhanced-${activeChannel}-${Date.now()}`;
-    console.log('🔔 REALTIME: Creating subscription:', subscriptionChannelName);
+    // Create enhanced subscription with better duplicate handling
+    const subscriptionChannelName = `messages-realtime-v2-${activeChannel}-${user?.id.slice(-8)}-${Date.now()}`;
+    console.log('🔔 REALTIME: Creating enhanced subscription:', subscriptionChannelName);
     
     const messagesSubscription = supabase
       .channel(subscriptionChannelName)
@@ -244,7 +248,7 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
           timestamp: new Date().toISOString()
         });
         
-        // Update local state immediately - avoid duplicates
+        // Enhanced duplicate prevention and immediate state update
         setMessages(prevMessages => {
           const exists = prevMessages.some(msg => msg.id === newMessage.id);
           if (exists) {
@@ -253,10 +257,15 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
           }
           
           console.log('✅ REALTIME: Adding new message to local state');
-          return [...prevMessages, newMessage];
+          const updatedMessages = [...prevMessages, newMessage];
+          
+          // Sort by created_at to maintain proper order
+          return updatedMessages.sort((a, b) => 
+            new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+          );
         });
 
-        // Show toast for messages from other users (global sound is handled by global hook)
+        // Show local toast for messages from other users (global sound handled by global hook)
         if (newMessage.sender_id !== user?.id) {
           console.log('💬 REALTIME: Showing local toast for incoming message');
           toast({
@@ -292,9 +301,9 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
         }
       })
       .subscribe((status) => {
-        console.log('💬 REALTIME: Local subscription status:', status);
+        console.log('💬 REALTIME: Enhanced local subscription status:', status);
         if (status === 'SUBSCRIBED') {
-          console.log('✅ REALTIME: Successfully subscribed to local message updates');
+          console.log('✅ REALTIME: Successfully subscribed to enhanced local message updates');
         } else if (status === 'CLOSED') {
           console.log('❌ REALTIME: Local subscription closed');
         } else if (status === 'CHANNEL_ERROR') {
@@ -305,7 +314,7 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
     messageSubscriptionRef.current = messagesSubscription;
 
     return () => {
-      console.log('🧹 REALTIME: Cleaning up local message subscription');
+      console.log('🧹 REALTIME: Cleaning up enhanced local message subscription');
       if (messageSubscriptionRef.current) {
         supabase.removeChannel(messageSubscriptionRef.current);
         messageSubscriptionRef.current = null;
@@ -344,7 +353,7 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
     };
   };
 
-  // Enhanced purge function
+  // Enhanced purge function with better error handling and RLS support
   const purgeMessages = async (messageCount: number) => {
     if (!activeChannel || !user || isPurging) return;
 
@@ -355,84 +364,51 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
       requestedCount: messageCount,
       currentMessages: messages.length,
       userId: user.id,
+      userRole: user.role,
       timestamp: new Date().toISOString()
     });
 
     try {
-      // Get messages to delete
-      const { data: messagesToDelete, error: fetchError } = await supabase
+      // Enhanced batch delete with proper error handling
+      const { error: deleteError, count } = await supabase
         .from('messages')
-        .select('id, created_at, content')
+        .delete({ count: 'exact' })
         .eq('channel_id', activeChannel)
         .order('created_at', { ascending: false })
         .limit(messageCount);
 
-      if (fetchError) {
-        console.error('❌ PURGE: Error fetching messages:', fetchError);
-        throw fetchError;
+      if (deleteError) {
+        console.error('❌ PURGE: Database deletion failed:', deleteError);
+        throw deleteError;
       }
 
-      if (!messagesToDelete || messagesToDelete.length === 0) {
-        console.log('⚠️ PURGE: No messages to delete');
-        toast({
-          title: "No messages to purge",
-          description: "There are no messages in this channel",
-        });
-        return;
-      }
-
-      console.log('📊 PURGE: Found messages to delete:', messagesToDelete.length);
-
-      // Delete messages one by one for better reliability
-      let deletedCount = 0;
-      const messageIds = messagesToDelete.map(msg => msg.id);
-
-      for (const messageId of messageIds) {
-        try {
-          const { error: deleteError } = await supabase
-            .from('messages')
-            .delete()
-            .eq('id', messageId);
-
-          if (deleteError) {
-            console.error(`❌ PURGE: Failed to delete message ${messageId}:`, deleteError);
-          } else {
-            console.log(`✅ PURGE: Deleted message ${messageId}`);
-            deletedCount++;
-            
-            // Remove from local state immediately
-            setMessages(prev => prev.filter(msg => msg.id !== messageId));
-          }
-        } catch (error) {
-          console.error(`❌ PURGE: Exception deleting message ${messageId}:`, error);
-        }
-      }
-
-      console.log('📈 PURGE: Deletion results:', {
-        requested: messageCount,
-        found: messagesToDelete.length,
-        deleted: deletedCount
+      const deletedCount = count || 0;
+      console.log('✅ PURGE: Database deletion successful:', {
+        deletedCount,
+        requested: messageCount
       });
 
-      // Verify database state
-      const { data: remainingMessages } = await supabase
-        .from('messages')
-        .select('id')
-        .eq('channel_id', activeChannel);
-
-      console.log('🔍 PURGE: Database verification - remaining messages:', remainingMessages?.length || 0);
-
-      // Force refresh local state
-      const { data: freshMessages } = await supabase
+      // Force refresh local state from database
+      const { data: freshMessages, error: fetchError } = await supabase
         .from('messages')
         .select('*')
         .eq('channel_id', activeChannel)
         .order('created_at', { ascending: true });
 
-      if (freshMessages) {
-        console.log('🔄 PURGE: Force refreshed local state:', freshMessages.length);
-        setMessages(freshMessages);
+      if (fetchError) {
+        console.error('❌ PURGE: Failed to refresh messages:', fetchError);
+      } else {
+        console.log('🔄 PURGE: Refreshed local state with', freshMessages?.length || 0, 'messages');
+        setMessages(freshMessages || []);
       }
+
+      // Log successful completion
+      console.log('📈 PURGE COMPLETED SUCCESSFULLY:', {
+        deletedCount,
+        channelId: activeChannel,
+        channelName: activeChannelData?.name || 'Unknown',
+        timestamp: new Date().toISOString()
+      });
 
       toast({
         title: "Purge completed",
