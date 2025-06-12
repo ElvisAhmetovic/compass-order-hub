@@ -4,6 +4,110 @@ import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
+// Global audio context to avoid suspension issues
+let globalAudioContext: AudioContext | null = null;
+
+const initializeAudioContext = () => {
+  if (!globalAudioContext) {
+    try {
+      globalAudioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      console.log('🔊 Global audio context initialized');
+    } catch (error) {
+      console.error('❌ Failed to initialize audio context:', error);
+    }
+  }
+  return globalAudioContext;
+};
+
+// Initialize audio context on user interaction
+const initializeAudioOnInteraction = () => {
+  const handleInteraction = async () => {
+    const audioContext = initializeAudioContext();
+    if (audioContext && audioContext.state === 'suspended') {
+      try {
+        await audioContext.resume();
+        console.log('🔊 Audio context resumed on user interaction');
+      } catch (error) {
+        console.error('❌ Failed to resume audio context:', error);
+      }
+    }
+    // Remove listeners after first interaction
+    document.removeEventListener('click', handleInteraction);
+    document.removeEventListener('keydown', handleInteraction);
+    document.removeEventListener('touchstart', handleInteraction);
+  };
+
+  document.addEventListener('click', handleInteraction, { once: true });
+  document.addEventListener('keydown', handleInteraction, { once: true });
+  document.addEventListener('touchstart', handleInteraction, { once: true });
+};
+
+// Initialize on module load
+if (typeof window !== 'undefined') {
+  initializeAudioOnInteraction();
+}
+
+const playNotificationSound = async () => {
+  try {
+    const audioContext = initializeAudioContext();
+    if (!audioContext) {
+      console.warn('⚠️ Audio context not available');
+      return;
+    }
+
+    // Resume context if suspended
+    if (audioContext.state === 'suspended') {
+      await audioContext.resume();
+      console.log('🔊 Audio context resumed for notification');
+    }
+
+    // Create and play notification beep
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    // Configure sound - pleasant notification beep
+    oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+    oscillator.type = 'sine';
+    
+    // Configure volume envelope
+    gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+    gainNode.gain.linearRampToValueAtTime(0.3, audioContext.currentTime + 0.01);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.4);
+    
+    // Play the sound
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + 0.4);
+    
+    console.log('✅ Notification sound played successfully');
+  } catch (error) {
+    console.error('❌ Error playing notification sound:', error);
+    
+    // Fallback: try to create new context
+    try {
+      const fallbackContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = fallbackContext.createOscillator();
+      const gainNode = fallbackContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(fallbackContext.destination);
+      
+      oscillator.frequency.value = 800;
+      oscillator.type = 'sine';
+      gainNode.gain.value = 0.3;
+      
+      oscillator.start();
+      oscillator.stop(fallbackContext.currentTime + 0.3);
+      
+      console.log('✅ Fallback notification sound played');
+    } catch (fallbackError) {
+      console.error('❌ Fallback sound also failed:', fallbackError);
+    }
+  }
+};
+
 export const useGlobalChatNotifications = () => {
   const { user } = useAuth();
   const subscriptionRef = useRef<any>(null);
@@ -24,7 +128,7 @@ export const useGlobalChatNotifications = () => {
 
     // Subscribe to ALL new messages in team chat
     const messagesSubscription = supabase
-      .channel('global-team-messages-v7') // Updated channel version
+      .channel('global-team-messages-v8') // Updated channel version
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',
@@ -41,45 +145,12 @@ export const useGlobalChatNotifications = () => {
           timestamp: new Date().toISOString()
         });
 
-        // Only show global notifications and play sound for messages from OTHER users
+        // Only show notifications and play sound for messages from OTHER users
         if (newMessage.sender_id !== user.id) {
           console.log('🔊 PLAYING GLOBAL SOUND! Message from:', newMessage.sender_name, 'to user:', user.id);
           
-          // Play notification sound immediately using a more direct approach
-          const playSound = async () => {
-            try {
-              // Create audio context each time to avoid suspended state issues
-              const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-              
-              // Resume context if suspended
-              if (audioContext.state === 'suspended') {
-                await audioContext.resume();
-              }
-              
-              const oscillator = audioContext.createOscillator();
-              const gainNode = audioContext.createGain();
-              
-              oscillator.connect(gainNode);
-              gainNode.connect(audioContext.destination);
-              
-              // Create distinctive double beep
-              oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
-              oscillator.type = 'sine';
-              
-              gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-              gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
-              
-              oscillator.start();
-              oscillator.stop(audioContext.currentTime + 0.3);
-              
-              console.log('✅ Global notification sound played successfully');
-            } catch (error) {
-              console.error('❌ Error playing global notification sound:', error);
-            }
-          };
-          
-          // Play sound immediately
-          playSound();
+          // Play sound immediately - no async wrapper to avoid delays
+          playNotificationSound();
           
           // Show global toast notification
           toast({

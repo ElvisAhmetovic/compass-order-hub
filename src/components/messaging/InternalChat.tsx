@@ -134,7 +134,7 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
     // Subscribe to real-time updates for channels
     console.log('🔔 Setting up channel real-time subscription');
     const channelSubscription = supabase
-      .channel('channels-realtime-v3')
+      .channel('channels-realtime-v4')
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',
@@ -246,7 +246,7 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
     // Subscribe to real-time updates for messages in this channel
     console.log('🔔 Setting up message real-time subscription for channel:', activeChannel);
     const messagesSubscription = supabase
-      .channel(`messages-realtime-${activeChannel}-v5`)
+      .channel(`messages-realtime-${activeChannel}-v8`) // Updated to match global notifications
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',
@@ -254,15 +254,16 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
         filter: `channel_id=eq.${activeChannel}`
       }, (payload) => {
         const newMessage = payload.new as Message;
-        console.log('🆕 REALTIME: New message received:', {
+        console.log('🆕 LOCAL CHAT: New message received:', {
           id: newMessage.id,
           content: newMessage.content.substring(0, 50),
           sender: newMessage.sender_name,
           channel: newMessage.channel_id,
+          isCurrentUser: newMessage.sender_id === user?.id,
           timestamp: new Date().toISOString()
         });
         
-        // Add message to local state - use functional update to ensure we have latest state
+        // Add message to local state immediately
         setMessages(prevMessages => {
           // Check if message already exists by ID
           const messageExists = prevMessages.some(msg => msg.id === newMessage.id);
@@ -275,35 +276,9 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
           return [...prevMessages, newMessage];
         });
 
-        // Play sound and show toast for messages from other users
-        if (newMessage.sender_id !== user?.id && soundEnabled) {
-          console.log('🔊 Playing sound for incoming message from:', newMessage.sender_name);
-          
-          // Trigger sound
-          try {
-            const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-            const oscillator = audioContext.createOscillator();
-            const gainNode = audioContext.createGain();
-            
-            oscillator.connect(gainNode);
-            gainNode.connect(audioContext.destination);
-            
-            // Create a pleasant notification sound
-            oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
-            oscillator.type = 'sine';
-            
-            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
-            
-            oscillator.start();
-            oscillator.stop(audioContext.currentTime + 0.3);
-            
-            console.log('✅ Notification sound played');
-          } catch (error) {
-            console.error('❌ Error playing notification sound:', error);
-          }
-
-          // Show toast
+        // Show local toast for messages from other users (but don't play sound here - global hook handles that)
+        if (newMessage.sender_id !== user?.id) {
+          console.log('💬 LOCAL CHAT: Showing toast for incoming message');
           toast({
             title: `💬 ${newMessage.sender_name}`,
             description: newMessage.content.substring(0, 80) + (newMessage.content.length > 80 ? '...' : ''),
@@ -312,7 +287,7 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
         }
       })
       .subscribe((status) => {
-        console.log('💬 Message subscription status:', status);
+        console.log('💬 Local message subscription status:', status);
         if (status === 'SUBSCRIBED') {
           console.log('✅ Successfully subscribed to message updates for channel:', activeChannel);
         } else if (status === 'CLOSED') {
@@ -331,7 +306,7 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
         messageSubscriptionRef.current = null;
       }
     };
-  }, [activeChannel, user, soundEnabled]);
+  }, [activeChannel, user]);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
