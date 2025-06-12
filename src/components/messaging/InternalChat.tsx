@@ -249,7 +249,7 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
     // Subscribe to real-time updates for messages in this channel
     console.log('🔔 Setting up message real-time subscription for channel:', activeChannel);
     const messagesSubscription = supabase
-      .channel(`messages-realtime-${activeChannel}-v9`) // Updated version for purge support
+      .channel(`messages-realtime-${activeChannel}-v10`) // Updated version for better purge debugging
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',
@@ -295,15 +295,28 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
         table: 'messages',
         filter: `channel_id=eq.${activeChannel}`
       }, (payload) => {
-        const deletedMessage = payload.old as Message;
-        console.log('🗑️ LOCAL CHAT: Message deleted:', deletedMessage.id);
-        
-        // Remove message from local state immediately
-        setMessages(prevMessages => {
-          const updatedMessages = prevMessages.filter(msg => msg.id !== deletedMessage.id);
-          console.log(`✅ Removed message ${deletedMessage.id} from local state. ${prevMessages.length} -> ${updatedMessages.length}`);
-          return updatedMessages;
+        console.log('🗑️ PURGE DEBUG: DELETE event received:', {
+          payload: payload,
+          old: payload.old,
+          channel: activeChannel,
+          timestamp: new Date().toISOString()
         });
+        
+        const deletedMessage = payload.old as Message;
+        if (deletedMessage && deletedMessage.id) {
+          console.log('🗑️ LOCAL CHAT: Processing message deletion:', deletedMessage.id);
+          
+          // Remove message from local state immediately
+          setMessages(prevMessages => {
+            const beforeCount = prevMessages.length;
+            const updatedMessages = prevMessages.filter(msg => msg.id !== deletedMessage.id);
+            const afterCount = updatedMessages.length;
+            console.log(`✅ PURGE: Removed message ${deletedMessage.id} from local state. ${beforeCount} -> ${afterCount}`);
+            return updatedMessages;
+          });
+        } else {
+          console.error('❌ PURGE: Invalid deleted message data:', deletedMessage);
+        }
       })
       .subscribe((status) => {
         console.log('💬 Local message subscription status:', status);
@@ -358,24 +371,26 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
     };
   };
 
-  // Fixed purge chat messages function
+  // Enhanced purge chat messages function with better debugging
   const purgeMessages = async (messageCount: number) => {
     if (!activeChannel || !user || isPurging) return;
 
     setIsPurging(true);
-    console.log(`🗑️ Starting purge of last ${messageCount} messages from channel:`, activeChannel);
+    console.log(`🗑️ PURGE START: Beginning purge of ${messageCount} messages from channel:`, activeChannel);
+    console.log(`🗑️ PURGE START: Current message count in local state:`, messages.length);
 
     try {
       // Get the last N messages from the current channel, ordered by creation time (newest first)
+      console.log('🗑️ PURGE STEP 1: Fetching messages to delete...');
       const { data: messagesToDelete, error: fetchError } = await supabase
         .from('messages')
-        .select('id, created_at')
+        .select('id, created_at, content')
         .eq('channel_id', activeChannel)
         .order('created_at', { ascending: false })
         .limit(messageCount);
 
       if (fetchError) {
-        console.error('❌ Error fetching messages to delete:', fetchError);
+        console.error('❌ PURGE ERROR: Error fetching messages to delete:', fetchError);
         toast({
           title: "Error",
           description: "Failed to fetch messages for deletion",
@@ -384,7 +399,11 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
         return;
       }
 
+      console.log('🗑️ PURGE STEP 2: Messages found to delete:', messagesToDelete?.length || 0);
+      console.log('🗑️ PURGE STEP 2: Message IDs to delete:', messagesToDelete?.map(m => ({ id: m.id, content: m.content?.substring(0, 30) })));
+
       if (!messagesToDelete || messagesToDelete.length === 0) {
+        console.log('🗑️ PURGE END: No messages to delete');
         toast({
           title: "No messages to purge",
           description: "There are no messages to delete in this channel",
@@ -393,16 +412,17 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
       }
 
       const messageIds = messagesToDelete.map(msg => msg.id);
-      console.log(`🗑️ About to delete ${messageIds.length} messages:`, messageIds);
+      console.log(`🗑️ PURGE STEP 3: About to delete ${messageIds.length} messages with IDs:`, messageIds);
 
       // Delete the messages from Supabase - this will trigger real-time DELETE events
+      console.log('🗑️ PURGE STEP 4: Executing database deletion...');
       const { error: deleteError, count } = await supabase
         .from('messages')
         .delete({ count: 'exact' })
         .in('id', messageIds);
 
       if (deleteError) {
-        console.error('❌ Error deleting messages from database:', deleteError);
+        console.error('❌ PURGE ERROR: Error deleting messages from database:', deleteError);
         toast({
           title: "Error",
           description: `Failed to purge messages: ${deleteError.message}`,
@@ -411,7 +431,23 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
         return;
       }
 
-      console.log(`✅ Successfully deleted ${count} messages from database`);
+      console.log(`✅ PURGE STEP 5: Successfully deleted ${count} messages from database`);
+      console.log(`🗑️ PURGE STEP 5: Database reports ${count} messages deleted`);
+
+      // Force refresh messages after a short delay to ensure database consistency
+      setTimeout(async () => {
+        console.log('🔄 PURGE STEP 6: Force refreshing messages after purge...');
+        const { data: refreshedMessages, error: refreshError } = await supabase
+          .from('messages')
+          .select('*')
+          .eq('channel_id', activeChannel)
+          .order('created_at', { ascending: true });
+
+        if (!refreshError && refreshedMessages) {
+          console.log('🔄 PURGE STEP 6: Refreshed messages count:', refreshedMessages.length);
+          setMessages(refreshedMessages);
+        }
+      }, 1000);
 
       // Get channel name for notification
       const activeChannelData = channels.find(ch => ch.id === activeChannel);
@@ -419,7 +455,7 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
 
       // Create notifications for all team members about the purge
       if (teamMembers.length > 0) {
-        console.log('📬 Creating purge notifications for all team members...');
+        console.log('📬 PURGE STEP 7: Creating purge notifications for all team members...');
         
         const notificationPromises = teamMembers
           .filter(member => member.id !== user.id)
@@ -435,7 +471,7 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
           });
 
         await Promise.all(notificationPromises);
-        console.log('✅ All purge notifications created successfully');
+        console.log('✅ PURGE STEP 7: All purge notifications created successfully');
       }
       
       toast({
@@ -443,8 +479,10 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
         description: `Successfully deleted ${count || messageIds.length} messages from the chat`,
       });
 
+      console.log('✅ PURGE COMPLETE: Purge operation completed successfully');
+
     } catch (error) {
-      console.error('❌ Unexpected error during purge:', error);
+      console.error('❌ PURGE ERROR: Unexpected error during purge:', error);
       toast({
         title: "Error",
         description: "An unexpected error occurred while purging messages",
@@ -654,6 +692,9 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
                         </SelectContent>
                       </Select>
                       <span className="text-sm">messages</span>
+                    </div>
+                    <div className="text-xs text-muted-foreground bg-gray-50 p-2 rounded">
+                      Current messages in channel: {messages.length}
                     </div>
                   </AlertDialogDescription>
                 </AlertDialogHeader>
