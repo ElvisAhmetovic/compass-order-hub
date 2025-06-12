@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -100,29 +99,44 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
     };
   }, [channelId]);
 
-  // Create notifications for all team members when a message is sent
+  // Create notifications for ALL team members when ANY message is sent
   const createMessageNotifications = async (message: Message, channelName: string) => {
     if (!user) return;
 
-    // Get all team members except the sender
-    const { data: allUsers } = await supabase
-      .from('profiles')
-      .select('id')
-      .neq('id', user.id);
+    console.log('Creating notifications for message:', message);
 
-    if (allUsers) {
-      // Create notifications for all other users
-      const notifications = allUsers.map(member => 
-        NotificationService.createNotification({
-          user_id: member.id,
-          title: `New message in ${channelName}`,
-          message: `${message.sender_name}: ${message.content.substring(0, 100)}${message.content.length > 100 ? '...' : ''}`,
-          type: 'info' as const,
-          action_url: '/team-collaboration'
-        })
-      );
+    try {
+      // Get all team members except the sender
+      const { data: allUsers, error } = await supabase
+        .from('profiles')
+        .select('id')
+        .neq('id', user.id);
 
-      await Promise.all(notifications);
+      if (error) {
+        console.error('Error fetching users for notifications:', error);
+        return;
+      }
+
+      if (allUsers && allUsers.length > 0) {
+        console.log(`Creating notifications for ${allUsers.length} users`);
+        
+        // Create notifications for all other users
+        const notificationPromises = allUsers.map(member => {
+          console.log(`Creating notification for user: ${member.id}`);
+          return NotificationService.createNotification({
+            user_id: member.id,
+            title: `New message in ${channelName}`,
+            message: `${message.sender_name}: ${message.content.substring(0, 100)}${message.content.length > 100 ? '...' : ''}`,
+            type: 'info' as const,
+            action_url: '/team-collaboration'
+          });
+        });
+
+        await Promise.all(notificationPromises);
+        console.log('All notifications created successfully');
+      }
+    } catch (error) {
+      console.error('Error creating message notifications:', error);
     }
   };
 
@@ -247,6 +261,8 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
     const messageContent = newMessage || `Shared file: ${fileData?.name}`;
     const activeChannelData = channels.find(ch => ch.id === activeChannel);
 
+    console.log('Sending message:', messageContent);
+
     const { data: insertedMessage, error } = await supabase
       .from('messages')
       .insert({
@@ -273,8 +289,11 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
       return;
     }
 
-    // Create notifications for all team members
+    console.log('Message sent successfully:', insertedMessage);
+
+    // Create notifications for ALL team members (this is crucial!)
     if (insertedMessage && activeChannelData) {
+      console.log('Creating notifications for all team members...');
       await createMessageNotifications(insertedMessage, activeChannelData.name);
     }
 
