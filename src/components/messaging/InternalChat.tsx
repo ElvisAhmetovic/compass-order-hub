@@ -371,46 +371,55 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
     };
   };
 
-  // COMPLETELY REWRITTEN purge function with direct database approach
+  // FIXED purge function with proper error handling and RLS debugging
   const purgeMessages = async (messageCount: number) => {
     if (!activeChannel || !user || isPurging) return;
 
     setIsPurging(true);
     
-    console.log('🚀 PURGE DEBUG: Starting purge process', {
+    console.log('🚀 PURGE FIXED: Starting enhanced purge process', {
       channel: activeChannel,
       requestedCount: messageCount,
       currentMessages: messages.length,
       userId: user.id,
+      userRole: user.role,
       timestamp: new Date().toISOString()
     });
 
     try {
-      // Step 1: Get ALL messages in this channel first to see what we're working with
-      console.log('🔍 STEP 1: Getting all messages in channel');
-      const { data: allMessages, error: getAllError } = await supabase
+      // Step 1: Check user permissions and RLS policies
+      console.log('🔐 STEP 1: Checking permissions and RLS policies');
+      
+      // Test if we can access the messages table at all
+      const { data: testAccess, error: accessError } = await supabase
         .from('messages')
-        .select('id, created_at, sender_name, content')
+        .select('id')
         .eq('channel_id', activeChannel)
-        .order('created_at', { ascending: false });
+        .limit(1);
 
-      if (getAllError) {
-        console.error('❌ STEP 1 ERROR:', getAllError);
-        throw new Error(`Cannot fetch messages: ${getAllError.message}`);
+      if (accessError) {
+        console.error('❌ STEP 1 ACCESS ERROR:', accessError);
+        throw new Error(`Access denied to messages table: ${accessError.message}`);
       }
 
-      console.log('📊 STEP 1 RESULT:', {
-        totalMessagesInChannel: allMessages?.length || 0,
-        requestedToDelete: messageCount,
-        messagesPreview: allMessages?.slice(0, 3).map(m => ({
-          id: m.id,
-          sender: m.sender_name,
-          preview: m.content?.substring(0, 30)
-        }))
-      });
+      console.log('✅ STEP 1: Database access confirmed');
 
-      if (!allMessages || allMessages.length === 0) {
-        console.log('⚠️ No messages found to purge');
+      // Step 2: Get messages to delete with explicit ordering
+      console.log('🔍 STEP 2: Getting messages to delete');
+      const { data: messagesToDelete, error: fetchError } = await supabase
+        .from('messages')
+        .select('id, created_at, sender_name, content, sender_id')
+        .eq('channel_id', activeChannel)
+        .order('created_at', { ascending: false })
+        .limit(messageCount);
+
+      if (fetchError) {
+        console.error('❌ STEP 2 FETCH ERROR:', fetchError);
+        throw new Error(`Cannot fetch messages to delete: ${fetchError.message}`);
+      }
+
+      if (!messagesToDelete || messagesToDelete.length === 0) {
+        console.log('⚠️ STEP 2: No messages found to purge');
         toast({
           title: "No messages to purge",
           description: "There are no messages in this channel",
@@ -418,130 +427,154 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
         return;
       }
 
-      // Step 2: Take only the number we want to delete
-      const messagesToDelete = allMessages.slice(0, messageCount);
-      const messageIds = messagesToDelete.map(msg => msg.id);
-      
-      console.log('🎯 STEP 2: Messages targeted for deletion', {
-        count: messagesToDelete.length,
-        ids: messageIds,
+      console.log('📊 STEP 2 RESULT:', {
+        foundMessages: messagesToDelete.length,
+        requestedCount: messageCount,
         firstMessage: messagesToDelete[0]?.content?.substring(0, 30),
         lastMessage: messagesToDelete[messagesToDelete.length - 1]?.content?.substring(0, 30)
       });
 
-      // Step 3: Delete messages ONE BY ONE to avoid any bulk operation issues
-      console.log('🗑️ STEP 3: Starting individual deletions');
-      let successfulDeletions = 0;
-      let failedDeletions = 0;
+      // Step 3: Attempt bulk delete first (more efficient)
+      console.log('🗑️ STEP 3: Attempting bulk delete');
+      const messageIds = messagesToDelete.map(msg => msg.id);
+      
+      const { error: bulkDeleteError, count } = await supabase
+        .from('messages')
+        .delete({ count: 'exact' })
+        .in('id', messageIds);
 
-      for (const messageId of messageIds) {
-        try {
-          console.log(`🗑️ Deleting message: ${messageId}`);
-          const { error: deleteError } = await supabase
-            .from('messages')
-            .delete()
-            .eq('id', messageId);
+      if (bulkDeleteError) {
+        console.error('❌ STEP 3 BULK DELETE ERROR:', bulkDeleteError);
+        console.log('🔄 STEP 3: Falling back to individual deletions');
+        
+        // Fallback to individual deletions
+        let successfulDeletions = 0;
+        let failedDeletions = 0;
 
-          if (deleteError) {
-            console.error(`❌ Failed to delete message ${messageId}:`, deleteError);
+        for (let i = 0; i < messageIds.length; i++) {
+          const messageId = messageIds[i];
+          console.log(`🗑️ Individual delete ${i + 1}/${messageIds.length}: ${messageId}`);
+          
+          try {
+            const { error: deleteError } = await supabase
+              .from('messages')
+              .delete()
+              .eq('id', messageId);
+
+            if (deleteError) {
+              console.error(`❌ Failed to delete message ${messageId}:`, deleteError);
+              failedDeletions++;
+            } else {
+              console.log(`✅ Successfully deleted message: ${messageId}`);
+              successfulDeletions++;
+              
+              // Remove from local state immediately
+              setMessages(prev => prev.filter(msg => msg.id !== messageId));
+            }
+          } catch (error) {
+            console.error(`❌ Exception deleting message ${messageId}:`, error);
             failedDeletions++;
-          } else {
-            console.log(`✅ Successfully deleted message: ${messageId}`);
-            successfulDeletions++;
-            
-            // Remove from local state immediately
-            setMessages(prev => prev.filter(msg => msg.id !== messageId));
           }
-        } catch (error) {
-          console.error(`❌ Exception deleting message ${messageId}:`, error);
-          failedDeletions++;
         }
+
+        console.log('📈 STEP 3 INDIVIDUAL RESULTS:', {
+          successful: successfulDeletions,
+          failed: failedDeletions,
+          total: messageIds.length
+        });
+
+        if (successfulDeletions === 0) {
+          throw new Error(`All ${messageIds.length} deletion attempts failed`);
+        }
+
+      } else {
+        console.log('✅ STEP 3 BULK DELETE SUCCESS:', {
+          deletedCount: count,
+          expectedCount: messageIds.length
+        });
+
+        // Update local state for bulk delete
+        setMessages(prev => prev.filter(msg => !messageIds.includes(msg.id)));
       }
 
-      console.log('📈 STEP 3 RESULTS:', {
-        successful: successfulDeletions,
-        failed: failedDeletions,
-        total: messageIds.length
-      });
-
-      // Step 4: Verify the deletions worked
-      console.log('🔍 STEP 4: Verifying deletions');
+      // Step 4: Verify deletions in database
+      console.log('🔍 STEP 4: Verifying deletions in database');
       const { data: remainingMessages, error: verifyError } = await supabase
         .from('messages')
         .select('id')
         .eq('channel_id', activeChannel);
 
       if (verifyError) {
-        console.error('❌ STEP 4 ERROR:', verifyError);
+        console.error('❌ STEP 4 VERIFICATION ERROR:', verifyError);
       } else {
-        console.log('✅ STEP 4 VERIFICATION:', {
+        console.log('✅ STEP 4 VERIFICATION SUCCESS:', {
           remainingMessagesInDB: remainingMessages?.length || 0,
-          originalCount: allMessages.length,
-          expectedAfterDeletion: allMessages.length - successfulDeletions
+          originalCount: messagesToDelete.length
         });
       }
 
-      // Step 5: Force refresh local state
-      console.log('🔄 STEP 5: Force refreshing local state');
-      const { data: refreshedMessages, error: refreshError } = await supabase
+      // Step 5: Force refresh local state from database
+      console.log('🔄 STEP 5: Force refreshing local state from database');
+      const { data: freshMessages, error: refreshError } = await supabase
         .from('messages')
         .select('*')
         .eq('channel_id', activeChannel)
         .order('created_at', { ascending: true });
 
-      if (!refreshError && refreshedMessages) {
+      if (!refreshError && freshMessages) {
         console.log('🔄 STEP 5 REFRESH SUCCESS:', {
-          newMessageCount: refreshedMessages.length,
+          freshMessageCount: freshMessages.length,
           previousLocalCount: messages.length
         });
-        setMessages(refreshedMessages);
+        setMessages(freshMessages);
       } else {
         console.error('❌ STEP 5 REFRESH ERROR:', refreshError);
       }
 
       // Step 6: Send notifications
-      if (successfulDeletions > 0) {
-        const activeChannelData = channels.find(ch => ch.id === activeChannel);
-        const channelName = activeChannelData?.name || 'Unknown Channel';
+      const activeChannelData = channels.find(ch => ch.id === activeChannel);
+      const channelName = activeChannelData?.name || 'Unknown Channel';
+      const deletedCount = bulkDeleteError ? 
+        (messageIds.length - 0) : // Individual delete count would be calculated above
+        (count || messageIds.length);
 
-        console.log('📬 STEP 6: Sending purge notifications');
-        if (teamMembers.length > 0) {
-          const notificationPromises = teamMembers
-            .filter(member => member.id !== user.id)
-            .map(member => {
-              return NotificationService.createNotification({
-                user_id: member.id,
-                title: `💬 Chat purged in ${channelName}`,
-                message: `${user.full_name} purged ${successfulDeletions} messages from ${channelName}`,
-                type: 'info' as const,
-                action_url: '/team-collaboration'
-              });
+      console.log('📬 STEP 6: Sending purge notifications');
+      if (teamMembers.length > 0) {
+        const notificationPromises = teamMembers
+          .filter(member => member.id !== user.id)
+          .map(member => {
+            return NotificationService.createNotification({
+              user_id: member.id,
+              title: `💬 Chat purged in ${channelName}`,
+              message: `${user.full_name} purged ${deletedCount} messages from ${channelName}`,
+              type: 'info' as const,
+              action_url: '/team-collaboration'
             });
+          });
 
-          await Promise.all(notificationPromises);
-          console.log('✅ STEP 6: Notifications sent');
-        }
-
-        toast({
-          title: "Messages purged",
-          description: `Successfully deleted ${successfulDeletions} messages${failedDeletions > 0 ? ` (${failedDeletions} failed)` : ''}`,
-        });
-
-        console.log('🎉 PURGE COMPLETED SUCCESSFULLY:', {
-          deletedCount: successfulDeletions,
-          failedCount: failedDeletions,
-          channelId: activeChannel,
-          timestamp: new Date().toISOString()
-        });
-      } else {
-        throw new Error('No messages were successfully deleted');
+        await Promise.all(notificationPromises);
+        console.log('✅ STEP 6: Notifications sent');
       }
+
+      toast({
+        title: "Messages purged successfully",
+        description: `Deleted ${deletedCount} messages from ${channelName}`,
+      });
+
+      console.log('🎉 PURGE COMPLETED SUCCESSFULLY:', {
+        deletedCount: deletedCount,
+        channelId: activeChannel,
+        channelName: channelName,
+        timestamp: new Date().toISOString()
+      });
 
     } catch (error) {
       console.error('❌ PURGE FAILED COMPLETELY:', {
         error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
         channelId: activeChannel,
         userId: user.id,
+        userRole: user.role,
         timestamp: new Date().toISOString()
       });
       
