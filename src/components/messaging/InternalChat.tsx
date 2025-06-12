@@ -30,14 +30,10 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
   const [newChannelName, setNewChannelName] = useState('');
   const [selectedParticipants, setSelectedParticipants] = useState<string[]>([]);
   const [fileUpload, setFileUpload] = useState<File | null>(null);
-  const [newMessageReceived, setNewMessageReceived] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const { user } = useAuth();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Play notification sound when new message is received
-  useNotificationSound(newMessageReceived && soundEnabled);
 
   // Fetch team members
   useEffect(() => {
@@ -170,27 +166,10 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
         table: 'messages',
         filter: `channel_id=eq.${activeChannel}`
       }, (payload) => {
-        console.log('New message received:', payload.new);
+        console.log('New message received in channel:', payload.new);
         const newMessage = payload.new as Message;
         
-        // Only play sound and show notification if message is from someone else
-        if (newMessage.sender_id !== user?.id) {
-          console.log('Playing notification sound for new message from:', newMessage.sender_name);
-          setNewMessageReceived(true);
-          
-          // Reset the sound trigger after a short delay
-          setTimeout(() => {
-            console.log('Resetting notification sound trigger');
-            setNewMessageReceived(false);
-          }, 1000);
-          
-          // Show toast notification for new messages
-          toast({
-            title: `New message from ${newMessage.sender_name}`,
-            description: newMessage.content.substring(0, 100) + (newMessage.content.length > 100 ? '...' : ''),
-          });
-        }
-        
+        // Just add the message to the list - sound is handled globally now
         setMessages(prev => [...prev, newMessage]);
       })
       .on('postgres_changes', {

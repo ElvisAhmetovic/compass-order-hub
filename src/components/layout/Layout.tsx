@@ -1,19 +1,20 @@
 
-import { ReactNode } from "react";
+import Header from "./Header";
 import { Toaster } from "@/components/ui/toaster";
 import { UserRole } from "@/types";
-import Header from "./Header";
+import GlobalNotifications from "./GlobalNotifications";
 
 interface LayoutProps {
-  children: ReactNode;
+  children: React.ReactNode;
   userRole?: UserRole;
 }
 
 const Layout = ({ children, userRole = "admin" }: LayoutProps) => {
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen bg-gray-50">
+      <GlobalNotifications />
       <Header userRole={userRole} />
-      <main className="flex-1 px-6 py-6">
+      <main className="container mx-auto px-4 py-8">
         {children}
       </main>
       <Toaster />
