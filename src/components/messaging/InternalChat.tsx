@@ -11,7 +11,7 @@ import { Message, Channel } from '@/types/messaging';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Plus, Paperclip, Bell, Users } from 'lucide-react';
+import { Plus, Paperclip, Bell, Users, Volume2 } from 'lucide-react';
 import { useNotificationSound } from '@/hooks/useNotificationSound';
 import { NotificationService } from '@/services/notificationService';
 
@@ -34,6 +34,42 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
   const { user } = useAuth();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Test notification sound function
+  const testNotificationSound = () => {
+    console.log('🧪 Testing notification sound manually');
+    // Create a test audio context to verify sound works
+    try {
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+      oscillator.type = 'sine';
+      
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+      
+      oscillator.start();
+      oscillator.stop(audioContext.currentTime + 0.5);
+      
+      console.log('✅ Test sound played');
+      toast({
+        title: "🔊 Test Sound",
+        description: "If you heard a beep, the audio system is working!",
+      });
+    } catch (error) {
+      console.error('❌ Test sound failed:', error);
+      toast({
+        title: "❌ Audio Test Failed",
+        description: "There might be an issue with audio permissions.",
+        variant: "destructive"
+      });
+    }
+  };
 
   // Fetch team members
   useEffect(() => {
@@ -353,6 +389,14 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
           <div className="flex gap-2">
             <Button
               size="sm"
+              variant="outline"
+              onClick={testNotificationSound}
+              title="Test notification sound"
+            >
+              <Volume2 className="h-4 w-4" />
+            </Button>
+            <Button
+              size="sm"
               variant={soundEnabled ? "default" : "outline"}
               onClick={() => setSoundEnabled(!soundEnabled)}
             >
@@ -435,7 +479,10 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
           <p className="text-sm text-muted-foreground">
             {activeChannelData.description} 
             {activeChannelData.type === 'private' && ` • ${activeChannelData.participants?.length || 0} participants`}
-            {soundEnabled && <span className="ml-2">🔊 Sound On</span>}
+            {soundEnabled && <span className="ml-2">🔊 Notifications On</span>}
+            <span className="ml-2 text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
+              🔔 Global notifications active
+            </span>
           </p>
         )}
       </CardHeader>
