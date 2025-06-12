@@ -72,12 +72,6 @@ const InventoryAutocomplete: React.FC<InventoryAutocompleteProps> = ({
     setIsOpen(false);
   };
 
-  const parsePrice = (priceStr: string) => {
-    if (!priceStr) return 0;
-    const numStr = priceStr.replace(/[^\d.,]/g, '').replace(',', '.');
-    return parseFloat(numStr) || 0;
-  };
-
   return (
     <div className="relative">
       <Input

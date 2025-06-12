@@ -1,4 +1,3 @@
-
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -72,7 +71,7 @@ const OrderDetailsSection = ({ order, data, errors, isEditing, onChange }: Order
             )}
           </div>
         ) : (
-          <p className="text-sm font-semibold">{formatCurrency(order.price || 0)}</p>
+          <p className="text-sm font-semibold">{formatCurrency(order.price || 0, order.currency || "EUR")}</p>
         )}
       </div>
 
