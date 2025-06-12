@@ -14,6 +14,7 @@ import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Plus, Paperclip, Bell, Users } from 'lucide-react';
 import { useNotificationSound } from '@/hooks/useNotificationSound';
+import { NotificationService } from '@/services/notificationService';
 
 interface InternalChatProps {
   orderId?: string;
@@ -99,6 +100,32 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
     };
   }, [channelId]);
 
+  // Create notifications for all team members when a message is sent
+  const createMessageNotifications = async (message: Message, channelName: string) => {
+    if (!user) return;
+
+    // Get all team members except the sender
+    const { data: allUsers } = await supabase
+      .from('profiles')
+      .select('id')
+      .neq('id', user.id);
+
+    if (allUsers) {
+      // Create notifications for all other users
+      const notifications = allUsers.map(member => 
+        NotificationService.createNotification({
+          user_id: member.id,
+          title: `New message in ${channelName}`,
+          message: `${message.sender_name}: ${message.content.substring(0, 100)}${message.content.length > 100 ? '...' : ''}`,
+          type: 'info' as const,
+          action_url: '/team-collaboration'
+        })
+      );
+
+      await Promise.all(notifications);
+    }
+  };
+
   // Fetch messages for active channel and setup real-time subscription
   useEffect(() => {
     if (!activeChannel) return;
@@ -132,7 +159,7 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
         console.log('New message received:', payload.new);
         const newMessage = payload.new as Message;
         
-        // Only play sound if message is from someone else
+        // Only play sound and show notification if message is from someone else
         if (newMessage.sender_id !== user?.id) {
           setNewMessageReceived(true);
           setTimeout(() => setNewMessageReceived(false), 1000);
@@ -177,7 +204,6 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // ... keep existing code (uploadFile function)
   const uploadFile = async (file: File) => {
     const fileExt = file.name.split('.').pop();
     const fileName = `${user?.id}/${Date.now()}.${fileExt}`;
@@ -218,19 +244,24 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
       }
     }
 
-    const { error } = await supabase
+    const messageContent = newMessage || `Shared file: ${fileData?.name}`;
+    const activeChannelData = channels.find(ch => ch.id === activeChannel);
+
+    const { data: insertedMessage, error } = await supabase
       .from('messages')
       .insert({
         sender_id: user.id,
         sender_name: user.full_name,
         sender_role: user.role,
-        content: newMessage || `Shared file: ${fileData?.name}`,
+        content: messageContent,
         channel_id: activeChannel,
         order_id: orderId,
         file_url: fileData?.url,
         file_name: fileData?.name,
         file_type: fileData?.type
-      });
+      })
+      .select()
+      .single();
 
     if (error) {
       console.error('Error sending message:', error);
@@ -240,6 +271,11 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
         variant: "destructive"
       });
       return;
+    }
+
+    // Create notifications for all team members
+    if (insertedMessage && activeChannelData) {
+      await createMessageNotifications(insertedMessage, activeChannelData.name);
     }
 
     setNewMessage('');
@@ -254,7 +290,6 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
     });
   };
 
-  // ... keep existing code (createChannel function)
   const createChannel = async () => {
     if (!newChannelName.trim() || !user) return;
 
@@ -292,7 +327,6 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
     });
   };
 
-  // ... keep existing code (formatTime, getRoleBadgeColor functions)
   const formatTime = (dateString: string) => {
     return new Date(dateString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
