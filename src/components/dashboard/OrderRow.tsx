@@ -17,6 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 import { InvoiceService } from "@/services/invoiceService";
 import { OrderService } from "@/services/orderService";
 import MultiStatusBadges from "./MultiStatusBadges";
+import { formatCurrency } from "@/utils/currencyUtils";
 
 interface OrderRowProps {
   order: Order;
@@ -41,10 +42,6 @@ const OrderRow = ({
   const { user } = useAuth();
   const { toast } = useToast();
   const isAdmin = user?.role === "admin";
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
-  };
 
   const getStatusColor = (status: string) => {
     const statusClasses = {
@@ -313,7 +310,7 @@ const OrderRow = ({
         </TableCell>
       )}
       <TableCell>
-        {formatCurrency(order.price)}
+        {formatCurrency(order.price || 0, order.currency || "EUR")}
       </TableCell>
       <TableCell>
         <MultiStatusBadges order={order} onRefresh={onRefresh} compact={true} />
