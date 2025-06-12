@@ -175,8 +175,14 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
         
         // Only play sound and show notification if message is from someone else
         if (newMessage.sender_id !== user?.id) {
+          console.log('Playing notification sound for new message from:', newMessage.sender_name);
           setNewMessageReceived(true);
-          setTimeout(() => setNewMessageReceived(false), 1000);
+          
+          // Reset the sound trigger after a short delay
+          setTimeout(() => {
+            console.log('Resetting notification sound trigger');
+            setNewMessageReceived(false);
+          }, 1000);
           
           // Show toast notification for new messages
           toast({
