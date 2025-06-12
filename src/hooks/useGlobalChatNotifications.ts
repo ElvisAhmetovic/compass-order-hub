@@ -15,21 +15,21 @@ export const useGlobalChatNotifications = () => {
 
   useEffect(() => {
     if (!user) {
-      console.log('Global chat notifications: No user found, skipping setup');
+      console.log('🔔 Global chat notifications: No user found, skipping setup');
       return;
     }
 
-    console.log('🔔 Setting up global chat notification listener for user:', user.id);
+    console.log('🔔 Setting up ENHANCED global chat notification listener for user:', user.id);
 
     // Clean up any existing subscription
     if (subscriptionRef.current) {
-      console.log('Cleaning up existing subscription');
+      console.log('🧹 Cleaning up existing global subscription');
       supabase.removeChannel(subscriptionRef.current);
     }
 
-    // Subscribe to ALL new messages in team chat
+    // Subscribe to ALL new messages in team chat with enhanced real-time
     const messagesSubscription = supabase
-      .channel('global-team-messages-v3') // Changed channel name to ensure fresh subscription
+      .channel('global-team-messages-v4') // Updated channel version
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',
@@ -43,17 +43,21 @@ export const useGlobalChatNotifications = () => {
           senderName: newMessage.sender_name,
           currentUserId: user.id,
           content: newMessage.content?.substring(0, 50) + '...',
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
+          channelId: newMessage.channel_id
         });
 
         // CRITICAL: Play sound for EVERYONE except the sender
         if (newMessage.sender_id !== user.id) {
           console.log('🔊 PLAYING SOUND! Message from:', newMessage.sender_name, 'to user:', user.id);
           
-          // Trigger sound immediately
-          setShouldPlaySound(true);
+          // Trigger sound immediately with priority
+          setShouldPlaySound(prev => {
+            console.log('🔊 Sound trigger state change: false -> true');
+            return true;
+          });
           
-          // Show toast notification with more details
+          // Show enhanced toast notification
           toast({
             title: `💬 New team message from ${newMessage.sender_name}`,
             description: newMessage.content ? 
@@ -61,23 +65,26 @@ export const useGlobalChatNotifications = () => {
                 newMessage.content.substring(0, 80) + '...' : 
                 newMessage.content
               ) : 'New message',
-            duration: 5000,
+            duration: 6000, // Longer duration
           });
 
           // Reset sound trigger after delay
           setTimeout(() => {
             console.log('🔇 Resetting sound trigger');
-            setShouldPlaySound(false);
-          }, 1000);
+            setShouldPlaySound(prev => {
+              console.log('🔇 Sound trigger state change: true -> false');
+              return false;
+            });
+          }, 1500); // Slightly longer delay
 
         } else {
           console.log('⏭️ Skipping notification - message is from current user');
         }
       })
       .subscribe((status) => {
-        console.log('🔔 Global chat subscription status:', status);
+        console.log('🔔 ENHANCED Global chat subscription status:', status);
         if (status === 'SUBSCRIBED') {
-          console.log('✅ Successfully subscribed to global chat notifications');
+          console.log('✅ Successfully subscribed to ENHANCED global chat notifications');
         } else if (status === 'CLOSED') {
           console.log('❌ Global chat subscription closed');
         } else if (status === 'CHANNEL_ERROR') {
@@ -88,7 +95,7 @@ export const useGlobalChatNotifications = () => {
     subscriptionRef.current = messagesSubscription;
 
     return () => {
-      console.log('🧹 Cleaning up global chat notification listener');
+      console.log('🧹 Cleaning up ENHANCED global chat notification listener');
       if (subscriptionRef.current) {
         supabase.removeChannel(subscriptionRef.current);
         subscriptionRef.current = null;
@@ -96,12 +103,18 @@ export const useGlobalChatNotifications = () => {
     };
   }, [user]);
 
-  // Debug: Log when sound state changes
+  // Enhanced debug logging
   useEffect(() => {
     if (shouldPlaySound) {
-      console.log('🔊 Sound trigger activated at:', new Date().toISOString());
+      console.log('🔊 ENHANCED Sound trigger activated at:', new Date().toISOString());
+    } else {
+      console.log('🔇 Sound trigger deactivated at:', new Date().toISOString());
     }
   }, [shouldPlaySound]);
 
-  return null;
+  // Return connection status for debugging
+  return {
+    isConnected: subscriptionRef.current !== null,
+    userId: user?.id
+  };
 };

@@ -34,11 +34,12 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
   const { user } = useAuth();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const channelSubscriptionRef = useRef<any>(null);
+  const messageSubscriptionRef = useRef<any>(null);
 
   // Test notification sound function
   const testNotificationSound = () => {
     console.log('🧪 Testing notification sound manually');
-    // Create a test audio context to verify sound works
     try {
       const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
       const oscillator = audioContext.createOscillator();
@@ -74,34 +75,44 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
   // Fetch team members
   useEffect(() => {
     const fetchTeamMembers = async () => {
-      const { data } = await supabase
+      console.log('📋 Fetching team members...');
+      const { data, error } = await supabase
         .from('profiles')
         .select('id, first_name, last_name, role');
       
+      if (error) {
+        console.error('❌ Error fetching team members:', error);
+        return;
+      }
+
       if (data) {
-        setTeamMembers(data.map(member => ({
+        const members = data.map(member => ({
           id: member.id,
           name: `${member.first_name} ${member.last_name}`.trim(),
           role: member.role
-        })));
+        }));
+        console.log('✅ Team members loaded:', members.length);
+        setTeamMembers(members);
       }
     };
     fetchTeamMembers();
   }, []);
 
-  // Fetch channels
+  // Fetch channels and setup real-time channel subscription
   useEffect(() => {
     const fetchChannels = async () => {
+      console.log('📺 Fetching channels...');
       const { data, error } = await supabase
         .from('channels')
         .select('*')
         .order('created_at', { ascending: true });
 
       if (error) {
-        console.error('Error fetching channels:', error);
+        console.error('❌ Error fetching channels:', error);
         return;
       }
 
+      console.log('✅ Channels loaded:', data?.length || 0);
       setChannels(data || []);
       
       // Set active channel
@@ -114,20 +125,65 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
 
     fetchChannels();
 
+    // Clean up existing subscription
+    if (channelSubscriptionRef.current) {
+      console.log('🧹 Cleaning up existing channel subscription');
+      supabase.removeChannel(channelSubscriptionRef.current);
+    }
+
     // Subscribe to real-time updates for channels
+    console.log('🔔 Setting up channel real-time subscription');
     const channelSubscription = supabase
-      .channel('channels-changes')
+      .channel('channels-realtime-v2')
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',
         table: 'channels'
       }, (payload) => {
-        setChannels(prev => [...prev, payload.new as Channel]);
+        console.log('🆕 New channel added:', payload.new);
+        const newChannel = payload.new as Channel;
+        setChannels(prev => {
+          const exists = prev.find(ch => ch.id === newChannel.id);
+          if (exists) return prev;
+          return [...prev, newChannel];
+        });
+        
+        toast({
+          title: "New Channel",
+          description: `Channel "${newChannel.name}" has been created`,
+        });
       })
-      .subscribe();
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'channels'
+      }, (payload) => {
+        console.log('📝 Channel updated:', payload.new);
+        const updatedChannel = payload.new as Channel;
+        setChannels(prev => prev.map(ch => 
+          ch.id === updatedChannel.id ? updatedChannel : ch
+        ));
+      })
+      .on('postgres_changes', {
+        event: 'DELETE',
+        schema: 'public',
+        table: 'channels'
+      }, (payload) => {
+        console.log('🗑️ Channel deleted:', payload.old);
+        setChannels(prev => prev.filter(ch => ch.id !== payload.old.id));
+      })
+      .subscribe((status) => {
+        console.log('📺 Channel subscription status:', status);
+      });
+
+    channelSubscriptionRef.current = channelSubscription;
 
     return () => {
-      supabase.removeChannel(channelSubscription);
+      console.log('🧹 Cleaning up channel subscription');
+      if (channelSubscriptionRef.current) {
+        supabase.removeChannel(channelSubscriptionRef.current);
+        channelSubscriptionRef.current = null;
+      }
     };
   }, [channelId]);
 
@@ -135,7 +191,7 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
   const createMessageNotifications = async (message: Message, channelName: string) => {
     if (!user) return;
 
-    console.log('Creating notifications for message:', message);
+    console.log('📬 Creating notifications for message:', message.id);
 
     try {
       // Get all team members except the sender
@@ -145,16 +201,16 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
         .neq('id', user.id);
 
       if (error) {
-        console.error('Error fetching users for notifications:', error);
+        console.error('❌ Error fetching users for notifications:', error);
         return;
       }
 
       if (allUsers && allUsers.length > 0) {
-        console.log(`Creating notifications for ${allUsers.length} users`);
+        console.log(`📤 Creating notifications for ${allUsers.length} users`);
         
         // Create notifications for all other users
         const notificationPromises = allUsers.map(member => {
-          console.log(`Creating notification for user: ${member.id}`);
+          console.log(`📨 Creating notification for user: ${member.id}`);
           return NotificationService.createNotification({
             user_id: member.id,
             title: `New message in ${channelName}`,
@@ -165,18 +221,24 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
         });
 
         await Promise.all(notificationPromises);
-        console.log('All notifications created successfully');
+        console.log('✅ All notifications created successfully');
       }
     } catch (error) {
-      console.error('Error creating message notifications:', error);
+      console.error('❌ Error creating message notifications:', error);
     }
   };
 
   // Fetch messages for active channel and setup real-time subscription
   useEffect(() => {
-    if (!activeChannel) return;
+    if (!activeChannel) {
+      console.log('⏭️ No active channel, skipping message setup');
+      return;
+    }
+
+    console.log('💬 Setting up messages for channel:', activeChannel);
 
     const fetchMessages = async () => {
+      console.log('📨 Fetching messages for channel:', activeChannel);
       const { data, error } = await supabase
         .from('messages')
         .select('*')
@@ -184,29 +246,49 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
         .order('created_at', { ascending: true });
 
       if (error) {
-        console.error('Error fetching messages:', error);
+        console.error('❌ Error fetching messages:', error);
         return;
       }
 
+      console.log('✅ Messages loaded:', data?.length || 0);
       setMessages(data || []);
     };
 
     fetchMessages();
 
+    // Clean up existing message subscription
+    if (messageSubscriptionRef.current) {
+      console.log('🧹 Cleaning up existing message subscription');
+      supabase.removeChannel(messageSubscriptionRef.current);
+    }
+
     // Subscribe to real-time updates for messages in this channel
+    console.log('🔔 Setting up message real-time subscription for channel:', activeChannel);
     const messagesSubscription = supabase
-      .channel(`messages-${activeChannel}`)
+      .channel(`messages-realtime-${activeChannel}-v3`)
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',
         table: 'messages',
         filter: `channel_id=eq.${activeChannel}`
       }, (payload) => {
-        console.log('New message received in channel:', payload.new);
+        console.log('🆕 New message received in active channel:', payload.new);
         const newMessage = payload.new as Message;
         
-        // Just add the message to the list - sound is handled globally now
-        setMessages(prev => [...prev, newMessage]);
+        setMessages(prev => {
+          const exists = prev.find(msg => msg.id === newMessage.id);
+          if (exists) return prev;
+          return [...prev, newMessage];
+        });
+
+        // Show local toast for new message (in addition to global notification)
+        if (newMessage.sender_id !== user?.id) {
+          toast({
+            title: `💬 ${newMessage.sender_name}`,
+            description: newMessage.content.substring(0, 80) + (newMessage.content.length > 80 ? '...' : ''),
+            duration: 3000,
+          });
+        }
       })
       .on('postgres_changes', {
         event: 'UPDATE',
@@ -214,9 +296,10 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
         table: 'messages',
         filter: `channel_id=eq.${activeChannel}`
       }, (payload) => {
-        console.log('Message updated:', payload.new);
+        console.log('📝 Message updated:', payload.new);
+        const updatedMessage = payload.new as Message;
         setMessages(prev => prev.map(msg => 
-          msg.id === payload.new.id ? payload.new as Message : msg
+          msg.id === updatedMessage.id ? updatedMessage : msg
         ));
       })
       .on('postgres_changes', {
@@ -225,18 +308,29 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
         table: 'messages',
         filter: `channel_id=eq.${activeChannel}`
       }, (payload) => {
-        console.log('Message deleted:', payload.old);
+        console.log('🗑️ Message deleted:', payload.old);
         setMessages(prev => prev.filter(msg => msg.id !== payload.old.id));
       })
-      .subscribe();
+      .subscribe((status) => {
+        console.log('💬 Message subscription status:', status);
+      });
+
+    messageSubscriptionRef.current = messagesSubscription;
 
     return () => {
-      supabase.removeChannel(messagesSubscription);
+      console.log('🧹 Cleaning up message subscription');
+      if (messageSubscriptionRef.current) {
+        supabase.removeChannel(messageSubscriptionRef.current);
+        messageSubscriptionRef.current = null;
+      }
     };
   }, [activeChannel, user]);
 
+  // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
   }, [messages]);
 
   const uploadFile = async (file: File) => {
@@ -282,7 +376,7 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
     const messageContent = newMessage || `Shared file: ${fileData?.name}`;
     const activeChannelData = channels.find(ch => ch.id === activeChannel);
 
-    console.log('Sending message:', messageContent);
+    console.log('📤 Sending message:', messageContent);
 
     const { data: insertedMessage, error } = await supabase
       .from('messages')
@@ -301,7 +395,7 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
       .single();
 
     if (error) {
-      console.error('Error sending message:', error);
+      console.error('❌ Error sending message:', error);
       toast({
         title: "Error",
         description: "Failed to send message",
@@ -310,11 +404,11 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
       return;
     }
 
-    console.log('Message sent successfully:', insertedMessage);
+    console.log('✅ Message sent successfully:', insertedMessage.id);
 
-    // Create notifications for ALL team members (this is crucial!)
+    // Create notifications for ALL team members
     if (insertedMessage && activeChannelData) {
-      console.log('Creating notifications for all team members...');
+      console.log('📬 Creating notifications for all team members...');
       await createMessageNotifications(insertedMessage, activeChannelData.name);
     }
 
@@ -333,6 +427,8 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
   const createChannel = async () => {
     if (!newChannelName.trim() || !user) return;
 
+    console.log('🆕 Creating new channel:', newChannelName);
+
     const { data, error } = await supabase
       .from('channels')
       .insert({
@@ -346,7 +442,7 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
       .single();
 
     if (error) {
-      console.error('Error creating channel:', error);
+      console.error('❌ Error creating channel:', error);
       toast({
         title: "Error",
         description: "Failed to create channel",
@@ -355,7 +451,8 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
       return;
     }
 
-    setChannels(prev => [...prev, data]);
+    console.log('✅ Channel created successfully:', data.id);
+
     setNewChannelName('');
     setSelectedParticipants([]);
     setIsCreateChannelOpen(false);
@@ -481,7 +578,7 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
             {activeChannelData.type === 'private' && ` • ${activeChannelData.participants?.length || 0} participants`}
             {soundEnabled && <span className="ml-2">🔊 Notifications On</span>}
             <span className="ml-2 text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
-              🔔 Global notifications active
+              🔔 Real-time updates active
             </span>
           </p>
         )}
