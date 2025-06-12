@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,7 +12,8 @@ import { Message, Channel } from '@/types/messaging';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Plus, Paperclip, Image, Users } from 'lucide-react';
+import { Plus, Paperclip, Bell, Users } from 'lucide-react';
+import { useNotificationSound } from '@/hooks/useNotificationSound';
 
 interface InternalChatProps {
   orderId?: string;
@@ -28,9 +30,14 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
   const [newChannelName, setNewChannelName] = useState('');
   const [selectedParticipants, setSelectedParticipants] = useState<string[]>([]);
   const [fileUpload, setFileUpload] = useState<File | null>(null);
+  const [newMessageReceived, setNewMessageReceived] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(true);
   const { user } = useAuth();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Play notification sound when new message is received
+  useNotificationSound(newMessageReceived && soundEnabled);
 
   // Fetch team members
   useEffect(() => {
@@ -123,7 +130,21 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
         filter: `channel_id=eq.${activeChannel}`
       }, (payload) => {
         console.log('New message received:', payload.new);
-        setMessages(prev => [...prev, payload.new as Message]);
+        const newMessage = payload.new as Message;
+        
+        // Only play sound if message is from someone else
+        if (newMessage.sender_id !== user?.id) {
+          setNewMessageReceived(true);
+          setTimeout(() => setNewMessageReceived(false), 1000);
+          
+          // Show toast notification for new messages
+          toast({
+            title: `New message from ${newMessage.sender_name}`,
+            description: newMessage.content.substring(0, 100) + (newMessage.content.length > 100 ? '...' : ''),
+          });
+        }
+        
+        setMessages(prev => [...prev, newMessage]);
       })
       .on('postgres_changes', {
         event: 'UPDATE',
@@ -150,7 +171,7 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
     return () => {
       supabase.removeChannel(messagesSubscription);
     };
-  }, [activeChannel]);
+  }, [activeChannel, user]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -292,6 +313,13 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg">Team Chat</CardTitle>
           <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant={soundEnabled ? "default" : "outline"}
+              onClick={() => setSoundEnabled(!soundEnabled)}
+            >
+              <Bell className="h-4 w-4" />
+            </Button>
             <Dialog open={isCreateChannelOpen} onOpenChange={setIsCreateChannelOpen}>
               <DialogTrigger asChild>
                 <Button size="sm" variant="outline">
@@ -369,6 +397,7 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
           <p className="text-sm text-muted-foreground">
             {activeChannelData.description} 
             {activeChannelData.type === 'private' && ` • ${activeChannelData.participants?.length || 0} participants`}
+            {soundEnabled && <span className="ml-2">🔊 Sound On</span>}
           </p>
         )}
       </CardHeader>
@@ -443,16 +472,6 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
               onClick={() => fileInputRef.current?.click()}
             >
               <Paperclip className="h-4 w-4" />
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => {
-                fileInputRef.current?.setAttribute('accept', 'image/*');
-                fileInputRef.current?.click();
-              }}
-            >
-              <Image className="h-4 w-4" />
             </Button>
             <Input
               placeholder="Type your message..."
