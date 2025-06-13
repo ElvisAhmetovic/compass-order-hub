@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
-import { MoreHorizontal, FileText, Send } from "lucide-react";
+import { MoreHorizontal, FileText, Send, Receipt } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -40,6 +40,7 @@ const OrderRow = ({
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [isSendingToReview, setIsSendingToReview] = useState(false);
   const [isMovingToYearly, setIsMovingToYearly] = useState(false);
+  const [isCreatingInvoice, setIsCreatingInvoice] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
   const isAdmin = user?.role === "admin";
@@ -167,6 +168,48 @@ const OrderRow = ({
         description: "Failed to create invoice from order. Please check your authentication and try again.",
         variant: "destructive"
       });
+    }
+  };
+
+  const handleCreateInvoice = async () => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "You must be logged in to create invoices.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsCreatingInvoice(true);
+    
+    try {
+      console.log(`Creating invoice for order ${order.id}`);
+      
+      // Create invoice from order with draft status
+      await createInvoiceFromOrder(order.id, order, "Invoice Sent");
+      
+      console.log('Invoice created successfully');
+      
+      // Show success message
+      toast({
+        title: "Invoice Created",
+        description: `Invoice has been created for order from ${order.company_name}.`
+      });
+      
+      // Trigger refresh
+      onRefresh();
+      window.dispatchEvent(new CustomEvent('orderStatusChanged'));
+      
+    } catch (error) {
+      console.error("Error creating invoice:", error);
+      toast({
+        title: "Error",
+        description: "Failed to create invoice. Please check your connection and try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsCreatingInvoice(false);
     }
   };
 
@@ -372,7 +415,7 @@ const OrderRow = ({
         {formatDate(order.updated_at)}
       </TableCell>
       <TableCell>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col items-start gap-1">
           {/* Send to Review button - visible for admins on orders not already in Review status */}
           {isAdmin && !order.status_review && (
             <Button
@@ -380,7 +423,7 @@ const OrderRow = ({
               size="sm"
               onClick={handleSendToReview}
               disabled={isSendingToReview}
-              className="h-8 px-2"
+              className="h-8 px-2 w-full"
             >
               <Send className="h-4 w-4 mr-1" />
               {isSendingToReview ? "Sending..." : "Review"}
@@ -394,11 +437,23 @@ const OrderRow = ({
               size="sm"
               onClick={handleMoveToYearlyPackages}
               disabled={isMovingToYearly}
-              className="h-8 px-2"
+              className="h-8 px-2 w-full"
             >
               {isMovingToYearly ? "Moving..." : "→ Yearly"}
             </Button>
           )}
+
+          {/* Create Invoice button - visible to all users */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleCreateInvoice}
+            disabled={isCreatingInvoice}
+            className="h-8 px-2 w-full"
+          >
+            <Receipt className="h-4 w-4 mr-1" />
+            {isCreatingInvoice ? "Creating..." : "Invoice"}
+          </Button>
           
           {!hideActions && isAdmin ? (
             <DropdownMenu>
