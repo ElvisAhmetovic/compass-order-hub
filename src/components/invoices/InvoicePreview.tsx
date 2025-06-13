@@ -120,6 +120,96 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
         total: "Total:",
         notes: "Notes:",
         terms: "Conditions:"
+      },
+      es: {
+        date: "Fecha:",
+        dueDate: "Fecha de vencimiento:",
+        balanceDue: "Saldo pendiente:",
+        billTo: "Facturar a:",
+        item: "Artículo",
+        quantity: "Cantidad",
+        rate: "Precio",
+        amount: "Importe",
+        subtotal: "Subtotal:",
+        tax: "IVA",
+        total: "Total:",
+        notes: "Notas:",
+        terms: "Términos:"
+      },
+      da: {
+        date: "Dato:",
+        dueDate: "Forfaldsdato:",
+        balanceDue: "Resterende saldo:",
+        billTo: "Faktureres til:",
+        item: "Vare",
+        quantity: "Antal",
+        rate: "Pris",
+        amount: "Beløb",
+        subtotal: "Subtotal:",
+        tax: "Moms",
+        total: "Total:",
+        notes: "Noter:",
+        terms: "Vilkår:"
+      },
+      no: {
+        date: "Dato:",
+        dueDate: "Forfallsdato:",
+        balanceDue: "Gjenstående saldo:",
+        billTo: "Faktureres til:",
+        item: "Vare",
+        quantity: "Antall",
+        rate: "Pris",
+        amount: "Beløp",
+        subtotal: "Subtotal:",
+        tax: "MVA",
+        total: "Total:",
+        notes: "Notater:",
+        terms: "Vilkår:"
+      },
+      cs: {
+        date: "Datum:",
+        dueDate: "Datum splatnosti:",
+        balanceDue: "Zbývající zůstatek:",
+        billTo: "Fakturovat na:",
+        item: "Položka",
+        quantity: "Množství",
+        rate: "Cena",
+        amount: "Částka",
+        subtotal: "Mezisoučet:",
+        tax: "DPH",
+        total: "Celkem:",
+        notes: "Poznámky:",
+        terms: "Podmínky:"
+      },
+      pl: {
+        date: "Data:",
+        dueDate: "Termin płatności:",
+        balanceDue: "Pozostałe saldo:",
+        billTo: "Fakturować do:",
+        item: "Pozycja",
+        quantity: "Ilość",
+        rate: "Cena",
+        amount: "Kwota",
+        subtotal: "Suma częściowa:",
+        tax: "VAT",
+        total: "Razem:",
+        notes: "Uwagi:",
+        terms: "Warunki:"
+      },
+      sv: {
+        date: "Datum:",
+        dueDate: "Förfallodatum:",
+        balanceDue: "Återstående saldo:",
+        billTo: "Fakturera till:",
+        item: "Artikel",
+        quantity: "Antal",
+        rate: "Pris",
+        amount: "Belopp",
+        subtotal: "Delsumma:",
+        tax: "Moms",
+        total: "Totalt:",
+        notes: "Anteckningar:",
+        terms: "Villkor:"
       }
     };
     
@@ -141,43 +231,48 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
   return (
     <Card className="w-full max-w-4xl mx-auto">
       <CardContent className="p-8">
-        <div className="bg-white min-h-[800px] space-y-6">
+        <div className="bg-white min-h-[800px] space-y-6" style={{ fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif" }}>
           {/* Header */}
-          <div className="flex justify-between items-start">
-            <div className="flex items-center gap-4">
+          <div className="flex justify-between items-start border-b-2 border-gray-200 pb-6">
+            <div className="flex items-center gap-6">
               {templateSettings.logo && (
                 <img 
                   src={templateSettings.logo} 
                   alt="Company Logo" 
                   className={`${
-                    templateSettings.logoSize === "small" ? "h-12" :
-                    templateSettings.logoSize === "medium" ? "h-16" :
-                    "h-20"
+                    templateSettings.logoSize === "small" ? "h-16" :
+                    templateSettings.logoSize === "medium" ? "h-20" :
+                    "h-32"
                   } w-auto object-contain`}
                 />
               )}
               <div>
-                <h1 className="text-lg font-bold text-gray-800">
+                <h1 className="text-2xl font-bold text-gray-800 mb-2">
                   {companyInfo.name}
                 </h1>
+                <div className="text-xs text-gray-500 leading-relaxed">
+                  <div>{companyInfo.street}</div>
+                  <div>{companyInfo.postal} {companyInfo.city}</div>
+                  <div>{companyInfo.email}</div>
+                </div>
               </div>
             </div>
             
             <div className="text-right">
-              <h2 className="text-3xl font-bold text-gray-600">
+              <h2 className="text-4xl font-bold text-gray-700 mb-2">
                 {templateSettings.invoiceNumberPrefix || "RE NR:"}{invoice?.invoice_number || "784/25"}
               </h2>
-              <p className="text-sm text-gray-500 mt-1">
+              <p className="text-sm text-gray-500">
                 # {templateSettings.invoiceNumberPrefix || "RE NR:"}{invoice?.invoice_number || "784/25"}
               </p>
             </div>
           </div>
 
           {/* Company Details and Invoice Info */}
-          <div className="grid grid-cols-2 gap-8">
+          <div className="grid grid-cols-2 gap-10">
             <div>
-              <div className="text-sm text-gray-700 space-y-1">
-                <div className="font-bold">{companyInfo.name}</div>
+              <div className="text-sm text-gray-700 space-y-1 leading-relaxed">
+                <div className="font-bold mb-2">{companyInfo.name}</div>
                 <div>Company Registration Number: {companyInfo.registrationNumber}</div>
                 <div>UID- Number: {companyInfo.vatId}</div>
                 <div>{companyInfo.street} {companyInfo.postal} {companyInfo.city}</div>
@@ -185,16 +280,16 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
               </div>
             </div>
             
-            <div className="text-right space-y-2">
+            <div className="text-right space-y-3">
               <div className="flex justify-between">
-                <span>{getTranslatedText('date')}</span>
+                <span className="font-semibold">{getTranslatedText('date')}</span>
                 <span>{invoice?.issue_date ? formatDate(invoice.issue_date) : formatDate(new Date().toISOString())}</span>
               </div>
               <div className="flex justify-between">
-                <span>{getTranslatedText('dueDate')}</span>
+                <span className="font-semibold">{getTranslatedText('dueDate')}</span>
                 <span>{invoice?.due_date ? formatDate(invoice.due_date) : formatDate(new Date(Date.now() + 4*24*60*60*1000).toISOString())}</span>
               </div>
-              <div className="flex justify-between font-bold text-lg">
+              <div className="flex justify-between font-bold text-xl border-t pt-3">
                 <span>{getTranslatedText('balanceDue')}</span>
                 <span>{formatCurrency(total, templateSettings.currency || 'EUR')}</span>
               </div>
@@ -203,11 +298,11 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
 
           {/* Bill To */}
           <div>
-            <div className="font-bold text-gray-700 mb-2">{getTranslatedText('billTo')}</div>
-            <div className="text-sm text-gray-700 space-y-1">
+            <div className="font-bold text-gray-700 mb-3 text-lg">{getTranslatedText('billTo')}</div>
+            <div className="text-sm text-gray-700 bg-gray-50 p-4 rounded-lg leading-relaxed">
               {client ? (
                 <>
-                  <div className="font-bold">{client.name}</div>
+                  <div className="font-bold mb-1">{client.name}</div>
                   <div>{client.email}</div>
                   {client.address && <div>{client.address}</div>}
                   {client.city && <div>{client.zip_code} {client.city}</div>}
@@ -226,29 +321,29 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
 
           {/* Invoice Items Table */}
           <div className="mt-8">
-            <table className="w-full">
+            <table className="w-full shadow-sm">
               <thead>
-                <tr className="bg-gray-800 text-white">
-                  <th className="text-left py-3 px-4">{getTranslatedText('item')}</th>
-                  <th className="text-center py-3 px-4">{getTranslatedText('quantity')}</th>
-                  <th className="text-right py-3 px-4">{getTranslatedText('rate')}</th>
-                  <th className="text-right py-3 px-4">{getTranslatedText('amount')}</th>
+                <tr className="bg-gray-700 text-white">
+                  <th className="text-left py-4 px-4 font-semibold border-r border-gray-600">{getTranslatedText('item')}</th>
+                  <th className="text-center py-4 px-4 font-semibold border-r border-gray-600">{getTranslatedText('quantity')}</th>
+                  <th className="text-right py-4 px-4 font-semibold border-r border-gray-600">{getTranslatedText('rate')}</th>
+                  <th className="text-right py-4 px-4 font-semibold">{getTranslatedText('amount')}</th>
                 </tr>
               </thead>
               <tbody>
                 {lineItems.length > 0 ? lineItems.map((item, index) => (
-                  <tr key={index} className="border-b">
-                    <td className="py-3 px-4">{item.item_description}</td>
-                    <td className="text-center py-3 px-4">{item.quantity}</td>
-                    <td className="text-right py-3 px-4">{formatCurrency(item.unit_price, templateSettings.currency || 'EUR')}</td>
-                    <td className="text-right py-3 px-4">{formatCurrency(item.quantity * item.unit_price * (1 - item.discount_rate), templateSettings.currency || 'EUR')}</td>
+                  <tr key={index} className={`border-b ${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}`}>
+                    <td className="py-4 px-4 border-r border-gray-200">{item.item_description}</td>
+                    <td className="text-center py-4 px-4 border-r border-gray-200">{item.quantity}</td>
+                    <td className="text-right py-4 px-4 border-r border-gray-200">{formatCurrency(item.unit_price, templateSettings.currency || 'EUR')}</td>
+                    <td className="text-right py-4 px-4 font-semibold">{formatCurrency(item.quantity * item.unit_price * (1 - item.discount_rate), templateSettings.currency || 'EUR')}</td>
                   </tr>
                 )) : (
-                  <tr className="border-b">
-                    <td className="py-3 px-4">Sample Service</td>
-                    <td className="text-center py-3 px-4">1</td>
-                    <td className="text-right py-3 px-4">{formatCurrency(750, templateSettings.currency || 'EUR')}</td>
-                    <td className="text-right py-3 px-4">{formatCurrency(750, templateSettings.currency || 'EUR')}</td>
+                  <tr className="border-b bg-gray-50">
+                    <td className="py-4 px-4 border-r border-gray-200">Sample Service</td>
+                    <td className="text-center py-4 px-4 border-r border-gray-200">1</td>
+                    <td className="text-right py-4 px-4 border-r border-gray-200">{formatCurrency(750, templateSettings.currency || 'EUR')}</td>
+                    <td className="text-right py-4 px-4 font-semibold">{formatCurrency(750, templateSettings.currency || 'EUR')}</td>
                   </tr>
                 )}
               </tbody>
@@ -256,19 +351,19 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
           </div>
 
           {/* Totals */}
-          <div className="flex justify-end mt-6">
-            <div className="w-64 space-y-2">
-              <div className="flex justify-between">
+          <div className="flex justify-end mt-8">
+            <div className="w-80 bg-gray-50 p-5 rounded-lg space-y-3">
+              <div className="flex justify-between text-sm">
                 <span>{getTranslatedText('subtotal')}</span>
-                <span>{formatCurrency(subtotal || 750, templateSettings.currency || 'EUR')}</span>
+                <span className="font-semibold">{formatCurrency(subtotal || 750, templateSettings.currency || 'EUR')}</span>
               </div>
               {templateSettings.vatEnabled && (
-                <div className="flex justify-between">
+                <div className="flex justify-between text-sm">
                   <span>{getTranslatedText('tax')} ({templateSettings.vatRate || 21}%):</span>
-                  <span>{formatCurrency(vatAmount, templateSettings.currency || 'EUR')}</span>
+                  <span className="font-semibold">{formatCurrency(vatAmount, templateSettings.currency || 'EUR')}</span>
                 </div>
               )}
-              <div className="flex justify-between font-bold text-lg border-t pt-2">
+              <div className="flex justify-between font-bold text-lg border-t-2 border-gray-700 pt-3 text-gray-700">
                 <span>{getTranslatedText('total')}</span>
                 <span>{formatCurrency(total || 750, templateSettings.currency || 'EUR')}</span>
               </div>
@@ -276,23 +371,23 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
           </div>
 
           {/* Notes and Terms */}
-          <div className="mt-8 space-y-4">
+          <div className="mt-10 grid grid-cols-2 gap-8">
             <div>
-              <div className="font-bold text-gray-700 mb-2">{getTranslatedText('notes')}</div>
-              <div className="text-sm text-gray-600">
+              <div className="font-bold text-gray-700 mb-3 text-lg">{getTranslatedText('notes')}</div>
+              <div className="text-sm text-gray-600 bg-gray-50 p-4 rounded-lg leading-relaxed">
                 {templateSettings.customTerms || 
                  "We verzoeken dat de door ons gefactureerde diensten binnen 3 dagen worden gecrediteerd/overgemaakt. Alle belastingen en sociale premies worden door ons aangegeven en afgedragen aan de autoriteiten."}
               </div>
             </div>
             
             <div>
-              <div className="font-bold text-gray-700 mb-2">{getTranslatedText('terms')}</div>
-              <div className="text-sm text-gray-600 space-y-1">
-                <div>{selectedAccount.name}:</div>
-                <div>IBAN: {selectedAccount.iban}</div>
-                <div>BIC: {selectedAccount.bic}</div>
-                {selectedAccount.blz && <div>BLZ: {selectedAccount.blz} KONTO: {selectedAccount.account}</div>}
-                {selectedAccount.bank && <div>Bank: {selectedAccount.bank}</div>}
+              <div className="font-bold text-gray-700 mb-3 text-lg">{getTranslatedText('terms')}</div>
+              <div className="text-sm text-gray-600 bg-gray-50 p-4 rounded-lg leading-relaxed">
+                <div className="font-semibold mb-2">{selectedAccount.name}:</div>
+                <div><strong>IBAN:</strong> {selectedAccount.iban}</div>
+                <div><strong>BIC:</strong> {selectedAccount.bic}</div>
+                {selectedAccount.blz && <div><strong>BLZ:</strong> {selectedAccount.blz} <strong>KONTO:</strong> {selectedAccount.account}</div>}
+                {selectedAccount.bank && <div><strong>Bank:</strong> {selectedAccount.bank}</div>}
               </div>
             </div>
           </div>

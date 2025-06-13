@@ -2,8 +2,20 @@
 import { SUPPORTED_CURRENCIES } from "@/components/invoices/CurrencySelector";
 
 export const getCurrencySymbol = (currencyCode: string = 'EUR'): string => {
-  const currency = SUPPORTED_CURRENCIES.find(c => c.code === currencyCode);
-  return currency?.symbol || '€';
+  const currencyMap: { [key: string]: string } = {
+    'EUR': '€',
+    'USD': '$',
+    'GBP': '£',
+    'JPY': '¥',
+    'CAD': 'C$',
+    'AUD': 'A$',
+    'CHF': '₣',
+    'SEK': 'kr',
+    'NOK': 'kr',
+    'DKK': 'kr'
+  };
+  
+  return currencyMap[currencyCode] || '€';
 };
 
 export const formatCurrency = (amount: number, currencyCode: string = 'EUR'): string => {

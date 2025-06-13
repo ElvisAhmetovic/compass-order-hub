@@ -175,6 +175,96 @@ const generateInvoiceHTML = (data: InvoicePDFData): string => {
         total: "Total:",
         notes: "Notes:",
         terms: "Conditions:"
+      },
+      es: {
+        date: "Fecha:",
+        dueDate: "Fecha de vencimiento:",
+        balanceDue: "Saldo pendiente:",
+        billTo: "Facturar a:",
+        item: "Artículo",
+        quantity: "Cantidad",
+        rate: "Precio",
+        amount: "Importe",
+        subtotal: "Subtotal:",
+        tax: "IVA",
+        total: "Total:",
+        notes: "Notas:",
+        terms: "Términos:"
+      },
+      da: {
+        date: "Dato:",
+        dueDate: "Forfaldsdato:",
+        balanceDue: "Resterende saldo:",
+        billTo: "Faktureres til:",
+        item: "Vare",
+        quantity: "Antal",
+        rate: "Pris",
+        amount: "Beløb",
+        subtotal: "Subtotal:",
+        tax: "Moms",
+        total: "Total:",
+        notes: "Noter:",
+        terms: "Vilkår:"
+      },
+      no: {
+        date: "Dato:",
+        dueDate: "Forfallsdato:",
+        balanceDue: "Gjenstående saldo:",
+        billTo: "Faktureres til:",
+        item: "Vare",
+        quantity: "Antall",
+        rate: "Pris",
+        amount: "Beløp",
+        subtotal: "Subtotal:",
+        tax: "MVA",
+        total: "Total:",
+        notes: "Notater:",
+        terms: "Vilkår:"
+      },
+      cs: {
+        date: "Datum:",
+        dueDate: "Datum splatnosti:",
+        balanceDue: "Zbývající zůstatek:",
+        billTo: "Fakturovat na:",
+        item: "Položka",
+        quantity: "Množství",
+        rate: "Cena",
+        amount: "Částka",
+        subtotal: "Mezisoučet:",
+        tax: "DPH",
+        total: "Celkem:",
+        notes: "Poznámky:",
+        terms: "Podmínky:"
+      },
+      pl: {
+        date: "Data:",
+        dueDate: "Termin płatności:",
+        balanceDue: "Pozostałe saldo:",
+        billTo: "Fakturować do:",
+        item: "Pozycja",
+        quantity: "Ilość",
+        rate: "Cena",
+        amount: "Kwota",
+        subtotal: "Suma częściowa:",
+        tax: "VAT",
+        total: "Razem:",
+        notes: "Uwagi:",
+        terms: "Warunki:"
+      },
+      sv: {
+        date: "Datum:",
+        dueDate: "Förfallodatum:",
+        balanceDue: "Återstående saldo:",
+        billTo: "Fakturera till:",
+        item: "Artikel",
+        quantity: "Antal",
+        rate: "Pris",
+        amount: "Belopp",
+        subtotal: "Delsumma:",
+        tax: "Moms",
+        total: "Totalt:",
+        notes: "Anteckningar:",
+        terms: "Villkor:"
       }
     };
     
@@ -183,78 +273,93 @@ const generateInvoiceHTML = (data: InvoicePDFData): string => {
   };
 
   const currentInvoiceData = invoice || {
-    invoice_number: 'NEW',
+    invoice_number: formData?.invoice_number || 'NEW',
     issue_date: formData?.issue_date || new Date().toISOString(),
     due_date: formData?.due_date || new Date(Date.now() + 30*24*60*60*1000).toISOString()
   };
 
+  const companyInfo = templateSettings.companyInfo || {
+    name: "Company Name",
+    registrationNumber: "123456789",
+    vatId: "VAT123456789",
+    street: "Street Address",
+    postal: "12345",
+    city: "City",
+    email: "info@company.com"
+  };
+
   return `
-    <div style="background: white; min-height: 800px; padding: 32px; font-family: Arial, sans-serif;">
+    <div style="background: white; min-height: 800px; padding: 32px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 14px; line-height: 1.4; color: #333;">
       <!-- Header -->
-      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 32px;">
-        <div style="display: flex; align-items: center; gap: 16px;">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px; border-bottom: 2px solid #e5e7eb; padding-bottom: 20px;">
+        <div style="display: flex; align-items: center; gap: 20px;">
           ${templateSettings.logo ? `
             <img 
               src="${templateSettings.logo}" 
               alt="Company Logo" 
               style="height: ${
-                templateSettings.logoSize === "small" ? "48px" :
-                templateSettings.logoSize === "medium" ? "64px" :
-                "80px"
+                templateSettings.logoSize === "small" ? "60px" :
+                templateSettings.logoSize === "medium" ? "80px" :
+                "120px"
               }; width: auto; object-fit: contain;"
             />
           ` : ''}
           <div>
-            <h1 style="font-size: 18px; font-weight: bold; color: #1f2937; margin: 0;">
-              ${templateSettings.companyInfo.name}
+            <h1 style="font-size: 24px; font-weight: bold; color: #1f2937; margin: 0; margin-bottom: 8px;">
+              ${companyInfo.name}
             </h1>
+            <div style="font-size: 12px; color: #6b7280;">
+              ${companyInfo.street}<br>
+              ${companyInfo.postal} ${companyInfo.city}<br>
+              ${companyInfo.email}
+            </div>
           </div>
         </div>
         
         <div style="text-align: right;">
-          <h2 style="font-size: 32px; font-weight: bold; color: #4b5563; margin: 0;">
+          <h2 style="font-size: 36px; font-weight: bold; color: #374151; margin: 0; margin-bottom: 8px;">
             ${templateSettings.invoiceNumberPrefix || 'RE NR:'}${currentInvoiceData.invoice_number}
           </h2>
-          <p style="font-size: 12px; color: #6b7280; margin: 4px 0 0 0;">
+          <p style="font-size: 14px; color: #6b7280; margin: 0;">
             # ${templateSettings.invoiceNumberPrefix || 'RE NR:'}${currentInvoiceData.invoice_number}
           </p>
         </div>
       </div>
 
       <!-- Company Details and Invoice Info -->
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-bottom: 32px;">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-bottom: 40px;">
         <div>
-          <div style="font-size: 14px; color: #374151; line-height: 1.4;">
-            <div style="font-weight: bold;">${templateSettings.companyInfo.name}</div>
-            <div>Company Registration Number: ${templateSettings.companyInfo.registrationNumber}</div>
-            <div>UID- Number: ${templateSettings.companyInfo.vatId}</div>
-            <div>${templateSettings.companyInfo.street} ${templateSettings.companyInfo.postal} ${templateSettings.companyInfo.city}</div>
-            <div>${templateSettings.companyInfo.email}</div>
+          <div style="font-size: 14px; color: #374151; line-height: 1.6;">
+            <div style="font-weight: bold; margin-bottom: 8px;">${companyInfo.name}</div>
+            <div>Company Registration Number: ${companyInfo.registrationNumber}</div>
+            <div>UID- Number: ${companyInfo.vatId}</div>
+            <div>${companyInfo.street} ${companyInfo.postal} ${companyInfo.city}</div>
+            <div>${companyInfo.email}</div>
           </div>
         </div>
         
         <div style="text-align: right;">
-          <div style="margin-bottom: 8px;">
-            <span>${getTranslatedText('date')}</span>
-            <span style="float: right;">${formatDate(currentInvoiceData.issue_date)}</span>
+          <div style="margin-bottom: 12px; display: flex; justify-content: space-between;">
+            <span style="font-weight: 600;">${getTranslatedText('date')}</span>
+            <span>${formatDate(currentInvoiceData.issue_date)}</span>
           </div>
-          <div style="margin-bottom: 8px;">
-            <span>${getTranslatedText('dueDate')}</span>
-            <span style="float: right;">${formatDate(currentInvoiceData.due_date)}</span>
+          <div style="margin-bottom: 12px; display: flex; justify-content: space-between;">
+            <span style="font-weight: 600;">${getTranslatedText('dueDate')}</span>
+            <span>${formatDate(currentInvoiceData.due_date)}</span>
           </div>
-          <div style="font-weight: bold; font-size: 18px;">
+          <div style="font-weight: bold; font-size: 20px; display: flex; justify-content: space-between; border-top: 1px solid #e5e7eb; padding-top: 12px;">
             <span>${getTranslatedText('balanceDue')}</span>
-            <span style="float: right;">${formatCurrency(total || 750, templateSettings.currency)}</span>
+            <span>${formatCurrency(total || 750, templateSettings.currency || 'EUR')}</span>
           </div>
         </div>
       </div>
 
       <!-- Bill To -->
-      <div style="margin-bottom: 32px;">
-        <div style="font-weight: bold; color: #374151; margin-bottom: 8px;">${getTranslatedText('billTo')}</div>
-        <div style="font-size: 14px; color: #374151; line-height: 1.4;">
+      <div style="margin-bottom: 40px;">
+        <div style="font-weight: bold; color: #374151; margin-bottom: 12px; font-size: 16px;">${getTranslatedText('billTo')}</div>
+        <div style="font-size: 14px; color: #374151; line-height: 1.6; background: #f9fafb; padding: 16px; border-radius: 8px;">
           ${client ? `
-            <div style="font-weight: bold;">${client.name}</div>
+            <div style="font-weight: bold; margin-bottom: 4px;">${client.name}</div>
             <div>${client.email}</div>
             ${client.address ? `<div>${client.address}</div>` : ''}
             ${client.city ? `<div>${client.zip_code} ${client.city}</div>` : ''}
@@ -269,30 +374,30 @@ const generateInvoiceHTML = (data: InvoicePDFData): string => {
       </div>
 
       <!-- Invoice Items Table -->
-      <div style="margin: 32px 0;">
-        <table style="width: 100%; border-collapse: collapse;">
+      <div style="margin: 40px 0;">
+        <table style="width: 100%; border-collapse: collapse; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
           <thead>
-            <tr style="background: #1f2937; color: white;">
-              <th style="text-align: left; padding: 12px 16px;">${getTranslatedText('item')}</th>
-              <th style="text-align: center; padding: 12px 16px;">${getTranslatedText('quantity')}</th>
-              <th style="text-align: right; padding: 12px 16px;">${getTranslatedText('rate')}</th>
-              <th style="text-align: right; padding: 12px 16px;">${getTranslatedText('amount')}</th>
+            <tr style="background: #374151; color: white;">
+              <th style="text-align: left; padding: 16px; font-weight: 600; border-right: 1px solid #4b5563;">${getTranslatedText('item')}</th>
+              <th style="text-align: center; padding: 16px; font-weight: 600; border-right: 1px solid #4b5563;">${getTranslatedText('quantity')}</th>
+              <th style="text-align: right; padding: 16px; font-weight: 600; border-right: 1px solid #4b5563;">${getTranslatedText('rate')}</th>
+              <th style="text-align: right; padding: 16px; font-weight: 600;">${getTranslatedText('amount')}</th>
             </tr>
           </thead>
           <tbody>
             ${lineItems.length > 0 ? lineItems.map((item, index) => `
-              <tr style="border-bottom: 1px solid #e5e7eb;">
-                <td style="padding: 12px 16px;">${item.item_description}</td>
-                <td style="text-align: center; padding: 12px 16px;">${item.quantity}</td>
-                <td style="text-align: right; padding: 12px 16px;">${formatCurrency(item.unit_price, templateSettings.currency)}</td>
-                <td style="text-align: right; padding: 12px 16px;">${formatCurrency(item.quantity * item.unit_price * (1 - item.discount_rate), templateSettings.currency)}</td>
+              <tr style="border-bottom: 1px solid #e5e7eb; ${index % 2 === 0 ? 'background: #f9fafb;' : 'background: white;'}">
+                <td style="padding: 16px; border-right: 1px solid #e5e7eb;">${item.item_description}</td>
+                <td style="text-align: center; padding: 16px; border-right: 1px solid #e5e7eb;">${item.quantity}</td>
+                <td style="text-align: right; padding: 16px; border-right: 1px solid #e5e7eb;">${formatCurrency(item.unit_price, templateSettings.currency || 'EUR')}</td>
+                <td style="text-align: right; padding: 16px; font-weight: 600;">${formatCurrency(item.quantity * item.unit_price * (1 - item.discount_rate), templateSettings.currency || 'EUR')}</td>
               </tr>
             `).join('') : `
-              <tr style="border-bottom: 1px solid #e5e7eb;">
-                <td style="padding: 12px 16px;">Sample Service</td>
-                <td style="text-align: center; padding: 12px 16px;">1</td>
-                <td style="text-align: right; padding: 12px 16px;">${formatCurrency(750, templateSettings.currency)}</td>
-                <td style="text-align: right; padding: 12px 16px;">${formatCurrency(750, templateSettings.currency)}</td>
+              <tr style="border-bottom: 1px solid #e5e7eb; background: #f9fafb;">
+                <td style="padding: 16px; border-right: 1px solid #e5e7eb;">Sample Service</td>
+                <td style="text-align: center; padding: 16px; border-right: 1px solid #e5e7eb;">1</td>
+                <td style="text-align: right; padding: 16px; border-right: 1px solid #e5e7eb;">${formatCurrency(750, templateSettings.currency || 'EUR')}</td>
+                <td style="text-align: right; padding: 16px; font-weight: 600;">${formatCurrency(750, templateSettings.currency || 'EUR')}</td>
               </tr>
             `}
           </tbody>
@@ -300,43 +405,43 @@ const generateInvoiceHTML = (data: InvoicePDFData): string => {
       </div>
 
       <!-- Totals -->
-      <div style="display: flex; justify-content: flex-end; margin: 24px 0;">
-        <div style="width: 256px;">
-          <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+      <div style="display: flex; justify-content: flex-end; margin: 32px 0;">
+        <div style="width: 300px; background: #f9fafb; padding: 20px; border-radius: 8px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 14px;">
             <span>${getTranslatedText('subtotal')}</span>
-            <span>${formatCurrency(subtotal || 750, templateSettings.currency)}</span>
+            <span style="font-weight: 600;">${formatCurrency(subtotal || 750, templateSettings.currency || 'EUR')}</span>
           </div>
           ${templateSettings.vatEnabled ? `
-            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-              <span>${getTranslatedText('tax')} (${templateSettings.vatRate}%):</span>
-              <span>${formatCurrency(vatAmount, templateSettings.currency)}</span>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 14px;">
+              <span>${getTranslatedText('tax')} (${templateSettings.vatRate || 21}%):</span>
+              <span style="font-weight: 600;">${formatCurrency(vatAmount, templateSettings.currency || 'EUR')}</span>
             </div>
           ` : ''}
-          <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 18px; border-top: 1px solid #e5e7eb; padding-top: 8px;">
+          <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 18px; border-top: 2px solid #374151; padding-top: 12px; color: #374151;">
             <span>${getTranslatedText('total')}</span>
-            <span>${formatCurrency(total || 750, templateSettings.currency)}</span>
+            <span>${formatCurrency(total || 750, templateSettings.currency || 'EUR')}</span>
           </div>
         </div>
       </div>
 
       <!-- Notes and Terms -->
-      <div style="margin-top: 32px;">
+      <div style="margin-top: 40px; display: grid; grid-template-columns: 1fr 1fr; gap: 32px;">
         <div>
-          <div style="font-weight: bold; color: #374151; margin-bottom: 8px;">${getTranslatedText('notes')}</div>
-          <div style="font-size: 14px; color: #4b5563; margin-bottom: 16px;">
+          <div style="font-weight: bold; color: #374151; margin-bottom: 12px; font-size: 16px;">${getTranslatedText('notes')}</div>
+          <div style="font-size: 14px; color: #4b5563; line-height: 1.6; background: #f9fafb; padding: 16px; border-radius: 8px;">
             ${templateSettings.customTerms || formData?.notes || 
              "We verzoeken dat de door ons gefactureerde diensten binnen 3 dagen worden gecrediteerd/overgemaakt. Alle belastingen en sociale premies worden door ons aangegeven en afgedragen aan de autoriteiten."}
           </div>
         </div>
         
         <div>
-          <div style="font-weight: bold; color: #374151; margin-bottom: 8px;">${getTranslatedText('terms')}</div>
-          <div style="font-size: 14px; color: #4b5563; line-height: 1.4;">
-            <div>${selectedAccount.name}:</div>
-            <div>IBAN: ${selectedAccount.iban}</div>
-            <div>BIC: ${selectedAccount.bic}</div>
-            ${selectedAccount.blz ? `<div>BLZ: ${selectedAccount.blz} KONTO: ${selectedAccount.account}</div>` : ''}
-            ${selectedAccount.bank ? `<div>Bank: ${selectedAccount.bank}</div>` : ''}
+          <div style="font-weight: bold; color: #374151; margin-bottom: 12px; font-size: 16px;">${getTranslatedText('terms')}</div>
+          <div style="font-size: 14px; color: #4b5563; line-height: 1.6; background: #f9fafb; padding: 16px; border-radius: 8px;">
+            <div style="font-weight: 600; margin-bottom: 8px;">${selectedAccount.name}:</div>
+            <div><strong>IBAN:</strong> ${selectedAccount.iban}</div>
+            <div><strong>BIC:</strong> ${selectedAccount.bic}</div>
+            ${selectedAccount.blz ? `<div><strong>BLZ:</strong> ${selectedAccount.blz} <strong>KONTO:</strong> ${selectedAccount.account}</div>` : ''}
+            ${selectedAccount.bank ? `<div><strong>Bank:</strong> ${selectedAccount.bank}</div>` : ''}
           </div>
         </div>
       </div>

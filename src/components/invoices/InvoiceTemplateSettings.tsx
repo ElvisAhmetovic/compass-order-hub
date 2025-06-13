@@ -51,7 +51,26 @@ const LANGUAGES = [
   { code: 'en', name: 'English' },
   { code: 'de', name: 'Deutsch' },
   { code: 'nl', name: 'Nederlands' },
-  { code: 'fr', name: 'Français' }
+  { code: 'fr', name: 'Français' },
+  { code: 'es', name: 'Español' },
+  { code: 'da', name: 'Dansk' },
+  { code: 'no', name: 'Norsk' },
+  { code: 'cs', name: 'Čeština' },
+  { code: 'pl', name: 'Polski' },
+  { code: 'sv', name: 'Svenska' }
+];
+
+const CURRENCIES = [
+  { code: 'EUR', name: 'EUR (€)', symbol: '€' },
+  { code: 'USD', name: 'USD ($)', symbol: '$' },
+  { code: 'GBP', name: 'GBP (£)', symbol: '£' },
+  { code: 'JPY', name: 'JPY (¥)', symbol: '¥' },
+  { code: 'CAD', name: 'CAD (C$)', symbol: 'C$' },
+  { code: 'AUD', name: 'AUD (A$)', symbol: 'A$' },
+  { code: 'CHF', name: 'CHF (₣)', symbol: '₣' },
+  { code: 'SEK', name: 'SEK (kr)', symbol: 'kr' },
+  { code: 'NOK', name: 'NOK (kr)', symbol: 'kr' },
+  { code: 'DKK', name: 'DKK (kr)', symbol: 'kr' }
 ];
 
 const InvoiceTemplateSettings: React.FC<InvoiceTemplateSettingsProps> = ({
@@ -60,7 +79,7 @@ const InvoiceTemplateSettings: React.FC<InvoiceTemplateSettingsProps> = ({
 }) => {
   const [settings, setSettings] = useState({
     logo: "",
-    logoSize: "medium",
+    logoSize: "large",
     language: "en",
     selectedPaymentAccount: "belgium",
     companyInfo: getCompanyInfo(),
@@ -111,9 +130,9 @@ const InvoiceTemplateSettings: React.FC<InvoiceTemplateSettingsProps> = ({
                   src={settings.logo} 
                   alt="Company Logo" 
                   className={`${
-                    settings.logoSize === "small" ? "h-8" :
-                    settings.logoSize === "medium" ? "h-12" :
-                    "h-16"
+                    settings.logoSize === "small" ? "h-12" :
+                    settings.logoSize === "medium" ? "h-16" :
+                    "h-24"
                   } w-auto object-contain`}
                 />
                 <Button
@@ -322,9 +341,11 @@ const InvoiceTemplateSettings: React.FC<InvoiceTemplateSettingsProps> = ({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="EUR">EUR (€)</SelectItem>
-                  <SelectItem value="USD">USD ($)</SelectItem>
-                  <SelectItem value="GBP">GBP (£)</SelectItem>
+                  {CURRENCIES.map((currency) => (
+                    <SelectItem key={currency.code} value={currency.code}>
+                      {currency.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
