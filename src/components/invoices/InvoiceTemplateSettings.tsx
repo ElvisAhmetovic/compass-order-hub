@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -129,6 +130,96 @@ const InvoiceTemplateSettings: React.FC<InvoiceTemplateSettingsProps> = ({
   };
 
   const selectedAccount = PAYMENT_ACCOUNTS.find(acc => acc.id === settings.selectedPaymentAccount);
+
+  // Get translated payment labels
+  const getPaymentTranslations = (language: string) => {
+    const translations = {
+      en: {
+        paymentAccount: "Payment Account",
+        iban: "IBAN",
+        bic: "BIC", 
+        blz: "BLZ",
+        account: "Account",
+        bank: "Bank"
+      },
+      nl: {
+        paymentAccount: "Betaalrekening",
+        iban: "IBAN",
+        bic: "BIC",
+        blz: "BLZ", 
+        account: "Rekening",
+        bank: "Bank"
+      },
+      de: {
+        paymentAccount: "Zahlungskonto",
+        iban: "IBAN",
+        bic: "BIC",
+        blz: "BLZ",
+        account: "Konto",
+        bank: "Bank"
+      },
+      fr: {
+        paymentAccount: "Compte de paiement",
+        iban: "IBAN",
+        bic: "BIC",
+        blz: "BLZ",
+        account: "Compte",
+        bank: "Banque"
+      },
+      es: {
+        paymentAccount: "Cuenta de pago",
+        iban: "IBAN",
+        bic: "BIC",
+        blz: "BLZ",
+        account: "Cuenta",
+        bank: "Banco"
+      },
+      da: {
+        paymentAccount: "Betalingskonto",
+        iban: "IBAN",
+        bic: "BIC",
+        blz: "BLZ",
+        account: "Konto",
+        bank: "Bank"
+      },
+      no: {
+        paymentAccount: "Betalingskonto",
+        iban: "IBAN",
+        bic: "BIC",
+        blz: "BLZ",
+        account: "Konto",
+        bank: "Bank"
+      },
+      cs: {
+        paymentAccount: "Platební účet",
+        iban: "IBAN",
+        bic: "BIC",
+        blz: "BLZ",
+        account: "Účet",
+        bank: "Banka"
+      },
+      pl: {
+        paymentAccount: "Konto płatnicze",
+        iban: "IBAN",
+        bic: "BIC",
+        blz: "BLZ",
+        account: "Konto",
+        bank: "Bank"
+      },
+      sv: {
+        paymentAccount: "Betalningskonto",
+        iban: "IBAN",
+        bic: "BIC",
+        blz: "BLZ",
+        account: "Konto",
+        bank: "Bank"
+      }
+    };
+    
+    return translations[language] || translations.en;
+  };
+
+  const paymentLabels = getPaymentTranslations(settings.language);
 
   return (
     <div className="space-y-6">
@@ -275,7 +366,7 @@ const InvoiceTemplateSettings: React.FC<InvoiceTemplateSettingsProps> = ({
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <Label>Payment Account</Label>
+            <Label>{paymentLabels.paymentAccount}</Label>
             <Select 
               value={settings.selectedPaymentAccount} 
               onValueChange={(value) => setSettings(prev => ({ ...prev, selectedPaymentAccount: value }))}
@@ -300,24 +391,24 @@ const InvoiceTemplateSettings: React.FC<InvoiceTemplateSettingsProps> = ({
             <div className="p-4 bg-gray-50 rounded-lg space-y-2">
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <strong>IBAN:</strong> {selectedAccount.iban}
+                  <strong>{paymentLabels.iban}:</strong> {selectedAccount.iban}
                 </div>
                 <div>
-                  <strong>BIC:</strong> {selectedAccount.bic}
+                  <strong>{paymentLabels.bic}:</strong> {selectedAccount.bic}
                 </div>
                 {selectedAccount.blz && (
                   <div>
-                    <strong>BLZ:</strong> {selectedAccount.blz}
+                    <strong>{paymentLabels.blz}:</strong> {selectedAccount.blz}
                   </div>
                 )}
                 {selectedAccount.account && (
                   <div>
-                    <strong>Account:</strong> {selectedAccount.account}
+                    <strong>{paymentLabels.account}:</strong> {selectedAccount.account}
                   </div>
                 )}
                 {selectedAccount.bank && (
                   <div className="col-span-2">
-                    <strong>Bank:</strong> {selectedAccount.bank}
+                    <strong>{paymentLabels.bank}:</strong> {selectedAccount.bank}
                   </div>
                 )}
               </div>

@@ -74,7 +74,12 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
         tax: "Tax",
         total: "Total:",
         notes: "Notes:",
-        terms: "Terms:"
+        terms: "Terms:",
+        iban: "IBAN",
+        bic: "BIC",
+        blz: "BLZ",
+        account: "Account",
+        bank: "Bank"
       },
       nl: {
         date: "Datum:",
@@ -89,7 +94,12 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
         tax: "BTW",
         total: "Totaal:",
         notes: "Opmerkingen:",
-        terms: "Voorwaarden:"
+        terms: "Voorwaarden:",
+        iban: "IBAN",
+        bic: "BIC",
+        blz: "BLZ",
+        account: "Rekening",
+        bank: "Bank"
       },
       de: {
         date: "Datum:",
@@ -104,7 +114,12 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
         tax: "MwSt",
         total: "Gesamt:",
         notes: "Notizen:",
-        terms: "Bedingungen:"
+        terms: "Bedingungen:",
+        iban: "IBAN",
+        bic: "BIC",
+        blz: "BLZ",
+        account: "Konto",
+        bank: "Bank"
       },
       fr: {
         date: "Date:",
@@ -119,7 +134,12 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
         tax: "TVA",
         total: "Total:",
         notes: "Notes:",
-        terms: "Conditions:"
+        terms: "Conditions:",
+        iban: "IBAN",
+        bic: "BIC",
+        blz: "BLZ",
+        account: "Compte",
+        bank: "Banque"
       },
       es: {
         date: "Fecha:",
@@ -134,7 +154,12 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
         tax: "IVA",
         total: "Total:",
         notes: "Notas:",
-        terms: "Términos:"
+        terms: "Términos:",
+        iban: "IBAN",
+        bic: "BIC",
+        blz: "BLZ",
+        account: "Cuenta",
+        bank: "Banco"
       },
       da: {
         date: "Dato:",
@@ -149,7 +174,12 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
         tax: "Moms",
         total: "Total:",
         notes: "Noter:",
-        terms: "Vilkår:"
+        terms: "Vilkår:",
+        iban: "IBAN",
+        bic: "BIC",
+        blz: "BLZ",
+        account: "Konto",
+        bank: "Bank"
       },
       no: {
         date: "Dato:",
@@ -164,7 +194,12 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
         tax: "MVA",
         total: "Total:",
         notes: "Notater:",
-        terms: "Vilkår:"
+        terms: "Vilkår:",
+        iban: "IBAN",
+        bic: "BIC",
+        blz: "BLZ",
+        account: "Konto",
+        bank: "Bank"
       },
       cs: {
         date: "Datum:",
@@ -179,7 +214,12 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
         tax: "DPH",
         total: "Celkem:",
         notes: "Poznámky:",
-        terms: "Podmínky:"
+        terms: "Podmínky:",
+        iban: "IBAN",
+        bic: "BIC",
+        blz: "BLZ",
+        account: "Účet",
+        bank: "Banka"
       },
       pl: {
         date: "Data:",
@@ -194,7 +234,12 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
         tax: "VAT",
         total: "Razem:",
         notes: "Uwagi:",
-        terms: "Warunki:"
+        terms: "Warunki:",
+        iban: "IBAN",
+        bic: "BIC",
+        blz: "BLZ",
+        account: "Konto",
+        bank: "Bank"
       },
       sv: {
         date: "Datum:",
@@ -209,7 +254,12 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
         tax: "Moms",
         total: "Totalt:",
         notes: "Anteckningar:",
-        terms: "Villkor:"
+        terms: "Villkor:",
+        iban: "IBAN",
+        bic: "BIC",
+        blz: "BLZ",
+        account: "Konto",
+        bank: "Bank"
       }
     };
     
@@ -384,10 +434,10 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
               <div className="font-bold text-gray-700 mb-3 text-lg">{getTranslatedText('terms')}</div>
               <div className="text-sm text-gray-600 bg-gray-50 p-4 rounded-lg leading-relaxed">
                 <div className="font-semibold mb-2">{selectedAccount.name}:</div>
-                <div><strong>IBAN:</strong> {selectedAccount.iban}</div>
-                <div><strong>BIC:</strong> {selectedAccount.bic}</div>
-                {selectedAccount.blz && <div><strong>BLZ:</strong> {selectedAccount.blz} <strong>KONTO:</strong> {selectedAccount.account}</div>}
-                {selectedAccount.bank && <div><strong>Bank:</strong> {selectedAccount.bank}</div>}
+                <div><strong>{getTranslatedText('iban')}:</strong> {selectedAccount.iban}</div>
+                <div><strong>{getTranslatedText('bic')}:</strong> {selectedAccount.bic}</div>
+                {selectedAccount.blz && <div><strong>{getTranslatedText('blz')}:</strong> {selectedAccount.blz} <strong>{getTranslatedText('account')}:</strong> {selectedAccount.account}</div>}
+                {selectedAccount.bank && <div><strong>{getTranslatedText('bank')}:</strong> {selectedAccount.bank}</div>}
               </div>
             </div>
           </div>

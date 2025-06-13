@@ -144,7 +144,12 @@ const generateInvoiceHTML = (data: InvoicePDFData): string => {
         tax: "Tax",
         total: "Total:",
         notes: "Notes:",
-        terms: "Terms:"
+        terms: "Terms:",
+        iban: "IBAN",
+        bic: "BIC",
+        blz: "BLZ",
+        account: "ACCOUNT",
+        bank: "Bank"
       },
       nl: {
         date: "Datum:",
@@ -159,7 +164,12 @@ const generateInvoiceHTML = (data: InvoicePDFData): string => {
         tax: "BTW",
         total: "Totaal:",
         notes: "Opmerkingen:",
-        terms: "Voorwaarden:"
+        terms: "Voorwaarden:",
+        iban: "IBAN",
+        bic: "BIC",
+        blz: "BLZ",
+        account: "REKENING",
+        bank: "Bank"
       },
       de: {
         date: "Datum:",
@@ -174,7 +184,12 @@ const generateInvoiceHTML = (data: InvoicePDFData): string => {
         tax: "MwSt",
         total: "Gesamt:",
         notes: "Notizen:",
-        terms: "Bedingungen:"
+        terms: "Bedingungen:",
+        iban: "IBAN",
+        bic: "BIC",
+        blz: "BLZ",
+        account: "KONTO",
+        bank: "Bank"
       },
       fr: {
         date: "Date:",
@@ -189,7 +204,12 @@ const generateInvoiceHTML = (data: InvoicePDFData): string => {
         tax: "TVA",
         total: "Total:",
         notes: "Notes:",
-        terms: "Conditions:"
+        terms: "Conditions:",
+        iban: "IBAN",
+        bic: "BIC",
+        blz: "BLZ",
+        account: "COMPTE",
+        bank: "Banque"
       },
       es: {
         date: "Fecha:",
@@ -204,7 +224,12 @@ const generateInvoiceHTML = (data: InvoicePDFData): string => {
         tax: "IVA",
         total: "Total:",
         notes: "Notas:",
-        terms: "Términos:"
+        terms: "Términos:",
+        iban: "IBAN",
+        bic: "BIC",
+        blz: "BLZ",
+        account: "CUENTA",
+        bank: "Banco"
       },
       da: {
         date: "Dato:",
@@ -219,7 +244,12 @@ const generateInvoiceHTML = (data: InvoicePDFData): string => {
         tax: "Moms",
         total: "Total:",
         notes: "Noter:",
-        terms: "Vilkår:"
+        terms: "Vilkår:",
+        iban: "IBAN",
+        bic: "BIC",
+        blz: "BLZ",
+        account: "KONTO",
+        bank: "Bank"
       },
       no: {
         date: "Dato:",
@@ -234,7 +264,12 @@ const generateInvoiceHTML = (data: InvoicePDFData): string => {
         tax: "MVA",
         total: "Total:",
         notes: "Notater:",
-        terms: "Vilkår:"
+        terms: "Vilkår:",
+        iban: "IBAN",
+        bic: "BIC",
+        blz: "BLZ",
+        account: "KONTO",
+        bank: "Bank"
       },
       cs: {
         date: "Datum:",
@@ -249,7 +284,12 @@ const generateInvoiceHTML = (data: InvoicePDFData): string => {
         tax: "DPH",
         total: "Celkem:",
         notes: "Poznámky:",
-        terms: "Podmínky:"
+        terms: "Podmínky:",
+        iban: "IBAN",
+        bic: "BIC",
+        blz: "BLZ",
+        account: "ÚČET",
+        bank: "Banka"
       },
       pl: {
         date: "Data:",
@@ -264,7 +304,12 @@ const generateInvoiceHTML = (data: InvoicePDFData): string => {
         tax: "VAT",
         total: "Razem:",
         notes: "Uwagi:",
-        terms: "Warunki:"
+        terms: "Warunki:",
+        iban: "IBAN",
+        bic: "BIC",
+        blz: "BLZ",
+        account: "KONTO",
+        bank: "Bank"
       },
       sv: {
         date: "Datum:",
@@ -279,7 +324,12 @@ const generateInvoiceHTML = (data: InvoicePDFData): string => {
         tax: "Moms",
         total: "Totalt:",
         notes: "Anteckningar:",
-        terms: "Villkor:"
+        terms: "Villkor:",
+        iban: "IBAN",
+        bic: "BIC",
+        blz: "BLZ",
+        account: "KONTO",
+        bank: "Bank"
       }
     };
     
@@ -453,10 +503,10 @@ const generateInvoiceHTML = (data: InvoicePDFData): string => {
           <div style="font-weight: bold; color: #374151; margin-bottom: 12px; font-size: 16px;">${getTranslatedText('terms')}</div>
           <div style="font-size: 14px; color: #4b5563; line-height: 1.6; background: #f9fafb; padding: 16px; border-radius: 8px;">
             <div style="font-weight: 600; margin-bottom: 8px;">${selectedAccount.name}:</div>
-            <div><strong>IBAN:</strong> ${selectedAccount.iban}</div>
-            <div><strong>BIC:</strong> ${selectedAccount.bic}</div>
-            ${selectedAccount.blz ? `<div><strong>BLZ:</strong> ${selectedAccount.blz} <strong>KONTO:</strong> ${selectedAccount.account}</div>` : ''}
-            ${selectedAccount.bank ? `<div><strong>Bank:</strong> ${selectedAccount.bank}</div>` : ''}
+            <div><strong>${getTranslatedText('iban')}:</strong> ${selectedAccount.iban}</div>
+            <div><strong>${getTranslatedText('bic')}:</strong> ${selectedAccount.bic}</div>
+            ${selectedAccount.blz ? `<div><strong>${getTranslatedText('blz')}:</strong> ${selectedAccount.blz} <strong>${getTranslatedText('account')}:</strong> ${selectedAccount.account}</div>` : ''}
+            ${selectedAccount.bank ? `<div><strong>${getTranslatedText('bank')}:</strong> ${selectedAccount.bank}</div>` : ''}
           </div>
         </div>
       </div>
