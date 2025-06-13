@@ -8,7 +8,7 @@ import {
   DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, FileText, AlertTriangle } from "lucide-react";
+import { MoreHorizontal, FileText, AlertTriangle, Receipt } from "lucide-react";
 import { Order, OrderStatus } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
@@ -149,6 +149,48 @@ const OrderActions = ({ order, onOrderView, onRefresh }: OrderActionsProps) => {
         description: "Failed to create invoice from order. Please check your authentication and try again.",
         variant: "destructive"
       });
+    }
+  };
+
+  const handleCreateInvoice = async () => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "You must be logged in to create invoices.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    
+    try {
+      console.log(`Creating invoice for order ${order.id}`);
+      
+      // Create invoice from order with draft status
+      await createInvoiceFromOrder(order.id, order, "Invoice Sent");
+      
+      console.log('Invoice created successfully');
+      
+      // Show success message
+      toast({
+        title: "Invoice Created",
+        description: `Invoice has been created for order from ${order.company_name}.`
+      });
+      
+      // Trigger refresh
+      onRefresh();
+      window.dispatchEvent(new CustomEvent('orderStatusChanged'));
+      
+    } catch (error) {
+      console.error("Error creating invoice:", error);
+      toast({
+        title: "Error",
+        description: "Failed to create invoice. Please check your connection and try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -385,6 +427,14 @@ const OrderActions = ({ order, onOrderView, onRefresh }: OrderActionsProps) => {
       <DropdownMenuContent align="end" className="w-48">
         <DropdownMenuItem onClick={() => onOrderView(order)}>
           View Details
+        </DropdownMenuItem>
+        
+        <DropdownMenuSeparator />
+        
+        {/* Create Invoice option */}
+        <DropdownMenuItem onClick={handleCreateInvoice} disabled={isLoading}>
+          <Receipt className="h-4 w-4 mr-2" />
+          Create Invoice
         </DropdownMenuItem>
         
         <DropdownMenuSeparator />
