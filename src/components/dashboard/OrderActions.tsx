@@ -271,6 +271,65 @@ const OrderActions = ({ order, onOrderView, onRefresh }: OrderActionsProps) => {
     }
   };
 
+  const handleMoveToYearlyPackages = async () => {
+    if (!isAdmin) {
+      toast({
+        title: "Permission Denied",
+        description: "Only administrators can move orders to yearly packages.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to move orders.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (order.is_yearly_package) {
+      toast({
+        title: "Already a Yearly Package",
+        description: "This order is already marked as a yearly package.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!window.confirm("Are you sure you want to move this order to yearly packages?")) {
+      return;
+    }
+    
+    setIsLoading(true);
+    
+    try {
+      // Update order to mark it as yearly package
+      await OrderService.updateOrder(order.id, { is_yearly_package: true });
+      
+      // Show success message
+      toast({
+        title: "Order Moved",
+        description: "The order has been moved to yearly packages successfully."
+      });
+      
+      // Trigger refresh and notify about the change
+      onRefresh();
+      window.dispatchEvent(new CustomEvent('orderStatusChanged'));
+    } catch (error) {
+      console.error("Error moving order to yearly packages:", error);
+      toast({
+        title: "Error",
+        description: "Failed to move the order to yearly packages. Please check your connection and try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleAutoAssign = async () => {
     if (!isAdmin) {
       toast({
@@ -329,6 +388,16 @@ const OrderActions = ({ order, onOrderView, onRefresh }: OrderActionsProps) => {
         </DropdownMenuItem>
         
         <DropdownMenuSeparator />
+        
+        {/* Move to Yearly Packages - only show for regular orders */}
+        {!order.is_yearly_package && (
+          <>
+            <DropdownMenuItem onClick={handleMoveToYearlyPackages}>
+              Move to Yearly Packages
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+          </>
+        )}
         
         {/* Workflow automation actions */}
         {!order.assigned_to && (

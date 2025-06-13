@@ -39,6 +39,7 @@ const OrderRow = ({
   const [isDeleting, setIsDeleting] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [isSendingToReview, setIsSendingToReview] = useState(false);
+  const [isMovingToYearly, setIsMovingToYearly] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
   const isAdmin = user?.role === "admin";
@@ -274,6 +275,58 @@ const OrderRow = ({
     }
   };
 
+  const handleMoveToYearlyPackages = async () => {
+    if (!isAdmin) {
+      toast({
+        title: "Permission Denied",
+        description: "Only administrators can move orders to yearly packages.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to move orders.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (order.is_yearly_package) {
+      toast({
+        title: "Already a Yearly Package",
+        description: "This order is already marked as a yearly package.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsMovingToYearly(true);
+    try {
+      // Update order to mark it as yearly package
+      await OrderService.updateOrder(order.id, { is_yearly_package: true });
+      
+      toast({
+        title: "Order moved to yearly packages",
+        description: `Order has been moved to the Yearly Packages section.`,
+      });
+      
+      onRefresh();
+      window.dispatchEvent(new CustomEvent('orderStatusChanged'));
+    } catch (error) {
+      console.error("Error moving order to yearly packages:", error);
+      toast({
+        title: "Error",
+        description: "Failed to move order to yearly packages. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsMovingToYearly(false);
+    }
+  };
+
   return (
     <TableRow>
       <TableCell className="min-w-0">
@@ -331,6 +384,19 @@ const OrderRow = ({
             >
               <Send className="h-4 w-4 mr-1" />
               {isSendingToReview ? "Sending..." : "Review"}
+            </Button>
+          )}
+
+          {/* Move to Yearly Packages button - visible for admins on regular orders only */}
+          {isAdmin && !order.is_yearly_package && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleMoveToYearlyPackages}
+              disabled={isMovingToYearly}
+              className="h-8 px-2"
+            >
+              {isMovingToYearly ? "Moving..." : "→ Yearly"}
             </Button>
           )}
           
