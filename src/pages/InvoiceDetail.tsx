@@ -423,46 +423,48 @@ const InvoiceDetail = () => {
                           </Button>
                         </div>
                       </CardHeader>
-                      <CardContent>
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>Description</TableHead>
-                              <TableHead>Qty</TableHead>
-                              <TableHead>Unit</TableHead>
-                              <TableHead>Price</TableHead>
-                              <TableHead>VAT %</TableHead>
-                              <TableHead>Discount %</TableHead>
-                              <TableHead>Total</TableHead>
-                              <TableHead className="w-[50px]"></TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {lineItems.map((item, index) => (
-                              <LineItemRow
-                                key={index}
-                                item={item}
-                                index={index}
-                                currency={formData.currency}
-                                onUpdate={updateLineItem}
-                                onRemove={removeLineItem}
-                              />
-                            ))}
-                          </TableBody>
-                        </Table>
+                      <CardContent className="overflow-x-auto">
+                        <div className="min-w-[900px]">
+                          <Table>
+                            <TableHeader>
+                              <TableRow className="h-14">
+                                <TableHead className="w-1/2 min-w-[300px] text-left font-semibold">Description</TableHead>
+                                <TableHead className="text-center font-semibold">Qty</TableHead>
+                                <TableHead className="text-center font-semibold">Unit</TableHead>
+                                <TableHead className="text-right font-semibold">Price</TableHead>
+                                <TableHead className="text-center font-semibold">VAT %</TableHead>
+                                <TableHead className="text-center font-semibold">Discount %</TableHead>
+                                <TableHead className="text-right font-semibold">Total</TableHead>
+                                <TableHead className="w-[60px] text-center"></TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {lineItems.map((item, index) => (
+                                <LineItemRow
+                                  key={index}
+                                  item={item}
+                                  index={index}
+                                  currency={formData.currency}
+                                  onUpdate={updateLineItem}
+                                  onRemove={removeLineItem}
+                                />
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
 
                         {/* Totals */}
-                        <div className="mt-6 flex justify-end">
-                          <div className="w-64 space-y-2">
-                            <div className="flex justify-between">
+                        <div className="mt-8 flex justify-end">
+                          <div className="w-80 space-y-3 bg-gray-50 p-4 rounded-lg">
+                            <div className="flex justify-between text-sm">
                               <span>Net Amount:</span>
-                              <span>{formatCurrency(netAmount, formData.currency)}</span>
+                              <span className="font-semibold">{formatCurrency(netAmount, formData.currency)}</span>
                             </div>
-                            <div className="flex justify-between">
+                            <div className="flex justify-between text-sm">
                               <span>VAT Amount:</span>
-                              <span>{formatCurrency(vatAmount, formData.currency)}</span>
+                              <span className="font-semibold">{formatCurrency(vatAmount, formData.currency)}</span>
                             </div>
-                            <div className="flex justify-between font-bold text-lg border-t pt-2">
+                            <div className="flex justify-between font-bold text-lg border-t pt-3">
                               <span>Total Amount:</span>
                               <span>{formatCurrency(totalAmount, formData.currency)}</span>
                             </div>
