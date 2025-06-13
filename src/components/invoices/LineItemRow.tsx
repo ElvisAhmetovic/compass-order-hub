@@ -26,13 +26,15 @@ const LineItemRow: React.FC<LineItemRowProps> = ({
   const { inventoryData } = useInventory();
 
   const handleInventorySelect = (inventoryItem: any) => {
+    console.log('=== INVENTORY SELECTION START ===');
     console.log('Selected inventory item:', inventoryItem);
     console.log('Item index:', index);
+    console.log('Current item state:', item);
     
     // Parse the price more robustly
     const parsePrice = (priceStr: string) => {
       if (!priceStr) return 0;
-      console.log('Parsing price:', priceStr);
+      console.log('Raw price string:', priceStr);
       
       // Remove currency symbols and letters, keep numbers, dots, and commas
       const cleanStr = priceStr.replace(/[^\d.,]/g, '');
@@ -44,30 +46,37 @@ const LineItemRow: React.FC<LineItemRowProps> = ({
         : cleanStr.replace(',', '');
       
       const parsed = parseFloat(normalizedStr) || 0;
-      console.log('Parsed price:', parsed);
+      console.log('Final parsed price:', parsed);
       return parsed;
     };
 
     const parsedPrice = parsePrice(inventoryItem.price);
     
-    console.log('Updating fields:');
+    console.log('About to update fields:');
     console.log('- Description:', inventoryItem.name);
     console.log('- Price:', parsedPrice);
     console.log('- Unit:', inventoryItem.unit || 'pcs');
 
-    // Update each field individually with logging
-    onUpdate(index, 'item_description', inventoryItem.name);
-    console.log('Updated description');
-    
-    onUpdate(index, 'unit_price', parsedPrice);
-    console.log('Updated price');
-    
-    onUpdate(index, 'unit', inventoryItem.unit || 'pcs');
-    console.log('Updated unit');
+    // Force immediate state updates with a timeout to ensure React processes them
+    setTimeout(() => {
+      console.log('Updating description...');
+      onUpdate(index, 'item_description', inventoryItem.name);
+      
+      setTimeout(() => {
+        console.log('Updating price...');
+        onUpdate(index, 'unit_price', parsedPrice);
+        
+        setTimeout(() => {
+          console.log('Updating unit...');
+          onUpdate(index, 'unit', inventoryItem.unit || 'pcs');
+          console.log('=== INVENTORY SELECTION COMPLETE ===');
+        }, 50);
+      }, 50);
+    }, 50);
   };
 
   const handleDescriptionChange = (value: string) => {
-    console.log('Description changed to:', value);
+    console.log('Manual description change:', value);
     onUpdate(index, 'item_description', value);
   };
 

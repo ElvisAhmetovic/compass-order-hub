@@ -114,25 +114,45 @@ const InvoiceDetail = () => {
   };
 
   const updateLineItem = (index: number, field: string, value: any) => {
-    console.log('updateLineItem called:', { index, field, value });
-    console.log('Current lineItems:', lineItems);
+    console.log('=== UPDATE LINE ITEM START ===');
+    console.log('Index:', index);
+    console.log('Field:', field);
+    console.log('Value:', value);
+    console.log('Current lineItems length:', lineItems.length);
+    console.log('Current item before update:', lineItems[index]);
     
-    const updated = [...lineItems];
-    updated[index] = { ...updated[index], [field]: value };
+    if (index < 0 || index >= lineItems.length) {
+      console.error('Invalid index:', index);
+      return;
+    }
     
-    console.log('Updated item:', updated[index]);
-    
-    // Recalculate line total
-    const item = updated[index];
-    const subtotal = item.quantity * item.unit_price;
-    const withDiscount = subtotal * (1 - item.discount_rate);
-    const withVat = withDiscount * (1 + item.vat_rate);
-    updated[index].line_total = Math.round(withVat * 100) / 100;
-    
-    console.log('Line total calculated:', updated[index].line_total);
-    console.log('Setting updated lineItems:', updated);
-    
-    setLineItems(updated);
+    // Use functional update to ensure we have the latest state
+    setLineItems(prevItems => {
+      const updated = [...prevItems];
+      const currentItem = { ...updated[index] };
+      
+      console.log('Previous item:', currentItem);
+      
+      // Update the specific field
+      currentItem[field] = value;
+      console.log('Updated field', field, 'to:', value);
+      
+      // Recalculate line total
+      const subtotal = currentItem.quantity * currentItem.unit_price;
+      const withDiscount = subtotal * (1 - currentItem.discount_rate);
+      const withVat = withDiscount * (1 + currentItem.vat_rate);
+      currentItem.line_total = Math.round(withVat * 100) / 100;
+      
+      console.log('Calculated line total:', currentItem.line_total);
+      console.log('Final updated item:', currentItem);
+      
+      updated[index] = currentItem;
+      
+      console.log('Final updated array length:', updated.length);
+      console.log('=== UPDATE LINE ITEM END ===');
+      
+      return updated;
+    });
   };
 
   const removeLineItem = (index: number) => {
