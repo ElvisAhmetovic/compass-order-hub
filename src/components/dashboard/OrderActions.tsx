@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { 
   DropdownMenu,
@@ -411,9 +410,26 @@ const OrderActions = ({ order, onOrderView, onRefresh }: OrderActionsProps) => {
 
   if (!isAdmin) {
     return (
-      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onOrderView(order)}>
-        <FileText className="h-4 w-4" />
-      </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild disabled={isLoading}>
+          <Button variant="ghost" size="icon" className="h-8 w-8">
+            <MoreHorizontal className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-48">
+          <DropdownMenuItem onClick={() => onOrderView(order)}>
+            View Details
+          </DropdownMenuItem>
+          
+          <DropdownMenuSeparator />
+          
+          {/* Create Invoice option - available to all users */}
+          <DropdownMenuItem onClick={handleCreateInvoice} disabled={isLoading}>
+            <Receipt className="h-4 w-4 mr-2" />
+            Create Invoice
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     );
   }
 
