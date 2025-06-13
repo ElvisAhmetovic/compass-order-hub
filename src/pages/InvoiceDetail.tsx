@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Save, ArrowLeft, Mail, Eye } from "lucide-react";
+import { Plus, Save, ArrowLeft, Mail, Eye, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { InvoiceService } from "@/services/invoiceService";
 import CurrencySelector from "@/components/invoices/CurrencySelector";
@@ -259,6 +259,13 @@ const InvoiceDetail = () => {
     }
   };
 
+  const handleDownloadPDF = () => {
+    toast({
+      title: "PDF Generation",
+      description: "PDF download functionality will be implemented soon.",
+    });
+  };
+
   const selectedClient = clients.find(c => c.id === formData.client_id);
   const { netAmount, vatAmount, totalAmount } = calculateTotals();
 
@@ -456,10 +463,16 @@ const InvoiceDetail = () => {
                         {saving ? 'Saving...' : 'Save Invoice'}
                       </Button>
                       {!isNewInvoice && invoice && (
-                        <Button onClick={() => setSendDialogOpen(true)}>
-                          <Mail size={16} className="mr-2" />
-                          Send Invoice
-                        </Button>
+                        <>
+                          <Button onClick={handleDownloadPDF} variant="outline">
+                            <Download size={16} className="mr-2" />
+                            Download PDF
+                          </Button>
+                          <Button onClick={() => setSendDialogOpen(true)}>
+                            <Mail size={16} className="mr-2" />
+                            Send Invoice
+                          </Button>
+                        </>
                       )}
                     </div>
                   </div>
