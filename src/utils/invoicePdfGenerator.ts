@@ -1,4 +1,3 @@
-
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { Invoice, InvoiceLineItem, Client } from '@/types/invoice';
@@ -555,7 +554,6 @@ const generateInvoiceHTML = (data: InvoicePDFData): string => {
         <div>
           <div style="font-weight: bold; color: #374151; margin-bottom: 12px; font-size: 16px;">${getTranslatedText('terms')}</div>
           <div style="font-size: 14px; color: #4b5563; line-height: 1.6; background: #f9fafb; padding: 16px; border-radius: 8px;">
-            <div style="font-weight: 600; margin-bottom: 8px;">${selectedAccount.name}:</div>
             <div><strong>${getTranslatedText('iban')}:</strong> ${selectedAccount.iban}</div>
             <div><strong>${getTranslatedText('bic')}:</strong> ${selectedAccount.bic}</div>
             ${selectedAccount.blz ? `<div><strong>${getTranslatedText('blz')}:</strong> ${selectedAccount.blz} <strong>${getTranslatedText('account')}:</strong> ${selectedAccount.account}</div>` : ''}
