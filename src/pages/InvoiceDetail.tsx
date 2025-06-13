@@ -114,8 +114,13 @@ const InvoiceDetail = () => {
   };
 
   const updateLineItem = (index: number, field: string, value: any) => {
+    console.log('updateLineItem called:', { index, field, value });
+    console.log('Current lineItems:', lineItems);
+    
     const updated = [...lineItems];
     updated[index] = { ...updated[index], [field]: value };
+    
+    console.log('Updated item:', updated[index]);
     
     // Recalculate line total
     const item = updated[index];
@@ -123,6 +128,9 @@ const InvoiceDetail = () => {
     const withDiscount = subtotal * (1 - item.discount_rate);
     const withVat = withDiscount * (1 + item.vat_rate);
     updated[index].line_total = Math.round(withVat * 100) / 100;
+    
+    console.log('Line total calculated:', updated[index].line_total);
+    console.log('Setting updated lineItems:', updated);
     
     setLineItems(updated);
   };
