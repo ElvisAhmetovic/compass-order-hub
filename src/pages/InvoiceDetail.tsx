@@ -11,7 +11,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Save, ArrowLeft, Mail, CreditCard } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Plus, Save, ArrowLeft, Mail, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { InvoiceService } from "@/services/invoiceService";
 import CurrencySelector from "@/components/invoices/CurrencySelector";
@@ -19,6 +20,8 @@ import { formatCurrency } from "@/utils/currencyUtils";
 import LineItemRow from "@/components/invoices/LineItemRow";
 import SendInvoiceDialog from "@/components/invoices/SendInvoiceDialog";
 import PaymentTracker from "@/components/invoices/PaymentTracker";
+import InvoiceTemplateSettings from "@/components/invoices/InvoiceTemplateSettings";
+import InvoicePreview from "@/components/invoices/InvoicePreview";
 
 const InvoiceDetail = () => {
   const { id } = useParams();
@@ -33,6 +36,8 @@ const InvoiceDetail = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [sendDialogOpen, setSendDialogOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("edit");
+  const [templateSettings, setTemplateSettings] = useState({});
 
   const [formData, setFormData] = useState<InvoiceFormData>({
     client_id: '',
@@ -254,6 +259,7 @@ const InvoiceDetail = () => {
     }
   };
 
+  const selectedClient = clients.find(c => c.id === formData.client_id);
   const { netAmount, vatAmount, totalAmount } = calculateTotals();
 
   if (loading) {
@@ -287,177 +293,206 @@ const InvoiceDetail = () => {
               </h1>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2 space-y-6">
-                {/* Invoice Details */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Invoice Details</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="client">Client *</Label>
-                        <Select value={formData.client_id} onValueChange={(value) => setFormData({...formData, client_id: value})}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select a client" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {clients.map((client) => (
-                              <SelectItem key={client.id} value={client.id}>
-                                {client.name} - {client.email}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      
-                      <div>
-                        <Label htmlFor="currency">Currency</Label>
-                        <CurrencySelector
-                          value={formData.currency}
-                          onValueChange={(value) => setFormData({...formData, currency: value})}
-                        />
-                      </div>
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="mb-6">
+                <TabsTrigger value="edit">Edit Invoice</TabsTrigger>
+                <TabsTrigger value="template">Template Settings</TabsTrigger>
+                <TabsTrigger value="preview">
+                  <Eye className="h-4 w-4 mr-2" />
+                  Preview
+                </TabsTrigger>
+              </TabsList>
 
-                      <div>
-                        <Label htmlFor="issue_date">Issue Date</Label>
-                        <Input
-                          type="date"
-                          value={formData.issue_date}
-                          onChange={(e) => setFormData({...formData, issue_date: e.target.value})}
-                        />
-                      </div>
+              <TabsContent value="edit">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  <div className="lg:col-span-2 space-y-6">
+                    {/* Invoice Details */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Invoice Details</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="client">Client *</Label>
+                            <Select value={formData.client_id} onValueChange={(value) => setFormData({...formData, client_id: value})}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select a client" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {clients.map((client) => (
+                                  <SelectItem key={client.id} value={client.id}>
+                                    {client.name} - {client.email}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          
+                          <div>
+                            <Label htmlFor="currency">Currency</Label>
+                            <CurrencySelector
+                              value={formData.currency}
+                              onValueChange={(value) => setFormData({...formData, currency: value})}
+                            />
+                          </div>
 
-                      <div>
-                        <Label htmlFor="due_date">Due Date</Label>
-                        <Input
-                          type="date"
-                          value={formData.due_date}
-                          onChange={(e) => setFormData({...formData, due_date: e.target.value})}
-                        />
-                      </div>
+                          <div>
+                            <Label htmlFor="issue_date">Issue Date</Label>
+                            <Input
+                              type="date"
+                              value={formData.issue_date}
+                              onChange={(e) => setFormData({...formData, issue_date: e.target.value})}
+                            />
+                          </div>
 
-                      <div>
-                        <Label htmlFor="payment_terms">Payment Terms</Label>
-                        <Input
-                          value={formData.payment_terms}
-                          onChange={(e) => setFormData({...formData, payment_terms: e.target.value})}
-                          placeholder="e.g., Net 30"
-                        />
-                      </div>
-                    </div>
+                          <div>
+                            <Label htmlFor="due_date">Due Date</Label>
+                            <Input
+                              type="date"
+                              value={formData.due_date}
+                              onChange={(e) => setFormData({...formData, due_date: e.target.value})}
+                            />
+                          </div>
 
-                    <div>
-                      <Label htmlFor="notes">Notes</Label>
-                      <Textarea
-                        value={formData.notes}
-                        onChange={(e) => setFormData({...formData, notes: e.target.value})}
-                        placeholder="Public notes for the client"
-                        rows={3}
-                      />
-                    </div>
+                          <div>
+                            <Label htmlFor="payment_terms">Payment Terms</Label>
+                            <Input
+                              value={formData.payment_terms}
+                              onChange={(e) => setFormData({...formData, payment_terms: e.target.value})}
+                              placeholder="e.g., Net 30"
+                            />
+                          </div>
+                        </div>
 
-                    <div>
-                      <Label htmlFor="internal_notes">Internal Notes</Label>
-                      <Textarea
-                        value={formData.internal_notes}
-                        onChange={(e) => setFormData({...formData, internal_notes: e.target.value})}
-                        placeholder="Internal notes (not visible to client)"
-                        rows={2}
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Line Items */}
-                <Card>
-                  <CardHeader>
-                    <div className="flex justify-between items-center">
-                      <CardTitle>Line Items</CardTitle>
-                      <Button onClick={addLineItem} variant="outline" size="sm">
-                        <Plus size={16} className="mr-2" />
-                        Add Item
-                      </Button>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Description</TableHead>
-                          <TableHead>Qty</TableHead>
-                          <TableHead>Unit</TableHead>
-                          <TableHead>Price</TableHead>
-                          <TableHead>VAT %</TableHead>
-                          <TableHead>Discount %</TableHead>
-                          <TableHead>Total</TableHead>
-                          <TableHead className="w-[50px]"></TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {lineItems.map((item, index) => (
-                          <LineItemRow
-                            key={index}
-                            item={item}
-                            index={index}
-                            currency={formData.currency}
-                            onUpdate={updateLineItem}
-                            onRemove={removeLineItem}
+                        <div>
+                          <Label htmlFor="notes">Notes</Label>
+                          <Textarea
+                            value={formData.notes}
+                            onChange={(e) => setFormData({...formData, notes: e.target.value})}
+                            placeholder="Public notes for the client"
+                            rows={3}
                           />
-                        ))}
-                      </TableBody>
-                    </Table>
+                        </div>
 
-                    {/* Totals */}
-                    <div className="mt-6 flex justify-end">
-                      <div className="w-64 space-y-2">
-                        <div className="flex justify-between">
-                          <span>Net Amount:</span>
-                          <span>{formatCurrency(netAmount, formData.currency)}</span>
+                        <div>
+                          <Label htmlFor="internal_notes">Internal Notes</Label>
+                          <Textarea
+                            value={formData.internal_notes}
+                            onChange={(e) => setFormData({...formData, internal_notes: e.target.value})}
+                            placeholder="Internal notes (not visible to client)"
+                            rows={2}
+                          />
                         </div>
-                        <div className="flex justify-between">
-                          <span>VAT Amount:</span>
-                          <span>{formatCurrency(vatAmount, formData.currency)}</span>
+                      </CardContent>
+                    </Card>
+
+                    {/* Line Items */}
+                    <Card>
+                      <CardHeader>
+                        <div className="flex justify-between items-center">
+                          <CardTitle>Line Items</CardTitle>
+                          <Button onClick={addLineItem} variant="outline" size="sm">
+                            <Plus size={16} className="mr-2" />
+                            Add Item
+                          </Button>
                         </div>
-                        <div className="flex justify-between font-bold text-lg border-t pt-2">
-                          <span>Total Amount:</span>
-                          <span>{formatCurrency(totalAmount, formData.currency)}</span>
+                      </CardHeader>
+                      <CardContent>
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Description</TableHead>
+                              <TableHead>Qty</TableHead>
+                              <TableHead>Unit</TableHead>
+                              <TableHead>Price</TableHead>
+                              <TableHead>VAT %</TableHead>
+                              <TableHead>Discount %</TableHead>
+                              <TableHead>Total</TableHead>
+                              <TableHead className="w-[50px]"></TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {lineItems.map((item, index) => (
+                              <LineItemRow
+                                key={index}
+                                item={item}
+                                index={index}
+                                currency={formData.currency}
+                                onUpdate={updateLineItem}
+                                onRemove={removeLineItem}
+                              />
+                            ))}
+                          </TableBody>
+                        </Table>
+
+                        {/* Totals */}
+                        <div className="mt-6 flex justify-end">
+                          <div className="w-64 space-y-2">
+                            <div className="flex justify-between">
+                              <span>Net Amount:</span>
+                              <span>{formatCurrency(netAmount, formData.currency)}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>VAT Amount:</span>
+                              <span>{formatCurrency(vatAmount, formData.currency)}</span>
+                            </div>
+                            <div className="flex justify-between font-bold text-lg border-t pt-2">
+                              <span>Total Amount:</span>
+                              <span>{formatCurrency(totalAmount, formData.currency)}</span>
+                            </div>
+                          </div>
                         </div>
-                      </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* Actions */}
+                    <div className="flex justify-end gap-4">
+                      <Button variant="outline" onClick={() => navigate('/invoices')}>
+                        Cancel
+                      </Button>
+                      <Button onClick={handleSave} disabled={saving}>
+                        <Save size={16} className="mr-2" />
+                        {saving ? 'Saving...' : 'Save Invoice'}
+                      </Button>
+                      {!isNewInvoice && invoice && (
+                        <Button onClick={() => setSendDialogOpen(true)}>
+                          <Mail size={16} className="mr-2" />
+                          Send Invoice
+                        </Button>
+                      )}
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
 
-                {/* Actions */}
-                <div className="flex justify-end gap-4">
-                  <Button variant="outline" onClick={() => navigate('/invoices')}>
-                    Cancel
-                  </Button>
-                  <Button onClick={handleSave} disabled={saving}>
-                    <Save size={16} className="mr-2" />
-                    {saving ? 'Saving...' : 'Save Invoice'}
-                  </Button>
-                  {!isNewInvoice && invoice && (
-                    <Button onClick={() => setSendDialogOpen(true)}>
-                      <Mail size={16} className="mr-2" />
-                      Send Invoice
-                    </Button>
-                  )}
+                  {/* Sidebar */}
+                  <div className="space-y-6">
+                    {!isNewInvoice && invoice && (
+                      <PaymentTracker
+                        invoiceId={invoice.id}
+                        currency={invoice.currency}
+                        onPaymentStatusChange={handlePaymentStatusChange}
+                      />
+                    )}
+                  </div>
                 </div>
-              </div>
+              </TabsContent>
 
-              {/* Sidebar */}
-              <div className="space-y-6">
-                {!isNewInvoice && invoice && (
-                  <PaymentTracker
-                    invoiceId={invoice.id}
-                    currency={invoice.currency}
-                    onPaymentStatusChange={handlePaymentStatusChange}
-                  />
-                )}
-              </div>
-            </div>
+              <TabsContent value="template">
+                <InvoiceTemplateSettings
+                  onSettingsChange={setTemplateSettings}
+                  initialSettings={templateSettings}
+                />
+              </TabsContent>
+
+              <TabsContent value="preview">
+                <InvoicePreview
+                  invoice={invoice}
+                  lineItems={lineItems}
+                  client={selectedClient}
+                  templateSettings={templateSettings}
+                />
+              </TabsContent>
+            </Tabs>
 
             {/* Send Invoice Dialog */}
             {!isNewInvoice && invoice && (
