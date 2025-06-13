@@ -1,53 +1,31 @@
-
+import React from 'react';
+import { Plus } from 'lucide-react';
 import { Button } from "@/components/ui/button";
-import { PlusCircle, AlertCircle } from "lucide-react";
-import { useAuth } from "@/context/AuthContext";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface DashboardHeaderProps {
   title: string;
-  description?: string;
+  description: string;
   onCreateOrder?: () => void;
+  createButtonText?: string;
 }
 
 const DashboardHeader = ({ 
   title, 
-  description,
-  onCreateOrder
+  description, 
+  onCreateOrder,
+  createButtonText = "Create Order"
 }: DashboardHeaderProps) => {
-  const { user } = useAuth();
-  const isAdmin = user?.role === "admin";
-  
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
-          {description && (
-            <p className="text-muted-foreground">
-              {description}
-            </p>
-          )}
-        </div>
-        
-        {isAdmin && onCreateOrder && (
-          <Button 
-            onClick={onCreateOrder}
-            className="flex items-center gap-1 ml-auto"
-          >
-            <PlusCircle className="h-4 w-4" />
-            <span>Create Order</span>
-          </Button>
-        )}
+    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
+        <p className="text-muted-foreground">{description}</p>
       </div>
-      
-      {!isAdmin && title.toLowerCase().includes('order') && (
-        <Alert variant="default" className="bg-amber-50 border-amber-200">
-          <AlertCircle className="h-4 w-4 text-amber-800" />
-          <AlertDescription className="text-amber-800">
-            You can only see orders assigned to you. Contact an administrator if you need access to additional orders.
-          </AlertDescription>
-        </Alert>
+      {onCreateOrder && (
+        <Button onClick={onCreateOrder} className="shrink-0">
+          <Plus className="mr-2 h-4 w-4" />
+          {createButtonText}
+        </Button>
       )}
     </div>
   );

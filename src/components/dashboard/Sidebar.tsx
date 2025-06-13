@@ -38,6 +38,7 @@ const Sidebar = () => {
     { href: '/support', icon: HelpCircle, label: 'Support', roles: ['admin', 'agent', 'user'] },
     { href: '/active-orders', icon: FileText, label: 'My Orders', roles: ['user'] }, // User-specific orders view
     { href: '/active-orders', icon: Clock, label: 'Active Orders', roles: ['admin', 'agent'] }, // Admin/agent view
+    { href: '/yearly-packages', icon: Package, label: 'Yearly Packages', roles: ['admin', 'agent'] }, // New yearly packages section
     { href: '/complaints', icon: AlertTriangle, label: 'Complaints', roles: ['admin', 'agent'] },
     { href: '/completed', icon: CheckCircle, label: 'Completed', roles: ['admin', 'agent'] },
     { href: '/cancelled', icon: XCircle, label: 'Cancelled', roles: ['admin', 'agent'] },

@@ -1,4 +1,3 @@
-
 import { Card, CardContent } from "@/components/ui/card";
 import { 
   ClipboardCheck, 
@@ -56,28 +55,37 @@ const SummaryCard = ({
   );
 };
 
-export const DashboardCards = () => {
+interface DashboardCardsProps {
+  isYearlyPackages?: boolean;
+}
+
+export const DashboardCards = ({ isYearlyPackages = false }: DashboardCardsProps) => {
   const [orderSummaries, setOrderSummaries] = useState<OrderSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
   
   useEffect(() => {
-    // Fetch orders from Supabase
-    const fetchOrders = async () => {
+    const fetchStats = async () => {
       try {
         setLoading(true);
-        let orders = await OrderService.getOrders();
         
+        let allOrders: Order[];
+        if (isYearlyPackages) {
+          allOrders = await OrderService.getYearlyPackages();
+        } else {
+          allOrders = await OrderService.getOrders(false); // Exclude yearly packages for regular dashboard
+        }
+
         // Filter orders for non-admin users to only show their assigned orders
         if (!isAdmin && user) {
-          orders = orders.filter(order => order.assigned_to === user.id);
+          allOrders = allOrders.filter(order => order.assigned_to === user.id);
         }
         
-        const summaries = calculateSummaries(orders);
+        const summaries = calculateSummaries(allOrders);
         setOrderSummaries(summaries);
       } catch (error) {
-        console.error("Error fetching orders for dashboard:", error);
+        console.error("Error fetching dashboard stats:", error);
       } finally {
         setLoading(false);
       }
@@ -110,12 +118,12 @@ export const DashboardCards = () => {
       return Array.from(summaryMap.values());
     };
     
-    fetchOrders();
+    fetchStats();
 
     // Listen for order changes to refresh data
     const handleOrderStatusChange = () => {
       console.log('Order status change detected in DashboardCards, refreshing data...');
-      fetchOrders();
+      fetchStats();
     };
 
     window.addEventListener('orderStatusChanged', handleOrderStatusChange);
@@ -123,7 +131,7 @@ export const DashboardCards = () => {
     return () => {
       window.removeEventListener('orderStatusChanged', handleOrderStatusChange);
     };
-  }, [isAdmin, user]);
+  }, [isAdmin, user, isYearlyPackages]);
 
   const getIcon = (status: OrderStatus) => {
     const iconProps = { className: "h-6 w-6" };

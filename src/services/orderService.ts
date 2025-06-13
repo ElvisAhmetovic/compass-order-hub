@@ -3,12 +3,15 @@ import { Order, OrderStatus } from "@/types";
 
 export class OrderService {
   // Get all orders with proper error handling
-  static async getOrders(): Promise<Order[]> {
+  static async getOrders(includeYearlyPackages: boolean = false): Promise<Order[]> {
     try {
-      const { data, error } = await supabase
-        .from('orders')
-        .select('*')
-        .order('created_at', { ascending: false });
+      let query = supabase.from('orders').select('*');
+      
+      if (!includeYearlyPackages) {
+        query = query.neq('is_yearly_package', true);
+      }
+      
+      const { data, error } = await query.order('created_at', { ascending: false });
 
       if (error) {
         console.error('Error fetching orders:', error);
@@ -91,6 +94,76 @@ export class OrderService {
     }
   }
 
+  // Create new yearly package order
+  static async createYearlyPackage(orderData: Omit<Order, 'id' | 'created_at' | 'updated_at'> & { is_yearly_package: boolean }): Promise<Order> {
+    try {
+      // Validate required fields
+      if (!orderData.company_name) {
+        throw new Error('Company name is required');
+      }
+      if (!orderData.contact_email) {
+        throw new Error('Contact email is required');
+      }
+      if (!orderData.description) {
+        throw new Error('Description is required');
+      }
+
+      // Ensure company_link is properly formatted if provided
+      let formattedLink = orderData.company_link;
+      if (formattedLink && !formattedLink.startsWith('http://') && !formattedLink.startsWith('https://')) {
+        formattedLink = 'https://' + formattedLink;
+      }
+
+      const cleanOrderData = {
+        ...orderData,
+        company_link: formattedLink,
+        price: orderData.price || 0,
+        status: orderData.status || 'Created',
+        priority: orderData.priority || 'medium',
+        is_yearly_package: true // Ensure this is always true for yearly packages
+      };
+
+      console.log('Creating yearly package with data:', cleanOrderData);
+
+      const { data, error } = await supabase
+        .from('orders')
+        .insert(cleanOrderData)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error creating yearly package:', error);
+        throw error;
+      }
+      
+      return data;
+    } catch (error) {
+      console.error('Failed to create yearly package:', error);
+      throw error;
+    }
+  }
+
+  // Get yearly packages only
+  static async getYearlyPackages(): Promise<Order[]> {
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('is_yearly_package', true)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching yearly packages:', error);
+        throw error;
+      }
+      
+      return data || [];
+    } catch (error) {
+      console.error('Failed to get yearly packages:', error);
+      throw error;
+    }
+  }
+
   // Update order with validation - now handles multiple statuses
   static async updateOrder(id: string, orderData: Partial<Order>): Promise<Order> {
     try {
@@ -144,9 +217,16 @@ export class OrderService {
   }
 
   // Get orders by status - now supports multiple status filtering
-  static async getOrdersByStatus(status: string): Promise<Order[]> {
+  static async getOrdersByStatus(status: string, isYearlyPackages: boolean = false): Promise<Order[]> {
     try {
       let query = supabase.from('orders').select('*');
+      
+      // Filter by yearly package status first
+      if (isYearlyPackages) {
+        query = query.eq('is_yearly_package', true);
+      } else {
+        query = query.neq('is_yearly_package', true);
+      }
       
       // Map old status names to new boolean columns
       const statusColumnMap: Record<string, string> = {

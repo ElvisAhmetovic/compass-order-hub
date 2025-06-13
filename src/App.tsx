@@ -1,10 +1,10 @@
-
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
+import YearlyPackages from './pages/YearlyPackages';
 import { RequireAuth } from './components/auth/RequireAuth';
 import AdminGuard from './components/auth/AdminGuard';
 import Companies from './pages/Companies';
@@ -249,6 +249,14 @@ function App() {
             element={
               <RequireAuth>
                 <TeamCollaboration />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/yearly-packages"
+            element={
+              <RequireAuth>
+                <YearlyPackages />
               </RequireAuth>
             }
           />

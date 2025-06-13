@@ -55,6 +55,8 @@ export interface Order {
   status_cancelled?: boolean;
   status_deleted?: boolean;
   status_review?: boolean;
+  // Yearly package field
+  is_yearly_package?: boolean;
 }
 
 export interface InvoiceDetails {

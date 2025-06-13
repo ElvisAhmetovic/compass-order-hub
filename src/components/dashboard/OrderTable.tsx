@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Table,
   TableHeader,
@@ -16,14 +16,21 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
 import { OrderService } from "@/services/orderService";
 import { SearchService, SearchFilters } from "@/services/searchService";
+import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 
 interface OrderTableProps {
   onOrderClick: (order: Order) => void;
-  statusFilter: string | null;
-  refreshTrigger: number;
+  statusFilter?: string | null;
+  refreshTrigger?: number;
+  isYearlyPackages?: boolean;
 }
 
-const OrderTable = ({ onOrderClick, statusFilter, refreshTrigger }: OrderTableProps) => {
+const OrderTable = ({ 
+  onOrderClick, 
+  statusFilter, 
+  refreshTrigger = 0,
+  isYearlyPackages = false 
+}: OrderTableProps) => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -44,42 +51,41 @@ const OrderTable = ({ onOrderClick, statusFilter, refreshTrigger }: OrderTablePr
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
 
-  // Fetch orders from Supabase
-  useEffect(() => {
-    const fetchOrders = async () => {
-      if (!user) {
-        setOrders([]);
-        setLoading(false);
-        return;
-      }
-
+  // Fetch orders with yearly package filtering
+  const fetchOrders = useCallback(async () => {
+    try {
       setLoading(true);
-      try {
-        const supabaseOrders = await OrderService.getOrders();
-        
-        // Filter orders for non-admin users to only show their assigned orders
-        let filteredSupabaseOrders = supabaseOrders;
-        if (!isAdmin && user) {
-          filteredSupabaseOrders = supabaseOrders.filter((order: Order) => order.assigned_to === user.id);
-        }
-        
-        setOrders(filteredSupabaseOrders);
-        setError(null);
-      } catch (err) {
-        console.error("Error fetching orders:", err);
-        setError("Failed to load orders. Please check your connection and try again.");
-        toast({
-          title: "Error",
-          description: "Failed to load orders. Please check your connection and try again.",
-          variant: "destructive"
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
+      let orders: Order[];
 
-    fetchOrders();
-  }, [refreshTrigger, toast, isAdmin, user]);
+      if (isYearlyPackages) {
+        // For yearly packages page, only get yearly packages
+        if (statusFilter && statusFilter !== "All") {
+          orders = await OrderService.getOrdersByStatus(statusFilter, true);
+        } else {
+          orders = await OrderService.getYearlyPackages();
+        }
+      } else {
+        // For regular pages, exclude yearly packages
+        if (statusFilter && statusFilter !== "All") {
+          orders = await OrderService.getOrdersByStatus(statusFilter, false);
+        } else {
+          orders = await OrderService.getOrders(false); // false means exclude yearly packages
+        }
+      }
+
+      console.log(`Fetched ${orders.length} ${isYearlyPackages ? 'yearly package' : 'regular'} orders`);
+      setOrders(orders);
+    } catch (error) {
+      console.error("Error fetching orders:", error);
+      toast({
+        variant: "destructive",
+        title: "Error loading orders",
+        description: "Failed to load orders. Please try again.",
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [statusFilter, refreshTrigger, isYearlyPackages]);
 
   // Apply filters and sorting whenever orders or filter criteria change
   useEffect(() => {
@@ -243,11 +249,28 @@ const OrderTable = ({ onOrderClick, statusFilter, refreshTrigger }: OrderTablePr
   const totalPages = Math.ceil(filteredOrders.length / rowsPerPage);
 
   return (
-    <div className="space-y-4">
-      <AdvancedSearch 
-        onFiltersChange={handleFiltersChange}
-        currentFilters={searchFilters}
-      />
+    <Card>
+      <CardHeader className="pb-3">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <CardTitle className="text-lg font-semibold">
+              {isYearlyPackages ? 'Yearly Packages' : 'Orders'}
+            </CardTitle>
+            <CardDescription>
+              {isYearlyPackages 
+                ? 'Manage your yearly package orders'
+                : 'Manage and track your orders'
+              }
+            </CardDescription>
+          </div>
+          <div>
+            <AdvancedSearch 
+              onFiltersChange={handleFiltersChange}
+              currentFilters={searchFilters}
+            />
+          </div>
+        </div>
+      </CardHeader>
       
       <div className="rounded-md border overflow-hidden">
         <Table>
@@ -320,7 +343,7 @@ const OrderTable = ({ onOrderClick, statusFilter, refreshTrigger }: OrderTablePr
           onPageChange={handlePageChange}
         />
       </div>
-    </div>
+    </Card>
   );
 };
 
