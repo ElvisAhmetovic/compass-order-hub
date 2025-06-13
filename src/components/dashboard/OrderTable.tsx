@@ -54,22 +54,28 @@ const OrderTable = ({
 
   // Fetch orders with better error handling
   const fetchOrders = useCallback(async () => {
+    if (!user) {
+      console.log('OrderTable: No user found, skipping fetch');
+      setLoading(false);
+      return;
+    }
+
     try {
-      console.log(`Starting to fetch ${isYearlyPackages ? 'yearly packages' : 'regular orders'}...`);
+      console.log(`OrderTable: Starting to fetch ${isYearlyPackages ? 'yearly packages' : 'regular orders'}...`);
       setLoading(true);
       setError(null);
       
       let orders: Order[];
 
       if (isYearlyPackages) {
-        console.log('Fetching yearly packages only');
+        console.log('OrderTable: Fetching yearly packages only');
         if (statusFilter && statusFilter !== "All") {
           orders = await OrderService.getOrdersByStatus(statusFilter, true);
         } else {
           orders = await OrderService.getYearlyPackages();
         }
       } else {
-        console.log('Fetching regular orders (excluding yearly packages)');
+        console.log('OrderTable: Fetching regular orders (excluding yearly packages)');
         if (statusFilter && statusFilter !== "All") {
           orders = await OrderService.getOrdersByStatus(statusFilter, false);
         } else {
@@ -77,10 +83,17 @@ const OrderTable = ({
         }
       }
 
-      console.log(`Successfully fetched ${orders.length} ${isYearlyPackages ? 'yearly package' : 'regular'} orders`);
+      console.log(`OrderTable: Successfully fetched ${orders.length} ${isYearlyPackages ? 'yearly package' : 'regular'} orders`);
+      
+      // Filter orders for non-admin users to only show their assigned orders
+      if (!isAdmin && user) {
+        orders = orders.filter(order => order.assigned_to === user.id);
+        console.log(`OrderTable: Filtered to ${orders.length} orders for user ${user.id}`);
+      }
+      
       setOrders(orders);
     } catch (error) {
-      console.error("Error fetching orders:", error);
+      console.error("OrderTable: Error fetching orders:", error);
       setError("Failed to load orders. Please try again.");
       toast({
         variant: "destructive",
@@ -90,7 +103,7 @@ const OrderTable = ({
     } finally {
       setLoading(false);
     }
-  }, [statusFilter, isYearlyPackages, toast]);
+  }, [statusFilter, isYearlyPackages, toast, user, isAdmin]);
 
   // Initial fetch and refresh trigger
   useEffect(() => {
@@ -100,30 +113,16 @@ const OrderTable = ({
 
   // Apply filters and sorting whenever orders or filter criteria change
   useEffect(() => {
-    console.log('Applying filters and sorting to orders...');
+    console.log('OrderTable: Applying filters and sorting to orders...');
     let result = [...orders];
     
-    // Apply status filter first
+    // Apply status filter using the same logic as dashboard
     if (statusFilter && statusFilter !== "All") {
-      const statusFieldMap: Record<string, keyof Order> = {
-        "Created": "status_created",
-        "In Progress": "status_in_progress",
-        "Complaint": "status_complaint",
-        "Invoice Sent": "status_invoice_sent",
-        "Invoice Paid": "status_invoice_paid",
-        "Resolved": "status_resolved",
-        "Cancelled": "status_cancelled",
-        "Deleted": "status_deleted",
-        "Review": "status_review"
-      };
-
-      const statusField = statusFieldMap[statusFilter];
-      if (statusField) {
-        result = result.filter(order => order[statusField] === true);
-      } else {
-        // Fallback to old status field for backward compatibility
-        result = result.filter(order => order.status === statusFilter);
-      }
+      // Use the new status system
+      result = result.filter(order => {
+        const activeStatuses = OrderService.getActiveStatuses(order);
+        return activeStatuses.includes(statusFilter as OrderStatus);
+      });
     } else if (statusFilter === "All") {
       // For "All", show orders that don't have resolved, cancelled, or deleted status
       result = result.filter(order => 
@@ -131,12 +130,12 @@ const OrderTable = ({
       );
     }
     
-    // Apply advanced search filters using the new method
+    // Apply advanced search filters using the same method as dashboard
     if (Object.keys(searchFilters).length > 0) {
       result = SearchService.applyFiltersToOrders(result, searchFilters);
     }
     
-    // Apply sorting
+    // Apply sorting - same as dashboard
     result.sort((a, b) => {
       const dateA = new Date(a[sortField] || '').getTime();
       const dateB = new Date(b[sortField] || '').getTime();
@@ -148,7 +147,7 @@ const OrderTable = ({
       }
     });
     
-    console.log(`Filtered orders: ${result.length} out of ${orders.length}`);
+    console.log(`OrderTable: Filtered orders: ${result.length} out of ${orders.length}`);
     setFilteredOrders(result);
     // Reset to first page when filters change
     setCurrentPage(1);
@@ -170,13 +169,13 @@ const OrderTable = ({
   };
 
   const handleRefresh = () => {
-    console.log('Manual refresh triggered from OrderTable');
+    console.log('OrderTable: Manual refresh triggered');
     // Trigger parent component refresh
     window.dispatchEvent(new CustomEvent('orderStatusChanged'));
   };
 
   const handleFiltersChange = (filters: SearchFilters) => {
-    console.log('Applying new filters:', filters);
+    console.log('OrderTable: Applying new filters:', filters);
     setSearchFilters(filters);
   };
 

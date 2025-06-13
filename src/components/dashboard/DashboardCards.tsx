@@ -47,7 +47,7 @@ const SummaryCard = ({
           <div>
             <h3 className="font-medium text-lg">{title}</h3>
             <div className="text-muted-foreground text-sm">
-              {count} {count === 1 ? 'order' : 'orders'} — €{value}
+              {count} {count === 1 ? 'order' : 'orders'} — €{value.toFixed(2)}
             </div>
           </div>
         </div>
@@ -70,7 +70,7 @@ export const DashboardCards = ({ isYearlyPackages = false }: DashboardCardsProps
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        console.log('DashboardCards: Starting to fetch stats...');
+        console.log(`DashboardCards: Starting to fetch ${isYearlyPackages ? 'yearly packages' : 'regular orders'} stats...`);
         setLoading(true);
         setError(null);
         
@@ -107,7 +107,7 @@ export const DashboardCards = ({ isYearlyPackages = false }: DashboardCardsProps
       // Initialize summaries for all status types we want to track
       const summaryMap = new Map<OrderStatus, OrderSummary>();
       
-      // Initialize with empty data for each status
+      // Initialize with empty data for each status - same for both regular and yearly packages
       const statusesToTrack: OrderStatus[] = isAdmin 
         ? ["In Progress", "Invoice Sent", "Invoice Paid", "Complaint", "Resolved", "Cancelled", "Deleted", "Review"] 
         : ["In Progress", "Invoice Sent", "Invoice Paid", "Cancelled", "Review"];
@@ -118,11 +118,16 @@ export const DashboardCards = ({ isYearlyPackages = false }: DashboardCardsProps
       
       // Update summaries with actual data
       orders.forEach(order => {
-        if (summaryMap.has(order.status)) {
-          const summary = summaryMap.get(order.status)!;
-          summary.count += 1;
-          summary.value += parseFloat(order.price?.toString() || '0');
-        }
+        // Check all active statuses for this order
+        const activeStatuses = OrderService.getActiveStatuses(order);
+        
+        activeStatuses.forEach(status => {
+          if (summaryMap.has(status)) {
+            const summary = summaryMap.get(status)!;
+            summary.count += 1;
+            summary.value += parseFloat(order.price?.toString() || '0');
+          }
+        });
       });
       
       // Convert map to array

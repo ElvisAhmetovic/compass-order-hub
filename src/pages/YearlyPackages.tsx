@@ -15,18 +15,18 @@ const YearlyPackages = () => {
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   
-  // Use the order modal hook
+  // Use the order modal hook - same as dashboard
   const { currentOrder, isOpen, open, close } = useOrderModal();
   
-  // Get user role from auth context
+  // Get user role from auth context - same as dashboard
   const { user } = useAuth();
   const userRole: UserRole = user?.role || "user";
   const isAdmin = userRole === "admin";
 
-  // Listen for order status changes to refresh all data
+  // Listen for order status changes to refresh all data - same as dashboard
   useEffect(() => {
     const handleOrderStatusChange = () => {
-      console.log('Yearly packages order status change detected, refreshing data...');
+      console.log('YearlyPackages: Order status change detected, refreshing data...');
       setRefreshTrigger(prev => prev + 1);
     };
 
@@ -38,11 +38,16 @@ const YearlyPackages = () => {
   }, []);
 
   const handleRefresh = () => {
-    console.log('Manual yearly packages refresh triggered');
+    console.log('YearlyPackages: Manual refresh triggered');
     setRefreshTrigger(prev => prev + 1);
   };
 
-  // Show loading state if user is not authenticated
+  const handleCreateModalClose = () => {
+    setCreateModalOpen(false);
+    handleRefresh();
+  };
+
+  // Show loading state if user is not authenticated - same as dashboard
   if (!user) {
     return (
       <div className="flex min-h-screen">
@@ -89,10 +94,7 @@ const YearlyPackages = () => {
 
             <CreateYearlyPackageModal
               open={createModalOpen}
-              onClose={() => {
-                setCreateModalOpen(false);
-                handleRefresh();
-              }}
+              onClose={handleCreateModalClose}
             />
           </div>
         </Layout>
