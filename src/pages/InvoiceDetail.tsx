@@ -423,34 +423,36 @@ const InvoiceDetail = () => {
                           </Button>
                         </div>
                       </CardHeader>
-                      <CardContent className="overflow-x-auto">
-                        <div className="min-w-[900px]">
-                          <Table>
-                            <TableHeader>
-                              <TableRow className="h-14">
-                                <TableHead className="w-1/2 min-w-[300px] text-left font-semibold">Description</TableHead>
-                                <TableHead className="text-center font-semibold">Qty</TableHead>
-                                <TableHead className="text-center font-semibold">Unit</TableHead>
-                                <TableHead className="text-right font-semibold">Price</TableHead>
-                                <TableHead className="text-center font-semibold">VAT %</TableHead>
-                                <TableHead className="text-center font-semibold">Discount %</TableHead>
-                                <TableHead className="text-right font-semibold">Total</TableHead>
-                                <TableHead className="w-[60px] text-center"></TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {lineItems.map((item, index) => (
-                                <LineItemRow
-                                  key={index}
-                                  item={item}
-                                  index={index}
-                                  currency={formData.currency}
-                                  onUpdate={updateLineItem}
-                                  onRemove={removeLineItem}
-                                />
-                              ))}
-                            </TableBody>
-                          </Table>
+                      <CardContent>
+                        <div className="overflow-x-auto">
+                          <div className="min-w-[1000px]">
+                            <Table>
+                              <TableHeader>
+                                <TableRow className="h-16">
+                                  <TableHead className="w-1/2 min-w-[350px] text-left font-semibold">Description</TableHead>
+                                  <TableHead className="text-center font-semibold">Qty</TableHead>
+                                  <TableHead className="text-center font-semibold">Unit</TableHead>
+                                  <TableHead className="text-right font-semibold">Price</TableHead>
+                                  <TableHead className="text-center font-semibold">VAT %</TableHead>
+                                  <TableHead className="text-center font-semibold">Discount %</TableHead>
+                                  <TableHead className="text-right font-semibold">Total</TableHead>
+                                  <TableHead className="w-[80px] text-center"></TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {lineItems.map((item, index) => (
+                                  <LineItemRow
+                                    key={index}
+                                    item={item}
+                                    index={index}
+                                    currency={formData.currency}
+                                    onUpdate={updateLineItem}
+                                    onRemove={removeLineItem}
+                                  />
+                                ))}
+                              </TableBody>
+                            </Table>
+                          </div>
                         </div>
 
                         {/* Totals */}
