@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -36,16 +35,68 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
   };
 
   const { subtotal, vatAmount, total } = calculateTotals();
+  
+  // Get translated account names and payment info
+  const getAccountTranslations = (language: string, accountId: string) => {
+    const translations = {
+      en: {
+        belgium: "Belgium Bank Account",
+        germany: "German Bank Account"
+      },
+      nl: {
+        belgium: "Bankrekening België",
+        germany: "Duitse Bankrekening"
+      },
+      de: {
+        belgium: "Belgisches Bankkonto",
+        germany: "Deutsches Bankkonto"
+      },
+      fr: {
+        belgium: "Compte bancaire belge",
+        germany: "Compte bancaire allemand"
+      },
+      es: {
+        belgium: "Cuenta bancaria belga",
+        germany: "Cuenta bancaria alemana"
+      },
+      da: {
+        belgium: "Belgisk bankkonto",
+        germany: "Tysk bankkonto"
+      },
+      no: {
+        belgium: "Belgisk bankkonto",
+        germany: "Tysk bankkonto"
+      },
+      cs: {
+        belgium: "Belgický bankovní účet",
+        germany: "Německý bankovní účet"
+      },
+      pl: {
+        belgium: "Belgijskie konto bankowe",
+        germany: "Niemieckie konto bankowe"
+      },
+      sv: {
+        belgium: "Belgiskt bankkonto",
+        germany: "Tyskt bankkonto"
+      }
+    };
+    
+    const lang = language || 'en';
+    return translations[lang]?.[accountId] || translations.en[accountId];
+  };
+
   const selectedAccount = templateSettings.selectedPaymentAccount === "belgium" 
     ? {
-        name: "Bankrekening België",
+        id: "belgium",
+        name: getAccountTranslations(templateSettings.language, "belgium"),
         iban: "BE79967023897833",
         bic: "TRWIBEB1XXX",
         blz: "967",
         account: "967023897833"
       }
     : {
-        name: "German Bank Account",
+        id: "germany",
+        name: getAccountTranslations(templateSettings.language, "germany"),
         iban: "DE91240703680071572200",
         bic: "DEUTDE2HP22",
         bank: "Postbank/DSL Ndl of Deutsche Bank"
