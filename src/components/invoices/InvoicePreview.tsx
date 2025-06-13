@@ -90,11 +90,52 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
         total: "Totaal:",
         notes: "Opmerkingen:",
         terms: "Voorwaarden:"
+      },
+      de: {
+        date: "Datum:",
+        dueDate: "Fälligkeitsdatum:",
+        balanceDue: "Saldo:",
+        billTo: "Rechnung an:",
+        item: "Artikel",
+        quantity: "Menge",
+        rate: "Preis",
+        amount: "Betrag",
+        subtotal: "Zwischensumme:",
+        tax: "MwSt",
+        total: "Gesamt:",
+        notes: "Notizen:",
+        terms: "Bedingungen:"
+      },
+      fr: {
+        date: "Date:",
+        dueDate: "Date d'échéance:",
+        balanceDue: "Solde dû:",
+        billTo: "Facturer à:",
+        item: "Article",
+        quantity: "Quantité",
+        rate: "Taux",
+        amount: "Montant",
+        subtotal: "Sous-total:",
+        tax: "TVA",
+        total: "Total:",
+        notes: "Notes:",
+        terms: "Conditions:"
       }
     };
     
     const lang = templateSettings.language || 'en';
     return translations[lang]?.[key] || translations.en[key];
+  };
+
+  // Provide default company info if not available
+  const companyInfo = templateSettings.companyInfo || {
+    name: "Company Name",
+    registrationNumber: "123456789",
+    vatId: "VAT123456789",
+    street: "Street Address",
+    postal: "12345",
+    city: "City",
+    email: "info@company.com"
   };
 
   return (
@@ -117,17 +158,17 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
               )}
               <div>
                 <h1 className="text-lg font-bold text-gray-800">
-                  {templateSettings.companyInfo.name}
+                  {companyInfo.name}
                 </h1>
               </div>
             </div>
             
             <div className="text-right">
               <h2 className="text-3xl font-bold text-gray-600">
-                {templateSettings.invoiceNumberPrefix}{invoice?.invoice_number || "784/25"}
+                {templateSettings.invoiceNumberPrefix || "RE NR:"}{invoice?.invoice_number || "784/25"}
               </h2>
               <p className="text-sm text-gray-500 mt-1">
-                # {templateSettings.invoiceNumberPrefix}{invoice?.invoice_number || "784/25"}
+                # {templateSettings.invoiceNumberPrefix || "RE NR:"}{invoice?.invoice_number || "784/25"}
               </p>
             </div>
           </div>
@@ -136,11 +177,11 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
           <div className="grid grid-cols-2 gap-8">
             <div>
               <div className="text-sm text-gray-700 space-y-1">
-                <div className="font-bold">{templateSettings.companyInfo.name}</div>
-                <div>Company Registration Number: {templateSettings.companyInfo.registrationNumber}</div>
-                <div>UID- Number: {templateSettings.companyInfo.vatId}</div>
-                <div>{templateSettings.companyInfo.street} {templateSettings.companyInfo.postal} {templateSettings.companyInfo.city}</div>
-                <div>{templateSettings.companyInfo.email}</div>
+                <div className="font-bold">{companyInfo.name}</div>
+                <div>Company Registration Number: {companyInfo.registrationNumber}</div>
+                <div>UID- Number: {companyInfo.vatId}</div>
+                <div>{companyInfo.street} {companyInfo.postal} {companyInfo.city}</div>
+                <div>{companyInfo.email}</div>
               </div>
             </div>
             
@@ -155,7 +196,7 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
               </div>
               <div className="flex justify-between font-bold text-lg">
                 <span>{getTranslatedText('balanceDue')}</span>
-                <span>{formatCurrency(total, templateSettings.currency)}</span>
+                <span>{formatCurrency(total, templateSettings.currency || 'EUR')}</span>
               </div>
             </div>
           </div>
@@ -199,15 +240,15 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
                   <tr key={index} className="border-b">
                     <td className="py-3 px-4">{item.item_description}</td>
                     <td className="text-center py-3 px-4">{item.quantity}</td>
-                    <td className="text-right py-3 px-4">{formatCurrency(item.unit_price, templateSettings.currency)}</td>
-                    <td className="text-right py-3 px-4">{formatCurrency(item.quantity * item.unit_price * (1 - item.discount_rate), templateSettings.currency)}</td>
+                    <td className="text-right py-3 px-4">{formatCurrency(item.unit_price, templateSettings.currency || 'EUR')}</td>
+                    <td className="text-right py-3 px-4">{formatCurrency(item.quantity * item.unit_price * (1 - item.discount_rate), templateSettings.currency || 'EUR')}</td>
                   </tr>
                 )) : (
                   <tr className="border-b">
                     <td className="py-3 px-4">Sample Service</td>
                     <td className="text-center py-3 px-4">1</td>
-                    <td className="text-right py-3 px-4">{formatCurrency(750, templateSettings.currency)}</td>
-                    <td className="text-right py-3 px-4">{formatCurrency(750, templateSettings.currency)}</td>
+                    <td className="text-right py-3 px-4">{formatCurrency(750, templateSettings.currency || 'EUR')}</td>
+                    <td className="text-right py-3 px-4">{formatCurrency(750, templateSettings.currency || 'EUR')}</td>
                   </tr>
                 )}
               </tbody>
@@ -219,17 +260,17 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
             <div className="w-64 space-y-2">
               <div className="flex justify-between">
                 <span>{getTranslatedText('subtotal')}</span>
-                <span>{formatCurrency(subtotal || 750, templateSettings.currency)}</span>
+                <span>{formatCurrency(subtotal || 750, templateSettings.currency || 'EUR')}</span>
               </div>
               {templateSettings.vatEnabled && (
                 <div className="flex justify-between">
-                  <span>{getTranslatedText('tax')} ({templateSettings.vatRate}%):</span>
-                  <span>{formatCurrency(vatAmount, templateSettings.currency)}</span>
+                  <span>{getTranslatedText('tax')} ({templateSettings.vatRate || 21}%):</span>
+                  <span>{formatCurrency(vatAmount, templateSettings.currency || 'EUR')}</span>
                 </div>
               )}
               <div className="flex justify-between font-bold text-lg border-t pt-2">
                 <span>{getTranslatedText('total')}</span>
-                <span>{formatCurrency(total || 750, templateSettings.currency)}</span>
+                <span>{formatCurrency(total || 750, templateSettings.currency || 'EUR')}</span>
               </div>
             </div>
           </div>
