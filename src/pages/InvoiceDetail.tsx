@@ -22,6 +22,7 @@ import SendInvoiceDialog from "@/components/invoices/SendInvoiceDialog";
 import PaymentTracker from "@/components/invoices/PaymentTracker";
 import InvoiceTemplateSettings from "@/components/invoices/InvoiceTemplateSettings";
 import InvoicePreview from "@/components/invoices/InvoicePreview";
+import { generateInvoicePDF } from "@/utils/invoicePdfGenerator";
 
 const InvoiceDetail = () => {
   const { id } = useParams();
@@ -259,11 +260,28 @@ const InvoiceDetail = () => {
     }
   };
 
-  const handleDownloadPDF = () => {
-    toast({
-      title: "PDF Generation",
-      description: "PDF download functionality will be implemented soon.",
-    });
+  const handleDownloadPDF = async () => {
+    try {
+      await generateInvoicePDF({
+        invoice,
+        lineItems,
+        client: selectedClient,
+        templateSettings,
+        formData
+      });
+      
+      toast({
+        title: "PDF Downloaded",
+        description: "Invoice PDF has been generated and downloaded successfully.",
+      });
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      toast({
+        title: "PDF Generation Failed",
+        description: "There was an error generating the PDF. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const selectedClient = clients.find(c => c.id === formData.client_id);
