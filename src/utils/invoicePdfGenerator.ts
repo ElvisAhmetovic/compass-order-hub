@@ -1,4 +1,3 @@
-
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { Invoice, InvoiceLineItem, Client } from '@/types/invoice';
@@ -72,6 +71,22 @@ export const generateInvoicePDF = async (data: InvoicePDFData): Promise<void> =>
 
 const generateInvoiceHTML = (data: InvoicePDFData): string => {
   const { invoice, lineItems, client, templateSettings, formData } = data;
+  
+  // Get saved logo from localStorage or use the one from template settings
+  const getSavedLogo = () => {
+    try {
+      const savedSettings = localStorage.getItem('invoiceTemplateSettings');
+      if (savedSettings) {
+        const parsed = JSON.parse(savedSettings);
+        return parsed.logo || templateSettings.logo;
+      }
+    } catch (error) {
+      console.log('No saved logo found, using template settings');
+    }
+    return templateSettings.logo;
+  };
+
+  const logoUrl = getSavedLogo();
   
   const calculateTotals = () => {
     const subtotal = lineItems.reduce((sum, item) => {
@@ -293,9 +308,9 @@ const generateInvoiceHTML = (data: InvoicePDFData): string => {
       <!-- Header -->
       <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px; border-bottom: 2px solid #e5e7eb; padding-bottom: 20px;">
         <div style="display: flex; align-items: center; gap: 20px;">
-          ${templateSettings.logo ? `
+          ${logoUrl ? `
             <img 
-              src="${templateSettings.logo}" 
+              src="${logoUrl}" 
               alt="Company Logo" 
               style="height: ${
                 templateSettings.logoSize === "small" ? "60px" :

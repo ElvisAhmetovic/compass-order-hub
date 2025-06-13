@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -77,6 +76,19 @@ const InvoiceTemplateSettings: React.FC<InvoiceTemplateSettingsProps> = ({
   onSettingsChange,
   initialSettings
 }) => {
+  // Load saved settings from localStorage on component mount
+  const loadSavedSettings = () => {
+    try {
+      const saved = localStorage.getItem('invoiceTemplateSettings');
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch (error) {
+      console.log('No saved settings found');
+    }
+    return {};
+  };
+
   const [settings, setSettings] = useState({
     logo: "",
     logoSize: "large",
@@ -88,11 +100,14 @@ const InvoiceTemplateSettings: React.FC<InvoiceTemplateSettingsProps> = ({
     vatRate: 21,
     currency: "EUR",
     invoiceNumberPrefix: "RE NR:",
+    ...loadSavedSettings(),
     ...initialSettings
   });
 
   useEffect(() => {
     onSettingsChange(settings);
+    // Save settings to localStorage whenever they change
+    localStorage.setItem('invoiceTemplateSettings', JSON.stringify(settings));
   }, [settings, onSettingsChange]);
 
   const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
