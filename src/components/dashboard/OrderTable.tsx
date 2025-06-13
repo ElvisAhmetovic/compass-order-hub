@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from "react";
 import {
   Table,
@@ -51,21 +52,24 @@ const OrderTable = ({
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
 
-  // Fetch orders with yearly package filtering
+  // Fetch orders with better error handling
   const fetchOrders = useCallback(async () => {
     try {
+      console.log(`Starting to fetch ${isYearlyPackages ? 'yearly packages' : 'regular orders'}...`);
       setLoading(true);
+      setError(null);
+      
       let orders: Order[];
 
       if (isYearlyPackages) {
-        // For yearly packages page, only get yearly packages
+        console.log('Fetching yearly packages only');
         if (statusFilter && statusFilter !== "All") {
           orders = await OrderService.getOrdersByStatus(statusFilter, true);
         } else {
           orders = await OrderService.getYearlyPackages();
         }
       } else {
-        // For regular pages, exclude yearly packages
+        console.log('Fetching regular orders (excluding yearly packages)');
         if (statusFilter && statusFilter !== "All") {
           orders = await OrderService.getOrdersByStatus(statusFilter, false);
         } else {
@@ -73,10 +77,11 @@ const OrderTable = ({
         }
       }
 
-      console.log(`Fetched ${orders.length} ${isYearlyPackages ? 'yearly package' : 'regular'} orders`);
+      console.log(`Successfully fetched ${orders.length} ${isYearlyPackages ? 'yearly package' : 'regular'} orders`);
       setOrders(orders);
     } catch (error) {
       console.error("Error fetching orders:", error);
+      setError("Failed to load orders. Please try again.");
       toast({
         variant: "destructive",
         title: "Error loading orders",
@@ -85,10 +90,17 @@ const OrderTable = ({
     } finally {
       setLoading(false);
     }
-  }, [statusFilter, refreshTrigger, isYearlyPackages]);
+  }, [statusFilter, isYearlyPackages, toast]);
+
+  // Initial fetch and refresh trigger
+  useEffect(() => {
+    console.log('OrderTable useEffect triggered - refreshTrigger:', refreshTrigger);
+    fetchOrders();
+  }, [fetchOrders, refreshTrigger]);
 
   // Apply filters and sorting whenever orders or filter criteria change
   useEffect(() => {
+    console.log('Applying filters and sorting to orders...');
     let result = [...orders];
     
     // Apply status filter first
@@ -136,6 +148,7 @@ const OrderTable = ({
       }
     });
     
+    console.log(`Filtered orders: ${result.length} out of ${orders.length}`);
     setFilteredOrders(result);
     // Reset to first page when filters change
     setCurrentPage(1);
@@ -157,6 +170,7 @@ const OrderTable = ({
   };
 
   const handleRefresh = () => {
+    console.log('Manual refresh triggered from OrderTable');
     // Trigger parent component refresh
     window.dispatchEvent(new CustomEvent('orderStatusChanged'));
   };
@@ -194,6 +208,7 @@ const OrderTable = ({
         </div>
         <div className="flex justify-center items-center h-64">
           <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
+          <span className="ml-2">Loading {isYearlyPackages ? 'yearly packages' : 'orders'}...</span>
         </div>
       </div>
     );
@@ -231,7 +246,7 @@ const OrderTable = ({
           />
         </div>
         <div className="p-8 text-center border rounded-md">
-          <p className="text-muted-foreground text-lg">No orders found.</p>
+          <p className="text-muted-foreground text-lg">No {isYearlyPackages ? 'yearly packages' : 'orders'} found.</p>
           <p className="text-sm text-muted-foreground mt-1">
             {isAdmin 
               ? (statusFilter || Object.keys(searchFilters).length > 0 ? "Try changing your filters or create a new order." : "Start by creating your first order.")

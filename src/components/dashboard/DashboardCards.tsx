@@ -1,3 +1,4 @@
+
 import { Card, CardContent } from "@/components/ui/card";
 import { 
   ClipboardCheck, 
@@ -62,30 +63,40 @@ interface DashboardCardsProps {
 export const DashboardCards = ({ isYearlyPackages = false }: DashboardCardsProps) => {
   const [orderSummaries, setOrderSummaries] = useState<OrderSummary[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
   
   useEffect(() => {
     const fetchStats = async () => {
       try {
+        console.log('DashboardCards: Starting to fetch stats...');
         setLoading(true);
+        setError(null);
         
         let allOrders: Order[];
         if (isYearlyPackages) {
+          console.log('DashboardCards: Fetching yearly packages');
           allOrders = await OrderService.getYearlyPackages();
         } else {
+          console.log('DashboardCards: Fetching regular orders (excluding yearly packages)');
           allOrders = await OrderService.getOrders(false); // Exclude yearly packages for regular dashboard
         }
+
+        console.log(`DashboardCards: Fetched ${allOrders.length} orders`);
 
         // Filter orders for non-admin users to only show their assigned orders
         if (!isAdmin && user) {
           allOrders = allOrders.filter(order => order.assigned_to === user.id);
+          console.log(`DashboardCards: Filtered to ${allOrders.length} orders for user ${user.id}`);
         }
         
         const summaries = calculateSummaries(allOrders);
+        console.log('DashboardCards: Calculated summaries:', summaries);
         setOrderSummaries(summaries);
       } catch (error) {
-        console.error("Error fetching dashboard stats:", error);
+        console.error("DashboardCards: Error fetching dashboard stats:", error);
+        setError("Failed to load dashboard statistics");
       } finally {
         setLoading(false);
       }
@@ -118,12 +129,17 @@ export const DashboardCards = ({ isYearlyPackages = false }: DashboardCardsProps
       return Array.from(summaryMap.values());
     };
     
-    fetchStats();
+    // Only fetch if user exists
+    if (user) {
+      fetchStats();
+    }
 
     // Listen for order changes to refresh data
     const handleOrderStatusChange = () => {
-      console.log('Order status change detected in DashboardCards, refreshing data...');
-      fetchStats();
+      console.log('DashboardCards: Order status change detected, refreshing data...');
+      if (user) {
+        fetchStats();
+      }
     };
 
     window.addEventListener('orderStatusChanged', handleOrderStatusChange);
@@ -181,6 +197,18 @@ export const DashboardCards = ({ isYearlyPackages = false }: DashboardCardsProps
     }
   };
 
+  if (!user) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <Card className="border shadow-sm">
+          <CardContent className="p-6">
+            <p className="text-muted-foreground">Please log in to view dashboard</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
@@ -195,6 +223,18 @@ export const DashboardCards = ({ isYearlyPackages = false }: DashboardCardsProps
             </CardContent>
           </Card>
         ))}
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <Card className="border shadow-sm">
+          <CardContent className="p-6">
+            <p className="text-destructive">{error}</p>
+          </CardContent>
+        </Card>
       </div>
     );
   }
