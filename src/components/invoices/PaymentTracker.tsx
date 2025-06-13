@@ -1,12 +1,13 @@
 
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { PaymentService, PaymentLink } from "@/services/paymentService";
-import { formatCurrency } from "@/utils/currencyUtils";
-import { RefreshCw, ExternalLink, Copy, CreditCard } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { PaymentService, PaymentLink } from "@/services/paymentService";
+import { InvoiceService } from "@/services/invoiceService";
+import { formatCurrency } from "@/utils/currencyUtils";
+import { CreditCard, AlertCircle, RefreshCw } from "lucide-react";
 
 interface PaymentTrackerProps {
   invoiceId: string;
@@ -21,101 +22,107 @@ const PaymentTracker: React.FC<PaymentTrackerProps> = ({
 }) => {
   const [paymentLinks, setPaymentLinks] = useState<PaymentLink[]>([]);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
-    loadPaymentLinks();
+    loadPaymentData();
   }, [invoiceId]);
 
-  const loadPaymentLinks = async () => {
+  const loadPaymentData = async () => {
+    if (!invoiceId) {
+      setLoading(false);
+      setError("No invoice ID provided");
+      return;
+    }
+
     try {
       setLoading(true);
-      const links = await PaymentService.getPaymentLinks(invoiceId);
-      setPaymentLinks(links);
+      setError(null);
+      
+      // Try to load payment links, but don't fail if the service isn't available
+      try {
+        const links = await PaymentService.getPaymentLinks(invoiceId);
+        setPaymentLinks(links || []);
+      } catch (paymentError) {
+        console.warn("Payment service not available:", paymentError);
+        setPaymentLinks([]);
+      }
+
     } catch (error) {
-      console.error("Error loading payment links:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load payment information.",
-        variant: "destructive",
-      });
+      console.error("Error loading payment data:", error);
+      setError("Unable to load payment information");
     } finally {
       setLoading(false);
     }
   };
 
-  const refreshPaymentStatus = async (paymentLinkId: string) => {
+  const handleCreatePaymentLink = async (method: string = 'stripe') => {
+    setCreating(true);
     try {
-      setRefreshing(paymentLinkId);
-      const updatedLink = await PaymentService.refreshPaymentStatus(paymentLinkId);
+      const paymentLink = await PaymentService.createPaymentLink(invoiceId, method);
       
-      setPaymentLinks(links => 
-        links.map(link => 
-          link.id === paymentLinkId ? updatedLink : link
-        )
-      );
-
-      if (updatedLink.status === 'paid' && onPaymentStatusChange) {
-        onPaymentStatusChange('paid');
-      }
-
       toast({
-        title: "Status updated",
-        description: `Payment status refreshed: ${updatedLink.status}`,
+        title: "Payment link created",
+        description: "Payment link has been generated successfully.",
       });
+
+      setPaymentLinks([paymentLink, ...paymentLinks]);
     } catch (error) {
-      console.error("Error refreshing payment status:", error);
+      console.error("Error creating payment link:", error);
       toast({
-        title: "Error",
-        description: "Failed to refresh payment status.",
-        variant: "destructive",
+        title: "Payment Service Unavailable",
+        description: "Payment link creation is not available at the moment.",
+        variant: "destructive"
       });
     } finally {
-      setRefreshing(null);
+      setCreating(false);
     }
   };
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    toast({
-      title: "Copied",
-      description: "Payment link copied to clipboard.",
-    });
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'paid':
-        return 'default';
-      case 'active':
-        return 'secondary';
-      case 'expired':
-        return 'outline';
-      case 'cancelled':
-        return 'destructive';
-      default:
-        return 'outline';
-    }
-  };
-
-  const getStatusIcon = (method: string) => {
-    switch (method) {
-      case 'stripe':
-        return <CreditCard className="h-4 w-4" />;
-      default:
-        return <CreditCard className="h-4 w-4" />;
-    }
+  const handleRetry = () => {
+    loadPaymentData();
   };
 
   if (loading) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm">Payment Status</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <CreditCard className="h-5 w-5" />
+            Payment Tracking
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-center py-4">Loading payment information...</div>
+          <div className="text-center py-4 text-muted-foreground">
+            Loading payment information...
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <CreditCard className="h-5 w-5" />
+            Payment Tracking
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-4">
+            <AlertCircle className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+            <p className="text-sm text-muted-foreground mb-3">
+              Payment information is currently unavailable
+            </p>
+            <Button variant="outline" size="sm" onClick={handleRetry}>
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Retry
+            </Button>
+          </div>
         </CardContent>
       </Card>
     );
@@ -124,88 +131,48 @@ const PaymentTracker: React.FC<PaymentTrackerProps> = ({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-sm flex items-center gap-2">
-          <CreditCard className="h-4 w-4" />
-          Payment Status
-        </CardTitle>
+        <div className="flex justify-between items-center">
+          <CardTitle className="flex items-center gap-2">
+            <CreditCard className="h-5 w-5" />
+            Payment Tracking
+          </CardTitle>
+          <Button
+            onClick={() => handleCreatePaymentLink('stripe')}
+            disabled={creating}
+            size="sm"
+            variant="outline"
+          >
+            {creating ? "Creating..." : "Create Payment Link"}
+          </Button>
+        </div>
       </CardHeader>
       <CardContent className="space-y-3">
-        {paymentLinks.length === 0 ? (
-          <div className="text-center py-4 text-muted-foreground">
-            No payment links available
-          </div>
-        ) : (
+        {paymentLinks.length > 0 ? (
           paymentLinks.map((link) => (
-            <div key={link.id} className="border rounded-lg p-3 space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  {getStatusIcon(link.payment_method)}
-                  <span className="font-medium text-sm">
-                    {link.payment_method.toUpperCase()}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant={getStatusColor(link.status)}>
-                    {link.status.toUpperCase()}
-                  </Badge>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => refreshPaymentStatus(link.id)}
-                    disabled={refreshing === link.id}
-                  >
-                    <RefreshCw className={`h-3 w-3 ${refreshing === link.id ? 'animate-spin' : ''}`} />
-                  </Button>
-                </div>
+            <div key={link.id} className="p-3 border rounded-md">
+              <div className="flex items-center justify-between mb-2">
+                <span className="font-medium">{link.payment_method.toUpperCase()}</span>
+                <Badge variant={
+                  link.status === 'paid' ? 'default' :
+                  link.status === 'active' ? 'secondary' :
+                  'destructive'
+                }>
+                  {link.status.toUpperCase()}
+                </Badge>
               </div>
-
               <div className="text-sm text-muted-foreground">
                 Amount: {formatCurrency(link.amount, link.currency)}
               </div>
-
-              {link.status === 'paid' && link.paid_at && (
-                <div className="text-sm text-green-600">
-                  Paid on {new Date(link.paid_at).toLocaleDateString()}
-                  {link.transaction_id && (
-                    <span className="block text-xs">
-                      Transaction ID: {link.transaction_id}
-                    </span>
-                  )}
-                </div>
-              )}
-
-              {link.status === 'active' && (
-                <div className="flex items-center gap-1">
-                  <div className="flex-1 bg-muted rounded px-2 py-1 text-xs font-mono">
-                    {link.payment_url.length > 50 
-                      ? `${link.payment_url.substring(0, 50)}...` 
-                      : link.payment_url
-                    }
-                  </div>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => copyToClipboard(link.payment_url)}
-                  >
-                    <Copy className="h-3 w-3" />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => window.open(link.payment_url, '_blank')}
-                  >
-                    <ExternalLink className="h-3 w-3" />
-                  </Button>
-                </div>
-              )}
-
-              {link.expires_at && new Date(link.expires_at) > new Date() && (
-                <div className="text-xs text-muted-foreground">
-                  Expires: {new Date(link.expires_at).toLocaleDateString()}
-                </div>
-              )}
+              <div className="text-sm text-muted-foreground">
+                Created: {new Date(link.created_at).toLocaleDateString()}
+              </div>
             </div>
           ))
+        ) : (
+          <div className="text-center py-4 text-muted-foreground">
+            <p className="text-sm">No payment links created yet</p>
+            <p className="text-xs mt-1">Create a payment link to enable online payments</p>
+          </div>
         )}
       </CardContent>
     </Card>
