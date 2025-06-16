@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -73,6 +72,9 @@ const CURRENCIES = [
   { code: 'DKK', name: 'DKK (kr)', symbol: 'kr' }
 ];
 
+// Default company logo
+const DEFAULT_COMPANY_LOGO = "/lovable-uploads/f7433a5f-4a36-45f5-a9c0-0609818523fe.png";
+
 const InvoiceTemplateSettings: React.FC<InvoiceTemplateSettingsProps> = ({
   onSettingsChange,
   initialSettings
@@ -82,7 +84,12 @@ const InvoiceTemplateSettings: React.FC<InvoiceTemplateSettingsProps> = ({
     try {
       const saved = localStorage.getItem('invoiceTemplateSettings');
       if (saved) {
-        return JSON.parse(saved);
+        const parsedSettings = JSON.parse(saved);
+        // If no logo is set, use the default company logo
+        if (!parsedSettings.logo) {
+          parsedSettings.logo = DEFAULT_COMPANY_LOGO;
+        }
+        return parsedSettings;
       }
     } catch (error) {
       console.log('No saved settings found');
@@ -91,7 +98,7 @@ const InvoiceTemplateSettings: React.FC<InvoiceTemplateSettingsProps> = ({
   };
 
   const [settings, setSettings] = useState({
-    logo: "",
+    logo: DEFAULT_COMPANY_LOGO, // Set default logo
     logoSize: "large",
     language: "en",
     selectedPaymentAccount: "belgium",
@@ -106,6 +113,11 @@ const InvoiceTemplateSettings: React.FC<InvoiceTemplateSettingsProps> = ({
   });
 
   useEffect(() => {
+    // Ensure the default logo is always set if no logo exists
+    if (!settings.logo) {
+      setSettings(prev => ({ ...prev, logo: DEFAULT_COMPANY_LOGO }));
+    }
+    
     onSettingsChange(settings);
     // Save settings to localStorage whenever they change
     localStorage.setItem('invoiceTemplateSettings', JSON.stringify(settings));
@@ -121,6 +133,10 @@ const InvoiceTemplateSettings: React.FC<InvoiceTemplateSettingsProps> = ({
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  const resetToDefaultLogo = () => {
+    setSettings(prev => ({ ...prev, logo: DEFAULT_COMPANY_LOGO }));
   };
 
   const updateCompanyInfo = (field: string, value: string) => {
@@ -251,8 +267,8 @@ const InvoiceTemplateSettings: React.FC<InvoiceTemplateSettingsProps> = ({
                 </Button>
               </div>
             )}
-            <div>
-              <Label htmlFor="logo-upload">Upload Logo</Label>
+            <div className="space-y-2">
+              <Label htmlFor="logo-upload">Upload Custom Logo</Label>
               <div className="flex items-center gap-2 mt-1">
                 <Input
                   id="logo-upload"
@@ -269,7 +285,17 @@ const InvoiceTemplateSettings: React.FC<InvoiceTemplateSettingsProps> = ({
                   <Upload className="h-4 w-4 mr-2" />
                   Choose File
                 </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={resetToDefaultLogo}
+                >
+                  Reset to Default
+                </Button>
               </div>
+              <p className="text-xs text-gray-500">
+                AB Media Team logo is set as default. Upload a custom logo or use the default.
+              </p>
             </div>
           </div>
           
