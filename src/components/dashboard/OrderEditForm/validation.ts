@@ -16,7 +16,10 @@ export interface OrderFormData {
 
 export interface ValidationErrors {
   company_name?: string;
+  company_address?: string;
   contact_email?: string;
+  contact_phone?: string;
+  company_link?: string;
   description?: string;
   price?: string;
   currency?: string;
