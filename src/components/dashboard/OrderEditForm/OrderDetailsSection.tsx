@@ -59,7 +59,13 @@ const OrderDetailsSection = ({ order, data, errors, isEditing, onChange }: Order
     price: data.price !== undefined ? data.price : (order.price || 0),
     currency: data.currency || order.currency || "EUR",
     priority: data.priority || order.priority || "medium",
-    assigned_to: data.assigned_to || order.assigned_to || ""
+    assigned_to: data.assigned_to || order.assigned_to || "unassigned"
+  };
+
+  const handleAssignedToChange = (value: string) => {
+    // Convert "unassigned" back to empty string for the form data
+    const actualValue = value === "unassigned" ? "" : value;
+    onChange('assigned_to', actualValue);
   };
 
   return (
@@ -179,14 +185,14 @@ const OrderDetailsSection = ({ order, data, errors, isEditing, onChange }: Order
         </Label>
         {isEditing ? (
           <Select 
-            value={safeData.assigned_to || ""} 
-            onValueChange={(value) => onChange('assigned_to', value || "")}
+            value={safeData.assigned_to === "" ? "unassigned" : safeData.assigned_to} 
+            onValueChange={handleAssignedToChange}
           >
             <SelectTrigger className="mt-1">
               <SelectValue placeholder="Select user..." />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Unassigned</SelectItem>
+              <SelectItem value="unassigned">Unassigned</SelectItem>
               {assignedUsers.map((user) => (
                 <SelectItem key={user.id} value={user.id}>
                   {user.name}
