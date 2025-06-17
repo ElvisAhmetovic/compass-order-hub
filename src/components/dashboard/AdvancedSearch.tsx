@@ -261,29 +261,33 @@ const AdvancedSearch = ({ onFiltersChange, currentFilters }: AdvancedSearchProps
               </div>
             </div>
 
-            {/* Assigned To Filter */}
+            {/* Assigned To Filter - Updated with proper dropdown */}
             <div className="space-y-2">
               <Label>Assigned To</Label>
-              <div className="grid grid-cols-2 gap-2">
-                {filterOptions.assignedUsers.map((user) => (
-                  <div key={user.id} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`user-${user.id}`}
-                      checked={filters.assignedTo?.includes(user.id) || false}
-                      onCheckedChange={(checked) => {
-                        const currentUsers = filters.assignedTo || [];
-                        const newUsers = checked
-                          ? [...currentUsers, user.id]
-                          : currentUsers.filter(u => u !== user.id);
-                        handleFilterChange('assignedTo', newUsers);
-                      }}
-                    />
-                    <Label htmlFor={`user-${user.id}`} className="text-sm">
-                      {user.name}
-                    </Label>
-                  </div>
-                ))}
-              </div>
+              {filterOptions.assignedUsers.length > 0 ? (
+                <div className="grid grid-cols-1 gap-2 max-h-40 overflow-y-auto">
+                  {filterOptions.assignedUsers.map((assignedUser) => (
+                    <div key={assignedUser.id} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`user-${assignedUser.id}`}
+                        checked={filters.assignedTo?.includes(assignedUser.id) || false}
+                        onCheckedChange={(checked) => {
+                          const currentUsers = filters.assignedTo || [];
+                          const newUsers = checked
+                            ? [...currentUsers, assignedUser.id]
+                            : currentUsers.filter(u => u !== assignedUser.id);
+                          handleFilterChange('assignedTo', newUsers);
+                        }}
+                      />
+                      <Label htmlFor={`user-${assignedUser.id}`} className="text-sm cursor-pointer">
+                        {assignedUser.name}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">No agents found</p>
+              )}
             </div>
 
             {/* Date Range */}
