@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -42,7 +43,7 @@ const formSchema = z.object({
   price: z.coerce.number().min(0, "Price must be a positive number"),
   currency: z.string().default("EUR"),
   priority: z.string().default("medium"),
-  description: z.string().optional().or(z.literal("")),
+  description: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -109,7 +110,7 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
         contact_phone: values.contactPhone?.trim() || null,
         company_address: values.companyAddress?.trim() || null,
         company_link: formattedLink || null,
-        description: values.description?.trim() || "", // Handle empty description
+        description: values.description?.trim() || "",
         price: values.price,
         currency: values.currency,
         status: "Created" as const,
@@ -347,7 +348,7 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {["low", "medium", "high", "urgent"].map((priority) => (
+                        {priorities.map((priority) => (
                           <SelectItem key={priority} value={priority}>
                             {priority.charAt(0).toUpperCase() + priority.slice(1)}
                           </SelectItem>
