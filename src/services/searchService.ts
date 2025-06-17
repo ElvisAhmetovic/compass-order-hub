@@ -1,4 +1,3 @@
-
 import { Order, Company } from '@/types';
 import { OrderService } from './orderService';
 import { supabase } from '@/integrations/supabase/client';
@@ -231,19 +230,26 @@ export class SearchService {
     statuses: string[];
   }> {
     try {
-      // Get all orders to extract unique values
+      // Get all users from profiles table
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name')
+        .eq('disabled', false)
+        .order('first_name');
+
+      if (profilesError) {
+        console.error('Error fetching user profiles:', profilesError);
+      }
+
+      // Convert profiles to assignedUsers format
+      const assignedUsers = (profiles || []).map(profile => ({
+        id: profile.id,
+        name: `${profile.first_name} ${profile.last_name}`.trim() || 'Unknown User'
+      }));
+
+      // Get all orders to extract unique values for other filters
       const orders = await OrderService.getOrders();
       
-      // Get unique assigned users
-      const assignedUsersMap = new Map<string, string>();
-      orders.forEach(order => {
-        if (order.assigned_to && order.assigned_to_name) {
-          assignedUsersMap.set(order.assigned_to, order.assigned_to_name);
-        }
-      });
-      
-      const assignedUsers = Array.from(assignedUsersMap.entries()).map(([id, name]) => ({ id, name }));
-
       // Get unique currencies
       const currencies = Array.from(new Set(
         orders.map(order => order.currency || 'EUR')
