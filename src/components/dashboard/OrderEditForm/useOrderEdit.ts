@@ -5,9 +5,13 @@ import { OrderService } from "@/services/orderService";
 import { useToast } from "@/hooks/use-toast";
 import { OrderFormData, ValidationErrors, validateOrderForm } from "./validation";
 
+interface ExtendedOrderFormData extends OrderFormData {
+  assigned_to?: string;
+}
+
 export const useOrderEdit = (order: Order | null, onRefresh: () => void) => {
   const [isEditing, setIsEditing] = useState(false);
-  const [editedOrder, setEditedOrder] = useState<OrderFormData>({
+  const [editedOrder, setEditedOrder] = useState<ExtendedOrderFormData>({
     company_name: "",
     company_address: "",
     contact_email: "",
@@ -16,7 +20,8 @@ export const useOrderEdit = (order: Order | null, onRefresh: () => void) => {
     description: "",
     price: 0,
     currency: "EUR",
-    priority: "medium"
+    priority: "medium",
+    assigned_to: ""
   });
   const [isSaving, setIsSaving] = useState(false);
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
@@ -26,7 +31,7 @@ export const useOrderEdit = (order: Order | null, onRefresh: () => void) => {
     if (!order) return;
     
     // Safeguard: Create a backup of original data to prevent data loss
-    const safeOrderData = {
+    const safeOrderData: ExtendedOrderFormData = {
       company_name: order.company_name || "",
       company_address: order.company_address || "",
       contact_email: order.contact_email || "",
@@ -35,7 +40,8 @@ export const useOrderEdit = (order: Order | null, onRefresh: () => void) => {
       description: order.description || "",
       price: order.price || 0,
       currency: order.currency || "EUR",
-      priority: (order.priority || "medium") as OrderPriority
+      priority: (order.priority || "medium") as OrderPriority,
+      assigned_to: order.assigned_to || ""
     };
     
     console.log('Starting edit mode with safe data:', safeOrderData);
@@ -45,7 +51,7 @@ export const useOrderEdit = (order: Order | null, onRefresh: () => void) => {
     setValidationErrors({});
   }, [order]);
 
-  const handleFieldChange = useCallback((field: keyof OrderFormData, value: string | number) => {
+  const handleFieldChange = useCallback((field: keyof ExtendedOrderFormData, value: string | number) => {
     console.log(`Updating field ${field} with value:`, value);
     
     // Safeguard: Ensure we never set undefined or null values
@@ -106,6 +112,22 @@ export const useOrderEdit = (order: Order | null, onRefresh: () => void) => {
         currency: editedOrder.currency || "EUR",
         priority: editedOrder.priority || "medium"
       };
+
+      // Handle assignment change - if assigned_to is different, update it
+      if (editedOrder.assigned_to !== order.assigned_to) {
+        if (editedOrder.assigned_to && editedOrder.assigned_to.trim()) {
+          // Find the user name from the search service
+          const options = await import('@/services/searchService').then(m => m.SearchService.getFilterOptions());
+          const assignedUser = options.assignedUsers.find(u => u.id === editedOrder.assigned_to);
+          
+          updateData.assigned_to = editedOrder.assigned_to;
+          updateData.assigned_to_name = assignedUser?.name || 'Unknown User';
+        } else {
+          // Unassign the order
+          updateData.assigned_to = null;
+          updateData.assigned_to_name = null;
+        }
+      }
       
       console.log('Sending update data to API:', updateData);
       
@@ -150,7 +172,8 @@ export const useOrderEdit = (order: Order | null, onRefresh: () => void) => {
       description: "",
       price: 0,
       currency: "EUR",
-      priority: "medium"
+      priority: "medium",
+      assigned_to: ""
     });
     setValidationErrors({});
   }, []);

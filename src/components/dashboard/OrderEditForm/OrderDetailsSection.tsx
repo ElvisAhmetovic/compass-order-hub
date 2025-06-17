@@ -1,3 +1,4 @@
+
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -8,16 +9,30 @@ import { OrderFormData, ValidationErrors } from "./validation";
 import { Order, OrderPriority } from "@/types";
 import { formatDate } from "@/lib/utils";
 import { formatCurrency } from "@/utils/currencyUtils";
+import { useState, useEffect } from "react";
+import { SearchService } from "@/services/searchService";
 
 interface OrderDetailsSectionProps {
   order: Order;
-  data: OrderFormData;
+  data: OrderFormData & { assigned_to?: string };
   errors: ValidationErrors;
   isEditing: boolean;
-  onChange: (field: keyof OrderFormData, value: string | number) => void;
+  onChange: (field: keyof (OrderFormData & { assigned_to?: string }), value: string | number) => void;
 }
 
 const OrderDetailsSection = ({ order, data, errors, isEditing, onChange }: OrderDetailsSectionProps) => {
+  const [assignedUsers, setAssignedUsers] = useState<Array<{ id: string; name: string }>>([]);
+
+  useEffect(() => {
+    const loadAssignedUsers = async () => {
+      const options = await SearchService.getFilterOptions();
+      setAssignedUsers(options.assignedUsers);
+    };
+    if (isEditing) {
+      loadAssignedUsers();
+    }
+  }, [isEditing]);
+
   const getPriorityColor = (priority: string) => {
     const priorityClasses = {
       "low": "bg-priority-low text-white border-priority-low",
@@ -43,7 +58,8 @@ const OrderDetailsSection = ({ order, data, errors, isEditing, onChange }: Order
     description: data.description || order.description || "",
     price: data.price !== undefined ? data.price : (order.price || 0),
     currency: data.currency || order.currency || "EUR",
-    priority: data.priority || order.priority || "medium"
+    priority: data.priority || order.priority || "medium",
+    assigned_to: data.assigned_to || order.assigned_to || ""
   };
 
   return (
@@ -161,7 +177,26 @@ const OrderDetailsSection = ({ order, data, errors, isEditing, onChange }: Order
           <User className="h-3 w-3" />
           Assigned To
         </Label>
-        <p className="text-sm">{order.assigned_to_name || "Unassigned"}</p>
+        {isEditing ? (
+          <Select 
+            value={safeData.assigned_to || ""} 
+            onValueChange={(value) => onChange('assigned_to', value || "")}
+          >
+            <SelectTrigger className="mt-1">
+              <SelectValue placeholder="Select user..." />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">Unassigned</SelectItem>
+              {assignedUsers.map((user) => (
+                <SelectItem key={user.id} value={user.id}>
+                  {user.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ) : (
+          <p className="text-sm">{order.assigned_to_name || "Unassigned"}</p>
+        )}
       </div>
       
       <div>

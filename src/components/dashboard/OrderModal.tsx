@@ -139,7 +139,10 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
                   
                   <OrderDetailsSection
                     order={order}
-                    data={isEditing ? editedOrder : {
+                    data={isEditing ? {
+                      ...editedOrder,
+                      assigned_to: editedOrder.assigned_to
+                    } : {
                       company_name: order.company_name,
                       company_address: order.company_address || "",
                       contact_email: order.contact_email || "",
@@ -148,7 +151,8 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
                       description: order.description || "",
                       price: order.price || 0,
                       currency: order.currency || "EUR",
-                      priority: order.priority || "medium"
+                      priority: order.priority || "medium",
+                      assigned_to: order.assigned_to || ""
                     }}
                     errors={validationErrors}
                     isEditing={isEditing}
