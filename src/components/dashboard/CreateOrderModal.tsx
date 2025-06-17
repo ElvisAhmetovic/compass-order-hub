@@ -42,7 +42,7 @@ const formSchema = z.object({
   price: z.coerce.number().min(0, "Price must be a positive number"),
   currency: z.string().default("EUR"),
   priority: z.string().default("medium"),
-  description: z.string().optional(),
+  description: z.string().optional().or(z.literal("")),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -109,7 +109,7 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
         contact_phone: values.contactPhone?.trim() || null,
         company_address: values.companyAddress?.trim() || null,
         company_link: formattedLink || null,
-        description: values.description.trim(),
+        description: values.description?.trim() || "", // Handle empty description
         price: values.price,
         currency: values.currency,
         status: "Created" as const,
@@ -347,7 +347,7 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {priorities.map((priority) => (
+                        {["low", "medium", "high", "urgent"].map((priority) => (
                           <SelectItem key={priority} value={priority}>
                             {priority.charAt(0).toUpperCase() + priority.slice(1)}
                           </SelectItem>
