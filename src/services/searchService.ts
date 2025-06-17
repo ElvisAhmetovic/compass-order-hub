@@ -111,6 +111,20 @@ export class SearchService {
       );
     }
 
+    // Apply assigned to filters - this is the key improvement
+    if (filters.assignedTo && filters.assignedTo.length > 0) {
+      console.log('Filtering by assigned agents:', filters.assignedTo);
+      result = result.filter(order => {
+        // Check if the order is assigned to any of the selected agents
+        const isAssignedToSelectedAgent = order.assigned_to && 
+          filters.assignedTo!.includes(order.assigned_to);
+        
+        console.log(`Order ${order.id}: assigned_to=${order.assigned_to}, matches=${isAssignedToSelectedAgent}`);
+        return isAssignedToSelectedAgent;
+      });
+      console.log(`After agent filter: ${result.length} orders`);
+    }
+
     // Apply status filters
     if (filters.status && filters.status.length > 0) {
       result = result.filter(order => {
@@ -126,19 +140,23 @@ export class SearchService {
       );
     }
 
-    // Apply assigned to filters
-    if (filters.assignedTo && filters.assignedTo.length > 0) {
-      result = result.filter(order =>
-        filters.assignedTo!.includes(order.assigned_to || 'unassigned')
-      );
-    }
-
-    // Apply date range filter
+    // Apply date range filter - improved to work with agent filter
     if (filters.dateRange?.from && filters.dateRange?.to) {
+      console.log('Applying date filter:', filters.dateRange);
       result = result.filter(order => {
         const orderDate = new Date(order.created_at || '');
-        return orderDate >= filters.dateRange!.from && orderDate <= filters.dateRange!.to;
+        const fromDate = new Date(filters.dateRange!.from);
+        const toDate = new Date(filters.dateRange!.to);
+        
+        // Set time to start/end of day for better comparison
+        fromDate.setHours(0, 0, 0, 0);
+        toDate.setHours(23, 59, 59, 999);
+        
+        const isInRange = orderDate >= fromDate && orderDate <= toDate;
+        console.log(`Order ${order.id}: date=${orderDate.toISOString()}, in range=${isInRange}`);
+        return isInRange;
       });
+      console.log(`After date filter: ${result.length} orders`);
     }
 
     // Apply price range filter
@@ -158,6 +176,7 @@ export class SearchService {
       );
     }
 
+    console.log(`Final filtered results: ${result.length} orders`);
     return result;
   }
 
