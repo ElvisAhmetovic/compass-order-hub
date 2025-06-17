@@ -1,5 +1,6 @@
 
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -33,6 +34,7 @@ import { toast } from "@/hooks/use-toast";
 import { OrderPriority } from "@/types";
 import { useAuth } from "@/context/AuthContext";
 import { OrderService } from "@/services/orderService";
+import { supabase } from "@/integrations/supabase/client";
 
 const formSchema = z.object({
   companyName: z.string().min(1, "Company name is required"),
@@ -44,6 +46,7 @@ const formSchema = z.object({
   currency: z.string().default("EUR"),
   priority: z.string().default("medium"),
   description: z.string().optional(),
+  assignedTo: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -53,9 +56,17 @@ interface CreateOrderModalProps {
   onClose: () => void;
 }
 
+interface User {
+  id: string;
+  full_name: string;
+  email: string;
+}
+
 const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [users, setUsers] = useState<User[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
   
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -69,8 +80,50 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
       currency: "EUR",
       priority: "medium",
       description: "",
+      assignedTo: user?.id || "", // Default to current user
     },
   });
+
+  // Load available users for assignment
+  useEffect(() => {
+    const loadUsers = async () => {
+      if (!open) return;
+      
+      setLoadingUsers(true);
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('id, first_name, last_name')
+          .order('first_name');
+        
+        if (error) {
+          console.error('Error loading users:', error);
+          return;
+        }
+        
+        const formattedUsers = data.map(profile => ({
+          id: profile.id,
+          full_name: `${profile.first_name} ${profile.last_name}`.trim() || 'Unknown User',
+          email: '' // We don't have email in profiles, but keeping the interface
+        }));
+        
+        setUsers(formattedUsers);
+      } catch (error) {
+        console.error('Error loading users:', error);
+      } finally {
+        setLoadingUsers(false);
+      }
+    };
+    
+    loadUsers();
+  }, [open]);
+
+  // Reset form when modal opens and set default assigned user
+  useEffect(() => {
+    if (open && user) {
+      form.setValue('assignedTo', user.id);
+    }
+  }, [open, user, form]);
 
   // Validate and format URL
   const formatUrl = (url: string): string => {
@@ -103,6 +156,10 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
         console.log('Formatted company link:', formattedLink);
       }
 
+      // Find assigned user name
+      const assignedUser = users.find(u => u.id === values.assignedTo);
+      const assignedToName = assignedUser?.full_name || (values.assignedTo === user.id ? user.full_name : '');
+
       // Create order data for Supabase
       const orderData = {
         company_name: values.companyName.trim(),
@@ -116,6 +173,8 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
         status: "Created" as const,
         priority: values.priority as OrderPriority,
         created_by: user.id,
+        assigned_to: values.assignedTo || user.id, // Default to current user if not specified
+        assigned_to_name: assignedToName,
       };
       
       console.log('Creating order with data:', orderData);
@@ -126,7 +185,7 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
       // Show success message
       toast({
         title: "Order created successfully",
-        description: `Created order for ${values.companyName}`,
+        description: `Created order for ${values.companyName}${assignedToName ? ` and assigned to ${assignedToName}` : ''}`,
       });
       
       form.reset();
@@ -362,6 +421,40 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
                 )}
               />
 
+              {/* Assign To */}
+              <FormField
+                control={form.control}
+                name="assignedTo"
+                render={({ field }) => (
+                  <FormItem className="mt-4">
+                    <FormLabel className="text-sm">Assign To</FormLabel>
+                    <Select 
+                      onValueChange={field.onChange} 
+                      value={field.value}
+                      disabled={loadingUsers}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder={loadingUsers ? "Loading users..." : "Select user to assign"} />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {users.map((assignUser) => (
+                          <SelectItem key={assignUser.id} value={assignUser.id}>
+                            {assignUser.full_name}
+                            {assignUser.id === user?.id && " (You)"}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Order will be assigned to the selected user (defaults to you)
+                    </p>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
               {/* Description */}
               <FormField
                 control={form.control}
@@ -403,3 +496,4 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
 };
 
 export default CreateOrderModal;
+
