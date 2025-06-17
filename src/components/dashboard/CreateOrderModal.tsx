@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -43,7 +42,7 @@ const formSchema = z.object({
   price: z.coerce.number().min(0, "Price must be a positive number"),
   currency: z.string().default("EUR"),
   priority: z.string().default("medium"),
-  description: z.string().min(10, "Minimum 10 characters required"),
+  description: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -370,17 +369,16 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
                   <FormItem className="mt-4">
                     <div className="flex items-center gap-1">
                       <FormLabel className="text-sm">Description</FormLabel>
-                      <span className="text-red-500">*</span>
                     </div>
                     <FormControl>
                       <Textarea 
-                        placeholder="Describe what the company ordered..." 
+                        placeholder="Describe what the company ordered (optional)..." 
                         className="min-h-[120px]" 
                         {...field} 
                       />
                     </FormControl>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Minimum 10 characters required
+                      Optional field - you can leave this empty or add details about the order
                     </p>
                     <FormMessage />
                   </FormItem>
