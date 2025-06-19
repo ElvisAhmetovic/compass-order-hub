@@ -52,9 +52,16 @@ const OrderSearchDropdown = ({ onOrderSelect, className }: OrderSearchDropdownPr
   const loadOrders = async () => {
     setLoading(true);
     try {
-      const fetchedOrders = await OrderService.getOrders();
-      setOrders(fetchedOrders);
-      setFilteredOrders(fetchedOrders);
+      // Fetch both regular orders and yearly packages
+      const [regularOrders, yearlyPackages] = await Promise.all([
+        OrderService.getOrders(),
+        OrderService.getYearlyPackages()
+      ]);
+      
+      // Combine both arrays
+      const allOrders = [...regularOrders, ...yearlyPackages];
+      setOrders(allOrders);
+      setFilteredOrders(allOrders);
     } catch (error) {
       console.error("Error loading orders:", error);
     } finally {
@@ -131,6 +138,11 @@ const OrderSearchDropdown = ({ onOrderSelect, className }: OrderSearchDropdownPr
                         >
                           {order.priority || "medium"}
                         </Badge>
+                        {order.is_yearly_package && (
+                          <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                            Yearly Package
+                          </Badge>
+                        )}
                       </div>
                       <p className="text-xs text-muted-foreground truncate">
                         {order.contact_email}
