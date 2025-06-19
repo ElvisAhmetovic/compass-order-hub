@@ -45,6 +45,7 @@ export interface Order {
   currency?: string;
   agent_name?: string;
   status_date?: string;
+  inventory_items?: string | null;
   // New multi-status fields
   status_created?: boolean;
   status_in_progress?: boolean;
