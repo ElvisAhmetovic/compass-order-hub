@@ -114,7 +114,7 @@ const OrderActions = ({ order, onOrderView, onRefresh }: OrderActionsProps) => {
         try {
           const inventoryItems: SelectedInventoryItem[] = JSON.parse(orderData.inventory_items);
           lineItems = inventoryItems.map(item => ({
-            item_description: item.name, // Use name instead of description
+            item_description: item.name || 'Inventory Item', // Use inventory item name
             quantity: item.quantity,
             unit_price: item.unitPrice,
             unit: item.unit,
@@ -126,11 +126,11 @@ const OrderActions = ({ order, onOrderView, onRefresh }: OrderActionsProps) => {
         }
       }
 
-      // If no inventory items, use the order's main price/description
+      // If no inventory items, use a generic service description (NOT the order description)
       if (lineItems.length === 0) {
         lineItems = [
           {
-            item_description: orderData.description || 'Service provided',
+            item_description: 'Service provided', // Generic description for services
             quantity: 1,
             unit_price: orderData.price || 0,
             unit: 'pcs',

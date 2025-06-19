@@ -86,7 +86,7 @@ const OrderDetailsSection = ({
     contact_email: data.contact_email || order.contact_email || "",
     contact_phone: data.contact_phone || order.contact_phone || "",
     company_link: data.company_link || order.company_link || "",
-    description: data.description || order.description || "",
+    description: data.description !== undefined ? data.description : (order.description || ""),
     price: data.price !== undefined ? data.price : (order.price || 0),
     currency: data.currency || order.currency || "EUR",
     priority: data.priority || order.priority || "medium",
@@ -246,7 +246,7 @@ const OrderDetailsSection = ({
         {isEditing ? (
           <Textarea
             value={safeData.description}
-            onChange={(e) => onChange('description', e.target.value || "")}
+            onChange={(e) => onChange('description', e.target.value)}
             placeholder="Order description"
             className="mt-1"
             rows={3}
