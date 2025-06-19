@@ -334,6 +334,9 @@ export class OrderService {
         console.error('Error assigning order:', error);
         throw error;
       }
+
+      // Log assignment activity
+      await this.logOrderActivity(orderId, 'Order Assigned', `Order assigned to ${userName}`);
       
       return data;
     } catch (error) {
@@ -346,6 +349,13 @@ export class OrderService {
   static async unassignOrder(orderId: string): Promise<Order> {
     try {
       console.log(`Unassigning order ${orderId}`);
+
+      // Get current assignment info for logging
+      const { data: currentOrder } = await supabase
+        .from('orders')
+        .select('assigned_to_name')
+        .eq('id', orderId)
+        .single();
 
       const { data, error } = await supabase
         .from('orders')
@@ -362,6 +372,10 @@ export class OrderService {
         console.error('Error unassigning order:', error);
         throw error;
       }
+
+      // Log unassignment activity
+      const previousAssignee = currentOrder?.assigned_to_name || 'Unknown user';
+      await this.logOrderActivity(orderId, 'Order Unassigned', `Order unassigned from ${previousAssignee}`);
       
       return data;
     } catch (error) {
@@ -483,123 +497,6 @@ export class OrderService {
       }
     } catch (error) {
       console.error('Failed to log order activity:', error);
-    }
-  }
-
-  // Get orders by status - now supports multiple status filtering
-  static async getOrdersByStatus(status: string, isYearlyPackages: boolean = false): Promise<Order[]> {
-    try {
-      let query = supabase.from('orders').select('*');
-      
-      // Filter by yearly package status first
-      if (isYearlyPackages) {
-        query = query.eq('is_yearly_package', true);
-      } else {
-        query = query.neq('is_yearly_package', true);
-      }
-      
-      // Map old status names to new boolean columns
-      const statusColumnMap: Record<string, string> = {
-        'Created': 'status_created',
-        'In Progress': 'status_in_progress', 
-        'Complaint': 'status_complaint',
-        'Invoice Sent': 'status_invoice_sent',
-        'Invoice Paid': 'status_invoice_paid',
-        'Resolved': 'status_resolved',
-        'Cancelled': 'status_cancelled',
-        'Deleted': 'status_deleted',
-        'Review': 'status_review'
-      };
-
-      const statusColumn = statusColumnMap[status];
-      if (statusColumn) {
-        query = query.eq(statusColumn, true);
-      } else {
-        // Fallback to old status column for backward compatibility
-        query = query.eq('status', status);
-      }
-      
-      const { data, error } = await query.order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('Error fetching orders by status:', error);
-        throw error;
-      }
-      
-      return data || [];
-    } catch (error) {
-      console.error('Failed to get orders by status:', error);
-      throw error;
-    }
-  }
-
-  // Assign order to user
-  static async assignOrder(orderId: string, userId: string, userName: string): Promise<Order> {
-    try {
-      console.log(`Assigning order ${orderId} to user ${userId} (${userName})`);
-
-      const { data, error } = await supabase
-        .from('orders')
-        .update({
-          assigned_to: userId,
-          assigned_to_name: userName,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', orderId)
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Error assigning order:', error);
-        throw error;
-      }
-
-      // Log assignment activity
-      await this.logOrderActivity(orderId, 'Order Assigned', `Order assigned to ${userName}`);
-      
-      return data;
-    } catch (error) {
-      console.error('Failed to assign order:', error);
-      throw error;
-    }
-  }
-
-  // Unassign order
-  static async unassignOrder(orderId: string): Promise<Order> {
-    try {
-      console.log(`Unassigning order ${orderId}`);
-
-      // Get current assignment info for logging
-      const { data: currentOrder } = await supabase
-        .from('orders')
-        .select('assigned_to_name')
-        .eq('id', orderId)
-        .single();
-
-      const { data, error } = await supabase
-        .from('orders')
-        .update({
-          assigned_to: null,
-          assigned_to_name: null,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', orderId)
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Error unassigning order:', error);
-        throw error;
-      }
-
-      // Log unassignment activity
-      const previousAssignee = currentOrder?.assigned_to_name || 'Unknown user';
-      await this.logOrderActivity(orderId, 'Order Unassigned', `Order unassigned from ${previousAssignee}`);
-      
-      return data;
-    } catch (error) {
-      console.error('Failed to unassign order:', error);
-      throw error;
     }
   }
 }
