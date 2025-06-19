@@ -15,7 +15,6 @@ import { Button } from "@/components/ui/button";
 import { MigrationService } from "@/services/migrationService";
 import { toast } from "@/hooks/use-toast";
 import TeamEncouragement from "@/components/dashboard/TeamEncouragement";
-import { supabase } from "@/integrations/supabase/client";
 
 const Dashboard = () => {
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -53,36 +52,19 @@ const Dashboard = () => {
     checkForLocalStorageData();
   }, [isAdmin, user]);
 
-  // Enhanced real-time order updates
+  // Listen for order status changes to refresh all data
   useEffect(() => {
-    if (!user) return;
-
     const handleOrderStatusChange = () => {
       console.log('Order status change detected, refreshing data...');
       setRefreshTrigger(prev => prev + 1);
     };
 
-    // Listen for custom events from the notification service
     window.addEventListener('orderStatusChanged', handleOrderStatusChange);
-
-    // Also set up direct Supabase subscription for immediate updates
-    const orderSubscription = supabase
-      .channel('order-changes')
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'orders'
-      }, (payload) => {
-        console.log('Real-time order change:', payload);
-        setRefreshTrigger(prev => prev + 1);
-      })
-      .subscribe();
     
     return () => {
       window.removeEventListener('orderStatusChanged', handleOrderStatusChange);
-      supabase.removeChannel(orderSubscription);
     };
-  }, [user]);
+  }, []);
 
   const handleMigration = async () => {
     if (!user) {
