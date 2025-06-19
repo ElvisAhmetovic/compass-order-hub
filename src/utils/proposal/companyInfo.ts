@@ -7,7 +7,7 @@ export const getCompanyInfo = () => {
     return JSON.parse(storedCompanyInfo);
   }
   
-  // Default company info
+  // Default company info - AB Media Team
   return {
     logo: "https://placehold.co/200x60?text=Your+Logo",
     name: "AB MEDIA TEAM LTD",

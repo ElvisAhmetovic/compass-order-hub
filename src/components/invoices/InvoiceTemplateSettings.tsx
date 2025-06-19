@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -102,7 +103,22 @@ const InvoiceTemplateSettings: React.FC<InvoiceTemplateSettingsProps> = ({
     logoSize: "large",
     language: "en",
     selectedPaymentAccount: "belgium",
-    companyInfo: getCompanyInfo(),
+    companyInfo: {
+      name: "AB MEDIA TEAM LTD",
+      contactPerson: "Andreas Berger",
+      street: "Weseler Str.73",
+      postal: "47169",
+      city: "Duisburg",
+      country: "Germany",
+      phone: "+49 203 70 90 72 62",
+      email: "kontakt.abmedia@gmail.com",
+      website: "www.abmedia-team.com",
+      registrationNumber: "15748871",
+      vatId: "DE123418679",
+      taxNumber: "13426 27369",
+      director: "Andreas Berger",
+      ...getCompanyInfo()
+    },
     customTerms: "",
     vatEnabled: true,
     vatRate: 21,
@@ -522,6 +538,22 @@ const InvoiceTemplateSettings: React.FC<InvoiceTemplateSettingsProps> = ({
       </Card>
     </div>
   );
+};
+
+const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const file = event.target.files?.[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const logoUrl = e.target?.result as string;
+      setSettings(prev => ({ ...prev, logo: logoUrl }));
+    };
+    reader.readAsDataURL(file);
+  }
+};
+
+const resetToDefaultLogo = () => {
+  setSettings(prev => ({ ...prev, logo: DEFAULT_COMPANY_LOGO }));
 };
 
 export default InvoiceTemplateSettings;
