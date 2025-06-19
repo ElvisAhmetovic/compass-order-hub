@@ -1,7 +1,7 @@
 
 import React from "react";
 import { useAuth } from "@/context/AuthContext";
-import LogoutButton from "@/components/auth/LogoutButton";
+import { LogoutButton } from "@/components/auth/LogoutButton";
 import NotificationDropdown from "./NotificationDropdown";
 
 interface HeaderProps {
