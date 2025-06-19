@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -10,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table, TableBody, TableHead, TableHeader, TableRow, TableCell } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Save, ArrowLeft, Mail, Eye, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -547,92 +548,96 @@ const InvoiceDetail = () => {
                       <CardHeader>
                         <CardTitle>Summary</CardTitle>
                       </CardHeader>
-                      <CardContent className="space-y-4">
+                      <CardContent className="space-y-3">
                         <div className="flex justify-between">
                           <span>Net Amount:</span>
-                          <span className="font-semibold">{formatCurrency(netAmount, formData.currency)}</span>
+                          <span>{formatCurrency(netAmount, formData.currency)}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span>VAT Amount:</span>
-                          <span className="font-semibold">{formatCurrency(vatAmount, formData.currency)}</span>
+                          <span>VAT:</span>
+                          <span>{formatCurrency(vatAmount, formData.currency)}</span>
                         </div>
-                        <div className="flex justify-between text-lg font-bold border-t pt-2">
-                          <span>Total Amount:</span>
+                        <div className="flex justify-between font-bold border-t pt-3">
+                          <span>Total:</span>
                           <span>{formatCurrency(totalAmount, formData.currency)}</span>
                         </div>
                       </CardContent>
                     </Card>
 
-                    {/* Actions */}
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Actions</CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-2">
-                        <Button onClick={handleSave} disabled={saving} className="w-full">
-                          <Save size={16} className="mr-2" />
-                          {saving ? 'Saving...' : 'Save Invoice'}
-                        </Button>
-                        
-                        <Button 
-                          variant="outline" 
-                          onClick={handleDownloadPDF}
-                          className="w-full"
-                        >
-                          <Download size={16} className="mr-2" />
-                          Download PDF
-                        </Button>
+                    <div className="space-y-3">
+                      <Button onClick={handleSave} disabled={saving} className="w-full">
+                        <Save size={16} className="mr-2" />
+                        {saving ? "Saving..." : "Save Invoice"}
+                      </Button>
+                      
+                      {!isNewInvoice && (
+                        <>
+                          <Button
+                            onClick={() => setSendDialogOpen(true)}
+                            variant="outline"
+                            className="w-full"
+                          >
+                            <Mail size={16} className="mr-2" />
+                            Send Invoice
+                          </Button>
+                          
+                          <Button
+                            onClick={handleDownloadPDF}
+                            variant="outline"
+                            className="w-full"
+                          >
+                            <Download size={16} className="mr-2" />
+                            Download PDF
+                          </Button>
+                        </>
+                      )}
+                    </div>
 
-                        {!isNewInvoice && invoice && (
-                          <>
-                            <Button 
-                              variant="outline" 
-                              onClick={() => setSendDialogOpen(true)}
-                              className="w-full"
-                            >
-                              <Mail size={16} className="mr-2" />
-                              Send Invoice
-                            </Button>
-                            
-                            <PaymentTracker 
-                              invoice={invoice} 
-                              onPaymentStatusChange={handlePaymentStatusChange}
-                            />
-                          </>
-                        )}
-                      </CardContent>
-                    </Card>
+                    {!isNewInvoice && id && (
+                      <PaymentTracker
+                        invoiceId={id}
+                        currency={formData.currency}
+                        amount={totalAmount}
+                        onPaymentStatusChange={handlePaymentStatusChange}
+                      />
+                    )}
                   </div>
                 </div>
               </TabsContent>
 
               <TabsContent value="template">
                 <InvoiceTemplateSettings
-                  settings={templateSettings}
                   onSettingsChange={setTemplateSettings}
+                  initialSettings={templateSettings}
                 />
               </TabsContent>
 
               <TabsContent value="preview">
-                <InvoicePreview
-                  invoice={invoice}
-                  lineItems={lineItems}
-                  client={selectedClient}
-                  templateSettings={{
-                    ...templateSettings,
-                    currency: formData.currency // Ensure the current form currency is used in preview
-                  }}
-                />
+                <div className="space-y-4">
+                  <div className="flex justify-end">
+                    <Button onClick={handleDownloadPDF} variant="outline">
+                      <Download size={16} className="mr-2" />
+                      Download PDF
+                    </Button>
+                  </div>
+                  <InvoicePreview
+                    invoice={invoice}
+                    lineItems={lineItems}
+                    client={selectedClient}
+                    templateSettings={{
+                      ...templateSettings,
+                      currency: formData.currency
+                    }}
+                  />
+                </div>
               </TabsContent>
             </Tabs>
 
-            {/* Send Invoice Dialog */}
-            {invoice && (
+            {invoice && selectedClient && (
               <SendInvoiceDialog
                 open={sendDialogOpen}
-                onClose={() => setSendDialogOpen(false)}
+                onOpenChange={setSendDialogOpen}
                 invoice={invoice}
-                client={selectedClient}
               />
             )}
           </div>
