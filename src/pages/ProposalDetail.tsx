@@ -20,6 +20,7 @@ import {
   getTranslation 
 } from "@/utils/proposalUtils";
 import { useToast } from "@/hooks/use-toast";
+import Sidebar from "@/components/dashboard/Sidebar";
 
 interface LineItem {
   id: string;
@@ -268,59 +269,60 @@ const ProposalDetail = () => {
 
   return (
     <div className="flex min-h-screen bg-gray-50">
+      <Sidebar />
       <div className="flex-1">
         <Layout userRole={user?.role || "user"}>
           <div className="container mx-auto py-8">
             {/* Move title to upper left corner */}
             <h1 className="text-lg font-semibold mb-4">
-              {isNewProposal ? getTranslation(proposalData.language, 'createNewProposal') : 
-                `${getTranslation(proposalData.language, 'editProposal')} ${proposalData.number}`}
+              {isNewProposal ? t('createNew') + ' ' + t('proposals') : 
+                t('edit') + ' ' + t('proposals') + ' ' + proposalData.number}
             </h1>
             
             <div className="flex justify-between items-center mb-6">
               <div className="flex items-center gap-4">
                 <Button variant="ghost" onClick={() => navigate("/proposals")}>
                   <ArrowLeft size={16} className="mr-2" />
-                  {getTranslation(proposalData.language, 'backToProposals')}
+                  {t('backToList')}
                 </Button>
               </div>
               <div className="flex gap-2 items-center">
                 <div className="flex items-center gap-2">
                   <Button variant="outline" onClick={handlePreview}>
                     <Eye size={16} className="mr-2" />
-                    {getTranslation(proposalData.language, 'preview')}
+                    {t('viewDetails')}
                   </Button>
                   <Button variant="outline" onClick={handleDownload}>
                     <Download size={16} className="mr-2" />
-                    {getTranslation(proposalData.language, 'downloadPdf')}
+                    {t('downloadPdf')}
                   </Button>
                 </div>
                 <Button onClick={handleSave} disabled={isSaving}>
                   <Save size={16} className="mr-2" />
-                  {isSaving ? getTranslation(proposalData.language, 'saving') : getTranslation(proposalData.language, 'save')}
+                  {isSaving ? t('saving') : t('save')}
                 </Button>
               </div>
             </div>
 
             <Tabs defaultValue="basic" className="space-y-6">
               <TabsList className="grid w-full grid-cols-6">
-                <TabsTrigger value="basic">{getTranslation(proposalData.language, 'basicInformation')}</TabsTrigger>
-                <TabsTrigger value="customer">{getTranslation(proposalData.language, 'customerInformation')}</TabsTrigger>
-                <TabsTrigger value="content">{getTranslation(proposalData.language, 'proposalContent')}</TabsTrigger>
-                <TabsTrigger value="products">{getTranslation(proposalData.language, 'productsServices')}</TabsTrigger>
-                <TabsTrigger value="pricing">{getTranslation(proposalData.language, 'vatPricing')}</TabsTrigger>
-                <TabsTrigger value="terms">{getTranslation(proposalData.language, 'termsConditions')}</TabsTrigger>
+                <TabsTrigger value="basic">{t('basicInformation')}</TabsTrigger>
+                <TabsTrigger value="customer">{t('customerInformation')}</TabsTrigger>
+                <TabsTrigger value="content">{t('proposalContent')}</TabsTrigger>
+                <TabsTrigger value="products">{t('productsServices')}</TabsTrigger>
+                <TabsTrigger value="pricing">{t('vatPricing')}</TabsTrigger>
+                <TabsTrigger value="terms">{t('termsConditions')}</TabsTrigger>
               </TabsList>
 
               <TabsContent value="basic" className="space-y-6">
                 <Card>
                   <CardHeader>
-                    <CardTitle>{getTranslation(proposalData.language, 'basicInformation')}</CardTitle>
+                    <CardTitle>{t('basicInformation')}</CardTitle>
                     <CardDescription>Basic proposal information and settings</CardDescription>
                   </CardHeader>
                   <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="proposalNumber">{getTranslation(proposalData.language, 'proposalNumber')}</Label>
+                      <Label htmlFor="proposalNumber">{t('proposalNumber')}</Label>
                       <Input
                         id="proposalNumber"
                         value={proposalData.number}
@@ -329,7 +331,7 @@ const ProposalDetail = () => {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="reference">{getTranslation(proposalData.language, 'reference')}</Label>
+                      <Label htmlFor="reference">{t('reference')}</Label>
                       <Input
                         id="reference"
                         value={proposalData.reference}
@@ -337,7 +339,7 @@ const ProposalDetail = () => {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="subject">{getTranslation(proposalData.language, 'subject')}</Label>
+                      <Label htmlFor="subject">{t('subject')}</Label>
                       <Input
                         id="subject"
                         value={proposalData.subject}
@@ -345,7 +347,7 @@ const ProposalDetail = () => {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="status">{getTranslation(proposalData.language, 'status')}</Label>
+                      <Label htmlFor="status">{t('status')}</Label>
                       <Select value={proposalData.status} onValueChange={(value) => setProposalData(prev => ({ ...prev, status: value }))}>
                         <SelectTrigger>
                           <SelectValue />
@@ -360,7 +362,7 @@ const ProposalDetail = () => {
                       </Select>
                     </div>
                     <div>
-                      <Label htmlFor="currency">{getTranslation(proposalData.language, 'currency')}</Label>
+                      <Label htmlFor="currency">{t('currency')}</Label>
                       <Select value={proposalData.currency} onValueChange={(value) => setProposalData(prev => ({ ...prev, currency: value }))}>
                         <SelectTrigger>
                           <SelectValue />
@@ -375,7 +377,7 @@ const ProposalDetail = () => {
                       </Select>
                     </div>
                     <div>
-                      <Label htmlFor="proposalDate">{getTranslation(proposalData.language, 'proposalDate')}</Label>
+                      <Label htmlFor="proposalDate">{t('proposalDate')}</Label>
                       <Input
                         id="proposalDate"
                         type="date"
@@ -384,7 +386,7 @@ const ProposalDetail = () => {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="proposalTime">{getTranslation(proposalData.language, 'proposalTime')}</Label>
+                      <Label htmlFor="proposalTime">{t('proposalTime')}</Label>
                       <Input
                         id="proposalTime"
                         type="time"
@@ -393,7 +395,7 @@ const ProposalDetail = () => {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="language">{getTranslation(proposalData.language, 'language')}</Label>
+                      <Label htmlFor="language">{t('language')}</Label>
                       <Select value={proposalData.language} onValueChange={(value) => setProposalData(prev => ({ ...prev, language: value }))}>
                         <SelectTrigger>
                           <SelectValue />
@@ -414,12 +416,12 @@ const ProposalDetail = () => {
               <TabsContent value="customer" className="space-y-6">
                 <Card>
                   <CardHeader>
-                    <CardTitle>{getTranslation(proposalData.language, 'customerInformation')}</CardTitle>
+                    <CardTitle>{t('customerInformation')}</CardTitle>
                     <CardDescription>Enter customer details for the proposal</CardDescription>
                   </CardHeader>
                   <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="customerName">{getTranslation(proposalData.language, 'customerName')}</Label>
+                      <Label htmlFor="customerName">{t('customerName')}</Label>
                       <Input
                         id="customerName"
                         value={proposalData.customerName}
@@ -427,7 +429,7 @@ const ProposalDetail = () => {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="customerAddress">{getTranslation(proposalData.language, 'customerAddress')}</Label>
+                      <Label htmlFor="customerAddress">{t('customerAddress')}</Label>
                       <Input
                         id="customerAddress"
                         value={proposalData.customerAddress}
@@ -435,7 +437,7 @@ const ProposalDetail = () => {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="customerEmail">{getTranslation(proposalData.language, 'customerEmail')}</Label>
+                      <Label htmlFor="customerEmail">{t('customerEmail')}</Label>
                       <Input
                         id="customerEmail"
                         type="email"
@@ -444,7 +446,7 @@ const ProposalDetail = () => {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="country">{getTranslation(proposalData.language, 'country')}</Label>
+                      <Label htmlFor="country">{t('country')}</Label>
                       <Input
                         id="country"
                         value={proposalData.country}
@@ -452,7 +454,7 @@ const ProposalDetail = () => {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="customerReference">{getTranslation(proposalData.language, 'customerReference')}</Label>
+                      <Label htmlFor="customerReference">{t('customerReference')}</Label>
                       <Input
                         id="customerReference"
                         value={proposalData.customerReference}
@@ -460,7 +462,7 @@ const ProposalDetail = () => {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="internalContactPerson">{getTranslation(proposalData.language, 'internalContactPerson')}</Label>
+                      <Label htmlFor="internalContactPerson">{t('internalContactPerson')}</Label>
                       <Input
                         id="internalContactPerson"
                         value={proposalData.internalContactPerson}
@@ -474,12 +476,12 @@ const ProposalDetail = () => {
               <TabsContent value="content" className="space-y-6">
                 <Card>
                   <CardHeader>
-                    <CardTitle>{getTranslation(proposalData.language, 'proposalContent')}</CardTitle>
+                    <CardTitle>{t('proposalContent')}</CardTitle>
                     <CardDescription>Define the core content of the proposal</CardDescription>
                   </CardHeader>
                   <CardContent className="grid grid-cols-1 gap-4">
                     <div>
-                      <Label htmlFor="proposalTitle">{getTranslation(proposalData.language, 'proposalTitle')}</Label>
+                      <Label htmlFor="proposalTitle">{t('proposalTitle')}</Label>
                       <Input
                         id="proposalTitle"
                         value={proposalData.proposalTitle}
@@ -487,7 +489,7 @@ const ProposalDetail = () => {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="proposalDescription">{getTranslation(proposalData.language, 'proposalDescription')}</Label>
+                      <Label htmlFor="proposalDescription">{t('proposalDescription')}</Label>
                       <Textarea
                         id="proposalDescription"
                         value={proposalData.proposalDescription}
@@ -495,7 +497,7 @@ const ProposalDetail = () => {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="additionalContent">{getTranslation(proposalData.language, 'additionalContent')}</Label>
+                      <Label htmlFor="additionalContent">{t('additionalContent')}</Label>
                       <Textarea
                         id="additionalContent"
                         value={proposalData.additionalContent}
@@ -509,7 +511,7 @@ const ProposalDetail = () => {
               <TabsContent value="products" className="space-y-6">
                 <Card>
                   <CardHeader>
-                    <CardTitle>{getTranslation(proposalData.language, 'productsServices')}</CardTitle>
+                    <CardTitle>{t('productsServices')}</CardTitle>
                     <CardDescription>List the products and services included in this proposal</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
@@ -517,13 +519,13 @@ const ProposalDetail = () => {
                       <table className="min-w-full divide-y divide-gray-200">
                         <thead>
                           <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{getTranslation(proposalData.language, 'productServiceName')}</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{getTranslation(proposalData.language, 'description')}</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{getTranslation(proposalData.language, 'quantity')}</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{getTranslation(proposalData.language, 'unitPrice')}</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{getTranslation(proposalData.language, 'total')}</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('productServiceName')}</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('description')}</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('quantity')}</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('unitPrice')}</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('total')}</th>
                             <th className="relative px-6 py-3">
-                              <span className="sr-only">{getTranslation(proposalData.language, 'actions')}</span>
+                              <span className="sr-only">{t('actions')}</span>
                             </th>
                           </tr>
                         </thead>
@@ -569,7 +571,7 @@ const ProposalDetail = () => {
                     </div>
                     <Button variant="outline" size="sm" onClick={addLineItem}>
                       <Plus className="w-4 h-4 mr-2" />
-                      {getTranslation(proposalData.language, 'addLineItem')}
+                      {t('addLineItem')}
                     </Button>
                   </CardContent>
                 </Card>
@@ -578,12 +580,12 @@ const ProposalDetail = () => {
               <TabsContent value="pricing" className="space-y-6">
                 <Card>
                   <CardHeader>
-                    <CardTitle>{getTranslation(proposalData.language, 'vatPricing')}</CardTitle>
+                    <CardTitle>{t('vatPricing')}</CardTitle>
                     <CardDescription>Configure VAT and pricing details</CardDescription>
                   </CardHeader>
                   <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="flex items-center space-x-2">
-                      <Label htmlFor="vatEnabled">{getTranslation(proposalData.language, 'vatEnabled')}</Label>
+                      <Label htmlFor="vatEnabled">{t('vatEnabled')}</Label>
                       <Switch
                         id="vatEnabled"
                         checked={proposalData.vatEnabled}
@@ -591,7 +593,7 @@ const ProposalDetail = () => {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="vatRate">{getTranslation(proposalData.language, 'vatRate')}</Label>
+                      <Label htmlFor="vatRate">{t('vatRate')}</Label>
                       <Input
                         id="vatRate"
                         type="number"
@@ -601,7 +603,7 @@ const ProposalDetail = () => {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="netAmount">{getTranslation(proposalData.language, 'netAmount')}</Label>
+                      <Label htmlFor="netAmount">{t('netAmount')}</Label>
                       <Input
                         id="netAmount"
                         value={netAmount.toFixed(2)}
@@ -609,7 +611,7 @@ const ProposalDetail = () => {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="totalAmount">{getTranslation(proposalData.language, 'totalAmount')}</Label>
+                      <Label htmlFor="totalAmount">{t('totalAmount')}</Label>
                       <Input
                         id="totalAmount"
                         value={totalAmount.toFixed(2)}
@@ -623,12 +625,12 @@ const ProposalDetail = () => {
               <TabsContent value="terms" className="space-y-6">
                 <Card>
                   <CardHeader>
-                    <CardTitle>{getTranslation(proposalData.language, 'termsConditions')}</CardTitle>
+                    <CardTitle>{t('termsConditions')}</CardTitle>
                     <CardDescription>Set terms and conditions for the proposal</CardDescription>
                   </CardHeader>
                   <CardContent className="grid grid-cols-1 gap-4">
                     <div>
-                      <Label htmlFor="deliveryTerms">{getTranslation(proposalData.language, 'deliveryTerms')}</Label>
+                      <Label htmlFor="deliveryTerms">{t('deliveryTerms')}</Label>
                       <Textarea
                         id="deliveryTerms"
                         value={proposalData.deliveryTerms}
@@ -636,7 +638,7 @@ const ProposalDetail = () => {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="paymentTerms">{getTranslation(proposalData.language, 'paymentTerms')}</Label>
+                      <Label htmlFor="paymentTerms">{t('paymentTerms')}</Label>
                       <Textarea
                         id="paymentTerms"
                         value={proposalData.paymentTerms}
@@ -644,7 +646,7 @@ const ProposalDetail = () => {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="additionalTerms">{getTranslation(proposalData.language, 'additionalTerms')}</Label>
+                      <Label htmlFor="additionalTerms">{t('additionalTerms')}</Label>
                       <Textarea
                         id="additionalTerms"
                         value={proposalData.additionalTerms}
@@ -652,7 +654,7 @@ const ProposalDetail = () => {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="footerContent">{getTranslation(proposalData.language, 'footerContent')}</Label>
+                      <Label htmlFor="footerContent">{t('footerContent')}</Label>
                       <Textarea
                         id="footerContent"
                         value={proposalData.footerContent}

@@ -12,7 +12,13 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 export const useLanguage = () => {
   const context = useContext(LanguageContext);
   if (!context) {
-    throw new Error('useLanguage must be used within a LanguageProvider');
+    // Return a fallback instead of throwing an error
+    console.warn('useLanguage must be used within a LanguageProvider. Using fallback values.');
+    return {
+      language: 'en',
+      setLanguage: () => {},
+      t: (key: string) => key // Return the key itself as fallback
+    };
   }
   return context;
 };
@@ -33,9 +39,14 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
   };
 
   const t = (key: string): string => {
-    // Import translations dynamically to avoid circular imports
-    const { getUITranslation } = require('../utils/translations');
-    return getUITranslation(language, key);
+    try {
+      // Import translations dynamically to avoid circular imports
+      const { getUITranslation } = require('../utils/translations');
+      return getUITranslation(language, key);
+    } catch (error) {
+      console.warn('Failed to load translations:', error);
+      return key; // Return the key itself as fallback
+    }
   };
 
   const value = {
