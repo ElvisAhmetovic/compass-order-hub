@@ -705,6 +705,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           currency: string | null
+          deleted_at: string | null
           description: string | null
           id: string
           internal_notes: string | null
@@ -739,6 +740,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           currency?: string | null
+          deleted_at?: string | null
           description?: string | null
           id?: string
           internal_notes?: string | null
@@ -773,6 +775,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           currency?: string | null
+          deleted_at?: string | null
           description?: string | null
           id?: string
           internal_notes?: string | null
@@ -1285,6 +1288,14 @@ export type Database = {
       }
       recalculate_invoice_totals: {
         Args: { invoice_id_param: string }
+        Returns: undefined
+      }
+      restore_order: {
+        Args: { order_id_param: string }
+        Returns: undefined
+      }
+      soft_delete_order: {
+        Args: { order_id_param: string }
         Returns: undefined
       }
     }

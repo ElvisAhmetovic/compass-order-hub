@@ -1,15 +1,19 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { Order, OrderStatus } from "@/types";
 
 export class OrderService {
-  // Get all orders with proper error handling
-  static async getOrders(includeYearlyPackages: boolean = false): Promise<Order[]> {
+  // Get all orders with proper error handling - now excludes soft deleted orders by default
+  static async getOrders(includeYearlyPackages: boolean = false, includeDeleted: boolean = false): Promise<Order[]> {
     try {
       let query = supabase.from('orders').select('*');
       
       if (!includeYearlyPackages) {
         query = query.neq('is_yearly_package', true);
+      }
+      
+      // Exclude soft deleted orders unless specifically requested
+      if (!includeDeleted) {
+        query = query.is('deleted_at', null);
       }
       
       const { data, error } = await query.order('created_at', { ascending: false });
@@ -22,6 +26,27 @@ export class OrderService {
       return data || [];
     } catch (error) {
       console.error('Failed to get orders:', error);
+      throw error;
+    }
+  }
+
+  // Get only deleted orders
+  static async getDeletedOrders(): Promise<Order[]> {
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*')
+        .not('deleted_at', 'is', null)
+        .order('deleted_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching deleted orders:', error);
+        throw error;
+      }
+      
+      return data || [];
+    } catch (error) {
+      console.error('Failed to get deleted orders:', error);
       throw error;
     }
   }
@@ -235,10 +260,74 @@ export class OrderService {
     }
   }
 
-  // Delete order
+  // Soft delete order instead of permanent deletion
   static async deleteOrder(id: string): Promise<void> {
     try {
-      console.log('Deleting order:', id);
+      console.log('Soft deleting order:', id);
+
+      // Get order info before soft deletion for logging
+      const { data: orderToDelete } = await supabase
+        .from('orders')
+        .select('company_name')
+        .eq('id', id)
+        .single();
+
+      // Use the soft delete function
+      const { error } = await supabase.rpc('soft_delete_order', {
+        order_id_param: id
+      });
+
+      if (error) {
+        console.error('Error soft deleting order:', error);
+        throw error;
+      }
+
+      // Log soft deletion activity
+      if (orderToDelete) {
+        await this.logOrderActivity(id, 'Order Soft Deleted', `Order for ${orderToDelete.company_name} was moved to deleted items`);
+      }
+    } catch (error) {
+      console.error('Failed to soft delete order:', error);
+      throw error;
+    }
+  }
+
+  // Restore a soft deleted order
+  static async restoreOrder(id: string): Promise<void> {
+    try {
+      console.log('Restoring order:', id);
+
+      // Get order info before restoration for logging
+      const { data: orderToRestore } = await supabase
+        .from('orders')
+        .select('company_name')
+        .eq('id', id)
+        .single();
+
+      // Use the restore function
+      const { error } = await supabase.rpc('restore_order', {
+        order_id_param: id
+      });
+
+      if (error) {
+        console.error('Error restoring order:', error);
+        throw error;
+      }
+
+      // Log restoration activity
+      if (orderToRestore) {
+        await this.logOrderActivity(id, 'Order Restored', `Order for ${orderToRestore.company_name} was restored from deleted items`);
+      }
+    } catch (error) {
+      console.error('Failed to restore order:', error);
+      throw error;
+    }
+  }
+
+  // Permanently delete an order (admin only)
+  static async permanentlyDeleteOrder(id: string): Promise<void> {
+    try {
+      console.log('Permanently deleting order:', id);
 
       // Get order info before deletion for logging
       const { data: orderToDelete } = await supabase
@@ -253,16 +342,16 @@ export class OrderService {
         .eq('id', id);
 
       if (error) {
-        console.error('Error deleting order:', error);
+        console.error('Error permanently deleting order:', error);
         throw error;
       }
 
-      // Log deletion activity
+      // Log permanent deletion activity
       if (orderToDelete) {
-        await this.logOrderActivity(id, 'Order Deleted', `Order for ${orderToDelete.company_name} was deleted`);
+        await this.logOrderActivity(id, 'Order Permanently Deleted', `Order for ${orderToDelete.company_name} was permanently deleted`);
       }
     } catch (error) {
-      console.error('Failed to delete order:', error);
+      console.error('Failed to permanently delete order:', error);
       throw error;
     }
   }

@@ -308,20 +308,20 @@ const OrderActions = ({ order, onOrderView, onRefresh }: OrderActionsProps) => {
       return;
     }
 
-    if (!window.confirm("Are you sure you want to delete this order?")) {
+    if (!window.confirm("Are you sure you want to delete this order? It will be moved to the deleted items where it can be restored.")) {
       return;
     }
     
     setIsLoading(true);
     
     try {
-      // Delete order using Supabase
+      // Use soft delete instead of permanent deletion
       await OrderService.deleteOrder(order.id);
       
       // Show success message
       toast({
-        title: "Order deleted",
-        description: "The order has been deleted successfully."
+        title: "Order moved to deleted items",
+        description: "The order has been moved to deleted items and can be restored if needed."
       });
       
       // Trigger refresh and notify about the change
