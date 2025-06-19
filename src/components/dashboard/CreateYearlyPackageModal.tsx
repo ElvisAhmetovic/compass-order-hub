@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -30,9 +29,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
-import { OrderPriority } from "@/types";
+import { OrderPriority, Order } from "@/types";
 import { useAuth } from "@/context/AuthContext";
 import { OrderService } from "@/services/orderService";
+import OrderSearchDropdown from "./OrderSearchDropdown";
 
 const formSchema = z.object({
   companyName: z.string().min(1, "Company name is required"),
@@ -71,6 +71,24 @@ const CreateYearlyPackageModal = ({ open, onClose }: CreateYearlyPackageModalPro
       description: "",
     },
   });
+
+  // Handle autofill from selected order
+  const handleOrderAutofill = (selectedOrder: Order) => {
+    form.setValue('companyName', selectedOrder.company_name);
+    form.setValue('companyAddress', selectedOrder.company_address || '');
+    form.setValue('contactEmail', selectedOrder.contact_email || '');
+    form.setValue('contactPhone', selectedOrder.contact_phone || '');
+    form.setValue('companyLink', selectedOrder.company_link || '');
+    form.setValue('price', selectedOrder.price || 0);
+    form.setValue('currency', selectedOrder.currency || 'EUR');
+    form.setValue('priority', selectedOrder.priority || 'medium');
+    form.setValue('description', selectedOrder.description || '');
+    
+    toast({
+      title: "Order information filled",
+      description: `Autofilled information from order: ${selectedOrder.company_name}`,
+    });
+  };
 
   // Validate and format URL
   const formatUrl = (url: string): string => {
@@ -156,6 +174,17 @@ const CreateYearlyPackageModal = ({ open, onClose }: CreateYearlyPackageModalPro
           <DialogTitle className="text-xl font-semibold">Create New Yearly Package</DialogTitle>
         </DialogHeader>
         <p className="text-sm text-muted-foreground">Fill in the details below to create a new yearly package order</p>
+        
+        {/* Order Search Dropdown */}
+        <div className="mb-4">
+          <OrderSearchDropdown 
+            onOrderSelect={handleOrderAutofill}
+            className="w-full"
+          />
+          <p className="text-xs text-muted-foreground mt-1">
+            Select an existing order to autofill the form with its information
+          </p>
+        </div>
         
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
