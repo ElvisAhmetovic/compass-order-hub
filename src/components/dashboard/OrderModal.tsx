@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { X, Edit, Building2, MessageSquare } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,6 @@ import CompanyInfoSection from "./OrderEditForm/CompanyInfoSection";
 import OrderDetailsSection from "./OrderEditForm/OrderDetailsSection";
 import EditModeHeader from "./OrderEditForm/EditModeHeader";
 import { useOrderEdit } from "./OrderEditForm/useOrderEdit";
-import { SelectedInventoryItem } from "./InventoryItemsSelector";
 
 interface OrderModalProps {
   order: Order | null;
@@ -25,12 +24,9 @@ interface OrderModalProps {
 const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
   // ALL HOOKS MUST BE CALLED FIRST - before any early returns or conditional logic
   const [refreshTrigger, setRefreshTrigger] = useState(0);
-  const [selectedInventoryItems, setSelectedInventoryItems] = useState<SelectedInventoryItem[]>([]);
-  const [inventoryInitialized, setInventoryInitialized] = useState(false);
 
   const handleRefresh = () => {
     setRefreshTrigger(prev => prev + 1);
-    setInventoryInitialized(false); // Reset initialization flag when refreshing
   };
 
   // Call useOrderEdit hook BEFORE any conditional returns
@@ -45,57 +41,6 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
     handleSave,
     handleCancel
   } = useOrderEdit(order, handleRefresh);
-
-  // Initialize inventory items from order data only once when order changes
-  useEffect(() => {
-    if (order?.inventory_items && !inventoryInitialized) {
-      try {
-        const parsedItems = JSON.parse(order.inventory_items);
-        if (Array.isArray(parsedItems)) {
-          console.log('Setting initial inventory items:', parsedItems);
-          setSelectedInventoryItems(parsedItems);
-        }
-      } catch (error) {
-        console.error('Error parsing inventory items:', error);
-        setSelectedInventoryItems([]);
-      }
-      setInventoryInitialized(true);
-    } else if (!order?.inventory_items && !inventoryInitialized) {
-      setSelectedInventoryItems([]);
-      setInventoryInitialized(true);
-    }
-  }, [order?.id, inventoryInitialized]);
-
-  // Reset initialization when order changes
-  useEffect(() => {
-    setInventoryInitialized(false);
-  }, [order?.id]);
-
-  // Handle inventory items changes with proper state update
-  const handleInventoryItemsChange = (items: SelectedInventoryItem[]) => {
-    console.log('Inventory items changed:', items);
-    setSelectedInventoryItems(items);
-    // Update the form data immediately
-    handleFieldChange('inventory_items', JSON.stringify(items));
-  };
-
-  // Enhanced save function that includes inventory items
-  const handleSaveWithInventory = async () => {
-    console.log('Saving with inventory items:', selectedInventoryItems);
-    // Update the inventory items in the edited order before saving
-    handleFieldChange('inventory_items', JSON.stringify(selectedInventoryItems));
-    
-    // Small delay to ensure state is updated
-    setTimeout(async () => {
-      await handleSave();
-    }, 100);
-  };
-
-  // Reset inventory when canceling edit
-  const handleCancelEdit = () => {
-    handleCancel();
-    setInventoryInitialized(false); // This will trigger re-initialization from order data
-  };
 
   // NOW we can do early returns after all hooks are called
   if (!order) return null;
@@ -154,8 +99,8 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
                 <EditModeHeader
                   isSaving={isSaving}
                   hasErrors={hasErrors}
-                  onSave={handleSaveWithInventory}
-                  onCancel={handleCancelEdit}
+                  onSave={handleSave}
+                  onCancel={handleCancel}
                 />
               )}
 
@@ -212,8 +157,6 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
                     errors={validationErrors}
                     isEditing={isEditing}
                     onChange={handleFieldChange}
-                    selectedInventoryItems={selectedInventoryItems}
-                    onInventoryItemsChange={handleInventoryItemsChange}
                   />
                 </div>
               </div>

@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from "react";
 import { Order, OrderPriority } from "@/types";
 import { OrderService } from "@/services/orderService";
@@ -7,7 +6,6 @@ import { OrderFormData, ValidationErrors, validateOrderForm } from "./validation
 
 interface ExtendedOrderFormData extends OrderFormData {
   assigned_to?: string;
-  inventory_items?: string;
 }
 
 export const useOrderEdit = (order: Order | null, onRefresh: () => void) => {
@@ -22,8 +20,7 @@ export const useOrderEdit = (order: Order | null, onRefresh: () => void) => {
     price: 0,
     currency: "EUR",
     priority: "medium",
-    assigned_to: "",
-    inventory_items: ""
+    assigned_to: ""
   });
   const [isSaving, setIsSaving] = useState(false);
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
@@ -32,8 +29,8 @@ export const useOrderEdit = (order: Order | null, onRefresh: () => void) => {
   const handleEdit = useCallback(() => {
     if (!order) return;
     
-    // Initialize with actual order data
-    const orderData: ExtendedOrderFormData = {
+    // Safeguard: Create a backup of original data to prevent data loss
+    const safeOrderData: ExtendedOrderFormData = {
       company_name: order.company_name || "",
       company_address: order.company_address || "",
       contact_email: order.contact_email || "",
@@ -43,21 +40,20 @@ export const useOrderEdit = (order: Order | null, onRefresh: () => void) => {
       price: order.price || 0,
       currency: order.currency || "EUR",
       priority: (order.priority || "medium") as OrderPriority,
-      assigned_to: order.assigned_to || "",
-      inventory_items: order.inventory_items || ""
+      assigned_to: order.assigned_to || ""
     };
     
-    console.log('Starting edit mode with order data:', orderData);
+    console.log('Starting edit mode with safe data:', safeOrderData);
     
     setIsEditing(true);
-    setEditedOrder(orderData);
+    setEditedOrder(safeOrderData);
     setValidationErrors({});
   }, [order]);
 
   const handleFieldChange = useCallback((field: keyof ExtendedOrderFormData, value: string | number) => {
     console.log(`Updating field ${field} with value:`, value);
     
-    // Ensure we never set undefined or null values
+    // Safeguard: Ensure we never set undefined or null values
     const safeValue = value === null || value === undefined ? 
       (typeof value === 'number' ? 0 : "") : value;
     
@@ -103,7 +99,7 @@ export const useOrderEdit = (order: Order | null, onRefresh: () => void) => {
     setValidationErrors({}); // Clear all errors if we're proceeding
     
     try {
-      // Prepare update data with all fields
+      // Safeguard: Ensure all values are properly defined before sending to API
       const updateData: Partial<Order> = {
         company_name: editedOrder.company_name || order.company_name || "",
         company_address: editedOrder.company_address || "",
@@ -113,11 +109,10 @@ export const useOrderEdit = (order: Order | null, onRefresh: () => void) => {
         description: editedOrder.description || "",
         price: editedOrder.price !== undefined ? editedOrder.price : 0,
         currency: editedOrder.currency || "EUR",
-        priority: editedOrder.priority || "medium",
-        inventory_items: editedOrder.inventory_items || null
+        priority: editedOrder.priority || "medium"
       };
 
-      // Handle assignment change
+      // Handle assignment change - if assigned_to is different, update it
       if (editedOrder.assigned_to !== order.assigned_to) {
         if (editedOrder.assigned_to && editedOrder.assigned_to.trim()) {
           // Find the user name from the search service
@@ -156,7 +151,7 @@ export const useOrderEdit = (order: Order | null, onRefresh: () => void) => {
         variant: "destructive"
       });
       
-      // Don't exit edit mode on save failure to prevent data loss
+      // Safeguard: Don't exit edit mode on save failure to prevent data loss
       console.log('Save failed, keeping edit mode active to prevent data loss');
     } finally {
       setIsSaving(false);
@@ -177,8 +172,7 @@ export const useOrderEdit = (order: Order | null, onRefresh: () => void) => {
       price: 0,
       currency: "EUR",
       priority: "medium",
-      assigned_to: "",
-      inventory_items: ""
+      assigned_to: ""
     });
     setValidationErrors({});
   }, []);

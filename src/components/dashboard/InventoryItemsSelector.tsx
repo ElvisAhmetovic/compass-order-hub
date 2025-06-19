@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Plus, X, Search } from 'lucide-react';
 import { useInventory } from '@/hooks/useInventory';
+import InventoryAutocomplete from '@/components/inventory/InventoryAutocomplete';
 
 export interface SelectedInventoryItem {
   id: string;
@@ -32,8 +33,6 @@ const InventoryItemsSelector: React.FC<InventoryItemsSelectorProps> = ({
   const [searchValue, setSearchValue] = useState('');
 
   const handleAddItem = (inventoryItem: any) => {
-    console.log('Adding inventory item:', inventoryItem);
-    
     // Parse price to get numeric value
     const priceStr = inventoryItem.price || 'EUR0.00';
     const numericPrice = parseFloat(priceStr.replace(/[^0-9.-]/g, '')) || 0;
@@ -60,15 +59,11 @@ const InventoryItemsSelector: React.FC<InventoryItemsSelectorProps> = ({
       onItemsChange([...selectedItems, newItem]);
     }
 
-    // Clear search after adding item
     setSearchValue('');
   };
 
   const handleRemoveItem = (itemId: string) => {
-    console.log('Removing inventory item with ID:', itemId);
-    const newItems = selectedItems.filter(item => item.id !== itemId);
-    console.log('New items after removal:', newItems);
-    onItemsChange(newItems);
+    onItemsChange(selectedItems.filter(item => item.id !== itemId));
   };
 
   const handleQuantityChange = (itemId: string, quantity: number) => {
@@ -88,24 +83,6 @@ const InventoryItemsSelector: React.FC<InventoryItemsSelectorProps> = ({
 
   const getTotalAmount = () => {
     return selectedItems.reduce((sum, item) => sum + item.total, 0);
-  };
-
-  // Handle direct item selection from search results
-  const handleDirectItemSelect = (item: any) => {
-    console.log('Direct item selection:', item);
-    handleAddItem(item);
-  };
-
-  // Get filtered items for display
-  const getFilteredItems = () => {
-    if (!searchValue || !inventoryData) return [];
-    
-    return inventoryData
-      .filter(item => 
-        item.name.toLowerCase().includes(searchValue.toLowerCase()) ||
-        item.description?.toLowerCase().includes(searchValue.toLowerCase())
-      )
-      .slice(0, 8); // Show more items
   };
 
   if (loading) {
@@ -133,52 +110,13 @@ const InventoryItemsSelector: React.FC<InventoryItemsSelectorProps> = ({
         {/* Search and Add Items */}
         <div>
           <Label className="text-xs text-muted-foreground">Search Products/Services</Label>
-          <div className="mt-1">
-            <Input
-              value={searchValue}
-              onChange={(e) => setSearchValue(e.target.value)}
-              placeholder="Type to search and add items..."
-              className="w-full"
-            />
-          </div>
-          
-          {/* Show clickable search results */}
-          {searchValue && getFilteredItems().length > 0 && (
-            <div className="mt-2 max-h-40 overflow-y-auto border rounded-md bg-background">
-              {getFilteredItems().map((item) => (
-                <div
-                  key={item.id}
-                  className="p-3 hover:bg-muted cursor-pointer border-b last:border-b-0 transition-colors"
-                  onClick={() => handleDirectItemSelect(item)}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-foreground">{item.name}</p>
-                      <p className="text-xs text-muted-foreground truncate">
-                        ID: {item.id} • {item.category}
-                      </p>
-                      {item.description && (
-                        <p className="text-xs text-muted-foreground mt-1 truncate">
-                          {item.description}
-                        </p>
-                      )}
-                    </div>
-                    <div className="text-right ml-2">
-                      <p className="text-sm font-medium text-foreground">{item.price}</p>
-                      <p className="text-xs text-muted-foreground">{item.unit}</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Show message when no results found */}
-          {searchValue && getFilteredItems().length === 0 && (
-            <div className="mt-2 p-3 text-center text-sm text-muted-foreground border rounded-md">
-              No items found matching "{searchValue}"
-            </div>
-          )}
+          <InventoryAutocomplete
+            value={searchValue}
+            onChange={setSearchValue}
+            onSelect={handleAddItem}
+            inventoryItems={inventoryData}
+            placeholder="Type to search and add items..."
+          />
         </div>
 
         {/* Selected Items List */}
@@ -207,15 +145,10 @@ const InventoryItemsSelector: React.FC<InventoryItemsSelectorProps> = ({
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      console.log('Delete button clicked for item:', item.id);
-                      handleRemoveItem(item.id);
-                    }}
-                    className="h-8 w-8 p-0 hover:bg-destructive/10"
+                    onClick={() => handleRemoveItem(item.id)}
+                    className="h-8 w-8 p-0"
                   >
-                    <X className="h-3 w-3 text-destructive" />
+                    <X className="h-3 w-3" />
                   </Button>
                 </div>
               </div>
