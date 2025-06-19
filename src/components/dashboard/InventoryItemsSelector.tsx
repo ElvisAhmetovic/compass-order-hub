@@ -61,6 +61,7 @@ const InventoryItemsSelector: React.FC<InventoryItemsSelectorProps> = ({
       onItemsChange([...selectedItems, newItem]);
     }
 
+    // Clear search after adding item
     setSearchValue('');
   };
 
@@ -93,6 +94,18 @@ const InventoryItemsSelector: React.FC<InventoryItemsSelectorProps> = ({
     handleAddItem(item);
   };
 
+  // Get filtered items for display
+  const getFilteredItems = () => {
+    if (!searchValue || !inventoryData) return [];
+    
+    return inventoryData
+      .filter(item => 
+        item.name.toLowerCase().includes(searchValue.toLowerCase()) ||
+        item.description?.toLowerCase().includes(searchValue.toLowerCase())
+      )
+      .slice(0, 8); // Show more items
+  };
+
   if (loading) {
     return (
       <Card className={className}>
@@ -119,42 +132,49 @@ const InventoryItemsSelector: React.FC<InventoryItemsSelectorProps> = ({
         <div>
           <Label className="text-xs text-muted-foreground">Search Products/Services</Label>
           <div className="mt-1">
-            <InventoryAutocomplete
+            <Input
               value={searchValue}
-              onChange={setSearchValue}
-              onSelect={handleDirectItemSelect}
-              inventoryItems={inventoryData}
+              onChange={(e) => setSearchValue(e.target.value)}
               placeholder="Type to search and add items..."
+              className="w-full"
             />
           </div>
           
-          {/* Alternative: Show clickable items when searching */}
-          {searchValue && inventoryData && inventoryData.length > 0 && (
-            <div className="mt-2 max-h-32 overflow-y-auto border rounded-md">
-              {inventoryData
-                .filter(item => 
-                  item.name.toLowerCase().includes(searchValue.toLowerCase()) ||
-                  item.description?.toLowerCase().includes(searchValue.toLowerCase())
-                )
-                .slice(0, 5)
-                .map((item) => (
-                  <div
-                    key={item.id}
-                    className="p-2 hover:bg-muted cursor-pointer border-b last:border-b-0"
-                    onClick={() => handleDirectItemSelect(item)}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-medium">{item.name}</p>
-                        <p className="text-xs text-muted-foreground">{item.description}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm font-medium">{item.price}</p>
-                        <p className="text-xs text-muted-foreground">{item.unit}</p>
-                      </div>
+          {/* Show clickable search results */}
+          {searchValue && getFilteredItems().length > 0 && (
+            <div className="mt-2 max-h-40 overflow-y-auto border rounded-md bg-background">
+              {getFilteredItems().map((item) => (
+                <div
+                  key={item.id}
+                  className="p-3 hover:bg-muted cursor-pointer border-b last:border-b-0 transition-colors"
+                  onClick={() => handleDirectItemSelect(item)}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-foreground">{item.name}</p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        ID: {item.id} • {item.category}
+                      </p>
+                      {item.description && (
+                        <p className="text-xs text-muted-foreground mt-1 truncate">
+                          {item.description}
+                        </p>
+                      )}
+                    </div>
+                    <div className="text-right ml-2">
+                      <p className="text-sm font-medium text-foreground">{item.price}</p>
+                      <p className="text-xs text-muted-foreground">{item.unit}</p>
                     </div>
                   </div>
-                ))}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Show message when no results found */}
+          {searchValue && getFilteredItems().length === 0 && (
+            <div className="mt-2 p-3 text-center text-sm text-muted-foreground border rounded-md">
+              No items found matching "{searchValue}"
             </div>
           )}
         </div>
