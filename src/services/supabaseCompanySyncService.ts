@@ -93,7 +93,7 @@ export class SupabaseCompanySyncService {
             phone: orderData.contact_phone || "Not provided",
             address: orderData.company_address || "Not provided",
             contact_person: orderData.contact_name || "Not provided",
-            map_link: orderData.company_link || ""
+            map_link: orderData.company_link || "" // This is the key fix - mapping company_link to map_link
           };
 
           console.log("Creating company with data:", companyData);
@@ -190,7 +190,7 @@ export class SupabaseCompanySyncService {
           phone: order.contact_phone || "Not provided",
           address: order.company_address || "Not provided",
           contact_person: order.contact_name || "Not provided",
-          map_link: order.company_link || ""
+          map_link: order.company_link || "" // Fixed mapping here too
         };
 
         await CompanyService.createCompany(companyData);
