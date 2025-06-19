@@ -137,6 +137,18 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
                         isEditing={isEditing}
                         onChange={handleFieldChange}
                       />
+
+                      {/* Show existing description as read-only if it exists */}
+                      {order.description && (
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-muted-foreground">
+                            Description (Read-only)
+                          </label>
+                          <div className="p-3 bg-muted/50 rounded-md text-sm">
+                            {order.description}
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {/* Order Details */}

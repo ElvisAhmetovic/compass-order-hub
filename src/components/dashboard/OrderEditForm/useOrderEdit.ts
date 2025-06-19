@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from "react";
 import { Order, OrderPriority } from "@/types";
 import { OrderService } from "@/services/orderService";
@@ -99,6 +98,7 @@ export const useOrderEdit = (order: Order | null, onRefresh: () => void) => {
     
     try {
       // Safeguard: Ensure all values are properly defined before sending to API
+      // IMPORTANT: Keep the existing description if it exists, don't overwrite it
       const updateData: Partial<Order> = {
         company_name: editedOrder.company_name || order.company_name || "",
         company_address: editedOrder.company_address || "",
@@ -108,6 +108,7 @@ export const useOrderEdit = (order: Order | null, onRefresh: () => void) => {
         price: editedOrder.price !== undefined ? editedOrder.price : 0,
         currency: editedOrder.currency || "EUR",
         priority: editedOrder.priority || "medium"
+        // Note: We don't update description here to preserve existing ones
       };
 
       // Handle assignment change - if assigned_to is different, update it
