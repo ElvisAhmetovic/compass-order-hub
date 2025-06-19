@@ -33,6 +33,7 @@ import { OrderPriority, Order } from "@/types";
 import { useAuth } from "@/context/AuthContext";
 import { OrderService } from "@/services/orderService";
 import OrderSearchDropdown from "./OrderSearchDropdown";
+import InventoryItemsSelector, { SelectedInventoryItem } from "./InventoryItemsSelector";
 
 const formSchema = z.object({
   companyName: z.string().min(1, "Company name is required"),
@@ -56,6 +57,7 @@ interface CreateYearlyPackageModalProps {
 const CreateYearlyPackageModal = ({ open, onClose }: CreateYearlyPackageModalProps) => {
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedInventoryItems, setSelectedInventoryItems] = useState<SelectedInventoryItem[]>([]);
   
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -129,12 +131,13 @@ const CreateYearlyPackageModal = ({ open, onClose }: CreateYearlyPackageModalPro
         company_address: values.companyAddress?.trim() || null,
         company_link: formattedLink || null,
         description: values.description.trim(),
+        inventory_items: selectedInventoryItems.length > 0 ? JSON.stringify(selectedInventoryItems) : null,
         price: values.price,
         currency: values.currency,
         status: "Created" as const,
         priority: values.priority as OrderPriority,
         created_by: user.id,
-        is_yearly_package: true, // This is the key difference for yearly packages
+        is_yearly_package: true,
       };
       
       console.log('Creating yearly package order with data:', orderData);
@@ -149,6 +152,7 @@ const CreateYearlyPackageModal = ({ open, onClose }: CreateYearlyPackageModalPro
       });
       
       form.reset();
+      setSelectedInventoryItems([]);
       onClose();
       
       // Trigger a refresh of the orders list
@@ -169,7 +173,7 @@ const CreateYearlyPackageModal = ({ open, onClose }: CreateYearlyPackageModalPro
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold">Create New Yearly Package</DialogTitle>
         </DialogHeader>
@@ -188,89 +192,90 @@ const CreateYearlyPackageModal = ({ open, onClose }: CreateYearlyPackageModalPro
         
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <div>
-              <h3 className="text-base font-medium mb-2">Yearly Package Information</h3>
-              <p className="text-sm text-muted-foreground mb-4">Fields marked with * are required</p>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Company Name */}
-                <FormField
-                  control={form.control}
-                  name="companyName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <div className="flex items-center gap-1">
-                        <FormLabel className="text-sm">Company Name</FormLabel>
-                        <span className="text-red-500">*</span>
-                      </div>
-                      <FormControl>
-                        <Input placeholder="Enter company name" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {/* Contact Email */}
-                <FormField
-                  control={form.control}
-                  name="contactEmail"
-                  render={({ field }) => (
-                    <FormItem>
-                      <div className="flex items-center gap-1">
-                        <FormLabel className="text-sm">Contact Email</FormLabel>
-                        <span className="text-red-500">*</span>
-                      </div>
-                      <FormControl>
-                        <Input type="email" placeholder="Email Address" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {/* Company Address */}
-                <FormField
-                  control={form.control}
-                  name="companyAddress"
-                  render={({ field }) => (
-                    <FormItem>
-                      <div className="flex items-center gap-1">
-                        <FormLabel className="text-sm">Company Address</FormLabel>
-                        <div className="ml-1 tooltip" title="Company's physical address">
-                          <Info className="h-4 w-4 text-muted-foreground" />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Left Column - Company Information */}
+              <div>
+                <h3 className="text-base font-medium mb-2">Yearly Package Information</h3>
+                <p className="text-sm text-muted-foreground mb-4">Fields marked with * are required</p>
+                
+                <div className="space-y-4">
+                  {/* Company Name */}
+                  <FormField
+                    control={form.control}
+                    name="companyName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <div className="flex items-center gap-1">
+                          <FormLabel className="text-sm">Company Name</FormLabel>
+                          <span className="text-red-500">*</span>
                         </div>
-                      </div>
-                      <FormControl>
-                        <Input placeholder="Full Address" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                        <FormControl>
+                          <Input placeholder="Enter company name" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                {/* Contact Phone */}
-                <FormField
-                  control={form.control}
-                  name="contactPhone"
-                  render={({ field }) => (
-                    <FormItem>
-                      <div className="flex items-center gap-1">
-                        <FormLabel className="text-sm">Contact Phone</FormLabel>
-                        <div className="ml-1 tooltip" title="International format preferred">
-                          <Info className="h-4 w-4 text-muted-foreground" />
+                  {/* Contact Email */}
+                  <FormField
+                    control={form.control}
+                    name="contactEmail"
+                    render={({ field }) => (
+                      <FormItem>
+                        <div className="flex items-center gap-1">
+                          <FormLabel className="text-sm">Contact Email</FormLabel>
+                          <span className="text-red-500">*</span>
                         </div>
-                      </div>
-                      <FormControl>
-                        <Input placeholder="Phone Number (e.g. +43 1234567890)" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                        <FormControl>
+                          <Input type="email" placeholder="Email Address" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                {/* Company Link */}
-                <div className="md:col-span-2">
+                  {/* Company Address */}
+                  <FormField
+                    control={form.control}
+                    name="companyAddress"
+                    render={({ field }) => (
+                      <FormItem>
+                        <div className="flex items-center gap-1">
+                          <FormLabel className="text-sm">Company Address</FormLabel>
+                          <div className="ml-1 tooltip" title="Company's physical address">
+                            <Info className="h-4 w-4 text-muted-foreground" />
+                          </div>
+                        </div>
+                        <FormControl>
+                          <Input placeholder="Full Address" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Contact Phone */}
+                  <FormField
+                    control={form.control}
+                    name="contactPhone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <div className="flex items-center gap-1">
+                          <FormLabel className="text-sm">Contact Phone</FormLabel>
+                          <div className="ml-1 tooltip" title="International format preferred">
+                            <Info className="h-4 w-4 text-muted-foreground" />
+                          </div>
+                        </div>
+                        <FormControl>
+                          <Input placeholder="Phone Number (e.g. +43 1234567890)" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Company Link */}
                   <FormField
                     control={form.control}
                     name="companyLink"
@@ -295,126 +300,136 @@ const CreateYearlyPackageModal = ({ open, onClose }: CreateYearlyPackageModalPro
                       </FormItem>
                     )}
                   />
-                </div>
 
-                {/* Price and Currency */}
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="price"
-                    render={({ field }) => (
-                      <FormItem>
-                        <div className="flex items-center gap-1">
-                          <FormLabel className="text-sm">Annual Price</FormLabel>
-                          <span className="text-red-500">*</span>
-                          <div className="ml-1 tooltip" title="Yearly package price before taxes">
-                            <Info className="h-4 w-4 text-muted-foreground" />
+                  {/* Price and Currency */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="price"
+                      render={({ field }) => (
+                        <FormItem>
+                          <div className="flex items-center gap-1">
+                            <FormLabel className="text-sm">Annual Price</FormLabel>
+                            <span className="text-red-500">*</span>
+                            <div className="ml-1 tooltip" title="Yearly package price before taxes">
+                              <Info className="h-4 w-4 text-muted-foreground" />
+                            </div>
                           </div>
-                        </div>
-                        <FormControl>
-                          <Input 
-                            type="number" 
-                            placeholder="0" 
-                            min="0"
-                            step="0.01"
-                            {...field} 
-                          />
-                        </FormControl>
-                        <FormMessage />
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Enter the total annual package amount
-                        </p>
-                      </FormItem>
-                    )}
-                  />
+                          <FormControl>
+                            <Input 
+                              type="number" 
+                              placeholder="0" 
+                              min="0"
+                              step="0.01"
+                              {...field} 
+                            />
+                          </FormControl>
+                          <FormMessage />
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Enter the total annual package amount
+                          </p>
+                        </FormItem>
+                      )}
+                    />
 
-                  {/* Currency */}
+                    {/* Currency */}
+                    <FormField
+                      control={form.control}
+                      name="currency"
+                      render={({ field }) => (
+                        <FormItem>
+                          <div className="flex items-center gap-1">
+                            <FormLabel className="text-sm">Currency</FormLabel>
+                            <span className="text-red-500">*</span>
+                          </div>
+                          <Select 
+                            onValueChange={field.onChange} 
+                            defaultValue={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select currency" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="EUR">EUR (€)</SelectItem>
+                              <SelectItem value="USD">USD ($)</SelectItem>
+                              <SelectItem value="GBP">GBP (£)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  {/* Priority */}
                   <FormField
                     control={form.control}
-                    name="currency"
+                    name="priority"
                     render={({ field }) => (
                       <FormItem>
-                        <div className="flex items-center gap-1">
-                          <FormLabel className="text-sm">Currency</FormLabel>
-                          <span className="text-red-500">*</span>
-                        </div>
+                        <FormLabel className="text-sm">Priority</FormLabel>
                         <Select 
                           onValueChange={field.onChange} 
                           defaultValue={field.value}
                         >
                           <FormControl>
                             <SelectTrigger>
-                              <SelectValue placeholder="Select currency" />
+                              <SelectValue placeholder="Select priority" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="EUR">EUR (€)</SelectItem>
-                            <SelectItem value="USD">USD ($)</SelectItem>
-                            <SelectItem value="GBP">GBP (£)</SelectItem>
+                            {priorities.map((priority) => (
+                              <SelectItem key={priority} value={priority}>
+                                {priority.charAt(0).toUpperCase() + priority.slice(1)}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
-                        <FormMessage />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Set the priority level for this yearly package
+                        </p>
                       </FormItem>
                     )}
                   />
                 </div>
               </div>
 
-              {/* Priority */}
-              <FormField
-                control={form.control}
-                name="priority"
-                render={({ field }) => (
-                  <FormItem className="mt-4">
-                    <FormLabel className="text-sm">Priority</FormLabel>
-                    <Select 
-                      onValueChange={field.onChange} 
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select priority" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {priorities.map((priority) => (
-                          <SelectItem key={priority} value={priority}>
-                            {priority.charAt(0).toUpperCase() + priority.slice(1)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Set the priority level for this yearly package
-                    </p>
-                  </FormItem>
-                )}
-              />
+              {/* Right Column - Inventory & Description */}
+              <div className="space-y-4">
+                {/* Inventory Items Section */}
+                <InventoryItemsSelector
+                  selectedItems={selectedInventoryItems}
+                  onItemsChange={setSelectedInventoryItems}
+                  className="w-full"
+                />
 
-              {/* Description */}
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem className="mt-4">
-                    <div className="flex items-center gap-1">
-                      <FormLabel className="text-sm">Package Description</FormLabel>
-                      <span className="text-red-500">*</span>
-                    </div>
-                    <FormControl>
-                      <Textarea 
-                        placeholder="Describe the yearly package services and deliverables..." 
-                        className="min-h-[120px]" 
-                        {...field} 
-                      />
-                    </FormControl>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Minimum 10 characters required
-                    </p>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                {/* Description */}
+                <FormField
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <div className="flex items-center gap-1">
+                        <FormLabel className="text-sm">Package Description</FormLabel>
+                        <span className="text-red-500">*</span>
+                      </div>
+                      <FormControl>
+                        <Textarea 
+                          placeholder="Describe the yearly package services and deliverables..." 
+                          className="min-h-[120px]" 
+                          {...field} 
+                        />
+                      </FormControl>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Minimum 10 characters required
+                      </p>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
             </div>
 
             <div className="flex justify-end gap-2 pt-4">

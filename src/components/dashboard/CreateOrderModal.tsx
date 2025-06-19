@@ -34,6 +34,7 @@ import { useAuth } from "@/context/AuthContext";
 import { OrderService } from "@/services/orderService";
 import { supabase } from "@/integrations/supabase/client";
 import OrderSearchDropdown from "./OrderSearchDropdown";
+import InventoryItemsSelector, { SelectedInventoryItem } from "./InventoryItemsSelector";
 
 const formSchema = z.object({
   companyName: z.string().min(1, "Company name is required"),
@@ -45,6 +46,7 @@ const formSchema = z.object({
   currency: z.string().default("EUR"),
   priority: z.string().default("medium"),
   description: z.string().optional(),
+  internalNotes: z.string().optional(),
   assignedTo: z.string().optional(),
 });
 
@@ -66,6 +68,7 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
+  const [selectedInventoryItems, setSelectedInventoryItems] = useState<SelectedInventoryItem[]>([]);
   
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -79,7 +82,8 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
       currency: "EUR",
       priority: "medium",
       description: "",
-      assignedTo: user?.id || "", // Default to current user
+      internalNotes: "",
+      assignedTo: user?.id || "",
     },
   });
 
@@ -121,6 +125,7 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
   useEffect(() => {
     if (open && user) {
       form.setValue('assignedTo', user.id);
+      setSelectedInventoryItems([]);
     }
   }, [open, user, form]);
 
@@ -134,7 +139,7 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
     form.setValue('price', selectedOrder.price || 0);
     form.setValue('currency', selectedOrder.currency || 'EUR');
     form.setValue('priority', selectedOrder.priority || 'medium');
-    form.setValue('description', selectedOrder.description || '');
+    // Note: We don't autofill description or internalNotes to keep them separate
     
     toast({
       title: "Order information filled",
@@ -185,12 +190,14 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
         company_address: values.companyAddress?.trim() || null,
         company_link: formattedLink || null,
         description: values.description?.trim() || "",
+        internal_notes: values.internalNotes?.trim() || null,
+        inventory_items: selectedInventoryItems.length > 0 ? JSON.stringify(selectedInventoryItems) : null,
         price: values.price,
         currency: values.currency,
         status: "Created" as const,
         priority: values.priority as OrderPriority,
         created_by: user.id,
-        assigned_to: values.assignedTo || user.id, // Default to current user if not specified
+        assigned_to: values.assignedTo || user.id,
         assigned_to_name: assignedToName,
       };
       
@@ -206,6 +213,7 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
       });
       
       form.reset();
+      setSelectedInventoryItems([]);
       onClose();
       
       // Trigger a refresh of the orders list
@@ -222,12 +230,11 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
     }
   };
 
-  // Updated priorities to use lowercase values to match the OrderPriority type
   const priorities: OrderPriority[] = ["low", "medium", "high", "urgent"];
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold">Create New Order</DialogTitle>
         </DialogHeader>
@@ -246,89 +253,90 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
         
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <div>
-              <h3 className="text-base font-medium mb-2">Company Information</h3>
-              <p className="text-sm text-muted-foreground mb-4">Fields marked with * are required</p>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Company Name */}
-                <FormField
-                  control={form.control}
-                  name="companyName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <div className="flex items-center gap-1">
-                        <FormLabel className="text-sm">Company Name</FormLabel>
-                        <span className="text-red-500">*</span>
-                      </div>
-                      <FormControl>
-                        <Input placeholder="Enter company name" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {/* Contact Email */}
-                <FormField
-                  control={form.control}
-                  name="contactEmail"
-                  render={({ field }) => (
-                    <FormItem>
-                      <div className="flex items-center gap-1">
-                        <FormLabel className="text-sm">Contact Email</FormLabel>
-                        <span className="text-red-500">*</span>
-                      </div>
-                      <FormControl>
-                        <Input type="email" placeholder="Email Address" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {/* Company Address */}
-                <FormField
-                  control={form.control}
-                  name="companyAddress"
-                  render={({ field }) => (
-                    <FormItem>
-                      <div className="flex items-center gap-1">
-                        <FormLabel className="text-sm">Company Address</FormLabel>
-                        <div className="ml-1 tooltip" title="Company's physical address">
-                          <Info className="h-4 w-4 text-muted-foreground" />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Left Column - Company Information */}
+              <div>
+                <h3 className="text-base font-medium mb-2">Company Information</h3>
+                <p className="text-sm text-muted-foreground mb-4">Fields marked with * are required</p>
+                
+                <div className="space-y-4">
+                  {/* Company Name */}
+                  <FormField
+                    control={form.control}
+                    name="companyName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <div className="flex items-center gap-1">
+                          <FormLabel className="text-sm">Company Name</FormLabel>
+                          <span className="text-red-500">*</span>
                         </div>
-                      </div>
-                      <FormControl>
-                        <Input placeholder="Full Address" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                        <FormControl>
+                          <Input placeholder="Enter company name" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                {/* Contact Phone */}
-                <FormField
-                  control={form.control}
-                  name="contactPhone"
-                  render={({ field }) => (
-                    <FormItem>
-                      <div className="flex items-center gap-1">
-                        <FormLabel className="text-sm">Contact Phone</FormLabel>
-                        <div className="ml-1 tooltip" title="International format preferred">
-                          <Info className="h-4 w-4 text-muted-foreground" />
+                  {/* Contact Email */}
+                  <FormField
+                    control={form.control}
+                    name="contactEmail"
+                    render={({ field }) => (
+                      <FormItem>
+                        <div className="flex items-center gap-1">
+                          <FormLabel className="text-sm">Contact Email</FormLabel>
+                          <span className="text-red-500">*</span>
                         </div>
-                      </div>
-                      <FormControl>
-                        <Input placeholder="Phone Number (e.g. +43 1234567890)" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                        <FormControl>
+                          <Input type="email" placeholder="Email Address" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                {/* Company Link */}
-                <div className="md:col-span-2">
+                  {/* Company Address */}
+                  <FormField
+                    control={form.control}
+                    name="companyAddress"
+                    render={({ field }) => (
+                      <FormItem>
+                        <div className="flex items-center gap-1">
+                          <FormLabel className="text-sm">Company Address</FormLabel>
+                          <div className="ml-1 tooltip" title="Company's physical address">
+                            <Info className="h-4 w-4 text-muted-foreground" />
+                          </div>
+                        </div>
+                        <FormControl>
+                          <Input placeholder="Full Address" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Contact Phone */}
+                  <FormField
+                    control={form.control}
+                    name="contactPhone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <div className="flex items-center gap-1">
+                          <FormLabel className="text-sm">Contact Phone</FormLabel>
+                          <div className="ml-1 tooltip" title="International format preferred">
+                            <Info className="h-4 w-4 text-muted-foreground" />
+                          </div>
+                        </div>
+                        <FormControl>
+                          <Input placeholder="Phone Number (e.g. +43 1234567890)" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Company Link */}
                   <FormField
                     control={form.control}
                     name="companyLink"
@@ -353,64 +361,129 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
                       </FormItem>
                     )}
                   />
-                </div>
 
-                {/* Price and Currency */}
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="price"
-                    render={({ field }) => (
-                      <FormItem>
-                        <div className="flex items-center gap-1">
-                          <FormLabel className="text-sm">Price</FormLabel>
-                          <span className="text-red-500">*</span>
-                          <div className="ml-1 tooltip" title="Order price before taxes">
-                            <Info className="h-4 w-4 text-muted-foreground" />
+                  {/* Price and Currency */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="price"
+                      render={({ field }) => (
+                        <FormItem>
+                          <div className="flex items-center gap-1">
+                            <FormLabel className="text-sm">Price</FormLabel>
+                            <span className="text-red-500">*</span>
+                            <div className="ml-1 tooltip" title="Order price before taxes">
+                              <Info className="h-4 w-4 text-muted-foreground" />
+                            </div>
                           </div>
-                        </div>
-                        <FormControl>
-                          <Input 
-                            type="number" 
-                            placeholder="0" 
-                            min="0"
-                            step="0.01"
-                            {...field} 
-                          />
-                        </FormControl>
-                        <FormMessage />
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Enter the total order amount
-                        </p>
-                      </FormItem>
-                    )}
-                  />
+                          <FormControl>
+                            <Input 
+                              type="number" 
+                              placeholder="0" 
+                              min="0"
+                              step="0.01"
+                              {...field} 
+                            />
+                          </FormControl>
+                          <FormMessage />
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Enter the total order amount
+                          </p>
+                        </FormItem>
+                      )}
+                    />
 
-                  {/* Currency */}
+                    {/* Currency */}
+                    <FormField
+                      control={form.control}
+                      name="currency"
+                      render={({ field }) => (
+                        <FormItem>
+                          <div className="flex items-center gap-1">
+                            <FormLabel className="text-sm">Currency</FormLabel>
+                            <span className="text-red-500">*</span>
+                          </div>
+                          <Select 
+                            onValueChange={field.onChange} 
+                            defaultValue={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select currency" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="EUR">EUR (€)</SelectItem>
+                              <SelectItem value="USD">USD ($)</SelectItem>
+                              <SelectItem value="GBP">GBP (£)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  {/* Priority */}
                   <FormField
                     control={form.control}
-                    name="currency"
+                    name="priority"
                     render={({ field }) => (
                       <FormItem>
-                        <div className="flex items-center gap-1">
-                          <FormLabel className="text-sm">Currency</FormLabel>
-                          <span className="text-red-500">*</span>
-                        </div>
+                        <FormLabel className="text-sm">Priority</FormLabel>
                         <Select 
                           onValueChange={field.onChange} 
                           defaultValue={field.value}
                         >
                           <FormControl>
                             <SelectTrigger>
-                              <SelectValue placeholder="Select currency" />
+                              <SelectValue placeholder="Select priority" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="EUR">EUR (€)</SelectItem>
-                            <SelectItem value="USD">USD ($)</SelectItem>
-                            <SelectItem value="GBP">GBP (£)</SelectItem>
+                            {priorities.map((priority) => (
+                              <SelectItem key={priority} value={priority}>
+                                {priority.charAt(0).toUpperCase() + priority.slice(1)}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Set the priority level for this order
+                        </p>
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Assign To */}
+                  <FormField
+                    control={form.control}
+                    name="assignedTo"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm">Assign To</FormLabel>
+                        <Select 
+                          onValueChange={field.onChange} 
+                          value={field.value}
+                          disabled={loadingUsers}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder={loadingUsers ? "Loading users..." : "Select user to assign"} />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {users.map((assignUser) => (
+                              <SelectItem key={assignUser.id} value={assignUser.id}>
+                                {assignUser.full_name}
+                                {assignUser.id === user?.id && " (You)"}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Order will be assigned to the selected user (defaults to you)
+                        </p>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -418,94 +491,69 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
                 </div>
               </div>
 
-              {/* Priority */}
-              <FormField
-                control={form.control}
-                name="priority"
-                render={({ field }) => (
-                  <FormItem className="mt-4">
-                    <FormLabel className="text-sm">Priority</FormLabel>
-                    <Select 
-                      onValueChange={field.onChange} 
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select priority" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {priorities.map((priority) => (
-                          <SelectItem key={priority} value={priority}>
-                            {priority.charAt(0).toUpperCase() + priority.slice(1)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Set the priority level for this order
-                    </p>
-                  </FormItem>
-                )}
-              />
+              {/* Right Column - Inventory & Descriptions */}
+              <div className="space-y-4">
+                {/* Inventory Items Section */}
+                <InventoryItemsSelector
+                  selectedItems={selectedInventoryItems}
+                  onItemsChange={setSelectedInventoryItems}
+                  className="w-full"
+                />
 
-              {/* Assign To */}
-              <FormField
-                control={form.control}
-                name="assignedTo"
-                render={({ field }) => (
-                  <FormItem className="mt-4">
-                    <FormLabel className="text-sm">Assign To</FormLabel>
-                    <Select 
-                      onValueChange={field.onChange} 
-                      value={field.value}
-                      disabled={loadingUsers}
-                    >
+                {/* Client-facing Description */}
+                <FormField
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <div className="flex items-center gap-1">
+                        <FormLabel className="text-sm">Client Description</FormLabel>
+                        <div className="ml-1 tooltip" title="This description will appear in proposals and invoices">
+                          <Info className="h-4 w-4 text-muted-foreground" />
+                        </div>
+                      </div>
                       <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder={loadingUsers ? "Loading users..." : "Select user to assign"} />
-                        </SelectTrigger>
+                        <Textarea 
+                          placeholder="Description that will be visible to clients in proposals/invoices..." 
+                          className="min-h-[80px]" 
+                          {...field} 
+                        />
                       </FormControl>
-                      <SelectContent>
-                        {users.map((assignUser) => (
-                          <SelectItem key={assignUser.id} value={assignUser.id}>
-                            {assignUser.full_name}
-                            {assignUser.id === user?.id && " (You)"}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Order will be assigned to the selected user (defaults to you)
-                    </p>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        This description will be included in proposals and invoices
+                      </p>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              {/* Description */}
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem className="mt-4">
-                    <div className="flex items-center gap-1">
-                      <FormLabel className="text-sm">Description</FormLabel>
-                    </div>
-                    <FormControl>
-                      <Textarea 
-                        placeholder="Describe what the company ordered (optional)..." 
-                        className="min-h-[120px]" 
-                        {...field} 
-                      />
-                    </FormControl>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Optional field - you can leave this empty or add details about the order
-                    </p>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                {/* Internal Notes */}
+                <FormField
+                  control={form.control}
+                  name="internalNotes"
+                  render={({ field }) => (
+                    <FormItem>
+                      <div className="flex items-center gap-1">
+                        <FormLabel className="text-sm">Internal Notes</FormLabel>
+                        <div className="ml-1 tooltip" title="These notes are for internal use only">
+                          <Info className="h-4 w-4 text-muted-foreground" />
+                        </div>
+                      </div>
+                      <FormControl>
+                        <Textarea 
+                          placeholder="Internal notes and comments (not visible to clients)..." 
+                          className="min-h-[80px]" 
+                          {...field} 
+                        />
+                      </FormControl>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        These notes are for internal use only and won't appear in proposals or invoices
+                      </p>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
             </div>
 
             <div className="flex justify-end gap-2 pt-4">

@@ -4,13 +4,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
-import { DollarSign, User, Calendar, Clock } from "lucide-react";
+import { DollarSign, User, Calendar, Clock, Package } from "lucide-react";
 import { OrderFormData, ValidationErrors } from "./validation";
 import { Order, OrderPriority } from "@/types";
 import { formatDate } from "@/lib/utils";
 import { formatCurrency } from "@/utils/currencyUtils";
 import { useState, useEffect } from "react";
 import { SearchService } from "@/services/searchService";
+import InventoryItemsSelector, { SelectedInventoryItem } from "../InventoryItemsSelector";
 
 interface OrderDetailsSectionProps {
   order: Order;
@@ -18,9 +19,19 @@ interface OrderDetailsSectionProps {
   errors: ValidationErrors;
   isEditing: boolean;
   onChange: (field: keyof (OrderFormData & { assigned_to?: string }), value: string | number) => void;
+  selectedInventoryItems?: SelectedInventoryItem[];
+  onInventoryItemsChange?: (items: SelectedInventoryItem[]) => void;
 }
 
-const OrderDetailsSection = ({ order, data, errors, isEditing, onChange }: OrderDetailsSectionProps) => {
+const OrderDetailsSection = ({ 
+  order, 
+  data, 
+  errors, 
+  isEditing, 
+  onChange,
+  selectedInventoryItems = [],
+  onInventoryItemsChange = () => {}
+}: OrderDetailsSectionProps) => {
   const [assignedUsers, setAssignedUsers] = useState<Array<{ id: string; name: string }>>([]);
 
   useEffect(() => {
@@ -47,6 +58,18 @@ const OrderDetailsSection = ({ order, data, errors, isEditing, onChange }: Order
     return priority.charAt(0).toUpperCase() + priority.slice(1);
   };
 
+  // Parse existing inventory items from order
+  useEffect(() => {
+    if (order.inventory_items && selectedInventoryItems.length === 0) {
+      try {
+        const parsedItems = JSON.parse(order.inventory_items as string);
+        onInventoryItemsChange(parsedItems);
+      } catch (error) {
+        console.error('Error parsing inventory items:', error);
+      }
+    }
+  }, [order.inventory_items, selectedInventoryItems.length, onInventoryItemsChange]);
+
   // Safeguard: Always ensure we have valid data and prevent null/undefined values
   const safeData = {
     ...data,
@@ -69,7 +92,54 @@ const OrderDetailsSection = ({ order, data, errors, isEditing, onChange }: Order
   };
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
+      {/* Inventory Items Section */}
+      {isEditing && (
+        <div>
+          <Label className="text-sm font-medium text-muted-foreground flex items-center gap-1">
+            <Package className="h-3 w-3" />
+            Inventory Items
+          </Label>
+          <div className="mt-2">
+            <InventoryItemsSelector
+              selectedItems={selectedInventoryItems}
+              onItemsChange={onInventoryItemsChange}
+              className="w-full"
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Display existing inventory items when not editing */}
+      {!isEditing && order.inventory_items && (
+        <div>
+          <Label className="text-sm font-medium text-muted-foreground flex items-center gap-1">
+            <Package className="h-3 w-3" />
+            Inventory Items
+          </Label>
+          <div className="mt-2 space-y-2">
+            {(() => {
+              try {
+                const items = JSON.parse(order.inventory_items as string);
+                return items.map((item: SelectedInventoryItem, index: number) => (
+                  <div key={index} className="flex items-center justify-between p-2 bg-muted/50 rounded-md text-sm">
+                    <div>
+                      <span className="font-medium">{item.name}</span>
+                      <span className="text-muted-foreground ml-2">
+                        {item.quantity} {item.unit} × €{item.unitPrice.toFixed(2)}
+                      </span>
+                    </div>
+                    <Badge variant="secondary">€{item.total.toFixed(2)}</Badge>
+                  </div>
+                ));
+              } catch (error) {
+                return <p className="text-sm text-muted-foreground">No inventory items</p>;
+              }
+            })()}
+          </div>
+        </div>
+      )}
+
       <div>
         <Label className="text-sm font-medium text-muted-foreground flex items-center gap-1">
           <DollarSign className="h-3 w-3" />
