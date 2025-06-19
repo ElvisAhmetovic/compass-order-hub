@@ -594,7 +594,7 @@ const ProposalDetail = () => {
                   <ArrowLeft size={16} className="mr-2" />
                   Back to Proposals
                 </Button>
-                <h1 className="text-2xl font-bold">
+                <h1 className="text-lg font-semibold">
                   {isNewProposal ? "Create New Proposal" : `Edit Proposal ${proposalData.number}`}
                 </h1>
               </div>
