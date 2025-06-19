@@ -62,8 +62,17 @@ const InventoryItemsSelector: React.FC<InventoryItemsSelectorProps> = ({
     setSearchValue('');
   };
 
-  const handleRemoveItem = (itemId: string) => {
-    onItemsChange(selectedItems.filter(item => item.id !== itemId));
+  const handleRemoveItem = (itemId: string, event: React.MouseEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    console.log('Removing item with ID:', itemId);
+    console.log('Current selected items:', selectedItems);
+    
+    const updatedItems = selectedItems.filter(item => item.id !== itemId);
+    console.log('Updated items after removal:', updatedItems);
+    
+    onItemsChange(updatedItems);
   };
 
   const handleQuantityChange = (itemId: string, quantity: number) => {
@@ -145,8 +154,9 @@ const InventoryItemsSelector: React.FC<InventoryItemsSelectorProps> = ({
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => handleRemoveItem(item.id)}
-                    className="h-8 w-8 p-0"
+                    onClick={(e) => handleRemoveItem(item.id, e)}
+                    className="h-8 w-8 p-0 hover:bg-destructive/10 hover:text-destructive"
+                    type="button"
                   >
                     <X className="h-3 w-3" />
                   </Button>
