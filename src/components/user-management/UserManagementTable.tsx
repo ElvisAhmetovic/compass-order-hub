@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -108,6 +107,9 @@ export function UserManagementTable({ users, setUsers, onReload }: UserManagemen
       await onReload();
       setIsEditModalOpen(false);
       setEditingUser(null);
+      
+      // Trigger a refresh of orders to show updated names
+      window.dispatchEvent(new CustomEvent('orderStatusChanged'));
       
       toast({
         title: "User updated",

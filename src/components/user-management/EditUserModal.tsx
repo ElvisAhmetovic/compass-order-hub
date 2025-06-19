@@ -115,6 +115,30 @@ export const EditUserModal: React.FC<EditUserModalProps> = ({
 
       console.log('Successfully updated profiles table');
 
+      // Update assigned_to_name in orders table if name changed
+      if (values.fullName !== user.full_name) {
+        console.log('Updating assigned_to_name in orders for user:', user.id);
+        const { error: ordersError } = await supabase
+          .from('orders')
+          .update({ 
+            assigned_to_name: values.fullName,
+            updated_at: new Date().toISOString()
+          })
+          .eq('assigned_to', user.id);
+
+        if (ordersError) {
+          console.error('Orders update error:', ordersError);
+          // Don't throw error - continue with profile update even if orders update fails
+          toast({
+            variant: "destructive",
+            title: "Warning",
+            description: "User profile updated but some order assignments may still show the old name."
+          });
+        } else {
+          console.log('Successfully updated assigned_to_name in orders');
+        }
+      }
+
       // Try to update email in auth system (this might fail due to permissions)
       if (values.email !== user.email) {
         try {
