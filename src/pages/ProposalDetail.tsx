@@ -401,8 +401,8 @@ const ProposalDetail = () => {
                         </SelectTrigger>
                         <SelectContent>
                           {SUPPORTED_LANGUAGES.map(lang => (
-                            <SelectItem key={lang.code} value={lang.code}>
-                              {lang.name}
+                            <SelectItem key={lang.code} value={lang.value}>
+                              {lang.label}
                             </SelectItem>
                           ))}
                         </SelectContent>
