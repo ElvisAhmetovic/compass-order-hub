@@ -114,7 +114,7 @@ const OrderActions = ({ order, onOrderView, onRefresh }: OrderActionsProps) => {
         try {
           const inventoryItems: SelectedInventoryItem[] = JSON.parse(orderData.inventory_items);
           lineItems = inventoryItems.map(item => ({
-            item_description: item.name,
+            item_description: item.name, // Use name instead of description
             quantity: item.quantity,
             unit_price: item.unitPrice,
             unit: item.unit,
