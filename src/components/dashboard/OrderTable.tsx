@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import {
   Table,
@@ -56,9 +55,7 @@ const OrderTable = ({
         if (isYearlyPackages) {
           fetchedOrders = await OrderService.getYearlyPackages();
         } else {
-          const { data, error, count } = await OrderService.getOrders();
-          if (error) throw error;
-          fetchedOrders = data || [];
+          fetchedOrders = await OrderService.getOrders();
         }
 
         // Apply client-side filtering if needed
