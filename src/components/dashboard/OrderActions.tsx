@@ -14,6 +14,7 @@ import { useAuth } from "@/context/AuthContext";
 import { InvoiceService } from "@/services/invoiceService";
 import { OrderService } from "@/services/orderService";
 import { WorkflowService } from "@/services/workflowService";
+import { SelectedInventoryItem } from "./InventoryItemsSelector";
 
 interface OrderActionsProps {
   order: Order;
@@ -106,16 +107,28 @@ const OrderActions = ({ order, onOrderView, onRefresh }: OrderActionsProps) => {
         }
       }
 
-      // Create a new invoice from the order
-      const invoiceData = {
-        client_id: clientId,
-        issue_date: new Date().toISOString().split('T')[0],
-        due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days from now
-        currency: 'EUR',
-        payment_terms: 'Net 30',
-        notes: `Invoice created from order. Order ID: ${orderId}`,
-        internal_notes: `Automatically generated from order ${orderId}`,
-        line_items: [
+      // Parse inventory items from order if they exist
+      let lineItems = [];
+      
+      if (orderData.inventory_items) {
+        try {
+          const inventoryItems: SelectedInventoryItem[] = JSON.parse(orderData.inventory_items);
+          lineItems = inventoryItems.map(item => ({
+            item_description: item.name,
+            quantity: item.quantity,
+            unit_price: item.unitPrice,
+            unit: item.unit,
+            vat_rate: 0.19,
+            discount_rate: 0
+          }));
+        } catch (error) {
+          console.error("Error parsing inventory items:", error);
+        }
+      }
+
+      // If no inventory items, use the order's main price/description
+      if (lineItems.length === 0) {
+        lineItems = [
           {
             item_description: orderData.description || 'Service provided',
             quantity: 1,
@@ -124,7 +137,19 @@ const OrderActions = ({ order, onOrderView, onRefresh }: OrderActionsProps) => {
             vat_rate: 0.19,
             discount_rate: 0
           }
-        ]
+        ];
+      }
+
+      // Create a new invoice from the order
+      const invoiceData = {
+        client_id: clientId,
+        issue_date: new Date().toISOString().split('T')[0],
+        due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days from now
+        currency: orderData.currency || 'EUR',
+        payment_terms: 'Net 30',
+        notes: `Invoice created from order. Order ID: ${orderId}`,
+        internal_notes: `Automatically generated from order ${orderId}`,
+        line_items: lineItems
       };
 
       const newInvoice = await InvoiceService.createInvoice(invoiceData);
