@@ -13,6 +13,7 @@ import CompanyInfoSection from "./OrderEditForm/CompanyInfoSection";
 import OrderDetailsSection from "./OrderEditForm/OrderDetailsSection";
 import EditModeHeader from "./OrderEditForm/EditModeHeader";
 import { useOrderEdit } from "./OrderEditForm/useOrderEdit";
+import { SelectedInventoryItem } from "./InventoryItemsSelector";
 
 interface OrderModalProps {
   order: Order | null;
@@ -24,6 +25,7 @@ interface OrderModalProps {
 const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
   // ALL HOOKS MUST BE CALLED FIRST - before any early returns or conditional logic
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [selectedInventoryItems, setSelectedInventoryItems] = useState<SelectedInventoryItem[]>([]);
 
   const handleRefresh = () => {
     setRefreshTrigger(prev => prev + 1);
@@ -41,6 +43,24 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
     handleSave,
     handleCancel
   } = useOrderEdit(order, handleRefresh);
+
+  // Handle inventory items changes
+  const handleInventoryItemsChange = (items: SelectedInventoryItem[]) => {
+    setSelectedInventoryItems(items);
+  };
+
+  // Enhanced save function that includes inventory items
+  const handleSaveWithInventory = async () => {
+    // First update the inventory items in the edited order
+    if (selectedInventoryItems.length > 0) {
+      handleFieldChange('inventory_items', JSON.stringify(selectedInventoryItems));
+    } else {
+      handleFieldChange('inventory_items', '');
+    }
+    
+    // Then call the original save function
+    await handleSave();
+  };
 
   // NOW we can do early returns after all hooks are called
   if (!order) return null;
@@ -99,7 +119,7 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
                 <EditModeHeader
                   isSaving={isSaving}
                   hasErrors={hasErrors}
-                  onSave={handleSave}
+                  onSave={handleSaveWithInventory}
                   onCancel={handleCancel}
                 />
               )}
@@ -157,6 +177,8 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
                     errors={validationErrors}
                     isEditing={isEditing}
                     onChange={handleFieldChange}
+                    selectedInventoryItems={selectedInventoryItems}
+                    onInventoryItemsChange={handleInventoryItemsChange}
                   />
                 </div>
               </div>

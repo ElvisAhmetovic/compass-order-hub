@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from "react";
 import { Order, OrderPriority } from "@/types";
 import { OrderService } from "@/services/orderService";
@@ -6,6 +7,7 @@ import { OrderFormData, ValidationErrors, validateOrderForm } from "./validation
 
 interface ExtendedOrderFormData extends OrderFormData {
   assigned_to?: string;
+  inventory_items?: string;
 }
 
 export const useOrderEdit = (order: Order | null, onRefresh: () => void) => {
@@ -20,7 +22,8 @@ export const useOrderEdit = (order: Order | null, onRefresh: () => void) => {
     price: 0,
     currency: "EUR",
     priority: "medium",
-    assigned_to: ""
+    assigned_to: "",
+    inventory_items: ""
   });
   const [isSaving, setIsSaving] = useState(false);
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
@@ -40,7 +43,8 @@ export const useOrderEdit = (order: Order | null, onRefresh: () => void) => {
       price: order.price || 0,
       currency: order.currency || "EUR",
       priority: (order.priority || "medium") as OrderPriority,
-      assigned_to: order.assigned_to || ""
+      assigned_to: order.assigned_to || "",
+      inventory_items: order.inventory_items || ""
     };
     
     console.log('Starting edit mode with safe data:', safeOrderData);
@@ -109,7 +113,8 @@ export const useOrderEdit = (order: Order | null, onRefresh: () => void) => {
         description: editedOrder.description || "",
         price: editedOrder.price !== undefined ? editedOrder.price : 0,
         currency: editedOrder.currency || "EUR",
-        priority: editedOrder.priority || "medium"
+        priority: editedOrder.priority || "medium",
+        inventory_items: editedOrder.inventory_items || null
       };
 
       // Handle assignment change - if assigned_to is different, update it
@@ -172,7 +177,8 @@ export const useOrderEdit = (order: Order | null, onRefresh: () => void) => {
       price: 0,
       currency: "EUR",
       priority: "medium",
-      assigned_to: ""
+      assigned_to: "",
+      inventory_items: ""
     });
     setValidationErrors({});
   }, []);
