@@ -46,31 +46,33 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
 
   // Initialize inventory items from order data when order changes or when entering edit mode
   useEffect(() => {
-    if (order?.inventory_items && isEditing) {
+    if (order?.inventory_items) {
       try {
         const parsedItems = JSON.parse(order.inventory_items);
         if (Array.isArray(parsedItems)) {
+          console.log('Setting initial inventory items:', parsedItems);
           setSelectedInventoryItems(parsedItems);
         }
       } catch (error) {
         console.error('Error parsing inventory items:', error);
         setSelectedInventoryItems([]);
       }
-    } else if (!isEditing) {
-      // Reset when not editing
+    } else {
       setSelectedInventoryItems([]);
     }
-  }, [order?.inventory_items, isEditing]);
+  }, [order?.inventory_items, order?.id]);
 
-  // Handle inventory items changes
+  // Handle inventory items changes with proper state update
   const handleInventoryItemsChange = (items: SelectedInventoryItem[]) => {
+    console.log('Inventory items changed:', items);
     setSelectedInventoryItems(items);
-    // Immediately update the form data
+    // Update the form data immediately
     handleFieldChange('inventory_items', JSON.stringify(items));
   };
 
   // Enhanced save function that includes inventory items
   const handleSaveWithInventory = async () => {
+    console.log('Saving with inventory items:', selectedInventoryItems);
     // Update the inventory items in the edited order before saving
     handleFieldChange('inventory_items', JSON.stringify(selectedInventoryItems));
     

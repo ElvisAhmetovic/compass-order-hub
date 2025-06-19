@@ -7,7 +7,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Plus, X, Search } from 'lucide-react';
 import { useInventory } from '@/hooks/useInventory';
-import InventoryAutocomplete from '@/components/inventory/InventoryAutocomplete';
 
 export interface SelectedInventoryItem {
   id: string;
@@ -66,7 +65,10 @@ const InventoryItemsSelector: React.FC<InventoryItemsSelectorProps> = ({
   };
 
   const handleRemoveItem = (itemId: string) => {
-    onItemsChange(selectedItems.filter(item => item.id !== itemId));
+    console.log('Removing inventory item with ID:', itemId);
+    const newItems = selectedItems.filter(item => item.id !== itemId);
+    console.log('New items after removal:', newItems);
+    onItemsChange(newItems);
   };
 
   const handleQuantityChange = (itemId: string, quantity: number) => {
@@ -205,10 +207,15 @@ const InventoryItemsSelector: React.FC<InventoryItemsSelectorProps> = ({
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => handleRemoveItem(item.id)}
-                    className="h-8 w-8 p-0"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      console.log('Delete button clicked for item:', item.id);
+                      handleRemoveItem(item.id);
+                    }}
+                    className="h-8 w-8 p-0 hover:bg-destructive/10"
                   >
-                    <X className="h-3 w-3" />
+                    <X className="h-3 w-3 text-destructive" />
                   </Button>
                 </div>
               </div>
