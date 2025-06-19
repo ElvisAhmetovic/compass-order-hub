@@ -1,3 +1,4 @@
+
 export const translations = {
   en: {
     // Common
@@ -52,6 +53,15 @@ export const translations = {
     "paymentTerms": "Payment Terms",
     "additionalTerms": "Additional Terms",
     "footerContent": "Footer Content",
+
+    // PDF specific translations
+    "createNewProposal": "New Proposal",
+    "placeAndDate": "Place & Date",
+    "signatureAndStamp": "Signature & Stamp",
+    "paymentData": "Payment Data",
+    "accountNumber": "Account Number",
+    "accountName": "Account Name",
+    "paymentMethod": "Payment Method",
 
     // Statuses
     "draft": "Draft",
@@ -121,6 +131,15 @@ export const translations = {
     "additionalTerms": "Dodatni Uslovi",
     "footerContent": "Sadržaj Podnožja",
 
+    // PDF specific translations
+    "createNewProposal": "Nova Ponuda",
+    "placeAndDate": "Mjesto i Datum",
+    "signatureAndStamp": "Potpis i Pečat",
+    "paymentData": "Podaci za Plaćanje",
+    "accountNumber": "Broj Računa",
+    "accountName": "Ime Računa",
+    "paymentMethod": "Način Plaćanja",
+
     // Statuses
     "draft": "Nacrt",
     "pending": "Na čekanju",
@@ -188,6 +207,15 @@ export const translations = {
     "paymentTerms": "Zahlungsbedingungen",
     "additionalTerms": "Zusätzliche Bedingungen",
     "footerContent": "Fußzeileninhalt",
+
+    // PDF specific translations
+    "createNewProposal": "Neues Angebot",
+    "placeAndDate": "Ort und Datum",
+    "signatureAndStamp": "Unterschrift und Stempel",
+    "paymentData": "Zahlungsdaten",
+    "accountNumber": "Kontonummer",
+    "accountName": "Kontoname",
+    "paymentMethod": "Zahlungsart",
 
     // Statuses
     "draft": "Entwurf",
@@ -257,6 +285,15 @@ export const translations = {
     "additionalTerms": "Conditions additionnelles",
     "footerContent": "Contenu du pied de page",
 
+    // PDF specific translations
+    "createNewProposal": "Nouvelle Proposition",
+    "placeAndDate": "Lieu et Date",
+    "signatureAndStamp": "Signature et Tampon",
+    "paymentData": "Données de Paiement",
+    "accountNumber": "Numéro de Compte",
+    "accountName": "Nom du Compte",
+    "paymentMethod": "Méthode de Paiement",
+
     // Statuses
     "draft": "Brouillon",
     "pending": "En attente",
@@ -324,6 +361,15 @@ export const translations = {
     "paymentTerms": "Condiciones de pago",
     "additionalTerms": "Condiciones adicionales",
     "footerContent": "Contenido del pie de página",
+
+    // PDF specific translations
+    "createNewProposal": "Nueva Propuesta",
+    "placeAndDate": "Lugar y Fecha",
+    "signatureAndStamp": "Firma y Sello",
+    "paymentData": "Datos de Pago",
+    "accountNumber": "Número de Cuenta",
+    "accountName": "Nombre de la Cuenta",
+    "paymentMethod": "Método de Pago",
 
     // Statuses
     "draft": "Borrador",
