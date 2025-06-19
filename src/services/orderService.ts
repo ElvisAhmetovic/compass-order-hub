@@ -1,6 +1,6 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { Order, OrderStatus } from "@/types";
+import { RealTimeNotificationService } from "./realTimeNotificationService";
 
 export class OrderService {
   // Get all orders with proper error handling
@@ -218,6 +218,12 @@ export class OrderService {
         if (cleanData.assigned_to !== undefined && cleanData.assigned_to !== currentOrder.assigned_to) {
           if (cleanData.assigned_to) {
             changes.push(`Order assigned to ${cleanData.assigned_to_name || 'user'}`);
+            // Send notification to assigned user
+            await RealTimeNotificationService.notifyOrderAssignment(
+              id, 
+              cleanData.assigned_to, 
+              cleanData.assigned_to_name || 'user'
+            );
           } else {
             changes.push('Order unassigned');
           }
@@ -226,6 +232,8 @@ export class OrderService {
 
       if (changes.length > 0) {
         await this.logOrderActivity(id, 'Order Updated', changes.join('; '));
+        // Send notification about the update
+        await RealTimeNotificationService.notifyOrderChange(id, 'updated', data.assigned_to);
       }
       
       return data;
@@ -338,6 +346,9 @@ export class OrderService {
       // Log assignment activity
       await this.logOrderActivity(orderId, 'Order Assigned', `Order assigned to ${userName}`);
       
+      // Send real-time notification
+      await RealTimeNotificationService.notifyOrderAssignment(orderId, userId, userName);
+      
       return data;
     } catch (error) {
       console.error('Failed to assign order:', error);
@@ -353,7 +364,7 @@ export class OrderService {
       // Get current assignment info for logging
       const { data: currentOrder } = await supabase
         .from('orders')
-        .select('assigned_to_name')
+        .select('assigned_to_name, assigned_to')
         .eq('id', orderId)
         .single();
 
@@ -376,6 +387,11 @@ export class OrderService {
       // Log unassignment activity
       const previousAssignee = currentOrder?.assigned_to_name || 'Unknown user';
       await this.logOrderActivity(orderId, 'Order Unassigned', `Order unassigned from ${previousAssignee}`);
+      
+      // Send notification to previously assigned user
+      if (currentOrder?.assigned_to) {
+        await RealTimeNotificationService.notifyOrderChange(orderId, 'unassigned', currentOrder.assigned_to);
+      }
       
       return data;
     } catch (error) {
@@ -443,22 +459,8 @@ export class OrderService {
     // Also log in audit logs for comprehensive tracking
     await this.logOrderActivity(orderId, 'Status Change', `Status "${status}" ${enabled ? 'added' : 'removed'}`);
 
-    // Create notification for assigned user if order is assigned to someone else
-    if (currentOrder.assigned_to && currentOrder.assigned_to !== user.id) {
-      try {
-        const { NotificationService } = await import('./notificationService');
-        await NotificationService.createNotification({
-          user_id: currentOrder.assigned_to,
-          title: 'Order Status Updated',
-          message: `Order for ${currentOrder.company_name} status changed: ${status} ${enabled ? 'added' : 'removed'}`,
-          type: 'info',
-          order_id: orderId,
-          action_url: `/dashboard?order=${orderId}`
-        });
-      } catch (notificationError) {
-        console.error('Error creating notification:', notificationError);
-      }
-    }
+    // Send real-time notification
+    await RealTimeNotificationService.notifyOrderChange(orderId, `status changed to ${status}`, currentOrder.assigned_to);
   }
 
   // Get all active statuses for an order

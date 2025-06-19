@@ -1,27 +1,34 @@
 
-import { LogoutButton } from "@/components/auth/LogoutButton";
-import { UserRole } from "@/types";
-import NotificationCenter from "@/components/notifications/NotificationCenter";
+import React from "react";
+import { useAuth } from "@/context/AuthContext";
+import LogoutButton from "@/components/auth/LogoutButton";
+import NotificationDropdown from "./NotificationDropdown";
 
 interface HeaderProps {
-  userRole?: UserRole;
+  userRole?: string;
 }
 
-const Header = ({ userRole = "admin" }: HeaderProps) => {
+const Header = ({ userRole }: HeaderProps) => {
+  const { user } = useAuth();
+
   return (
-    <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-14 items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <img 
-            src="/lovable-uploads/2d4259f4-7fb1-4221-9e23-4bec4378d055.png" 
-            alt="AB Media Team Logo" 
-            className="h-12 w-auto"
-          />
-          <h1 className="text-xl font-semibold">Order Management System</h1>
+    <header className="bg-white border-b border-gray-200 px-6 py-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-semibold text-gray-900">
+            Order Management System
+          </h1>
         </div>
-        
         <div className="flex items-center space-x-4">
-          <NotificationCenter />
+          {user && <NotificationDropdown />}
+          <div className="text-sm text-gray-600">
+            Welcome, {user?.email}
+            {userRole && (
+              <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
+                {userRole}
+              </span>
+            )}
+          </div>
           <LogoutButton />
         </div>
       </div>
