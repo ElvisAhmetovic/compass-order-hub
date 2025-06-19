@@ -2,16 +2,12 @@
 import { LogoutButton } from "@/components/auth/LogoutButton";
 import { UserRole } from "@/types";
 import NotificationCenter from "@/components/notifications/NotificationCenter";
-import LanguageSwitcher from "./LanguageSwitcher";
-import { useLanguage } from "@/context/LanguageContext";
 
 interface HeaderProps {
   userRole?: UserRole;
 }
 
 const Header = ({ userRole = "admin" }: HeaderProps) => {
-  const { t } = useLanguage();
-
   return (
     <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-14 items-center justify-between">
@@ -21,11 +17,10 @@ const Header = ({ userRole = "admin" }: HeaderProps) => {
             alt="AB Media Team Logo" 
             className="h-12 w-auto"
           />
-          <h1 className="text-xl font-semibold">{t('orderManagementSystem')}</h1>
+          <h1 className="text-xl font-semibold">Order Management System</h1>
         </div>
         
         <div className="flex items-center space-x-4">
-          <LanguageSwitcher />
           <NotificationCenter />
           <LogoutButton />
         </div>
