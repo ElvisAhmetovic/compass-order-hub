@@ -70,21 +70,6 @@ const OrderDetailsSection = ({
     }
   }, [order.inventory_items, selectedInventoryItems.length, onInventoryItemsChange]);
 
-  // Safeguard: Always ensure we have valid data and prevent null/undefined values
-  const safeData = {
-    ...data,
-    company_name: data.company_name || order.company_name || "",
-    company_address: data.company_address || order.company_address || "",
-    contact_email: data.contact_email || order.contact_email || "",
-    contact_phone: data.contact_phone || order.contact_phone || "",
-    company_link: data.company_link || order.company_link || "",
-    description: data.description || order.description || "",
-    price: data.price !== undefined ? data.price : (order.price || 0),
-    currency: data.currency || order.currency || "EUR",
-    priority: data.priority || order.priority || "medium",
-    assigned_to: data.assigned_to || order.assigned_to || "unassigned"
-  };
-
   const handleAssignedToChange = (value: string) => {
     // Convert "unassigned" back to empty string for the form data
     const actualValue = value === "unassigned" ? "" : value;
@@ -150,10 +135,10 @@ const OrderDetailsSection = ({
             <Input
               type="number"
               step="0.01"
-              value={safeData.price || 0}
+              value={data.price || 0}
               onChange={(e) => {
                 const value = parseFloat(e.target.value) || 0;
-                onChange('price', Math.max(0, value)); // Prevent negative values
+                onChange('price', Math.max(0, value));
               }}
               placeholder="0.00"
               className={`mt-1 ${errors.price ? 'border-destructive' : ''}`}
@@ -171,7 +156,7 @@ const OrderDetailsSection = ({
         <Label className="text-sm font-medium text-muted-foreground">Currency</Label>
         {isEditing ? (
           <Select 
-            value={safeData.currency} 
+            value={data.currency || "EUR"} 
             onValueChange={(value) => onChange('currency', value || "EUR")}
           >
             <SelectTrigger className="mt-1">
@@ -193,7 +178,7 @@ const OrderDetailsSection = ({
         <Label className="text-sm font-medium text-muted-foreground">Priority</Label>
         {isEditing ? (
           <Select 
-            value={safeData.priority} 
+            value={data.priority || "medium"} 
             onValueChange={(value) => onChange('priority', value || "medium")}
           >
             <SelectTrigger className="mt-1">
@@ -237,7 +222,7 @@ const OrderDetailsSection = ({
         <Label className="text-sm font-medium text-muted-foreground">Description</Label>
         {isEditing ? (
           <Textarea
-            value={safeData.description}
+            value={data.description || ""}
             onChange={(e) => onChange('description', e.target.value || "")}
             placeholder="Order description"
             className="mt-1"
@@ -255,7 +240,7 @@ const OrderDetailsSection = ({
         </Label>
         {isEditing ? (
           <Select 
-            value={safeData.assigned_to === "" ? "unassigned" : safeData.assigned_to} 
+            value={data.assigned_to === "" ? "unassigned" : (data.assigned_to || "unassigned")} 
             onValueChange={handleAssignedToChange}
           >
             <SelectTrigger className="mt-1">

@@ -32,8 +32,8 @@ export const useOrderEdit = (order: Order | null, onRefresh: () => void) => {
   const handleEdit = useCallback(() => {
     if (!order) return;
     
-    // Safeguard: Create a backup of original data to prevent data loss
-    const safeOrderData: ExtendedOrderFormData = {
+    // Initialize with actual order data
+    const orderData: ExtendedOrderFormData = {
       company_name: order.company_name || "",
       company_address: order.company_address || "",
       contact_email: order.contact_email || "",
@@ -47,17 +47,17 @@ export const useOrderEdit = (order: Order | null, onRefresh: () => void) => {
       inventory_items: order.inventory_items || ""
     };
     
-    console.log('Starting edit mode with safe data:', safeOrderData);
+    console.log('Starting edit mode with order data:', orderData);
     
     setIsEditing(true);
-    setEditedOrder(safeOrderData);
+    setEditedOrder(orderData);
     setValidationErrors({});
   }, [order]);
 
   const handleFieldChange = useCallback((field: keyof ExtendedOrderFormData, value: string | number) => {
     console.log(`Updating field ${field} with value:`, value);
     
-    // Safeguard: Ensure we never set undefined or null values
+    // Ensure we never set undefined or null values
     const safeValue = value === null || value === undefined ? 
       (typeof value === 'number' ? 0 : "") : value;
     
@@ -103,7 +103,7 @@ export const useOrderEdit = (order: Order | null, onRefresh: () => void) => {
     setValidationErrors({}); // Clear all errors if we're proceeding
     
     try {
-      // Safeguard: Ensure all values are properly defined before sending to API
+      // Prepare update data with all fields
       const updateData: Partial<Order> = {
         company_name: editedOrder.company_name || order.company_name || "",
         company_address: editedOrder.company_address || "",
@@ -117,7 +117,7 @@ export const useOrderEdit = (order: Order | null, onRefresh: () => void) => {
         inventory_items: editedOrder.inventory_items || null
       };
 
-      // Handle assignment change - if assigned_to is different, update it
+      // Handle assignment change
       if (editedOrder.assigned_to !== order.assigned_to) {
         if (editedOrder.assigned_to && editedOrder.assigned_to.trim()) {
           // Find the user name from the search service
@@ -156,7 +156,7 @@ export const useOrderEdit = (order: Order | null, onRefresh: () => void) => {
         variant: "destructive"
       });
       
-      // Safeguard: Don't exit edit mode on save failure to prevent data loss
+      // Don't exit edit mode on save failure to prevent data loss
       console.log('Save failed, keeping edit mode active to prevent data loss');
     } finally {
       setIsSaving(false);
