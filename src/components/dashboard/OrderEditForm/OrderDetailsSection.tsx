@@ -1,4 +1,3 @@
-
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -9,7 +8,7 @@ import { OrderFormData, ValidationErrors } from "./validation";
 import { Order, OrderPriority } from "@/types";
 import { formatDate } from "@/lib/utils";
 import { formatCurrency } from "@/utils/currencyUtils";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { SearchService } from "@/services/searchService";
 import InventoryItemsSelector, { SelectedInventoryItem } from "../InventoryItemsSelector";
 
@@ -33,6 +32,7 @@ const OrderDetailsSection = ({
   onInventoryItemsChange = () => {}
 }: OrderDetailsSectionProps) => {
   const [assignedUsers, setAssignedUsers] = useState<Array<{ id: string; name: string }>>([]);
+  const inventoryInitialized = useRef(false);
 
   useEffect(() => {
     const loadAssignedUsers = async () => {
@@ -58,17 +58,25 @@ const OrderDetailsSection = ({
     return priority.charAt(0).toUpperCase() + priority.slice(1);
   };
 
-  // Parse existing inventory items from order
+  // Parse existing inventory items from order - but only once
   useEffect(() => {
-    if (order.inventory_items && selectedInventoryItems.length === 0) {
+    if (order.inventory_items && !inventoryInitialized.current && selectedInventoryItems.length === 0) {
       try {
         const parsedItems = JSON.parse(order.inventory_items as string);
         onInventoryItemsChange(parsedItems);
+        inventoryInitialized.current = true;
+        console.log('Initialized inventory items from order:', parsedItems);
       } catch (error) {
         console.error('Error parsing inventory items:', error);
+        inventoryInitialized.current = true; // Mark as initialized even on error
       }
     }
   }, [order.inventory_items, selectedInventoryItems.length, onInventoryItemsChange]);
+
+  // Reset initialization flag when switching between orders
+  useEffect(() => {
+    inventoryInitialized.current = false;
+  }, [order.id]);
 
   // Safeguard: Always ensure we have valid data and prevent null/undefined values
   const safeData = {
