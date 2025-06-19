@@ -7,7 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { PaymentService, PaymentLink } from "@/services/paymentService";
 import { InvoiceService } from "@/services/invoiceService";
 import { formatCurrency } from "@/utils/currencyUtils";
-import { CreditCard, AlertCircle, RefreshCw, Plus } from "lucide-react";
+import { CreditCard, AlertCircle, RefreshCw, Plus, Trash2 } from "lucide-react";
 import PaymentGatewaySelector, { PaymentGateway } from "@/components/payments/PaymentGatewaySelector";
 
 interface PaymentTrackerProps {
@@ -27,6 +27,7 @@ const PaymentTracker: React.FC<PaymentTrackerProps> = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  const [deleting, setDeleting] = useState<string | null>(null);
   const [showGatewaySelector, setShowGatewaySelector] = useState(false);
   const { toast } = useToast();
 
@@ -83,6 +84,29 @@ const PaymentTracker: React.FC<PaymentTrackerProps> = ({
       });
     } finally {
       setCreating(false);
+    }
+  };
+
+  const handleDeletePaymentLink = async (linkId: string) => {
+    setDeleting(linkId);
+    try {
+      await PaymentService.deletePaymentLink(linkId);
+      
+      toast({
+        title: "Payment link removed",
+        description: "Payment link has been removed successfully.",
+      });
+
+      setPaymentLinks(paymentLinks.filter(link => link.id !== linkId));
+    } catch (error) {
+      console.error("Error deleting payment link:", error);
+      toast({
+        title: "Error",
+        description: "Failed to remove payment link. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setDeleting(null);
     }
   };
 
@@ -158,14 +182,25 @@ const PaymentTracker: React.FC<PaymentTrackerProps> = ({
             paymentLinks.map((link) => (
               <div key={link.id} className="p-3 border rounded-md">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="font-medium">{link.payment_method.toUpperCase()}</span>
-                  <Badge variant={
-                    link.status === 'paid' ? 'default' :
-                    link.status === 'active' ? 'secondary' :
-                    'destructive'
-                  }>
-                    {link.status.toUpperCase()}
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">{link.payment_method.toUpperCase()}</span>
+                    <Badge variant={
+                      link.status === 'paid' ? 'default' :
+                      link.status === 'active' ? 'secondary' :
+                      'destructive'
+                    }>
+                      {link.status.toUpperCase()}
+                    </Badge>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleDeletePaymentLink(link.id)}
+                    disabled={deleting === link.id}
+                    className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </div>
                 <div className="text-sm text-muted-foreground">
                   Amount: {formatCurrency(link.amount, link.currency)}

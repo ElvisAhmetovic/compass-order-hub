@@ -289,4 +289,25 @@ export class PaymentService {
       throw error;
     }
   }
+
+  // Delete payment link
+  static async deletePaymentLink(linkId: string): Promise<void> {
+    try {
+      // In a real implementation, this would make an API call to delete the payment link
+      // For now, we'll simulate the deletion
+      console.log(`Deleting payment link: ${linkId}`);
+      
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // In production, this would be:
+      // const response = await fetch(`/api/payment-links/${linkId}`, { method: 'DELETE' });
+      // if (!response.ok) throw new Error('Failed to delete payment link');
+      
+      return;
+    } catch (error) {
+      console.error('Failed to delete payment link:', error);
+      throw new Error('Unable to delete payment link at this time');
+    }
+  }
 }
