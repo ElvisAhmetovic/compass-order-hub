@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { X, Edit, Building2, MessageSquare } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -44,22 +44,40 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
     handleCancel
   } = useOrderEdit(order, handleRefresh);
 
+  // Initialize inventory items from order data when order changes or when entering edit mode
+  useEffect(() => {
+    if (order?.inventory_items && isEditing) {
+      try {
+        const parsedItems = JSON.parse(order.inventory_items);
+        if (Array.isArray(parsedItems)) {
+          setSelectedInventoryItems(parsedItems);
+        }
+      } catch (error) {
+        console.error('Error parsing inventory items:', error);
+        setSelectedInventoryItems([]);
+      }
+    } else if (!isEditing) {
+      // Reset when not editing
+      setSelectedInventoryItems([]);
+    }
+  }, [order?.inventory_items, isEditing]);
+
   // Handle inventory items changes
   const handleInventoryItemsChange = (items: SelectedInventoryItem[]) => {
     setSelectedInventoryItems(items);
+    // Immediately update the form data
+    handleFieldChange('inventory_items', JSON.stringify(items));
   };
 
   // Enhanced save function that includes inventory items
   const handleSaveWithInventory = async () => {
-    // First update the inventory items in the edited order
-    if (selectedInventoryItems.length > 0) {
-      handleFieldChange('inventory_items', JSON.stringify(selectedInventoryItems));
-    } else {
-      handleFieldChange('inventory_items', '');
-    }
+    // Update the inventory items in the edited order before saving
+    handleFieldChange('inventory_items', JSON.stringify(selectedInventoryItems));
     
-    // Then call the original save function
-    await handleSave();
+    // Small delay to ensure state is updated
+    setTimeout(async () => {
+      await handleSave();
+    }, 100);
   };
 
   // NOW we can do early returns after all hooks are called

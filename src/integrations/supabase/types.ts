@@ -707,6 +707,7 @@ export type Database = {
           currency: string | null
           description: string | null
           id: string
+          internal_notes: string | null
           is_yearly_package: boolean | null
           price: number | null
           priority: string | null
@@ -739,6 +740,7 @@ export type Database = {
           currency?: string | null
           description?: string | null
           id?: string
+          internal_notes?: string | null
           is_yearly_package?: boolean | null
           price?: number | null
           priority?: string | null
@@ -771,6 +773,7 @@ export type Database = {
           currency?: string | null
           description?: string | null
           id?: string
+          internal_notes?: string | null
           is_yearly_package?: boolean | null
           price?: number | null
           priority?: string | null
