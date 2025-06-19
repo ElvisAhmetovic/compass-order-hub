@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from "react";
 import {
   Table,
@@ -8,9 +7,11 @@ import {
   TableHead,
   TableCell
 } from "@/components/ui/table";
+import { Checkbox } from "@/components/ui/checkbox";
 import OrderRow from "./OrderRow";
 import OrderPagination from "./OrderPagination";
 import AdvancedSearch from "./AdvancedSearch";
+import BulkOperationsBar from "./BulkOperationsBar";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { Order, OrderStatus, User } from "@/types";
 import { useToast } from "@/hooks/use-toast";
@@ -37,6 +38,9 @@ const OrderTable = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
+  // Selection state
+  const [selectedOrderIds, setSelectedOrderIds] = useState<Set<string>>(new Set());
+  
   // Sorting state
   const [sortField, setSortField] = useState<'created_at' | 'updated_at'>('created_at');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
@@ -51,6 +55,13 @@ const OrderTable = ({
   const { toast } = useToast();
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
+
+  // Mock users data for assignment (in real app, this would come from a users service)
+  const mockUsers = [
+    { id: 'user1', name: 'John Doe' },
+    { id: 'user2', name: 'Jane Smith' },
+    { id: 'user3', name: 'Mike Johnson' }
+  ];
 
   // Fetch orders with better error handling
   const fetchOrders = useCallback(async () => {
@@ -151,27 +162,39 @@ const OrderTable = ({
     setFilteredOrders(result);
     // Reset to first page when filters change
     setCurrentPage(1);
+    // Clear selection when filters change
+    setSelectedOrderIds(new Set());
   }, [orders, statusFilter, searchFilters, sortField, sortDirection]);
 
-  const handlePageChange = (pageNumber: number) => {
-    setCurrentPage(pageNumber);
+  // Selection handlers
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      const currentPageOrderIds = currentOrders.map(order => order.id);
+      setSelectedOrderIds(new Set(currentPageOrderIds));
+    } else {
+      setSelectedOrderIds(new Set());
+    }
   };
 
-  const toggleSort = (field: 'created_at' | 'updated_at') => {
-    if (sortField === field) {
-      // Toggle direction if already sorting by this field
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+  const handleSelectOrder = (orderId: string, checked: boolean) => {
+    const newSelection = new Set(selectedOrderIds);
+    if (checked) {
+      newSelection.add(orderId);
     } else {
-      // Set new field and default to descending
-      setSortField(field);
-      setSortDirection('desc');
+      newSelection.delete(orderId);
     }
+    setSelectedOrderIds(newSelection);
+  };
+
+  const handleClearSelection = () => {
+    setSelectedOrderIds(new Set());
   };
 
   const handleRefresh = () => {
     console.log('OrderTable: Manual refresh triggered');
     // Trigger parent component refresh
     window.dispatchEvent(new CustomEvent('orderStatusChanged'));
+    setSelectedOrderIds(new Set()); // Clear selection on refresh
   };
 
   const handleFiltersChange = (filters: SearchFilters) => {
@@ -262,6 +285,12 @@ const OrderTable = ({
   const currentOrders = filteredOrders.slice(indexOfFirstOrder, indexOfLastOrder);
   const totalPages = Math.ceil(filteredOrders.length / rowsPerPage);
 
+  // Get selected orders for bulk operations
+  const selectedOrders = orders.filter(order => selectedOrderIds.has(order.id));
+  const isAllCurrentPageSelected = currentOrders.length > 0 && 
+    currentOrders.every(order => selectedOrderIds.has(order.id));
+  const isSomeCurrentPageSelected = currentOrders.some(order => selectedOrderIds.has(order.id));
+
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -286,20 +315,41 @@ const OrderTable = ({
         </div>
       </CardHeader>
       
+      {/* Bulk Operations Bar */}
+      <BulkOperationsBar
+        selectedOrders={selectedOrders}
+        onClearSelection={handleClearSelection}
+        onRefresh={handleRefresh}
+        users={mockUsers}
+      />
+      
       <div className="rounded-md border overflow-hidden">
         <Table>
           <colgroup>
-            <col className="w-[25%]" />
-            <col className="w-[15%]" />
-            <col className="w-[12%]" />
-            {isAdmin && <col className="w-[10%]" />}
-            <col className="w-[10%]" />
-            <col className="w-[15%]" />
-            <col className="w-[12%]" />
+            <col className="w-[50px]" />
+            <col className="w-[22%]" />
             <col className="w-[13%]" />
+            <col className="w-[10%]" />
+            {isAdmin && <col className="w-[8%]" />}
+            <col className="w-[8%]" />
+            <col className="w-[13%]" />
+            <col className="w-[10%]" />
+            <col className="w-[11%]" />
           </colgroup>
           <TableHeader>
             <TableRow>
+              <TableHead>
+                <Checkbox
+                  checked={isAllCurrentPageSelected}
+                  onCheckedChange={handleSelectAll}
+                  ref={(el) => {
+                    if (el) {
+                      el.indeterminate = isSomeCurrentPageSelected && !isAllCurrentPageSelected;
+                    }
+                  }}
+                  aria-label="Select all orders"
+                />
+              </TableHead>
               <TableHead>Company</TableHead>
               <TableHead>Assigned To</TableHead>
               <TableHead 
@@ -344,6 +394,8 @@ const OrderTable = ({
                 assigneeName={order.assigned_to_name || "Unassigned"}
                 hideActions={!isAdmin}
                 hidePriority={!isAdmin}
+                isSelected={selectedOrderIds.has(order.id)}
+                onSelect={(checked) => handleSelectOrder(order.id, checked)}
               />
             ))}
           </TableBody>
