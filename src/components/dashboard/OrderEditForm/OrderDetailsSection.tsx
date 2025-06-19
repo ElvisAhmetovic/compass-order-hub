@@ -1,5 +1,5 @@
+
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
@@ -86,7 +86,6 @@ const OrderDetailsSection = ({
     contact_email: data.contact_email || order.contact_email || "",
     contact_phone: data.contact_phone || order.contact_phone || "",
     company_link: data.company_link || order.company_link || "",
-    description: data.description !== undefined ? data.description : (order.description || ""),
     price: data.price !== undefined ? data.price : (order.price || 0),
     currency: data.currency || order.currency || "EUR",
     priority: data.priority || order.priority || "medium",
@@ -238,21 +237,6 @@ const OrderDetailsSection = ({
           <Badge className={`${getPriorityColor(order.priority || "medium")} font-medium`}>
             {formatPriorityDisplay(order.priority || "medium")}
           </Badge>
-        )}
-      </div>
-      
-      <div>
-        <Label className="text-sm font-medium text-muted-foreground">Description</Label>
-        {isEditing ? (
-          <Textarea
-            value={safeData.description}
-            onChange={(e) => onChange('description', e.target.value)}
-            placeholder="Order description"
-            className="mt-1"
-            rows={3}
-          />
-        ) : (
-          <p className="text-sm">{order.description || "No description provided"}</p>
         )}
       </div>
       

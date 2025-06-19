@@ -107,30 +107,32 @@ const OrderActions = ({ order, onOrderView, onRefresh }: OrderActionsProps) => {
         }
       }
 
-      // Parse inventory items from order if they exist
+      // Parse inventory items from order if they exist and create line items from them
       let lineItems = [];
       
       if (orderData.inventory_items) {
         try {
           const inventoryItems: SelectedInventoryItem[] = JSON.parse(orderData.inventory_items);
-          lineItems = inventoryItems.map(item => ({
-            item_description: item.name || 'Inventory Item', // Use inventory item name
-            quantity: item.quantity,
-            unit_price: item.unitPrice,
-            unit: item.unit,
-            vat_rate: 0.19,
-            discount_rate: 0
-          }));
+          if (inventoryItems.length > 0) {
+            lineItems = inventoryItems.map(item => ({
+              item_description: item.name, // Use the inventory item name
+              quantity: item.quantity,
+              unit_price: item.unitPrice,
+              unit: item.unit,
+              vat_rate: 0.19,
+              discount_rate: 0
+            }));
+          }
         } catch (error) {
           console.error("Error parsing inventory items:", error);
         }
       }
 
-      // If no inventory items, use a generic service description (NOT the order description)
+      // If no inventory items exist, create a generic service line item
       if (lineItems.length === 0) {
         lineItems = [
           {
-            item_description: 'Service provided', // Generic description for services
+            item_description: 'Service provided',
             quantity: 1,
             unit_price: orderData.price || 0,
             unit: 'pcs',

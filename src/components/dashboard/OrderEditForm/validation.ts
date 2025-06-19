@@ -1,18 +1,18 @@
 
-import { OrderPriority } from "@/types";
+import { z } from "zod";
 
-export interface OrderFormData {
-  company_name: string;
-  company_address: string;
-  contact_email: string;
-  contact_phone: string;
-  company_link: string;
-  description: string;
-  price: number;
-  currency: string;
-  priority: OrderPriority;
-  assigned_to?: string;
-}
+export const orderSchema = z.object({
+  company_name: z.string().min(1, "Company name is required"),
+  company_address: z.string().optional(),
+  contact_email: z.string().email("Invalid email format").optional().or(z.literal("")),
+  contact_phone: z.string().optional(),
+  company_link: z.string().url("Invalid URL format").optional().or(z.literal("")),
+  price: z.number().min(0, "Price must be positive"),
+  currency: z.string().min(1, "Currency is required"),
+  priority: z.enum(["low", "medium", "high", "urgent"]),
+});
+
+export type OrderFormData = z.infer<typeof orderSchema>;
 
 export interface ValidationErrors {
   company_name?: string;
@@ -20,44 +20,23 @@ export interface ValidationErrors {
   contact_email?: string;
   contact_phone?: string;
   company_link?: string;
-  description?: string;
   price?: string;
   currency?: string;
   priority?: string;
-  assigned_to?: string;
 }
 
-export const validateOrderForm = (data: OrderFormData): ValidationErrors => {
+export const validateOrderForm = (data: Partial<OrderFormData>): ValidationErrors => {
   const errors: ValidationErrors = {};
 
-  // Company name is required
-  if (!data.company_name?.trim()) {
-    errors.company_name = "Company name is required";
-  }
-
-  // Email validation (if provided)
-  if (data.contact_email?.trim()) {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(data.contact_email)) {
-      errors.contact_email = "Please enter a valid email address";
+  try {
+    orderSchema.parse(data);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      error.errors.forEach((err) => {
+        const field = err.path[0] as keyof ValidationErrors;
+        errors[field] = err.message;
+      });
     }
-  }
-
-  // Price validation
-  if (data.price !== undefined && data.price < 0) {
-    errors.price = "Price cannot be negative";
-  }
-
-  // Currency validation
-  const validCurrencies = ['EUR', 'USD', 'CHF', 'GBP'];
-  if (data.currency && !validCurrencies.includes(data.currency)) {
-    errors.currency = "Please select a valid currency";
-  }
-
-  // Priority validation
-  const validPriorities: OrderPriority[] = ['low', 'medium', 'high', 'urgent'];
-  if (data.priority && !validPriorities.includes(data.priority)) {
-    errors.priority = "Please select a valid priority";
   }
 
   return errors;
