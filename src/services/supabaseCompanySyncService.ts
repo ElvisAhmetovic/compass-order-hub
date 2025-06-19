@@ -106,6 +106,75 @@ export class SupabaseCompanySyncService {
     }
   }
 
+  // New method to update existing companies with fresh order data
+  static async updateExistingCompanies(): Promise<void> {
+    console.log("Starting update of existing companies with order data...");
+    
+    try {
+      // Get all orders and existing companies
+      const [orders, existingCompanies] = await Promise.all([
+        this.getOrdersFromDatabase(),
+        this.getExistingCompanies()
+      ]);
+
+      console.log(`Found ${orders?.length || 0} orders and ${existingCompanies.length} companies to process`);
+
+      let updatedCount = 0;
+
+      // Process each company and find its most recent order data
+      for (const company of existingCompanies) {
+        // Find the most recent order for this company (by name match)
+        const companyOrders = orders?.filter(order => 
+          order.company_name && 
+          order.company_name.toLowerCase().trim() === company.name.toLowerCase().trim()
+        ) || [];
+
+        if (companyOrders.length > 0) {
+          // Get the most recent order
+          const mostRecentOrder = companyOrders.sort((a, b) => 
+            new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime()
+          )[0];
+
+          // Prepare updated company data
+          const updatedData = {
+            email: mostRecentOrder.contact_email || company.email,
+            phone: mostRecentOrder.contact_phone || company.phone,
+            address: mostRecentOrder.company_address || company.address,
+            contact_person: mostRecentOrder.contact_name || company.contact_person,
+            map_link: mostRecentOrder.company_link || company.map_link || ""
+          };
+
+          // Check if any data has changed
+          const hasChanges = 
+            updatedData.email !== company.email ||
+            updatedData.phone !== company.phone ||
+            updatedData.address !== company.address ||
+            updatedData.contact_person !== company.contact_person ||
+            updatedData.map_link !== company.map_link;
+
+          if (hasChanges) {
+            try {
+              await CompanyService.updateCompany(company.id, updatedData);
+              console.log(`✅ Updated company: ${company.name}`);
+              updatedCount++;
+            } catch (error) {
+              console.error(`❌ Failed to update company ${company.name}:`, error);
+            }
+          } else {
+            console.log(`⏭️ No changes needed for company: ${company.name}`);
+          }
+        } else {
+          console.log(`⚠️ No orders found for company: ${company.name}`);
+        }
+      }
+
+      console.log(`✅ Company update completed. Updated ${updatedCount} companies.`);
+    } catch (error) {
+      console.error("❌ Company update failed:", error);
+      throw error;
+    }
+  }
+
   // Original method for syncing with clients (kept for backward compatibility)
   private static async syncCompaniesWithClients(existingClients: any[], existingCompanies: Company[]): Promise<void> {
     console.log("Syncing companies with existing clients...");
@@ -161,6 +230,22 @@ export class SupabaseCompanySyncService {
       return data || [];
     } catch (error) {
       console.error("Error fetching existing clients:", error);
+      return [];
+    }
+  }
+
+  // Helper method to get orders from database
+  private static async getOrdersFromDatabase(): Promise<Order[]> {
+    try {
+      const { data: orders, error } = await supabase
+        .from('orders')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return orders || [];
+    } catch (error) {
+      console.error("Error fetching orders:", error);
       return [];
     }
   }

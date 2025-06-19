@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Layout from "@/components/layout/Layout";
 import { useAuth } from "@/context/AuthContext";
@@ -28,6 +27,7 @@ const Companies = () => {
   const [isMigrating, setIsMigrating] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isRemovingDuplicates, setIsRemovingDuplicates] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [currentCompany, setCurrentCompany] = useState<Company | null>(null);
@@ -161,7 +161,33 @@ const Companies = () => {
       setIsRemovingDuplicates(false);
     }
   };
-  
+
+  // New method to handle updating existing companies
+  const handleUpdateCompanies = async () => {
+    setIsUpdating(true);
+    try {
+      console.log("Starting company update with latest order data...");
+      await SupabaseCompanySyncService.updateExistingCompanies();
+      
+      // Reload data after update
+      await loadCompaniesAndStats();
+      
+      toast({
+        title: "Companies updated",
+        description: "Successfully updated companies with latest order information."
+      });
+    } catch (error) {
+      console.error("Company update failed:", error);
+      toast({
+        variant: "destructive",
+        title: "Update failed",
+        description: "There was an error updating companies with order data."
+      });
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   useEffect(() => {
     loadCompaniesAndStats();
   }, []);
@@ -300,6 +326,14 @@ const Companies = () => {
                     className="flex items-center gap-2"
                   >
                     {isSyncing ? "🔄 Syncing..." : "🔄 Enhanced Sync (Orders + Clients)"}
+                  </Button>
+                  <Button 
+                    onClick={handleUpdateCompanies}
+                    disabled={isUpdating}
+                    variant="outline"
+                    className="flex items-center gap-2"
+                  >
+                    {isUpdating ? "🔄 Updating..." : "🔄 Update Companies"}
                   </Button>
                   <Button 
                     onClick={handleRemoveDuplicates}
