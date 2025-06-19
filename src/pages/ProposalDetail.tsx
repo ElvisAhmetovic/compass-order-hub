@@ -74,17 +74,17 @@ interface ProposalData {
   paymentTerms: string;
   termsAndConditions: string;
   
-  // Payment data
-  accountNumber: string;
-  accountName: string;
-  paymentMethod: string;
+  // Payment data - updated fields
+  iban: string;
+  bic: string;
+  blzKonto: string;
   
   // Footer and company info
   footerContent: string;
   logo?: string;
   logoSize?: number;
   signatureUrl?: string;
-  includePaymentData: boolean; // New property for payment data toggle
+  includePaymentData: boolean;
   
   // Line items
   lineItems: ProposalLineItem[];
@@ -145,15 +145,15 @@ const ProposalDetail = () => {
     paymentTerms: "By placing your order you agree to pay for the services included in this offer within 7 days of receipt of the invoice.",
     termsAndConditions: "",
     
-    // Payment data
-    accountNumber: "",
-    accountName: "",
-    paymentMethod: "CREDIT CARD",
+    // Payment data - updated with new fields
+    iban: "BE79967023897833",
+    bic: "TRWIBEB1XXX",
+    blzKonto: "967 KONTO: 967023897833",
     
     // Footer and company info
     footerContent: "",
     logoSize: 33,
-    includePaymentData: true, // Default to including payment data
+    includePaymentData: true,
     
     // Line items
     lineItems: [],
@@ -1105,7 +1105,7 @@ const ProposalDetail = () => {
                 </CardContent>
               </Card>
 
-              {/* Payment Data */}
+              {/* Payment Data - Updated Section */}
               <Card className="lg:col-span-2">
                 <CardHeader>
                   <CardTitle>Payment Data</CardTitle>
@@ -1113,41 +1113,33 @@ const ProposalDetail = () => {
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                      <Label htmlFor="accountNumber">Account Number</Label>
+                      <Label htmlFor="iban">IBAN</Label>
                       <Input
-                        id="accountNumber"
-                        value={proposalData.accountNumber}
-                        onChange={(e) => setProposalData(prev => ({ ...prev, accountNumber: e.target.value }))}
-                        placeholder="9670238783"
+                        id="iban"
+                        value={proposalData.iban}
+                        onChange={(e) => setProposalData(prev => ({ ...prev, iban: e.target.value }))}
+                        placeholder="BE79967023897833"
                       />
                     </div>
                     
                     <div>
-                      <Label htmlFor="accountName">Account Name</Label>
+                      <Label htmlFor="bic">BIC</Label>
                       <Input
-                        id="accountName"
-                        value={proposalData.accountName}
-                        onChange={(e) => setProposalData(prev => ({ ...prev, accountName: e.target.value }))}
-                        placeholder="COMPANY NAME"
+                        id="bic"
+                        value={proposalData.bic}
+                        onChange={(e) => setProposalData(prev => ({ ...prev, bic: e.target.value }))}
+                        placeholder="TRWIBEB1XXX"
                       />
                     </div>
                     
                     <div>
-                      <Label htmlFor="paymentMethod">Payment Method</Label>
-                      <Select 
-                        value={proposalData.paymentMethod} 
-                        onValueChange={(value) => setProposalData(prev => ({ ...prev, paymentMethod: value }))}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="CREDIT CARD">CREDIT CARD</SelectItem>
-                          <SelectItem value="BANK TRANSFER">BANK TRANSFER</SelectItem>
-                          <SelectItem value="PAYPAL">PAYPAL</SelectItem>
-                          <SelectItem value="CASH">CASH</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <Label htmlFor="blzKonto">BLZ KONTO</Label>
+                      <Input
+                        id="blzKonto"
+                        value={proposalData.blzKonto}
+                        onChange={(e) => setProposalData(prev => ({ ...prev, blzKonto: e.target.value }))}
+                        placeholder="967 KONTO: 967023897833"
+                      />
                     </div>
                   </div>
                 </CardContent>
