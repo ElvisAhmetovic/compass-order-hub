@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from "react";
 import {
   Table,
@@ -62,6 +63,21 @@ const OrderTable = ({
     { id: 'user2', name: 'Jane Smith' },
     { id: 'user3', name: 'Mike Johnson' }
   ];
+
+  // Sorting toggle function
+  const toggleSort = (field: 'created_at' | 'updated_at') => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('desc');
+    }
+  };
+
+  // Page change handler
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
 
   // Fetch orders with better error handling
   const fetchOrders = useCallback(async () => {
@@ -342,11 +358,6 @@ const OrderTable = ({
                 <Checkbox
                   checked={isAllCurrentPageSelected}
                   onCheckedChange={handleSelectAll}
-                  ref={(el) => {
-                    if (el) {
-                      el.indeterminate = isSomeCurrentPageSelected && !isAllCurrentPageSelected;
-                    }
-                  }}
                   aria-label="Select all orders"
                 />
               </TableHead>

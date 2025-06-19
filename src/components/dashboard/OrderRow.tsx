@@ -141,7 +141,7 @@ const OrderRow = ({
       </TableCell>
       
       <TableCell>
-        <MultiStatusBadges order={order} />
+        <MultiStatusBadges order={order} onRefresh={onRefresh} />
       </TableCell>
       
       <TableCell className="text-sm text-muted-foreground">
