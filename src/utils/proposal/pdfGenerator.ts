@@ -400,10 +400,10 @@ const createSecondPageContent = (proposalData: any, language: string = "en") => 
   const fontFamily = getLanguageFont(language);
   const textDirection = getTextDirection(language);
 
-  // Payment data (only if enabled)
-  const paymentAccountNumber = proposalData.accountNumber || companyInfo.accountNumber || '12345678901234567';
-  const paymentAccountName = proposalData.accountName || companyInfo.accountHolder || 'YOUR NAME';
-  const paymentMethodValue = proposalData.paymentMethod || companyInfo.paymentMethod || 'CREDIT CARD';
+  // Payment data (only if enabled) - UPDATED TO USE NEW FIELD NAMES
+  const paymentIban = proposalData.iban || companyInfo.iban || 'BE79967023897833';
+  const paymentBic = proposalData.bic || companyInfo.bic || 'TRWIBEB1XXX';
+  const paymentBlzKonto = proposalData.blzKonto || companyInfo.blzKonto || '967 KONTO: 967023897833';
 
   return `
     <style>
@@ -477,13 +477,13 @@ const createSecondPageContent = (proposalData: any, language: string = "en") => 
         </div>
         <div style="color: #2d6b4f;">
           <div style="margin-bottom: 8px;">
-            <strong>${t.accountNumber || 'Account Nr'}:</strong> ${paymentAccountNumber}
+            <strong>IBAN:</strong> ${paymentIban}
           </div>
           <div style="margin-bottom: 8px;">
-            <strong>${t.accountName || 'Name'}:</strong> ${paymentAccountName}
+            <strong>BIC:</strong> ${paymentBic}
           </div>
           <div>
-            <strong>${t.paymentMethod || 'Payment Method'}:</strong> ${paymentMethodValue}
+            <strong>BLZ KONTO:</strong> ${paymentBlzKonto}
           </div>
         </div>
       </div>
