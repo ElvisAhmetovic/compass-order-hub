@@ -33,6 +33,8 @@ const InventoryItemsSelector: React.FC<InventoryItemsSelectorProps> = ({
   const [searchValue, setSearchValue] = useState('');
 
   const handleAddItem = (inventoryItem: any) => {
+    console.log('Adding inventory item:', inventoryItem);
+    
     // Parse price to get numeric value
     const priceStr = inventoryItem.price || 'EUR0.00';
     const numericPrice = parseFloat(priceStr.replace(/[^0-9.-]/g, '')) || 0;
@@ -85,6 +87,12 @@ const InventoryItemsSelector: React.FC<InventoryItemsSelectorProps> = ({
     return selectedItems.reduce((sum, item) => sum + item.total, 0);
   };
 
+  // Handle direct item selection from search results
+  const handleDirectItemSelect = (item: any) => {
+    console.log('Direct item selection:', item);
+    handleAddItem(item);
+  };
+
   if (loading) {
     return (
       <Card className={className}>
@@ -110,13 +118,45 @@ const InventoryItemsSelector: React.FC<InventoryItemsSelectorProps> = ({
         {/* Search and Add Items */}
         <div>
           <Label className="text-xs text-muted-foreground">Search Products/Services</Label>
-          <InventoryAutocomplete
-            value={searchValue}
-            onChange={setSearchValue}
-            onSelect={handleAddItem}
-            inventoryItems={inventoryData}
-            placeholder="Type to search and add items..."
-          />
+          <div className="mt-1">
+            <InventoryAutocomplete
+              value={searchValue}
+              onChange={setSearchValue}
+              onSelect={handleDirectItemSelect}
+              inventoryItems={inventoryData}
+              placeholder="Type to search and add items..."
+            />
+          </div>
+          
+          {/* Alternative: Show clickable items when searching */}
+          {searchValue && inventoryData && inventoryData.length > 0 && (
+            <div className="mt-2 max-h-32 overflow-y-auto border rounded-md">
+              {inventoryData
+                .filter(item => 
+                  item.name.toLowerCase().includes(searchValue.toLowerCase()) ||
+                  item.description?.toLowerCase().includes(searchValue.toLowerCase())
+                )
+                .slice(0, 5)
+                .map((item) => (
+                  <div
+                    key={item.id}
+                    className="p-2 hover:bg-muted cursor-pointer border-b last:border-b-0"
+                    onClick={() => handleDirectItemSelect(item)}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium">{item.name}</p>
+                        <p className="text-xs text-muted-foreground">{item.description}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-medium">{item.price}</p>
+                        <p className="text-xs text-muted-foreground">{item.unit}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          )}
         </div>
 
         {/* Selected Items List */}
