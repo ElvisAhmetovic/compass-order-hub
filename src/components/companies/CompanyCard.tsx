@@ -10,7 +10,7 @@ interface CompanyCardProps {
   company: Company;
   companyKey: string;
   isAdmin: boolean;
-  onEditClick: (companyKey: string, company: Company) => void;
+  onEditClick: () => void;
   getGoogleMapsLink: (address: string, customLink?: string) => string;
 }
 
@@ -34,7 +34,7 @@ const CompanyCard: React.FC<CompanyCardProps> = ({
             <Button 
               variant="ghost" 
               size="sm"
-              onClick={() => onEditClick(companyKey, company)}
+              onClick={onEditClick}
             >
               <Pencil className="h-4 w-4" />
             </Button>
@@ -62,7 +62,7 @@ const CompanyCard: React.FC<CompanyCardProps> = ({
           <div className="flex items-center space-x-2">
             <Link className="h-4 w-4 text-muted-foreground" />
             <a 
-              href={getGoogleMapsLink(company.address || "", company.mapLink)} 
+              href={getGoogleMapsLink(company.address || "", company.map_link)} 
               target="_blank" 
               rel="noopener noreferrer"
               className="text-primary hover:underline"
@@ -75,7 +75,7 @@ const CompanyCard: React.FC<CompanyCardProps> = ({
         <Separator className="my-4" />
         
         <div className="text-sm text-muted-foreground">
-          Total orders: {company.orders.length}
+          Total orders: {company.orders?.length || 0}
         </div>
       </div>
     </Card>

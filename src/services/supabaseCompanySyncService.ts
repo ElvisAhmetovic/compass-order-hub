@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { Company, Order } from "@/types";
 import { CompanyService } from "./companyService";
@@ -20,12 +21,16 @@ export class SupabaseCompanySyncService {
       }
 
       console.log(`Found ${orders?.length || 0} orders to process`);
+      console.log("Sample order data:", orders?.[0]);
 
       // Step 2: Get existing companies and clients
       const [existingCompanies, existingClients] = await Promise.all([
         this.getExistingCompanies(),
         this.getExistingClients()
       ]);
+
+      console.log(`Found ${existingCompanies.length} existing companies`);
+      console.log(`Found ${existingClients.length} existing clients`);
 
       // Step 3: Process orders and create missing companies
       await this.syncCompaniesFromOrders(orders || [], existingCompanies);
@@ -61,16 +66,22 @@ export class SupabaseCompanySyncService {
       }
     });
 
+    console.log(`Found ${companiesToCreate.size} unique companies in orders`);
+    console.log("Companies to potentially create:", Array.from(companiesToCreate));
+
     // Filter out companies that already exist
     const existingCompanyNames = new Set(
       existingCompanies.map(company => company.name.toLowerCase().trim())
     );
+
+    console.log("Existing company names:", Array.from(existingCompanyNames));
 
     const newCompaniesToCreate = Array.from(companiesToCreate).filter(
       companyKey => !existingCompanyNames.has(companyKey)
     );
 
     console.log(`Creating ${newCompaniesToCreate.length} new companies from orders`);
+    console.log("New companies to create:", newCompaniesToCreate);
 
     // Create companies from order data
     for (const companyKey of newCompaniesToCreate) {
@@ -86,6 +97,7 @@ export class SupabaseCompanySyncService {
             map_link: orderData.company_link || ""
           };
 
+          console.log("Creating company with data:", companyData);
           await CompanyService.createCompany(companyData);
           console.log(`Created company from order: ${orderData.company_name}`);
         } catch (error) {
