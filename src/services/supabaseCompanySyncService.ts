@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { Company, Order } from "@/types";
 import { CompanyService } from "./companyService";
@@ -69,7 +68,7 @@ export class SupabaseCompanySyncService {
     console.log(`Found ${companiesToCreate.size} unique companies in orders`);
     console.log("Companies to potentially create:", Array.from(companiesToCreate));
 
-    // Filter out companies that already exist
+    // Filter out companies that already exist (improved matching)
     const existingCompanyNames = new Set(
       existingCompanies.map(company => company.name.toLowerCase().trim())
     );
@@ -199,6 +198,53 @@ export class SupabaseCompanySyncService {
       }
     } catch (error) {
       console.error(`Failed to sync company for order ${order.id}:`, error);
+    }
+  }
+
+  // Method to remove duplicate companies
+  static async removeDuplicateCompanies(): Promise<void> {
+    console.log("Starting duplicate company removal...");
+    
+    try {
+      const companies = await this.getExistingCompanies();
+      const companyGroups = new Map<string, Company[]>();
+      
+      // Group companies by normalized name
+      companies.forEach(company => {
+        const normalizedName = company.name.toLowerCase().trim();
+        if (!companyGroups.has(normalizedName)) {
+          companyGroups.set(normalizedName, []);
+        }
+        companyGroups.get(normalizedName)!.push(company);
+      });
+      
+      // Remove duplicates (keep the newest one)
+      for (const [name, groupedCompanies] of companyGroups) {
+        if (groupedCompanies.length > 1) {
+          // Sort by created_at descending and keep the first (newest)
+          groupedCompanies.sort((a, b) => 
+            new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime()
+          );
+          
+          const [keepCompany, ...duplicates] = groupedCompanies;
+          console.log(`Found ${duplicates.length} duplicates for "${name}", keeping:`, keepCompany.id);
+          
+          // Delete the duplicates
+          for (const duplicate of duplicates) {
+            try {
+              await CompanyService.deleteCompany(duplicate.id);
+              console.log(`Deleted duplicate company: ${duplicate.name} (${duplicate.id})`);
+            } catch (error) {
+              console.error(`Failed to delete duplicate company ${duplicate.id}:`, error);
+            }
+          }
+        }
+      }
+      
+      console.log("Duplicate removal completed");
+    } catch (error) {
+      console.error("Duplicate removal failed:", error);
+      throw error;
     }
   }
 }

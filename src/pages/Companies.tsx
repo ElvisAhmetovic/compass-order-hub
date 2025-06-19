@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import Layout from "@/components/layout/Layout";
 import { useAuth } from "@/context/AuthContext";
 import Sidebar from "@/components/dashboard/Sidebar";
-import { Plus } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { Company } from "@/types";
@@ -27,6 +27,7 @@ const Companies = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isMigrating, setIsMigrating] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isRemovingDuplicates, setIsRemovingDuplicates] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [currentCompany, setCurrentCompany] = useState<Company | null>(null);
@@ -134,6 +135,32 @@ const Companies = () => {
       setIsMigrating(false);
     }
   };
+
+  // Handle removing duplicate companies
+  const handleRemoveDuplicates = async () => {
+    setIsRemovingDuplicates(true);
+    try {
+      console.log("Starting duplicate removal...");
+      await SupabaseCompanySyncService.removeDuplicateCompanies();
+      
+      // Reload companies after removal
+      await loadCompaniesAndStats();
+      
+      toast({
+        title: "Duplicates removed",
+        description: "Successfully removed duplicate companies."
+      });
+    } catch (error) {
+      console.error("Duplicate removal failed:", error);
+      toast({
+        variant: "destructive",
+        title: "Removal failed",
+        description: "There was an error removing duplicate companies."
+      });
+    } finally {
+      setIsRemovingDuplicates(false);
+    }
+  };
   
   useEffect(() => {
     loadCompaniesAndStats();
@@ -148,6 +175,31 @@ const Companies = () => {
   const handleEditClick = (company: Company) => {
     setCurrentCompany({...company});
     setEditDialogOpen(true);
+  };
+
+  const handleDeleteClick = async (company: Company) => {
+    if (!confirm(`Are you sure you want to delete ${company.name}?`)) {
+      return;
+    }
+
+    try {
+      await CompanyService.deleteCompany(company.id);
+      
+      toast({
+        title: "Company deleted",
+        description: `${company.name} has been deleted successfully.`
+      });
+      
+      // Reload companies to reflect changes
+      loadCompaniesAndStats();
+    } catch (error) {
+      console.error("Error deleting company:", error);
+      toast({
+        variant: "destructive",
+        title: "Delete failed",
+        description: "There was an error deleting the company."
+      });
+    }
   };
 
   const handleSaveEdit = async () => {
@@ -250,6 +302,15 @@ const Companies = () => {
                     {isSyncing ? "🔄 Syncing..." : "🔄 Enhanced Sync (Orders + Clients)"}
                   </Button>
                   <Button 
+                    onClick={handleRemoveDuplicates}
+                    disabled={isRemovingDuplicates}
+                    variant="outline"
+                    className="flex items-center gap-2"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    {isRemovingDuplicates ? "Removing..." : "Remove Duplicates"}
+                  </Button>
+                  <Button 
                     onClick={() => setCreateDialogOpen(true)} 
                     className="flex items-center gap-2"
                   >
@@ -284,6 +345,7 @@ const Companies = () => {
                     companyKey={company.id}
                     isAdmin={isAdmin}
                     onEditClick={() => handleEditClick(company)}
+                    onDeleteClick={() => handleDeleteClick(company)}
                     getGoogleMapsLink={getGoogleMapsLink}
                   />
                 ))}

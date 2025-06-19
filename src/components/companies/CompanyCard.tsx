@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Card } from "@/components/ui/card";
-import { Building2, Mail, MapPin, Phone, Link, Pencil } from "lucide-react";
+import { Building2, Mail, MapPin, Phone, Link, Pencil, Trash2 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { Company } from "@/types";
@@ -11,6 +11,7 @@ interface CompanyCardProps {
   companyKey: string;
   isAdmin: boolean;
   onEditClick: () => void;
+  onDeleteClick: () => void;
   getGoogleMapsLink: (address: string, customLink?: string) => string;
 }
 
@@ -19,6 +20,7 @@ const CompanyCard: React.FC<CompanyCardProps> = ({
   companyKey,
   isAdmin,
   onEditClick,
+  onDeleteClick,
   getGoogleMapsLink,
 }) => {
   return (
@@ -31,13 +33,23 @@ const CompanyCard: React.FC<CompanyCardProps> = ({
           </div>
           
           {isAdmin && (
-            <Button 
-              variant="ghost" 
-              size="sm"
-              onClick={onEditClick}
-            >
-              <Pencil className="h-4 w-4" />
-            </Button>
+            <div className="flex gap-1">
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={onEditClick}
+              >
+                <Pencil className="h-4 w-4" />
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={onDeleteClick}
+                className="text-destructive hover:text-destructive"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
           )}
         </div>
         
