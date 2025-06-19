@@ -14,6 +14,7 @@ import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { MigrationService } from "@/services/migrationService";
 import { toast } from "@/hooks/use-toast";
+import TeamEncouragement from "@/components/dashboard/TeamEncouragement";
 
 const Dashboard = () => {
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -180,6 +181,11 @@ const Dashboard = () => {
               }
               onCreateOrder={isAdmin ? () => setCreateModalOpen(true) : undefined}
             />
+            
+            {/* Team Encouragement Messages - Only on dashboard home */}
+            {isDashboardHome && (
+              <TeamEncouragement />
+            )}
             
             {/* Migration button for admins if localStorage data exists */}
             {isAdmin && showMigrationButton && (

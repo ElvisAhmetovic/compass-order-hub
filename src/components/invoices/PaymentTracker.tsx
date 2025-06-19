@@ -7,23 +7,27 @@ import { useToast } from "@/hooks/use-toast";
 import { PaymentService, PaymentLink } from "@/services/paymentService";
 import { InvoiceService } from "@/services/invoiceService";
 import { formatCurrency } from "@/utils/currencyUtils";
-import { CreditCard, AlertCircle, RefreshCw } from "lucide-react";
+import { CreditCard, AlertCircle, RefreshCw, Plus } from "lucide-react";
+import PaymentGatewaySelector, { PaymentGateway } from "@/components/payments/PaymentGatewaySelector";
 
 interface PaymentTrackerProps {
   invoiceId: string;
   currency: string;
+  amount?: number;
   onPaymentStatusChange?: (status: string) => void;
 }
 
 const PaymentTracker: React.FC<PaymentTrackerProps> = ({
   invoiceId,
   currency,
+  amount = 0,
   onPaymentStatusChange
 }) => {
   const [paymentLinks, setPaymentLinks] = useState<PaymentLink[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  const [showGatewaySelector, setShowGatewaySelector] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -58,22 +62,23 @@ const PaymentTracker: React.FC<PaymentTrackerProps> = ({
     }
   };
 
-  const handleCreatePaymentLink = async (method: string = 'stripe') => {
+  const handlePaymentGatewaySelect = async (gateway: PaymentGateway) => {
     setCreating(true);
     try {
-      const paymentLink = await PaymentService.createPaymentLink(invoiceId, method);
+      const paymentLink = await PaymentService.createPaymentLink(invoiceId, gateway.type);
       
       toast({
         title: "Payment link created",
-        description: "Payment link has been generated successfully.",
+        description: `${gateway.name} payment link has been generated successfully.`,
       });
 
       setPaymentLinks([paymentLink, ...paymentLinks]);
+      setShowGatewaySelector(false);
     } catch (error) {
       console.error("Error creating payment link:", error);
       toast({
         title: "Payment Service Unavailable",
-        description: "Payment link creation is not available at the moment.",
+        description: `${gateway.name} payment link creation is not available at the moment.`,
         variant: "destructive"
       });
     } finally {
@@ -129,53 +134,64 @@ const PaymentTracker: React.FC<PaymentTrackerProps> = ({
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex justify-between items-center">
-          <CardTitle className="flex items-center gap-2">
-            <CreditCard className="h-5 w-5" />
-            Payment Tracking
-          </CardTitle>
-          <Button
-            onClick={() => handleCreatePaymentLink('stripe')}
-            disabled={creating}
-            size="sm"
-            variant="outline"
-          >
-            {creating ? "Creating..." : "Create Payment Link"}
-          </Button>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        {paymentLinks.length > 0 ? (
-          paymentLinks.map((link) => (
-            <div key={link.id} className="p-3 border rounded-md">
-              <div className="flex items-center justify-between mb-2">
-                <span className="font-medium">{link.payment_method.toUpperCase()}</span>
-                <Badge variant={
-                  link.status === 'paid' ? 'default' :
-                  link.status === 'active' ? 'secondary' :
-                  'destructive'
-                }>
-                  {link.status.toUpperCase()}
-                </Badge>
-              </div>
-              <div className="text-sm text-muted-foreground">
-                Amount: {formatCurrency(link.amount, link.currency)}
-              </div>
-              <div className="text-sm text-muted-foreground">
-                Created: {new Date(link.created_at).toLocaleDateString()}
-              </div>
-            </div>
-          ))
-        ) : (
-          <div className="text-center py-4 text-muted-foreground">
-            <p className="text-sm">No payment links created yet</p>
-            <p className="text-xs mt-1">Create a payment link to enable online payments</p>
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <div className="flex justify-between items-center">
+            <CardTitle className="flex items-center gap-2">
+              <CreditCard className="h-5 w-5" />
+              Payment Tracking
+            </CardTitle>
+            <Button
+              onClick={() => setShowGatewaySelector(!showGatewaySelector)}
+              disabled={creating}
+              size="sm"
+              variant="outline"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              {creating ? "Creating..." : "New Payment Link"}
+            </Button>
           </div>
-        )}
-      </CardContent>
-    </Card>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {paymentLinks.length > 0 ? (
+            paymentLinks.map((link) => (
+              <div key={link.id} className="p-3 border rounded-md">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-medium">{link.payment_method.toUpperCase()}</span>
+                  <Badge variant={
+                    link.status === 'paid' ? 'default' :
+                    link.status === 'active' ? 'secondary' :
+                    'destructive'
+                  }>
+                    {link.status.toUpperCase()}
+                  </Badge>
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  Amount: {formatCurrency(link.amount, link.currency)}
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  Created: {new Date(link.created_at).toLocaleDateString()}
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="text-center py-4 text-muted-foreground">
+              <p className="text-sm">No payment links created yet</p>
+              <p className="text-xs mt-1">Create a payment link to enable online payments</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {showGatewaySelector && (
+        <PaymentGatewaySelector
+          amount={amount}
+          currency={currency}
+          onPaymentSelect={handlePaymentGatewaySelect}
+        />
+      )}
+    </div>
   );
 };
 

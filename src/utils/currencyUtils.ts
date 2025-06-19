@@ -23,8 +23,8 @@ export const formatCurrency = (amount: number, currencyCode: string = 'EUR'): st
   return `${symbol}${amount.toFixed(2)}`;
 };
 
-// Mock exchange rates - in a real app, you'd fetch these from an API
-const EXCHANGE_RATES: { [key: string]: number } = {
+// Enhanced exchange rates with fallback
+let cachedRates: { [key: string]: number } = {
   'EUR': 1,
   'USD': 1.09,
   'GBP': 0.87,
@@ -37,15 +37,39 @@ const EXCHANGE_RATES: { [key: string]: number } = {
   'DKK': 7.46,
 };
 
+// Fetch live exchange rates (you can integrate with a real API later)
+export const fetchExchangeRates = async (): Promise<{ [key: string]: number }> => {
+  try {
+    // For now, return cached rates. In production, you'd call a real API like:
+    // const response = await fetch('https://api.exchangerate-api.com/v4/latest/EUR');
+    // const data = await response.json();
+    // return data.rates;
+    
+    console.log('Using cached exchange rates. Consider integrating with a live API.');
+    return cachedRates;
+  } catch (error) {
+    console.error('Failed to fetch exchange rates:', error);
+    return cachedRates;
+  }
+};
+
+export const updateExchangeRates = async () => {
+  const rates = await fetchExchangeRates();
+  cachedRates = { ...cachedRates, ...rates };
+  return cachedRates;
+};
+
 export const convertCurrency = (amount: number, fromCurrency: string, toCurrency: string): number => {
   if (fromCurrency === toCurrency) return amount;
   
   // Convert to EUR first, then to target currency
-  const eurAmount = amount / EXCHANGE_RATES[fromCurrency];
-  return eurAmount * EXCHANGE_RATES[toCurrency];
+  const eurAmount = amount / cachedRates[fromCurrency];
+  return eurAmount * cachedRates[toCurrency];
 };
 
 export const getExchangeRate = (fromCurrency: string, toCurrency: string): number => {
   if (fromCurrency === toCurrency) return 1;
-  return EXCHANGE_RATES[toCurrency] / EXCHANGE_RATES[fromCurrency];
+  return cachedRates[toCurrency] / cachedRates[fromCurrency];
 };
+
+export const getCurrentRates = () => ({ ...cachedRates });
