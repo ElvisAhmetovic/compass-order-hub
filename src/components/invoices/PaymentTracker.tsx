@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { PaymentService, PaymentLink } from "@/services/paymentService";
-import { InvoiceService } from "@/services/invoiceService";
 import { formatCurrency } from "@/utils/currencyUtils";
 import { CreditCard, AlertCircle, RefreshCw, Plus, Trash2 } from "lucide-react";
 import PaymentGatewaySelector, { PaymentGateway } from "@/components/payments/PaymentGatewaySelector";
@@ -46,18 +45,11 @@ const PaymentTracker: React.FC<PaymentTrackerProps> = ({
       setLoading(true);
       setError(null);
       
-      // Try to load payment links, but don't fail if the service isn't available
-      try {
-        const links = await PaymentService.getPaymentLinks(invoiceId);
-        setPaymentLinks(links || []);
-      } catch (paymentError) {
-        console.warn("Payment service not available:", paymentError);
-        setPaymentLinks([]);
-      }
-
+      const links = await PaymentService.getPaymentLinks(invoiceId);
+      setPaymentLinks(links || []);
     } catch (error) {
       console.error("Error loading payment data:", error);
-      setError("Unable to load payment information");
+      setPaymentLinks([]);
     } finally {
       setLoading(false);
     }

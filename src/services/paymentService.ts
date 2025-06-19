@@ -100,29 +100,14 @@ export class PaymentService {
   // Get payment links for invoice
   static async getPaymentLinks(invoiceId: string): Promise<PaymentLink[]> {
     try {
-      // Return stored payment links for this invoice, or create default ones if none exist
+      // Return stored payment links for this invoice, or return empty if none exist
       if (mockPaymentLinks[invoiceId]) {
         return mockPaymentLinks[invoiceId];
       }
 
-      // Initialize with default mock data only if no links exist yet
-      const mockLinks: PaymentLink[] = [
-        {
-          id: 'pl_1',
-          invoice_id: invoiceId,
-          payment_url: 'https://checkout.stripe.com/pay/mock',
-          amount: 99.99,
-          currency: 'EUR',
-          status: 'active',
-          payment_method: 'stripe',
-          expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-          created_at: new Date(Date.now() - 60 * 60 * 1000).toISOString()
-        }
-      ];
-
-      // Store the initial mock data
-      mockPaymentLinks[invoiceId] = mockLinks;
-      return mockLinks;
+      // Return empty array if no links exist for this invoice
+      mockPaymentLinks[invoiceId] = [];
+      return mockPaymentLinks[invoiceId];
     } catch (error) {
       console.error('Failed to get payment links:', error);
       throw error;
