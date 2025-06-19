@@ -41,7 +41,7 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
     handleFieldChange,
     handleSave,
     handleCancel
-  } = useOrderEdit(order, handleRefresh);
+  } = useOrderEdit(order, handleRefresh, selectedInventoryItems, setSelectedInventoryItems);
 
   if (!order) return null;
 

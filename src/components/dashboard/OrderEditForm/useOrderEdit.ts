@@ -1,14 +1,28 @@
+
 import { useState, useCallback } from "react";
 import { Order, OrderPriority } from "@/types";
 import { OrderService } from "@/services/orderService";
 import { useToast } from "@/hooks/use-toast";
 import { OrderFormData, ValidationErrors, validateOrderForm } from "./validation";
+import { SelectedInventoryItem } from "../InventoryItemsSelector";
 
 interface ExtendedOrderFormData extends OrderFormData {
   assigned_to?: string;
 }
 
-export const useOrderEdit = (order: Order | null, onRefresh: () => void) => {
+interface UseOrderEditProps {
+  order: Order | null;
+  onRefresh: () => void;
+  selectedInventoryItems?: SelectedInventoryItem[];
+  onInventoryItemsChange?: (items: SelectedInventoryItem[]) => void;
+}
+
+export const useOrderEdit = (
+  order: Order | null, 
+  onRefresh: () => void,
+  selectedInventoryItems: SelectedInventoryItem[] = [],
+  onInventoryItemsChange: (items: SelectedInventoryItem[]) => void = () => {}
+) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedOrder, setEditedOrder] = useState<ExtendedOrderFormData>({
     company_name: "",
@@ -75,6 +89,7 @@ export const useOrderEdit = (order: Order | null, onRefresh: () => void) => {
     if (!order) return;
     
     console.log('Attempting to save order with data:', editedOrder);
+    console.log('Selected inventory items:', selectedInventoryItems);
     
     const errors = validateOrderForm(editedOrder);
     
@@ -110,6 +125,16 @@ export const useOrderEdit = (order: Order | null, onRefresh: () => void) => {
         priority: editedOrder.priority || "medium"
         // Note: We don't update description here to preserve existing ones
       };
+
+      // IMPORTANT: Save inventory items to the database
+      if (selectedInventoryItems.length > 0) {
+        updateData.inventory_items = JSON.stringify(selectedInventoryItems);
+        console.log('Saving inventory items to database:', updateData.inventory_items);
+      } else {
+        // If no inventory items selected, clear the field
+        updateData.inventory_items = null;
+        console.log('Clearing inventory items from database');
+      }
 
       // Handle assignment change - if assigned_to is different, update it
       if (editedOrder.assigned_to !== order.assigned_to) {
@@ -155,7 +180,7 @@ export const useOrderEdit = (order: Order | null, onRefresh: () => void) => {
     } finally {
       setIsSaving(false);
     }
-  }, [editedOrder, order, toast, onRefresh]);
+  }, [editedOrder, order, toast, onRefresh, selectedInventoryItems]);
 
   const handleCancel = useCallback(() => {
     console.log('Canceling edit mode');
@@ -173,7 +198,20 @@ export const useOrderEdit = (order: Order | null, onRefresh: () => void) => {
       assigned_to: ""
     });
     setValidationErrors({});
-  }, []);
+    
+    // Reset inventory items to original state when canceling
+    if (order?.inventory_items) {
+      try {
+        const originalItems = JSON.parse(order.inventory_items as string);
+        onInventoryItemsChange(originalItems);
+      } catch (error) {
+        console.error('Error parsing original inventory items:', error);
+        onInventoryItemsChange([]);
+      }
+    } else {
+      onInventoryItemsChange([]);
+    }
+  }, [order, onInventoryItemsChange]);
 
   const hasErrors = Object.keys(validationErrors).filter(key => 
     key === 'company_name' // Only critical errors should block saving
