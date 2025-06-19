@@ -9,19 +9,24 @@ import { toast } from "@/hooks/use-toast";
 import { Company } from "@/types";
 import CompanyCard from "@/components/companies/CompanyCard";
 import CompanySearch from "@/components/companies/CompanySearch";
+import CompanyOrderStats from "@/components/companies/CompanyOrderStats";
 import EditCompanyDialog from "@/components/companies/EditCompanyDialog";
 import CreateCompanyDialog from "@/components/companies/CreateCompanyDialog";
 import { getGoogleMapsLink } from "@/utils/companyUtils";
 import { CompanyService } from "@/services/companyService";
 import { SupabaseCompanySyncService } from "@/services/supabaseCompanySyncService";
 import { MigrationService } from "@/services/migrationService";
+import { OrderService } from "@/services/orderService";
 
 const Companies = () => {
   const { user } = useAuth();
   const [companies, setCompanies] = useState<Company[]>([]);
+  const [totalOrders, setTotalOrders] = useState(0);
+  const [recentSyncs, setRecentSyncs] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isMigrating, setIsMigrating] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [currentCompany, setCurrentCompany] = useState<Company | null>(null);
@@ -40,26 +45,67 @@ const Companies = () => {
   
   const isAdmin = user?.role === 'admin';
   
-  // Load companies from Supabase
-  const loadCompanies = async () => {
+  // Load companies and stats from Supabase
+  const loadCompaniesAndStats = async () => {
     setIsLoading(true);
     try {
-      // First sync companies and clients
-      await SupabaseCompanySyncService.performFullSync();
+      // Load companies and orders in parallel
+      const [companiesData, ordersData] = await Promise.all([
+        CompanyService.getCompanies(),
+        OrderService.getOrders()
+      ]);
       
-      // Then load companies from Supabase
-      const supabaseCompanies = await CompanyService.getCompanies();
-      setCompanies(supabaseCompanies);
-      console.log("Companies loaded from Supabase:", supabaseCompanies);
+      setCompanies(companiesData);
+      setTotalOrders(ordersData.length);
+      
+      // Calculate recent syncs (companies created in last 24 hours)
+      const oneDayAgo = new Date();
+      oneDayAgo.setDate(oneDayAgo.getDate() - 1);
+      const recentCompanies = companiesData.filter(company => 
+        new Date(company.created_at || '') > oneDayAgo
+      );
+      setRecentSyncs(recentCompanies.length);
+      
+      console.log("Companies and stats loaded:", {
+        companies: companiesData.length,
+        orders: ordersData.length,
+        recentSyncs: recentCompanies.length
+      });
     } catch (error) {
-      console.error("Error loading companies:", error);
+      console.error("Error loading companies and stats:", error);
       toast({
         variant: "destructive",
-        title: "Error loading companies",
-        description: "Failed to load companies from database."
+        title: "Error loading data",
+        description: "Failed to load companies and statistics."
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Enhanced sync with orders, clients, and companies
+  const handleEnhancedSync = async () => {
+    setIsSyncing(true);
+    try {
+      console.log("Starting enhanced sync with orders and clients...");
+      await SupabaseCompanySyncService.performFullSync();
+      
+      // Reload data after sync
+      await loadCompaniesAndStats();
+      
+      toast({
+        title: "Enhanced sync completed",
+        description: "Successfully synced companies with orders and clients data."
+      });
+    } catch (error) {
+      console.error("Enhanced sync failed:", error);
+      toast({
+        variant: "destructive",
+        title: "Sync failed",
+        description: "There was an error syncing companies with orders and clients."
+      });
+    } finally {
+      setIsSyncing(false);
     }
   };
 
@@ -71,7 +117,7 @@ const Companies = () => {
       await MigrationService.performFullMigration();
       
       // Reload companies after migration
-      await loadCompanies();
+      await loadCompaniesAndStats();
       
       toast({
         title: "Migration completed",
@@ -90,7 +136,7 @@ const Companies = () => {
   };
   
   useEffect(() => {
-    loadCompanies();
+    loadCompaniesAndStats();
   }, []);
   
   // Filter companies based on search term
@@ -111,7 +157,7 @@ const Companies = () => {
       await CompanyService.updateCompany(currentCompany.id, currentCompany);
       
       // Reload companies to reflect changes
-      loadCompanies();
+      loadCompaniesAndStats();
 
       toast({
         title: "Company updated",
@@ -165,7 +211,7 @@ const Companies = () => {
       setCreateDialogOpen(false);
       
       // Reload companies to show the new one
-      loadCompanies();
+      loadCompaniesAndStats();
     } catch (error) {
       console.error("Error creating company:", error);
       toast({
@@ -196,11 +242,12 @@ const Companies = () => {
                     {isMigrating ? "🔄 Migrating..." : "📦 Migrate from localStorage"}
                   </Button>
                   <Button 
-                    onClick={() => SupabaseCompanySyncService.performFullSync()} 
+                    onClick={handleEnhancedSync}
+                    disabled={isSyncing}
                     variant="outline"
                     className="flex items-center gap-2"
                   >
-                    🔄 Sync with Clients
+                    {isSyncing ? "🔄 Syncing..." : "🔄 Enhanced Sync (Orders + Clients)"}
                   </Button>
                   <Button 
                     onClick={() => setCreateDialogOpen(true)} 
@@ -212,6 +259,12 @@ const Companies = () => {
                 </div>
               )}
             </div>
+
+            <CompanyOrderStats 
+              totalCompanies={companies.length}
+              totalOrders={totalOrders}
+              recentSyncs={recentSyncs}
+            />
             
             <CompanySearch 
               searchTerm={searchTerm}
@@ -240,6 +293,9 @@ const Companies = () => {
                 <p className="text-muted-foreground">No companies found.</p>
                 {searchTerm && (
                   <p className="text-sm mt-2">Try a different search term.</p>
+                )}
+                {isAdmin && !searchTerm && (
+                  <p className="text-sm mt-2">Use the "Enhanced Sync" button to automatically create companies from your orders and clients.</p>
                 )}
               </div>
             )}

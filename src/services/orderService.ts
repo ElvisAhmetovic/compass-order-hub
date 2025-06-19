@@ -74,7 +74,7 @@ export class OrderService {
     }
   }
 
-  // Create new order with validation and activity logging
+  // Create new order with validation and activity logging - now includes auto company sync
   static async createOrder(orderData: Omit<Order, 'id' | 'created_at' | 'updated_at'>): Promise<Order> {
     try {
       // Validate required fields
@@ -113,6 +113,15 @@ export class OrderService {
       if (error) {
         console.error('Error creating order:', error);
         throw error;
+      }
+
+      // Auto-sync company data from the new order
+      try {
+        const { SupabaseCompanySyncService } = await import('./supabaseCompanySyncService');
+        await SupabaseCompanySyncService.syncOrderCompany(data);
+      } catch (syncError) {
+        console.error('Failed to auto-sync company from order:', syncError);
+        // Don't fail the order creation if company sync fails
       }
 
       // Log order creation activity
@@ -165,6 +174,15 @@ export class OrderService {
       if (error) {
         console.error('Error creating yearly package:', error);
         throw error;
+      }
+
+      // Auto-sync company data from the new yearly package
+      try {
+        const { SupabaseCompanySyncService } = await import('./supabaseCompanySyncService');
+        await SupabaseCompanySyncService.syncOrderCompany(data);
+      } catch (syncError) {
+        console.error('Failed to auto-sync company from yearly package:', syncError);
+        // Don't fail the order creation if company sync fails
       }
 
       // Log yearly package creation activity
@@ -228,6 +246,17 @@ export class OrderService {
       if (error) {
         console.error('Error updating order:', error);
         throw error;
+      }
+
+      // Auto-sync company data if company information was updated
+      if (cleanData.company_name || cleanData.contact_email || cleanData.company_address) {
+        try {
+          const { SupabaseCompanySyncService } = await import('./supabaseCompanySyncService');
+          await SupabaseCompanySyncService.syncOrderCompany(data);
+        } catch (syncError) {
+          console.error('Failed to auto-sync company from updated order:', syncError);
+          // Don't fail the order update if company sync fails
+        }
       }
 
       // Log specific changes
