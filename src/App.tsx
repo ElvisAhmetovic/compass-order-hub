@@ -1,268 +1,71 @@
-import React from 'react';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import Dashboard from './pages/Dashboard';
-import YearlyPackages from './pages/YearlyPackages';
-import { RequireAuth } from './components/auth/RequireAuth';
-import AdminGuard from './components/auth/AdminGuard';
-import Companies from './pages/Companies';
-import UserManagement from './pages/UserManagement';
-import Deleted from './pages/Deleted';
-import Reviews from './pages/Reviews';
-import Support from "./pages/Support";
-import SupportDetail from "./pages/SupportDetail";
-import Inventory from './pages/Inventory';
-import Index from './pages/Index';
-import Proposals from './pages/Proposals';
-import ProposalDetail from './pages/ProposalDetail';
-import Invoices from './pages/Invoices';
-import InvoiceDetail from './pages/InvoiceDetail';
-import Clients from './pages/Clients';
-import ProfilePage from './pages/Profile';
-import SettingsPage from './pages/Settings';
-import SecurityPage from './pages/Security';
-import Analytics from './pages/Analytics';
-import TeamCollaboration from './pages/TeamCollaboration';
+import React from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { AuthProvider } from "@/context/AuthContext";
+import { ThemeProvider } from "@/components/theme/ThemeProvider";
+import Index from "@/pages/Index";
+import Login from "@/pages/Login";
+import Register from "@/pages/Register";
+import Dashboard from "@/pages/Dashboard";
+import Companies from "@/pages/Companies";
+import Clients from "@/pages/Clients";
+import Profile from "@/pages/Profile";
+import Invoices from "@/pages/Invoices";
+import InvoiceDetail from "@/pages/InvoiceDetail";
+import Proposals from "@/pages/Proposals";
+import ProposalDetail from "@/pages/ProposalDetail";
+import Inventory from "@/pages/Inventory";
+import Analytics from "@/pages/Analytics";
+import Reviews from "@/pages/Reviews";
+import Deleted from "@/pages/Deleted";
+import UserManagement from "@/pages/UserManagement";
+import Support from "@/pages/Support";
+import SupportDetail from "@/pages/SupportDetail";
+import SettingsPage from "@/pages/Settings";
+import Security from "@/pages/Security";
+import TeamCollaboration from "@/pages/TeamCollaboration";
+import YearlyPackages from "@/pages/YearlyPackages";
+import EmailManagement from "@/pages/EmailManagement";
+import NotFound from "@/pages/NotFound";
+
+const queryClient = new QueryClient();
 
 function App() {
   return (
-    <AuthProvider>
-      <Router>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route
-            path="/dashboard"
-            element={
-              <RequireAuth>
-                <Dashboard />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/active-orders"
-            element={
-              <RequireAuth>
-                <Dashboard />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/complaints"
-            element={
-              <RequireAuth>
-                <Dashboard />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/completed"
-            element={
-              <RequireAuth>
-                <Dashboard />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/resolved"
-            element={
-              <RequireAuth>
-                <Dashboard />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/cancelled"
-            element={
-              <RequireAuth>
-                <Dashboard />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/invoice-sent"
-            element={
-              <RequireAuth>
-                <Dashboard />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/invoice-paid"
-            element={
-              <RequireAuth>
-                <Dashboard />
-              </RequireAuth>
-            }
-          />
-           <Route
-            path="/companies"
-            element={
-              <RequireAuth>
-                <Companies />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/user-management"
-            element={
-              <RequireAuth>
-                <UserManagement />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/deleted"
-            element={
-              <RequireAuth>
-                <AdminGuard>
-                  <Deleted />
-                </AdminGuard>
-              </RequireAuth>
-            }
-          />
-           <Route
-            path="/reviews"
-            element={
-              <RequireAuth>
-                <Reviews />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/support"
-            element={
-              <RequireAuth>
-                <Support />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/support/:inquiryId"
-            element={
-              <RequireAuth>
-                <SupportDetail />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/inventory"
-            element={
-              <RequireAuth>
-                <Inventory />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/proposals"
-            element={
-              <RequireAuth>
-                <Proposals />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/proposals/new"
-            element={
-              <RequireAuth>
-                <ProposalDetail />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/proposals/:id"
-            element={
-              <RequireAuth>
-                <ProposalDetail />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/invoices"
-            element={
-              <RequireAuth>
-                <Invoices />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/invoices/new"
-            element={
-              <RequireAuth>
-                <InvoiceDetail />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/invoices/:id"
-            element={
-              <RequireAuth>
-                <InvoiceDetail />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/clients"
-            element={
-              <RequireAuth>
-                <Clients />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/profile"
-            element={
-              <RequireAuth>
-                <ProfilePage />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/settings"
-            element={
-              <RequireAuth>
-                <SettingsPage />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/security"
-            element={
-              <RequireAuth>
-                <SecurityPage />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/analytics"
-            element={
-              <RequireAuth>
-                <Analytics />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/team-collaboration"
-            element={
-              <RequireAuth>
-                <TeamCollaboration />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/yearly-packages"
-            element={
-              <RequireAuth>
-                <YearlyPackages />
-              </RequireAuth>
-            }
-          />
-        </Routes>
-      </Router>
-    </AuthProvider>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider>
+        <AuthProvider>
+          <Router>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/companies" element={<Companies />} />
+              <Route path="/clients" element={<Clients />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/invoices" element={<Invoices />} />
+              <Route path="/invoices/:id" element={<InvoiceDetail />} />
+              <Route path="/proposals" element={<Proposals />} />
+              <Route path="/proposals/:id" element={<ProposalDetail />} />
+              <Route path="/inventory" element={<Inventory />} />
+              <Route path="/analytics" element={<Analytics />} />
+              <Route path="/reviews" element={<Reviews />} />
+              <Route path="/deleted" element={<Deleted />} />
+              <Route path="/user-management" element={<UserManagement />} />
+              <Route path="/support" element={<Support />} />
+              <Route path="/support/:id" element={<SupportDetail />} />
+              <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/security" element={<Security />} />
+              <Route path="/team-collaboration" element={<TeamCollaboration />} />
+              <Route path="/yearly-packages" element={<YearlyPackages />} />
+              <Route path="/email-management" element={<EmailManagement />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Router>
+        </AuthProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
   );
 }
 

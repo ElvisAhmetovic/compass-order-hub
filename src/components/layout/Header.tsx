@@ -1,28 +1,38 @@
 
+import React from "react";
 import { LogoutButton } from "@/components/auth/LogoutButton";
+import { useAuth } from "@/context/AuthContext";
 import { UserRole } from "@/types";
-import NotificationCenter from "@/components/notifications/NotificationCenter";
+import { DarkModeToggle } from "@/components/theme/DarkModeToggle";
 
 interface HeaderProps {
   userRole?: UserRole;
 }
 
-const Header = ({ userRole = "admin" }: HeaderProps) => {
+const Header = ({ userRole = "user" }: HeaderProps) => {
+  const { user } = useAuth();
+
   return (
-    <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-14 items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <img 
-            src="/lovable-uploads/2d4259f4-7fb1-4221-9e23-4bec4378d055.png" 
-            alt="AB Media Team Logo" 
-            className="h-12 w-auto"
-          />
-          <h1 className="text-xl font-semibold">Order Management System</h1>
-        </div>
-        
-        <div className="flex items-center space-x-4">
-          <NotificationCenter />
-          <LogoutButton />
+    <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 shadow-sm">
+      <div className="container mx-auto px-4 py-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <h1 className="text-xl font-bold text-gray-900 dark:text-white">
+              Order Management System
+            </h1>
+          </div>
+          
+          <div className="flex items-center space-x-4">
+            <DarkModeToggle />
+            {user && (
+              <div className="flex items-center space-x-3">
+                <span className="text-sm text-gray-700 dark:text-gray-300">
+                  Welcome, {user.full_name || user.email}
+                </span>
+                <LogoutButton />
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </header>
