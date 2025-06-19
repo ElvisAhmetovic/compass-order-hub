@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import {
   Table,
@@ -11,7 +12,7 @@ import { Order, OrderStatus } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Loader2, RefreshCw } from "lucide-react";
 import { OrderService } from "@/services/orderService";
-import { toast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
 import OrderFilters from "./OrderFilters";
 import OrderPagination from "./OrderPagination";
@@ -50,54 +51,81 @@ const OrderTable = ({
     const fetchOrders = async () => {
       setLoading(true);
       try {
-        const { data: fetchedOrders, error, count } = await OrderService.getOrders(
-          statusFilter,
-          searchQuery,
-          selectedStatuses,
-          selectedPriorities,
-          advancedSearchCriteria,
-          isYearlyPackages
-        );
-
-        if (error) {
-          console.error("Error fetching orders:", error);
-          toast({
-            title: "Error",
-            description: "Failed to fetch orders. Please check your connection and try again.",
-            variant: "destructive"
-          });
-          return;
+        let fetchedOrders: Order[] = [];
+        
+        if (isYearlyPackages) {
+          fetchedOrders = await OrderService.getYearlyPackages();
+        } else {
+          fetchedOrders = await OrderService.getOrders(false, false);
         }
 
-        setOrders(fetchedOrders || []);
-        setTotalOrders(count || 0);
+        // Apply client-side filtering if needed
+        let filteredOrders = fetchedOrders;
+        
+        if (statusFilter) {
+          filteredOrders = filteredOrders.filter(order => {
+            const activeStatuses = OrderService.getActiveStatuses(order);
+            return activeStatuses.includes(statusFilter as OrderStatus);
+          });
+        }
+
+        if (searchQuery) {
+          filteredOrders = filteredOrders.filter(order =>
+            order.company_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            order.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            order.contact_email?.toLowerCase().includes(searchQuery.toLowerCase())
+          );
+        }
+
+        if (selectedStatuses.length > 0) {
+          filteredOrders = filteredOrders.filter(order => {
+            const activeStatuses = OrderService.getActiveStatuses(order);
+            return selectedStatuses.some(status => activeStatuses.includes(status as OrderStatus));
+          });
+        }
+
+        if (selectedPriorities.length > 0) {
+          filteredOrders = filteredOrders.filter(order =>
+            selectedPriorities.includes(order.priority || "medium")
+          );
+        }
+
+        setOrders(filteredOrders);
+        setTotalOrders(filteredOrders.length);
+      } catch (error) {
+        console.error("Error fetching orders:", error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch orders. Please check your connection and try again.",
+          variant: "destructive"
+        });
       } finally {
         setLoading(false);
       }
     };
 
     fetchOrders();
-  }, [statusFilter, refreshTrigger, searchQuery, selectedStatuses, selectedPriorities, advancedSearchCriteria, isYearlyPackages]);
+  }, [statusFilter, refreshTrigger, searchQuery, selectedStatuses, selectedPriorities, advancedSearchCriteria, isYearlyPackages, toast]);
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
-    setCurrentPage(1); // Reset to the first page when searching
+    setCurrentPage(1);
   };
 
   const handleStatusChange = (statuses: string[]) => {
     setSelectedStatuses(statuses);
-    setCurrentPage(1); // Reset to the first page when filtering
+    setCurrentPage(1);
   };
 
   const handlePriorityChange = (priorities: string[]) => {
     setSelectedPriorities(priorities);
-    setCurrentPage(1); // Reset to the first page when filtering
+    setCurrentPage(1);
   };
 
   const handleAdvancedSearch = (criteria: any) => {
     setAdvancedSearchCriteria(criteria);
-    setIsAdvancedSearchOpen(false); // Close the modal
-    setCurrentPage(1); // Reset to the first page when advanced searching
+    setIsAdvancedSearchOpen(false);
+    setCurrentPage(1);
   };
 
   const toggleAdvancedSearch = () => {
@@ -113,7 +141,6 @@ const OrderTable = ({
   const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
 
   const handleRefresh = () => {
-    // Trigger a refresh to update our data
     window.dispatchEvent(new CustomEvent('orderStatusChanged'));
   };
 
@@ -135,7 +162,7 @@ const OrderTable = ({
       />
 
       <AdvancedSearch
-        isOpen={isAdvancedSearchOpen}
+        open={isAdvancedSearchOpen}
         onClose={toggleAdvancedSearch}
         onSearch={handleAdvancedSearch}
       />
@@ -202,10 +229,9 @@ const OrderTable = ({
 
       {orders.length > 0 && (
         <OrderPagination
-          ordersPerPage={ordersPerPage}
           totalOrders={totalOrders}
-          paginate={paginate}
           currentPage={currentPage}
+          onPageChange={paginate}
         />
       )}
     </div>
