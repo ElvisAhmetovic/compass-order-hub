@@ -17,6 +17,10 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
   client,
   templateSettings
 }) => {
+  // Get the currency from template settings, falling back to EUR
+  const currentCurrency = templateSettings.currency || 'EUR';
+  console.log('InvoicePreview: Using currency:', currentCurrency);
+  
   const calculateTotals = () => {
     const subtotal = lineItems.reduce((sum, item) => {
       return sum + (item.quantity * item.unit_price * (1 - item.discount_rate));
@@ -392,7 +396,7 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
               </div>
               <div className="flex justify-between font-bold text-xl border-t pt-3">
                 <span>{getTranslatedText('balanceDue')}</span>
-                <span>{formatCurrency(total, templateSettings.currency || 'EUR')}</span>
+                <span>{formatCurrency(total, currentCurrency)}</span>
               </div>
             </div>
           </div>
@@ -436,15 +440,15 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
                   <tr key={index} className={`border-b ${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}`}>
                     <td className="py-4 px-4 border-r border-gray-200">{item.item_description}</td>
                     <td className="text-center py-4 px-4 border-r border-gray-200">{item.quantity}</td>
-                    <td className="text-right py-4 px-4 border-r border-gray-200">{formatCurrency(item.unit_price, templateSettings.currency || 'EUR')}</td>
-                    <td className="text-right py-4 px-4 font-semibold">{formatCurrency(item.quantity * item.unit_price * (1 - item.discount_rate), templateSettings.currency || 'EUR')}</td>
+                    <td className="text-right py-4 px-4 border-r border-gray-200">{formatCurrency(item.unit_price, currentCurrency)}</td>
+                    <td className="text-right py-4 px-4 font-semibold">{formatCurrency(item.quantity * item.unit_price * (1 - item.discount_rate), currentCurrency)}</td>
                   </tr>
                 )) : (
                   <tr className="border-b bg-gray-50">
                     <td className="py-4 px-4 border-r border-gray-200">Sample Service</td>
                     <td className="text-center py-4 px-4 border-r border-gray-200">1</td>
-                    <td className="text-right py-4 px-4 border-r border-gray-200">{formatCurrency(750, templateSettings.currency || 'EUR')}</td>
-                    <td className="text-right py-4 px-4 font-semibold">{formatCurrency(750, templateSettings.currency || 'EUR')}</td>
+                    <td className="text-right py-4 px-4 border-r border-gray-200">{formatCurrency(750, currentCurrency)}</td>
+                    <td className="text-right py-4 px-4 font-semibold">{formatCurrency(750, currentCurrency)}</td>
                   </tr>
                 )}
               </tbody>
@@ -456,17 +460,17 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
             <div className="w-80 bg-gray-50 p-5 rounded-lg space-y-3">
               <div className="flex justify-between text-sm">
                 <span>{getTranslatedText('subtotal')}</span>
-                <span className="font-semibold">{formatCurrency(subtotal || 750, templateSettings.currency || 'EUR')}</span>
+                <span className="font-semibold">{formatCurrency(subtotal || 750, currentCurrency)}</span>
               </div>
               {templateSettings.vatEnabled && (
                 <div className="flex justify-between text-sm">
                   <span>{getTranslatedText('tax')} ({templateSettings.vatRate || 21}%):</span>
-                  <span className="font-semibold">{formatCurrency(vatAmount, templateSettings.currency || 'EUR')}</span>
+                  <span className="font-semibold">{formatCurrency(vatAmount, currentCurrency)}</span>
                 </div>
               )}
               <div className="flex justify-between font-bold text-lg border-t-2 border-gray-700 pt-3 text-gray-700">
                 <span>{getTranslatedText('total')}</span>
-                <span>{formatCurrency(total || 750, templateSettings.currency || 'EUR')}</span>
+                <span>{formatCurrency(total || 750, currentCurrency)}</span>
               </div>
             </div>
           </div>

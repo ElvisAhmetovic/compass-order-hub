@@ -14,6 +14,10 @@ interface InvoicePDFData {
 export const generateInvoicePDF = async (data: InvoicePDFData): Promise<void> => {
   const { invoice, lineItems, client, templateSettings, formData } = data;
   
+  // Get the current currency from form data or template settings
+  const currentCurrency = formData?.currency || templateSettings.currency || 'EUR';
+  console.log('PDF Generator: Using currency:', currentCurrency);
+  
   // Create a temporary container for the invoice
   const container = document.createElement('div');
   container.style.position = 'absolute';
@@ -27,8 +31,14 @@ export const generateInvoicePDF = async (data: InvoicePDFData): Promise<void> =>
   document.body.appendChild(container);
 
   try {
-    // Generate the invoice HTML
-    container.innerHTML = generateInvoiceHTML(data);
+    // Generate the invoice HTML with the correct currency
+    container.innerHTML = generateInvoiceHTML({
+      ...data,
+      templateSettings: {
+        ...templateSettings,
+        currency: currentCurrency
+      }
+    });
     
     // Wait for images to load
     const images = container.querySelectorAll('img');
@@ -71,6 +81,10 @@ export const generateInvoicePDF = async (data: InvoicePDFData): Promise<void> =>
 
 const generateInvoiceHTML = (data: InvoicePDFData): string => {
   const { invoice, lineItems, client, templateSettings, formData } = data;
+  
+  // Get the current currency
+  const currentCurrency = templateSettings.currency || 'EUR';
+  console.log('PDF HTML Generator: Using currency:', currentCurrency);
   
   // Get saved logo from localStorage or use the one from template settings
   const getSavedLogo = () => {
@@ -466,7 +480,7 @@ const generateInvoiceHTML = (data: InvoicePDFData): string => {
           </div>
           <div style="font-weight: bold; font-size: 20px; display: flex; justify-content: space-between; border-top: 1px solid #e5e7eb; padding-top: 12px;">
             <span>${getTranslatedText('balanceDue')}</span>
-            <span>${formatCurrency(total || 750, templateSettings.currency || 'EUR')}</span>
+            <span>${formatCurrency(total || 750, currentCurrency)}</span>
           </div>
         </div>
       </div>
@@ -506,15 +520,15 @@ const generateInvoiceHTML = (data: InvoicePDFData): string => {
               <tr style="border-bottom: 1px solid #e5e7eb; ${index % 2 === 0 ? 'background: #f9fafb;' : 'background: white;'}">
                 <td style="padding: 16px; border-right: 1px solid #e5e7eb;">${item.item_description}</td>
                 <td style="text-align: center; padding: 16px; border-right: 1px solid #e5e7eb;">${item.quantity}</td>
-                <td style="text-align: right; padding: 16px; border-right: 1px solid #e5e7eb;">${formatCurrency(item.unit_price, templateSettings.currency || 'EUR')}</td>
-                <td style="text-align: right; padding: 16px; font-weight: 600;">${formatCurrency(item.quantity * item.unit_price * (1 - item.discount_rate), templateSettings.currency || 'EUR')}</td>
+                <td style="text-align: right; padding: 16px; border-right: 1px solid #e5e7eb;">${formatCurrency(item.unit_price, currentCurrency)}</td>
+                <td style="text-align: right; padding: 16px; font-weight: 600;">${formatCurrency(item.quantity * item.unit_price * (1 - item.discount_rate), currentCurrency)}</td>
               </tr>
             `).join('') : `
               <tr style="border-bottom: 1px solid #e5e7eb; background: #f9fafb;">
                 <td style="padding: 16px; border-right: 1px solid #e5e7eb;">Sample Service</td>
                 <td style="text-align: center; padding: 16px; border-right: 1px solid #e5e7eb;">1</td>
-                <td style="text-align: right; padding: 16px; border-right: 1px solid #e5e7eb;">${formatCurrency(750, templateSettings.currency || 'EUR')}</td>
-                <td style="text-align: right; padding: 16px; font-weight: 600;">${formatCurrency(750, templateSettings.currency || 'EUR')}</td>
+                <td style="text-align: right; padding: 16px; border-right: 1px solid #e5e7eb;">${formatCurrency(750, currentCurrency)}</td>
+                <td style="text-align: right; padding: 16px; font-weight: 600;">${formatCurrency(750, currentCurrency)}</td>
               </tr>
             `}
           </tbody>
@@ -526,17 +540,17 @@ const generateInvoiceHTML = (data: InvoicePDFData): string => {
         <div style="width: 300px; background: #f9fafb; padding: 20px; border-radius: 8px;">
           <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 14px;">
             <span>${getTranslatedText('subtotal')}</span>
-            <span style="font-weight: 600;">${formatCurrency(subtotal || 750, templateSettings.currency || 'EUR')}</span>
+            <span style="font-weight: 600;">${formatCurrency(subtotal || 750, currentCurrency)}</span>
           </div>
           ${templateSettings.vatEnabled ? `
             <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 14px;">
               <span>${getTranslatedText('tax')} (${templateSettings.vatRate || 21}%):</span>
-              <span style="font-weight: 600;">${formatCurrency(vatAmount, templateSettings.currency || 'EUR')}</span>
+              <span style="font-weight: 600;">${formatCurrency(vatAmount, currentCurrency)}</span>
             </div>
           ` : ''}
           <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 18px; border-top: 2px solid #374151; padding-top: 12px; color: #374151;">
             <span>${getTranslatedText('total')}</span>
-            <span>${formatCurrency(total || 750, templateSettings.currency || 'EUR')}</span>
+            <span>${formatCurrency(total || 750, currentCurrency)}</span>
           </div>
         </div>
       </div>

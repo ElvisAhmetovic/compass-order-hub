@@ -38,7 +38,22 @@ const InvoiceDetail = () => {
   const [saving, setSaving] = useState(false);
   const [sendDialogOpen, setSendDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("edit");
-  const [templateSettings, setTemplateSettings] = useState({});
+  const [templateSettings, setTemplateSettings] = useState({
+    currency: 'EUR', // Default currency
+    vatEnabled: true,
+    vatRate: 0.19,
+    language: 'en',
+    selectedPaymentAccount: 'belgium',
+    companyInfo: {
+      name: "Company Name",
+      registrationNumber: "123456789",
+      vatId: "VAT123456789",
+      street: "Street Address",
+      postal: "12345",
+      city: "City",
+      email: "info@company.com"
+    }
+  });
 
   const [formData, setFormData] = useState<InvoiceFormData>({
     client_id: '',
@@ -55,6 +70,14 @@ const InvoiceDetail = () => {
     loadData();
   }, [id]);
 
+  // Update template settings when form currency changes
+  useEffect(() => {
+    setTemplateSettings(prev => ({
+      ...prev,
+      currency: formData.currency
+    }));
+  }, [formData.currency]);
+
   const loadData = async () => {
     try {
       setLoading(true);
@@ -68,7 +91,7 @@ const InvoiceDetail = () => {
         const invoiceData = await InvoiceService.getInvoice(id);
         if (invoiceData) {
           setInvoice(invoiceData);
-          setFormData({
+          const newFormData = {
             client_id: invoiceData.client_id,
             issue_date: invoiceData.issue_date.split('T')[0],
             due_date: invoiceData.due_date.split('T')[0],
@@ -77,7 +100,14 @@ const InvoiceDetail = () => {
             notes: invoiceData.notes || '',
             internal_notes: invoiceData.internal_notes || '',
             line_items: []
-          });
+          };
+          setFormData(newFormData);
+          
+          // Update template settings with invoice currency
+          setTemplateSettings(prev => ({
+            ...prev,
+            currency: invoiceData.currency
+          }));
 
           // Load line items
           const lineItemsData = await InvoiceService.getLineItems(id);
@@ -94,6 +124,15 @@ const InvoiceDetail = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleFormDataChange = (field: string, value: any) => {
+    console.log(`Updating form field: ${field} to:`, value);
+    setFormData(prev => {
+      const updated = { ...prev, [field]: value };
+      console.log('Updated form data:', updated);
+      return updated;
+    });
   };
 
   const addLineItem = () => {
@@ -290,11 +329,17 @@ const InvoiceDetail = () => {
 
   const handleDownloadPDF = async () => {
     try {
+      console.log('Generating PDF with currency:', formData.currency);
+      console.log('Template settings currency:', templateSettings.currency);
+      
       await generateInvoicePDF({
         invoice,
         lineItems,
         client: selectedClient,
-        templateSettings,
+        templateSettings: {
+          ...templateSettings,
+          currency: formData.currency // Ensure the current form currency is used
+        },
         formData
       });
       
@@ -368,7 +413,7 @@ const InvoiceDetail = () => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
                             <Label htmlFor="client">Client *</Label>
-                            <Select value={formData.client_id} onValueChange={(value) => setFormData({...formData, client_id: value})}>
+                            <Select value={formData.client_id} onValueChange={(value) => handleFormDataChange('client_id', value)}>
                               <SelectTrigger>
                                 <SelectValue placeholder="Select a client" />
                               </SelectTrigger>
@@ -386,7 +431,10 @@ const InvoiceDetail = () => {
                             <Label htmlFor="currency">Currency</Label>
                             <CurrencySelector
                               value={formData.currency}
-                              onValueChange={(value) => setFormData({...formData, currency: value})}
+                              onValueChange={(value) => {
+                                console.log('Currency selector changed to:', value);
+                                handleFormDataChange('currency', value);
+                              }}
                             />
                           </div>
 
@@ -395,7 +443,7 @@ const InvoiceDetail = () => {
                             <Input
                               type="date"
                               value={formData.issue_date}
-                              onChange={(e) => setFormData({...formData, issue_date: e.target.value})}
+                              onChange={(e) => handleFormDataChange('issue_date', e.target.value)}
                             />
                           </div>
 
@@ -404,7 +452,7 @@ const InvoiceDetail = () => {
                             <Input
                               type="date"
                               value={formData.due_date}
-                              onChange={(e) => setFormData({...formData, due_date: e.target.value})}
+                              onChange={(e) => handleFormDataChange('due_date', e.target.value)}
                             />
                           </div>
 
@@ -412,7 +460,7 @@ const InvoiceDetail = () => {
                             <Label htmlFor="payment_terms">Payment Terms</Label>
                             <Input
                               value={formData.payment_terms}
-                              onChange={(e) => setFormData({...formData, payment_terms: e.target.value})}
+                              onChange={(e) => handleFormDataChange('payment_terms', e.target.value)}
                               placeholder="e.g., Net 30"
                             />
                           </div>
@@ -422,7 +470,7 @@ const InvoiceDetail = () => {
                           <Label htmlFor="notes">Notes</Label>
                           <Textarea
                             value={formData.notes}
-                            onChange={(e) => setFormData({...formData, notes: e.target.value})}
+                            onChange={(e) => handleFormDataChange('notes', e.target.value)}
                             placeholder="Public notes for the client"
                             rows={3}
                           />
@@ -432,7 +480,7 @@ const InvoiceDetail = () => {
                           <Label htmlFor="internal_notes">Internal Notes</Label>
                           <Textarea
                             value={formData.internal_notes}
-                            onChange={(e) => setFormData({...formData, internal_notes: e.target.value})}
+                            onChange={(e) => handleFormDataChange('internal_notes', e.target.value)}
                             placeholder="Internal notes (not visible to client)"
                             rows={2}
                           />
@@ -464,13 +512,13 @@ const InvoiceDetail = () => {
                                   <TableHead className="text-center font-semibold">VAT %</TableHead>
                                   <TableHead className="text-center font-semibold">Discount %</TableHead>
                                   <TableHead className="text-right font-semibold">Total</TableHead>
-                                  <TableHead className="w-[80px] text-center"></TableHead>
+                                  <TableHead className="text-center font-semibold">Actions</TableHead>
                                 </TableRow>
                               </TableHeader>
                               <TableBody>
                                 {lineItems.map((item, index) => (
                                   <LineItemRow
-                                    key={index}
+                                    key={item.id}
                                     item={item}
                                     index={index}
                                     currency={formData.currency}
@@ -478,72 +526,90 @@ const InvoiceDetail = () => {
                                     onRemove={removeLineItem}
                                   />
                                 ))}
+                                {lineItems.length === 0 && (
+                                  <TableRow>
+                                    <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                                      No items added yet. Click "Add Item" to get started.
+                                    </TableCell>
+                                  </TableRow>
+                                )}
                               </TableBody>
                             </Table>
                           </div>
                         </div>
+                      </CardContent>
+                    </Card>
+                  </div>
 
-                        {/* Totals */}
-                        <div className="mt-8 flex justify-end">
-                          <div className="w-80 space-y-3 bg-gray-50 p-4 rounded-lg">
-                            <div className="flex justify-between text-sm">
-                              <span>Net Amount:</span>
-                              <span className="font-semibold">{formatCurrency(netAmount, formData.currency)}</span>
-                            </div>
-                            <div className="flex justify-between text-sm">
-                              <span>VAT Amount:</span>
-                              <span className="font-semibold">{formatCurrency(vatAmount, formData.currency)}</span>
-                            </div>
-                            <div className="flex justify-between font-bold text-lg border-t pt-3">
-                              <span>Total Amount:</span>
-                              <span>{formatCurrency(totalAmount, formData.currency)}</span>
-                            </div>
-                          </div>
+                  {/* Summary */}
+                  <div className="space-y-6">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Summary</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="flex justify-between">
+                          <span>Net Amount:</span>
+                          <span className="font-semibold">{formatCurrency(netAmount, formData.currency)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>VAT Amount:</span>
+                          <span className="font-semibold">{formatCurrency(vatAmount, formData.currency)}</span>
+                        </div>
+                        <div className="flex justify-between text-lg font-bold border-t pt-2">
+                          <span>Total Amount:</span>
+                          <span>{formatCurrency(totalAmount, formData.currency)}</span>
                         </div>
                       </CardContent>
                     </Card>
 
                     {/* Actions */}
-                    <div className="flex justify-end gap-4">
-                      <Button variant="outline" onClick={() => navigate('/invoices')}>
-                        Cancel
-                      </Button>
-                      <Button onClick={handleSave} disabled={saving}>
-                        <Save size={16} className="mr-2" />
-                        {saving ? 'Saving...' : 'Save Invoice'}
-                      </Button>
-                      {!isNewInvoice && invoice && (
-                        <>
-                          <Button onClick={handleDownloadPDF} variant="outline">
-                            <Download size={16} className="mr-2" />
-                            Download PDF
-                          </Button>
-                          <Button onClick={() => setSendDialogOpen(true)}>
-                            <Mail size={16} className="mr-2" />
-                            Send Invoice
-                          </Button>
-                        </>
-                      )}
-                    </div>
-                  </div>
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Actions</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-2">
+                        <Button onClick={handleSave} disabled={saving} className="w-full">
+                          <Save size={16} className="mr-2" />
+                          {saving ? 'Saving...' : 'Save Invoice'}
+                        </Button>
+                        
+                        <Button 
+                          variant="outline" 
+                          onClick={handleDownloadPDF}
+                          className="w-full"
+                        >
+                          <Download size={16} className="mr-2" />
+                          Download PDF
+                        </Button>
 
-                  {/* Sidebar */}
-                  <div className="space-y-6">
-                    {!isNewInvoice && invoice && (
-                      <PaymentTracker
-                        invoiceId={invoice.id}
-                        currency={invoice.currency}
-                        onPaymentStatusChange={handlePaymentStatusChange}
-                      />
-                    )}
+                        {!isNewInvoice && invoice && (
+                          <>
+                            <Button 
+                              variant="outline" 
+                              onClick={() => setSendDialogOpen(true)}
+                              className="w-full"
+                            >
+                              <Mail size={16} className="mr-2" />
+                              Send Invoice
+                            </Button>
+                            
+                            <PaymentTracker 
+                              invoice={invoice} 
+                              onPaymentStatusChange={handlePaymentStatusChange}
+                            />
+                          </>
+                        )}
+                      </CardContent>
+                    </Card>
                   </div>
                 </div>
               </TabsContent>
 
               <TabsContent value="template">
                 <InvoiceTemplateSettings
+                  settings={templateSettings}
                   onSettingsChange={setTemplateSettings}
-                  initialSettings={templateSettings}
                 />
               </TabsContent>
 
@@ -552,17 +618,21 @@ const InvoiceDetail = () => {
                   invoice={invoice}
                   lineItems={lineItems}
                   client={selectedClient}
-                  templateSettings={templateSettings}
+                  templateSettings={{
+                    ...templateSettings,
+                    currency: formData.currency // Ensure the current form currency is used in preview
+                  }}
                 />
               </TabsContent>
             </Tabs>
 
             {/* Send Invoice Dialog */}
-            {!isNewInvoice && invoice && (
+            {invoice && (
               <SendInvoiceDialog
                 open={sendDialogOpen}
-                onOpenChange={setSendDialogOpen}
+                onClose={() => setSendDialogOpen(false)}
                 invoice={invoice}
+                client={selectedClient}
               />
             )}
           </div>
