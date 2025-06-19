@@ -129,7 +129,6 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
                           contact_email: order.contact_email || "",
                           contact_phone: order.contact_phone || "",
                           company_link: order.company_link || "",
-                          description: order.description || "",
                           price: order.price || 0,
                           currency: order.currency || "EUR",
                           priority: order.priority || "medium"
@@ -158,7 +157,6 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
                           contact_email: order.contact_email || "",
                           contact_phone: order.contact_phone || "",
                           company_link: order.company_link || "",
-                          description: order.description || "",
                           price: order.price || 0,
                           currency: order.currency || "EUR",
                           priority: order.priority || "medium",
