@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 
 export interface PaymentLink {
@@ -31,6 +32,9 @@ export interface PaymentWebhookEvent {
   processed: boolean;
   created_at: string;
 }
+
+// Store payment links in memory to persist across operations
+const mockPaymentLinks: { [invoiceId: string]: PaymentLink[] } = {};
 
 export class PaymentService {
   // Create payment link with enhanced gateway support
@@ -68,7 +72,12 @@ export class PaymentService {
           break;
       }
 
-      // Store in database (mock for now)
+      // Store in memory
+      if (!mockPaymentLinks[invoiceId]) {
+        mockPaymentLinks[invoiceId] = [];
+      }
+      mockPaymentLinks[invoiceId].push(mockPaymentLink);
+      
       console.log('Mock payment link created:', mockPaymentLink);
       
       return mockPaymentLink;
@@ -91,8 +100,12 @@ export class PaymentService {
   // Get payment links for invoice
   static async getPaymentLinks(invoiceId: string): Promise<PaymentLink[]> {
     try {
-      // Mock data for demonstration
-      // In production, this would query your database
+      // Return stored payment links for this invoice, or create default ones if none exist
+      if (mockPaymentLinks[invoiceId]) {
+        return mockPaymentLinks[invoiceId];
+      }
+
+      // Initialize with default mock data only if no links exist yet
       const mockLinks: PaymentLink[] = [
         {
           id: 'pl_1',
@@ -107,6 +120,8 @@ export class PaymentService {
         }
       ];
 
+      // Store the initial mock data
+      mockPaymentLinks[invoiceId] = mockLinks;
       return mockLinks;
     } catch (error) {
       console.error('Failed to get payment links:', error);
@@ -293,12 +308,15 @@ export class PaymentService {
   // Delete payment link
   static async deletePaymentLink(linkId: string): Promise<void> {
     try {
-      // In a real implementation, this would make an API call to delete the payment link
-      // For now, we'll simulate the deletion
       console.log(`Deleting payment link: ${linkId}`);
       
       // Simulate API delay
       await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Remove from our in-memory storage
+      for (const invoiceId in mockPaymentLinks) {
+        mockPaymentLinks[invoiceId] = mockPaymentLinks[invoiceId].filter(link => link.id !== linkId);
+      }
       
       // In production, this would be:
       // const response = await fetch(`/api/payment-links/${linkId}`, { method: 'DELETE' });
