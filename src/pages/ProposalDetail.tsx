@@ -16,8 +16,7 @@ import {
   PROPOSAL_STATUSES, 
   SUPPORTED_LANGUAGES, 
   generateProposalPDF, 
-  previewProposalPDF,
-  getTranslation 
+  previewProposalPDF
 } from "@/utils/proposalUtils";
 import { useToast } from "@/hooks/use-toast";
 import Sidebar from "@/components/dashboard/Sidebar";
