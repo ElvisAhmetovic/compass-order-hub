@@ -5,6 +5,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Order, UserRole } from "@/types";
 import OrderCollaboration from "./OrderCollaboration";
 import OrderActivityTimeline from "./OrderActivityTimeline";
@@ -13,6 +14,7 @@ import CompanyInfoSection from "./OrderEditForm/CompanyInfoSection";
 import OrderDetailsSection from "./OrderEditForm/OrderDetailsSection";
 import EditModeHeader from "./OrderEditForm/EditModeHeader";
 import { useOrderEdit } from "./OrderEditForm/useOrderEdit";
+import { SelectedInventoryItem } from "./InventoryItemsSelector";
 
 interface OrderModalProps {
   order: Order | null;
@@ -22,14 +24,13 @@ interface OrderModalProps {
 }
 
 const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
-  // ALL HOOKS MUST BE CALLED FIRST - before any early returns or conditional logic
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [selectedInventoryItems, setSelectedInventoryItems] = useState<SelectedInventoryItem[]>([]);
 
   const handleRefresh = () => {
     setRefreshTrigger(prev => prev + 1);
   };
 
-  // Call useOrderEdit hook BEFORE any conditional returns
   const {
     isEditing,
     editedOrder,
@@ -42,7 +43,6 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
     handleCancel
   } = useOrderEdit(order, handleRefresh);
 
-  // NOW we can do early returns after all hooks are called
   if (!order) return null;
 
   const isAdmin = userRole === "admin";
@@ -63,8 +63,8 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
-        <div className="flex items-center justify-between p-6 border-b">
+      <DialogContent className="max-w-5xl max-h-[95vh] overflow-hidden flex flex-col">
+        <div className="flex items-center justify-between p-6 border-b shrink-0">
           <div className="flex-1">
             <div className="flex items-center gap-4 mb-2">
               <h2 className="text-xl font-semibold">{order.company_name}</h2>
@@ -88,13 +88,13 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
 
         <div className="flex-1 overflow-hidden">
           <Tabs defaultValue="details" className="h-full flex flex-col">
-            <TabsList className="mx-6">
+            <TabsList className="mx-6 shrink-0">
               <TabsTrigger value="details">Order Details</TabsTrigger>
               <TabsTrigger value="activity">Activity Timeline</TabsTrigger>
               <TabsTrigger value="collaboration">Collaboration</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="details" className="flex-1 overflow-auto px-6 pb-6">
+            <TabsContent value="details" className="flex-1 overflow-hidden px-6 pb-6">
               {isEditing && (
                 <EditModeHeader
                   isSaving={isSaving}
@@ -104,70 +104,78 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
                 />
               )}
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Company Information */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-medium flex items-center gap-2">
-                    <Building2 className="h-5 w-5" />
-                    Company Information
-                  </h3>
-                  
-                  <CompanyInfoSection
-                    data={isEditing ? editedOrder : {
-                      company_name: order.company_name,
-                      company_address: order.company_address || "",
-                      contact_email: order.contact_email || "",
-                      contact_phone: order.contact_phone || "",
-                      company_link: order.company_link || "",
-                      description: order.description || "",
-                      price: order.price || 0,
-                      currency: order.currency || "EUR",
-                      priority: order.priority || "medium"
-                    }}
-                    errors={validationErrors}
-                    isEditing={isEditing}
-                    onChange={handleFieldChange}
-                  />
-                </div>
+              <ScrollArea className="h-full">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pr-4">
+                  {/* Company Information */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-medium flex items-center gap-2">
+                      <Building2 className="h-5 w-5" />
+                      Company Information
+                    </h3>
+                    
+                    <CompanyInfoSection
+                      data={isEditing ? editedOrder : {
+                        company_name: order.company_name,
+                        company_address: order.company_address || "",
+                        contact_email: order.contact_email || "",
+                        contact_phone: order.contact_phone || "",
+                        company_link: order.company_link || "",
+                        description: order.description || "",
+                        price: order.price || 0,
+                        currency: order.currency || "EUR",
+                        priority: order.priority || "medium"
+                      }}
+                      errors={validationErrors}
+                      isEditing={isEditing}
+                      onChange={handleFieldChange}
+                    />
+                  </div>
 
-                {/* Order Details */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-medium flex items-center gap-2">
-                    <MessageSquare className="h-5 w-5" />
-                    Order Details
-                  </h3>
-                  
-                  <OrderDetailsSection
-                    order={order}
-                    data={isEditing ? {
-                      ...editedOrder,
-                      assigned_to: editedOrder.assigned_to
-                    } : {
-                      company_name: order.company_name,
-                      company_address: order.company_address || "",
-                      contact_email: order.contact_email || "",
-                      contact_phone: order.contact_phone || "",
-                      company_link: order.company_link || "",
-                      description: order.description || "",
-                      price: order.price || 0,
-                      currency: order.currency || "EUR",
-                      priority: order.priority || "medium",
-                      assigned_to: order.assigned_to || ""
-                    }}
-                    errors={validationErrors}
-                    isEditing={isEditing}
-                    onChange={handleFieldChange}
-                  />
+                  {/* Order Details */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-medium flex items-center gap-2">
+                      <MessageSquare className="h-5 w-5" />
+                      Order Details
+                    </h3>
+                    
+                    <OrderDetailsSection
+                      order={order}
+                      data={isEditing ? {
+                        ...editedOrder,
+                        assigned_to: editedOrder.assigned_to
+                      } : {
+                        company_name: order.company_name,
+                        company_address: order.company_address || "",
+                        contact_email: order.contact_email || "",
+                        contact_phone: order.contact_phone || "",
+                        company_link: order.company_link || "",
+                        description: order.description || "",
+                        price: order.price || 0,
+                        currency: order.currency || "EUR",
+                        priority: order.priority || "medium",
+                        assigned_to: order.assigned_to || ""
+                      }}
+                      errors={validationErrors}
+                      isEditing={isEditing}
+                      onChange={handleFieldChange}
+                      selectedInventoryItems={selectedInventoryItems}
+                      onInventoryItemsChange={setSelectedInventoryItems}
+                    />
+                  </div>
                 </div>
-              </div>
+              </ScrollArea>
             </TabsContent>
 
-            <TabsContent value="activity" className="flex-1 overflow-auto px-6 pb-6">
-              <OrderActivityTimeline orderId={order.id} />
+            <TabsContent value="activity" className="flex-1 overflow-hidden px-6 pb-6">
+              <ScrollArea className="h-full">
+                <OrderActivityTimeline orderId={order.id} />
+              </ScrollArea>
             </TabsContent>
 
-            <TabsContent value="collaboration" className="flex-1 overflow-auto px-6 pb-6">
-              <OrderCollaboration orderId={order.id} />
+            <TabsContent value="collaboration" className="flex-1 overflow-hidden px-6 pb-6">
+              <ScrollArea className="h-full">
+                <OrderCollaboration orderId={order.id} />
+              </ScrollArea>
             </TabsContent>
           </Tabs>
         </div>
