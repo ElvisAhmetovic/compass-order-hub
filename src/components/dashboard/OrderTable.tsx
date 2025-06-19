@@ -40,8 +40,8 @@ const OrderTable = ({
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
   const [selectedPriorities, setSelectedPriorities] = useState<string[]>([]);
-  const [isAdvancedSearchOpen, setIsAdvancedSearchOpen] = useState(false);
-  const [advancedSearchCriteria, setAdvancedSearchCriteria] = useState({});
+  const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
+  const [advancedSearchFilters, setAdvancedSearchFilters] = useState({});
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
 
@@ -56,7 +56,9 @@ const OrderTable = ({
         if (isYearlyPackages) {
           fetchedOrders = await OrderService.getYearlyPackages();
         } else {
-          fetchedOrders = await OrderService.getOrders(false, false);
+          const { data, error, count } = await OrderService.getOrders();
+          if (error) throw error;
+          fetchedOrders = data || [];
         }
 
         // Apply client-side filtering if needed
@@ -105,15 +107,15 @@ const OrderTable = ({
     };
 
     fetchOrders();
-  }, [statusFilter, refreshTrigger, searchQuery, selectedStatuses, selectedPriorities, advancedSearchCriteria, isYearlyPackages, toast]);
+  }, [statusFilter, refreshTrigger, searchQuery, selectedStatuses, selectedPriorities, advancedSearchFilters, isYearlyPackages, toast]);
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
     setCurrentPage(1);
   };
 
-  const handleStatusChange = (statuses: string[]) => {
-    setSelectedStatuses(statuses);
+  const handleStatusChange = (status: string | null) => {
+    setSelectedStatus(status);
     setCurrentPage(1);
   };
 
@@ -123,13 +125,8 @@ const OrderTable = ({
   };
 
   const handleAdvancedSearch = (criteria: any) => {
-    setAdvancedSearchCriteria(criteria);
-    setIsAdvancedSearchOpen(false);
+    setAdvancedSearchFilters(criteria);
     setCurrentPage(1);
-  };
-
-  const toggleAdvancedSearch = () => {
-    setIsAdvancedSearchOpen(!isAdvancedSearchOpen);
   };
 
   // Get current orders
@@ -151,20 +148,19 @@ const OrderTable = ({
     return user ? user.name : "Unknown User";
   };
 
+  // Calculate total pages
+  const totalPages = Math.ceil(totalOrders / ordersPerPage);
+
   return (
     <div className="space-y-4">
       <OrderFilters
-        onSearch={handleSearch}
         onStatusChange={handleStatusChange}
-        onPriorityChange={handlePriorityChange}
-        toggleAdvancedSearch={toggleAdvancedSearch}
-        isAdmin={isAdmin}
+        selectedStatus={selectedStatus}
       />
 
       <AdvancedSearch
-        open={isAdvancedSearchOpen}
-        onClose={toggleAdvancedSearch}
-        onSearch={handleAdvancedSearch}
+        onFiltersChange={handleAdvancedSearch}
+        currentFilters={advancedSearchFilters}
       />
 
       {loading ? (
@@ -229,7 +225,7 @@ const OrderTable = ({
 
       {orders.length > 0 && (
         <OrderPagination
-          totalOrders={totalOrders}
+          totalPages={totalPages}
           currentPage={currentPage}
           onPageChange={paginate}
         />
