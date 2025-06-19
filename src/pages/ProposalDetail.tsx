@@ -588,15 +588,17 @@ const ProposalDetail = () => {
       <div className="flex-1">
         <Layout userRole={user?.role || "user"}>
           <div className="container mx-auto py-8">
+            {/* Move title to upper left corner */}
+            <h1 className="text-lg font-semibold mb-4">
+              {isNewProposal ? "Create New Proposal" : `Edit Proposal ${proposalData.number}`}
+            </h1>
+            
             <div className="flex justify-between items-center mb-6">
               <div className="flex items-center gap-4">
                 <Button variant="ghost" onClick={() => navigate("/proposals")}>
                   <ArrowLeft size={16} className="mr-2" />
                   Back to Proposals
                 </Button>
-                <h1 className="text-base font-medium">
-                  {isNewProposal ? "Create New Proposal" : `Edit Proposal ${proposalData.number}`}
-                </h1>
               </div>
               <div className="flex gap-2 items-center">
                 <div className="flex items-center gap-2">
