@@ -12,6 +12,7 @@ interface ActivityItem {
   action: string;
   details: string;
   actor_name?: string;
+  actor_id?: string;
   created_at: string;
   order_id: string;
 }
@@ -23,6 +24,30 @@ interface OrderActivityTimelineProps {
 const OrderActivityTimeline = ({ orderId }: OrderActivityTimelineProps) => {
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const fetchUserName = async (userId: string): Promise<string> => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('first_name, last_name')
+        .eq('id', userId)
+        .single();
+
+      if (error) {
+        console.error('Error fetching user profile:', error);
+        return 'Unknown User';
+      }
+
+      if (data) {
+        return `${data.first_name} ${data.last_name}`.trim() || 'Unknown User';
+      }
+
+      return 'Unknown User';
+    } catch (error) {
+      console.error('Error in fetchUserName:', error);
+      return 'Unknown User';
+    }
+  };
 
   useEffect(() => {
     const fetchActivities = async () => {
@@ -46,24 +71,41 @@ const OrderActivityTimeline = ({ orderId }: OrderActivityTimelineProps) => {
         if (auditError) throw auditError;
 
         // Combine and format activities
-        const combinedActivities: ActivityItem[] = [
-          ...(statusHistory || []).map(item => ({
-            id: item.id,
-            action: 'Status Change',
-            details: `Order status changed to ${item.status}${item.details ? ` - ${item.details}` : ''}`,
-            actor_name: item.actor_name,
-            created_at: item.changed_at,
-            order_id: item.order_id
-          })),
-          ...(auditLogs || []).map(item => ({
-            id: item.id,
-            action: item.action,
-            details: item.details || '',
-            actor_name: undefined, // audit logs don't have actor names yet
-            created_at: item.created_at,
-            order_id: item.order_id
-          }))
-        ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        const statusActivities: ActivityItem[] = (statusHistory || []).map(item => ({
+          id: item.id,
+          action: 'Status Change',
+          details: `Order status changed to ${item.status}${item.details ? ` - ${item.details}` : ''}`,
+          actor_name: item.actor_name,
+          actor_id: item.actor_id,
+          created_at: item.changed_at,
+          order_id: item.order_id
+        }));
+
+        const auditActivities: ActivityItem[] = await Promise.all(
+          (auditLogs || []).map(async (item) => {
+            let actorName = 'System';
+            
+            // If we have actor_id but no actor_name, fetch the user's name
+            if (item.actor_id && !item.actor_name) {
+              actorName = await fetchUserName(item.actor_id);
+            } else if (item.actor_name) {
+              actorName = item.actor_name;
+            }
+
+            return {
+              id: item.id,
+              action: item.action,
+              details: item.details || '',
+              actor_name: actorName,
+              actor_id: item.actor_id,
+              created_at: item.created_at,
+              order_id: item.order_id
+            };
+          })
+        );
+
+        const combinedActivities = [...statusActivities, ...auditActivities]
+          .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
         setActivities(combinedActivities);
       } catch (error) {
@@ -112,6 +154,14 @@ const OrderActivityTimeline = ({ orderId }: OrderActivityTimelineProps) => {
     switch (action.toLowerCase()) {
       case 'status change':
         return <AlertTriangle className="h-4 w-4" />;
+      case 'order created':
+      case 'yearly package created':
+        return <FileText className="h-4 w-4" />;
+      case 'order assigned':
+      case 'order unassigned':
+        return <User className="h-4 w-4" />;
+      case 'order updated':
+        return <FileText className="h-4 w-4" />;
       case 'comment':
         return <MessageSquare className="h-4 w-4" />;
       case 'file upload':
@@ -125,6 +175,14 @@ const OrderActivityTimeline = ({ orderId }: OrderActivityTimelineProps) => {
     switch (action.toLowerCase()) {
       case 'status change':
         return 'bg-blue-100 text-blue-800';
+      case 'order created':
+      case 'yearly package created':
+        return 'bg-green-100 text-green-800';
+      case 'order assigned':
+      case 'order unassigned':
+        return 'bg-purple-100 text-purple-800';
+      case 'order updated':
+        return 'bg-orange-100 text-orange-800';
       case 'comment':
         return 'bg-green-100 text-green-800';
       case 'file upload':
