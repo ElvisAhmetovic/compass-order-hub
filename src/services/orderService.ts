@@ -13,7 +13,7 @@ export class OrderService {
       
       // Exclude soft deleted orders unless specifically requested
       if (!includeDeleted) {
-        query = query.is('deleted_at', null);
+        query = query.is('deleted_at', null).neq('status_deleted', true);
       }
       
       const { data, error } = await query.order('created_at', { ascending: false });
@@ -30,20 +30,22 @@ export class OrderService {
     }
   }
 
-  // Get only deleted orders
+  // Get only deleted orders - improved to catch all deleted orders
   static async getDeletedOrders(): Promise<Order[]> {
     try {
+      console.log('Fetching deleted orders from database...');
       const { data, error } = await supabase
         .from('orders')
         .select('*')
-        .not('deleted_at', 'is', null)
-        .order('deleted_at', { ascending: false });
+        .or('deleted_at.not.is.null,status_deleted.eq.true')
+        .order('deleted_at', { ascending: false, nullsFirst: false });
 
       if (error) {
         console.error('Error fetching deleted orders:', error);
         throw error;
       }
       
+      console.log(`Found ${data?.length || 0} deleted orders:`, data);
       return data || [];
     } catch (error) {
       console.error('Failed to get deleted orders:', error);

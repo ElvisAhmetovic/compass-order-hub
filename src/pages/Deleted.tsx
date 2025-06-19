@@ -6,16 +6,19 @@ import Sidebar from "@/components/dashboard/Sidebar";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { RotateCcw, Trash2, AlertTriangle } from "lucide-react";
+import { RotateCcw, Trash2, AlertTriangle, Search } from "lucide-react";
 import { Order } from "@/types";
 import { OrderService } from "@/services/orderService";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { Input } from "@/components/ui/input";
 
 const Deleted = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [deletedOrders, setDeletedOrders] = useState<Order[]>([]);
+  const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const [restoring, setRestoring] = useState<string | null>(null);
   const [permanentlyDeleting, setPermanentlyDeleting] = useState<string | null>(null);
@@ -26,17 +29,43 @@ const Deleted = () => {
     fetchDeletedOrders();
   }, []);
 
+  useEffect(() => {
+    // Filter orders based on search term
+    if (searchTerm.trim() === "") {
+      setFilteredOrders(deletedOrders);
+    } else {
+      const filtered = deletedOrders.filter(order => 
+        order.company_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        order.contact_email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        order.description?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      setFilteredOrders(filtered);
+    }
+  }, [searchTerm, deletedOrders]);
+
   const fetchDeletedOrders = async () => {
     try {
       setLoading(true);
-      const orders = await OrderService.getDeletedOrders();
+      console.log("Fetching deleted orders...");
+      
+      // Get all orders including deleted ones
+      const allOrders = await OrderService.getOrders(true, true);
+      console.log("All orders fetched:", allOrders.length);
+      
+      // Filter for deleted orders (either deleted_at is not null OR status_deleted is true)
+      const deleted = allOrders.filter(order => 
+        order.deleted_at !== null || order.status_deleted === true
+      );
+      console.log("Deleted orders found:", deleted.length, deleted);
       
       // Filter for non-admin users to only show their assigned orders
       if (!isAdmin && user) {
-        const userOrders = orders.filter(order => order.assigned_to === user.id);
+        const userOrders = deleted.filter(order => order.assigned_to === user.id);
         setDeletedOrders(userOrders);
+        console.log("User deleted orders:", userOrders.length);
       } else {
-        setDeletedOrders(orders);
+        setDeletedOrders(deleted);
+        console.log("Admin deleted orders:", deleted.length);
       }
     } catch (error) {
       console.error("Error fetching deleted orders:", error);
@@ -145,8 +174,29 @@ const Deleted = () => {
                 </p>
               </div>
               <Badge variant="secondary" className="text-sm">
-                {deletedOrders.length} deleted order{deletedOrders.length !== 1 ? 's' : ''}
+                {filteredOrders.length} deleted order{filteredOrders.length !== 1 ? 's' : ''}
               </Badge>
+            </div>
+
+            {/* Search bar */}
+            <div className="flex items-center space-x-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <Input
+                  type="text"
+                  placeholder="Search deleted orders by company name, email, or description..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              <Button 
+                variant="outline" 
+                onClick={fetchDeletedOrders}
+                disabled={loading}
+              >
+                Refresh
+              </Button>
             </div>
 
             {loading ? (
@@ -154,19 +204,33 @@ const Deleted = () => {
                 <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
                 <span className="ml-2">Loading deleted orders...</span>
               </div>
-            ) : deletedOrders.length === 0 ? (
+            ) : filteredOrders.length === 0 ? (
               <Card>
                 <CardContent className="p-8 text-center">
                   <AlertTriangle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-medium mb-2">No Deleted Orders</h3>
+                  <h3 className="text-lg font-medium mb-2">
+                    {searchTerm ? "No matching deleted orders" : "No Deleted Orders"}
+                  </h3>
                   <p className="text-muted-foreground">
-                    There are no deleted orders to display.
+                    {searchTerm 
+                      ? `No deleted orders match "${searchTerm}". Try a different search term.`
+                      : "There are no deleted orders to display."
+                    }
                   </p>
+                  {searchTerm && (
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setSearchTerm("")}
+                      className="mt-4"
+                    >
+                      Clear Search
+                    </Button>
+                  )}
                 </CardContent>
               </Card>
             ) : (
               <div className="grid gap-4">
-                {deletedOrders.map((order) => (
+                {filteredOrders.map((order) => (
                   <Card key={order.id}>
                     <CardHeader>
                       <div className="flex items-center justify-between">
@@ -174,7 +238,7 @@ const Deleted = () => {
                           <CardTitle className="text-lg">{order.company_name}</CardTitle>
                           <div className="flex items-center gap-4 text-sm text-muted-foreground mt-2">
                             <span>Deleted: {order.deleted_at ? format(new Date(order.deleted_at), 'MMM dd, yyyy HH:mm') : 'Unknown'}</span>
-                            <span>Originally created: {format(new Date(order.created_at), 'MMM dd, yyyy')}</span>
+                            <span>Originally created: {order.created_at ? format(new Date(order.created_at), 'MMM dd, yyyy') : 'Unknown'}</span>
                             {order.assigned_to_name && <span>Assigned to: {order.assigned_to_name}</span>}
                           </div>
                         </div>
@@ -196,6 +260,10 @@ const Deleted = () => {
                       <div className="space-y-4">
                         {order.description && (
                           <p className="text-sm text-muted-foreground">{order.description}</p>
+                        )}
+                        
+                        {order.contact_email && (
+                          <p className="text-sm text-muted-foreground">Contact: {order.contact_email}</p>
                         )}
                         
                         <div className="flex items-center gap-2">
