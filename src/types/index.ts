@@ -1,3 +1,4 @@
+
 export type UserRole = "admin" | "user" | "agent";
 
 export interface User {
@@ -37,6 +38,7 @@ export interface Order {
   priority?: OrderPriority;
   created_at?: string;
   updated_at?: string;
+  deleted_at?: string; // Add deleted_at property
   created_by?: string;
   assigned_to?: string;
   assigned_to_name?: string;
