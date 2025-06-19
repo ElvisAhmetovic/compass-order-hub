@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
-import { MoreHorizontal, FileText, Send, Receipt } from "lucide-react";
+import { MoreHorizontal, FileText, Send, Receipt, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -40,6 +40,7 @@ const OrderRow = ({
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [isSendingToReview, setIsSendingToReview] = useState(false);
   const [isMovingToYearly, setIsMovingToYearly] = useState(false);
+  const [isMovingToActive, setIsMovingToActive] = useState(false);
   const [isCreatingInvoice, setIsCreatingInvoice] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
@@ -370,6 +371,58 @@ const OrderRow = ({
     }
   };
 
+  const handleMoveToActiveOrders = async () => {
+    if (!isAdmin) {
+      toast({
+        title: "Permission Denied",
+        description: "Only administrators can move orders to active orders.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to move orders.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!order.is_yearly_package) {
+      toast({
+        title: "Not a Yearly Package",
+        description: "This order is not a yearly package.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsMovingToActive(true);
+    try {
+      // Update order to remove yearly package flag
+      await OrderService.updateOrder(order.id, { is_yearly_package: false });
+      
+      toast({
+        title: "Order moved to active orders",
+        description: `Order has been moved to the Dashboard/Active Orders section.`,
+      });
+      
+      onRefresh();
+      window.dispatchEvent(new CustomEvent('orderStatusChanged'));
+    } catch (error) {
+      console.error("Error moving order to active orders:", error);
+      toast({
+        title: "Error",
+        description: "Failed to move order to active orders. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsMovingToActive(false);
+    }
+  };
+
   return (
     <TableRow>
       <TableCell className="min-w-0">
@@ -440,6 +493,20 @@ const OrderRow = ({
               className="h-8 px-2 w-full"
             >
               {isMovingToYearly ? "Moving..." : "→ Yearly"}
+            </Button>
+          )}
+
+          {/* Move to Active Orders button - visible for admins on yearly packages only */}
+          {isAdmin && order.is_yearly_package && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleMoveToActiveOrders}
+              disabled={isMovingToActive}
+              className="h-8 px-2 w-full"
+            >
+              <ArrowLeft className="h-4 w-4 mr-1" />
+              {isMovingToActive ? "Moving..." : "→ Active"}
             </Button>
           )}
 
