@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
-import { MoreHorizontal, FileText, Send, Receipt } from "lucide-react";
+import { MoreHorizontal, FileText, Send, Receipt, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -26,6 +26,7 @@ interface OrderRowProps {
   assigneeName: string;
   hideActions?: boolean;
   hidePriority?: boolean;
+  isYearlyPackages?: boolean;
 }
 
 const OrderRow = ({ 
@@ -34,13 +35,15 @@ const OrderRow = ({
   onRefresh, 
   assigneeName, 
   hideActions = false, 
-  hidePriority = false 
+  hidePriority = false,
+  isYearlyPackages = false
 }: OrderRowProps) => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [isSendingToReview, setIsSendingToReview] = useState(false);
   const [isMovingToYearly, setIsMovingToYearly] = useState(false);
   const [isCreatingInvoice, setIsCreatingInvoice] = useState(false);
+  const [isSendingToDashboard, setIsSendingToDashboard] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
   const isAdmin = user?.role === "admin";
@@ -370,6 +373,58 @@ const OrderRow = ({
     }
   };
 
+  const handleSendToDashboard = async () => {
+    if (!isAdmin) {
+      toast({
+        title: "Permission Denied",
+        description: "Only administrators can move orders back to dashboard.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to move orders.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!order.is_yearly_package) {
+      toast({
+        title: "Not a Yearly Package",
+        description: "This order is not marked as a yearly package.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsSendingToDashboard(true);
+    try {
+      // Update order to remove yearly package status
+      await OrderService.updateOrder(order.id, { is_yearly_package: false });
+      
+      toast({
+        title: "Order moved to dashboard",
+        description: `Order has been moved back to the main dashboard.`,
+      });
+      
+      onRefresh();
+      window.dispatchEvent(new CustomEvent('orderStatusChanged'));
+    } catch (error) {
+      console.error("Error moving order to dashboard:", error);
+      toast({
+        title: "Error",
+        description: "Failed to move order to dashboard. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSendingToDashboard(false);
+    }
+  };
+
   return (
     <TableRow>
       <TableCell className="min-w-0">
@@ -416,6 +471,20 @@ const OrderRow = ({
       </TableCell>
       <TableCell>
         <div className="flex flex-col items-start gap-1">
+          {/* Send to Dashboard button - visible for admins on yearly packages only */}
+          {isAdmin && isYearlyPackages && order.is_yearly_package && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleSendToDashboard}
+              disabled={isSendingToDashboard}
+              className="h-8 px-2 w-full"
+            >
+              <ArrowLeft className="h-4 w-4 mr-1" />
+              {isSendingToDashboard ? "Moving..." : "→ Dashboard"}
+            </Button>
+          )}
+
           {/* Send to Review button - visible for admins on orders not already in Review status */}
           {isAdmin && !order.status_review && (
             <Button
@@ -431,7 +500,7 @@ const OrderRow = ({
           )}
 
           {/* Move to Yearly Packages button - visible for admins on regular orders only */}
-          {isAdmin && !order.is_yearly_package && (
+          {isAdmin && !order.is_yearly_package && !isYearlyPackages && (
             <Button
               variant="outline"
               size="sm"
