@@ -1,853 +1,441 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import Layout from "@/components/layout/Layout";
-import Sidebar from "@/components/dashboard/Sidebar";
-import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { PlusCircle, Trash2, Save, Eye, Download, ArrowLeft, Calendar, Clock, Languages } from "lucide-react";
+import { Trash2, Plus, ArrowLeft, Eye, Download, Save } from "lucide-react";
+import Layout from "@/components/layout/Layout";
+import { useAuth } from "@/context/AuthContext";
+import { useLanguage } from "@/context/LanguageContext";
+import { 
+  PROPOSAL_STATUSES, 
+  SUPPORTED_LANGUAGES, 
+  generateProposalPDF, 
+  previewProposalPDF,
+  getTranslation 
+} from "@/utils/proposalUtils";
 import { useToast } from "@/hooks/use-toast";
-import { v4 as uuidv4 } from "uuid";
-import { generateProposalPDF, previewProposalPDF, PROPOSAL_STATUSES, formatInventoryItemForProposal } from "@/utils/proposalUtils";
-import InventoryAutocomplete from "@/components/inventory/InventoryAutocomplete";
-import TemplateManager from "@/components/proposals/TemplateManager";
-import { getDefaultTemplate, createProposalFromTemplate } from "@/utils/templateUtils";
-import { useInventory } from "@/hooks/useInventory";
-import { SUPPORTED_LANGUAGES } from "@/utils/proposalTranslations";
 
-interface ProposalLineItem {
+interface LineItem {
   id: string;
-  proposal_id: string;
-  item_id?: string;
-  name: string;
+  productServiceName: string;
   description: string;
   quantity: number;
-  unit_price: number;
-  total_price: number;
-  category?: string;
-  unit?: string;
-  created_at: string;
+  unitPrice: number;
+  total: number;
 }
 
 interface ProposalData {
-  id: string;
+  // Basic Information
   number: string;
-  customer: string;
-  subject: string;
   reference: string;
-  amount: string;
+  subject: string;
   status: string;
-  created_at: string;
-  updated_at: string;
   currency: string;
-  vatEnabled: boolean;
-  vatRate: number;
+  date: string;
+  time: string;
+  language: string;
   
-  // Date and time fields
-  proposalDate: string;
-  proposalTime: string;
+  // Company Logo
+  companyLogo: string;
+  logoSize: string;
   
-  // Customer details
+  // Customer Information
   customerName: string;
   customerAddress: string;
   customerEmail: string;
-  customerCountry: string;
-  customerRef: string;
+  country: string;
+  customerReference: string;
+  internalContactPerson: string;
   
-  // Company/Contact details
-  yourContact: string;
-  internalContact: string;
-  
-  // Proposal content
+  // Proposal Content
   proposalTitle: string;
   proposalDescription: string;
-  content: string;
+  additionalContent: string;
   
-  // Terms and delivery
+  // Line Items
+  lineItems: LineItem[];
+  
+  // VAT & Pricing
+  vatEnabled: boolean;
+  vatRate: number;
+  
+  // Terms & Conditions
   deliveryTerms: string;
   paymentTerms: string;
-  termsAndConditions: string;
+  additionalTerms: string;
+  footerContent: string;
   
-  // Payment data
+  // Payment Data
   accountNumber: string;
   accountName: string;
   paymentMethod: string;
-  
-  // Footer and company info
-  footerContent: string;
-  logo?: string;
-  logoSize?: number;
-  signatureUrl?: string;
-  includePaymentData: boolean; // New property for payment data toggle
-  
-  // Line items
-  lineItems: ProposalLineItem[];
-  
-  // Calculated totals
-  netAmount: number;
-  vatAmount: number;
-  totalAmount: number;
 }
 
 const ProposalDetail = () => {
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { t } = useLanguage(); // UI translations only
   const { toast } = useToast();
-  const { inventoryData, loading: inventoryLoading } = useInventory();
-  const isNewProposal = id === "new" || !id;
-
-  // Add language state for PDF output only
-  const [pdfLanguage, setPdfLanguage] = useState('en');
+  
+  const isNewProposal = id === 'new' || !id;
 
   const [proposalData, setProposalData] = useState<ProposalData>({
-    id: isNewProposal ? uuidv4() : id || "",
-    number: "",
-    customer: "",
-    subject: "",
+    // Basic Information
+    number: isNewProposal ? `PRO-${Date.now()}` : "",
     reference: "",
-    amount: "0.00",
-    status: "Draft",
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
+    subject: "",
+    status: "draft",
     currency: "EUR",
-    vatEnabled: true,
-    vatRate: 19,
+    date: new Date().toISOString().split('T')[0],
+    time: new Date().toLocaleTimeString('en-GB', { hour12: false }),
+    language: "en",
     
-    // Date and time fields with current date/time as default
-    proposalDate: new Date().toISOString().split('T')[0],
-    proposalTime: new Date().toTimeString().slice(0, 5),
+    // Company Logo
+    companyLogo: "",
+    logoSize: "medium",
     
-    // Customer details
+    // Customer Information
     customerName: "",
     customerAddress: "",
     customerEmail: "",
-    customerCountry: "",
-    customerRef: "",
+    country: "",
+    customerReference: "",
+    internalContactPerson: "",
     
-    // Company/Contact details
-    yourContact: "Thomas Klein",
-    internalContact: "Thomas Klein",
-    
-    // Proposal content
+    // Proposal Content
     proposalTitle: "",
     proposalDescription: "",
-    content: "",
+    additionalContent: "",
     
-    // Terms and delivery
-    deliveryTerms: "7 days after receipt of invoice",
-    paymentTerms: "By placing your order you agree to pay for the services included in this offer within 7 days of receipt of the invoice.",
-    termsAndConditions: "",
-    
-    // Payment data
-    accountNumber: "",
-    accountName: "",
-    paymentMethod: "CREDIT CARD",
-    
-    // Footer and company info
-    footerContent: "",
-    logoSize: 33,
-    includePaymentData: true, // Default to including payment data
-    
-    // Line items
+    // Line Items
     lineItems: [],
     
-    // Calculated totals
-    netAmount: 0,
-    vatAmount: 0,
-    totalAmount: 0
+    // VAT & Pricing
+    vatEnabled: true,
+    vatRate: 20,
+    
+    // Terms & Conditions
+    deliveryTerms: "",
+    paymentTerms: "",
+    additionalTerms: "",
+    footerContent: "",
+    
+    // Payment Data
+    accountNumber: "",
+    accountName: "",
+    paymentMethod: ""
   });
 
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    loadProposal();
-  }, [id]);
-
-  useEffect(() => {
-    if (!isNewProposal) {
-      const savedDetailedProposals = localStorage.getItem("detailedProposals");
-      if (savedDetailedProposals) {
-        const detailedProposals = JSON.parse(savedDetailedProposals);
-        const detailedProposal = detailedProposals.find((p: any) => p.id === id);
-        if (detailedProposal?.pdfLanguage) {
-          setPdfLanguage(detailedProposal.pdfLanguage);
-        }
-      }
+    if (!isNewProposal && id) {
+      // Simulate fetching proposal data
+      setTimeout(() => {
+        setProposalData({
+          number: id,
+          reference: "REF-123",
+          subject: "Sample Proposal",
+          status: "pending",
+          currency: "USD",
+          date: "2024-01-20",
+          time: "14:30",
+          language: "en",
+          companyLogo: "",
+          logoSize: "medium",
+          customerName: "Acme Corp",
+          customerAddress: "123 Main St",
+          customerEmail: "info@acme.com",
+          country: "USA",
+          customerReference: "Contact: John Doe",
+          internalContactPerson: "Jane Smith",
+          proposalTitle: "Software Development",
+          proposalDescription: "Custom software solution",
+          additionalContent: "Additional details here",
+          lineItems: [
+            { id: "1", productServiceName: "Development", description: "Coding", quantity: 100, unitPrice: 50, total: 5000 },
+            { id: "2", productServiceName: "Design", description: "UI/UX", quantity: 50, unitPrice: 80, total: 4000 }
+          ],
+          vatEnabled: true,
+          vatRate: 20,
+          deliveryTerms: "30 days",
+          paymentTerms: "Net 30",
+          additionalTerms: "As agreed",
+          footerContent: "Thank you for your business!",
+          accountNumber: "123456789",
+          accountName: "My Account",
+          paymentMethod: "Wire Transfer"
+        });
+      }, 500);
     }
   }, [id, isNewProposal]);
 
-  const loadProposal = () => {
+  const handleSave = async () => {
+    setIsSaving(true);
     try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      toast({
+        title: t('successSaved'),
+        description: isNewProposal ? 
+          "New proposal has been created successfully." : 
+          "Proposal has been updated successfully.",
+      });
+      
       if (isNewProposal) {
-        // Check for default template first
-        const defaultTemplate = getDefaultTemplate();
-        
-        if (defaultTemplate) {
-          // Use default template as starting point
-          const templateProposal = createProposalFromTemplate(defaultTemplate, uuidv4());
-          setProposalData(templateProposal);
-        } else {
-          // Generate a new proposal number for blank proposal
-          const savedProposals = localStorage.getItem("proposals");
-          const proposals = savedProposals ? JSON.parse(savedProposals) : [];
-          const nextNumber = `AN-${(9984 + proposals.length + 1).toString()}`;
-          
-          setProposalData(prev => ({
-            ...prev,
-            number: nextNumber,
-            reference: `REF-${new Date().getFullYear()}-${(proposals.length + 1).toString().padStart(3, '0')}`
-          }));
-        }
-      } else {
-        const savedProposals = localStorage.getItem("proposals");
-        if (savedProposals) {
-          const proposals = JSON.parse(savedProposals);
-          const proposal = proposals.find((p: any) => p.id === id);
-          
-          if (proposal) {
-            // Load detailed proposal data
-            const savedDetailedProposals = localStorage.getItem("detailedProposals");
-            let detailedProposal = null;
-            
-            if (savedDetailedProposals) {
-              const detailedProposals = JSON.parse(savedDetailedProposals);
-              detailedProposal = detailedProposals.find((p: any) => p.id === id);
-            }
-            
-            // Merge basic and detailed data
-            const mergedData = {
-              ...proposalData,
-              ...proposal,
-              ...detailedProposal,
-              lineItems: detailedProposal?.lineItems || [],
-              netAmount: detailedProposal?.netAmount || parseFloat(proposal.amount) || 0,
-              vatAmount: detailedProposal?.vatAmount || 0,
-              totalAmount: detailedProposal?.totalAmount || parseFloat(proposal.amount) || 0
-            };
-            
-            setProposalData(mergedData);
-          }
-        }
+        navigate(`/proposals/${proposalData.number}`);
       }
     } catch (error) {
-      console.error("Error loading proposal:", error);
       toast({
-        title: "Error",
-        description: "Failed to load proposal.",
+        title: t('errorOccurred'),
+        description: "Failed to save proposal. Please try again.",
         variant: "destructive",
       });
     } finally {
-      setLoading(false);
+      setIsSaving(false);
     }
   };
 
-  const handleLoadTemplate = (templateData: any) => {
-    const newProposalData = createProposalFromTemplate(templateData, proposalData.id);
-    setProposalData(newProposalData);
-    
-    toast({
-      title: "Template applied",
-      description: "The template has been applied to this proposal.",
-    });
+  const handlePreview = () => {
+    previewProposalPDF(proposalData);
   };
 
-  const calculateTotals = (lineItems: ProposalLineItem[], vatEnabled: boolean, vatRate: number) => {
-    const netAmount = lineItems.reduce((sum, item) => sum + item.total_price, 0);
-    const vatAmount = vatEnabled ? (netAmount * vatRate / 100) : 0;
-    const totalAmount = netAmount + vatAmount;
-    
-    return { netAmount, vatAmount, totalAmount };
+  const handleDownload = () => {
+    generateProposalPDF(proposalData);
   };
 
-  const handleLineItemChange = (index: number, field: keyof ProposalLineItem, value: any) => {
-    const updatedLineItems = [...proposalData.lineItems];
-    updatedLineItems[index] = { ...updatedLineItems[index], [field]: value };
-    
-    // Recalculate line item total if quantity or unit_price changed
-    if (field === 'quantity' || field === 'unit_price') {
-      const item = updatedLineItems[index];
-      item.total_price = item.quantity * item.unit_price;
-    }
-    
-    // Recalculate totals
-    const { netAmount, vatAmount, totalAmount } = calculateTotals(updatedLineItems, proposalData.vatEnabled, proposalData.vatRate);
-    
-    setProposalData(prev => ({
-      ...prev,
-      lineItems: updatedLineItems,
-      netAmount,
-      vatAmount,
-      totalAmount,
-      amount: totalAmount.toFixed(2)
-    }));
-  };
-
-  const handleInventoryItemSelect = (index: number, inventoryItem: any) => {
-    const updatedLineItems = [...proposalData.lineItems];
-    const parsePrice = (priceStr: string) => {
-      if (!priceStr) return 0;
-      const numStr = priceStr.replace(/[^\d.,]/g, '').replace(',', '.');
-      return parseFloat(numStr) || 0;
-    };
-
-    const unitPrice = parsePrice(inventoryItem.price);
-    const quantity = updatedLineItems[index].quantity || 1;
-
-    updatedLineItems[index] = {
-      ...updatedLineItems[index],
-      item_id: inventoryItem.id,
-      name: inventoryItem.name,
-      description: inventoryItem.description || '',
-      unit_price: unitPrice,
-      total_price: quantity * unitPrice,
-      category: inventoryItem.category,
-      unit: inventoryItem.unit || 'unit'
-    };
-
-    const { netAmount, vatAmount, totalAmount } = calculateTotals(updatedLineItems, proposalData.vatEnabled, proposalData.vatRate);
-    
-    setProposalData(prev => ({
-      ...prev,
-      lineItems: updatedLineItems,
-      netAmount,
-      vatAmount,
-      totalAmount,
-      amount: totalAmount.toFixed(2)
-    }));
-  };
-
-  const handleAddLineItem = () => {
-    const newItem: ProposalLineItem = {
-      id: uuidv4(),
-      proposal_id: proposalData.id,
-      name: "",
+  const addLineItem = () => {
+    const newItem: LineItem = {
+      id: Date.now().toString(),
+      productServiceName: "",
       description: "",
       quantity: 1,
-      unit_price: 0,
-      total_price: 0,
-      unit: "unit",
-      created_at: new Date().toISOString()
+      unitPrice: 0,
+      total: 0
     };
-    
     setProposalData(prev => ({
       ...prev,
       lineItems: [...prev.lineItems, newItem]
     }));
   };
 
-  const handleRemoveLineItem = (index: number) => {
-    const updatedLineItems = proposalData.lineItems.filter((_, i) => i !== index);
-    const { netAmount, vatAmount, totalAmount } = calculateTotals(updatedLineItems, proposalData.vatEnabled, proposalData.vatRate);
-    
+  const updateLineItem = (id: string, field: keyof LineItem, value: string | number) => {
     setProposalData(prev => ({
       ...prev,
-      lineItems: updatedLineItems,
-      netAmount,
-      vatAmount,
-      totalAmount,
-      amount: totalAmount.toFixed(2)
+      lineItems: prev.lineItems.map(item => {
+        if (item.id === id) {
+          const updated = { ...item, [field]: value };
+          if (field === 'quantity' || field === 'unitPrice') {
+            updated.total = updated.quantity * updated.unitPrice;
+          }
+          return updated;
+        }
+        return item;
+      })
     }));
   };
 
-  const handleAddFromInventory = (inventoryItem: any) => {
-    const formattedItem = formatInventoryItemForProposal(inventoryItem, 1);
-    formattedItem.proposal_id = proposalData.id;
-    
-    const updatedLineItems = [...proposalData.lineItems, formattedItem];
-    const { netAmount, vatAmount, totalAmount } = calculateTotals(updatedLineItems, proposalData.vatEnabled, proposalData.vatRate);
-    
+  const removeLineItem = (id: string) => {
     setProposalData(prev => ({
       ...prev,
-      lineItems: updatedLineItems,
-      netAmount,
-      vatAmount,
-      totalAmount,
-      amount: totalAmount.toFixed(2)
-    }));
-    
-    toast({
-      title: "Item added",
-      description: `${inventoryItem.name} has been added to the proposal.`,
-    });
-  };
-
-  const handleVatToggle = (enabled: boolean) => {
-    const { netAmount, vatAmount, totalAmount } = calculateTotals(proposalData.lineItems, enabled, proposalData.vatRate);
-    
-    setProposalData(prev => ({
-      ...prev,
-      vatEnabled: enabled,
-      vatAmount,
-      totalAmount,
-      amount: totalAmount.toFixed(2)
+      lineItems: prev.lineItems.filter(item => item.id !== id)
     }));
   };
 
-  const handleVatRateChange = (rate: number) => {
-    const { netAmount, vatAmount, totalAmount } = calculateTotals(proposalData.lineItems, proposalData.vatEnabled, rate);
-    
-    setProposalData(prev => ({
-      ...prev,
-      vatRate: rate,
-      vatAmount,
-      totalAmount,
-      amount: totalAmount.toFixed(2)
-    }));
+  const calculateTotals = () => {
+    const netAmount = proposalData.lineItems.reduce((sum, item) => sum + item.total, 0);
+    const vatAmount = proposalData.vatEnabled ? netAmount * (proposalData.vatRate / 100) : 0;
+    const totalAmount = netAmount + vatAmount;
+    return { netAmount, vatAmount, totalAmount };
   };
 
-  const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const logoUrl = e.target?.result as string;
-        setProposalData(prev => ({
-          ...prev,
-          logo: logoUrl
-        }));
-        toast({
-          title: "Logo uploaded",
-          description: "Company logo has been uploaded successfully.",
-        });
-      };
-      reader.readAsDataURL(file);
-    }
-  };
+  const { netAmount, vatAmount, totalAmount } = calculateTotals();
 
-  const handleLogoSizeChange = (size: number) => {
-    setProposalData(prev => ({
-      ...prev,
-      logoSize: size
-    }));
-  };
-
-  const saveProposal = async () => {
-    setSaving(true);
-    try {
-      // Save to basic proposals list
-      const savedProposals = localStorage.getItem("proposals");
-      const proposals = savedProposals ? JSON.parse(savedProposals) : [];
-      
-      const basicProposalData = {
-        id: proposalData.id,
-        number: proposalData.number,
-        customer: proposalData.customerName || proposalData.customer,
-        subject: proposalData.subject,
-        reference: proposalData.reference,
-        amount: proposalData.amount,
-        status: proposalData.status,
-        created_at: proposalData.created_at,
-        updated_at: new Date().toISOString(),
-        currency: proposalData.currency,
-        vatEnabled: proposalData.vatEnabled
-      };
-      
-      const existingIndex = proposals.findIndex((p: any) => p.id === proposalData.id);
-      if (existingIndex >= 0) {
-        proposals[existingIndex] = basicProposalData;
-      } else {
-        proposals.push(basicProposalData);
-      }
-      
-      localStorage.setItem("proposals", JSON.stringify(proposals));
-      
-      // Save detailed proposal data with PDF language
-      const savedDetailedProposals = localStorage.getItem("detailedProposals");
-      const detailedProposals = savedDetailedProposals ? JSON.parse(savedDetailedProposals) : [];
-      
-      const detailedExistingIndex = detailedProposals.findIndex((p: any) => p.id === proposalData.id);
-      const updatedProposalData = {
-        ...proposalData,
-        pdfLanguage: pdfLanguage, // Save PDF language instead of interface language
-        updated_at: new Date().toISOString()
-      };
-      
-      if (detailedExistingIndex >= 0) {
-        detailedProposals[detailedExistingIndex] = updatedProposalData;
-      } else {
-        detailedProposals.push(updatedProposalData);
-      }
-      
-      localStorage.setItem("detailedProposals", JSON.stringify(detailedProposals));
-      
-      toast({
-        title: "Proposal saved",
-        description: "Proposal has been saved successfully.",
-      });
-      
-      if (isNewProposal) {
-        navigate(`/proposals/${proposalData.id}`);
-      }
-    } catch (error) {
-      console.error("Error saving proposal:", error);
-      toast({
-        title: "Error",
-        description: "Failed to save proposal.",
-        variant: "destructive",
-      });
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handlePreview = async () => {
-    // Ensure data is saved before preview
-    await saveProposal();
-    
-    // Prepare proposal data for PDF generation with PDF language
-    const pdfProposalData = {
-      ...proposalData,
-      language: pdfLanguage, // Use PDF language for generation
-      // Ensure customer data is properly mapped
-      customer: proposalData.customerName || proposalData.customer,
-      // Map internal contact properly
-      yourContact: proposalData.internalContact || proposalData.yourContact,
-      // Ensure line items include descriptions
-      lineItems: proposalData.lineItems.map(item => ({
-        ...item,
-        // Ensure description is included
-        additionalInfo: item.description
-      }))
-    };
-    
-    console.log('Preview data being sent:', pdfProposalData);
-    
-    const success = await previewProposalPDF(pdfProposalData, pdfLanguage);
-    if (!success) {
-      toast({
-        title: "Preview failed",
-        description: "Failed to generate proposal preview.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleDownload = async () => {
-    // Ensure data is saved before download
-    await saveProposal();
-    
-    // Prepare proposal data for PDF generation with PDF language
-    const pdfProposalData = {
-      ...proposalData,
-      language: pdfLanguage, // Use PDF language for generation
-      // Ensure customer data is properly mapped
-      customer: proposalData.customerName || proposalData.customer,
-      // Map internal contact properly
-      yourContact: proposalData.internalContact || proposalData.yourContact,
-      // Ensure line items include descriptions
-      lineItems: proposalData.lineItems.map(item => ({
-        ...item,
-        // Ensure description is included
-        additionalInfo: item.description
-      }))
-    };
-    
-    console.log('Download data being sent:', pdfProposalData);
-    
-    const success = await generateProposalPDF(pdfProposalData, pdfLanguage, `proposal-${proposalData.number}.pdf`);
-    if (success) {
-      toast({
-        title: "Proposal downloaded",
-        description: `Proposal ${proposalData.number} has been downloaded as PDF.`,
-      });
-    } else {
-      toast({
-        title: "Download failed",
-        description: "Failed to download proposal as PDF.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  if (loading || inventoryLoading) {
-    return (
-      <div className="flex min-h-screen">
-        <Sidebar />
-        <div className="flex-1">
-          <Layout userRole={user?.role || "user"}>
-            <div className="container mx-auto py-8">
-              <div className="text-center">Loading proposal...</div>
-            </div>
-          </Layout>
-        </div>
-      </div>
-    );
-  }
+  const currencies = [
+    { value: "EUR", label: "EUR (€)" },
+    { value: "USD", label: "USD ($)" },
+    { value: "GBP", label: "GBP (£)" },
+    { value: "BAM", label: "BAM (КМ)" }
+  ];
 
   return (
-    <div className="flex min-h-screen">
-      <Sidebar />
+    <div className="flex min-h-screen bg-gray-50">
       <div className="flex-1">
         <Layout userRole={user?.role || "user"}>
           <div className="container mx-auto py-8">
             {/* Move title to upper left corner */}
             <h1 className="text-lg font-semibold mb-4">
-              {isNewProposal ? "Create New Proposal" : `Edit Proposal ${proposalData.number}`}
+              {isNewProposal ? getTranslation(proposalData.language, 'createNewProposal') : 
+                `${getTranslation(proposalData.language, 'editProposal')} ${proposalData.number}`}
             </h1>
             
             <div className="flex justify-between items-center mb-6">
               <div className="flex items-center gap-4">
                 <Button variant="ghost" onClick={() => navigate("/proposals")}>
                   <ArrowLeft size={16} className="mr-2" />
-                  Back to Proposals
+                  {getTranslation(proposalData.language, 'backToProposals')}
                 </Button>
               </div>
               <div className="flex gap-2 items-center">
                 <div className="flex items-center gap-2">
-                  <Languages size={16} />
-                  <label className="text-sm font-medium">PDF Language:</label>
-                  <Select value={pdfLanguage} onValueChange={setPdfLanguage}>
-                    <SelectTrigger className="w-40">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {SUPPORTED_LANGUAGES.map((lang) => (
-                        <SelectItem key={lang.code} value={lang.code}>
-                          {lang.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Button variant="outline" onClick={handlePreview}>
+                    <Eye size={16} className="mr-2" />
+                    {getTranslation(proposalData.language, 'preview')}
+                  </Button>
+                  <Button variant="outline" onClick={handleDownload}>
+                    <Download size={16} className="mr-2" />
+                    {getTranslation(proposalData.language, 'downloadPdf')}
+                  </Button>
                 </div>
-                
-                {/* Payment Data Toggle */}
-                <div className="flex items-center gap-2 bg-muted/50 px-3 py-2 rounded-lg">
-                  <Switch
-                    id="includePaymentData"
-                    checked={proposalData.includePaymentData}
-                    onCheckedChange={(checked) => 
-                      setProposalData(prev => ({ ...prev, includePaymentData: checked }))
-                    }
-                  />
-                  <Label htmlFor="includePaymentData" className="text-sm font-medium">
-                    Include Payment Data in PDF
-                  </Label>
-                </div>
-                
-                <TemplateManager 
-                  currentProposalData={proposalData}
-                  onLoadTemplate={handleLoadTemplate}
-                />
-                <Button onClick={handlePreview} variant="outline">
-                  <Eye size={16} className="mr-2" />
-                  Preview
-                </Button>
-                <Button onClick={handleDownload} variant="outline">
-                  <Download size={16} className="mr-2" />
-                  Download PDF
-                </Button>
-                <Button onClick={saveProposal} disabled={saving}>
+                <Button onClick={handleSave} disabled={isSaving}>
                   <Save size={16} className="mr-2" />
-                  {saving ? "Saving..." : "Save"}
+                  {isSaving ? getTranslation(proposalData.language, 'saving') : getTranslation(proposalData.language, 'save')}
                 </Button>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Basic Information */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Basic Information</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+            <Tabs defaultValue="basic" className="space-y-6">
+              <TabsList className="grid w-full grid-cols-6">
+                <TabsTrigger value="basic">{getTranslation(proposalData.language, 'basicInformation')}</TabsTrigger>
+                <TabsTrigger value="customer">{getTranslation(proposalData.language, 'customerInformation')}</TabsTrigger>
+                <TabsTrigger value="content">{getTranslation(proposalData.language, 'proposalContent')}</TabsTrigger>
+                <TabsTrigger value="products">{getTranslation(proposalData.language, 'productsServices')}</TabsTrigger>
+                <TabsTrigger value="pricing">{getTranslation(proposalData.language, 'vatPricing')}</TabsTrigger>
+                <TabsTrigger value="terms">{getTranslation(proposalData.language, 'termsConditions')}</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="basic" className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>{getTranslation(proposalData.language, 'basicInformation')}</CardTitle>
+                    <CardDescription>Basic proposal information and settings</CardDescription>
+                  </CardHeader>
+                  <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="number">Proposal Number</Label>
+                      <Label htmlFor="proposalNumber">{getTranslation(proposalData.language, 'proposalNumber')}</Label>
                       <Input
-                        id="number"
+                        id="proposalNumber"
                         value={proposalData.number}
                         onChange={(e) => setProposalData(prev => ({ ...prev, number: e.target.value }))}
+                        disabled={!isNewProposal}
                       />
                     </div>
                     <div>
-                      <Label htmlFor="reference">Reference</Label>
+                      <Label htmlFor="reference">{getTranslation(proposalData.language, 'reference')}</Label>
                       <Input
                         id="reference"
                         value={proposalData.reference}
                         onChange={(e) => setProposalData(prev => ({ ...prev, reference: e.target.value }))}
                       />
                     </div>
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="subject">Subject</Label>
-                    <Input
-                      id="subject"
-                      value={proposalData.subject}
-                      onChange={(e) => setProposalData(prev => ({ ...prev, subject: e.target.value }))}
-                    />
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="status">Status</Label>
-                      <Select 
-                        value={proposalData.status} 
-                        onValueChange={(value) => setProposalData(prev => ({ ...prev, status: value }))}
-                      >
+                      <Label htmlFor="subject">{getTranslation(proposalData.language, 'subject')}</Label>
+                      <Input
+                        id="subject"
+                        value={proposalData.subject}
+                        onChange={(e) => setProposalData(prev => ({ ...prev, subject: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="status">{getTranslation(proposalData.language, 'status')}</Label>
+                      <Select value={proposalData.status} onValueChange={(value) => setProposalData(prev => ({ ...prev, status: value }))}>
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {PROPOSAL_STATUSES.map((status) => (
-                            <SelectItem key={status} value={status}>
-                              {status}
+                          {PROPOSAL_STATUSES.map(status => (
+                            <SelectItem key={status.value} value={status.value}>
+                              {status.label}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                     </div>
                     <div>
-                      <Label htmlFor="currency">Currency</Label>
-                      <Select 
-                        value={proposalData.currency} 
-                        onValueChange={(value) => setProposalData(prev => ({ ...prev, currency: value }))}
-                      >
+                      <Label htmlFor="currency">{getTranslation(proposalData.language, 'currency')}</Label>
+                      <Select value={proposalData.currency} onValueChange={(value) => setProposalData(prev => ({ ...prev, currency: value }))}>
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="EUR">EUR</SelectItem>
-                          <SelectItem value="USD">USD</SelectItem>
-                          <SelectItem value="GBP">GBP</SelectItem>
+                          {currencies.map(currency => (
+                            <SelectItem key={currency.value} value={currency.value}>
+                              {currency.label}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
-                  </div>
-                  
-                  {/* Date and Time Section */}
-                  <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="proposalDate" className="flex items-center gap-2">
-                        <Calendar size={16} />
-                        Proposal Date
-                      </Label>
+                      <Label htmlFor="proposalDate">{getTranslation(proposalData.language, 'proposalDate')}</Label>
                       <Input
                         id="proposalDate"
                         type="date"
-                        value={proposalData.proposalDate}
-                        onChange={(e) => setProposalData(prev => ({ ...prev, proposalDate: e.target.value }))}
+                        value={proposalData.date}
+                        onChange={(e) => setProposalData(prev => ({ ...prev, date: e.target.value }))}
                       />
                     </div>
                     <div>
-                      <Label htmlFor="proposalTime" className="flex items-center gap-2">
-                        <Clock size={16} />
-                        Proposal Time
-                      </Label>
+                      <Label htmlFor="proposalTime">{getTranslation(proposalData.language, 'proposalTime')}</Label>
                       <Input
                         id="proposalTime"
                         type="time"
-                        value={proposalData.proposalTime}
-                        onChange={(e) => setProposalData(prev => ({ ...prev, proposalTime: e.target.value }))}
+                        value={proposalData.time}
+                        onChange={(e) => setProposalData(prev => ({ ...prev, time: e.target.value }))}
                       />
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Company Logo Section */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Company Logo</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <Label htmlFor="logoUpload">Upload Company Logo</Label>
-                    <div className="flex items-center gap-4 mt-2">
-                      <Input
-                        id="logoUpload"
-                        type="file"
-                        accept="image/*"
-                        onChange={handleLogoUpload}
-                        className="flex-1"
-                      />
-                    </div>
-                  </div>
-                  
-                  {proposalData.logo && (
-                    <div className="space-y-4">
-                      <div>
-                        <Label>Logo Preview</Label>
-                        <div className="mt-2 p-4 border rounded-lg bg-gray-50">
-                          <img
-                            src={proposalData.logo}
-                            alt="Company Logo"
-                            style={{ maxWidth: `${proposalData.logoSize || 33}%`, maxHeight: '80px' }}
-                            className="object-contain"
-                          />
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <Label htmlFor="logoSize">Logo Size: {proposalData.logoSize || 33}%</Label>
-                        <div className="flex items-center gap-4 mt-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleLogoSizeChange(Math.max(10, (proposalData.logoSize || 33) - 5))}
-                          >
-                            -
-                          </Button>
-                          <span className="min-w-[60px] text-center">{proposalData.logoSize || 33}%</span>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleLogoSizeChange(Math.min(100, (proposalData.logoSize || 33) + 5))}
-                          >
-                            +
-                          </Button>
-                        </div>
-                        <Input
-                          type="range"
-                          min="10"
-                          max="100"
-                          step="5"
-                          value={proposalData.logoSize || 33}
-                          onChange={(e) => handleLogoSizeChange(parseInt(e.target.value))}
-                          className="mt-2"
-                        />
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* Customer Information */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Customer Information</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <Label htmlFor="customerName">Customer Name</Label>
-                    <Input
-                      id="customerName"
-                      value={proposalData.customerName}
-                      onChange={(e) => setProposalData(prev => ({ ...prev, customerName: e.target.value, customer: e.target.value }))}
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="customerAddress">Customer Address</Label>
-                    <Textarea
-                      id="customerAddress"
-                      value={proposalData.customerAddress}
-                      onChange={(e) => setProposalData(prev => ({ ...prev, customerAddress: e.target.value }))}
-                      rows={3}
-                    />
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="customerEmail">Customer Email</Label>
+                      <Label htmlFor="language">{getTranslation(proposalData.language, 'language')}</Label>
+                      <Select value={proposalData.language} onValueChange={(value) => setProposalData(prev => ({ ...prev, language: value }))}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {SUPPORTED_LANGUAGES.map(lang => (
+                            <SelectItem key={lang.code} value={lang.code}>
+                              {lang.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="customer" className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>{getTranslation(proposalData.language, 'customerInformation')}</CardTitle>
+                    <CardDescription>Enter customer details for the proposal</CardDescription>
+                  </CardHeader>
+                  <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="customerName">{getTranslation(proposalData.language, 'customerName')}</Label>
+                      <Input
+                        id="customerName"
+                        value={proposalData.customerName}
+                        onChange={(e) => setProposalData(prev => ({ ...prev, customerName: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="customerAddress">{getTranslation(proposalData.language, 'customerAddress')}</Label>
+                      <Input
+                        id="customerAddress"
+                        value={proposalData.customerAddress}
+                        onChange={(e) => setProposalData(prev => ({ ...prev, customerAddress: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="customerEmail">{getTranslation(proposalData.language, 'customerEmail')}</Label>
                       <Input
                         id="customerEmail"
                         type="email"
@@ -856,303 +444,225 @@ const ProposalDetail = () => {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="customerCountry">Country</Label>
+                      <Label htmlFor="country">{getTranslation(proposalData.language, 'country')}</Label>
                       <Input
-                        id="customerCountry"
-                        value={proposalData.customerCountry}
-                        onChange={(e) => setProposalData(prev => ({ ...prev, customerCountry: e.target.value }))}
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="customerRef">Customer Reference</Label>
-                      <Input
-                        id="customerRef"
-                        value={proposalData.customerRef}
-                        onChange={(e) => setProposalData(prev => ({ ...prev, customerRef: e.target.value }))}
+                        id="country"
+                        value={proposalData.country}
+                        onChange={(e) => setProposalData(prev => ({ ...prev, country: e.target.value }))}
                       />
                     </div>
                     <div>
-                      <Label htmlFor="internalContact">Internal Contact Person</Label>
+                      <Label htmlFor="customerReference">{getTranslation(proposalData.language, 'customerReference')}</Label>
                       <Input
-                        id="internalContact"
-                        value={proposalData.internalContact}
-                        onChange={(e) => setProposalData(prev => ({ ...prev, internalContact: e.target.value, yourContact: e.target.value }))}
+                        id="customerReference"
+                        value={proposalData.customerReference}
+                        onChange={(e) => setProposalData(prev => ({ ...prev, customerReference: e.target.value }))}
                       />
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
+                    <div>
+                      <Label htmlFor="internalContactPerson">{getTranslation(proposalData.language, 'internalContactPerson')}</Label>
+                      <Input
+                        id="internalContactPerson"
+                        value={proposalData.internalContactPerson}
+                        onChange={(e) => setProposalData(prev => ({ ...prev, internalContactPerson: e.target.value }))}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
 
-              {/* Proposal Content */}
-              <Card className="lg:col-span-2">
-                <CardHeader>
-                  <CardTitle>Proposal Content</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <Label htmlFor="proposalTitle">Proposal Title</Label>
-                    <Input
-                      id="proposalTitle"
-                      value={proposalData.proposalTitle}
-                      onChange={(e) => setProposalData(prev => ({ ...prev, proposalTitle: e.target.value }))}
-                      placeholder="e.g., Protect your online REPUTATION!"
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="proposalDescription">Proposal Description</Label>
-                    <Textarea
-                      id="proposalDescription"
-                      value={proposalData.proposalDescription}
-                      onChange={(e) => setProposalData(prev => ({ ...prev, proposalDescription: e.target.value }))}
-                      rows={3}
-                      placeholder="Thank you for your enquiry. We will be happy to provide you with the requested non-binding offer."
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="content">Additional Content</Label>
-                    <Textarea
-                      id="content"
-                      value={proposalData.content}
-                      onChange={(e) => setProposalData(prev => ({ ...prev, content: e.target.value }))}
-                      rows={4}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
+              <TabsContent value="content" className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>{getTranslation(proposalData.language, 'proposalContent')}</CardTitle>
+                    <CardDescription>Define the core content of the proposal</CardDescription>
+                  </CardHeader>
+                  <CardContent className="grid grid-cols-1 gap-4">
+                    <div>
+                      <Label htmlFor="proposalTitle">{getTranslation(proposalData.language, 'proposalTitle')}</Label>
+                      <Input
+                        id="proposalTitle"
+                        value={proposalData.proposalTitle}
+                        onChange={(e) => setProposalData(prev => ({ ...prev, proposalTitle: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="proposalDescription">{getTranslation(proposalData.language, 'proposalDescription')}</Label>
+                      <Textarea
+                        id="proposalDescription"
+                        value={proposalData.proposalDescription}
+                        onChange={(e) => setProposalData(prev => ({ ...prev, proposalDescription: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="additionalContent">{getTranslation(proposalData.language, 'additionalContent')}</Label>
+                      <Textarea
+                        id="additionalContent"
+                        value={proposalData.additionalContent}
+                        onChange={(e) => setProposalData(prev => ({ ...prev, additionalContent: e.target.value }))}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
 
-              {/* Line Items */}
-              <Card className="lg:col-span-2">
-                <CardHeader>
-                  <CardTitle className="flex justify-between items-center">
-                    Products/Services
-                    <Button onClick={handleAddLineItem} size="sm">
-                      <PlusCircle size={16} className="mr-2" />
-                      Add Line Item
+              <TabsContent value="products" className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>{getTranslation(proposalData.language, 'productsServices')}</CardTitle>
+                    <CardDescription>List the products and services included in this proposal</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead>
+                          <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{getTranslation(proposalData.language, 'productServiceName')}</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{getTranslation(proposalData.language, 'description')}</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{getTranslation(proposalData.language, 'quantity')}</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{getTranslation(proposalData.language, 'unitPrice')}</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{getTranslation(proposalData.language, 'total')}</th>
+                            <th className="relative px-6 py-3">
+                              <span className="sr-only">{getTranslation(proposalData.language, 'actions')}</span>
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {proposalData.lineItems.map(item => (
+                            <tr key={item.id}>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <Input
+                                  value={item.productServiceName}
+                                  onChange={(e) => updateLineItem(item.id, 'productServiceName', e.target.value)}
+                                />
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <Input
+                                  value={item.description}
+                                  onChange={(e) => updateLineItem(item.id, 'description', e.target.value)}
+                                />
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <Input
+                                  type="number"
+                                  value={item.quantity}
+                                  onChange={(e) => updateLineItem(item.id, 'quantity', Number(e.target.value))}
+                                />
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <Input
+                                  type="number"
+                                  value={item.unitPrice}
+                                  onChange={(e) => updateLineItem(item.id, 'unitPrice', Number(e.target.value))}
+                                />
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">{item.total}</td>
+                              <td className="px-6 py-4 whitespace-nowrap text-right">
+                                <Button variant="ghost" size="icon" onClick={() => removeLineItem(item.id)}>
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    <Button variant="outline" size="sm" onClick={addLineItem}>
+                      <Plus className="w-4 h-4 mr-2" />
+                      {getTranslation(proposalData.language, 'addLineItem')}
                     </Button>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {proposalData.lineItems.length > 0 && (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Product/Service Name</TableHead>
-                          <TableHead>Description</TableHead>
-                          <TableHead>Quantity</TableHead>
-                          <TableHead>Unit Price</TableHead>
-                          <TableHead>Total</TableHead>
-                          <TableHead>Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {proposalData.lineItems.map((item, index) => (
-                          <TableRow key={item.id}>
-                            <TableCell>
-                              <InventoryAutocomplete
-                                value={item.name}
-                                onChange={(value) => handleLineItemChange(index, 'name', value)}
-                                onSelect={(inventoryItem) => handleInventoryItemSelect(index, inventoryItem)}
-                                inventoryItems={inventoryData || []}
-                                placeholder="Type to search products..."
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <Textarea
-                                value={item.description}
-                                onChange={(e) => handleLineItemChange(index, 'description', e.target.value)}
-                                placeholder="Detailed description of the product/service"
-                                rows={2}
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <Input
-                                type="number"
-                                value={item.quantity}
-                                onChange={(e) => handleLineItemChange(index, 'quantity', parseFloat(e.target.value) || 0)}
-                                min="0"
-                                step="0.01"
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <Input
-                                type="number"
-                                value={item.unit_price}
-                                onChange={(e) => handleLineItemChange(index, 'unit_price', parseFloat(e.target.value) || 0)}
-                                min="0"
-                                step="0.01"
-                              />
-                            </TableCell>
-                            <TableCell>
-                              {proposalData.currency === 'USD' ? '$' : proposalData.currency === 'GBP' ? '£' : '€'}
-                              {item.total_price.toFixed(2)}
-                            </TableCell>
-                            <TableCell>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleRemoveLineItem(index)}
-                              >
-                                <Trash2 size={16} />
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  )}
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              </TabsContent>
 
-              {/* VAT and Pricing */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>VAT & Pricing</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      id="vatEnabled"
-                      checked={proposalData.vatEnabled}
-                      onCheckedChange={handleVatToggle}
-                    />
-                    <Label htmlFor="vatEnabled">VAT Enabled</Label>
-                  </div>
-                  
-                  {proposalData.vatEnabled && (
+              <TabsContent value="pricing" className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>{getTranslation(proposalData.language, 'vatPricing')}</CardTitle>
+                    <CardDescription>Configure VAT and pricing details</CardDescription>
+                  </CardHeader>
+                  <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="flex items-center space-x-2">
+                      <Label htmlFor="vatEnabled">{getTranslation(proposalData.language, 'vatEnabled')}</Label>
+                      <Switch
+                        id="vatEnabled"
+                        checked={proposalData.vatEnabled}
+                        onCheckedChange={(checked) => setProposalData(prev => ({ ...prev, vatEnabled: checked }))}
+                      />
+                    </div>
                     <div>
-                      <Label htmlFor="vatRate">VAT Rate (%)</Label>
+                      <Label htmlFor="vatRate">{getTranslation(proposalData.language, 'vatRate')}</Label>
                       <Input
                         id="vatRate"
                         type="number"
                         value={proposalData.vatRate}
-                        onChange={(e) => handleVatRateChange(parseFloat(e.target.value) || 0)}
-                        min="0"
-                        max="100"
-                        step="0.1"
+                        onChange={(e) => setProposalData(prev => ({ ...prev, vatRate: Number(e.target.value) }))}
+                        disabled={!proposalData.vatEnabled}
                       />
                     </div>
-                  )}
-                  
-                  <div className="space-y-2 pt-4 border-t">
-                    <div className="flex justify-between">
-                      <span>Net Amount:</span>
-                      <span>{proposalData.currency === 'USD' ? '$' : proposalData.currency === 'GBP' ? '£' : '€'}{proposalData.netAmount.toFixed(2)}</span>
-                    </div>
-                    {proposalData.vatEnabled && (
-                      <div className="flex justify-between">
-                        <span>VAT ({proposalData.vatRate}%):</span>
-                        <span>{proposalData.currency === 'USD' ? '$' : proposalData.currency === 'GBP' ? '£' : '€'}{proposalData.vatAmount.toFixed(2)}</span>
-                      </div>
-                    )}
-                    <div className="flex justify-between font-bold text-lg border-t pt-2">
-                      <span>Total Amount:</span>
-                      <span>{proposalData.currency === 'USD' ? '$' : proposalData.currency === 'GBP' ? '£' : '€'}{proposalData.totalAmount.toFixed(2)}</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Terms and Conditions */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Terms & Conditions</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <Label htmlFor="deliveryTerms">Delivery Terms</Label>
-                    <Input
-                      id="deliveryTerms"
-                      value={proposalData.deliveryTerms}
-                      onChange={(e) => setProposalData(prev => ({ ...prev, deliveryTerms: e.target.value }))}
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="paymentTerms">Payment Terms</Label>
-                    <Textarea
-                      id="paymentTerms"
-                      value={proposalData.paymentTerms}
-                      onChange={(e) => setProposalData(prev => ({ ...prev, paymentTerms: e.target.value }))}
-                      rows={3}
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="termsAndConditions">Additional Terms</Label>
-                    <Textarea
-                      id="termsAndConditions"
-                      value={proposalData.termsAndConditions}
-                      onChange={(e) => setProposalData(prev => ({ ...prev, termsAndConditions: e.target.value }))}
-                      rows={4}
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="footerContent">Footer Content</Label>
-                    <Textarea
-                      id="footerContent"
-                      value={proposalData.footerContent}
-                      onChange={(e) => setProposalData(prev => ({ ...prev, footerContent: e.target.value }))}
-                      rows={3}
-                      placeholder="Additional footer information"
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Payment Data */}
-              <Card className="lg:col-span-2">
-                <CardHeader>
-                  <CardTitle>Payment Data</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                      <Label htmlFor="accountNumber">Account Number</Label>
+                      <Label htmlFor="netAmount">{getTranslation(proposalData.language, 'netAmount')}</Label>
                       <Input
-                        id="accountNumber"
-                        value={proposalData.accountNumber}
-                        onChange={(e) => setProposalData(prev => ({ ...prev, accountNumber: e.target.value }))}
-                        placeholder="9670238783"
+                        id="netAmount"
+                        value={netAmount.toFixed(2)}
+                        disabled
                       />
                     </div>
-                    
                     <div>
-                      <Label htmlFor="accountName">Account Name</Label>
+                      <Label htmlFor="totalAmount">{getTranslation(proposalData.language, 'totalAmount')}</Label>
                       <Input
-                        id="accountName"
-                        value={proposalData.accountName}
-                        onChange={(e) => setProposalData(prev => ({ ...prev, accountName: e.target.value }))}
-                        placeholder="COMPANY NAME"
+                        id="totalAmount"
+                        value={totalAmount.toFixed(2)}
+                        disabled
                       />
                     </div>
-                    
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="terms" className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>{getTranslation(proposalData.language, 'termsConditions')}</CardTitle>
+                    <CardDescription>Set terms and conditions for the proposal</CardDescription>
+                  </CardHeader>
+                  <CardContent className="grid grid-cols-1 gap-4">
                     <div>
-                      <Label htmlFor="paymentMethod">Payment Method</Label>
-                      <Select 
-                        value={proposalData.paymentMethod} 
-                        onValueChange={(value) => setProposalData(prev => ({ ...prev, paymentMethod: value }))}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="CREDIT CARD">CREDIT CARD</SelectItem>
-                          <SelectItem value="BANK TRANSFER">BANK TRANSFER</SelectItem>
-                          <SelectItem value="PAYPAL">PAYPAL</SelectItem>
-                          <SelectItem value="CASH">CASH</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <Label htmlFor="deliveryTerms">{getTranslation(proposalData.language, 'deliveryTerms')}</Label>
+                      <Textarea
+                        id="deliveryTerms"
+                        value={proposalData.deliveryTerms}
+                        onChange={(e) => setProposalData(prev => ({ ...prev, deliveryTerms: e.target.value }))}
+                      />
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+                    <div>
+                      <Label htmlFor="paymentTerms">{getTranslation(proposalData.language, 'paymentTerms')}</Label>
+                      <Textarea
+                        id="paymentTerms"
+                        value={proposalData.paymentTerms}
+                        onChange={(e) => setProposalData(prev => ({ ...prev, paymentTerms: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="additionalTerms">{getTranslation(proposalData.language, 'additionalTerms')}</Label>
+                      <Textarea
+                        id="additionalTerms"
+                        value={proposalData.additionalTerms}
+                        onChange={(e) => setProposalData(prev => ({ ...prev, additionalTerms: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="footerContent">{getTranslation(proposalData.language, 'footerContent')}</Label>
+                      <Textarea
+                        id="footerContent"
+                        value={proposalData.footerContent}
+                        onChange={(e) => setProposalData(prev => ({ ...prev, footerContent: e.target.value }))}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
           </div>
         </Layout>
       </div>

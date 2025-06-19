@@ -1,3 +1,4 @@
+
 export const SUPPORTED_LANGUAGES = [
   { code: 'en', name: 'English' },
   { code: 'de', name: 'German' },
@@ -7,7 +8,8 @@ export const SUPPORTED_LANGUAGES = [
   { code: 'es', name: 'Spanish' },
   { code: 'nl', name: 'Dutch' },
   { code: 'no', name: 'Norwegian' },
-  { code: 'da', name: 'Danish' }
+  { code: 'da', name: 'Danish' },
+  { code: 'bs', name: 'Bosnian' }
 ];
 
 export const translations = {
@@ -712,6 +714,84 @@ export const translations = {
     // Signature section
     placeAndDate: "Sted og dato",
     signatureAndStamp: "Signatur og stempel"
+  },
+  bs: {
+    // Page titles
+    createNewProposal: "Kreiraj novu ponudu",
+    editProposal: "Uredi ponudu",
+    backToProposals: "Nazad na ponude",
+    
+    // Actions
+    preview: "Pregled",
+    downloadPdf: "Preuzmi PDF",
+    save: "Sačuvaj",
+    saving: "Čuvanje...",
+    
+    // Basic Information
+    basicInformation: "Osnovne informacije",
+    proposalNumber: "Broj ponude",
+    reference: "Referenca",
+    subject: "Predmet",
+    status: "Status",
+    currency: "Valuta",
+    proposalDate: "Datum ponude",
+    proposalTime: "Vreme ponude",
+    language: "Jezik",
+    
+    // Company Logo
+    companyLogo: "Logo kompanije",
+    uploadCompanyLogo: "Otpremi logo kompanije",
+    logoPreview: "Pregled loga",
+    logoSize: "Veličina loga",
+    
+    // Customer Information
+    customerInformation: "Informacije o klijentu",
+    customerName: "Ime klijenta",
+    customerAddress: "Adresa klijenta",
+    customerEmail: "Email klijenta",
+    country: "Država",
+    customerReference: "Referenca klijenta",
+    internalContactPerson: "Unutrašnja kontakt osoba",
+    
+    // Proposal Content
+    proposalContent: "Sadržaj ponude",
+    proposalTitle: "Naslov ponude",
+    proposalDescription: "Opis ponude",
+    additionalContent: "Dodatni sadržaj",
+    
+    // Products/Services
+    productsServices: "Proizvodi/Usluge",
+    addLineItem: "Dodaj stavku",
+    productServiceName: "Naziv proizvoda/usluge",
+    description: "Opis",
+    quantity: "Količina",
+    unitPrice: "Jedinična cijena",
+    total: "Ukupno",
+    actions: "Akcije",
+    
+    // VAT & Pricing
+    vatPricing: "PDV i cijene",
+    vatEnabled: "PDV omogućen",
+    vatRate: "Stopa PDV-a (%)",
+    netAmount: "Neto iznos",
+    totalAmount: "Ukupan iznos",
+    
+    // Terms & Conditions
+    termsConditions: "Uslovi i odredbe",
+    deliveryTerms: "Uslovi isporuke",
+    paymentTerms: "Uslovi plaćanja",
+    additionalTerms: "Dodatni uslovi",
+    footerContent: "Sadržaj futera",
+    
+    // Payment Data
+    paymentData: "Podaci za plaćanje",
+    accountNumber: "Broj računa",
+    accountName: "Naziv računa",
+    paymentMethod: "Način plaćanja",
+    
+    // Signature section
+    placeAndDate: "Mjesto i datum",
+    signatureAndStamp: "Potpis i pečat"
   }
 };
 
