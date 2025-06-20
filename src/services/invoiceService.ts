@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { Invoice, Client, InvoiceLineItem, Payment, InvoiceFormData } from "@/types/invoice";
 
@@ -165,40 +164,14 @@ export class InvoiceService {
 
       console.log('✅ Invoice created successfully:', invoiceResult);
 
-      // Add line items separately after invoice is created
+      // Add line items using the existing addLineItems method which has proper verification
       if (invoiceData.line_items.length > 0) {
-        console.log('Step 4: Adding line items separately...');
+        console.log('Step 4: Adding line items using addLineItems method...');
         console.log('Line items to add:', invoiceData.line_items);
         
-        // Wait a bit to ensure the invoice transaction is committed
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
         try {
-          // Add each line item individually with explicit invoice ownership verification
-          for (const lineItem of invoiceData.line_items) {
-            console.log('Adding individual line item:', lineItem);
-            
-            const lineItemData = {
-              invoice_id: invoiceResult.id,
-              item_description: lineItem.item_description,
-              quantity: lineItem.quantity,
-              unit: lineItem.unit,
-              unit_price: lineItem.unit_price,
-              vat_rate: lineItem.vat_rate,
-              discount_rate: lineItem.discount_rate
-            };
-            
-            const { error: lineItemError } = await supabase
-              .from('invoice_line_items')
-              .insert(lineItemData);
-              
-            if (lineItemError) {
-              console.error('🚫 LINE ITEM CREATION FAILED:', lineItemError);
-              throw lineItemError;
-            }
-          }
-          
-          console.log('✅ All line items added successfully');
+          await this.addLineItems(invoiceResult.id, invoiceData.line_items);
+          console.log('✅ Line items added successfully');
         } catch (lineItemError) {
           console.error('🚫 LINE ITEMS CREATION FAILED:', lineItemError);
           // Don't throw here, let the invoice be created without line items
