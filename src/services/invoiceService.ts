@@ -136,7 +136,7 @@ export class InvoiceService {
 
       console.log('✅ Invoice number generated:', invoiceNumber);
 
-      // Create invoice
+      // Create invoice first
       console.log('Step 3: Creating invoice record...');
       const invoiceInsertData = {
         invoice_number: invoiceNumber,
@@ -165,14 +165,40 @@ export class InvoiceService {
 
       console.log('✅ Invoice created successfully:', invoiceResult);
 
-      // Add line items if any
+      // Add line items separately after invoice is created
       if (invoiceData.line_items.length > 0) {
-        console.log('Step 4: Adding line items...');
+        console.log('Step 4: Adding line items separately...');
         console.log('Line items to add:', invoiceData.line_items);
         
+        // Wait a bit to ensure the invoice transaction is committed
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
         try {
-          await this.addLineItems(invoiceResult.id, invoiceData.line_items);
-          console.log('✅ Line items added successfully');
+          // Add each line item individually with explicit invoice ownership verification
+          for (const lineItem of invoiceData.line_items) {
+            console.log('Adding individual line item:', lineItem);
+            
+            const lineItemData = {
+              invoice_id: invoiceResult.id,
+              item_description: lineItem.item_description,
+              quantity: lineItem.quantity,
+              unit: lineItem.unit,
+              unit_price: lineItem.unit_price,
+              vat_rate: lineItem.vat_rate,
+              discount_rate: lineItem.discount_rate
+            };
+            
+            const { error: lineItemError } = await supabase
+              .from('invoice_line_items')
+              .insert(lineItemData);
+              
+            if (lineItemError) {
+              console.error('🚫 LINE ITEM CREATION FAILED:', lineItemError);
+              throw lineItemError;
+            }
+          }
+          
+          console.log('✅ All line items added successfully');
         } catch (lineItemError) {
           console.error('🚫 LINE ITEMS CREATION FAILED:', lineItemError);
           // Don't throw here, let the invoice be created without line items
@@ -232,6 +258,28 @@ export class InvoiceService {
       // Get current user for debugging
       const user = await this.getAuthenticatedUser();
       console.log('Current user for line items:', user?.id);
+
+      // Verify the invoice exists and belongs to the current user
+      const { data: invoice, error: invoiceError } = await supabase
+        .from('invoices')
+        .select('id, user_id')
+        .eq('id', invoiceId)
+        .single();
+
+      if (invoiceError) {
+        console.error('🚫 INVOICE VERIFICATION FAILED:', invoiceError);
+        throw invoiceError;
+      }
+
+      if (!invoice) {
+        throw new Error('Invoice not found');
+      }
+
+      if (invoice.user_id !== user?.id) {
+        throw new Error('You do not have permission to add line items to this invoice');
+      }
+
+      console.log('✅ Invoice ownership verified');
 
       const lineItemsWithInvoiceId = lineItems.map(item => ({
         ...item,
