@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -271,7 +272,10 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
         bic: "BIC",
         blz: "BLZ",
         account: "Account",
-        bank: "Bank"
+        bank: "Bank",
+        contactPerson: "Contact Person:",
+        companyRegistrationNumber: "Company Registration Number:",
+        uidNumber: "UID- Number:"
       },
       nl: {
         date: "Datum:",
@@ -291,7 +295,10 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
         bic: "BIC",
         blz: "BLZ",
         account: "Rekening",
-        bank: "Bank"
+        bank: "Bank",
+        contactPerson: "Contactpersoon:",
+        companyRegistrationNumber: "Bedrijfsregistratienummer:",
+        uidNumber: "UID-nummer:"
       },
       de: {
         date: "Datum:",
@@ -311,7 +318,10 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
         bic: "BIC",
         blz: "BLZ",
         account: "Konto",
-        bank: "Bank"
+        bank: "Bank",
+        contactPerson: "Ansprechpartner:",
+        companyRegistrationNumber: "Firmenregistrierungsnummer:",
+        uidNumber: "UID-Nummer:"
       },
       fr: {
         date: "Date:",
@@ -331,7 +341,10 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
         bic: "BIC",
         blz: "BLZ",
         account: "Compte",
-        bank: "Banque"
+        bank: "Banque",
+        contactPerson: "Personne de contact:",
+        companyRegistrationNumber: "Numéro d'enregistrement de l'entreprise:",
+        uidNumber: "Numéro UID:"
       },
       es: {
         date: "Fecha:",
@@ -351,7 +364,10 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
         bic: "BIC",
         blz: "BLZ",
         account: "Cuenta",
-        bank: "Banco"
+        bank: "Banco",
+        contactPerson: "Persona de contacto:",
+        companyRegistrationNumber: "Número de registro de la empresa:",
+        uidNumber: "Número UID:"
       },
       da: {
         date: "Dato:",
@@ -371,7 +387,10 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
         bic: "BIC",
         blz: "BLZ",
         account: "Konto",
-        bank: "Bank"
+        bank: "Bank",
+        contactPerson: "Kontaktperson:",
+        companyRegistrationNumber: "Virksomhedsregistreringsnummer:",
+        uidNumber: "UID-nummer:"
       },
       no: {
         date: "Dato:",
@@ -391,7 +410,10 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
         bic: "BIC",
         blz: "BLZ",
         account: "Konto",
-        bank: "Bank"
+        bank: "Bank",
+        contactPerson: "Kontaktperson:",
+        companyRegistrationNumber: "Selskapsregistreringsnummer:",
+        uidNumber: "UID-nummer:"
       },
       cs: {
         date: "Datum:",
@@ -411,7 +433,10 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
         bic: "BIC",
         blz: "BLZ",
         account: "Účet",
-        bank: "Banka"
+        bank: "Banka",
+        contactPerson: "Kontaktní osoba:",
+        companyRegistrationNumber: "Registrační číslo společnosti:",
+        uidNumber: "UID číslo:"
       },
       pl: {
         date: "Data:",
@@ -431,7 +456,10 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
         bic: "BIC",
         blz: "BLZ",
         account: "Konto",
-        bank: "Bank"
+        bank: "Bank",
+        contactPerson: "Osoba kontaktowa:",
+        companyRegistrationNumber: "Numer rejestracji firmy:",
+        uidNumber: "Numer UID:"
       },
       sv: {
         date: "Datum:",
@@ -451,7 +479,10 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
         bic: "BIC",
         blz: "BLZ",
         account: "Konto",
-        bank: "Bank"
+        bank: "Bank",
+        contactPerson: "Kontaktperson:",
+        companyRegistrationNumber: "Företagsregistreringsnummer:",
+        uidNumber: "UID-nummer:"
       }
     };
     
@@ -517,10 +548,10 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
               <div className="text-sm text-gray-700 space-y-1 leading-relaxed">
                 <div className="font-bold mb-2">{companyInfo.name}</div>
                 {companyInfo.contactPerson && (
-                  <div>Contact Person: {companyInfo.contactPerson}</div>
+                  <div>{getTranslatedText('contactPerson')} {companyInfo.contactPerson}</div>
                 )}
-                <div>Company Registration Number: {companyInfo.registrationNumber}</div>
-                <div>UID- Number: {companyInfo.vatId}</div>
+                <div>{getTranslatedText('companyRegistrationNumber')} {companyInfo.registrationNumber}</div>
+                <div>{getTranslatedText('uidNumber')} {companyInfo.vatId}</div>
                 <div>{companyInfo.street} {companyInfo.postal} {companyInfo.city}</div>
                 <div>{companyInfo.email}</div>
               </div>

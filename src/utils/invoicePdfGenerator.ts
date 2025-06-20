@@ -1,3 +1,4 @@
+
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { Invoice, InvoiceLineItem, Client } from '@/types/invoice';
@@ -352,7 +353,10 @@ const generateInvoiceHTML = (data: InvoicePDFData): string => {
         bic: "BIC",
         blz: "BLZ",
         account: "ACCOUNT",
-        bank: "Bank"
+        bank: "Bank",
+        contactPerson: "Contact Person:",
+        companyRegistrationNumber: "Company Registration Number:",
+        uidNumber: "UID- Number:"
       },
       nl: {
         date: "Datum:",
@@ -372,7 +376,10 @@ const generateInvoiceHTML = (data: InvoicePDFData): string => {
         bic: "BIC",
         blz: "BLZ",
         account: "REKENING",
-        bank: "Bank"
+        bank: "Bank",
+        contactPerson: "Contactpersoon:",
+        companyRegistrationNumber: "Bedrijfsregistratienummer:",
+        uidNumber: "UID-nummer:"
       },
       de: {
         date: "Datum:",
@@ -392,7 +399,10 @@ const generateInvoiceHTML = (data: InvoicePDFData): string => {
         bic: "BIC",
         blz: "BLZ",
         account: "KONTO",
-        bank: "Bank"
+        bank: "Bank",
+        contactPerson: "Ansprechpartner:",
+        companyRegistrationNumber: "Firmenregistrierungsnummer:",
+        uidNumber: "UID-Nummer:"
       },
       fr: {
         date: "Date:",
@@ -412,7 +422,10 @@ const generateInvoiceHTML = (data: InvoicePDFData): string => {
         bic: "BIC",
         blz: "BLZ",
         account: "COMPTE",
-        bank: "Banque"
+        bank: "Banque",
+        contactPerson: "Personne de contact:",
+        companyRegistrationNumber: "Numéro d'enregistrement de l'entreprise:",
+        uidNumber: "Numéro UID:"
       },
       es: {
         date: "Fecha:",
@@ -432,7 +445,10 @@ const generateInvoiceHTML = (data: InvoicePDFData): string => {
         bic: "BIC",
         blz: "BLZ",
         account: "CUENTA",
-        bank: "Banco"
+        bank: "Banco",
+        contactPerson: "Persona de contacto:",
+        companyRegistrationNumber: "Número de registro de la empresa:",
+        uidNumber: "Número UID:"
       },
       da: {
         date: "Dato:",
@@ -452,7 +468,10 @@ const generateInvoiceHTML = (data: InvoicePDFData): string => {
         bic: "BIC",
         blz: "BLZ",
         account: "KONTO",
-        bank: "Bank"
+        bank: "Bank",
+        contactPerson: "Kontaktperson:",
+        companyRegistrationNumber: "Virksomhedsregistreringsnummer:",
+        uidNumber: "UID-nummer:"
       },
       no: {
         date: "Dato:",
@@ -472,7 +491,10 @@ const generateInvoiceHTML = (data: InvoicePDFData): string => {
         bic: "BIC",
         blz: "BLZ",
         account: "KONTO",
-        bank: "Bank"
+        bank: "Bank",
+        contactPerson: "Kontaktperson:",
+        companyRegistrationNumber: "Selskapsregistreringsnummer:",
+        uidNumber: "UID-nummer:"
       },
       cs: {
         date: "Datum:",
@@ -492,7 +514,10 @@ const generateInvoiceHTML = (data: InvoicePDFData): string => {
         bic: "BIC",
         blz: "BLZ",
         account: "ÚČET",
-        bank: "Banka"
+        bank: "Banka",
+        contactPerson: "Kontaktní osoba:",
+        companyRegistrationNumber: "Registrační číslo společnosti:",
+        uidNumber: "UID číslo:"
       },
       pl: {
         date: "Data:",
@@ -512,7 +537,10 @@ const generateInvoiceHTML = (data: InvoicePDFData): string => {
         bic: "BIC",
         blz: "BLZ",
         account: "KONTO",
-        bank: "Bank"
+        bank: "Bank",
+        contactPerson: "Osoba kontaktowa:",
+        companyRegistrationNumber: "Numer rejestracji firmy:",
+        uidNumber: "Numer UID:"
       },
       sv: {
         date: "Datum:",
@@ -532,7 +560,10 @@ const generateInvoiceHTML = (data: InvoicePDFData): string => {
         bic: "BIC",
         blz: "BLZ",
         account: "KONTO",
-        bank: "Bank"
+        bank: "Bank",
+        contactPerson: "Kontaktperson:",
+        companyRegistrationNumber: "Företagsregistreringsnummer:",
+        uidNumber: "UID-nummer:"
       }
     };
     
@@ -600,9 +631,9 @@ const generateInvoiceHTML = (data: InvoicePDFData): string => {
         <div>
           <div style="font-size: 14px; color: #374151; line-height: 1.6;">
             <div style="font-weight: bold; margin-bottom: 8px;">${companyInfo.name}</div>
-            ${companyInfo.contactPerson ? `<div>Contact Person: ${companyInfo.contactPerson}</div>` : ''}
-            <div>Company Registration Number: ${companyInfo.registrationNumber}</div>
-            <div>UID- Number: ${companyInfo.vatId}</div>
+            ${companyInfo.contactPerson ? `<div>${getTranslatedText('contactPerson')} ${companyInfo.contactPerson}</div>` : ''}
+            <div>${getTranslatedText('companyRegistrationNumber')} ${companyInfo.registrationNumber}</div>
+            <div>${getTranslatedText('uidNumber')} ${companyInfo.vatId}</div>
             <div>${companyInfo.street} ${companyInfo.postal} ${companyInfo.city}</div>
             <div>${companyInfo.email}</div>
           </div>
