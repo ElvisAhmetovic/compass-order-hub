@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { Invoice, Client, InvoiceLineItem, Payment, InvoiceFormData } from "@/types/invoice";
 
@@ -164,27 +165,45 @@ export class InvoiceService {
 
       console.log('✅ Invoice created successfully:', invoiceResult);
 
-      // Add line items directly - RLS policies will handle permission checks
+      // Add line items if present
       if (invoiceData.line_items.length > 0) {
         console.log('Step 4: Adding line items...');
         console.log('Line items to add:', invoiceData.line_items);
         
-        const lineItemsWithInvoiceId = invoiceData.line_items.map(item => ({
-          ...item,
-          invoice_id: invoiceResult.id,
-        }));
+        // Add each line item individually with better error handling
+        for (let i = 0; i < invoiceData.line_items.length; i++) {
+          const lineItem = invoiceData.line_items[i];
+          console.log(`Adding line item ${i + 1}:`, lineItem);
+          
+          const lineItemData = {
+            invoice_id: invoiceResult.id,
+            item_description: lineItem.item_description,
+            quantity: lineItem.quantity,
+            unit: lineItem.unit,
+            unit_price: lineItem.unit_price,
+            vat_rate: lineItem.vat_rate,
+            discount_rate: lineItem.discount_rate
+          };
 
-        const { data: lineItemsData, error: lineItemsError } = await supabase
-          .from('invoice_line_items')
-          .insert(lineItemsWithInvoiceId)
-          .select();
+          console.log('Line item data to insert:', lineItemData);
 
-        if (lineItemsError) {
-          console.error('🚫 LINE ITEMS CREATION FAILED:', lineItemsError);
-          throw new Error(`Failed to add line items: ${lineItemsError.message}`);
+          const { data: lineItemResult, error: lineItemError } = await supabase
+            .from('invoice_line_items')
+            .insert(lineItemData)
+            .select()
+            .single();
+
+          if (lineItemError) {
+            console.error(`🚫 LINE ITEM ${i + 1} CREATION FAILED:`, lineItemError);
+            console.error('Line item data that failed:', lineItemData);
+            
+            // If line items fail, we should clean up the invoice
+            await supabase.from('invoices').delete().eq('id', invoiceResult.id);
+            throw new Error(`Failed to add line item ${i + 1}: ${lineItemError.message}`);
+          }
+
+          console.log(`✅ Line item ${i + 1} added successfully:`, lineItemResult);
         }
-
-        console.log('✅ Line items added successfully:', lineItemsData);
       }
 
       console.log('🎉 INVOICE CREATION COMPLETED SUCCESSFULLY');
@@ -242,26 +261,56 @@ export class InvoiceService {
         throw new Error('Authentication required to add line items');
       }
 
-      // Prepare line items data - RLS policies will handle ownership verification
-      const lineItemsWithInvoiceId = lineItems.map(item => ({
-        ...item,
-        invoice_id: invoiceId,
-      }));
+      // Verify that the invoice exists and belongs to the user
+      console.log('Checking invoice ownership...');
+      const { data: invoice, error: invoiceError } = await supabase
+        .from('invoices')
+        .select('id, user_id')
+        .eq('id', invoiceId)
+        .single();
 
-      console.log('Line items with invoice ID:', lineItemsWithInvoiceId);
-
-      // Insert line items - RLS policies will check permissions
-      const { data, error } = await supabase
-        .from('invoice_line_items')
-        .insert(lineItemsWithInvoiceId)
-        .select();
-
-      if (error) {
-        console.error('🚫 LINE ITEMS INSERT ERROR:', error);
-        throw new Error(`Failed to insert line items: ${error.message}`);
+      if (invoiceError) {
+        console.error('🚫 INVOICE CHECK ERROR:', invoiceError);
+        throw new Error(`Invoice not found: ${invoiceError.message}`);
       }
 
-      console.log('✅ Line items inserted successfully:', data);
+      if (invoice.user_id !== user.id) {
+        console.error('🚫 AUTHORIZATION ERROR: Invoice does not belong to user');
+        throw new Error('You do not have permission to modify this invoice');
+      }
+
+      console.log('✅ Invoice ownership verified');
+
+      // Add each line item individually
+      for (let i = 0; i < lineItems.length; i++) {
+        const lineItem = lineItems[i];
+        console.log(`Adding line item ${i + 1}:`, lineItem);
+        
+        const lineItemData = {
+          invoice_id: invoiceId,
+          item_description: lineItem.item_description,
+          quantity: lineItem.quantity,
+          unit: lineItem.unit,
+          unit_price: lineItem.unit_price,
+          vat_rate: lineItem.vat_rate,
+          discount_rate: lineItem.discount_rate
+        };
+
+        const { data: result, error } = await supabase
+          .from('invoice_line_items')
+          .insert(lineItemData)
+          .select()
+          .single();
+
+        if (error) {
+          console.error(`🚫 LINE ITEM ${i + 1} INSERT ERROR:`, error);
+          throw new Error(`Failed to insert line item ${i + 1}: ${error.message}`);
+        }
+
+        console.log(`✅ Line item ${i + 1} inserted successfully:`, result);
+      }
+
+      console.log('✅ All line items added successfully');
     } catch (error) {
       console.error('💥 ADD LINE ITEMS FAILED:', error);
       throw error;
