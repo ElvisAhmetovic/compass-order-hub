@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -104,21 +105,29 @@ const InvoiceTemplateSettings: React.FC<InvoiceTemplateSettingsProps> = ({
     const companyInfo = getCompanyInfo();
     const savedSettings = loadSavedSettings();
     
-    return {
+    const baseSettings = {
       logo: DEFAULT_COMPANY_LOGO,
       logoSize: "large",
       language: "en",
       selectedPaymentAccount: "belgium",
-      companyInfo: companyInfo,
       customTerms: "",
       vatEnabled: true,
       vatRate: 21,
       currency: "EUR",
       invoiceNumberPrefix: "RE NR:",
+    };
+
+    const mergedCompanyInfo = {
+      ...companyInfo,
+      ...savedSettings.companyInfo,
+      ...initialSettings?.companyInfo
+    };
+
+    return {
+      ...baseSettings,
       ...savedSettings,
       ...initialSettings,
-      // Ensure company info is always properly loaded
-      companyInfo: { ...companyInfo, ...savedSettings.companyInfo, ...initialSettings?.companyInfo }
+      companyInfo: mergedCompanyInfo
     };
   };
 
