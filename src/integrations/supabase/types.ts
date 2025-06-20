@@ -1304,6 +1304,10 @@ export type Database = {
         Args: { order_id_param: string }
         Returns: undefined
       }
+      user_owns_invoice_for_line_item: {
+        Args: { invoice_id_param: string }
+        Returns: boolean
+      }
     }
     Enums: {
       user_role: "user" | "admin" | "agent"

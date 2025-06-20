@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { Invoice, Client, InvoiceLineItem, Payment, InvoiceFormData } from "@/types/invoice";
 
@@ -165,19 +164,27 @@ export class InvoiceService {
 
       console.log('✅ Invoice created successfully:', invoiceResult);
 
-      // Add line items using the existing addLineItems method which has proper verification
+      // Add line items directly - RLS policies will handle permission checks
       if (invoiceData.line_items.length > 0) {
-        console.log('Step 4: Adding line items using addLineItems method...');
+        console.log('Step 4: Adding line items...');
         console.log('Line items to add:', invoiceData.line_items);
         
-        try {
-          await this.addLineItems(invoiceResult.id, invoiceData.line_items);
-          console.log('✅ Line items added successfully');
-        } catch (lineItemError) {
-          console.error('🚫 LINE ITEMS CREATION FAILED:', lineItemError);
-          // Don't throw here, let the invoice be created without line items
-          console.log('⚠️ Proceeding without line items due to error');
+        const lineItemsWithInvoiceId = invoiceData.line_items.map(item => ({
+          ...item,
+          invoice_id: invoiceResult.id,
+        }));
+
+        const { data: lineItemsData, error: lineItemsError } = await supabase
+          .from('invoice_line_items')
+          .insert(lineItemsWithInvoiceId)
+          .select();
+
+        if (lineItemsError) {
+          console.error('🚫 LINE ITEMS CREATION FAILED:', lineItemsError);
+          throw new Error(`Failed to add line items: ${lineItemsError.message}`);
         }
+
+        console.log('✅ Line items added successfully:', lineItemsData);
       }
 
       console.log('🎉 INVOICE CREATION COMPLETED SUCCESSFULLY');
@@ -229,44 +236,13 @@ export class InvoiceService {
     console.log('Line items to add:', lineItems);
     
     try {
-      // Get current user for debugging
+      // Check authentication
       const user = await this.getAuthenticatedUser();
-      console.log('Current user for line items:', user?.id);
-
       if (!user) {
         throw new Error('Authentication required to add line items');
       }
 
-      // Verify the invoice exists and belongs to the current user
-      console.log('Verifying invoice ownership...');
-      const { data: invoice, error: invoiceError } = await supabase
-        .from('invoices')
-        .select('id, user_id')
-        .eq('id', invoiceId)
-        .single();
-
-      if (invoiceError) {
-        console.error('🚫 INVOICE VERIFICATION FAILED:', invoiceError);
-        throw new Error(`Invoice verification failed: ${invoiceError.message}`);
-      }
-
-      if (!invoice) {
-        throw new Error('Invoice not found');
-      }
-
-      console.log('Invoice found:', { id: invoice.id, user_id: invoice.user_id });
-      console.log('Current user ID:', user.id);
-
-      if (invoice.user_id !== user.id) {
-        console.error('🚫 OWNERSHIP MISMATCH');
-        console.error('Invoice belongs to:', invoice.user_id);
-        console.error('Current user is:', user.id);
-        throw new Error('You do not have permission to add line items to this invoice');
-      }
-
-      console.log('✅ Invoice ownership verified');
-
-      // Prepare line items data
+      // Prepare line items data - RLS policies will handle ownership verification
       const lineItemsWithInvoiceId = lineItems.map(item => ({
         ...item,
         invoice_id: invoiceId,
@@ -274,7 +250,7 @@ export class InvoiceService {
 
       console.log('Line items with invoice ID:', lineItemsWithInvoiceId);
 
-      // Insert line items
+      // Insert line items - RLS policies will check permissions
       const { data, error } = await supabase
         .from('invoice_line_items')
         .insert(lineItemsWithInvoiceId)
@@ -282,9 +258,6 @@ export class InvoiceService {
 
       if (error) {
         console.error('🚫 LINE ITEMS INSERT ERROR:', error);
-        console.error('Error code:', error.code);
-        console.error('Error message:', error.message);
-        console.error('Error details:', error.details);
         throw new Error(`Failed to insert line items: ${error.message}`);
       }
 
