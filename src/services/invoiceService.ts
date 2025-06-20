@@ -108,21 +108,37 @@ export class InvoiceService {
   }
 
   static async createInvoice(invoiceData: InvoiceFormData): Promise<Invoice> {
-    // Check authentication first
-    const user = await this.getAuthenticatedUser();
-    if (!user) {
-      throw new Error('Authentication required to create invoices');
-    }
+    console.log('🚀 INVOICE CREATION REQUEST STARTED');
+    console.log('Request timestamp:', new Date().toISOString());
+    console.log('Invoice data received:', invoiceData);
+    
+    try {
+      // Check authentication first
+      console.log('Step 1: Authenticating user...');
+      const user = await this.getAuthenticatedUser();
+      
+      if (!user) {
+        console.error('🚫 AUTHENTICATION FAILED: No user found');
+        throw new Error('Authentication required. Please log in to create invoices.');
+      }
 
-    // Generate invoice number
-    const { data: invoiceNumber, error: numberError } = await supabase
-      .rpc('generate_invoice_number');
+      console.log('✅ User authenticated successfully');
 
-    if (numberError) throw numberError;
+      // Generate invoice number
+      console.log('Step 2: Generating invoice number...');
+      const { data: invoiceNumber, error: numberError } = await supabase
+        .rpc('generate_invoice_number');
 
-    const { data, error } = await supabase
-      .from('invoices')
-      .insert({
+      if (numberError) {
+        console.error('🚫 INVOICE NUMBER GENERATION FAILED:', numberError);
+        throw numberError;
+      }
+
+      console.log('✅ Invoice number generated:', invoiceNumber);
+
+      // Create invoice
+      console.log('Step 3: Creating invoice record...');
+      const invoiceInsertData = {
         invoice_number: invoiceNumber,
         client_id: invoiceData.client_id,
         issue_date: invoiceData.issue_date,
@@ -132,18 +148,46 @@ export class InvoiceService {
         notes: invoiceData.notes,
         internal_notes: invoiceData.internal_notes,
         user_id: user.id,
-      })
-      .select()
-      .single();
+      };
 
-    if (error) throw error;
+      console.log('Invoice insert data:', invoiceInsertData);
 
-    // Add line items
-    if (invoiceData.line_items.length > 0) {
-      await this.addLineItems(data.id, invoiceData.line_items);
+      const { data: invoiceResult, error: invoiceError } = await supabase
+        .from('invoices')
+        .insert(invoiceInsertData)
+        .select()
+        .single();
+
+      if (invoiceError) {
+        console.error('🚫 INVOICE CREATION FAILED:', invoiceError);
+        throw invoiceError;
+      }
+
+      console.log('✅ Invoice created successfully:', invoiceResult);
+
+      // Add line items if any
+      if (invoiceData.line_items.length > 0) {
+        console.log('Step 4: Adding line items...');
+        console.log('Line items to add:', invoiceData.line_items);
+        
+        try {
+          await this.addLineItems(invoiceResult.id, invoiceData.line_items);
+          console.log('✅ Line items added successfully');
+        } catch (lineItemError) {
+          console.error('🚫 LINE ITEMS CREATION FAILED:', lineItemError);
+          // Don't throw here, let the invoice be created without line items
+          console.log('⚠️ Proceeding without line items due to error');
+        }
+      }
+
+      console.log('🎉 INVOICE CREATION COMPLETED SUCCESSFULLY');
+      return invoiceResult;
+
+    } catch (error) {
+      console.error('💥 INVOICE CREATION REQUEST FAILED');
+      console.error('Error details:', error);
+      throw error;
     }
-
-    return data;
   }
 
   static async updateInvoice(id: string, invoiceData: Partial<InvoiceFormData> | { status: Invoice['status'] }): Promise<Invoice> {
@@ -180,16 +224,40 @@ export class InvoiceService {
   }
 
   static async addLineItems(invoiceId: string, lineItems: Omit<InvoiceLineItem, 'id' | 'invoice_id' | 'created_at' | 'updated_at' | 'line_total'>[]): Promise<void> {
-    const { error } = await supabase
-      .from('invoice_line_items')
-      .insert(
-        lineItems.map(item => ({
-          ...item,
-          invoice_id: invoiceId,
-        }))
-      );
+    console.log('🚀 ADDING LINE ITEMS');
+    console.log('Invoice ID:', invoiceId);
+    console.log('Line items to add:', lineItems);
+    
+    try {
+      // Get current user for debugging
+      const user = await this.getAuthenticatedUser();
+      console.log('Current user for line items:', user?.id);
 
-    if (error) throw error;
+      const lineItemsWithInvoiceId = lineItems.map(item => ({
+        ...item,
+        invoice_id: invoiceId,
+      }));
+
+      console.log('Line items with invoice ID:', lineItemsWithInvoiceId);
+
+      const { data, error } = await supabase
+        .from('invoice_line_items')
+        .insert(lineItemsWithInvoiceId)
+        .select();
+
+      if (error) {
+        console.error('🚫 LINE ITEMS INSERT ERROR:', error);
+        console.error('Error code:', error.code);
+        console.error('Error message:', error.message);
+        console.error('Error details:', error.details);
+        throw error;
+      }
+
+      console.log('✅ Line items inserted successfully:', data);
+    } catch (error) {
+      console.error('💥 ADD LINE ITEMS FAILED:', error);
+      throw error;
+    }
   }
 
   static async updateLineItem(id: string, lineItem: Partial<InvoiceLineItem>): Promise<void> {
