@@ -79,6 +79,8 @@ const InvoiceTemplateSettings: React.FC<InvoiceTemplateSettingsProps> = ({
   onSettingsChange,
   initialSettings
 }) => {
+  const [isLoading, setIsLoading] = useState(true);
+  
   // Load saved settings from localStorage on component mount
   const loadSavedSettings = () => {
     try {
@@ -92,47 +94,73 @@ const InvoiceTemplateSettings: React.FC<InvoiceTemplateSettingsProps> = ({
         return parsedSettings;
       }
     } catch (error) {
-      console.log('No saved settings found');
+      console.warn('Error loading saved settings:', error);
     }
     return {};
   };
 
-  // Get the actual company info from the utility function
-  const companyInfo = getCompanyInfo();
+  // Initialize settings with proper company info loading
+  const initializeSettings = () => {
+    const companyInfo = getCompanyInfo();
+    const savedSettings = loadSavedSettings();
+    
+    return {
+      logo: DEFAULT_COMPANY_LOGO,
+      logoSize: "large",
+      language: "en",
+      selectedPaymentAccount: "belgium",
+      companyInfo: companyInfo,
+      customTerms: "",
+      vatEnabled: true,
+      vatRate: 21,
+      currency: "EUR",
+      invoiceNumberPrefix: "RE NR:",
+      ...savedSettings,
+      ...initialSettings,
+      // Ensure company info is always properly loaded
+      companyInfo: { ...companyInfo, ...savedSettings.companyInfo, ...initialSettings?.companyInfo }
+    };
+  };
 
-  const [settings, setSettings] = useState({
-    logo: DEFAULT_COMPANY_LOGO, // Set default logo
-    logoSize: "large",
-    language: "en",
-    selectedPaymentAccount: "belgium",
-    companyInfo: companyInfo, // Use the actual company info
-    customTerms: "",
-    vatEnabled: true,
-    vatRate: 21,
-    currency: "EUR",
-    invoiceNumberPrefix: "RE NR:",
-    ...loadSavedSettings(),
-    ...initialSettings
-  });
+  const [settings, setSettings] = useState(initializeSettings);
 
   useEffect(() => {
+    // Delayed initialization to ensure localStorage is available after theme provider mounts
+    const timer = setTimeout(() => {
+      const initializedSettings = initializeSettings();
+      setSettings(initializedSettings);
+      setIsLoading(false);
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (isLoading) return;
+    
     // Ensure the default logo is always set if no logo exists
     if (!settings.logo) {
       setSettings(prev => ({ ...prev, logo: DEFAULT_COMPANY_LOGO }));
     }
     
-    // Ensure company info is properly loaded
-    if (!settings.companyInfo.name || settings.companyInfo.name === "Company Name") {
+    // Ensure company info is properly loaded and valid
+    if (!settings.companyInfo?.name || settings.companyInfo.name === "Company Name") {
+      const freshCompanyInfo = getCompanyInfo();
       setSettings(prev => ({ 
         ...prev, 
-        companyInfo: companyInfo 
+        companyInfo: freshCompanyInfo 
       }));
     }
     
     onSettingsChange(settings);
+    
     // Save settings to localStorage whenever they change
-    localStorage.setItem('invoiceTemplateSettings', JSON.stringify(settings));
-  }, [settings, onSettingsChange]);
+    try {
+      localStorage.setItem('invoiceTemplateSettings', JSON.stringify(settings));
+    } catch (error) {
+      console.warn('Error saving settings to localStorage:', error);
+    }
+  }, [settings, onSettingsChange, isLoading]);
 
   const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -248,6 +276,18 @@ const InvoiceTemplateSettings: React.FC<InvoiceTemplateSettingsProps> = ({
 
   const paymentLabels = getPaymentTranslations(settings.language);
 
+  // Show loading state while initializing
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded mb-4"></div>
+          <div className="h-32 bg-gray-200 dark:bg-gray-700 rounded"></div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Company Logo */}
@@ -336,42 +376,42 @@ const InvoiceTemplateSettings: React.FC<InvoiceTemplateSettingsProps> = ({
             <div>
               <Label>Company Name</Label>
               <Input
-                value={settings.companyInfo.name}
+                value={settings.companyInfo?.name || ''}
                 onChange={(e) => updateCompanyInfo('name', e.target.value)}
               />
             </div>
             <div>
               <Label>Contact Person</Label>
               <Input
-                value={settings.companyInfo.contactPerson}
+                value={settings.companyInfo?.contactPerson || ''}
                 onChange={(e) => updateCompanyInfo('contactPerson', e.target.value)}
               />
             </div>
             <div>
               <Label>Email</Label>
               <Input
-                value={settings.companyInfo.email}
+                value={settings.companyInfo?.email || ''}
                 onChange={(e) => updateCompanyInfo('email', e.target.value)}
               />
             </div>
             <div>
               <Label>Phone</Label>
               <Input
-                value={settings.companyInfo.phone}
+                value={settings.companyInfo?.phone || ''}
                 onChange={(e) => updateCompanyInfo('phone', e.target.value)}
               />
             </div>
             <div>
               <Label>Registration Number</Label>
               <Input
-                value={settings.companyInfo.registrationNumber}
+                value={settings.companyInfo?.registrationNumber || ''}
                 onChange={(e) => updateCompanyInfo('registrationNumber', e.target.value)}
               />
             </div>
             <div>
               <Label>VAT ID</Label>
               <Input
-                value={settings.companyInfo.vatId}
+                value={settings.companyInfo?.vatId || ''}
                 onChange={(e) => updateCompanyInfo('vatId', e.target.value)}
               />
             </div>
@@ -380,7 +420,7 @@ const InvoiceTemplateSettings: React.FC<InvoiceTemplateSettingsProps> = ({
           <div>
             <Label>Address</Label>
             <Textarea
-              value={`${settings.companyInfo.street}\n${settings.companyInfo.postal} ${settings.companyInfo.city}\n${settings.companyInfo.country}`}
+              value={`${settings.companyInfo?.street || ''}\n${settings.companyInfo?.postal || ''} ${settings.companyInfo?.city || ''}\n${settings.companyInfo?.country || ''}`}
               onChange={(e) => {
                 const lines = e.target.value.split('\n');
                 updateCompanyInfo('street', lines[0] || '');
