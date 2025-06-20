@@ -114,6 +114,143 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
     });
   };
 
+  // Translation function for line item descriptions
+  const translateLineItemDescription = (description: string, language: string) => {
+    const lineItemTranslations = {
+      // Common service/product descriptions
+      'Sample Service': {
+        en: 'Sample Service',
+        nl: 'Voorbeelddienst',
+        de: 'Beispielservice',
+        fr: 'Service d\'exemple',
+        es: 'Servicio de muestra',
+        da: 'Eksempeltjeneste',
+        no: 'Eksempeltjeneste',
+        cs: 'Ukázková služba',
+        pl: 'Przykładowa usługa',
+        sv: 'Exempeltjänst'
+      },
+      'Consulting': {
+        en: 'Consulting',
+        nl: 'Consultancy',
+        de: 'Beratung',
+        fr: 'Consultation',
+        es: 'Consultoría',
+        da: 'Rådgivning',
+        no: 'Rådgivning',
+        cs: 'Poradenství',
+        pl: 'Doradztwo',
+        sv: 'Rådgivning'
+      },
+      'Design Work': {
+        en: 'Design Work',
+        nl: 'Ontwerpwerk',
+        de: 'Designarbeit',
+        fr: 'Travail de conception',
+        es: 'Trabajo de diseño',
+        da: 'Designarbejde',
+        no: 'Designarbeid',
+        cs: 'Designová práce',
+        pl: 'Praca projektowa',
+        sv: 'Designarbete'
+      },
+      'Development': {
+        en: 'Development',
+        nl: 'Ontwikkeling',
+        de: 'Entwicklung',
+        fr: 'Développement',
+        es: 'Desarrollo',
+        da: 'Udvikling',
+        no: 'Utvikling',
+        cs: 'Vývoj',
+        pl: 'Rozwój',
+        sv: 'Utveckling'
+      },
+      'Web Development': {
+        en: 'Web Development',
+        nl: 'Webontwikkeling',
+        de: 'Webentwicklung',
+        fr: 'Développement web',
+        es: 'Desarrollo web',
+        da: 'Webudvikling',
+        no: 'Webutvikling',
+        cs: 'Vývoj webu',
+        pl: 'Rozwój stron internetowych',
+        sv: 'Webbutveckling'
+      },
+      'Marketing': {
+        en: 'Marketing',
+        nl: 'Marketing',
+        de: 'Marketing',
+        fr: 'Marketing',
+        es: 'Marketing',
+        da: 'Marketing',
+        no: 'Markedsføring',
+        cs: 'Marketing',
+        pl: 'Marketing',
+        sv: 'Marknadsföring'
+      },
+      'Training': {
+        en: 'Training',
+        nl: 'Training',
+        de: 'Schulung',
+        fr: 'Formation',
+        es: 'Formación',
+        da: 'Træning',
+        no: 'Trening',
+        cs: 'Školení',
+        pl: 'Szkolenie',
+        sv: 'Utbildning'
+      },
+      'Support': {
+        en: 'Support',
+        nl: 'Ondersteuning',
+        de: 'Support',
+        fr: 'Assistance',
+        es: 'Soporte',
+        da: 'Support',
+        no: 'Støtte',
+        cs: 'Podpora',
+        pl: 'Wsparcie',
+        sv: 'Support'
+      },
+      'Maintenance': {
+        en: 'Maintenance',
+        nl: 'Onderhoud',
+        de: 'Wartung',
+        fr: 'Maintenance',
+        es: 'Mantenimiento',
+        da: 'Vedligeholdelse',
+        no: 'Vedlikehold',
+        cs: 'Údržba',
+        pl: 'Konserwacja',
+        sv: 'Underhåll'
+      },
+      'License': {
+        en: 'License',
+        nl: 'Licentie',
+        de: 'Lizenz',
+        fr: 'Licence',
+        es: 'Licencia',
+        da: 'Licens',
+        no: 'Lisens',
+        cs: 'Licence',
+        pl: 'Licencja',
+        sv: 'Licens'
+      }
+    };
+
+    const lang = language || 'en';
+    
+    // Check if we have a direct translation for this description
+    if (lineItemTranslations[description]) {
+      return lineItemTranslations[description][lang] || description;
+    }
+    
+    // If no direct translation found, return the original description
+    return description;
+  };
+
   const getTranslatedText = (key: string) => {
     const translations = {
       en: {
@@ -442,14 +579,18 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
               <tbody>
                 {lineItems.length > 0 ? lineItems.map((item, index) => (
                   <tr key={index} className={`border-b ${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}`}>
-                    <td className="py-4 px-4 border-r border-gray-200">{item.item_description}</td>
+                    <td className="py-4 px-4 border-r border-gray-200">
+                      {translateLineItemDescription(item.item_description, templateSettings.language)}
+                    </td>
                     <td className="text-center py-4 px-4 border-r border-gray-200">{item.quantity}</td>
                     <td className="text-right py-4 px-4 border-r border-gray-200">{formatCurrency(item.unit_price, currentCurrency)}</td>
                     <td className="text-right py-4 px-4 font-semibold">{formatCurrency(item.quantity * item.unit_price * (1 - item.discount_rate), currentCurrency)}</td>
                   </tr>
                 )) : (
                   <tr className="border-b bg-gray-50">
-                    <td className="py-4 px-4 border-r border-gray-200">Sample Service</td>
+                    <td className="py-4 px-4 border-r border-gray-200">
+                      {translateLineItemDescription('Sample Service', templateSettings.language)}
+                    </td>
                     <td className="text-center py-4 px-4 border-r border-gray-200">1</td>
                     <td className="text-right py-4 px-4 border-r border-gray-200">{formatCurrency(750, currentCurrency)}</td>
                     <td className="text-right py-4 px-4 font-semibold">{formatCurrency(750, currentCurrency)}</td>
