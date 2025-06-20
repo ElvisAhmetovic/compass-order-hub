@@ -411,6 +411,7 @@ const generateInvoiceHTML = (data: InvoicePDFData): string => {
 
   const companyInfo = templateSettings.companyInfo || {
     name: "Company Name",
+    contactPerson: "Contact Person",
     registrationNumber: "123456789",
     vatId: "VAT123456789",
     street: "Street Address",
@@ -462,6 +463,7 @@ const generateInvoiceHTML = (data: InvoicePDFData): string => {
         <div>
           <div style="font-size: 14px; color: #374151; line-height: 1.6;">
             <div style="font-weight: bold; margin-bottom: 8px;">${companyInfo.name}</div>
+            ${companyInfo.contactPerson ? `<div>Contact Person: ${companyInfo.contactPerson}</div>` : ''}
             <div>Company Registration Number: ${companyInfo.registrationNumber}</div>
             <div>UID- Number: ${companyInfo.vatId}</div>
             <div>${companyInfo.street} ${companyInfo.postal} ${companyInfo.city}</div>

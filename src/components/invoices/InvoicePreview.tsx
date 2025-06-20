@@ -325,6 +325,7 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
   // Provide default company info if not available
   const companyInfo = templateSettings.companyInfo || {
     name: "Company Name",
+    contactPerson: "Contact Person",
     registrationNumber: "123456789",
     vatId: "VAT123456789",
     street: "Street Address",
@@ -378,6 +379,9 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
             <div>
               <div className="text-sm text-gray-700 space-y-1 leading-relaxed">
                 <div className="font-bold mb-2">{companyInfo.name}</div>
+                {companyInfo.contactPerson && (
+                  <div>Contact Person: {companyInfo.contactPerson}</div>
+                )}
                 <div>Company Registration Number: {companyInfo.registrationNumber}</div>
                 <div>UID- Number: {companyInfo.vatId}</div>
                 <div>{companyInfo.street} {companyInfo.postal} {companyInfo.city}</div>
