@@ -92,6 +92,13 @@ const InvoiceDetail = () => {
         const invoiceData = await InvoiceService.getInvoice(id);
         if (invoiceData) {
           setInvoice(invoiceData);
+          
+          // Load line items first
+          const lineItemsData = await InvoiceService.getLineItems(id);
+          console.log('Loaded line items:', lineItemsData);
+          setLineItems(lineItemsData);
+          
+          // Then set form data
           const newFormData = {
             client_id: invoiceData.client_id,
             issue_date: invoiceData.issue_date.split('T')[0],
@@ -109,10 +116,6 @@ const InvoiceDetail = () => {
             ...prev,
             currency: invoiceData.currency
           }));
-
-          // Load line items
-          const lineItemsData = await InvoiceService.getLineItems(id);
-          setLineItems(lineItemsData);
         }
       }
     } catch (error) {
