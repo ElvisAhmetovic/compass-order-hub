@@ -399,11 +399,6 @@ export class OrderService {
         query = query.neq('is_yearly_package', true);
       }
       
-      // Exclude soft deleted orders unless we're specifically looking for deleted items
-      if (status !== 'Deleted') {
-        query = query.is('deleted_at', null).neq('status_deleted', true);
-      }
-      
       // Map old status names to new boolean columns
       const statusColumnMap: Record<string, string> = {
         'Created': 'status_created',

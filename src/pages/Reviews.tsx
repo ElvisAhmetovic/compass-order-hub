@@ -55,7 +55,7 @@ const Reviews = () => {
                     Review Orders
                   </h3>
                   <p className="text-sm text-blue-600 mt-1">
-                    Orders that have been manually sent to the review section. These orders may also have other statuses active simultaneously. Use "Remove Review" to remove orders from this section without deleting them.
+                    Orders that have been manually sent to the review section. These orders may also have other statuses active simultaneously.
                   </p>
                 </div>
               </div>
@@ -65,7 +65,6 @@ const Reviews = () => {
               onOrderClick={open} 
               statusFilter="Review"
               refreshTrigger={refreshTrigger}
-              showRemoveFromReview={true}
             />
             
             <OrderModal 
