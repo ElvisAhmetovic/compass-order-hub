@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { Order, OrderStatus } from "@/types";
 
@@ -409,7 +410,10 @@ export class OrderService {
         'Resolved': 'status_resolved',
         'Cancelled': 'status_cancelled',
         'Deleted': 'status_deleted',
-        'Review': 'status_review'
+        'Review': 'status_review',
+        'Facebook': 'status_review', // Map to existing status column for now
+        'Instagram': 'status_review', // Map to existing status column for now
+        'Trustpilot': 'status_review' // Map to existing status column for now
       };
 
       const statusColumn = statusColumnMap[status];
@@ -528,7 +532,10 @@ export class OrderService {
       "Resolved": "status_resolved",
       "Cancelled": "status_cancelled",
       "Deleted": "status_deleted",
-      "Review": "status_review"
+      "Review": "status_review",
+      "Facebook": "status_review", // Map to existing status column for now
+      "Instagram": "status_review", // Map to existing status column for now
+      "Trustpilot": "status_review" // Map to existing status column for now
     };
 
     const statusField = statusFieldMap[status];
@@ -593,7 +600,11 @@ export class OrderService {
     if (order.status_resolved) statuses.push('Resolved');
     if (order.status_cancelled) statuses.push('Cancelled');
     if (order.status_deleted) statuses.push('Deleted');
-    if (order.status_review) statuses.push('Review');
+    if (order.status_review) {
+      statuses.push('Review');
+      // For now, we'll treat Facebook, Instagram, and Trustpilot as part of Review status
+      // This is a temporary solution until we add dedicated columns for these statuses
+    }
     
     return statuses;
   }
