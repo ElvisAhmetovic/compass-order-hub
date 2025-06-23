@@ -17,7 +17,7 @@ interface User {
 }
 
 interface OrderDetailsSectionProps {
-  order: Order;
+  order: Order | null;
   data: OrderFormData & { assigned_to?: string };
   errors: ValidationErrors;
   isEditing: boolean;
@@ -41,6 +41,17 @@ const OrderDetailsSection = ({
 }: OrderDetailsSectionProps) => {
   const [users, setUsers] = useState<User[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
+
+  // Early return if order is null
+  if (!order) {
+    return (
+      <div className="space-y-6">
+        <div className="p-4 text-center text-muted-foreground">
+          No order data available
+        </div>
+      </div>
+    );
+  }
 
   // Load users for assignment dropdown
   useEffect(() => {
@@ -108,7 +119,7 @@ const OrderDetailsSection = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <Label className="text-sm font-medium text-muted-foreground">Created Date</Label>
-            <div className="text-sm">{formatDate(order.created_at)}</div>
+            <div className="text-sm">{order.created_at ? formatDate(order.created_at) : 'Unknown'}</div>
           </div>
           <div>
             <Label className="text-sm font-medium text-muted-foreground">Last Updated</Label>
