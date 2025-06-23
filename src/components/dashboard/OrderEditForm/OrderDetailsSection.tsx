@@ -132,15 +132,15 @@ const OrderDetailsSection = ({
         <Label className="text-sm font-medium">Assigned To</Label>
         {isEditing ? (
           <Select 
-            value={data.assigned_to || ""} 
-            onValueChange={(value) => onChange('assigned_to', value)}
+            value={data.assigned_to || "unassigned"} 
+            onValueChange={(value) => onChange('assigned_to', value === "unassigned" ? "" : value)}
             disabled={loadingUsers}
           >
             <SelectTrigger>
               <SelectValue placeholder={loadingUsers ? "Loading users..." : "Select user to assign"} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Unassigned</SelectItem>
+              <SelectItem value="unassigned">Unassigned</SelectItem>
               {users.map((user) => (
                 <SelectItem key={user.id} value={user.id}>
                   {user.full_name}
@@ -201,7 +201,7 @@ const OrderDetailsSection = ({
         </div>
       )}
 
-      {/* Internal Notes Section - This was missing! */}
+      {/* Internal Notes Section */}
       <div className="space-y-2">
         <Label className="text-sm font-medium">Internal Notes</Label>
         {isEditing ? (
