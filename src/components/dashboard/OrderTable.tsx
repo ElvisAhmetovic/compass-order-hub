@@ -36,6 +36,7 @@ interface OrderTableProps {
   hideActions?: boolean;
   hidePriority?: boolean;
   showRemoveFromReview?: boolean;
+  isYearlyPackages?: boolean;
 }
 
 const OrderTable = ({ 
@@ -44,7 +45,8 @@ const OrderTable = ({
   refreshTrigger, 
   hideActions = false, 
   hidePriority = false,
-  showRemoveFromReview = false
+  showRemoveFromReview = false,
+  isYearlyPackages = false
 }: OrderTableProps) => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -58,9 +60,9 @@ const OrderTable = ({
       try {
         let fetchedOrders: Order[];
         if (statusFilter) {
-          fetchedOrders = await OrderService.getOrdersByStatus(statusFilter);
+          fetchedOrders = await OrderService.getOrdersByStatus(statusFilter, isYearlyPackages);
         } else {
-          fetchedOrders = await OrderService.getOrders();
+          fetchedOrders = await OrderService.getOrders(!isYearlyPackages, false);
         }
         setOrders(fetchedOrders);
       } catch (error) {
@@ -69,7 +71,7 @@ const OrderTable = ({
     };
 
     fetchOrders();
-  }, [statusFilter, refreshTrigger]);
+  }, [statusFilter, refreshTrigger, isYearlyPackages]);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
@@ -192,18 +194,19 @@ const OrderTable = ({
       <div className="flex items-center justify-center">
         <Pagination>
           <PaginationContent>
-            <PaginationPrevious
-              href="#"
-              onClick={() => handlePageChange(currentPage - 1)}
-              disabled={currentPage === 1}
-            />
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-              <PaginationItem
-                key={page}
-                active={currentPage === page}
+            <PaginationItem>
+              <Button
+                variant="outline"
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
               >
+                Previous
+              </Button>
+            </PaginationItem>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+              <PaginationItem key={page}>
                 <Button
-                  variant="outline"
+                  variant={currentPage === page ? "default" : "outline"}
                   onClick={() => handlePageChange(page)}
                   disabled={currentPage === page}
                 >
@@ -211,11 +214,15 @@ const OrderTable = ({
                 </Button>
               </PaginationItem>
             ))}
-            <PaginationNext
-              href="#"
-              onClick={() => handlePageChange(currentPage + 1)}
-              disabled={currentPage === totalPages}
-            />
+            <PaginationItem>
+              <Button
+                variant="outline"
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+              >
+                Next
+              </Button>
+            </PaginationItem>
           </PaginationContent>
         </Pagination>
       </div>
