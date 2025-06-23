@@ -1,5 +1,5 @@
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Order, OrderPriority } from "@/types";
 import { OrderService } from "@/services/orderService";
 import { useToast } from "@/hooks/use-toast";
@@ -35,9 +35,23 @@ export const useOrderEdit = (
     priority: "medium",
     assigned_to: ""
   });
+  const [internalNotes, setInternalNotes] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
   const { toast } = useToast();
+
+  // Listen for internal notes updates
+  useEffect(() => {
+    const handleInternalNotesUpdate = (event: CustomEvent) => {
+      setInternalNotes(event.detail.value);
+    };
+
+    window.addEventListener('updateInternalNotes', handleInternalNotesUpdate as EventListener);
+    
+    return () => {
+      window.removeEventListener('updateInternalNotes', handleInternalNotesUpdate as EventListener);
+    };
+  }, []);
 
   const handleEdit = useCallback(() => {
     if (!order) return;
@@ -59,6 +73,7 @@ export const useOrderEdit = (
     
     setIsEditing(true);
     setEditedOrder(safeOrderData);
+    setInternalNotes(order.internal_notes || "");
     setValidationErrors({});
   }, [order]);
 
@@ -89,6 +104,7 @@ export const useOrderEdit = (
     if (!order) return;
     
     console.log('Attempting to save order with data:', editedOrder);
+    console.log('Internal notes:', internalNotes);
     console.log('Selected inventory items:', selectedInventoryItems);
     
     const errors = validateOrderForm(editedOrder);
@@ -122,7 +138,8 @@ export const useOrderEdit = (
         company_link: editedOrder.company_link || "",
         price: editedOrder.price !== undefined ? editedOrder.price : 0,
         currency: editedOrder.currency || "EUR",
-        priority: editedOrder.priority || "medium"
+        priority: editedOrder.priority || "medium",
+        internal_notes: internalNotes || null // Include internal notes in the update
         // Note: We don't update description here to preserve existing ones
       };
 
@@ -180,7 +197,7 @@ export const useOrderEdit = (
     } finally {
       setIsSaving(false);
     }
-  }, [editedOrder, order, toast, onRefresh, selectedInventoryItems]);
+  }, [editedOrder, order, toast, onRefresh, selectedInventoryItems, internalNotes]);
 
   const handleCancel = useCallback(() => {
     console.log('Canceling edit mode');
@@ -197,6 +214,7 @@ export const useOrderEdit = (
       priority: "medium",
       assigned_to: ""
     });
+    setInternalNotes("");
     setValidationErrors({});
     
     // Reset inventory items to original state when canceling
