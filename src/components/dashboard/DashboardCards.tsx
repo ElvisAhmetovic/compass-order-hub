@@ -1,4 +1,3 @@
-
 import { Card, CardContent } from "@/components/ui/card";
 import { 
   ClipboardCheck, 
@@ -58,9 +57,10 @@ const SummaryCard = ({
 
 interface DashboardCardsProps {
   isYearlyPackages?: boolean;
+  statusFilter?: string;
 }
 
-export const DashboardCards = ({ isYearlyPackages = false }: DashboardCardsProps) => {
+export const DashboardCards = ({ isYearlyPackages = false, statusFilter }: DashboardCardsProps) => {
   const [orderSummaries, setOrderSummaries] = useState<OrderSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -70,7 +70,7 @@ export const DashboardCards = ({ isYearlyPackages = false }: DashboardCardsProps
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        console.log(`DashboardCards: Starting to fetch ${isYearlyPackages ? 'yearly packages' : 'regular orders'} stats...`);
+        console.log(`DashboardCards: Starting to fetch ${isYearlyPackages ? 'yearly packages' : statusFilter ? `${statusFilter} orders` : 'regular orders'} stats...`);
         setLoading(true);
         setError(null);
         
@@ -89,6 +89,15 @@ export const DashboardCards = ({ isYearlyPackages = false }: DashboardCardsProps
         if (!isAdmin && user) {
           allOrders = allOrders.filter(order => order.assigned_to === user.id);
           console.log(`DashboardCards: Filtered to ${allOrders.length} orders for user ${user.id}`);
+        }
+
+        // Filter by status if statusFilter is provided
+        if (statusFilter) {
+          allOrders = allOrders.filter(order => {
+            const activeStatuses = OrderService.getActiveStatuses(order);
+            return activeStatuses.includes(statusFilter as OrderStatus);
+          });
+          console.log(`DashboardCards: Filtered to ${allOrders.length} orders with status ${statusFilter}`);
         }
         
         const summaries = calculateSummaries(allOrders);
@@ -152,7 +161,7 @@ export const DashboardCards = ({ isYearlyPackages = false }: DashboardCardsProps
     return () => {
       window.removeEventListener('orderStatusChanged', handleOrderStatusChange);
     };
-  }, [isAdmin, user, isYearlyPackages]);
+  }, [isAdmin, user, isYearlyPackages, statusFilter]);
 
   const getIcon = (status: OrderStatus) => {
     const iconProps = { className: "h-6 w-6" };

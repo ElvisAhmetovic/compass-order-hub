@@ -33,7 +33,7 @@ import Facebook from "./pages/Facebook";
 import Instagram from "./pages/Instagram";
 import Trustpilot from "./pages/Trustpilot";
 import NotFound from "./pages/NotFound";
-import RequireAuth from "./components/auth/RequireAuth";
+import { RequireAuth } from "./components/auth/RequireAuth";
 import AdminGuard from "./components/auth/AdminGuard";
 
 const queryClient = new QueryClient();

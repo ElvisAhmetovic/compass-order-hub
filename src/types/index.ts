@@ -1,4 +1,4 @@
-export type UserRole = "admin" | "user" | "agent";
+export type UserRole = "admin" | "agent" | "user";
 
 export interface User {
   id: string;
@@ -20,7 +20,10 @@ export type OrderStatus =
   | "Resolved" 
   | "Cancelled" 
   | "Deleted"
-  | "Review";
+  | "Review"
+  | "Facebook"
+  | "Instagram"
+  | "Trustpilot";
 
 export interface Order {
   id: string;
