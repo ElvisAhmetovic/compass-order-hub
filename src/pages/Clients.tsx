@@ -170,12 +170,12 @@ const Clients = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Contact Person</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Phone</TableHead>
-                      <TableHead>City</TableHead>
-                      <TableHead>VAT ID</TableHead>
+                      <TableHead className="w-[200px]">Name</TableHead>
+                      <TableHead className="w-[180px]">Contact Person</TableHead>
+                      <TableHead className="w-[250px]">Email</TableHead>
+                      <TableHead className="w-[150px]">Phone</TableHead>
+                      <TableHead className="w-[120px]">City</TableHead>
+                      <TableHead className="w-[120px]">VAT ID</TableHead>
                       <TableHead className="w-[100px]">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -198,7 +198,7 @@ const Clients = () => {
                             </div>
                           </TableCell>
                           <TableCell>{client.contact_person || '-'}</TableCell>
-                          <TableCell>{client.email}</TableCell>
+                          <TableCell className="break-all">{client.email}</TableCell>
                           <TableCell>{client.phone || '-'}</TableCell>
                           <TableCell>{client.city || '-'}</TableCell>
                           <TableCell>{client.vat_id || '-'}</TableCell>
