@@ -13,6 +13,8 @@ export interface OrderFormData {
 export interface ValidationErrors {
   company_name?: string;
   contact_email?: string;
+  contact_phone?: string;
+  company_link?: string;
   price?: string;
 }
 

@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from "react";
 import { Order, OrderPriority } from "@/types";
 import { OrderService } from "@/services/orderService";
@@ -53,7 +52,7 @@ export const useOrderEdit = (
       company_link: order.company_link || "",
       price: order.price || 0,
       currency: order.currency || "EUR",
-      priority: (order.priority || "medium") as OrderPriority,
+      priority: (order.priority || "medium"),
       assigned_to: order.assigned_to || "",
       internal_notes: order.internal_notes || ""
     };
@@ -124,7 +123,7 @@ export const useOrderEdit = (
         company_link: editedOrder.company_link || "",
         price: editedOrder.price !== undefined ? editedOrder.price : 0,
         currency: editedOrder.currency || "EUR",
-        priority: editedOrder.priority || "medium",
+        priority: editedOrder.priority as OrderPriority || "medium",
         internal_notes: editedOrder.internal_notes || ""
       };
 
