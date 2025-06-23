@@ -24,6 +24,8 @@ interface OrderDetailsSectionProps {
   onChange: (field: keyof (OrderFormData & { assigned_to?: string }), value: string | number) => void;
   selectedInventoryItems: SelectedInventoryItem[];
   onInventoryItemsChange: (items: SelectedInventoryItem[]) => void;
+  internalNotes: string;
+  onInternalNotesChange: (notes: string) => void;
 }
 
 const OrderDetailsSection = ({
@@ -33,7 +35,9 @@ const OrderDetailsSection = ({
   isEditing,
   onChange,
   selectedInventoryItems,
-  onInventoryItemsChange
+  onInventoryItemsChange,
+  internalNotes,
+  onInternalNotesChange
 }: OrderDetailsSectionProps) => {
   const [users, setUsers] = useState<User[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
@@ -207,20 +211,13 @@ const OrderDetailsSection = ({
         {isEditing ? (
           <Textarea
             placeholder="Internal notes and comments (not visible to clients)..."
-            value={order.internal_notes || ""}
-            onChange={(e) => {
-              // We need to update the order directly for internal notes since it's not in the form data
-              // This will be handled by the parent component
-              const event = new CustomEvent('updateInternalNotes', { 
-                detail: { value: e.target.value } 
-              });
-              window.dispatchEvent(event);
-            }}
+            value={internalNotes}
+            onChange={(e) => onInternalNotesChange(e.target.value)}
             className="min-h-[80px]"
           />
         ) : (
           <div className="p-3 bg-muted/50 rounded-md text-sm min-h-[80px]">
-            {order.internal_notes || (
+            {internalNotes || (
               <span className="text-muted-foreground italic">No internal notes</span>
             )}
           </div>

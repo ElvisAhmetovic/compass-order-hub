@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useEffect } from "react";
 import { Order, OrderPriority } from "@/types";
 import { OrderService } from "@/services/orderService";
@@ -99,6 +98,11 @@ export const useOrderEdit = (
       });
     }
   }, [validationErrors]);
+
+  const handleInternalNotesChange = useCallback((notes: string) => {
+    console.log('Updating internal notes:', notes);
+    setInternalNotes(notes);
+  }, []);
 
   const handleSave = useCallback(async () => {
     if (!order) return;
@@ -241,8 +245,10 @@ export const useOrderEdit = (
     isSaving,
     validationErrors,
     hasErrors,
+    internalNotes,
     handleEdit,
     handleFieldChange,
+    handleInternalNotesChange,
     handleSave,
     handleCancel
   };
