@@ -8,6 +8,7 @@ import { SelectedInventoryItem } from "../InventoryItemsSelector";
 
 interface ExtendedOrderFormData extends OrderFormData {
   assigned_to?: string;
+  internal_notes?: string;
 }
 
 interface UseOrderEditProps {
@@ -33,7 +34,8 @@ export const useOrderEdit = (
     price: 0,
     currency: "EUR",
     priority: "medium",
-    assigned_to: ""
+    assigned_to: "",
+    internal_notes: ""
   });
   const [isSaving, setIsSaving] = useState(false);
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
@@ -42,7 +44,7 @@ export const useOrderEdit = (
   const handleEdit = useCallback(() => {
     if (!order) return;
     
-    // Safeguard: Create a backup of original data to prevent data loss
+    // Initialize form data with current order data, including internal notes
     const safeOrderData: ExtendedOrderFormData = {
       company_name: order.company_name || "",
       company_address: order.company_address || "",
@@ -52,7 +54,8 @@ export const useOrderEdit = (
       price: order.price || 0,
       currency: order.currency || "EUR",
       priority: (order.priority || "medium") as OrderPriority,
-      assigned_to: order.assigned_to || ""
+      assigned_to: order.assigned_to || "",
+      internal_notes: order.internal_notes || ""
     };
     
     console.log('Starting edit mode with safe data:', safeOrderData);
@@ -65,7 +68,7 @@ export const useOrderEdit = (
   const handleFieldChange = useCallback((field: keyof ExtendedOrderFormData, value: string | number) => {
     console.log(`Updating field ${field} with value:`, value);
     
-    // Safeguard: Ensure we never set undefined or null values
+    // Ensure we never set undefined or null values
     const safeValue = value === null || value === undefined ? 
       (typeof value === 'number' ? 0 : "") : value;
     
@@ -112,8 +115,7 @@ export const useOrderEdit = (
     setValidationErrors({}); // Clear all errors if we're proceeding
     
     try {
-      // Safeguard: Ensure all values are properly defined before sending to API
-      // IMPORTANT: Keep the existing description if it exists, don't overwrite it
+      // Prepare update data including internal notes
       const updateData: Partial<Order> = {
         company_name: editedOrder.company_name || order.company_name || "",
         company_address: editedOrder.company_address || "",
@@ -122,31 +124,28 @@ export const useOrderEdit = (
         company_link: editedOrder.company_link || "",
         price: editedOrder.price !== undefined ? editedOrder.price : 0,
         currency: editedOrder.currency || "EUR",
-        priority: editedOrder.priority || "medium"
-        // Note: We don't update description here to preserve existing ones
+        priority: editedOrder.priority || "medium",
+        internal_notes: editedOrder.internal_notes || ""
       };
 
-      // IMPORTANT: Save inventory items to the database
+      // Handle inventory items
       if (selectedInventoryItems.length > 0) {
         updateData.inventory_items = JSON.stringify(selectedInventoryItems);
         console.log('Saving inventory items to database:', updateData.inventory_items);
       } else {
-        // If no inventory items selected, clear the field
         updateData.inventory_items = null;
         console.log('Clearing inventory items from database');
       }
 
-      // Handle assignment change - if assigned_to is different, update it
+      // Handle assignment change
       if (editedOrder.assigned_to !== order.assigned_to) {
         if (editedOrder.assigned_to && editedOrder.assigned_to.trim()) {
-          // Find the user name from the search service
           const options = await import('@/services/searchService').then(m => m.SearchService.getFilterOptions());
           const assignedUser = options.assignedUsers.find(u => u.id === editedOrder.assigned_to);
           
           updateData.assigned_to = editedOrder.assigned_to;
           updateData.assigned_to_name = assignedUser?.name || 'Unknown User';
         } else {
-          // Unassign the order
           updateData.assigned_to = null;
           updateData.assigned_to_name = null;
         }
@@ -158,7 +157,7 @@ export const useOrderEdit = (
       
       toast({
         title: "Order Updated",
-        description: "Order details have been successfully updated.",
+        description: "Order details and internal notes have been successfully updated.",
       });
       
       console.log('Order updated successfully');
@@ -175,7 +174,6 @@ export const useOrderEdit = (
         variant: "destructive"
       });
       
-      // Safeguard: Don't exit edit mode on save failure to prevent data loss
       console.log('Save failed, keeping edit mode active to prevent data loss');
     } finally {
       setIsSaving(false);
@@ -195,7 +193,8 @@ export const useOrderEdit = (
       price: 0,
       currency: "EUR",
       priority: "medium",
-      assigned_to: ""
+      assigned_to: "",
+      internal_notes: ""
     });
     setValidationErrors({});
     

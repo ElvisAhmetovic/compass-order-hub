@@ -3,7 +3,8 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
-import { DollarSign, User, Calendar, Clock, Package } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { DollarSign, User, Calendar, Clock, Package, FileText } from "lucide-react";
 import { OrderFormData, ValidationErrors } from "./validation";
 import { Order, OrderPriority } from "@/types";
 import { formatDate } from "@/lib/utils";
@@ -14,10 +15,10 @@ import InventoryItemsSelector, { SelectedInventoryItem } from "../InventoryItems
 
 interface OrderDetailsSectionProps {
   order: Order;
-  data: OrderFormData & { assigned_to?: string };
+  data: OrderFormData & { assigned_to?: string; internal_notes?: string };
   errors: ValidationErrors;
   isEditing: boolean;
-  onChange: (field: keyof (OrderFormData & { assigned_to?: string }), value: string | number) => void;
+  onChange: (field: keyof (OrderFormData & { assigned_to?: string; internal_notes?: string }), value: string | number) => void;
   selectedInventoryItems?: SelectedInventoryItem[];
   onInventoryItemsChange?: (items: SelectedInventoryItem[]) => void;
 }
@@ -68,7 +69,7 @@ const OrderDetailsSection = ({
         console.log('Initialized inventory items from order:', parsedItems);
       } catch (error) {
         console.error('Error parsing inventory items:', error);
-        inventoryInitialized.current = true; // Mark as initialized even on error
+        inventoryInitialized.current = true;
       }
     }
   }, [order.inventory_items, selectedInventoryItems.length, onInventoryItemsChange]);
@@ -78,7 +79,7 @@ const OrderDetailsSection = ({
     inventoryInitialized.current = false;
   }, [order.id]);
 
-  // Safeguard: Always ensure we have valid data and prevent null/undefined values
+  // Ensure we have valid data and prevent null/undefined values
   const safeData = {
     ...data,
     company_name: data.company_name || order.company_name || "",
@@ -89,17 +90,45 @@ const OrderDetailsSection = ({
     price: data.price !== undefined ? data.price : (order.price || 0),
     currency: data.currency || order.currency || "EUR",
     priority: data.priority || order.priority || "medium",
-    assigned_to: data.assigned_to || order.assigned_to || "unassigned"
+    assigned_to: data.assigned_to || order.assigned_to || "unassigned",
+    internal_notes: data.internal_notes !== undefined ? data.internal_notes : (order.internal_notes || "")
   };
 
   const handleAssignedToChange = (value: string) => {
-    // Convert "unassigned" back to empty string for the form data
     const actualValue = value === "unassigned" ? "" : value;
     onChange('assigned_to', actualValue);
   };
 
   return (
     <div className="space-y-4">
+      {/* Internal Notes Section */}
+      <div>
+        <Label className="text-sm font-medium text-muted-foreground flex items-center gap-1">
+          <FileText className="h-3 w-3" />
+          Internal Notes
+        </Label>
+        {isEditing ? (
+          <div>
+            <Textarea
+              value={safeData.internal_notes}
+              onChange={(e) => onChange('internal_notes', e.target.value)}
+              placeholder="Add internal notes for team reference..."
+              className="mt-1 min-h-[80px]"
+            />
+          </div>
+        ) : (
+          <div className="mt-2">
+            {order.internal_notes ? (
+              <div className="p-3 bg-muted/50 rounded-md text-sm">
+                {order.internal_notes}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground italic">No internal notes</p>
+            )}
+          </div>
+        )}
+      </div>
+
       {/* Inventory Items Section */}
       {isEditing && (
         <div>
@@ -160,7 +189,7 @@ const OrderDetailsSection = ({
               value={safeData.price || 0}
               onChange={(e) => {
                 const value = parseFloat(e.target.value) || 0;
-                onChange('price', Math.max(0, value)); // Prevent negative values
+                onChange('price', Math.max(0, value));
               }}
               placeholder="0.00"
               className={`mt-1 ${errors.price ? 'border-destructive' : ''}`}
