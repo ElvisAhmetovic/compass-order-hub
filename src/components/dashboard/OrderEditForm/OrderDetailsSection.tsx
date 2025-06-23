@@ -180,7 +180,7 @@ const OrderDetailsSection = ({
                     )}
                   </div>
                   <div className="text-sm">
-                    Qty: {item.quantity} | Price: €{item.price}
+                    Qty: {item.quantity} | Price: €{item.unitPrice}
                   </div>
                 </div>
               ))

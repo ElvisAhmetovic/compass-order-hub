@@ -1,4 +1,3 @@
-
 export type UserRole = "admin" | "user" | "agent";
 
 export interface User {
@@ -48,6 +47,7 @@ export interface Order {
   agent_name?: string;
   status_date?: string;
   inventory_items?: string | null;
+  internal_notes?: string | null; // Add internal_notes property
   // New multi-status fields
   status_created?: boolean;
   status_in_progress?: boolean;
