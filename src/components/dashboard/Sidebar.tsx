@@ -18,7 +18,9 @@ import {
   CheckCircle,
   XCircle,
   Clock,
-  Eye
+  Eye,
+  Facebook,
+  Instagram
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
@@ -39,6 +41,9 @@ const Sidebar = () => {
     { href: '/active-orders', icon: FileText, label: 'My Orders', roles: ['user'] }, // User-specific orders view
     { href: '/active-orders', icon: Clock, label: 'Active Orders', roles: ['admin', 'agent'] }, // Admin/agent view
     { href: '/yearly-packages', icon: Package, label: 'Yearly Packages', roles: ['admin', 'agent'] }, // New yearly packages section
+    { href: '/facebook', icon: Facebook, label: 'Facebook', roles: ['admin', 'agent'] }, // New Facebook section
+    { href: '/instagram', icon: Instagram, label: 'Instagram', roles: ['admin', 'agent'] }, // New Instagram section
+    { href: '/trustpilot', icon: Star, label: 'Trustpilot', roles: ['admin', 'agent'] }, // New Trustpilot section
     { href: '/complaints', icon: AlertTriangle, label: 'Complaints', roles: ['admin', 'agent'] },
     { href: '/completed', icon: CheckCircle, label: 'Completed', roles: ['admin', 'agent'] },
     { href: '/cancelled', icon: XCircle, label: 'Cancelled', roles: ['admin', 'agent'] },
