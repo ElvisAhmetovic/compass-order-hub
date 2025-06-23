@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { X, Edit, Building2, MessageSquare } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -137,18 +136,6 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
                         isEditing={isEditing}
                         onChange={handleFieldChange}
                       />
-
-                      {/* Show existing description as read-only if it exists */}
-                      {order.description && (
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium text-muted-foreground">
-                            Description (Read-only)
-                          </label>
-                          <div className="p-3 bg-muted/50 rounded-md text-sm">
-                            {order.description}
-                          </div>
-                        </div>
-                      )}
                     </div>
 
                     {/* Order Details */}
@@ -162,7 +149,8 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
                         order={order}
                         data={isEditing ? {
                           ...editedOrder,
-                          assigned_to: editedOrder.assigned_to
+                          assigned_to: editedOrder.assigned_to,
+                          description: editedOrder.description
                         } : {
                           company_name: order.company_name,
                           company_address: order.company_address || "",
@@ -172,7 +160,8 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
                           price: order.price || 0,
                           currency: order.currency || "EUR",
                           priority: order.priority || "medium",
-                          assigned_to: order.assigned_to || ""
+                          assigned_to: order.assigned_to || "",
+                          description: order.description || ""
                         }}
                         errors={validationErrors}
                         isEditing={isEditing}

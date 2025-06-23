@@ -15,10 +15,10 @@ import InventoryItemsSelector, { SelectedInventoryItem } from "../InventoryItems
 
 interface OrderDetailsSectionProps {
   order: Order;
-  data: OrderFormData & { assigned_to?: string; internal_notes?: string };
+  data: OrderFormData & { assigned_to?: string; internal_notes?: string; description?: string };
   errors: ValidationErrors;
   isEditing: boolean;
-  onChange: (field: keyof (OrderFormData & { assigned_to?: string; internal_notes?: string }), value: string | number) => void;
+  onChange: (field: keyof (OrderFormData & { assigned_to?: string; internal_notes?: string; description?: string }), value: string | number) => void;
   selectedInventoryItems?: SelectedInventoryItem[];
   onInventoryItemsChange?: (items: SelectedInventoryItem[]) => void;
 }
@@ -91,7 +91,8 @@ const OrderDetailsSection = ({
     currency: data.currency || order.currency || "EUR",
     priority: data.priority || order.priority || "medium",
     assigned_to: data.assigned_to || order.assigned_to || "unassigned",
-    internal_notes: data.internal_notes !== undefined ? data.internal_notes : (order.internal_notes || "")
+    internal_notes: data.internal_notes !== undefined ? data.internal_notes : (order.internal_notes || ""),
+    description: data.description !== undefined ? data.description : (order.description || "")
   };
 
   const handleAssignedToChange = (value: string) => {
@@ -101,6 +102,34 @@ const OrderDetailsSection = ({
 
   return (
     <div className="space-y-4">
+      {/* Description Section */}
+      <div>
+        <Label className="text-sm font-medium text-muted-foreground flex items-center gap-1">
+          <FileText className="h-3 w-3" />
+          Description
+        </Label>
+        {isEditing ? (
+          <div>
+            <Textarea
+              value={safeData.description}
+              onChange={(e) => onChange('description', e.target.value)}
+              placeholder="Enter order description..."
+              className="mt-1 min-h-[80px]"
+            />
+          </div>
+        ) : (
+          <div className="mt-2">
+            {order.description ? (
+              <div className="p-3 bg-muted/50 rounded-md text-sm">
+                {order.description}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground italic">No description</p>
+            )}
+          </div>
+        )}
+      </div>
+
       {/* Internal Notes Section */}
       <div>
         <Label className="text-sm font-medium text-muted-foreground flex items-center gap-1">

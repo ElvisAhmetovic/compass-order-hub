@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from "react";
 import { Order, OrderPriority } from "@/types";
 import { OrderService } from "@/services/orderService";
@@ -8,6 +9,7 @@ import { SelectedInventoryItem } from "../InventoryItemsSelector";
 interface ExtendedOrderFormData extends OrderFormData {
   assigned_to?: string;
   internal_notes?: string;
+  description?: string;
 }
 
 interface UseOrderEditProps {
@@ -34,7 +36,8 @@ export const useOrderEdit = (
     currency: "EUR",
     priority: "medium",
     assigned_to: "",
-    internal_notes: ""
+    internal_notes: "",
+    description: ""
   });
   const [isSaving, setIsSaving] = useState(false);
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
@@ -43,7 +46,7 @@ export const useOrderEdit = (
   const handleEdit = useCallback(() => {
     if (!order) return;
     
-    // Initialize form data with current order data, including internal notes
+    // Initialize form data with current order data, including internal notes and description
     const safeOrderData: ExtendedOrderFormData = {
       company_name: order.company_name || "",
       company_address: order.company_address || "",
@@ -54,7 +57,8 @@ export const useOrderEdit = (
       currency: order.currency || "EUR",
       priority: (order.priority || "medium"),
       assigned_to: order.assigned_to || "",
-      internal_notes: order.internal_notes || ""
+      internal_notes: order.internal_notes || "",
+      description: order.description || ""
     };
     
     console.log('Starting edit mode with safe data:', safeOrderData);
@@ -114,7 +118,7 @@ export const useOrderEdit = (
     setValidationErrors({}); // Clear all errors if we're proceeding
     
     try {
-      // Prepare update data including internal notes
+      // Prepare update data including internal notes and description
       const updateData: Partial<Order> = {
         company_name: editedOrder.company_name || order.company_name || "",
         company_address: editedOrder.company_address || "",
@@ -124,7 +128,8 @@ export const useOrderEdit = (
         price: editedOrder.price !== undefined ? editedOrder.price : 0,
         currency: editedOrder.currency || "EUR",
         priority: editedOrder.priority as OrderPriority || "medium",
-        internal_notes: editedOrder.internal_notes || ""
+        internal_notes: editedOrder.internal_notes || "",
+        description: editedOrder.description || ""
       };
 
       // Handle inventory items
@@ -156,7 +161,7 @@ export const useOrderEdit = (
       
       toast({
         title: "Order Updated",
-        description: "Order details and internal notes have been successfully updated.",
+        description: "Order details, description, and internal notes have been successfully updated.",
       });
       
       console.log('Order updated successfully');
@@ -193,7 +198,8 @@ export const useOrderEdit = (
       currency: "EUR",
       priority: "medium",
       assigned_to: "",
-      internal_notes: ""
+      internal_notes: "",
+      description: ""
     });
     setValidationErrors({});
     
