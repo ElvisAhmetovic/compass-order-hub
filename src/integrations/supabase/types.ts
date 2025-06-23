@@ -725,11 +725,14 @@ export type Database = {
           status_created: boolean | null
           status_date: string | null
           status_deleted: boolean | null
+          status_facebook: boolean | null
           status_in_progress: boolean | null
+          status_instagram: boolean | null
           status_invoice_paid: boolean | null
           status_invoice_sent: boolean | null
           status_resolved: boolean | null
           status_review: boolean | null
+          status_trustpilot: boolean | null
           updated_at: string | null
         }
         Insert: {
@@ -760,11 +763,14 @@ export type Database = {
           status_created?: boolean | null
           status_date?: string | null
           status_deleted?: boolean | null
+          status_facebook?: boolean | null
           status_in_progress?: boolean | null
+          status_instagram?: boolean | null
           status_invoice_paid?: boolean | null
           status_invoice_sent?: boolean | null
           status_resolved?: boolean | null
           status_review?: boolean | null
+          status_trustpilot?: boolean | null
           updated_at?: string | null
         }
         Update: {
@@ -795,11 +801,14 @@ export type Database = {
           status_created?: boolean | null
           status_date?: string | null
           status_deleted?: boolean | null
+          status_facebook?: boolean | null
           status_in_progress?: boolean | null
+          status_instagram?: boolean | null
           status_invoice_paid?: boolean | null
           status_invoice_sent?: boolean | null
           status_resolved?: boolean | null
           status_review?: boolean | null
+          status_trustpilot?: boolean | null
           updated_at?: string | null
         }
         Relationships: [

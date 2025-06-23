@@ -1,3 +1,4 @@
+
 export type UserRole = "admin" | "agent" | "user";
 
 export interface User {
@@ -51,7 +52,7 @@ export interface Order {
   status_date?: string;
   inventory_items?: string | null;
   internal_notes?: string;
-  // New multi-status fields
+  // Multi-status fields
   status_created?: boolean;
   status_in_progress?: boolean;
   status_complaint?: boolean;
@@ -61,6 +62,10 @@ export interface Order {
   status_cancelled?: boolean;
   status_deleted?: boolean;
   status_review?: boolean;
+  // New dedicated social media status fields
+  status_facebook?: boolean;
+  status_instagram?: boolean;
+  status_trustpilot?: boolean;
   // Yearly package field
   is_yearly_package?: boolean;
 }
