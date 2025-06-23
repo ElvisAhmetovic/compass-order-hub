@@ -75,7 +75,6 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <CompanyInfoSection
-                  order={order}
                   data={editedOrder}
                   errors={validationErrors}
                   isEditing={isEditing}
