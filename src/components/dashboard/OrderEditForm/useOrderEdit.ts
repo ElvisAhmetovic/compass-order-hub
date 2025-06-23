@@ -39,6 +39,14 @@ export const useOrderEdit = (
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
   const { toast } = useToast();
 
+  // Initialize internal notes when order changes - this fixes the persistence issue
+  useEffect(() => {
+    if (order) {
+      console.log('Setting internal notes from order:', order.internal_notes);
+      setInternalNotes(order.internal_notes || "");
+    }
+  }, [order?.id, order?.internal_notes]); // Watch for order ID and internal_notes changes
+
   // Listen for internal notes updates
   useEffect(() => {
     const handleInternalNotesUpdate = (event: CustomEvent) => {
@@ -69,9 +77,11 @@ export const useOrderEdit = (
     };
     
     console.log('Starting edit mode with safe data:', safeOrderData);
+    console.log('Starting edit mode with internal notes:', order.internal_notes);
     
     setIsEditing(true);
     setEditedOrder(safeOrderData);
+    // Ensure internal notes are properly set when entering edit mode
     setInternalNotes(order.internal_notes || "");
     setValidationErrors({});
   }, [order]);
@@ -218,7 +228,8 @@ export const useOrderEdit = (
       priority: "medium",
       assigned_to: ""
     });
-    setInternalNotes("");
+    // Reset internal notes to original value when canceling, not empty string
+    setInternalNotes(order?.internal_notes || "");
     setValidationErrors({});
     
     // Reset inventory items to original state when canceling
