@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
-import { MoreHorizontal, FileText, Send, Receipt, ArrowLeft } from "lucide-react";
+import { MoreHorizontal, FileText, Send, Receipt, ArrowLeft, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -26,6 +26,7 @@ interface OrderRowProps {
   assigneeName: string;
   hideActions?: boolean;
   hidePriority?: boolean;
+  showRemoveFromReview?: boolean; // New prop for Reviews page
 }
 
 const OrderRow = ({ 
@@ -34,7 +35,8 @@ const OrderRow = ({
   onRefresh, 
   assigneeName, 
   hideActions = false, 
-  hidePriority = false 
+  hidePriority = false,
+  showRemoveFromReview = false
 }: OrderRowProps) => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
@@ -423,6 +425,48 @@ const OrderRow = ({
     }
   };
 
+  const handleRemoveFromReview = async () => {
+    if (!isAdmin) {
+      toast({
+        title: "Permission Denied",
+        description: "Only administrators can remove orders from review.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to remove orders from review.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsUpdatingStatus(true);
+    try {
+      await OrderService.toggleOrderStatus(order.id, "Review", false);
+      
+      toast({
+        title: "Removed from review",
+        description: `Order has been removed from the Reviews section.`,
+      });
+      
+      onRefresh();
+      window.dispatchEvent(new CustomEvent('orderStatusChanged'));
+    } catch (error) {
+      console.error("Error removing order from review:", error);
+      toast({
+        title: "Error",
+        description: "Failed to remove order from review. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  };
+
   return (
     <TableRow>
       <TableCell className="min-w-0">
@@ -469,6 +513,20 @@ const OrderRow = ({
       </TableCell>
       <TableCell>
         <div className="flex flex-col items-start gap-1">
+          {/* Remove from Review button - only visible on Reviews page for admins */}
+          {showRemoveFromReview && isAdmin && order.status_review && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRemoveFromReview}
+              disabled={isUpdatingStatus}
+              className="h-8 px-2 w-full"
+            >
+              <X className="h-4 w-4 mr-1" />
+              {isUpdatingStatus ? "Removing..." : "Remove Review"}
+            </Button>
+          )}
+
           {/* Send to Review button - visible for admins on orders not already in Review status */}
           {isAdmin && !order.status_review && (
             <Button

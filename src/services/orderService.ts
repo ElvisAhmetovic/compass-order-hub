@@ -387,7 +387,7 @@ export class OrderService {
     }
   }
 
-  // Get orders by status - now supports multiple status filtering and excludes soft deleted orders
+  // Get orders by status - now supports multiple status filtering
   static async getOrdersByStatus(status: string, isYearlyPackages: boolean = false): Promise<Order[]> {
     try {
       let query = supabase.from('orders').select('*');
