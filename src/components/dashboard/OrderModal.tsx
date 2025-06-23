@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import {
   Dialog,
@@ -8,10 +9,9 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Order, UserRole } from "@/types";
-import { CompanyInfoSection } from "@/components/dashboard/OrderEditForm/CompanyInfoSection";
+import CompanyInfoSection from "@/components/dashboard/OrderEditForm/CompanyInfoSection";
 import OrderDetailsSection from "@/components/dashboard/OrderEditForm/OrderDetailsSection";
-import { OrderHistory } from "@/components/dashboard/OrderEditForm/OrderHistory";
-import { EditModeHeader } from "@/components/dashboard/OrderEditForm/EditModeHeader";
+import EditModeHeader from "@/components/dashboard/OrderEditForm/EditModeHeader";
 import { useOrderEdit } from "@/components/dashboard/OrderEditForm/useOrderEdit";
 import { SelectedInventoryItem } from "@/components/dashboard/InventoryItemsSelector";
 
@@ -98,7 +98,9 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
 
             {isAdmin && (
               <TabsContent value="history" className="space-y-6 mt-6">
-                <OrderHistory orderId={order?.id || ""} />
+                <div className="p-4 text-center text-muted-foreground">
+                  Order history feature coming soon
+                </div>
               </TabsContent>
             )}
           </Tabs>
