@@ -39,10 +39,7 @@ const OrderDetailsSection = ({
   internalNotes,
   onInternalNotesChange
 }: OrderDetailsSectionProps) => {
-  const [users, setUsers] = useState<User[]>([]);
-  const [loadingUsers, setLoadingUsers] = useState(false);
-
-  // Early return if order is null
+  // Early return if order is null - BEFORE any hooks
   if (!order) {
     return (
       <div className="space-y-6">
@@ -52,6 +49,9 @@ const OrderDetailsSection = ({
       </div>
     );
   }
+
+  const [users, setUsers] = useState<User[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
 
   // Load users for assignment dropdown
   useEffect(() => {
