@@ -1,4 +1,5 @@
-import { useState, useCallback, useEffect } from "react";
+
+import { useState, useCallback } from "react";
 import { Order, OrderPriority } from "@/types";
 import { OrderService } from "@/services/orderService";
 import { useToast } from "@/hooks/use-toast";
@@ -34,31 +35,9 @@ export const useOrderEdit = (
     priority: "medium",
     assigned_to: ""
   });
-  const [internalNotes, setInternalNotes] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
   const { toast } = useToast();
-
-  // Initialize internal notes when order changes - this fixes the persistence issue
-  useEffect(() => {
-    if (order) {
-      console.log('Setting internal notes from order:', order.internal_notes);
-      setInternalNotes(order.internal_notes || "");
-    }
-  }, [order?.id, order?.internal_notes]); // Watch for order ID and internal_notes changes
-
-  // Listen for internal notes updates
-  useEffect(() => {
-    const handleInternalNotesUpdate = (event: CustomEvent) => {
-      setInternalNotes(event.detail.value);
-    };
-
-    window.addEventListener('updateInternalNotes', handleInternalNotesUpdate as EventListener);
-    
-    return () => {
-      window.removeEventListener('updateInternalNotes', handleInternalNotesUpdate as EventListener);
-    };
-  }, []);
 
   const handleEdit = useCallback(() => {
     if (!order) return;
@@ -77,12 +56,9 @@ export const useOrderEdit = (
     };
     
     console.log('Starting edit mode with safe data:', safeOrderData);
-    console.log('Starting edit mode with internal notes:', order.internal_notes);
     
     setIsEditing(true);
     setEditedOrder(safeOrderData);
-    // Ensure internal notes are properly set when entering edit mode
-    setInternalNotes(order.internal_notes || "");
     setValidationErrors({});
   }, [order]);
 
@@ -109,16 +85,10 @@ export const useOrderEdit = (
     }
   }, [validationErrors]);
 
-  const handleInternalNotesChange = useCallback((notes: string) => {
-    console.log('Updating internal notes:', notes);
-    setInternalNotes(notes);
-  }, []);
-
   const handleSave = useCallback(async () => {
     if (!order) return;
     
     console.log('Attempting to save order with data:', editedOrder);
-    console.log('Internal notes:', internalNotes);
     console.log('Selected inventory items:', selectedInventoryItems);
     
     const errors = validateOrderForm(editedOrder);
@@ -152,8 +122,7 @@ export const useOrderEdit = (
         company_link: editedOrder.company_link || "",
         price: editedOrder.price !== undefined ? editedOrder.price : 0,
         currency: editedOrder.currency || "EUR",
-        priority: editedOrder.priority || "medium",
-        internal_notes: internalNotes || null // Include internal notes in the update
+        priority: editedOrder.priority || "medium"
         // Note: We don't update description here to preserve existing ones
       };
 
@@ -211,7 +180,7 @@ export const useOrderEdit = (
     } finally {
       setIsSaving(false);
     }
-  }, [editedOrder, order, toast, onRefresh, selectedInventoryItems, internalNotes]);
+  }, [editedOrder, order, toast, onRefresh, selectedInventoryItems]);
 
   const handleCancel = useCallback(() => {
     console.log('Canceling edit mode');
@@ -228,8 +197,6 @@ export const useOrderEdit = (
       priority: "medium",
       assigned_to: ""
     });
-    // Reset internal notes to original value when canceling, not empty string
-    setInternalNotes(order?.internal_notes || "");
     setValidationErrors({});
     
     // Reset inventory items to original state when canceling
@@ -256,10 +223,8 @@ export const useOrderEdit = (
     isSaving,
     validationErrors,
     hasErrors,
-    internalNotes,
     handleEdit,
     handleFieldChange,
-    handleInternalNotesChange,
     handleSave,
     handleCancel
   };

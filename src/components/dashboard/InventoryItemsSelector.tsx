@@ -12,7 +12,6 @@ import InventoryAutocomplete from '@/components/inventory/InventoryAutocomplete'
 export interface SelectedInventoryItem {
   id: string;
   name: string;
-  description?: string;
   quantity: number;
   unit: string;
   unitPrice: number;
@@ -41,7 +40,6 @@ const InventoryItemsSelector: React.FC<InventoryItemsSelectorProps> = ({
     const newItem: SelectedInventoryItem = {
       id: inventoryItem.id,
       name: inventoryItem.name,
-      description: inventoryItem.description || '',
       quantity: 1,
       unit: inventoryItem.unit || 'Stk',
       unitPrice: numericPrice,
