@@ -99,16 +99,27 @@ const OrderDetailsSection = ({
     onChange('assigned_to', actualValue);
   };
 
-  // Helper function to format text for display with proper line breaks
+  // Helper function to format text for display with proper line breaks and structure
   const formatTextDisplay = (text: string) => {
     if (!text) return null;
     
-    return text.split('\n').map((line, index) => (
-      <span key={index}>
-        {line}
-        {index < text.split('\n').length - 1 && <br />}
-      </span>
-    ));
+    // Split by double line breaks first to create paragraphs
+    const paragraphs = text.split('\n\n');
+    
+    return paragraphs.map((paragraph, paragraphIndex) => {
+      // Split each paragraph by single line breaks
+      const lines = paragraph.split('\n');
+      
+      return (
+        <div key={paragraphIndex} className={paragraphIndex > 0 ? 'mt-3' : ''}>
+          {lines.map((line, lineIndex) => (
+            <div key={lineIndex} className={lineIndex > 0 ? 'mt-1' : ''}>
+              {line}
+            </div>
+          ))}
+        </div>
+      );
+    });
   };
 
   return (
@@ -124,18 +135,29 @@ const OrderDetailsSection = ({
             <Textarea
               value={safeData.description}
               onChange={(e) => onChange('description', e.target.value)}
-              placeholder="Description that will be visible to clients in proposals/invoices..."
-              className="mt-1 min-h-[120px] whitespace-pre-wrap"
-              style={{ whiteSpace: 'pre-wrap' }}
+              placeholder={`Description that will be visible to clients in proposals/invoices...
+
+Example formatting:
+1. First item or step
+2. Second item or step
+3. Third item or step
+
+Key features:
+• Feature one
+• Feature two
+• Feature three
+
+Additional details in new paragraphs...`}
+              className="mt-1 min-h-[120px]"
             />
             <p className="text-xs text-muted-foreground mt-1">
-              This description will be included in proposals and invoices. Use line breaks for better formatting.
+              This description will be included in proposals and invoices. Use line breaks for better formatting. Press Enter twice for new paragraphs.
             </p>
           </div>
         ) : (
           <div className="mt-2">
             {order.description ? (
-              <div className="p-3 bg-muted/50 rounded-md text-sm whitespace-pre-wrap">
+              <div className="p-3 bg-muted/50 rounded-md text-sm" style={{ whiteSpace: 'pre-wrap', lineHeight: '1.5' }}>
                 {formatTextDisplay(order.description)}
               </div>
             ) : (
@@ -156,18 +178,29 @@ const OrderDetailsSection = ({
             <Textarea
               value={safeData.internal_notes}
               onChange={(e) => onChange('internal_notes', e.target.value)}
-              placeholder="Internal notes and comments (not visible to clients)..."
-              className="mt-1 min-h-[120px] whitespace-pre-wrap"
-              style={{ whiteSpace: 'pre-wrap' }}
+              placeholder={`Internal notes and comments (not visible to clients)...
+
+Example formatting:
+1. First priority task
+2. Second priority task
+3. Follow-up needed
+
+Notes:
+• Client prefers email contact
+• Payment terms: Net 30
+• Special requirements noted
+
+Additional internal comments...`}
+              className="mt-1 min-h-[120px]"
             />
             <p className="text-xs text-muted-foreground mt-1">
-              These notes are for internal use only and won't appear in proposals or invoices. Use line breaks for better formatting.
+              These notes are for internal use only and won't appear in proposals or invoices. Use line breaks for better formatting. Press Enter twice for new paragraphs.
             </p>
           </div>
         ) : (
           <div className="mt-2">
             {order.internal_notes ? (
-              <div className="p-3 bg-muted/50 rounded-md text-sm whitespace-pre-wrap">
+              <div className="p-3 bg-muted/50 rounded-md text-sm" style={{ whiteSpace: 'pre-wrap', lineHeight: '1.5' }}>
                 {formatTextDisplay(order.internal_notes)}
               </div>
             ) : (

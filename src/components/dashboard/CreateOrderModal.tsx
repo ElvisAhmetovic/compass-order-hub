@@ -521,14 +521,25 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
                       </div>
                       <FormControl>
                         <Textarea 
-                          placeholder="Description that will be visible to clients in proposals/invoices..." 
-                          className="min-h-[120px] whitespace-pre-wrap" 
-                          style={{ whiteSpace: 'pre-wrap' }}
+                          placeholder={`Description that will be visible to clients in proposals/invoices...
+
+Example formatting:
+1. First item or step
+2. Second item or step
+3. Third item or step
+
+Key features:
+• Feature one
+• Feature two
+• Feature three
+
+Additional details in new paragraphs...`}
+                          className="min-h-[120px]"
                           {...field} 
                         />
                       </FormControl>
                       <p className="text-xs text-muted-foreground mt-1">
-                        This description will be included in proposals and invoices. Use line breaks for better formatting.
+                        This description will be included in proposals and invoices. Use line breaks for better formatting. Press Enter twice for new paragraphs.
                       </p>
                       <FormMessage />
                     </FormItem>
@@ -549,14 +560,25 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
                       </div>
                       <FormControl>
                         <Textarea 
-                          placeholder="Internal notes and comments (not visible to clients)..." 
-                          className="min-h-[120px] whitespace-pre-wrap" 
-                          style={{ whiteSpace: 'pre-wrap' }}
+                          placeholder={`Internal notes and comments (not visible to clients)...
+
+Example formatting:
+1. First priority task
+2. Second priority task
+3. Follow-up needed
+
+Notes:
+• Client prefers email contact
+• Payment terms: Net 30
+• Special requirements noted
+
+Additional internal comments...`}
+                          className="min-h-[120px]"
                           {...field} 
                         />
                       </FormControl>
                       <p className="text-xs text-muted-foreground mt-1">
-                        These notes are for internal use only and won't appear in proposals or invoices. Use line breaks for better formatting.
+                        These notes are for internal use only and won't appear in proposals or invoices. Use line breaks for better formatting. Press Enter twice for new paragraphs.
                       </p>
                       <FormMessage />
                     </FormItem>
