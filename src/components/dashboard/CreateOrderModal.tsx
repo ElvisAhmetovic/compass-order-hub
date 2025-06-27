@@ -129,21 +129,28 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
     }
   }, [open, user, form]);
 
-  // Handle autofill from selected order
+  // Handle autofill from selected order - only copy company/client information, not order-specific content
   const handleOrderAutofill = (selectedOrder: Order) => {
+    // Only copy company/client information and basic settings
     form.setValue('companyName', selectedOrder.company_name);
     form.setValue('companyAddress', selectedOrder.company_address || '');
     form.setValue('contactEmail', selectedOrder.contact_email || '');
     form.setValue('contactPhone', selectedOrder.contact_phone || '');
     form.setValue('companyLink', selectedOrder.company_link || '');
-    form.setValue('price', selectedOrder.price || 0);
     form.setValue('currency', selectedOrder.currency || 'EUR');
     form.setValue('priority', selectedOrder.priority || 'medium');
-    // Note: We don't autofill description or internalNotes to keep them separate
+    
+    // Reset order-specific content to empty for new order
+    form.setValue('price', 0);
+    form.setValue('description', '');
+    form.setValue('internalNotes', '');
+    
+    // Reset inventory items for new order
+    setSelectedInventoryItems([]);
     
     toast({
-      title: "Order information filled",
-      description: `Autofilled information from order: ${selectedOrder.company_name}`,
+      title: "Company information filled",
+      description: `Autofilled company details from: ${selectedOrder.company_name}. You can now add specific details for this new order.`,
     });
   };
 
