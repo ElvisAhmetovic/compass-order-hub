@@ -1,4 +1,3 @@
-
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
@@ -100,6 +99,18 @@ const OrderDetailsSection = ({
     onChange('assigned_to', actualValue);
   };
 
+  // Helper function to format text for display with proper line breaks
+  const formatTextDisplay = (text: string) => {
+    if (!text) return null;
+    
+    return text.split('\n').map((line, index) => (
+      <span key={index}>
+        {line}
+        {index < text.split('\n').length - 1 && <br />}
+      </span>
+    ));
+  };
+
   return (
     <div className="space-y-4">
       {/* Description Section */}
@@ -113,15 +124,19 @@ const OrderDetailsSection = ({
             <Textarea
               value={safeData.description}
               onChange={(e) => onChange('description', e.target.value)}
-              placeholder="Enter order description..."
-              className="mt-1 min-h-[80px]"
+              placeholder="Description that will be visible to clients in proposals/invoices..."
+              className="mt-1 min-h-[120px] whitespace-pre-wrap"
+              style={{ whiteSpace: 'pre-wrap' }}
             />
+            <p className="text-xs text-muted-foreground mt-1">
+              This description will be included in proposals and invoices. Use line breaks for better formatting.
+            </p>
           </div>
         ) : (
           <div className="mt-2">
             {order.description ? (
-              <div className="p-3 bg-muted/50 rounded-md text-sm">
-                {order.description}
+              <div className="p-3 bg-muted/50 rounded-md text-sm whitespace-pre-wrap">
+                {formatTextDisplay(order.description)}
               </div>
             ) : (
               <p className="text-sm text-muted-foreground italic">No description</p>
@@ -141,15 +156,19 @@ const OrderDetailsSection = ({
             <Textarea
               value={safeData.internal_notes}
               onChange={(e) => onChange('internal_notes', e.target.value)}
-              placeholder="Add internal notes for team reference..."
-              className="mt-1 min-h-[80px]"
+              placeholder="Internal notes and comments (not visible to clients)..."
+              className="mt-1 min-h-[120px] whitespace-pre-wrap"
+              style={{ whiteSpace: 'pre-wrap' }}
             />
+            <p className="text-xs text-muted-foreground mt-1">
+              These notes are for internal use only and won't appear in proposals or invoices. Use line breaks for better formatting.
+            </p>
           </div>
         ) : (
           <div className="mt-2">
             {order.internal_notes ? (
-              <div className="p-3 bg-muted/50 rounded-md text-sm">
-                {order.internal_notes}
+              <div className="p-3 bg-muted/50 rounded-md text-sm whitespace-pre-wrap">
+                {formatTextDisplay(order.internal_notes)}
               </div>
             ) : (
               <p className="text-sm text-muted-foreground italic">No internal notes</p>

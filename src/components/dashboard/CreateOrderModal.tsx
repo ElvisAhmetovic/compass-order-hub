@@ -515,12 +515,13 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
                       <FormControl>
                         <Textarea 
                           placeholder="Description that will be visible to clients in proposals/invoices..." 
-                          className="min-h-[80px]" 
+                          className="min-h-[120px] whitespace-pre-wrap" 
+                          style={{ whiteSpace: 'pre-wrap' }}
                           {...field} 
                         />
                       </FormControl>
                       <p className="text-xs text-muted-foreground mt-1">
-                        This description will be included in proposals and invoices
+                        This description will be included in proposals and invoices. Use line breaks for better formatting.
                       </p>
                       <FormMessage />
                     </FormItem>
@@ -542,12 +543,13 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
                       <FormControl>
                         <Textarea 
                           placeholder="Internal notes and comments (not visible to clients)..." 
-                          className="min-h-[80px]" 
+                          className="min-h-[120px] whitespace-pre-wrap" 
+                          style={{ whiteSpace: 'pre-wrap' }}
                           {...field} 
                         />
                       </FormControl>
                       <p className="text-xs text-muted-foreground mt-1">
-                        These notes are for internal use only and won't appear in proposals or invoices
+                        These notes are for internal use only and won't appear in proposals or invoices. Use line breaks for better formatting.
                       </p>
                       <FormMessage />
                     </FormItem>
