@@ -16,6 +16,18 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Only allow POST requests for the actual functionality
+  if (req.method !== "POST") {
+    console.log(`Method ${req.method} not allowed`);
+    return new Response(
+      JSON.stringify({ error: "Method not allowed" }),
+      { 
+        status: 405, 
+        headers: { "Content-Type": "application/json", ...corsHeaders }
+      }
+    );
+  }
+
   try {
     // Check if RESEND_API_KEY is configured
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
@@ -39,12 +51,18 @@ const handler = async (req: Request): Promise<Response> => {
     let requestBody;
     try {
       const bodyText = await req.text();
-      console.log('Raw request body:', bodyText);
+      console.log('Raw request body received, length:', bodyText.length);
+      
+      if (!bodyText.trim()) {
+        throw new Error('Empty request body');
+      }
+      
       requestBody = JSON.parse(bodyText);
+      console.log('Successfully parsed request body');
     } catch (parseError) {
       console.error('Failed to parse request body:', parseError);
       return new Response(
-        JSON.stringify({ error: 'Invalid JSON in request body' }),
+        JSON.stringify({ error: 'Invalid JSON in request body or empty body' }),
         { 
           status: 400, 
           headers: { "Content-Type": "application/json", ...corsHeaders }
@@ -54,11 +72,12 @@ const handler = async (req: Request): Promise<Response> => {
 
     const { orderData, emails, assignedToName, selectedInventoryItems } = requestBody;
     
-    console.log('Received order confirmation request:', {
-      orderData: orderData?.company_name,
-      emails: emails?.length,
+    console.log('Processing order confirmation request:', {
+      hasOrderData: !!orderData,
+      companyName: orderData?.company_name,
+      emailCount: emails?.length || 0,
       assignedToName,
-      inventoryItems: selectedInventoryItems?.length
+      inventoryItemsCount: selectedInventoryItems?.length || 0
     });
 
     if (!orderData || !emails || emails.length === 0) {

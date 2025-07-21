@@ -253,7 +253,7 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
         console.log('Email payload being sent:', JSON.stringify(emailPayload, null, 2));
 
         try {
-          // Call the edge function with proper error handling
+          // Call the edge function with improved error handling
           console.log('Calling send-order-confirmation edge function...');
           
           const { data: emailResult, error: emailError } = await supabase.functions.invoke('send-order-confirmation', {
@@ -267,6 +267,12 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
 
           if (emailError) {
             console.error('Edge function returned error:', emailError);
+            
+            // Check if it's a network/connection error
+            if (emailError.message?.includes('Failed to send a request to edge function')) {
+              throw new Error('Unable to connect to email service. Please check your internet connection and try again.');
+            }
+            
             throw new Error(emailError.message || 'Failed to send emails');
           }
 
@@ -284,8 +290,17 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
         } catch (emailError: any) {
           console.error('Exception while sending notification emails:', emailError);
           
-          // Show detailed error message
-          const errorMessage = emailError.message || emailError.toString() || 'Unknown error occurred';
+          // Show detailed error message based on error type
+          let errorMessage = 'Unknown error occurred';
+          
+          if (emailError.message?.includes('connect to email service')) {
+            errorMessage = 'Connection to email service failed. Please check your internet connection.';
+          } else if (emailError.message?.includes('RESEND_API_KEY')) {
+            errorMessage = 'Email service not configured properly. Please contact administrator.';
+          } else if (emailError.message) {
+            errorMessage = emailError.message;
+          }
+          
           console.error('Detailed email error:', errorMessage);
           
           toast({
