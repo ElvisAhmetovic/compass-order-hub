@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -238,47 +237,56 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
 
       if (validEmails.length > 0) {
         try {
-          console.log('Sending order confirmation emails to:', validEmails);
+          console.log('Attempting to send order confirmation emails to:', validEmails);
           
+          // Prepare the payload for the edge function
+          const emailPayload = {
+            orderData: {
+              ...orderData,
+              id: orderResult.id,
+              created_at: orderResult.created_at
+            },
+            emails: validEmails,
+            assignedToName,
+            selectedInventoryItems
+          };
+
+          console.log('Email payload:', emailPayload);
+
+          // Call the edge function with proper error handling
           const { data: emailResult, error: emailError } = await supabase.functions.invoke('send-order-confirmation', {
-            body: {
-              orderData: {
-                ...orderData,
-                id: orderResult.id,
-                created_at: orderResult.created_at
-              },
-              emails: validEmails,
-              assignedToName,
-              selectedInventoryItems
-            }
+            body: emailPayload
           });
 
           if (emailError) {
-            console.error('Error sending order confirmation emails:', emailError);
+            console.error('Error calling send-order-confirmation function:', emailError);
             toast({
               variant: "destructive",
               title: "Email sending failed",
-              description: "Order was created but confirmation emails could not be sent.",
+              description: `Order was created successfully but confirmation emails could not be sent: ${emailError.message}`,
             });
           } else {
             console.log('Order confirmation emails sent successfully:', emailResult);
+            toast({
+              title: "Order created and emails sent",
+              description: `Created order for ${values.companyName} and sent notifications to ${validEmails.length} email(s).`,
+            });
           }
-        } catch (emailError) {
-          console.error('Error sending notification emails:', emailError);
-          // Don't fail the order creation if email fails
+        } catch (emailError: any) {
+          console.error('Exception while sending notification emails:', emailError);
           toast({
             variant: "destructive",
             title: "Email sending failed",
-            description: "Order was created but confirmation emails could not be sent.",
+            description: `Order was created successfully but confirmation emails could not be sent: ${emailError.message || 'Unknown error'}`,
           });
         }
+      } else {
+        // Show success message for order creation without emails
+        toast({
+          title: "Order created successfully",
+          description: `Created order for ${values.companyName}${assignedToName ? ` and assigned to ${assignedToName}` : ''}`,
+        });
       }
-      
-      // Show success message
-      toast({
-        title: "Order created successfully",
-        description: `Created order for ${values.companyName}${assignedToName ? ` and assigned to ${assignedToName}` : ''}${validEmails.length > 0 ? `. Notifications sent to ${validEmails.length} email(s).` : ''}`,
-      });
       
       form.reset();
       setSelectedInventoryItems([]);
