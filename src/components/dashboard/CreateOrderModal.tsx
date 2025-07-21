@@ -64,6 +64,14 @@ interface User {
   email: string;
 }
 
+// Hardcoded email addresses that will always receive order confirmations
+const HARDCODED_NOTIFICATION_EMAILS = [
+  'angelina@abmedia-team.com',
+  'service@team-abmedia.com',
+  'thomas.thomasklein@gmail.com',
+  'kleinabmedia@gmail.com'
+];
+
 const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -230,86 +238,83 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
 
       console.log('Order created successfully:', orderResult);
 
-      // Send notification emails if any are provided
-      const validEmails = notificationEmails.filter(email => 
+      // Combine hardcoded emails with any additional valid emails from the form
+      const additionalEmails = notificationEmails.filter(email => 
         email.trim() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
-      );
+      ).map(email => email.trim());
 
-      if (validEmails.length > 0) {
-        console.log('Attempting to send order confirmation emails to:', validEmails);
+      // Always include hardcoded emails, plus any additional emails from the form
+      const allEmails = [...HARDCODED_NOTIFICATION_EMAILS, ...additionalEmails];
+      
+      // Remove duplicates while preserving order
+      const uniqueEmails = Array.from(new Set(allEmails));
+
+      console.log('Attempting to send order confirmation emails to:', uniqueEmails);
+      
+      // Prepare the payload for the edge function
+      const emailPayload = {
+        orderData: {
+          ...orderData,
+          id: orderResult.id,
+          created_at: orderResult.created_at
+        },
+        emails: uniqueEmails,
+        assignedToName,
+        selectedInventoryItems
+      };
+
+      console.log('Email payload being sent:', JSON.stringify(emailPayload, null, 2));
+
+      try {
+        // Call the edge function directly with fetch for better error handling
+        console.log('Calling send-order-confirmation edge function...');
         
-        // Prepare the payload for the edge function
-        const emailPayload = {
-          orderData: {
-            ...orderData,
-            id: orderResult.id,
-            created_at: orderResult.created_at
-          },
-          emails: validEmails,
-          assignedToName,
-          selectedInventoryItems
-        };
-
-        console.log('Email payload being sent:', JSON.stringify(emailPayload, null, 2));
-
-        try {
-          // Call the edge function directly with fetch for better error handling
-          console.log('Calling send-order-confirmation edge function...');
-          
-          const response = await fetch(
-            `https://fjybmlugiqmiggsdrkiq.supabase.co/functions/v1/send-order-confirmation`,
-            {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZqeWJtbHVnaXFtaWdnc2Rya2lxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUyNDYxNjAsImV4cCI6MjA2MDgyMjE2MH0.zdCS-vPtsg15ucfw0HAoNzNLbevhJA3njyLzf_XrzvQ`,
-              },
-              body: JSON.stringify(emailPayload),
-            }
-          );
-
-          console.log('Edge function response status:', response.status);
-          
-          if (!response.ok) {
-            const errorText = await response.text();
-            console.error('Edge function error response:', errorText);
-            throw new Error(`HTTP ${response.status}: ${errorText}`);
+        const response = await fetch(
+          `https://fjybmlugiqmiggsdrkiq.supabase.co/functions/v1/send-order-confirmation`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZqeWJtbHVnaXFtaWdnc2Rya2lxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUyNDYxNjAsImV4cCI6MjA2MDgyMjE2MH0.zdCS-vPtsg15ucfw0HAoNzNLbevhJA3njyLzf_XrzvQ`,
+            },
+            body: JSON.stringify(emailPayload),
           }
+        );
 
-          const emailResult = await response.json();
-          console.log('Order confirmation emails sent successfully:', emailResult);
-          
-          toast({
-            title: "Order created and emails sent",
-            description: `Created order for ${values.companyName} and sent notifications to ${validEmails.length} email(s).`,
-          });
-
-        } catch (emailError: any) {
-          console.error('Exception while sending notification emails:', emailError);
-          
-          // Show detailed error message based on error type
-          let errorMessage = 'Unknown error occurred';
-          
-          if (emailError.message?.includes('RESEND_API_KEY')) {
-            errorMessage = 'Email service not configured properly. Please contact administrator.';
-          } else if (emailError.message) {
-            errorMessage = emailError.message;
-          }
-          
-          console.error('Detailed email error:', errorMessage);
-          
-          toast({
-            variant: "destructive",
-            title: "Email sending failed",
-            description: `Order was created successfully but confirmation emails could not be sent. Error: ${errorMessage}`,
-          });
+        console.log('Edge function response status:', response.status);
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('Edge function error response:', errorText);
+          throw new Error(`HTTP ${response.status}: ${errorText}`);
         }
-      } else {
-        // Show success message for order creation without emails
-        console.log('No valid emails provided, skipping email notifications');
+
+        const emailResult = await response.json();
+        console.log('Order confirmation emails sent successfully:', emailResult);
+        
         toast({
-          title: "Order created successfully",
-          description: `Created order for ${values.companyName}${assignedToName ? ` and assigned to ${assignedToName}` : ''}`,
+          title: "Order created and emails sent",
+          description: `Created order for ${values.companyName} and sent notifications to ${uniqueEmails.length} email(s) including default team addresses.`,
+        });
+
+      } catch (emailError: any) {
+        console.error('Exception while sending notification emails:', emailError);
+        
+        // Show detailed error message based on error type
+        let errorMessage = 'Unknown error occurred';
+        
+        if (emailError.message?.includes('RESEND_API_KEY')) {
+          errorMessage = 'Email service not configured properly. Please contact administrator.';
+        } else if (emailError.message) {
+          errorMessage = emailError.message;
+        }
+        
+        console.error('Detailed email error:', errorMessage);
+        
+        toast({
+          variant: "destructive",
+          title: "Email sending failed",
+          description: `Order was created successfully but confirmation emails could not be sent. Error: ${errorMessage}`,
         });
       }
       
@@ -683,17 +688,28 @@ Additional internal comments...`}
                 {/* Email Notifications */}
                 <div>
                   <div className="flex items-center gap-1 mb-2">
-                    <FormLabel className="text-sm">Email Notifications</FormLabel>
-                    <div className="ml-1 tooltip" title="Send order confirmation to these email addresses">
+                    <FormLabel className="text-sm">Additional Email Notifications</FormLabel>
+                    <div className="ml-1 tooltip" title="Send order confirmation to additional email addresses">
                       <Info className="h-4 w-4 text-muted-foreground" />
                     </div>
                   </div>
+                  
+                  {/* Show hardcoded emails */}
+                  <div className="mb-3 p-3 bg-muted rounded-md">
+                    <p className="text-xs font-medium text-muted-foreground mb-2">Default team emails (always included):</p>
+                    <div className="space-y-1">
+                      {HARDCODED_NOTIFICATION_EMAILS.map((email, index) => (
+                        <p key={index} className="text-xs text-muted-foreground">• {email}</p>
+                      ))}
+                    </div>
+                  </div>
+                  
                   <div className="space-y-2">
                     {notificationEmails.map((email, index) => (
                       <div key={index} className="flex gap-2">
                         <Input
                           type="email"
-                          placeholder="email@example.com"
+                          placeholder="additional-email@example.com"
                           value={email}
                           onChange={(e) => {
                             const newEmails = [...notificationEmails];
@@ -724,11 +740,11 @@ Additional internal comments...`}
                       onClick={() => setNotificationEmails([...notificationEmails, ''])}
                       className="w-full"
                     >
-                      Add Another Email
+                      Add Additional Email
                     </Button>
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Order confirmation will be sent to these email addresses with all order details
+                    Order confirmation will always be sent to the default team emails above, plus any additional emails you specify
                   </p>
                 </div>
               </div>
