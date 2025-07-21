@@ -48,6 +48,7 @@ const formSchema = z.object({
   description: z.string().optional(),
   internalNotes: z.string().optional(),
   assignedTo: z.string().optional(),
+  notificationEmails: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -69,6 +70,7 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
   const [users, setUsers] = useState<User[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [selectedInventoryItems, setSelectedInventoryItems] = useState<SelectedInventoryItem[]>([]);
+  const [notificationEmails, setNotificationEmails] = useState<string[]>(['']);
   
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -84,6 +86,7 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
       description: "",
       internalNotes: "",
       assignedTo: user?.id || "",
+      notificationEmails: "",
     },
   });
 
@@ -126,6 +129,7 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
     if (open && user) {
       form.setValue('assignedTo', user.id);
       setSelectedInventoryItems([]);
+      setNotificationEmails(['']);
     }
   }, [open, user, form]);
 
@@ -147,6 +151,9 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
     
     // Reset inventory items for new order
     setSelectedInventoryItems([]);
+    
+    // Reset notification emails for new order
+    setNotificationEmails(['']);
     
     toast({
       title: "Company information filled",
@@ -211,16 +218,50 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
       console.log('Creating order with data:', orderData);
       
       // Save the new order to Supabase
-      await OrderService.createOrder(orderData);
+      const { data: orderResult, error: orderError } = await supabase
+        .from('orders')
+        .insert([orderData])
+        .select()
+        .single();
+
+      if (orderError) {
+        throw orderError;
+      }
+
+      // Send notification emails if any are provided
+      const validEmails = notificationEmails.filter(email => 
+        email.trim() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
+      );
+
+      if (validEmails.length > 0) {
+        try {
+          await supabase.functions.invoke('send-order-confirmation', {
+            body: {
+              orderData: {
+                ...orderData,
+                id: orderResult.id,
+                created_at: orderResult.created_at
+              },
+              emails: validEmails,
+              assignedToName,
+              selectedInventoryItems
+            }
+          });
+        } catch (emailError) {
+          console.error('Error sending notification emails:', emailError);
+          // Don't fail the order creation if email fails
+        }
+      }
       
       // Show success message
       toast({
         title: "Order created successfully",
-        description: `Created order for ${values.companyName}${assignedToName ? ` and assigned to ${assignedToName}` : ''}`,
+        description: `Created order for ${values.companyName}${assignedToName ? ` and assigned to ${assignedToName}` : ''}${validEmails.length > 0 ? `. Notifications sent to ${validEmails.length} email(s).` : ''}`,
       });
       
       form.reset();
       setSelectedInventoryItems([]);
+      setNotificationEmails(['']);
       onClose();
       
       // Trigger a refresh of the orders list
@@ -584,6 +625,58 @@ Additional internal comments...`}
                     </FormItem>
                   )}
                 />
+
+                {/* Email Notifications */}
+                <div>
+                  <div className="flex items-center gap-1 mb-2">
+                    <FormLabel className="text-sm">Email Notifications</FormLabel>
+                    <div className="ml-1 tooltip" title="Send order confirmation to these email addresses">
+                      <Info className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    {notificationEmails.map((email, index) => (
+                      <div key={index} className="flex gap-2">
+                        <Input
+                          type="email"
+                          placeholder="email@example.com"
+                          value={email}
+                          onChange={(e) => {
+                            const newEmails = [...notificationEmails];
+                            newEmails[index] = e.target.value;
+                            setNotificationEmails(newEmails);
+                          }}
+                          className="flex-1"
+                        />
+                        {notificationEmails.length > 1 && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              const newEmails = notificationEmails.filter((_, i) => i !== index);
+                              setNotificationEmails(newEmails);
+                            }}
+                          >
+                            Remove
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setNotificationEmails([...notificationEmails, ''])}
+                      className="w-full"
+                    >
+                      Add Another Email
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Order confirmation will be sent to these email addresses with all order details
+                  </p>
+                </div>
               </div>
             </div>
 
