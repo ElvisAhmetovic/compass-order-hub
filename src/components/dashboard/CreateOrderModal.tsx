@@ -253,29 +253,32 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
         console.log('Email payload being sent:', JSON.stringify(emailPayload, null, 2));
 
         try {
-          // Call the edge function with error handling
+          // Call the edge function directly with fetch for better error handling
           console.log('Calling send-order-confirmation edge function...');
           
-          const { data: emailResult, error: emailError } = await supabase.functions.invoke('send-order-confirmation', {
-            body: JSON.stringify(emailPayload),
-            headers: {
-              'Content-Type': 'application/json',
+          const response = await fetch(
+            `https://fjybmlugiqmiggsdrkiq.supabase.co/functions/v1/send-order-confirmation`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${supabase.supabaseKey}`,
+              },
+              body: JSON.stringify(emailPayload),
             }
-          });
+          );
 
-          console.log('Edge function response:', { emailResult, emailError });
-
-          if (emailError) {
-            console.error('Edge function returned error:', emailError);
-            throw new Error(emailError.message || 'Failed to send emails');
+          console.log('Edge function response status:', response.status);
+          
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Edge function error response:', errorText);
+            throw new Error(`HTTP ${response.status}: ${errorText}`);
           }
 
-          if (emailResult && emailResult.error) {
-            console.error('Edge function returned error in result:', emailResult.error);
-            throw new Error(emailResult.error);
-          }
-
+          const emailResult = await response.json();
           console.log('Order confirmation emails sent successfully:', emailResult);
+          
           toast({
             title: "Order created and emails sent",
             description: `Created order for ${values.companyName} and sent notifications to ${validEmails.length} email(s).`,
