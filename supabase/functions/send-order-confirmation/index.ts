@@ -1,5 +1,7 @@
+
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.8";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
@@ -8,32 +10,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-interface OrderConfirmationRequest {
-  orderData: {
-    id: string;
-    company_name: string;
-    contact_email: string;
-    contact_phone?: string;
-    company_address?: string;
-    company_link?: string;
-    description?: string;
-    internal_notes?: string;
-    price: number;
-    currency: string;
-    status: string;
-    priority: string;
-    created_at: string;
-  };
-  emails: string[];
-  assignedToName?: string;
-  selectedInventoryItems?: Array<{
-    id: string;
-    name: string;
-    quantity: number;
-    unit: string;
-  }>;
-}
-
 const handler = async (req: Request): Promise<Response> => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -41,176 +17,205 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { orderData, emails, assignedToName, selectedInventoryItems }: OrderConfirmationRequest = await req.json();
-
-    console.log(`Sending order confirmation for order ${orderData.id} to ${emails.length} recipient(s)`);
-
-    // Format date
-    const formattedDate = new Date(orderData.created_at).toLocaleString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+    const { orderData, emails, assignedToName, selectedInventoryItems } = await req.json();
+    
+    console.log('Received order confirmation request:', {
+      orderData: orderData?.company_name,
+      emails: emails?.length,
+      assignedToName,
+      inventoryItems: selectedInventoryItems?.length
     });
 
-    // Format price
-    const formattedPrice = new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: orderData.currency
-    }).format(orderData.price);
-
-    // Format inventory items
-    let inventorySection = '';
-    if (selectedInventoryItems && selectedInventoryItems.length > 0) {
-      inventorySection = `
-        <div style="margin: 20px 0; padding: 15px; background-color: #f8f9fa; border-radius: 8px;">
-          <h3 style="margin: 0 0 10px 0; color: #2563eb; font-size: 16px;">Inventory Items</h3>
-          <ul style="margin: 0; padding-left: 20px;">
-            ${selectedInventoryItems.map(item => `
-              <li style="margin: 5px 0;">${item.name} - Quantity: ${item.quantity} ${item.unit}</li>
-            `).join('')}
-          </ul>
-        </div>
-      `;
+    if (!orderData || !emails || emails.length === 0) {
+      console.error('Missing required data for order confirmation');
+      return new Response(
+        JSON.stringify({ error: 'Missing order data or email addresses' }),
+        { 
+          status: 400, 
+          headers: { "Content-Type": "application/json", ...corsHeaders }
+        }
+      );
     }
 
-    // Format description with proper line breaks
-    const formattedDescription = orderData.description ? 
-      orderData.description.replace(/\n/g, '<br>').replace(/•/g, '&bull;') : '';
+    const formatCurrency = (amount: number, currency: string) => {
+      const symbols = { EUR: '€', USD: '$', GBP: '£' };
+      return `${symbols[currency] || currency} ${amount.toFixed(2)}`;
+    };
 
-    // Create HTML email content
-    const htmlContent = `
+    const formatDate = (dateString: string) => {
+      return new Date(dateString).toLocaleDateString('de-DE', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    };
+
+    const formatInventoryItems = (items: any[]) => {
+      if (!items || items.length === 0) return '';
+      
+      return items.map(item => 
+        `<li style="margin-bottom: 8px;">
+          <strong>${item.name}</strong> - ${item.quantity} ${item.unit || 'Stück'}
+          ${item.description ? `<br><span style="color: #666; font-size: 14px;">${item.description}</span>` : ''}
+        </li>`
+      ).join('');
+    };
+
+    const emailSubject = `Neue Bestellung erhalten - ${orderData.company_name}`;
+    
+    const emailHtml = `
       <!DOCTYPE html>
-      <html>
+      <html lang="de">
       <head>
-        <meta charset="utf-8">
+        <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>New Order Confirmation</title>
+        <title>Bestellbestätigung</title>
       </head>
       <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <div style="background-color: #2563eb; color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; text-align: center;">
-          <h1 style="margin: 0; font-size: 24px;">New Order Created</h1>
-          <p style="margin: 10px 0 0 0; font-size: 16px;">Order ID: ${orderData.id}</p>
+        <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+          <h1 style="color: #2563eb; margin: 0 0 10px 0; font-size: 24px;">Empria Dental</h1>
+          <h2 style="color: #1f2937; margin: 0; font-size: 20px;">Neue Bestellung erhalten</h2>
         </div>
-        
-        <div style="background-color: white; padding: 20px; border-radius: 8px; border: 1px solid #e5e7eb;">
-          <h2 style="color: #2563eb; margin: 0 0 20px 0; font-size: 20px;">Order Details</h2>
+
+        <div style="background-color: white; padding: 20px; border-radius: 8px; border: 1px solid #e5e7eb; margin-bottom: 20px;">
+          <h3 style="color: #1f2937; margin-top: 0; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px;">Kundeninformationen</h3>
           
-          <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+          <table style="width: 100%; border-collapse: collapse;">
             <tr>
-              <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; font-weight: bold; width: 30%;">Company:</td>
-              <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">${orderData.company_name}</td>
+              <td style="padding: 8px 0; font-weight: bold; width: 150px;">Unternehmen:</td>
+              <td style="padding: 8px 0;">${orderData.company_name}</td>
             </tr>
             <tr>
-              <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; font-weight: bold;">Contact Email:</td>
-              <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">${orderData.contact_email}</td>
+              <td style="padding: 8px 0; font-weight: bold;">E-Mail:</td>
+              <td style="padding: 8px 0;">${orderData.contact_email}</td>
             </tr>
             ${orderData.contact_phone ? `
             <tr>
-              <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; font-weight: bold;">Phone:</td>
-              <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">${orderData.contact_phone}</td>
-            </tr>
-            ` : ''}
+              <td style="padding: 8px 0; font-weight: bold;">Telefon:</td>
+              <td style="padding: 8px 0;">${orderData.contact_phone}</td>
+            </tr>` : ''}
             ${orderData.company_address ? `
             <tr>
-              <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; font-weight: bold;">Address:</td>
-              <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">${orderData.company_address}</td>
-            </tr>
-            ` : ''}
+              <td style="padding: 8px 0; font-weight: bold;">Adresse:</td>
+              <td style="padding: 8px 0;">${orderData.company_address}</td>
+            </tr>` : ''}
             ${orderData.company_link ? `
             <tr>
-              <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; font-weight: bold;">Company Link:</td>
-              <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;"><a href="${orderData.company_link}" target="_blank" style="color: #2563eb;">${orderData.company_link}</a></td>
-            </tr>
-            ` : ''}
+              <td style="padding: 8px 0; font-weight: bold;">Website:</td>
+              <td style="padding: 8px 0;"><a href="${orderData.company_link}" target="_blank" style="color: #2563eb;">${orderData.company_link}</a></td>
+            </tr>` : ''}
+          </table>
+        </div>
+
+        <div style="background-color: white; padding: 20px; border-radius: 8px; border: 1px solid #e5e7eb; margin-bottom: 20px;">
+          <h3 style="color: #1f2937; margin-top: 0; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px;">Bestelldetails</h3>
+          
+          <table style="width: 100%; border-collapse: collapse;">
             <tr>
-              <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; font-weight: bold;">Price:</td>
-              <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; font-size: 18px; font-weight: bold; color: #059669;">${formattedPrice}</td>
+              <td style="padding: 8px 0; font-weight: bold; width: 150px;">Betrag:</td>
+              <td style="padding: 8px 0; font-size: 18px; color: #059669; font-weight: bold;">${formatCurrency(orderData.price, orderData.currency)}</td>
             </tr>
             <tr>
-              <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; font-weight: bold;">Status:</td>
-              <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;"><span style="background-color: #10b981; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">${orderData.status}</span></td>
+              <td style="padding: 8px 0; font-weight: bold;">Priorität:</td>
+              <td style="padding: 8px 0;">
+                <span style="padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; 
+                  ${orderData.priority === 'urgent' ? 'background-color: #fef2f2; color: #dc2626;' : 
+                    orderData.priority === 'high' ? 'background-color: #fff7ed; color: #ea580c;' : 
+                    orderData.priority === 'medium' ? 'background-color: #fefce8; color: #ca8a04;' : 
+                    'background-color: #f0f9ff; color: #0284c7;'}">
+                  ${orderData.priority.charAt(0).toUpperCase() + orderData.priority.slice(1)}
+                </span>
+              </td>
             </tr>
             <tr>
-              <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; font-weight: bold;">Priority:</td>
-              <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;"><span style="text-transform: capitalize;">${orderData.priority}</span></td>
+              <td style="padding: 8px 0; font-weight: bold;">Status:</td>
+              <td style="padding: 8px 0;">
+                <span style="padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; background-color: #f0f9ff; color: #0284c7;">
+                  ${orderData.status}
+                </span>
+              </td>
             </tr>
-            ${assignedToName ? `
             <tr>
-              <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; font-weight: bold;">Assigned To:</td>
-              <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">${assignedToName}</td>
+              <td style="padding: 8px 0; font-weight: bold;">Zugewiesen an:</td>
+              <td style="padding: 8px 0;">${assignedToName || 'Nicht zugewiesen'}</td>
             </tr>
-            ` : ''}
             <tr>
-              <td style="padding: 8px 0; font-weight: bold;">Created:</td>
-              <td style="padding: 8px 0;">${formattedDate}</td>
+              <td style="padding: 8px 0; font-weight: bold;">Erstellt am:</td>
+              <td style="padding: 8px 0;">${formatDate(orderData.created_at)}</td>
             </tr>
           </table>
-
-          ${inventorySection}
-
-          ${formattedDescription ? `
-          <div style="margin: 20px 0; padding: 15px; background-color: #f8f9fa; border-radius: 8px;">
-            <h3 style="margin: 0 0 10px 0; color: #2563eb; font-size: 16px;">Description</h3>
-            <div style="white-space: pre-line; font-size: 14px;">
-              ${formattedDescription}
-            </div>
-          </div>
-          ` : ''}
         </div>
-        
-        <div style="margin-top: 20px; padding: 15px; background-color: #f3f4f6; border-radius: 8px; font-size: 14px; color: #6b7280; text-align: center;">
-          <p style="margin: 0;"><strong>AB Media Team</strong></p>
-          <p style="margin: 5px 0 0 0;">This is an automated order confirmation. For any questions, please contact our team.</p>
+
+        ${selectedInventoryItems && selectedInventoryItems.length > 0 ? `
+        <div style="background-color: white; padding: 20px; border-radius: 8px; border: 1px solid #e5e7eb; margin-bottom: 20px;">
+          <h3 style="color: #1f2937; margin-top: 0; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px;">Inventar-Artikel</h3>
+          <ul style="padding-left: 20px; margin: 0;">
+            ${formatInventoryItems(selectedInventoryItems)}
+          </ul>
+        </div>` : ''}
+
+        ${orderData.description ? `
+        <div style="background-color: white; padding: 20px; border-radius: 8px; border: 1px solid #e5e7eb; margin-bottom: 20px;">
+          <h3 style="color: #1f2937; margin-top: 0; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px;">Beschreibung</h3>
+          <p style="margin: 0; white-space: pre-wrap;">${orderData.description}</p>
+        </div>` : ''}
+
+        ${orderData.internal_notes ? `
+        <div style="background-color: #fef3c7; padding: 20px; border-radius: 8px; border: 1px solid #f59e0b; margin-bottom: 20px;">
+          <h3 style="color: #92400e; margin-top: 0; border-bottom: 2px solid #f59e0b; padding-bottom: 10px;">Interne Notizen</h3>
+          <p style="margin: 0; white-space: pre-wrap; color: #92400e;">${orderData.internal_notes}</p>
+        </div>` : ''}
+
+        <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin-top: 20px; text-align: center;">
+          <p style="margin: 0; color: #6b7280; font-size: 14px;">
+            Diese E-Mail wurde automatisch von Empria Dental generiert.<br>
+            Besuchen Sie uns unter: <a href="https://empriadental.de" style="color: #2563eb;">empriadental.de</a>
+          </p>
         </div>
       </body>
       </html>
     `;
 
-    // Send emails to all recipients
-    const emailPromises = emails.map(async (email) => {
-      return await resend.emails.send({
-        from: "AB Media Team <orders@empriadental.de>",
-        to: [email],
-        subject: `New Order Created - ${orderData.company_name} (${formattedPrice})`,
-        html: htmlContent,
-      });
-    });
-
-    const emailResults = await Promise.allSettled(emailPromises);
+    const results = [];
     
-    // Check for any failures
-    const failures = emailResults.filter(result => result.status === 'rejected');
-    const successes = emailResults.filter(result => result.status === 'fulfilled');
+    // Send email to each recipient
+    for (const email of emails) {
+      try {
+        console.log(`Sending order confirmation to: ${email}`);
+        
+        const emailResponse = await resend.emails.send({
+          from: "Empria Dental <noreply@empriadental.de>",
+          to: [email],
+          subject: emailSubject,
+          html: emailHtml,
+        });
 
-    console.log(`Sent ${successes.length} emails successfully, ${failures.length} failed`);
-
-    if (failures.length > 0) {
-      console.error("Some emails failed to send:", failures);
+        console.log(`Email sent successfully to ${email}:`, emailResponse);
+        results.push({ email, success: true, id: emailResponse.data?.id });
+      } catch (error) {
+        console.error(`Failed to send email to ${email}:`, error);
+        results.push({ email, success: false, error: error.message });
+      }
     }
 
-    return new Response(JSON.stringify({ 
-      success: true,
-      message: `Order confirmation sent to ${successes.length} recipient(s)${failures.length > 0 ? `, ${failures.length} failed` : ''}`,
-      successCount: successes.length,
-      failureCount: failures.length
-    }), {
-      status: 200,
-      headers: {
-        "Content-Type": "application/json",
-        ...corsHeaders,
-      },
-    });
-
-  } catch (error: any) {
-    console.error("Error in send-order-confirmation function:", error);
     return new Response(
       JSON.stringify({ 
-        success: false, 
-        error: error.message,
-        details: "Failed to send order confirmation emails"
+        success: true, 
+        results,
+        message: `Order confirmation emails sent to ${emails.length} recipient(s)` 
       }),
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      }
+    );
+
+  } catch (error) {
+    console.error("Error in send-order-confirmation function:", error);
+    return new Response(
+      JSON.stringify({ error: error.message }),
       {
         status: 500,
         headers: { "Content-Type": "application/json", ...corsHeaders },
