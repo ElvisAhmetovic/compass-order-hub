@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -228,6 +229,8 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
         throw orderError;
       }
 
+      console.log('Order created successfully:', orderResult);
+
       // Send notification emails if any are provided
       const validEmails = notificationEmails.filter(email => 
         email.trim() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
@@ -235,7 +238,9 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
 
       if (validEmails.length > 0) {
         try {
-          await supabase.functions.invoke('send-order-confirmation', {
+          console.log('Sending order confirmation emails to:', validEmails);
+          
+          const { data: emailResult, error: emailError } = await supabase.functions.invoke('send-order-confirmation', {
             body: {
               orderData: {
                 ...orderData,
@@ -247,9 +252,25 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
               selectedInventoryItems
             }
           });
+
+          if (emailError) {
+            console.error('Error sending order confirmation emails:', emailError);
+            toast({
+              variant: "destructive",
+              title: "Email sending failed",
+              description: "Order was created but confirmation emails could not be sent.",
+            });
+          } else {
+            console.log('Order confirmation emails sent successfully:', emailResult);
+          }
         } catch (emailError) {
           console.error('Error sending notification emails:', emailError);
           // Don't fail the order creation if email fails
+          toast({
+            variant: "destructive",
+            title: "Email sending failed",
+            description: "Order was created but confirmation emails could not be sent.",
+          });
         }
       }
       
