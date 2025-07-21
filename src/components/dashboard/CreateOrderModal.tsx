@@ -236,52 +236,67 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
       );
 
       if (validEmails.length > 0) {
+        console.log('Attempting to send order confirmation emails to:', validEmails);
+        
+        // Prepare the payload for the edge function
+        const emailPayload = {
+          orderData: {
+            ...orderData,
+            id: orderResult.id,
+            created_at: orderResult.created_at
+          },
+          emails: validEmails,
+          assignedToName,
+          selectedInventoryItems
+        };
+
+        console.log('Email payload being sent:', JSON.stringify(emailPayload, null, 2));
+
         try {
-          console.log('Attempting to send order confirmation emails to:', validEmails);
-          
-          // Prepare the payload for the edge function
-          const emailPayload = {
-            orderData: {
-              ...orderData,
-              id: orderResult.id,
-              created_at: orderResult.created_at
-            },
-            emails: validEmails,
-            assignedToName,
-            selectedInventoryItems
-          };
-
-          console.log('Email payload:', emailPayload);
-
           // Call the edge function with proper error handling
+          console.log('Calling send-order-confirmation edge function...');
+          
           const { data: emailResult, error: emailError } = await supabase.functions.invoke('send-order-confirmation', {
-            body: emailPayload
+            body: emailPayload,
+            headers: {
+              'Content-Type': 'application/json',
+            }
           });
 
+          console.log('Edge function response:', { emailResult, emailError });
+
           if (emailError) {
-            console.error('Error calling send-order-confirmation function:', emailError);
-            toast({
-              variant: "destructive",
-              title: "Email sending failed",
-              description: `Order was created successfully but confirmation emails could not be sent: ${emailError.message}`,
-            });
-          } else {
-            console.log('Order confirmation emails sent successfully:', emailResult);
-            toast({
-              title: "Order created and emails sent",
-              description: `Created order for ${values.companyName} and sent notifications to ${validEmails.length} email(s).`,
-            });
+            console.error('Edge function returned error:', emailError);
+            throw new Error(emailError.message || 'Failed to send emails');
           }
+
+          if (emailResult && emailResult.error) {
+            console.error('Edge function returned error in result:', emailResult.error);
+            throw new Error(emailResult.error);
+          }
+
+          console.log('Order confirmation emails sent successfully:', emailResult);
+          toast({
+            title: "Order created and emails sent",
+            description: `Created order for ${values.companyName} and sent notifications to ${validEmails.length} email(s).`,
+          });
+
         } catch (emailError: any) {
           console.error('Exception while sending notification emails:', emailError);
+          
+          // Show detailed error message
+          const errorMessage = emailError.message || emailError.toString() || 'Unknown error occurred';
+          console.error('Detailed email error:', errorMessage);
+          
           toast({
             variant: "destructive",
             title: "Email sending failed",
-            description: `Order was created successfully but confirmation emails could not be sent: ${emailError.message || 'Unknown error'}`,
+            description: `Order was created successfully but confirmation emails could not be sent. Error: ${errorMessage}`,
           });
         }
       } else {
         // Show success message for order creation without emails
+        console.log('No valid emails provided, skipping email notifications');
         toast({
           title: "Order created successfully",
           description: `Created order for ${values.companyName}${assignedToName ? ` and assigned to ${assignedToName}` : ''}`,

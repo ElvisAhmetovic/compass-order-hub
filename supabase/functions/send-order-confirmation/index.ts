@@ -2,8 +2,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
 
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
-
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -21,10 +19,12 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     // Check if RESEND_API_KEY is configured
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
+    console.log('RESEND_API_KEY exists:', !!resendApiKey);
+    
     if (!resendApiKey) {
       console.error("RESEND_API_KEY environment variable is not set");
       return new Response(
-        JSON.stringify({ error: "Email service not configured" }),
+        JSON.stringify({ error: "Email service not configured - RESEND_API_KEY missing" }),
         { 
           status: 500, 
           headers: { "Content-Type": "application/json", ...corsHeaders }
@@ -32,7 +32,27 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    const { orderData, emails, assignedToName, selectedInventoryItems } = await req.json();
+    // Initialize Resend with the API key
+    const resend = new Resend(resendApiKey);
+
+    // Parse request body
+    let requestBody;
+    try {
+      const bodyText = await req.text();
+      console.log('Raw request body:', bodyText);
+      requestBody = JSON.parse(bodyText);
+    } catch (parseError) {
+      console.error('Failed to parse request body:', parseError);
+      return new Response(
+        JSON.stringify({ error: 'Invalid JSON in request body' }),
+        { 
+          status: 400, 
+          headers: { "Content-Type": "application/json", ...corsHeaders }
+        }
+      );
+    }
+
+    const { orderData, emails, assignedToName, selectedInventoryItems } = requestBody;
     
     console.log('Received order confirmation request:', {
       orderData: orderData?.company_name,
@@ -52,6 +72,7 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
+    // Helper functions
     const formatCurrency = (amount: number, currency: string) => {
       const symbols = { EUR: '€', USD: '$', GBP: '£' };
       return `${symbols[currency] || currency} ${amount.toFixed(2)}`;
@@ -232,7 +253,10 @@ const handler = async (req: Request): Promise<Response> => {
   } catch (error) {
     console.error("Error in send-order-confirmation function:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message || 'Unknown error occurred',
+        details: error.toString()
+      }),
       {
         status: 500,
         headers: { "Content-Type": "application/json", ...corsHeaders },
