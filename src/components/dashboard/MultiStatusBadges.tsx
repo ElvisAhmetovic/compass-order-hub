@@ -39,6 +39,8 @@ const MultiStatusBadges = ({ order, onRefresh, compact = false }: MultiStatusBad
       "Facebook": "bg-blue-600 text-white",
       "Instagram": "bg-pink-600 text-white",
       "Trustpilot": "bg-green-600 text-white",
+      "Trustpilot Deletion": "bg-red-600 text-white",
+      "Google Deletion": "bg-orange-600 text-white",
     };
     return statusClasses[status] || "bg-gray-500 text-white";
   };
@@ -47,7 +49,7 @@ const MultiStatusBadges = ({ order, onRefresh, compact = false }: MultiStatusBad
   const allStatuses: OrderStatus[] = [
     "Created", "In Progress", "Complaint", "Invoice Sent", 
     "Invoice Paid", "Resolved", "Cancelled", "Deleted", "Review",
-    "Facebook", "Instagram", "Trustpilot"
+    "Facebook", "Instagram", "Trustpilot", "Trustpilot Deletion", "Google Deletion"
   ];
 
   const handleToggleStatus = async (status: OrderStatus, enabled: boolean) => {

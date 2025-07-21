@@ -20,7 +20,8 @@ import {
   Clock,
   Eye,
   Facebook,
-  Instagram
+  Instagram,
+  UserX
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
@@ -44,6 +45,8 @@ const Sidebar = () => {
     { href: '/facebook', icon: Facebook, label: 'Facebook', roles: ['admin', 'agent'] }, // New Facebook section
     { href: '/instagram', icon: Instagram, label: 'Instagram', roles: ['admin', 'agent'] }, // New Instagram section
     { href: '/trustpilot', icon: Star, label: 'Trustpilot', roles: ['admin', 'agent'] }, // New Trustpilot section
+    { href: '/trustpilot-deletion', icon: UserX, label: 'Trustpilot Deletion', roles: ['admin', 'agent'] }, // New Trustpilot Deletion section
+    { href: '/google-deletion', icon: UserX, label: 'Google Deletion', roles: ['admin', 'agent'] }, // New Google Deletion section
     { href: '/complaints', icon: AlertTriangle, label: 'Complaints', roles: ['admin', 'agent'] },
     { href: '/completed', icon: CheckCircle, label: 'Completed', roles: ['admin', 'agent'] },
     { href: '/cancelled', icon: XCircle, label: 'Cancelled', roles: ['admin', 'agent'] },

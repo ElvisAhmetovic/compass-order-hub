@@ -32,6 +32,8 @@ import YearlyPackages from "./pages/YearlyPackages";
 import Facebook from "./pages/Facebook";
 import Instagram from "./pages/Instagram";
 import Trustpilot from "./pages/Trustpilot";
+import TrustpilotDeletion from "./pages/TrustpilotDeletion";
+import GoogleDeletion from "./pages/GoogleDeletion";
 import NotFound from "./pages/NotFound";
 import { RequireAuth } from "./components/auth/RequireAuth";
 import AdminGuard from "./components/auth/AdminGuard";
@@ -78,6 +80,16 @@ function App() {
                   <Route path="/trustpilot" element={
                     <RequireAuth>
                       <Trustpilot />
+                    </RequireAuth>
+                  } />
+                  <Route path="/trustpilot-deletion" element={
+                    <RequireAuth>
+                      <TrustpilotDeletion />
+                    </RequireAuth>
+                  } />
+                  <Route path="/google-deletion" element={
+                    <RequireAuth>
+                      <GoogleDeletion />
                     </RequireAuth>
                   } />
                   <Route path="/complaints" element={
