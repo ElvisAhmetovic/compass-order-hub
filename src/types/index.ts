@@ -1,4 +1,3 @@
-
 export type UserRole = "admin" | "agent" | "user";
 
 export interface User {
@@ -24,7 +23,9 @@ export type OrderStatus =
   | "Review"
   | "Facebook"
   | "Instagram"
-  | "Trustpilot";
+  | "Trustpilot"
+  | "Trustpilot Deletion"
+  | "Google Deletion";
 
 export interface Order {
   id: string;
