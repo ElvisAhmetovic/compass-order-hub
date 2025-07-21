@@ -169,9 +169,7 @@ const handler = async (req: Request): Promise<Response> => {
     `;
 
     // Send emails to all recipients
-    // Send emails to all recipients
     const emailPromises = emails.map(async (email) => {
-      console.log(`Sending order confirmation to ${email}`);
       return await resend.emails.send({
         from: "AB Media Team <orders@empriadental.de>",
         to: [email],
