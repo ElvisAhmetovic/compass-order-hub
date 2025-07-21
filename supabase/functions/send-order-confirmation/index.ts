@@ -41,7 +41,11 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { orderData, emails, assignedToName, selectedInventoryItems }: OrderConfirmationRequest = await req.json();
+    console.log('Received request:', req.method);
+    const requestBody = await req.json();
+    console.log('Request body received:', JSON.stringify(requestBody, null, 2));
+    
+    const { orderData, emails, assignedToName, selectedInventoryItems }: OrderConfirmationRequest = requestBody;
 
     console.log(`Sending order confirmation for order ${orderData.id} to ${emails.length} recipient(s)`);
 

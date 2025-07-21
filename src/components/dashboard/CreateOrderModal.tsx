@@ -233,9 +233,13 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
         email.trim() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
       );
 
+      console.log('Notification emails provided:', notificationEmails);
+      console.log('Valid emails filtered:', validEmails);
+
       if (validEmails.length > 0) {
+        console.log('Attempting to send emails to:', validEmails);
         try {
-          await supabase.functions.invoke('send-order-confirmation', {
+          const emailResponse = await supabase.functions.invoke('send-order-confirmation', {
             body: {
               orderData: {
                 ...orderData,
@@ -247,6 +251,7 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
               selectedInventoryItems
             }
           });
+          console.log('Email function response:', emailResponse);
         } catch (emailError) {
           console.error('Error sending notification emails:', emailError);
           // Don't fail the order creation if email fails
