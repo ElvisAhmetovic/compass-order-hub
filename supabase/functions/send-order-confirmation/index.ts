@@ -10,12 +10,28 @@ const corsHeaders = {
 };
 
 const handler = async (req: Request): Promise<Response> => {
+  console.log(`Received ${req.method} request to send-order-confirmation`);
+  
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
+    console.log("Handling CORS preflight request");
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    // Check if RESEND_API_KEY is configured
+    const resendApiKey = Deno.env.get("RESEND_API_KEY");
+    if (!resendApiKey) {
+      console.error("RESEND_API_KEY environment variable is not set");
+      return new Response(
+        JSON.stringify({ error: "Email service not configured" }),
+        { 
+          status: 500, 
+          headers: { "Content-Type": "application/json", ...corsHeaders }
+        }
+      );
+    }
+
     const { orderData, emails, assignedToName, selectedInventoryItems } = await req.json();
     
     console.log('Received order confirmation request:', {
@@ -182,7 +198,7 @@ const handler = async (req: Request): Promise<Response> => {
     // Send email to each recipient
     for (const email of emails) {
       try {
-        console.log(`Sending order confirmation to: ${email}`);
+        console.log(`Attempting to send order confirmation to: ${email}`);
         
         const emailResponse = await resend.emails.send({
           from: "Empria Dental <noreply@empriadental.de>",
@@ -198,6 +214,8 @@ const handler = async (req: Request): Promise<Response> => {
         results.push({ email, success: false, error: error.message });
       }
     }
+
+    console.log(`Email sending completed. Results:`, results);
 
     return new Response(
       JSON.stringify({ 
