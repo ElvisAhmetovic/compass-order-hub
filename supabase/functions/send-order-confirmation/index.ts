@@ -118,6 +118,16 @@ const handler = async (req: Request): Promise<Response> => {
       ).join('');
     };
 
+    const getPriorityBadgeStyle = (priority: string) => {
+      const priorityStyles = {
+        "low": "background-color: #3b82f6; color: white;",
+        "medium": "background-color: #f59e0b; color: white;", 
+        "high": "background-color: #ef4444; color: white;",
+        "urgent": "background-color: #dc2626; color: white;",
+      };
+      return priorityStyles[priority.toLowerCase()] || "background-color: #6b7280; color: white;";
+    };
+
     const emailSubject = `Neue Bestellung erhalten - ${orderData.company_name}`;
     
     const emailHtml = `
@@ -128,105 +138,157 @@ const handler = async (req: Request): Promise<Response> => {
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Bestellbestätigung</title>
       </head>
-      <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-          <h1 style="color: #2563eb; margin: 0 0 10px 0; font-size: 24px;">Empria Dental</h1>
-          <h2 style="color: #1f2937; margin: 0; font-size: 20px;">Neue Bestellung erhalten</h2>
+      <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; padding: 20px; background-color: #f8f9fa;">
+        <!-- Header -->
+        <div style="background-color: #2563eb; color: white; padding: 30px; border-radius: 8px; margin-bottom: 30px; text-align: center;">
+          <h1 style="margin: 0 0 10px 0; font-size: 28px; font-weight: bold;">Empria Dental</h1>
+          <h2 style="margin: 0; font-size: 22px; font-weight: normal;">Neue Bestellung erhalten</h2>
         </div>
 
-        <div style="background-color: white; padding: 20px; border-radius: 8px; border: 1px solid #e5e7eb; margin-bottom: 20px;">
-          <h3 style="color: #1f2937; margin-top: 0; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px;">Kundeninformationen</h3>
-          
-          <table style="width: 100%; border-collapse: collapse;">
-            <tr>
-              <td style="padding: 8px 0; font-weight: bold; width: 150px;">Unternehmen:</td>
-              <td style="padding: 8px 0;">${orderData.company_name}</td>
-            </tr>
-            <tr>
-              <td style="padding: 8px 0; font-weight: bold;">E-Mail:</td>
-              <td style="padding: 8px 0;">${orderData.contact_email}</td>
-            </tr>
-            ${orderData.contact_phone ? `
-            <tr>
-              <td style="padding: 8px 0; font-weight: bold;">Telefon:</td>
-              <td style="padding: 8px 0;">${orderData.contact_phone}</td>
-            </tr>` : ''}
-            ${orderData.company_address ? `
-            <tr>
-              <td style="padding: 8px 0; font-weight: bold;">Adresse:</td>
-              <td style="padding: 8px 0;">${orderData.company_address}</td>
-            </tr>` : ''}
-            ${orderData.company_link ? `
-            <tr>
-              <td style="padding: 8px 0; font-weight: bold;">Website:</td>
-              <td style="padding: 8px 0;"><a href="${orderData.company_link}" target="_blank" style="color: #2563eb;">${orderData.company_link}</a></td>
-            </tr>` : ''}
-          </table>
+        <!-- Order Header with Company Name and Status -->
+        <div style="background-color: white; padding: 25px; border-radius: 8px; border: 1px solid #e5e7eb; margin-bottom: 25px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h2 style="margin: 0; font-size: 24px; color: #1f2937;">${orderData.company_name}</h2>
+            <div style="display: flex; gap: 10px;">
+              <span style="padding: 6px 12px; border-radius: 4px; font-size: 12px; font-weight: bold; background-color: #dbeafe; color: #1e40af;">
+                ${orderData.status || 'Created'}
+              </span>
+              <span style="padding: 6px 12px; border-radius: 4px; font-size: 12px; font-weight: bold; ${getPriorityBadgeStyle(orderData.priority || 'medium')}">
+                ${(orderData.priority || 'medium').charAt(0).toUpperCase() + (orderData.priority || 'medium').slice(1)}
+              </span>
+            </div>
+          </div>
         </div>
 
-        <div style="background-color: white; padding: 20px; border-radius: 8px; border: 1px solid #e5e7eb; margin-bottom: 20px;">
-          <h3 style="color: #1f2937; margin-top: 0; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px;">Bestelldetails</h3>
+        <!-- Two Column Layout -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-bottom: 25px;">
           
-          <table style="width: 100%; border-collapse: collapse;">
-            <tr>
-              <td style="padding: 8px 0; font-weight: bold; width: 150px;">Betrag:</td>
-              <td style="padding: 8px 0; font-size: 18px; color: #059669; font-weight: bold;">${formatCurrency(orderData.price, orderData.currency)}</td>
-            </tr>
-            <tr>
-              <td style="padding: 8px 0; font-weight: bold;">Priorität:</td>
-              <td style="padding: 8px 0;">
-                <span style="padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; 
-                  ${orderData.priority === 'urgent' ? 'background-color: #fef2f2; color: #dc2626;' : 
-                    orderData.priority === 'high' ? 'background-color: #fff7ed; color: #ea580c;' : 
-                    orderData.priority === 'medium' ? 'background-color: #fefce8; color: #ca8a04;' : 
-                    'background-color: #f0f9ff; color: #0284c7;'}">
-                  ${orderData.priority.charAt(0).toUpperCase() + orderData.priority.slice(1)}
+          <!-- Company Information Column -->
+          <div style="background-color: white; padding: 25px; border-radius: 8px; border: 1px solid #e5e7eb;">
+            <h3 style="color: #1f2937; margin-top: 0; margin-bottom: 20px; font-size: 18px; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px; display: flex; align-items: center;">
+              <span style="margin-right: 8px;">🏢</span> Company Information
+            </h3>
+            
+            <div style="space-y: 15px;">
+              <div style="margin-bottom: 15px;">
+                <strong style="color: #374151; display: block; margin-bottom: 5px;">Company Name:</strong>
+                <span style="color: #1f2937;">${orderData.company_name}</span>
+              </div>
+              
+              ${orderData.company_address ? `
+              <div style="margin-bottom: 15px;">
+                <strong style="color: #374151; display: block; margin-bottom: 5px;">📍 Address:</strong>
+                <span style="color: #1f2937;">${orderData.company_address}</span>
+              </div>` : ''}
+              
+              <div style="margin-bottom: 15px;">
+                <strong style="color: #374151; display: block; margin-bottom: 5px;">📧 Email:</strong>
+                <a href="mailto:${orderData.contact_email}" style="color: #2563eb; text-decoration: none;">${orderData.contact_email}</a>
+              </div>
+              
+              ${orderData.contact_phone ? `
+              <div style="margin-bottom: 15px;">
+                <strong style="color: #374151; display: block; margin-bottom: 5px;">📞 Phone:</strong>
+                <a href="tel:${orderData.contact_phone}" style="color: #2563eb; text-decoration: none;">${orderData.contact_phone}</a>
+              </div>` : ''}
+              
+              ${orderData.company_link ? `
+              <div style="margin-bottom: 15px;">
+                <strong style="color: #374151; display: block; margin-bottom: 5px;">🌐 Website:</strong>
+                <a href="${orderData.company_link}" target="_blank" style="color: #2563eb; text-decoration: none; word-break: break-all;">${orderData.company_link}</a>
+              </div>` : ''}
+            </div>
+          </div>
+
+          <!-- Order Details Column -->
+          <div style="background-color: white; padding: 25px; border-radius: 8px; border: 1px solid #e5e7eb;">
+            <h3 style="color: #1f2937; margin-top: 0; margin-bottom: 20px; font-size: 18px; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px; display: flex; align-items: center;">
+              <span style="margin-right: 8px;">📋</span> Order Details
+            </h3>
+            
+            <div style="space-y: 15px;">
+              <div style="margin-bottom: 15px;">
+                <strong style="color: #374151; display: block; margin-bottom: 5px;">💰 Price:</strong>
+                <span style="font-size: 20px; color: #059669; font-weight: bold;">${formatCurrency(orderData.price || 0, orderData.currency || 'EUR')}</span>
+              </div>
+              
+              <div style="margin-bottom: 15px;">
+                <strong style="color: #374151; display: block; margin-bottom: 5px;">💱 Currency:</strong>
+                <span style="color: #1f2937;">${orderData.currency || 'EUR'}</span>
+              </div>
+              
+              <div style="margin-bottom: 15px;">
+                <strong style="color: #374151; display: block; margin-bottom: 5px;">⚡ Priority:</strong>
+                <span style="padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; ${getPriorityBadgeStyle(orderData.priority || 'medium')}">
+                  ${(orderData.priority || 'medium').charAt(0).toUpperCase() + (orderData.priority || 'medium').slice(1)}
                 </span>
-              </td>
-            </tr>
-            <tr>
-              <td style="padding: 8px 0; font-weight: bold;">Status:</td>
-              <td style="padding: 8px 0;">
-                <span style="padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; background-color: #f0f9ff; color: #0284c7;">
-                  ${orderData.status}
+              </div>
+              
+              <div style="margin-bottom: 15px;">
+                <strong style="color: #374151; display: block; margin-bottom: 5px;">📊 Status:</strong>
+                <span style="padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; background-color: #dbeafe; color: #1e40af;">
+                  ${orderData.status || 'Created'}
                 </span>
-              </td>
-            </tr>
-            <tr>
-              <td style="padding: 8px 0; font-weight: bold;">Zugewiesen an:</td>
-              <td style="padding: 8px 0;">${assignedToName || 'Nicht zugewiesen'}</td>
-            </tr>
-            <tr>
-              <td style="padding: 8px 0; font-weight: bold;">Erstellt am:</td>
-              <td style="padding: 8px 0;">${formatDate(orderData.created_at)}</td>
-            </tr>
-          </table>
+              </div>
+              
+              <div style="margin-bottom: 15px;">
+                <strong style="color: #374151; display: block; margin-bottom: 5px;">👤 Assigned To:</strong>
+                <span style="color: #1f2937;">${assignedToName || 'Not assigned'}</span>
+              </div>
+              
+              <div style="margin-bottom: 15px;">
+                <strong style="color: #374151; display: block; margin-bottom: 5px;">📅 Created:</strong>
+                <span style="color: #1f2937;">${formatDate(orderData.created_at || new Date().toISOString())}</span>
+              </div>
+              
+              <div style="margin-bottom: 0;">
+                <strong style="color: #374151; display: block; margin-bottom: 5px;">🕒 Last Updated:</strong>
+                <span style="color: #1f2937;">${formatDate(orderData.created_at || new Date().toISOString())}</span>
+              </div>
+            </div>
+          </div>
         </div>
 
         ${selectedInventoryItems && selectedInventoryItems.length > 0 ? `
-        <div style="background-color: white; padding: 20px; border-radius: 8px; border: 1px solid #e5e7eb; margin-bottom: 20px;">
-          <h3 style="color: #1f2937; margin-top: 0; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px;">Inventar-Artikel</h3>
-          <ul style="padding-left: 20px; margin: 0;">
+        <!-- Inventory Items Section -->
+        <div style="background-color: white; padding: 25px; border-radius: 8px; border: 1px solid #e5e7eb; margin-bottom: 25px;">
+          <h3 style="color: #1f2937; margin-top: 0; margin-bottom: 20px; font-size: 18px; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px; display: flex; align-items: center;">
+            <span style="margin-right: 8px;">📦</span> Inventory Items
+          </h3>
+          <ul style="padding-left: 20px; margin: 0; list-style-type: disc;">
             ${formatInventoryItems(selectedInventoryItems)}
           </ul>
         </div>` : ''}
 
         ${orderData.description ? `
-        <div style="background-color: white; padding: 20px; border-radius: 8px; border: 1px solid #e5e7eb; margin-bottom: 20px;">
-          <h3 style="color: #1f2937; margin-top: 0; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px;">Beschreibung</h3>
-          <p style="margin: 0; white-space: pre-wrap;">${orderData.description}</p>
+        <!-- Description Section -->
+        <div style="background-color: white; padding: 25px; border-radius: 8px; border: 1px solid #e5e7eb; margin-bottom: 25px;">
+          <h3 style="color: #1f2937; margin-top: 0; margin-bottom: 20px; font-size: 18px; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px; display: flex; align-items: center;">
+            <span style="margin-right: 8px;">📝</span> Description
+          </h3>
+          <div style="background-color: #f9fafb; padding: 15px; border-radius: 6px; border-left: 4px solid #2563eb;">
+            <p style="margin: 0; white-space: pre-wrap; color: #374151; line-height: 1.6;">${orderData.description}</p>
+          </div>
         </div>` : ''}
 
         ${orderData.internal_notes ? `
-        <div style="background-color: #fef3c7; padding: 20px; border-radius: 8px; border: 1px solid #f59e0b; margin-bottom: 20px;">
-          <h3 style="color: #92400e; margin-top: 0; border-bottom: 2px solid #f59e0b; padding-bottom: 10px;">Interne Notizen</h3>
-          <p style="margin: 0; white-space: pre-wrap; color: #92400e;">${orderData.internal_notes}</p>
+        <!-- Internal Notes Section -->
+        <div style="background-color: #fef3c7; padding: 25px; border-radius: 8px; border: 1px solid #f59e0b; margin-bottom: 25px;">
+          <h3 style="color: #92400e; margin-top: 0; margin-bottom: 20px; font-size: 18px; border-bottom: 2px solid #f59e0b; padding-bottom: 10px; display: flex; align-items: center;">
+            <span style="margin-right: 8px;">🔒</span> Internal Notes
+          </h3>
+          <div style="background-color: #fef7e0; padding: 15px; border-radius: 6px; border-left: 4px solid #f59e0b;">
+            <p style="margin: 0; white-space: pre-wrap; color: #92400e; line-height: 1.6;">${orderData.internal_notes}</p>
+          </div>
         </div>` : ''}
 
-        <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin-top: 20px; text-align: center;">
+        <!-- Footer -->
+        <div style="background-color: #f8f9fa; padding: 25px; border-radius: 8px; margin-top: 30px; text-align: center; border: 1px solid #e5e7eb;">
+          <p style="margin: 0 0 10px 0; color: #6b7280; font-size: 14px;">
+            Diese E-Mail wurde automatisch von Empria Dental generiert.
+          </p>
           <p style="margin: 0; color: #6b7280; font-size: 14px;">
-            Diese E-Mail wurde automatisch von Empria Dental generiert.<br>
-            Besuchen Sie uns unter: <a href="https://empriadental.de" style="color: #2563eb;">empriadental.de</a>
+            Besuchen Sie uns unter: <a href="https://empriadental.de" style="color: #2563eb; text-decoration: none; font-weight: 500;">empriadental.de</a>
           </p>
         </div>
       </body>
