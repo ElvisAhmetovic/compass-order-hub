@@ -1,3 +1,4 @@
+
 export type UserRole = "admin" | "agent" | "user";
 
 export interface User {
@@ -67,6 +68,8 @@ export interface Order {
   status_facebook?: boolean;
   status_instagram?: boolean;
   status_trustpilot?: boolean;
+  status_trustpilot_deletion?: boolean;
+  status_google_deletion?: boolean;
   // Yearly package field
   is_yearly_package?: boolean;
 }
