@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { Order, OrderStatus } from "@/types";
 
@@ -412,7 +413,9 @@ export class OrderService {
         'Review': 'status_review',
         'Facebook': 'status_facebook',
         'Instagram': 'status_instagram',
-        'Trustpilot': 'status_trustpilot'
+        'Trustpilot': 'status_trustpilot',
+        'Trustpilot Deletion': 'status_trustpilot_deletion',
+        'Google Deletion': 'status_google_deletion'
       };
 
       const statusColumn = statusColumnMap[status];
@@ -534,7 +537,9 @@ export class OrderService {
       "Review": "status_review",
       "Facebook": "status_facebook",
       "Instagram": "status_instagram",
-      "Trustpilot": "status_trustpilot"
+      "Trustpilot": "status_trustpilot",
+      "Trustpilot Deletion": "status_trustpilot_deletion",
+      "Google Deletion": "status_google_deletion"
     };
 
     const statusField = statusFieldMap[status];
@@ -603,6 +608,8 @@ export class OrderService {
     if (order.status_facebook) statuses.push('Facebook');
     if (order.status_instagram) statuses.push('Instagram');
     if (order.status_trustpilot) statuses.push('Trustpilot');
+    if (order.status_trustpilot_deletion) statuses.push('Trustpilot Deletion');
+    if (order.status_google_deletion) statuses.push('Google Deletion');
     
     return statuses;
   }
