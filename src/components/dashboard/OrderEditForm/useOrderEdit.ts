@@ -155,6 +155,8 @@ export const useOrderEdit = (
         }
       }
       
+      console.log('=== EDIT FORM DEBUG ===');
+      console.log('Order ID:', order.id);
       console.log('Sending update data to API:', updateData);
       
       await OrderService.updateOrder(order.id, updateData);
@@ -164,7 +166,7 @@ export const useOrderEdit = (
         description: "Order details, description, and internal notes have been successfully updated.",
       });
       
-      console.log('Order updated successfully');
+      console.log('Order updated successfully via edit form');
       
       setIsEditing(false);
       setValidationErrors({});
