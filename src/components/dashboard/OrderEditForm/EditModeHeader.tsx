@@ -27,7 +27,12 @@ const EditModeHeader = ({ isSaving, hasErrors, onSave, onCancel }: EditModeHeade
       <div className="flex gap-2">
         <Button 
           size="sm" 
-          onClick={onSave} 
+          onClick={() => {
+            console.log('=== SAVE BUTTON CLICKED ===');
+            console.log('isSaving:', isSaving);
+            console.log('hasErrors:', hasErrors);
+            onSave();
+          }} 
           disabled={isSaving || hasErrors}
           className="min-w-[80px]"
         >

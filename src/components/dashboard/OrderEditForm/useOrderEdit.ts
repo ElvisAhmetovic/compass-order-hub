@@ -92,6 +92,9 @@ export const useOrderEdit = (
   }, [validationErrors]);
 
   const handleSave = useCallback(async () => {
+    console.log('=== HANDLE SAVE CALLED ===');
+    console.log('Order exists:', !!order);
+    
     if (!order) return;
     
     console.log('Attempting to save order with data:', editedOrder);
