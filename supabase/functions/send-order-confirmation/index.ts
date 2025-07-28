@@ -128,7 +128,10 @@ const handler = async (req: Request): Promise<Response> => {
       return priorityStyles[priority.toLowerCase()] || "background-color: #6b7280; color: white;";
     };
 
-    const emailSubject = `Neue Bestellung erhalten - ${orderData.company_name}`;
+    const isUpdate = orderData.isUpdate;
+    const emailSubject = isUpdate ? 
+      `Bestellungsupdate - ${orderData.company_name}` : 
+      `Neue Bestellung erhalten - ${orderData.company_name}`;
     
     const emailHtml = `
       <!DOCTYPE html>
@@ -136,14 +139,26 @@ const handler = async (req: Request): Promise<Response> => {
       <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Bestellbestätigung</title>
+        <title>${isUpdate ? 'Bestellungsupdate' : 'Bestellbestätigung'}</title>
       </head>
       <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; padding: 20px; background-color: #f8f9fa;">
         <!-- Header -->
-        <div style="background-color: #2563eb; color: white; padding: 30px; border-radius: 8px; margin-bottom: 30px; text-align: center;">
+        <div style="background-color: ${isUpdate ? '#059669' : '#2563eb'}; color: white; padding: 30px; border-radius: 8px; margin-bottom: 30px; text-align: center;">
           <h1 style="margin: 0 0 10px 0; font-size: 28px; font-weight: bold;">Empria Dental</h1>
-          <h2 style="margin: 0; font-size: 22px; font-weight: normal;">Neue Bestellung erhalten</h2>
+          <h2 style="margin: 0; font-size: 22px; font-weight: normal;">${isUpdate ? '📝 Bestellungsupdate' : 'Neue Bestellung erhalten'}</h2>
         </div>
+
+        ${isUpdate ? `
+        <!-- Update Notice -->
+        <div style="background-color: #d1fae5; color: #065f46; padding: 20px; border-radius: 8px; margin-bottom: 25px; border: 1px solid #10b981;">
+          <div style="display: flex; align-items: center;">
+            <span style="font-size: 20px; margin-right: 10px;">📝</span>
+            <div>
+              <strong style="font-size: 16px;">Bestellung aktualisiert</strong>
+              <p style="margin: 5px 0 0 0; font-size: 14px;">Diese Bestellung wurde geändert. Bitte überprüfen Sie die aktuellen Details unten.</p>
+            </div>
+          </div>
+        </div>` : ''}
 
         <!-- Order Header with Company Name and Status -->
         <div style="background-color: white; padding: 25px; border-radius: 8px; border: 1px solid #e5e7eb; margin-bottom: 25px;">

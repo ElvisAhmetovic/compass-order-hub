@@ -283,6 +283,14 @@ export class OrderService {
 
       if (changes.length > 0) {
         await this.logOrderActivity(id, 'Order Updated', changes.join('; '));
+        
+        // Send update notification emails
+        try {
+          await this.sendOrderUpdateEmails(data);
+        } catch (emailError) {
+          console.error('Failed to send order update emails:', emailError);
+          // Don't fail the order update if email sending fails
+        }
       }
       
       return data;
@@ -612,6 +620,49 @@ export class OrderService {
     if (order.status_google_deletion) statuses.push('Google Deletion');
     
     return statuses;
+  }
+
+  // Send order update notification emails
+  static async sendOrderUpdateEmails(orderData: Order): Promise<void> {
+    try {
+      console.log('Sending order update notification emails for:', orderData.company_name);
+      
+      // Get email recipients - fallback to default emails if secret not available
+      const defaultEmails = 'angelina@abmedia-team.com,service@team-abmedia.com,thomas.thomasklein@gmail.com,kleinabmedia@gmail.com,jungabmedia@gmail.com,wolfabmedia@gmail.com';
+      const emails = defaultEmails.split(',').map(email => email.trim()).filter(email => email);
+      
+      // Get inventory items if they exist
+      let selectedInventoryItems = [];
+      if (orderData.inventory_items) {
+        try {
+          selectedInventoryItems = JSON.parse(orderData.inventory_items as string);
+        } catch (error) {
+          console.error('Error parsing inventory items:', error);
+        }
+      }
+
+      const { error } = await supabase.functions.invoke('send-order-confirmation', {
+        body: {
+          orderData: {
+            ...orderData,
+            isUpdate: true // Flag to indicate this is an update notification
+          },
+          emails,
+          assignedToName: orderData.assigned_to_name || 'Unassigned',
+          selectedInventoryItems
+        }
+      });
+
+      if (error) {
+        console.error('Error calling send-order-confirmation function:', error);
+        throw error;
+      }
+
+      console.log('Order update notification emails sent successfully');
+    } catch (error) {
+      console.error('Failed to send order update emails:', error);
+      throw error;
+    }
   }
 
   // New method to log order activities in audit logs
