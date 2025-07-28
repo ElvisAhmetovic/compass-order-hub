@@ -100,8 +100,8 @@ const CreateTechSupportModal = ({ isOpen, onClose, onSuccess }: CreateTechSuppor
 
   const sendNotificationEmail = async (ticketData: any) => {
     try {
-      // Call the existing order confirmation email function with proper structure
-      const emailData = {
+      // Prepare the payload for the edge function (same structure as create order)
+      const emailPayload = {
         orderData: {
           id: ticketData.id,
           company_name: ticketData.company_name,
@@ -119,20 +119,41 @@ const CreateTechSupportModal = ({ isOpen, onClose, onSuccess }: CreateTechSuppor
         selectedInventoryItems: []
       };
 
-      const { error: emailError } = await supabase.functions.invoke('send-order-confirmation', {
-        body: emailData
-      });
+      console.log('Tech support email payload being sent:', JSON.stringify(emailPayload, null, 2));
 
-      if (emailError) {
-        console.error('Email error:', emailError);
-        toast({
-          title: "Warning",
-          description: "Tech support ticket created but email notification failed",
-          variant: "destructive",
-        });
+      // Call the edge function directly with fetch (same as create order)
+      console.log('Calling send-order-confirmation edge function for tech support...');
+      
+      const response = await fetch(
+        `https://fjybmlugiqmiggsdrkiq.supabase.co/functions/v1/send-order-confirmation`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZqeWJtbHVnaXFtaWdnc2Rya2lxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUyNDYxNjAsImV4cCI6MjA2MDgyMjE2MH0.zdCS-vPtsg15ucfw0HAoNzNLbevhJA3njyLzf_XrzvQ`,
+          },
+          body: JSON.stringify(emailPayload),
+        }
+      );
+
+      console.log('Tech support edge function response status:', response.status);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Tech support edge function error response:', errorText);
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
       }
+
+      const emailResult = await response.json();
+      console.log('Tech support emails sent successfully:', emailResult);
+
     } catch (error) {
-      console.error('Error sending notification email:', error);
+      console.error('Error sending tech support notification email:', error);
+      toast({
+        title: "Warning",
+        description: "Tech support ticket created but email notification failed",
+        variant: "destructive",
+      });
     }
   };
 
