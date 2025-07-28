@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Calendar, CheckCircle, Clock } from 'lucide-react';
+import { Plus, Calendar, CheckCircle, Clock, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from '@/hooks/use-toast';
@@ -81,6 +82,33 @@ const TechSupport = () => {
     }
   };
 
+  const handleDeleteTicket = async (ticketId: string) => {
+    try {
+      const { error } = await supabase
+        .from('tech_support_tickets')
+        .delete()
+        .eq('id', ticketId);
+
+      if (error) throw error;
+
+      setTickets(prevTickets =>
+        prevTickets.filter(ticket => ticket.id !== ticketId)
+      );
+
+      toast({
+        title: "Success",
+        description: "Tech support ticket deleted successfully",
+      });
+    } catch (error) {
+      console.error('Error deleting ticket:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete ticket",
+        variant: "destructive",
+      });
+    }
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -132,27 +160,56 @@ const TechSupport = () => {
                       <span>by {ticket.created_by_name}</span>
                     </div>
                   </div>
-                  <Button
-                    variant={ticket.status === 'problem_solved' ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => handleStatusChange(
-                      ticket.id, 
-                      ticket.status === 'in_progress' ? 'problem_solved' : 'in_progress'
-                    )}
-                    className="flex items-center gap-2"
-                  >
-                    {ticket.status === 'problem_solved' ? (
-                      <>
-                        <CheckCircle className="w-4 h-4" />
-                        Problem Solved
-                      </>
-                    ) : (
-                      <>
-                        <Clock className="w-4 h-4" />
-                        In Progress
-                      </>
-                    )}
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant={ticket.status === 'problem_solved' ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => handleStatusChange(
+                        ticket.id, 
+                        ticket.status === 'in_progress' ? 'problem_solved' : 'in_progress'
+                      )}
+                      className="flex items-center gap-2"
+                    >
+                      {ticket.status === 'problem_solved' ? (
+                        <>
+                          <CheckCircle className="w-4 h-4" />
+                          Problem Solved
+                        </>
+                      ) : (
+                        <>
+                          <Clock className="w-4 h-4" />
+                          In Progress
+                        </>
+                      )}
+                    </Button>
+                    
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="destructive" size="sm" className="flex items-center gap-2">
+                          <Trash2 className="w-4 h-4" />
+                          Delete
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete Tech Support Ticket</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Are you sure you want to delete this tech support ticket for "{ticket.company_name}"? 
+                            This action cannot be undone.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction 
+                            onClick={() => handleDeleteTicket(ticket.id)}
+                            className="bg-red-600 hover:bg-red-700"
+                          >
+                            Delete Ticket
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
