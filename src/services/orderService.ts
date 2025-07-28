@@ -262,6 +262,10 @@ export class OrderService {
 
       // Log specific changes
       const changes = [];
+      console.log('=== ORDER UPDATE DEBUG ===');
+      console.log('Current order data:', currentOrder);
+      console.log('Update data:', cleanData);
+      
       if (currentOrder) {
         if (cleanData.company_name && cleanData.company_name !== currentOrder.company_name) {
           changes.push(`Company name changed from "${currentOrder.company_name}" to "${cleanData.company_name}"`);
@@ -279,18 +283,34 @@ export class OrderService {
             changes.push('Order unassigned');
           }
         }
+        if (cleanData.description && cleanData.description !== currentOrder.description) {
+          changes.push(`Description updated`);
+        }
+        if (cleanData.internal_notes && cleanData.internal_notes !== currentOrder.internal_notes) {
+          changes.push(`Internal notes updated`);
+        }
+        if (cleanData.inventory_items !== currentOrder.inventory_items) {
+          changes.push(`Inventory items updated`);
+        }
       }
+      
+      console.log('Detected changes:', changes);
 
       if (changes.length > 0) {
+        console.log('Changes detected, logging activity and sending emails...');
         await this.logOrderActivity(id, 'Order Updated', changes.join('; '));
         
         // Send update notification emails
         try {
+          console.log('Calling sendOrderUpdateEmails...');
           await this.sendOrderUpdateEmails(data);
+          console.log('Email sending completed successfully');
         } catch (emailError) {
           console.error('Failed to send order update emails:', emailError);
           // Don't fail the order update if email sending fails
         }
+      } else {
+        console.log('No changes detected, skipping email notifications');
       }
       
       return data;
