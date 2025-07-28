@@ -100,7 +100,7 @@ const CreateTechSupportModal = ({ isOpen, onClose, onSuccess }: CreateTechSuppor
 
   const sendNotificationEmail = async (ticketData: any) => {
     try {
-      // Call the existing order confirmation email function with tech support data
+      // Call the existing order confirmation email function with proper structure
       const emailData = {
         orderData: {
           id: ticketData.id,
@@ -108,12 +108,15 @@ const CreateTechSupportModal = ({ isOpen, onClose, onSuccess }: CreateTechSuppor
           status: 'Tech Support',
           priority: 'Medium',
           description: ticketData.problem_description,
-          action_needed: ticketData.action_needed,
-          created_by: ticketData.created_by_name,
+          internal_notes: ticketData.action_needed,
           created_at: ticketData.created_at,
-          attachment: selectedFile ? { name: selectedFile.name, url: ticketData.attachment_url } : null
+          contact_email: 'tech-support@abmedia-team.com',
+          price: 0,
+          currency: 'EUR'
         },
-        recipientEmails: DEFAULT_EMAILS
+        emails: DEFAULT_EMAILS,
+        assignedToName: ticketData.created_by_name,
+        selectedInventoryItems: []
       };
 
       const { error: emailError } = await supabase.functions.invoke('send-order-confirmation', {
