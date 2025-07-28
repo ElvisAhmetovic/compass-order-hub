@@ -297,8 +297,10 @@ const handler = async (req: Request): Promise<Response> => {
 
     const results = [];
     
-    // Send email to each recipient
-    for (const email of emails) {
+    // Send email to each recipient with delay to respect rate limits (2 requests per second)
+    for (let i = 0; i < emails.length; i++) {
+      const email = emails[i];
+      
       try {
         console.log(`Attempting to send order confirmation to: ${email}`);
         
@@ -314,6 +316,11 @@ const handler = async (req: Request): Promise<Response> => {
       } catch (error) {
         console.error(`Failed to send email to ${email}:`, error);
         results.push({ email, success: false, error: error.message });
+      }
+      
+      // Add 600ms delay between emails to respect Resend's rate limit (2 requests per second)
+      if (i < emails.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 600));
       }
     }
 

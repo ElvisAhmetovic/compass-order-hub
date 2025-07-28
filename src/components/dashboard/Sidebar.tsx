@@ -99,7 +99,8 @@ const Sidebar = () => {
           visibleItems.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.href || 
-              (item.href !== '/dashboard' && location.pathname.startsWith(item.href));
+              (item.href !== '/dashboard' && item.href !== '/active-orders' && location.pathname.startsWith(item.href)) ||
+              (item.href === '/active-orders' && location.pathname.startsWith('/active-orders'));
             
             return (
               <Link
