@@ -100,32 +100,29 @@ const CreateTechSupportModal = ({ isOpen, onClose, onSuccess }: CreateTechSuppor
 
   const sendNotificationEmail = async (ticketData: any) => {
     try {
-      // Prepare the payload for the edge function (same structure as create order)
+      // Prepare the payload for the dedicated tech support edge function
       const emailPayload = {
-        orderData: {
+        ticketData: {
           id: ticketData.id,
           company_name: ticketData.company_name,
-          status: 'Tech Support',
-          priority: 'Medium',
-          description: ticketData.problem_description,
-          internal_notes: ticketData.action_needed,
-          created_at: ticketData.created_at,
-          contact_email: 'tech-support@abmedia-team.com',
-          price: 0,
-          currency: 'EUR'
+          problem_description: ticketData.problem_description,
+          action_needed: ticketData.action_needed,
+          status: ticketData.status || 'in_progress',
+          attachment_url: ticketData.attachment_url,
+          attachment_name: ticketData.attachment_name,
+          created_by_name: ticketData.created_by_name,
+          created_at: ticketData.created_at
         },
-        emails: DEFAULT_EMAILS,
-        assignedToName: ticketData.created_by_name,
-        selectedInventoryItems: []
+        emails: DEFAULT_EMAILS
       };
 
       console.log('Tech support email payload being sent:', JSON.stringify(emailPayload, null, 2));
 
-      // Call the edge function directly with fetch (same as create order)
-      console.log('Calling send-order-confirmation edge function for tech support...');
+      // Call the dedicated tech support edge function with fetch
+      console.log('Calling send-tech-support-notification edge function...');
       
       const response = await fetch(
-        `https://fjybmlugiqmiggsdrkiq.supabase.co/functions/v1/send-order-confirmation`,
+        `https://fjybmlugiqmiggsdrkiq.supabase.co/functions/v1/send-tech-support-notification`,
         {
           method: 'POST',
           headers: {
