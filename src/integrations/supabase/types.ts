@@ -1061,6 +1061,48 @@ export type Database = {
         }
         Relationships: []
       }
+      tech_support_tickets: {
+        Row: {
+          action_needed: string
+          attachment_name: string | null
+          attachment_url: string | null
+          company_name: string
+          created_at: string
+          created_by: string | null
+          created_by_name: string
+          id: string
+          problem_description: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          action_needed: string
+          attachment_name?: string | null
+          attachment_url?: string | null
+          company_name: string
+          created_at?: string
+          created_by?: string | null
+          created_by_name: string
+          id?: string
+          problem_description: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          action_needed?: string
+          attachment_name?: string | null
+          attachment_url?: string | null
+          company_name?: string
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string
+          id?: string
+          problem_description?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       template_fields: {
         Row: {
           calculation: string | null

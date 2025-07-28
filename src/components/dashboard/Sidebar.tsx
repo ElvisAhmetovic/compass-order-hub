@@ -21,7 +21,8 @@ import {
   Eye,
   Facebook,
   Instagram,
-  UserX
+  UserX,
+  Wrench
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
@@ -39,6 +40,7 @@ const Sidebar = () => {
     { href: '/dashboard', icon: Home, label: 'Dashboard', roles: ['admin', 'agent', 'user'] },
     { href: '/analytics', icon: BarChart3, label: 'Analytics', roles: ['admin', 'agent'] },
     { href: '/support', icon: HelpCircle, label: 'Support', roles: ['admin', 'agent', 'user'] },
+    { href: '/tech-support', icon: Wrench, label: 'Tech Support', roles: ['admin', 'agent'] },
     { href: '/active-orders', icon: FileText, label: 'My Orders', roles: ['user'] }, // User-specific orders view
     { href: '/active-orders', icon: Clock, label: 'Active Orders', roles: ['admin', 'agent'] }, // Admin/agent view
     { href: '/yearly-packages', icon: Package, label: 'Yearly Packages', roles: ['admin', 'agent'] }, // New yearly packages section

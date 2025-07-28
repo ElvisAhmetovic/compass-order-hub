@@ -34,6 +34,7 @@ import Instagram from "./pages/Instagram";
 import Trustpilot from "./pages/Trustpilot";
 import TrustpilotDeletion from "./pages/TrustpilotDeletion";
 import GoogleDeletion from "./pages/GoogleDeletion";
+import TechSupport from "./pages/TechSupport";
 import NotFound from "./pages/NotFound";
 import { RequireAuth } from "./components/auth/RequireAuth";
 import AdminGuard from "./components/auth/AdminGuard";
@@ -177,6 +178,11 @@ function App() {
                   <Route path="/support/:id" element={
                     <RequireAuth>
                       <SupportDetail />
+                    </RequireAuth>
+                  } />
+                  <Route path="/tech-support" element={
+                    <RequireAuth>
+                      <TechSupport />
                     </RequireAuth>
                   } />
                   <Route path="/settings" element={
