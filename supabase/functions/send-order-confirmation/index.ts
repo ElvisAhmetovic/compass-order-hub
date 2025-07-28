@@ -129,9 +129,18 @@ const handler = async (req: Request): Promise<Response> => {
       return priorityStyles[priority.toLowerCase()] || "background-color: #6b7280; color: white;";
     };
 
+    const formatDateShort = (dateString: string) => {
+      return new Date(dateString).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+    };
+
     const isUpdate = orderData.isUpdate;
+    const updateDateStr = isUpdate ? ` - Updated ${formatDateShort(new Date().toISOString())}` : '';
     const emailSubject = isUpdate ? 
-      `Order Update - ${orderData.company_name}` : 
+      `Order Update${updateDateStr} - ${orderData.company_name}` : 
       `New Order Received - ${orderData.company_name}`;
     
     const emailHtml = `
