@@ -379,6 +379,7 @@ const createFirstPageContent = (proposalData: any, language: string = "en") => {
         </div>
       </div>
     </div>
+  </div>
   `;
 };
 
@@ -538,6 +539,7 @@ const createSecondPageContent = (proposalData: any, language: string = "en") => 
         </div>
       </div>
     </div>
+  </div>
   `;
 };
 
@@ -671,7 +673,8 @@ export const previewProposalPDF = async (proposalData: any, language: string = "
     }
     
     const pdf = pdfResult as jsPDF;
-    const dataUrl = pdf.output('datauristring');
+    const blob = pdf.output('blob');
+    let currentUrl = URL.createObjectURL(blob);
     
     // Remove existing preview
     const existingOverlay = document.getElementById("pdf-preview-overlay");
@@ -766,6 +769,7 @@ export const previewProposalPDF = async (proposalData: any, language: string = "
     closeButton.textContent = "Close";
     closeButton.style.cssText = "padding: 8px 16px; background-color: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer;";
     closeButton.onclick = () => {
+      if (currentUrl) URL.revokeObjectURL(currentUrl);
       document.body.removeChild(modalOverlay);
     };
     
@@ -778,7 +782,7 @@ export const previewProposalPDF = async (proposalData: any, language: string = "
     // Create PDF embed for better compatibility
     const embed = document.createElement('embed');
     embed.type = 'application/pdf';
-    embed.src = dataUrl;
+    embed.src = currentUrl;
     embed.style.cssText = `
       width: 80%;
       max-width: 1000px;
@@ -802,7 +806,10 @@ export const previewProposalPDF = async (proposalData: any, language: string = "
       const newPdfResult = await generateProposalPDF(updatedProposalData, newLanguage);
       
       if (newPdfResult && typeof newPdfResult !== 'boolean') {
-        embed.src = (newPdfResult as jsPDF).output('datauristring');
+        if (currentUrl) URL.revokeObjectURL(currentUrl);
+        const newBlob = (newPdfResult as jsPDF).output('blob');
+        currentUrl = URL.createObjectURL(newBlob);
+        embed.src = currentUrl;
       }
     };
 
