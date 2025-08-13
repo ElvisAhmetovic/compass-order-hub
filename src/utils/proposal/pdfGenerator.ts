@@ -350,7 +350,7 @@ const createFirstPageContent = (proposalData: any, language: string = "en") => {
               padding: 6px 0; 
               border-bottom: 1px solid #e2e8f0;
             ">
-              <span>${t.netAmount || 'Subtotal'}</span>
+              <span>${t.subtotal || 'Subtotal'}</span>
               <span style="font-weight: 600;">${currencySymbol}${(proposalData.netAmount || 0).toFixed(2)}</span>
             </div>
             <div style="
@@ -359,8 +359,8 @@ const createFirstPageContent = (proposalData: any, language: string = "en") => {
               padding: 6px 0; 
               border-bottom: 1px solid #e2e8f0;
             ">
-              <span>${t.vatPricing || 'VAT'} ${proposalData.vatEnabled ? `${proposalData.vatRate || 0}%` : '0%'}</span>
-              <span style="font-weight: 600;">${currencySymbol}${(proposalData.vatEnabled ? ((proposalData.netAmount || 0) * (proposalData.vatRate || 0) / 100) : 0).toFixed(2)}</span>
+              <span>${t.vat || 'VAT'} ${proposalData.vatEnabled ? `${proposalData.vatRate || 19}%` : '0%'}</span>
+              <span style="font-weight: 600;">${currencySymbol}${(proposalData.vatEnabled ? ((proposalData.netAmount || 0) * (proposalData.vatRate || 19) / 100) : 0).toFixed(2)}</span>
             </div>
             <div style="
               display: flex; 
