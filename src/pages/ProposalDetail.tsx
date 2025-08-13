@@ -612,7 +612,7 @@ const ProposalDetail = () => {
     
     console.log('Preview data being sent:', pdfProposalData);
     
-    const success = await previewProposalPDF(pdfProposalData, pdfLanguage);
+    const success = await previewProposalPDF(pdfProposalData, pdfLanguage, translatePackages);
     if (!success) {
       toast({
         title: "Preview failed",
@@ -644,7 +644,7 @@ const ProposalDetail = () => {
     
     console.log('Download data being sent:', pdfProposalData);
     
-    const success = await generateProposalPDF(pdfProposalData, pdfLanguage, `proposal-${proposalData.number}.pdf`);
+    const success = await generateProposalPDF(pdfProposalData, pdfLanguage, `proposal-${proposalData.number}.pdf`, translatePackages);
     if (success) {
       toast({
         title: "Proposal downloaded",

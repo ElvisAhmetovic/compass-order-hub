@@ -3,6 +3,7 @@ import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
 import { getCompanyInfo } from "./companyInfo";
 import { translations, SUPPORTED_LANGUAGES } from "../proposalTranslations";
+import { translateProposalData } from "../../services/translationService";
 
 // Get appropriate font family for each language
 const getLanguageFont = (language: string) => {
@@ -628,14 +629,22 @@ const generateMultiPagePDF = async (firstPageHtml: string, secondPageHtml: strin
 export const generateProposalPDF = async (
   proposalData: any, 
   language: string = "en", 
-  customFilename?: string
+  customFilename?: string,
+  shouldTranslate: boolean = false
 ): Promise<jsPDF | boolean> => {
   try {
     console.log('Generating PDF for proposal:', proposalData.number, 'Language:', language);
     
+    let dataToUse = proposalData;
+    
+    // Translate content if needed
+    if (shouldTranslate && language !== 'en') {
+      dataToUse = await translateProposalData(proposalData, language);
+    }
+    
     // Generate HTML content for both pages - SIMPLE APPROACH
-    const firstPageHtml = createFirstPageContent(proposalData, language);
-    const secondPageHtml = createSecondPageContent(proposalData, language);
+    const firstPageHtml = createFirstPageContent(dataToUse, language);
+    const secondPageHtml = createSecondPageContent(dataToUse, language);
     
     if (!firstPageHtml || !secondPageHtml) {
       console.error('HTML content is empty');
@@ -661,12 +670,16 @@ export const generateProposalPDF = async (
 };
 
 // Preview function
-export const previewProposalPDF = async (proposalData: any, language: string = "en") => {
+export const previewProposalPDF = async (
+  proposalData: any, 
+  language: string = "en", 
+  shouldTranslate: boolean = false
+) => {
   try {
     console.log('Generating PDF preview');
     
     // Generate PDF using the main function
-    const pdfResult = await generateProposalPDF({...proposalData, previewMode: true}, language);
+    const pdfResult = await generateProposalPDF({...proposalData, previewMode: true}, language, undefined, shouldTranslate);
     
     if (!pdfResult || typeof pdfResult === 'boolean') {
       console.error("Failed to generate PDF preview");
