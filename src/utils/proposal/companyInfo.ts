@@ -25,13 +25,13 @@ export const getCompanyInfo = () => {
 // Separate function for default company info to ensure consistency
 const getDefaultCompanyInfo = () => ({
   logo: "https://placehold.co/200x60?text=Your+Logo",
-  name: "AB MEDIA TEAM LTD",
+  name: "AB MEDIA TEAM",
   contactPerson: "Andreas Berger",
   street: "Weseler Str.73",
   postal: "47169",
   city: "Duisburg",
   country: "Germany",
-  phone: "+49 203 70 90 72 62",
+  phone: "+4920370907262",
   fax: "+49 203 70 90 73 53",
   email: "kontakt.abmedia@gmail.com",
   website: "www.abmedia-team.com",
