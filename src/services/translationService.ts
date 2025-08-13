@@ -184,9 +184,18 @@ const translateText = (text: string, targetLanguage: string): string => {
 // Main translation function
 export const translateProposalContent = (content: string, fromLanguage: string, toLanguage: string): Promise<string> => {
   return new Promise((resolve) => {
-    // For now, use basic word replacement
-    // In production, you would integrate with Google Translate API or similar
+    console.log(`Translating content from ${fromLanguage} to ${toLanguage}:`, content.substring(0, 100));
+    
+    // If target language is same as source or English and no translation needed, return as is
+    if (toLanguage === fromLanguage || (toLanguage === 'en' && !content)) {
+      resolve(content);
+      return;
+    }
+    
+    // Use basic word replacement for multi-language translation
     const translated = translateText(content, toLanguage);
+    
+    console.log(`Translation result:`, translated.substring(0, 100));
     
     // Simulate API delay
     setTimeout(() => {

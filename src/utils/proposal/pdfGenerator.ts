@@ -638,7 +638,8 @@ export const generateProposalPDF = async (
     let dataToUse = proposalData;
     
     // Translate content if needed
-    if (shouldTranslate && language !== 'en') {
+    if (shouldTranslate) {
+      console.log('Translating proposal data to language:', language);
       dataToUse = await translateProposalData(proposalData, language);
     }
     
@@ -776,7 +777,7 @@ export const previewProposalPDF = async (
     downloadButton.textContent = "Download PDF";
     downloadButton.style.cssText = "padding: 8px 16px; background-color: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; margin-right: 8px;";
     downloadButton.onclick = async () => {
-      await generateProposalPDF({...proposalData, logoSize: parseInt(logoSizeValue.textContent || '80')}, languageSelector.value);
+      await generateProposalPDF({...proposalData, logoSize: parseInt(logoSizeValue.textContent || '80')}, languageSelector.value, undefined, shouldTranslate);
     };
     
     const closeButton = document.createElement("button");
@@ -817,7 +818,7 @@ export const previewProposalPDF = async (
         logoSize: newLogoSize
       };
       
-      const newPdfResult = await generateProposalPDF(updatedProposalData, newLanguage);
+      const newPdfResult = await generateProposalPDF(updatedProposalData, newLanguage, undefined, shouldTranslate);
       
       if (newPdfResult && typeof newPdfResult !== 'boolean') {
         if (currentUrl) URL.revokeObjectURL(currentUrl);
