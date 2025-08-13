@@ -389,37 +389,76 @@ const ProposalDetail = () => {
   };
 
   const handleAddPredefinedPackage = (packageData: PredefinedPackage) => {
-    const name = translatePackages && packageData.nameTranslations[pdfLanguage] 
-      ? packageData.nameTranslations[pdfLanguage] 
-      : packageData.name;
+    // Get translated content based on translatePackages setting
+    const proposalTitle = translatePackages && packageData.proposalTitleTranslations[pdfLanguage] 
+      ? packageData.proposalTitleTranslations[pdfLanguage] 
+      : packageData.proposalTitle;
       
-    const description = translatePackages && packageData.descriptionTranslations[pdfLanguage] 
-      ? packageData.descriptionTranslations[pdfLanguage] 
-      : packageData.description;
+    const proposalDescription = translatePackages && packageData.proposalDescriptionTranslations[pdfLanguage] 
+      ? packageData.proposalDescriptionTranslations[pdfLanguage] 
+      : packageData.proposalDescription;
       
-    const unit = translatePackages && packageData.unitTranslations[pdfLanguage] 
-      ? packageData.unitTranslations[pdfLanguage] 
-      : packageData.unit;
+    const deliveryTerms = translatePackages && packageData.deliveryTermsTranslations[pdfLanguage] 
+      ? packageData.deliveryTermsTranslations[pdfLanguage] 
+      : packageData.deliveryTerms;
+      
+    const paymentTerms = translatePackages && packageData.paymentTermsTranslations[pdfLanguage] 
+      ? packageData.paymentTermsTranslations[pdfLanguage] 
+      : packageData.paymentTerms;
+      
+    const footerContent = translatePackages && packageData.footerContentTranslations[pdfLanguage] 
+      ? packageData.footerContentTranslations[pdfLanguage] 
+      : packageData.footerContent;
 
-    const newItem: ProposalLineItem = {
-      id: uuidv4(),
-      proposal_id: proposalData.id,
-      name: name,
-      description: description,
-      quantity: packageData.quantity,
-      unit_price: packageData.unitPrice,
-      total_price: packageData.quantity * packageData.unitPrice,
-      unit: unit,
-      category: packageData.category,
-      created_at: new Date().toISOString()
-    };
+    // Create line items from package
+    const newLineItems = packageData.lineItems.map(item => {
+      const name = translatePackages && item.nameTranslations[pdfLanguage] 
+        ? item.nameTranslations[pdfLanguage] 
+        : item.name;
+        
+      const description = translatePackages && item.descriptionTranslations[pdfLanguage] 
+        ? item.descriptionTranslations[pdfLanguage] 
+        : item.description;
+        
+      const unit = translatePackages && item.unitTranslations[pdfLanguage] 
+        ? item.unitTranslations[pdfLanguage] 
+        : item.unit;
+
+      return {
+        id: uuidv4(),
+        proposal_id: proposalData.id,
+        name: name,
+        description: description,
+        quantity: item.quantity,
+        unit_price: item.unitPrice,
+        total_price: item.quantity * item.unitPrice,
+        unit: unit,
+        category: item.category,
+        created_at: new Date().toISOString()
+      };
+    });
     
-    const updatedLineItems = [...proposalData.lineItems, newItem];
-    const { netAmount, vatAmount, totalAmount } = calculateTotals(updatedLineItems, proposalData.vatEnabled, proposalData.vatRate);
+    // Calculate totals with new line items
+    const { netAmount, vatAmount, totalAmount } = calculateTotals(newLineItems, packageData.vatEnabled, packageData.vatRate);
     
+    // Update the entire proposal with template data
     setProposalData(prev => ({
       ...prev,
-      lineItems: updatedLineItems,
+      // Update proposal content
+      proposalTitle,
+      proposalDescription,
+      deliveryTerms,
+      paymentTerms,
+      footerContent,
+      
+      // Update VAT settings
+      vatEnabled: packageData.vatEnabled,
+      vatRate: packageData.vatRate,
+      
+      // Replace line items
+      lineItems: newLineItems,
+      
+      // Update calculated totals
       netAmount,
       vatAmount,
       totalAmount,
@@ -427,8 +466,8 @@ const ProposalDetail = () => {
     }));
     
     toast({
-      title: "Package added",
-      description: `${name} has been added to the proposal.`,
+      title: "Template applied",
+      description: `${packageData.name} template has been applied to the proposal.`,
     });
   };
 
