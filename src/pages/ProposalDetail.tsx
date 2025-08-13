@@ -20,6 +20,7 @@ import TemplateManager from "@/components/proposals/TemplateManager";
 import { getDefaultTemplate, createProposalFromTemplate } from "@/utils/templateUtils";
 import { useInventory } from "@/hooks/useInventory";
 import { SUPPORTED_LANGUAGES } from "@/utils/proposalTranslations";
+import { PREDEFINED_PACKAGES, type PredefinedPackage } from "@/data/predefinedPackages";
 
 interface ProposalLineItem {
   id: string;
@@ -166,6 +167,7 @@ const ProposalDetail = () => {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [translatePackages, setTranslatePackages] = useState(true);
 
   useEffect(() => {
     loadProposal();
@@ -383,6 +385,50 @@ const ProposalDetail = () => {
     toast({
       title: "Item added",
       description: `${inventoryItem.name} has been added to the proposal.`,
+    });
+  };
+
+  const handleAddPredefinedPackage = (packageData: PredefinedPackage) => {
+    const name = translatePackages && packageData.nameTranslations[pdfLanguage] 
+      ? packageData.nameTranslations[pdfLanguage] 
+      : packageData.name;
+      
+    const description = translatePackages && packageData.descriptionTranslations[pdfLanguage] 
+      ? packageData.descriptionTranslations[pdfLanguage] 
+      : packageData.description;
+      
+    const unit = translatePackages && packageData.unitTranslations[pdfLanguage] 
+      ? packageData.unitTranslations[pdfLanguage] 
+      : packageData.unit;
+
+    const newItem: ProposalLineItem = {
+      id: uuidv4(),
+      proposal_id: proposalData.id,
+      name: name,
+      description: description,
+      quantity: packageData.quantity,
+      unit_price: packageData.unitPrice,
+      total_price: packageData.quantity * packageData.unitPrice,
+      unit: unit,
+      category: packageData.category,
+      created_at: new Date().toISOString()
+    };
+    
+    const updatedLineItems = [...proposalData.lineItems, newItem];
+    const { netAmount, vatAmount, totalAmount } = calculateTotals(updatedLineItems, proposalData.vatEnabled, proposalData.vatRate);
+    
+    setProposalData(prev => ({
+      ...prev,
+      lineItems: updatedLineItems,
+      netAmount,
+      vatAmount,
+      totalAmount,
+      amount: totalAmount.toFixed(2)
+    }));
+    
+    toast({
+      title: "Package added",
+      description: `${name} has been added to the proposal.`,
     });
   };
 
@@ -623,6 +669,18 @@ const ProposalDetail = () => {
                       ))}
                     </SelectContent>
                   </Select>
+                </div>
+                
+                {/* Translation Toggle for Predefined Packages */}
+                <div className="flex items-center gap-2 bg-muted/50 px-3 py-2 rounded-lg">
+                  <Switch
+                    id="translatePackages"
+                    checked={translatePackages}
+                    onCheckedChange={setTranslatePackages}
+                  />
+                  <Label htmlFor="translatePackages" className="text-sm font-medium">
+                    Translate Packages
+                  </Label>
                 </div>
                 
                 {/* Payment Data Toggle */}
@@ -937,10 +995,29 @@ const ProposalDetail = () => {
                 <CardHeader>
                   <CardTitle className="flex justify-between items-center">
                     Products/Services
-                    <Button onClick={handleAddLineItem} size="sm">
-                      <PlusCircle size={16} className="mr-2" />
-                      Add Line Item
-                    </Button>
+                    <div className="flex gap-2 items-center">
+                      <Button onClick={handleAddLineItem} size="sm" variant="outline">
+                        <PlusCircle size={16} className="mr-2" />
+                        Add Line Item
+                      </Button>
+                      <Select onValueChange={(value) => {
+                        const packageData = PREDEFINED_PACKAGES.find(p => p.id === value);
+                        if (packageData) handleAddPredefinedPackage(packageData);
+                      }}>
+                        <SelectTrigger className="w-64">
+                          <SelectValue placeholder="Add Predefined Package" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {PREDEFINED_PACKAGES.map((pkg) => (
+                            <SelectItem key={pkg.id} value={pkg.id}>
+                              {translatePackages && pkg.nameTranslations[pdfLanguage] 
+                                ? pkg.nameTranslations[pdfLanguage] 
+                                : pkg.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
