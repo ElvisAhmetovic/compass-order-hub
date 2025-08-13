@@ -73,17 +73,7 @@ const createFirstPageContent = (proposalData: any, language: string = "en") => {
 
   return `
     <style>
-      * {
-        box-sizing: border-box;
-      }
-      
-      body, html {
-        margin: 0;
-        padding: 0;
-        background: white;
-      }
-      
-      .pdf-page {
+      .pdf-root .pdf-page {
         width: 794px;
         height: 1100px;
         background: white;
@@ -97,12 +87,13 @@ const createFirstPageContent = (proposalData: any, language: string = "en") => {
         overflow: hidden;
       }
       
-      .section {
+      .pdf-root .section {
         margin-bottom: 16px;
       }
     </style>
     
-    <div class="pdf-page">
+    <div class="pdf-root">
+      <div class="pdf-page">
       <!-- Header Section -->
       <div class="section" style="
         display: flex; 
@@ -407,17 +398,7 @@ const createSecondPageContent = (proposalData: any, language: string = "en") => 
 
   return `
     <style>
-      * {
-        box-sizing: border-box;
-      }
-      
-      body, html {
-        margin: 0;
-        padding: 0;
-        background: white;
-      }
-      
-      .pdf-page {
+      .pdf-root .pdf-page {
         width: 794px;
         height: 1100px;
         background: white;
@@ -431,12 +412,13 @@ const createSecondPageContent = (proposalData: any, language: string = "en") => 
         overflow: hidden;
       }
       
-      .section {
+      .pdf-root .section {
         margin-bottom: 20px;
       }
     </style>
     
-    <div class="pdf-page">
+    <div class="pdf-root">
+      <div class="pdf-page">
       <!-- Terms and Conditions -->
       <div class="section" style="
         background: white; 
