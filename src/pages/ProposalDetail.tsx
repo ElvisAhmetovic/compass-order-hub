@@ -260,11 +260,18 @@ const ProposalDetail = () => {
   };
 
   const calculateTotals = (lineItems: ProposalLineItem[], vatEnabled: boolean, vatRate: number) => {
-    const netAmount = lineItems.reduce((sum, item) => sum + item.total_price, 0);
-    const vatAmount = vatEnabled ? (netAmount * vatRate / 100) : 0;
-    const totalAmount = netAmount + vatAmount;
+    // Total amount is the gross amount (VAT-inclusive)
+    const totalAmount = lineItems.reduce((sum, item) => sum + item.total_price, 0);
     
-    return { netAmount, vatAmount, totalAmount };
+    if (vatEnabled && vatRate > 0) {
+      // Calculate net amount by removing VAT from the gross total
+      const netAmount = totalAmount / (1 + vatRate / 100);
+      const vatAmount = totalAmount - netAmount;
+      return { netAmount, vatAmount, totalAmount };
+    } else {
+      // If VAT is disabled, net amount equals total amount
+      return { netAmount: totalAmount, vatAmount: 0, totalAmount };
+    }
   };
 
   const handleLineItemChange = (index: number, field: keyof ProposalLineItem, value: any) => {

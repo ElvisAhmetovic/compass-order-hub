@@ -360,7 +360,7 @@ const createFirstPageContent = (proposalData: any, language: string = "en") => {
               border-bottom: 1px solid #e2e8f0;
             ">
               <span>${t.vatPricing || 'VAT'} ${proposalData.vatEnabled ? `${proposalData.vatRate || 19}%` : '0%'}</span>
-              <span style="font-weight: 600;">${currencySymbol}${(proposalData.vatEnabled ? ((proposalData.netAmount || 0) * (proposalData.vatRate || 19) / 100) : 0).toFixed(2)}</span>
+              <span style="font-weight: 600;">${currencySymbol}${(proposalData.vatAmount || 0).toFixed(2)}</span>
             </div>
             <div style="
               display: flex; 
@@ -374,7 +374,7 @@ const createFirstPageContent = (proposalData: any, language: string = "en") => {
               padding-right: 12px;
             ">
               <span>${t.totalAmount || 'Total Amount'}</span>
-              <span>${currencySymbol}${(proposalData.vatEnabled ? ((proposalData.netAmount || 0) + ((proposalData.netAmount || 0) * (proposalData.vatRate || 0) / 100)) : (proposalData.netAmount || 0)).toFixed(2)}</span>
+              <span>${currencySymbol}${(proposalData.totalAmount || proposalData.netAmount || 0).toFixed(2)}</span>
             </div>
           </div>
         </div>
