@@ -115,6 +115,7 @@ const createFirstPageContent = (proposalData: any, language: string = "en") => {
             <div>${companyInfo.street || 'Weseler Str.73'}</div>
             <div>${companyInfo.postal || '47169'} ${companyInfo.city || 'Duisburg'}</div>
             <div>${companyInfo.country || 'Germany'}</div>
+            <div>${companyInfo.phone || '+4920370907262'}</div>
           </div>
         </div>
         <div style="
