@@ -542,7 +542,7 @@ const createSecondPageContent = (proposalData: any, language: string = "en") => 
 };
 
 // Generate PDF with separate pages
-const generateMultiPagePDF = async (firstPageHtml: string, secondPageHtml: string): Promise<jsPDF> => {
+const generateMultiPagePDF = async (firstPageHtml: string, secondPageHtml: string, scale: number = 2): Promise<jsPDF> => {
   console.log('Starting multi-page PDF generation');
   
   // Create temporary divs for both pages
@@ -577,10 +577,11 @@ const generateMultiPagePDF = async (firstPageHtml: string, secondPageHtml: strin
     // Generate first page
     console.log('Converting first page to canvas');
     const canvas1 = await html2canvas(tempDiv1, {
-      scale: 2,
+      scale: scale,
       logging: false,
       useCORS: true,
       allowTaint: true,
+      imageTimeout: 3000,
       backgroundColor: '#ffffff',
       width: 794,
       height: 1100
@@ -595,10 +596,11 @@ const generateMultiPagePDF = async (firstPageHtml: string, secondPageHtml: strin
     // Generate second page
     console.log('Converting second page to canvas');
     const canvas2 = await html2canvas(tempDiv2, {
-      scale: 2,
+      scale: scale,
       logging: false,
       useCORS: true,
       allowTaint: true,
+      imageTimeout: 3000,
       backgroundColor: '#ffffff',
       width: 794,
       height: 1100
@@ -638,7 +640,7 @@ export const generateProposalPDF = async (
     }
     
     // Generate PDF with separate pages
-    const pdf = await generateMultiPagePDF(firstPageHtml, secondPageHtml);
+    const pdf = await generateMultiPagePDF(firstPageHtml, secondPageHtml, proposalData?.previewMode ? 1 : 2);
     
     // For preview mode, return the PDF document
     if (proposalData.previewMode) {
@@ -773,10 +775,11 @@ export const previewProposalPDF = async (proposalData: any, language: string = "
     controls.appendChild(leftControls);
     controls.appendChild(rightControls);
     
-    // Create iframe
-    const iframe = document.createElement("iframe");
-    iframe.src = dataUrl;
-    iframe.style.cssText = `
+    // Create PDF embed for better compatibility
+    const embed = document.createElement('embed');
+    embed.type = 'application/pdf';
+    embed.src = dataUrl;
+    embed.style.cssText = `
       width: 80%;
       max-width: 1000px;
       height: 80%;
@@ -799,7 +802,7 @@ export const previewProposalPDF = async (proposalData: any, language: string = "
       const newPdfResult = await generateProposalPDF(updatedProposalData, newLanguage);
       
       if (newPdfResult && typeof newPdfResult !== 'boolean') {
-        iframe.src = (newPdfResult as jsPDF).output('datauristring');
+        embed.src = (newPdfResult as jsPDF).output('datauristring');
       }
     };
 
@@ -822,7 +825,7 @@ export const previewProposalPDF = async (proposalData: any, language: string = "
     
     // Add to modal
     modalOverlay.appendChild(controls);
-    modalOverlay.appendChild(iframe);
+    modalOverlay.appendChild(embed);
     
     // Add to document
     document.body.appendChild(modalOverlay);
