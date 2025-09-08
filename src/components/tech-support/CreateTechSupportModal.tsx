@@ -22,7 +22,9 @@ const DEFAULT_EMAILS = [
   'thomas.thomasklein@gmail.com',
   'kleinabmedia@gmail.com',
   'jungabmedia@gmail.com',
-  'wolfabmedia@gmail.com'
+  'wolfabmedia@gmail.com',
+  'marcusabmedia@gmail.com',
+  'paulkatz.abmedia@gmail.com'
 ];
 
 const CreateTechSupportModal = ({ isOpen, onClose, onSuccess }: CreateTechSupportModalProps) => {
