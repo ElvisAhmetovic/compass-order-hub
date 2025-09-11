@@ -75,6 +75,24 @@ const CreateTechSupportModal = ({ isOpen, onClose, onSuccess }: CreateTechSuppor
 
   const sendNotificationEmail = async (ticketData: any) => {
     try {
+      console.log('Sending notification email with ticket data:', ticketData);
+      
+      // Wait a moment to ensure all database operations are complete
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Get actual attachment count from database
+      const { data: attachmentData, error: attachmentError } = await supabase
+        .from('ticket_attachments')
+        .select('id')
+        .eq('ticket_id', ticketData.id);
+      
+      if (attachmentError) {
+        console.error('Error fetching attachment count:', attachmentError);
+      }
+      
+      const actualAttachmentCount = attachmentData?.length || 0;
+      console.log(`Actual attachment count from database: ${actualAttachmentCount}`);
+      
       // Prepare the payload for the dedicated tech support edge function
       const emailPayload = {
         ticketData: {
@@ -83,7 +101,7 @@ const CreateTechSupportModal = ({ isOpen, onClose, onSuccess }: CreateTechSuppor
           problem_description: ticketData.problem_description,
           action_needed: ticketData.action_needed,
           status: ticketData.status || 'in_progress',
-          attachments_count: attachments.length,
+          attachments_count: actualAttachmentCount,
           created_by_name: ticketData.created_by_name,
           created_at: ticketData.created_at
         },
@@ -92,7 +110,7 @@ const CreateTechSupportModal = ({ isOpen, onClose, onSuccess }: CreateTechSuppor
 
       console.log('Tech support email payload being sent:', JSON.stringify(emailPayload, null, 2));
 
-      // Call the dedicated tech support edge function with fetch
+      // Call the dedicated tech support edge function
       console.log('Calling send-tech-support-notification edge function...');
       
       const response = await fetch(
@@ -204,6 +222,32 @@ const CreateTechSupportModal = ({ isOpen, onClose, onSuccess }: CreateTechSuppor
         }
 
         finalTicketId = newTicket.id;
+      }
+
+      // Wait for all attachment uploads to be fully processed in the database
+      console.log('Waiting for all attachments to be processed...');
+      let maxWaitTime = 10000; // 10 seconds max wait
+      let waitTime = 0;
+      const checkInterval = 500; // Check every 500ms
+      
+      while (waitTime < maxWaitTime) {
+        const { data: dbAttachments } = await supabase
+          .from('ticket_attachments')
+          .select('id')
+          .eq('ticket_id', finalTicketId);
+        
+        const completedAttachments = attachments.filter(att => att.status === 'completed');
+        const dbCount = dbAttachments?.length || 0;
+        
+        console.log(`Database attachments: ${dbCount}, Completed uploads: ${completedAttachments.length}`);
+        
+        if (dbCount >= completedAttachments.length) {
+          console.log('All attachments processed in database');
+          break;
+        }
+        
+        await new Promise(resolve => setTimeout(resolve, checkInterval));
+        waitTime += checkInterval;
       }
 
       // Send notification email with attachment information

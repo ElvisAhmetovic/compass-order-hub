@@ -84,6 +84,18 @@ export const AttachmentViewer: React.FC<AttachmentViewerProps> = ({
     }
   }, [ticketId]);
 
+  // Add polling to refresh attachments periodically
+  useEffect(() => {
+    if (!ticketId) return;
+    
+    const pollInterval = setInterval(() => {
+      fetchAttachments();
+    }, 5000); // Poll every 5 seconds
+
+    // Clean up interval
+    return () => clearInterval(pollInterval);
+  }, [ticketId]);
+
   const handleDelete = async (attachmentId: string, path: string) => {
     if (!canDelete) return;
 
