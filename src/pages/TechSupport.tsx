@@ -255,19 +255,9 @@ const TechSupport = () => {
                         <p className="text-gray-700">{ticket.action_needed}</p>
                       </div>
 
-                      {ticket.attachment_url && (
-                        <div>
-                          <h4 className="font-medium text-gray-900 mb-2">Attachment:</h4>
-                          <a
-                            href={ticket.attachment_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-600 hover:text-blue-800 underline"
-                          >
-                            {ticket.attachment_name || 'View Attachment'}
-                          </a>
-                        </div>
-                      )}
+                      <div className="text-sm text-gray-500 italic">
+                        View full ticket details and attachments by clicking above
+                      </div>
 
                       <div className="flex items-center gap-2">
                         <Badge variant={ticket.status === 'problem_solved' ? "default" : "secondary"}>

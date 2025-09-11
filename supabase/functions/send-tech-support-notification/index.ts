@@ -232,8 +232,39 @@ const handler = async (req: Request): Promise<Response> => {
           </div>
         </div>
 
+        ${ticketData.attachments && ticketData.attachments.length > 0 ? `
+        <!-- Attachments Section -->
+        <div style="background-color: white; padding: 25px; border-radius: 8px; border: 1px solid #e5e7eb; margin-bottom: 25px;">
+          <h3 style="color: #1f2937; margin-top: 0; margin-bottom: 20px; font-size: 18px; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px; display: flex; align-items: center;">
+            <span style="margin-right: 8px;">📎</span> Attachments (${ticketData.attachments.length})
+          </h3>
+          <div style="display: grid; gap: 15px;">
+            ${ticketData.attachments.map(attachment => `
+              <div style="background-color: #f9fafb; padding: 15px; border-radius: 6px; border: 1px solid #e5e7eb; display: flex; align-items: center; gap: 15px;">
+                ${attachment.mime_type?.startsWith('image/') ? 
+                  `<div style="flex-shrink: 0;">
+                    <img src="${attachment.signedUrl}" alt="${attachment.original_name}" style="width: 120px; height: 120px; object-fit: cover; border-radius: 4px; border: 1px solid #d1d5db;">
+                   </div>` : 
+                  `<div style="flex-shrink: 0; width: 40px; height: 40px; background-color: #e5e7eb; border-radius: 4px; display: flex; align-items: center; justify-content: center;">
+                    📄
+                   </div>`
+                }
+                <div style="flex: 1;">
+                  <div style="font-weight: 600; color: #1f2937; margin-bottom: 4px;">${attachment.original_name}</div>
+                  <div style="font-size: 14px; color: #6b7280; margin-bottom: 8px;">
+                    ${attachment.mime_type} • ${Math.round(attachment.size_bytes / 1024)}KB
+                  </div>
+                  <a href="${attachment.signedUrl}" target="_blank" style="color: #2563eb; text-decoration: none; font-weight: 500; font-size: 14px;">
+                    ${attachment.mime_type?.startsWith('image/') ? '🖼️ View Image' : '📥 Download File'}
+                  </a>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>` : ''}
+
         ${ticketData.attachment_url ? `
-        <!-- Attachment Section -->
+        <!-- Legacy Attachment Section (for backwards compatibility) -->
         <div style="background-color: white; padding: 25px; border-radius: 8px; border: 1px solid #e5e7eb; margin-bottom: 25px;">
           <h3 style="color: #1f2937; margin-top: 0; margin-bottom: 20px; font-size: 18px; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px; display: flex; align-items: center;">
             <span style="margin-right: 8px;">📎</span> Attachment

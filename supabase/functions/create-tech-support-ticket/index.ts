@@ -166,7 +166,7 @@ const handler = async (req: Request): Promise<Response> => {
           // Generate unique filename
           const fileExt = attachment.name.split('.').pop() || 'bin';
           const fileName = `${crypto.randomUUID()}.${fileExt}`;
-          const filePath = `ticket_attachments/${ticket.id}/${fileName}`;
+          const filePath = `${ticket.id}/${fileName}`;  // Fixed: removed double prefix
 
           // Convert base64 to binary
           const binaryData = Uint8Array.from(atob(attachment.base64), c => c.charCodeAt(0));
