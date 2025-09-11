@@ -8,7 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { AttachmentUploader } from '@/components/attachments/AttachmentUploader';
-import { TicketAttachment } from '@/types/ticket-attachments';
+import { TicketAttachment, AttachmentUpload } from '@/types/ticket-attachments';
 
 interface CreateTechSupportModalProps {
   isOpen: boolean;
@@ -35,7 +35,7 @@ const CreateTechSupportModal = ({ isOpen, onClose, onSuccess }: CreateTechSuppor
     problem_description: '',
     action_needed: ''
   });
-  const [attachments, setAttachments] = useState<TicketAttachment[]>([]);
+  const [attachments, setAttachments] = useState<AttachmentUpload[]>([]);
   const [ticketId, setTicketId] = useState<string | null>(null);
   const { user } = useAuth();
 
@@ -69,7 +69,7 @@ const CreateTechSupportModal = ({ isOpen, onClose, onSuccess }: CreateTechSuppor
     return data.id;
   };
 
-  const handleAttachmentsChange = (newAttachments: TicketAttachment[]) => {
+  const handleAttachmentsChange = (newAttachments: AttachmentUpload[]) => {
     setAttachments(newAttachments);
   };
 

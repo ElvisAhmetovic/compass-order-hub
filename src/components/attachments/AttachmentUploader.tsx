@@ -20,7 +20,7 @@ import {
 
 interface AttachmentUploaderProps {
   ticketId?: string;
-  onAttachmentsChange?: (attachments: TicketAttachment[]) => void;
+  onAttachmentsChange?: (attachments: AttachmentUpload[]) => void;
   className?: string;
   disabled?: boolean;
 }
@@ -78,7 +78,7 @@ export const AttachmentUploader: React.FC<AttachmentUploaderProps> = ({
       validUploads.push({
         id: generateUniqueId(),
         file,
-        status: 'pending',
+        status: 'pending' as const,
         progress: 0
       });
     });
@@ -96,7 +96,7 @@ export const AttachmentUploader: React.FC<AttachmentUploaderProps> = ({
 
     setUploads(prev => prev.map(u => 
       u.id === upload.id 
-        ? { ...u, status: 'uploading', progress: 0 }
+        ? { ...u, status: 'uploading' as const, progress: 0 }
         : u
     ));
 
@@ -167,18 +167,19 @@ export const AttachmentUploader: React.FC<AttachmentUploaderProps> = ({
 
       // Notify parent component
       if (onAttachmentsChange) {
-        const allAttachments = uploads
-          .filter(u => u.status === 'completed' && u.attachment)
-          .map(u => u.attachment!)
-          .concat([attachment]);
-        onAttachmentsChange(allAttachments);
+        const updatedUploads = uploads.map(u => 
+          u.id === upload.id 
+            ? { ...u, status: 'completed' as const, progress: 100, attachment }
+            : u
+        );
+        onAttachmentsChange(updatedUploads);
       }
 
     } catch (error) {
       console.error('Upload error:', error);
       setUploads(prev => prev.map(u => 
         u.id === upload.id 
-          ? { ...u, status: 'error', error: error instanceof Error ? error.message : 'Upload failed' }
+          ? { ...u, status: 'error' as const, error: error instanceof Error ? error.message : 'Upload failed' }
           : u
       ));
       
