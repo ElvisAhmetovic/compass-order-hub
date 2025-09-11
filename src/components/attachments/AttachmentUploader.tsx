@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Upload, X, FileImage, FileText, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
@@ -18,6 +18,7 @@ interface AttachmentUploaderProps {
   maxSizeBytes?: number;
   acceptedTypes?: string[];
   disabled?: boolean;
+  enableGlobalPaste?: boolean;
 }
 
 const ACCEPTED_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'application/pdf'];
@@ -30,7 +31,8 @@ const AttachmentUploader: React.FC<AttachmentUploaderProps> = ({
   maxFiles = MAX_FILES,
   maxSizeBytes = MAX_SIZE_BYTES,
   acceptedTypes = ACCEPTED_TYPES,
-  disabled = false
+  disabled = false,
+  enableGlobalPaste = false
 }) => {
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -122,10 +124,13 @@ const AttachmentUploader: React.FC<AttachmentUploaderProps> = ({
     addFiles(droppedFiles);
   }, [disabled, addFiles]);
 
-  const handlePaste = useCallback((e: React.ClipboardEvent) => {
+  const handlePaste = useCallback((e: ClipboardEvent | React.ClipboardEvent) => {
     if (disabled) return;
 
-    const items = Array.from(e.clipboardData.items);
+    const clipboardData = e.clipboardData;
+    if (!clipboardData) return;
+
+    const items = Array.from(clipboardData.items);
     const pastedFiles: File[] = [];
 
     for (const item of items) {
@@ -138,8 +143,26 @@ const AttachmentUploader: React.FC<AttachmentUploaderProps> = ({
     if (pastedFiles.length > 0) {
       e.preventDefault();
       addFiles(pastedFiles);
+      toast({
+        title: "File pasted",
+        description: `${pastedFiles.length} file(s) added from clipboard`,
+      });
     }
   }, [disabled, addFiles]);
+
+  // Global paste handler when enabled
+  useEffect(() => {
+    if (!enableGlobalPaste) return;
+
+    const globalPasteHandler = (e: ClipboardEvent) => {
+      handlePaste(e);
+    };
+
+    document.addEventListener('paste', globalPasteHandler);
+    return () => {
+      document.removeEventListener('paste', globalPasteHandler);
+    };
+  }, [enableGlobalPaste, handlePaste]);
 
   const handleFileInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(e.target.files || []);

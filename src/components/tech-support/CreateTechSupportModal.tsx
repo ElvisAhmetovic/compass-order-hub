@@ -213,6 +213,7 @@ const CreateTechSupportModal = ({ isOpen, onClose, onSuccess }: CreateTechSuppor
                 files={attachments}
                 onFilesChange={setAttachments}
                 disabled={loading}
+                enableGlobalPaste={true}
               />
             </div>
           </div>
