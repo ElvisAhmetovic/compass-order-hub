@@ -166,7 +166,7 @@ const CreateTechSupportWithImageModal: React.FC<CreateTechSupportWithImageModalP
         name: attachment.file.name,
         type: attachment.file.type,
         size: attachment.file.size,
-        content: base64.split(',')[1], // Remove data:image/png;base64, prefix
+        base64: base64.split(',')[1], // Remove data:image/png;base64, prefix
       });
     }
     return serializedAttachments;
@@ -209,6 +209,8 @@ const CreateTechSupportWithImageModal: React.FC<CreateTechSupportWithImageModalP
 
       if (response.error) {
         console.error('Error creating ticket:', response.error);
+        console.error('Response data:', response.data);
+        console.error('Attachment count:', serializedAttachments.length);
         throw new Error(response.error.message || 'Failed to create ticket');
       }
 
