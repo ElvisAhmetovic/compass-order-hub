@@ -4,11 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { Upload, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from '@/hooks/use-toast';
-import { AttachmentUploader } from '@/components/attachments/AttachmentUploader';
-import { TicketAttachment, AttachmentUpload } from '@/types/ticket-attachments';
 
 interface CreateTechSupportModalProps {
   isOpen: boolean;
@@ -35,8 +34,7 @@ const CreateTechSupportModal = ({ isOpen, onClose, onSuccess }: CreateTechSuppor
     problem_description: '',
     action_needed: ''
   });
-  const [attachments, setAttachments] = useState<AttachmentUpload[]>([]);
-  const [ticketId, setTicketId] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const { user } = useAuth();
 
   const handleInputChange = (field: string, value: string) => {
@@ -46,53 +44,64 @@ const CreateTechSupportModal = ({ isOpen, onClose, onSuccess }: CreateTechSuppor
     }));
   };
 
-  // Create draft ticket first to get ID for attachments
-  const createDraftTicket = async () => {
-    if (!user) return null;
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Check file type
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+      if (!allowedTypes.includes(file.type)) {
+        toast({
+          title: "Error",
+          description: "Please select a JPG or PNG image file",
+          variant: "destructive",
+        });
+        return;
+      }
 
-    const ticketData = {
-      company_name: formData.company_name.trim() || 'Draft',
-      problem_description: formData.problem_description.trim() || 'Draft',
-      action_needed: formData.action_needed.trim() || 'Draft',
-      status: 'draft' as const,
-      created_by: user.id,
-      created_by_name: user.full_name || user.email || 'Unknown User'
-    };
+      // Check file size (5MB limit)
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: "Error",
+          description: "File size must be less than 5MB",
+          variant: "destructive",
+        });
+        return;
+      }
 
-    const { data, error } = await supabase
-      .from('tech_support_tickets')
-      .insert([ticketData])
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data.id;
+      setSelectedFile(file);
+    }
   };
 
-  const handleAttachmentsChange = (newAttachments: AttachmentUpload[]) => {
-    setAttachments(newAttachments);
+  const uploadFile = async (file: File): Promise<{ url: string; name: string } | null> => {
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}.${fileExt}`;
+      const filePath = `tech-support/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('team-files')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('team-files')
+        .getPublicUrl(filePath);
+
+      return { url: publicUrl, name: file.name };
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      toast({
+        title: "Error",
+        description: "Failed to upload attachment",
+        variant: "destructive",
+      });
+      return null;
+    }
   };
 
   const sendNotificationEmail = async (ticketData: any) => {
     try {
-      console.log('Sending notification email with ticket data:', ticketData);
-      
-      // Wait a moment to ensure all database operations are complete
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Get actual attachment count from database
-      const { data: attachmentData, error: attachmentError } = await supabase
-        .from('ticket_attachments')
-        .select('id')
-        .eq('ticket_id', ticketData.id);
-      
-      if (attachmentError) {
-        console.error('Error fetching attachment count:', attachmentError);
-      }
-      
-      const actualAttachmentCount = attachmentData?.length || 0;
-      console.log(`Actual attachment count from database: ${actualAttachmentCount}`);
-      
       // Prepare the payload for the dedicated tech support edge function
       const emailPayload = {
         ticketData: {
@@ -101,7 +110,8 @@ const CreateTechSupportModal = ({ isOpen, onClose, onSuccess }: CreateTechSuppor
           problem_description: ticketData.problem_description,
           action_needed: ticketData.action_needed,
           status: ticketData.status || 'in_progress',
-          attachments_count: actualAttachmentCount,
+          attachment_url: ticketData.attachment_url,
+          attachment_name: ticketData.attachment_name,
           created_by_name: ticketData.created_by_name,
           created_at: ticketData.created_at
         },
@@ -110,7 +120,7 @@ const CreateTechSupportModal = ({ isOpen, onClose, onSuccess }: CreateTechSuppor
 
       console.log('Tech support email payload being sent:', JSON.stringify(emailPayload, null, 2));
 
-      // Call the dedicated tech support edge function
+      // Call the dedicated tech support edge function with fetch
       console.log('Calling send-tech-support-notification edge function...');
       
       const response = await fetch(
@@ -148,138 +158,81 @@ const CreateTechSupportModal = ({ isOpen, onClose, onSuccess }: CreateTechSuppor
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!user) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to create a ticket",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!formData.company_name.trim() || !formData.problem_description.trim() || !formData.action_needed.trim()) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
-      // Wait for all attachment uploads to complete
-      const pendingUploads = attachments.filter(att => att.status === 'uploading' || att.status === 'pending');
-      if (pendingUploads.length > 0) {
-        toast({
-          title: "Please wait",
-          description: "Please wait for all attachments to finish uploading.",
-          variant: "default",
-        });
-        setLoading(false);
-        return;
+      let attachmentUrl = null;
+      let attachmentName = null;
+
+      // Upload file if selected
+      if (selectedFile) {
+        const uploadResult = await uploadFile(selectedFile);
+        if (uploadResult) {
+          attachmentUrl = uploadResult.url;
+          attachmentName = uploadResult.name;
+        }
       }
 
-      // Check for any failed uploads
-      const failedUploads = attachments.filter(att => att.status === 'error');
-      if (failedUploads.length > 0) {
-        toast({
-          title: "Upload Error",
-          description: "Some attachments failed to upload. Please retry or remove them.",
-          variant: "destructive",
-        });
-        setLoading(false);
-        return;
-      }
-
-      // Create or update the ticket with final details
+      // Create tech support ticket
       const ticketData = {
-        company_name: formData.company_name,
-        problem_description: formData.problem_description,
-        action_needed: formData.action_needed,
-        status: 'in_progress' as const,
-        created_by_name: user?.full_name || user?.email || 'Unknown',
-        created_by: user?.id || null
+        company_name: formData.company_name.trim(),
+        problem_description: formData.problem_description.trim(),
+        action_needed: formData.action_needed.trim(),
+        attachment_url: attachmentUrl,
+        attachment_name: attachmentName,
+        created_by: user.id,
+        created_by_name: user.full_name || user.email || 'Unknown User'
       };
 
-      let finalTicketId = ticketId;
+      const { data, error } = await supabase
+        .from('tech_support_tickets')
+        .insert([ticketData])
+        .select()
+        .single();
 
-      if (ticketId) {
-        // Update the existing draft ticket
-        const { error: updateError } = await supabase
-          .from('tech_support_tickets')
-          .update(ticketData)
-          .eq('id', ticketId);
+      if (error) throw error;
 
-        if (updateError) {
-          console.error('Error updating ticket:', updateError);
-          toast({
-            title: "Error",
-            description: "Failed to update ticket. Please try again.",
-            variant: "destructive",
-          });
-          return;
-        }
-      } else {
-        // Create a new ticket if none exists
-        const { data: newTicket, error: insertError } = await supabase
-          .from('tech_support_tickets')
-          .insert(ticketData)
-          .select()
-          .single();
-
-        if (insertError || !newTicket) {
-          console.error('Error creating ticket:', insertError);
-          toast({
-            title: "Error",
-            description: "Failed to create ticket. Please try again.",
-            variant: "destructive",
-          });
-          return;
-        }
-
-        finalTicketId = newTicket.id;
-      }
-
-      // Wait for all attachment uploads to be fully processed in the database
-      console.log('Waiting for all attachments to be processed...');
-      let maxWaitTime = 10000; // 10 seconds max wait
-      let waitTime = 0;
-      const checkInterval = 500; // Check every 500ms
-      
-      while (waitTime < maxWaitTime) {
-        const { data: dbAttachments } = await supabase
-          .from('ticket_attachments')
-          .select('id')
-          .eq('ticket_id', finalTicketId);
-        
-        const completedAttachments = attachments.filter(att => att.status === 'completed');
-        const dbCount = dbAttachments?.length || 0;
-        
-        console.log(`Database attachments: ${dbCount}, Completed uploads: ${completedAttachments.length}`);
-        
-        if (dbCount >= completedAttachments.length) {
-          console.log('All attachments processed in database');
-          break;
-        }
-        
-        await new Promise(resolve => setTimeout(resolve, checkInterval));
-        waitTime += checkInterval;
-      }
-
-      // Send notification email with attachment information
-      try {
-        await sendNotificationEmail({ id: finalTicketId, ...ticketData });
-      } catch (emailError) {
-        console.error('Error sending notification email:', emailError);
-        // Don't fail the ticket creation if email fails
-        toast({
-          title: "Warning",
-          description: "Ticket created but notification email failed to send.",
-          variant: "default",
-        });
-      }
+      // Send notification emails
+      await sendNotificationEmail({ ...data, ...ticketData });
 
       toast({
         title: "Success",
         description: "Tech support ticket created successfully!",
-        variant: "default",
       });
 
-      // Reset form and close modal
-      setFormData({ company_name: '', problem_description: '', action_needed: '' });
-      setAttachments([]);
-      setTicketId(null);
+      // Reset form
+      setFormData({
+        company_name: '',
+        problem_description: '',
+        action_needed: ''
+      });
+      setSelectedFile(null);
+
       onSuccess();
-      onClose();
     } catch (error) {
-      console.error('Error in handleSubmit:', error);
+      console.error('Error creating tech support ticket:', error);
       toast({
         title: "Error",
-        description: "An unexpected error occurred. Please try again.",
+        description: "Failed to create tech support ticket",
         variant: "destructive",
       });
     } finally {
@@ -287,16 +240,8 @@ const CreateTechSupportModal = ({ isOpen, onClose, onSuccess }: CreateTechSuppor
     }
   };
 
-  // Initialize draft ticket when modal opens and user starts adding attachments
-  const handleModalInteraction = async () => {
-    if (!ticketId && user && isOpen) {
-      try {
-        const newTicketId = await createDraftTicket();
-        setTicketId(newTicketId);
-      } catch (error) {
-        console.error('Failed to create draft ticket:', error);
-      }
-    }
+  const removeFile = () => {
+    setSelectedFile(null);
   };
 
   return (
@@ -344,24 +289,39 @@ const CreateTechSupportModal = ({ isOpen, onClose, onSuccess }: CreateTechSuppor
             </div>
 
             <div>
-              <Label>Attachments</Label>
+              <Label>Screenshot/Attachment (JPG/PNG)</Label>
               <div className="mt-2">
-                <AttachmentUploader
-                  ticketId={ticketId || undefined}
-                  onAttachmentsChange={handleAttachmentsChange}
-                  disabled={loading}
-                />
-              </div>
-              <div className="mt-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleModalInteraction}
-                  className="text-xs"
-                >
-                  Enable drag & drop and paste for screenshots
-                </Button>
+                {selectedFile ? (
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-md border">
+                    <span className="text-sm text-gray-700">{selectedFile.name}</span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={removeFile}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center w-full">
+                    <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
+                      <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                        <Upload className="w-8 h-8 mb-4 text-gray-500" />
+                        <p className="mb-2 text-sm text-gray-500">
+                          <span className="font-semibold">Click to upload</span> or drag and drop
+                        </p>
+                        <p className="text-xs text-gray-500">JPG or PNG (MAX 5MB)</p>
+                      </div>
+                      <input
+                        type="file"
+                        className="hidden"
+                        accept="image/jpeg,image/png,image/jpg"
+                        onChange={handleFileSelect}
+                      />
+                    </label>
+                  </div>
+                )}
               </div>
             </div>
           </div>

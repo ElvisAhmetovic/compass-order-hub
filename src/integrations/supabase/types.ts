@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
+  // Allows to automatically instanciate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
@@ -1162,53 +1162,6 @@ export type Database = {
           },
         ]
       }
-      ticket_attachments: {
-        Row: {
-          created_at: string
-          height: number | null
-          id: string
-          mime_type: string
-          original_name: string
-          path: string
-          size_bytes: number
-          ticket_id: string
-          user_id: string
-          width: number | null
-        }
-        Insert: {
-          created_at?: string
-          height?: number | null
-          id?: string
-          mime_type: string
-          original_name: string
-          path: string
-          size_bytes: number
-          ticket_id: string
-          user_id: string
-          width?: number | null
-        }
-        Update: {
-          created_at?: string
-          height?: number | null
-          id?: string
-          mime_type?: string
-          original_name?: string
-          path?: string
-          size_bytes?: number
-          ticket_id?: string
-          user_id?: string
-          width?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "ticket_attachments_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "tech_support_tickets"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       user_audit_logs: {
         Row: {
           action: string
@@ -1369,9 +1322,9 @@ export type Database = {
     Functions: {
       calculate_line_total: {
         Args: {
-          discount_rate_param?: number
           quantity_param: number
           unit_price_param: number
+          discount_rate_param?: number
           vat_rate_param?: number
         }
         Returns: number
@@ -1387,10 +1340,10 @@ export type Database = {
       get_order_status_history: {
         Args: { order_id_param: string }
         Returns: {
-          actor_name: string
-          changed_at: string
-          details: string
           status: string
+          changed_at: string
+          actor_name: string
+          details: string
         }[]
       }
       get_user_role: {
