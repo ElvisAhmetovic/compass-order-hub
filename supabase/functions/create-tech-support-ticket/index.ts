@@ -4,6 +4,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.8';
 // CORS configuration for Lovable projects
 const ALLOWED_ORIGINS = [
   'https://ab4babd7-978c-4acd-b78b-5f6332997961.lovableproject.com',
+  'https://www.empriadental.de',
   'http://localhost:5173', // For local development
   'http://localhost:3000'
 ];
