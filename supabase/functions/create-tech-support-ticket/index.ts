@@ -132,7 +132,27 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log('Creating ticket...');
     
-    let ticket: any = null;
+    // Create the tech support ticket in the database
+    const { data: ticket, error: ticketError } = await supabase
+      .from('tech_support_tickets')
+      .insert([{
+        company_name: ticketData.company_name,
+        problem_description: ticketData.problem_description,
+        action_needed: ticketData.action_needed,
+        created_by: user.id,
+        created_by_name: displayName,
+        status: 'in_progress'
+      }])
+      .select()
+      .single();
+
+    if (ticketError || !ticket) {
+      console.error('Error creating ticket:', ticketError);
+      throw new Error('Failed to create ticket in database');
+    }
+
+    console.log('Ticket created successfully with ID:', ticket.id);
+    
     let attachmentRecords: any[] = [];
 
     // 2. Process attachments if any
