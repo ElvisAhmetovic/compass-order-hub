@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Plus, Calendar, CheckCircle, Clock, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -29,6 +30,7 @@ const TechSupport = () => {
   const [tickets, setTickets] = useState<TechSupportTicket[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const navigate = useNavigate();
   const { user } = useAuth();
   const userRole: UserRole = user?.role || "user";
 
@@ -166,7 +168,10 @@ const TechSupport = () => {
                   <CardHeader>
                     <div className="flex justify-between items-start">
                       <div className="space-y-2">
-                        <CardTitle className="text-lg">{ticket.company_name}</CardTitle>
+                        <CardTitle className="text-lg cursor-pointer hover:text-primary" 
+                                   onClick={() => navigate(`/tech-support/${ticket.id}`)}>
+                          {ticket.company_name}
+                        </CardTitle>
                         <div className="flex items-center gap-2 text-sm text-gray-500">
                           <Calendar className="w-4 h-4" />
                           {formatDate(ticket.created_at)}

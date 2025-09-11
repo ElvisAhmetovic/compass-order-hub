@@ -6,6 +6,33 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+interface TicketAttachment {
+  id: string;
+  path: string;
+  mime_type: string;
+  size_bytes: number;
+  original_name: string;
+  signedUrl?: string;
+}
+
+interface TechSupportTicketData {
+  id: string;
+  company_name: string;
+  problem_description: string;
+  action_needed: string;
+  status: string;
+  attachment_url?: string;  // Legacy field - keep for compatibility
+  attachment_name?: string; // Legacy field - keep for compatibility
+  created_by_name: string;
+  created_at: string;
+  attachments?: TicketAttachment[]; // New field for multiple attachments
+}
+
+interface TechSupportNotificationRequest {
+  ticketData: TechSupportTicketData;
+  emails: string[];
+}
+
 const handler = async (req: Request): Promise<Response> => {
   console.log(`Received ${req.method} request to send-tech-support-notification`);
   
