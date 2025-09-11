@@ -130,16 +130,41 @@ const CreateTechSupportModal = ({ isOpen, onClose, onSuccess }: CreateTechSuppor
       );
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to create ticket');
+        const errorData = await response.json().catch(() => ({ error: 'Network error occurred' }));
+        
+        // Show more specific error messages
+        let errorMessage = errorData.error || 'Failed to create ticket';
+        
+        if (response.status === 401) {
+          errorMessage = 'Authentication failed. Please refresh the page and try again.';
+        } else if (response.status === 413 || errorMessage.includes('payload')) {
+          errorMessage = 'Upload too large. Please reduce image sizes or number of files.';
+        } else if (response.status >= 500) {
+          errorMessage = 'Server error. Please try again in a moment.';
+        }
+        
+        throw new Error(errorMessage);
       }
 
       const result = await response.json();
       console.log('Ticket created successfully:', result);
 
+      // Handle both old and new response formats
+      const ticketId = result.ticketId || result.id;
+      const attachmentCount = result.attachmentCount || 0;
+      const emailSent = result.emailSent !== false; // Default to true for backward compatibility
+
+      let successMessage = 'Tech support ticket created successfully!';
+      if (attachmentCount > 0) {
+        successMessage += ` ${attachmentCount} attachment(s) uploaded.`;
+      }
+      if (!emailSent) {
+        successMessage += ' (Email notification may be delayed)';
+      }
+
       toast({
         title: "Success",
-        description: `Tech support ticket created successfully! ${result.attachmentCount > 0 ? `${result.attachmentCount} attachment(s) uploaded.` : ''}`,
+        description: successMessage,
       });
 
       // Reset form

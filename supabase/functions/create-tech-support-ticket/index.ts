@@ -131,29 +131,9 @@ const handler = async (req: Request): Promise<Response> => {
       user.email || 'Unknown User';
 
     console.log('Creating ticket...');
-
-    // 1. Create tech support ticket
-    const { data: ticket, error: ticketError } = await supabase
-      .from('tech_support_tickets')
-      .insert([{
-        company_name: ticketData.company_name.trim(),
-        problem_description: ticketData.problem_description.trim(),
-        action_needed: ticketData.action_needed.trim(),
-        created_by: user.id,
-        created_by_name: displayName,
-        status: 'in_progress'
-      }])
-      .select()
-      .single();
-
-    if (ticketError) {
-      console.error('Error creating ticket:', ticketError);
-      throw ticketError;
-    }
-
-    console.log('Ticket created:', ticket.id);
-
-    const attachmentRecords = [];
+    
+    let ticket: any = null;
+    let attachmentRecords: any[] = [];
 
     // 2. Process attachments if any
     if (ticketData.attachments && ticketData.attachments.length > 0) {
@@ -224,14 +204,29 @@ const handler = async (req: Request): Promise<Response> => {
 
         } catch (attachmentError) {
           console.error(`Error processing attachment ${attachment.name}:`, attachmentError);
-          // Continue with other attachments, don't fail the entire request
+          
+          // If this was the only attachment or if attachments are critical, fail the whole request
+          if (ticketData.attachments.length === 1) {
+            throw new Error(`Failed to upload attachment: ${attachmentError.message}`);
+          }
+          
+          // Otherwise, continue but log the failure
+          console.log('Continuing without this attachment due to error');
         }
       }
     }
 
-    console.log(`Processed ${attachmentRecords.length} attachments successfully`);
+    // 4. Return success response with detailed info
+    const response = {
+      success: true,
+      ticketId: ticket.id,
+      attachmentCount: attachmentRecords.length,
+      attachmentUploadedSuccessfully: attachmentRecords.length === (ticketData.attachments?.length || 0),
+      emailSent: false, // Will be updated if email succeeds
+      createdAt: new Date().toISOString()
+    };
 
-    // 3. Send notification email
+    // 3. Send notification email (non-blocking)
     try {
       console.log('Sending notification email...');
       
@@ -261,22 +256,20 @@ const handler = async (req: Request): Promise<Response> => {
         }
       );
 
-      if (!emailResponse.ok) {
+      if (emailResponse.ok) {
+        console.log('Email notification sent successfully');
+        response.emailSent = true;
+      } else {
         const errorText = await emailResponse.text();
         console.error('Email notification failed:', errorText);
-      } else {
-        console.log('Email notification sent successfully');
+        // Don't fail the request, but log it
       }
     } catch (emailError) {
       console.error('Error sending email notification:', emailError);
-      // Don't fail the request if email fails
+      // Email failure is not critical to ticket creation success
     }
 
-    // 4. Return success response
-    return new Response(JSON.stringify({ 
-      ticketId: ticket.id,
-      attachmentCount: attachmentRecords.length
-    }), {
+    return new Response(JSON.stringify(response), {
       status: 200,
       headers: {
         'Content-Type': 'application/json',
@@ -286,8 +279,54 @@ const handler = async (req: Request): Promise<Response> => {
 
   } catch (error: any) {
     console.error('Error in create-tech-support-ticket function:', error);
+    
+    // Attempt cleanup if we have a ticket ID
+    if (ticket?.id) {
+      console.log('Attempting cleanup due to error...');
+      try {
+        // Delete any uploaded attachments
+        if (attachmentRecords.length > 0) {
+          const filePaths = attachmentRecords.map(record => record.path);
+          await supabase.storage
+            .from('ticket-attachments')
+            .remove(filePaths);
+          console.log(`Cleaned up ${filePaths.length} uploaded files`);
+        }
+        
+        // Delete attachment records
+        await supabase
+          .from('ticket_attachments')
+          .delete()
+          .eq('ticket_id', ticket.id);
+          
+        // Delete the ticket itself
+        await supabase
+          .from('tech_support_tickets')
+          .delete()
+          .eq('id', ticket.id);
+          
+        console.log('Cleanup completed');
+      } catch (cleanupError) {
+        console.error('Error during cleanup:', cleanupError);
+      }
+    }
+    
+    // Return appropriate error message
+    let errorMessage = error.message;
+    if (error.message?.includes('JWT')) {
+      errorMessage = 'Authentication failed. Please try logging in again.';
+    } else if (error.message?.includes('storage')) {
+      errorMessage = 'File upload failed. Please try with smaller images or fewer files.';
+    } else if (error.message?.includes('database')) {
+      errorMessage = 'Database error. Please try again in a moment.';
+    }
+    
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: errorMessage,
+        details: error.message,
+        timestamp: new Date().toISOString()
+      }),
       {
         status: 500,
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
