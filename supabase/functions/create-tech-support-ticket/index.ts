@@ -1,9 +1,22 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.8';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+// CORS configuration for Lovable projects
+const ALLOWED_ORIGINS = [
+  'https://ab4babd7-978c-4acd-b78b-5f6332997961.lovableproject.com',
+  'http://localhost:5173', // For local development
+  'http://localhost:3000'
+];
+
+const getCorsHeaders = (origin: string | null) => {
+  const allowedOrigin = origin && ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Methods': 'OPTIONS, POST',
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Max-Age': '86400',
+    'Vary': 'Origin'
+  };
 };
 
 interface AttachmentData {
@@ -33,13 +46,24 @@ const DEFAULT_EMAILS = [
 ];
 
 const handler = async (req: Request): Promise<Response> => {
+  const origin = req.headers.get('origin');
+  const corsHeaders = getCorsHeaders(origin);
+
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    console.log('Handling OPTIONS preflight request from origin:', origin);
+    return new Response('ok', { 
+      headers: corsHeaders,
+      status: 200 
+    });
   }
 
   if (req.method !== 'POST') {
-    return new Response('Method not allowed', { status: 405, headers: corsHeaders });
+    console.log('Method not allowed:', req.method);
+    return new Response(JSON.stringify({ error: 'Method not allowed' }), { 
+      status: 405, 
+      headers: { 'Content-Type': 'application/json', ...corsHeaders } 
+    });
   }
 
   try {
@@ -59,7 +83,11 @@ const handler = async (req: Request): Promise<Response> => {
     // Get authenticated user
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
-      return new Response('Missing authorization header', { status: 401, headers: corsHeaders });
+      console.error('Missing authorization header');
+      return new Response(JSON.stringify({ error: 'Missing authorization header' }), { 
+        status: 401, 
+        headers: { 'Content-Type': 'application/json', ...corsHeaders } 
+      });
     }
 
     const token = authHeader.replace('Bearer ', '');
@@ -67,7 +95,10 @@ const handler = async (req: Request): Promise<Response> => {
     
     if (authError || !user) {
       console.error('Authentication error:', authError);
-      return new Response('Unauthorized', { status: 401, headers: corsHeaders });
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { 
+        status: 401, 
+        headers: { 'Content-Type': 'application/json', ...corsHeaders } 
+      });
     }
 
     console.log('User authenticated:', user.id);
@@ -81,7 +112,11 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Validate required fields
     if (!ticketData.company_name?.trim() || !ticketData.problem_description?.trim() || !ticketData.action_needed?.trim()) {
-      return new Response('Missing required fields', { status: 400, headers: corsHeaders });
+      console.error('Missing required fields');
+      return new Response(JSON.stringify({ error: 'Missing required fields' }), { 
+        status: 400, 
+        headers: { 'Content-Type': 'application/json', ...corsHeaders } 
+      });
     }
 
     // Get user profile for display name
