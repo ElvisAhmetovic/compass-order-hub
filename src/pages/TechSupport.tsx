@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Calendar, CheckCircle, Clock, Trash2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import Layout from '@/components/layout/Layout';
+import Sidebar from '@/components/dashboard/Sidebar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/context/AuthContext';
-import { toast } from '@/hooks/use-toast';
 import CreateTechSupportModal from '@/components/tech-support/CreateTechSupportModal';
-import Layout from "@/components/layout/Layout";
-import Sidebar from "@/components/dashboard/Sidebar";
-import { UserRole } from "@/types";
+import { AttachmentViewer } from '@/components/attachments/AttachmentViewer';
+import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/context/AuthContext';
+import { Trash2, Calendar, User, Building, Plus, CheckCircle, Clock } from 'lucide-react';
+import { UserRole } from '@/types';
 
 interface TechSupportTicket {
   id: string;
@@ -30,6 +31,7 @@ const TechSupport = () => {
   const [loading, setLoading] = useState(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const { user } = useAuth();
+  const { toast } = useToast();
   const userRole: UserRole = user?.role || "user";
 
   const fetchTickets = async () => {
@@ -226,7 +228,7 @@ const TechSupport = () => {
                       </div>
                     </div>
                   </CardHeader>
-                  <CardContent>
+                   <CardContent>
                     <div className="space-y-4">
                       <div>
                         <h4 className="font-medium text-gray-900 mb-2">Problem Description:</h4>
@@ -238,16 +240,25 @@ const TechSupport = () => {
                         <p className="text-gray-700">{ticket.action_needed}</p>
                       </div>
 
-                      {ticket.attachment_url && (
-                        <div>
-                          <h4 className="font-medium text-gray-900 mb-2">Attachment:</h4>
-                          <a
-                            href={ticket.attachment_url}
-                            target="_blank"
+                      {/* Display attachments using the new viewer component */}
+                      <div className="mb-4">
+                        <AttachmentViewer 
+                          ticketId={ticket.id}
+                          canDelete={false}
+                        />
+                      </div>
+
+                      {/* Legacy attachment support (will be removed after migration) */}
+                      {ticket.attachment_url && ticket.attachment_name && (
+                        <div className="mb-4 border-t pt-2">
+                          <h4 className="text-sm font-medium mb-2">Legacy Attachment:</h4>
+                          <a 
+                            href={ticket.attachment_url} 
+                            target="_blank" 
                             rel="noopener noreferrer"
-                            className="text-blue-600 hover:text-blue-800 underline"
+                            className="text-blue-600 hover:text-blue-800 underline text-sm"
                           >
-                            {ticket.attachment_name || 'View Attachment'}
+                            {ticket.attachment_name}
                           </a>
                         </div>
                       )}

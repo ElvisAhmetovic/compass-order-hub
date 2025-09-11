@@ -130,78 +130,112 @@ const CreateTechSupportModal = ({ isOpen, onClose, onSuccess }: CreateTechSuppor
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!user) {
-      toast({
-        title: "Error",
-        description: "You must be logged in to create a ticket",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!formData.company_name.trim() || !formData.problem_description.trim() || !formData.action_needed.trim()) {
-      toast({
-        title: "Error",
-        description: "Please fill in all required fields",
-        variant: "destructive",
-      });
-      return;
-    }
-
     setLoading(true);
 
     try {
-      let currentTicketId = ticketId;
-
-      // Create draft ticket if not already created (for attachments)
-      if (!currentTicketId) {
-        currentTicketId = await createDraftTicket();
-        setTicketId(currentTicketId);
+      // Wait for all attachment uploads to complete
+      const pendingUploads = attachments.filter(att => att.status === 'uploading' || att.status === 'pending');
+      if (pendingUploads.length > 0) {
+        toast({
+          title: "Please wait",
+          description: "Please wait for all attachments to finish uploading.",
+          variant: "default",
+        });
+        setLoading(false);
+        return;
       }
 
-      // Update the ticket with final data and change status from draft to in_progress
-      const finalTicketData = {
-        company_name: formData.company_name.trim(),
-        problem_description: formData.problem_description.trim(),
-        action_needed: formData.action_needed.trim(),
-        status: 'in_progress',
-        created_by: user.id,
-        created_by_name: user.full_name || user.email || 'Unknown User'
+      // Check for any failed uploads
+      const failedUploads = attachments.filter(att => att.status === 'error');
+      if (failedUploads.length > 0) {
+        toast({
+          title: "Upload Error",
+          description: "Some attachments failed to upload. Please retry or remove them.",
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+
+      // Create or update the ticket with final details
+      const ticketData = {
+        company_name: formData.company_name,
+        problem_description: formData.problem_description,
+        action_needed: formData.action_needed,
+        status: 'in_progress' as const,
+        created_by_name: user?.full_name || user?.email || 'Unknown',
+        created_by: user?.id || null
       };
 
-      const { data, error } = await supabase
-        .from('tech_support_tickets')
-        .update(finalTicketData)
-        .eq('id', currentTicketId)
-        .select()
-        .single();
+      let finalTicketId = ticketId;
 
-      if (error) throw error;
+      if (ticketId) {
+        // Update the existing draft ticket
+        const { error: updateError } = await supabase
+          .from('tech_support_tickets')
+          .update(ticketData)
+          .eq('id', ticketId);
 
-      // Send notification emails
-      await sendNotificationEmail({ ...data, ...finalTicketData });
+        if (updateError) {
+          console.error('Error updating ticket:', updateError);
+          toast({
+            title: "Error",
+            description: "Failed to update ticket. Please try again.",
+            variant: "destructive",
+          });
+          return;
+        }
+      } else {
+        // Create a new ticket if none exists
+        const { data: newTicket, error: insertError } = await supabase
+          .from('tech_support_tickets')
+          .insert(ticketData)
+          .select()
+          .single();
+
+        if (insertError || !newTicket) {
+          console.error('Error creating ticket:', insertError);
+          toast({
+            title: "Error",
+            description: "Failed to create ticket. Please try again.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        finalTicketId = newTicket.id;
+      }
+
+      // Send notification email with attachment information
+      try {
+        await sendNotificationEmail({ id: finalTicketId, ...ticketData });
+      } catch (emailError) {
+        console.error('Error sending notification email:', emailError);
+        // Don't fail the ticket creation if email fails
+        toast({
+          title: "Warning",
+          description: "Ticket created but notification email failed to send.",
+          variant: "default",
+        });
+      }
 
       toast({
         title: "Success",
         description: "Tech support ticket created successfully!",
+        variant: "default",
       });
 
-      // Reset form
-      setFormData({
-        company_name: '',
-        problem_description: '',
-        action_needed: ''
-      });
+      // Reset form and close modal
+      setFormData({ company_name: '', problem_description: '', action_needed: '' });
       setAttachments([]);
       setTicketId(null);
-
       onSuccess();
+      onClose();
     } catch (error) {
-      console.error('Error creating tech support ticket:', error);
+      console.error('Error in handleSubmit:', error);
       toast({
         title: "Error",
-        description: "Failed to create tech support ticket",
+        description: "An unexpected error occurred. Please try again.",
         variant: "destructive",
       });
     } finally {
