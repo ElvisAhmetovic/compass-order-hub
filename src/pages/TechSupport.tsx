@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Calendar, CheckCircle, Clock, Trash2 } from 'lucide-react';
+import { Plus, Calendar, CheckCircle, Clock, Trash2, Image } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import CreateTechSupportModal from '@/components/tech-support/CreateTechSupportModal';
+import CreateTechSupportWithImageModal from '@/components/tech-support/CreateTechSupportWithImageModal';
 import Layout from "@/components/layout/Layout";
 import Sidebar from "@/components/dashboard/Sidebar";
 import { UserRole } from "@/types";
@@ -30,6 +31,7 @@ const TechSupport = () => {
   const [tickets, setTickets] = useState<TechSupportTicket[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isCreateWithImageModalOpen, setIsCreateWithImageModalOpen] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
   const userRole: UserRole = user?.role || "user";
@@ -146,13 +148,23 @@ const TechSupport = () => {
               <h1 className="text-3xl font-bold text-gray-900">Tech Support</h1>
               <p className="text-gray-600 mt-2">Internal tech support tickets and issues</p>
             </div>
-            <Button 
-              onClick={() => setIsCreateModalOpen(true)}
-              className="flex items-center gap-2"
-            >
-              <Plus className="w-4 h-4" />
-              Create Ticket
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                onClick={() => setIsCreateModalOpen(true)}
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                <Plus className="w-4 h-4" />
+                Create Ticket
+              </Button>
+              <Button 
+                onClick={() => setIsCreateWithImageModalOpen(true)}
+                className="flex items-center gap-2"
+              >
+                <Image className="w-4 h-4" />
+                Create Ticket with Image
+              </Button>
+            </div>
           </div>
 
           <div className="grid gap-4">
@@ -274,6 +286,15 @@ const TechSupport = () => {
             onClose={() => setIsCreateModalOpen(false)}
             onSuccess={() => {
               setIsCreateModalOpen(false);
+              fetchTickets();
+            }}
+          />
+
+          <CreateTechSupportWithImageModal
+            isOpen={isCreateWithImageModalOpen}
+            onClose={() => setIsCreateWithImageModalOpen(false)}
+            onSuccess={() => {
+              setIsCreateWithImageModalOpen(false);
               fetchTickets();
             }}
           />
