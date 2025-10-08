@@ -39,6 +39,7 @@ import TechSupportDetail from "./pages/TechSupportDetail";
 import NotFound from "./pages/NotFound";
 import { RequireAuth } from "./components/auth/RequireAuth";
 import AdminGuard from "./components/auth/AdminGuard";
+import TemporaryNotificationBanner from "./components/notifications/TemporaryNotificationBanner";
 
 const queryClient = new QueryClient();
 
@@ -49,6 +50,7 @@ function App() {
         <TooltipProvider>
           <AuthProvider>
             <Router>
+              <TemporaryNotificationBanner />
               <div className="min-h-screen bg-background">
                 <Routes>
                   <Route path="/" element={<Index />} />
