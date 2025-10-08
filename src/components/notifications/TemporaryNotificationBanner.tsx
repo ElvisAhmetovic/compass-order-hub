@@ -18,14 +18,14 @@ const TemporaryNotificationBanner = () => {
     }
 
     // Check if user has dismissed it
-    const isDismissed = localStorage.getItem(STORAGE_KEY);
+    const isDismissed = sessionStorage.getItem(STORAGE_KEY);
     if (!isDismissed) {
       setIsVisible(true);
     }
   }, []);
 
   const handleDismiss = () => {
-    localStorage.setItem(STORAGE_KEY, "true");
+    sessionStorage.setItem(STORAGE_KEY, "true");
     setIsVisible(false);
   };
 
