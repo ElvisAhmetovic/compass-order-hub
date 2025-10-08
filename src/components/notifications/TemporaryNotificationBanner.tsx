@@ -6,26 +6,18 @@ import { Button } from "@/components/ui/button";
 const TemporaryNotificationBanner = () => {
   // Set expiry to 24 hours from deployment (October 9, 2025)
   const EXPIRY_DATE = new Date("2025-10-09T00:00:00Z").getTime();
-  const STORAGE_KEY = "email-notification-dismissed";
 
-  const [isVisible, setIsVisible] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
 
   useEffect(() => {
     // Check if notification is still valid (not expired)
     const now = Date.now();
     if (now > EXPIRY_DATE) {
-      return;
-    }
-
-    // Check if user has dismissed it
-    const isDismissed = sessionStorage.getItem(STORAGE_KEY);
-    if (!isDismissed) {
-      setIsVisible(true);
+      setIsVisible(false);
     }
   }, []);
 
   const handleDismiss = () => {
-    sessionStorage.setItem(STORAGE_KEY, "true");
     setIsVisible(false);
   };
 

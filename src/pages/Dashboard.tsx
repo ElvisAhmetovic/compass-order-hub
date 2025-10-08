@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { MigrationService } from "@/services/migrationService";
 import { toast } from "@/hooks/use-toast";
 import TeamEncouragement from "@/components/dashboard/TeamEncouragement";
+import TemporaryNotificationBanner from "@/components/notifications/TemporaryNotificationBanner";
 
 const Dashboard = () => {
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -167,10 +168,12 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="flex min-h-screen">
-      <Sidebar />
-      <div className="flex-1">
-        <Layout userRole={userRole}>
+    <>
+      <TemporaryNotificationBanner />
+      <div className="flex min-h-screen">
+        <Sidebar />
+        <div className="flex-1">
+          <Layout userRole={userRole}>
           <div className="space-y-6">
             <DashboardHeader 
               title={getPageTitle()}
@@ -237,6 +240,7 @@ const Dashboard = () => {
         </Layout>
       </div>
     </div>
+    </>
   );
 };
 
