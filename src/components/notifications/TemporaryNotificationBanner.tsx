@@ -4,8 +4,8 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 
 const TemporaryNotificationBanner = () => {
-  // Set expiry to 24 hours from deployment (October 9, 2025)
-  const EXPIRY_DATE = new Date("2025-10-09T00:00:00Z").getTime();
+  // Set expiry to October 10, 2025
+  const EXPIRY_DATE = new Date("2025-10-10T00:00:00Z").getTime();
 
   const [isVisible, setIsVisible] = useState(true);
 
