@@ -44,7 +44,8 @@ const DEFAULT_EMAILS = [
   'wolfabmedia@gmail.com',
   'marcusabmedia@gmail.com',
   'paulkatz.abmedia@gmail.com',
-  'ajosesales36@gmail.com'
+  'ajosesales36@gmail.com',
+  'georgabmediateam@gmail.com'
 ];
 
 const handler = async (req: Request): Promise<Response> => {
