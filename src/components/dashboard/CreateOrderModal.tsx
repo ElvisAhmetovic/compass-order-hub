@@ -74,7 +74,8 @@ const HARDCODED_NOTIFICATION_EMAILS = [
   'wolfabmedia@gmail.com',
   'marcusabmedia@gmail.com',
   'paulkatz.abmedia@gmail.com',
-  'ajosesales36@gmail.com'
+  'ajosesales36@gmail.com',
+  'georgabmediateam@gmail.com'
 ];
 
 const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {

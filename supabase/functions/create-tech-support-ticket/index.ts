@@ -35,17 +35,18 @@ interface TicketRequest {
 }
 
 // Default emails for notifications
-const DEFAULT_EMAILS = [
-  'angelina@abmedia-team.com',
-  'service@team-abmedia.com',
-  'thomas.thomasklein@gmail.com',
-  'kleinabmedia@gmail.com',
-  'jungabmedia@gmail.com',
-  'wolfabmedia@gmail.com',
-  'marcusabmedia@gmail.com',
-  'paulkatz.abmedia@gmail.com',
-  'ajosesales36@gmail.com'
-];
+  const DEFAULT_EMAILS = [
+    'angelina@abmedia-team.com',
+    'service@team-abmedia.com',
+    'thomas.thomasklein@gmail.com',
+    'kleinabmedia@gmail.com',
+    'jungabmedia@gmail.com',
+    'wolfabmedia@gmail.com',
+    'marcusabmedia@gmail.com',
+    'paulkatz.abmedia@gmail.com',
+    'ajosesales36@gmail.com',
+    'georgabmediateam@gmail.com'
+  ];
 
 const handler = async (req: Request): Promise<Response> => {
   const origin = req.headers.get('origin');
