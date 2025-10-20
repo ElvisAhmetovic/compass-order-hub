@@ -69,19 +69,23 @@ const handler = async (req: Request): Promise<Response> => {
     });
   }
 
+  // Declare variables outside try block for cleanup access
+  let ticket: any = null;
+  let attachmentRecords: any[] = [];
+  
+  // Create Supabase client outside try block
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+  const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  
+  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  });
+
   try {
     console.log('Creating Supabase client...');
-    
-    // Create Supabase client
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    
-    const supabase = createClient(supabaseUrl, supabaseServiceKey, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-      },
-    });
 
     // Get authenticated user
     const authHeader = req.headers.get('Authorization');
@@ -155,8 +159,6 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     console.log('Ticket created successfully with ID:', ticket.id);
-    
-    let attachmentRecords: any[] = [];
 
     // 2. Process attachments if any
     if (ticketData.attachments && ticketData.attachments.length > 0) {
