@@ -936,6 +936,36 @@ export type Database = {
         }
         Relationships: []
       }
+      reactions: {
+        Row: {
+          created_at: string | null
+          emoji: string
+          entity_id: string
+          entity_type: string
+          id: string
+          user_id: string
+          user_name: string
+        }
+        Insert: {
+          created_at?: string | null
+          emoji: string
+          entity_id: string
+          entity_type: string
+          id?: string
+          user_id: string
+          user_name: string
+        }
+        Update: {
+          created_at?: string | null
+          emoji?: string
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          user_id?: string
+          user_name?: string
+        }
+        Relationships: []
+      }
       support_inquiries: {
         Row: {
           created_at: string | null
@@ -1380,10 +1410,7 @@ export type Database = {
         Args: { prefix_param?: string }
         Returns: string
       }
-      get_auth_user_role: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
+      get_auth_user_role: { Args: never; Returns: string }
       get_order_status_history: {
         Args: { order_id_param: string }
         Returns: {
@@ -1393,22 +1420,15 @@ export type Database = {
           status: string
         }[]
       }
-      get_user_role: {
-        Args: Record<PropertyKey, never> | { user_id: string }
-        Returns: string
-      }
-      is_admin: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
+      get_user_role:
+        | { Args: { user_id: string }; Returns: string }
+        | { Args: never; Returns: string }
+      is_admin: { Args: never; Returns: boolean }
       recalculate_invoice_totals: {
         Args: { invoice_id_param: string }
         Returns: undefined
       }
-      restore_order: {
-        Args: { order_id_param: string }
-        Returns: undefined
-      }
+      restore_order: { Args: { order_id_param: string }; Returns: undefined }
       soft_delete_order: {
         Args: { order_id_param: string }
         Returns: undefined

@@ -10,6 +10,7 @@ import { useAuth } from '@/context/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import CreateTechSupportModal from '@/components/tech-support/CreateTechSupportModal';
 import CreateTechSupportWithImageModal from '@/components/tech-support/CreateTechSupportWithImageModal';
+import { EmojiReactionBar } from "@/components/reactions/EmojiReactionBar";
 import Layout from "@/components/layout/Layout";
 import Sidebar from "@/components/dashboard/Sidebar";
 import { UserRole } from "@/types";
@@ -263,6 +264,14 @@ const TechSupport = () => {
                         <Badge variant={ticket.status === 'problem_solved' ? "default" : "secondary"}>
                           {ticket.status.replace('_', ' ').toUpperCase()}
                         </Badge>
+                      </div>
+
+                      {/* Emoji Reactions */}
+                      <div className="mt-4 pt-4 border-t border-border">
+                        <EmojiReactionBar 
+                          entityType="ticket" 
+                          entityId={ticket.id}
+                        />
                       </div>
                     </div>
                   </CardContent>

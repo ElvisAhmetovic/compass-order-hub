@@ -8,6 +8,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import Layout from "@/components/layout/Layout";
 import Sidebar from "@/components/dashboard/Sidebar";
 import AttachmentViewer from "@/components/attachments/AttachmentViewer";
+import { EmojiReactionBar } from "@/components/reactions/EmojiReactionBar";
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from '@/hooks/use-toast';
@@ -287,6 +288,14 @@ const TechSupportDetail = () => {
               {/* Attachments */}
               <div>
                 <AttachmentViewer ticketId={ticket.id} />
+              </div>
+
+              {/* Emoji Reactions */}
+              <div className="pt-4 border-t border-border">
+                <EmojiReactionBar 
+                  entityType="ticket" 
+                  entityId={ticket.id}
+                />
               </div>
 
               {/* Metadata */}

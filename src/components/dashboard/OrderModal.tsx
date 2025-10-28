@@ -13,6 +13,7 @@ import CompanyInfoSection from "./OrderEditForm/CompanyInfoSection";
 import OrderDetailsSection from "./OrderEditForm/OrderDetailsSection";
 import EditModeHeader from "./OrderEditForm/EditModeHeader";
 import { useOrderEdit } from "./OrderEditForm/useOrderEdit";
+import { EmojiReactionBar } from "@/components/reactions/EmojiReactionBar";
 import { SelectedInventoryItem } from "./InventoryItemsSelector";
 
 interface OrderModalProps {
@@ -170,6 +171,23 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
                         onInventoryItemsChange={setSelectedInventoryItems}
                       />
                     </div>
+
+                    {/* Emoji Reactions */}
+                    <div className="col-span-1 lg:col-span-2 pt-6 border-t border-border">
+                      <EmojiReactionBar 
+                        entityType="order" 
+                        entityId={order.id}
+                      />
+                    </div>
+
+                    {!isEditing && isAdmin && (
+                      <div className="col-span-1 lg:col-span-2">
+                        <Button onClick={handleEdit} className="w-full sm:w-auto">
+                          <Edit className="h-4 w-4 mr-2" />
+                          Bearbeiten
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 </ScrollArea>
               </div>
