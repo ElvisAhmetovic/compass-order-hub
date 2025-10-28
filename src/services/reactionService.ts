@@ -120,7 +120,7 @@ export class ReactionService {
           event: '*',
           schema: 'public',
           table: 'reactions',
-          filter: `entity_type=eq.${entityType},entity_id=eq.${entityId}`
+          filter: `entity_type=eq.${entityType}&entity_id=eq.${entityId}`
         },
         async () => {
           // Fetch updated reactions when any change occurs

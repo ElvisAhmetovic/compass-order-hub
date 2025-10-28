@@ -75,6 +75,10 @@ export const EmojiReactionBar = ({
     try {
       const userName = user.full_name || user.email || 'Unknown User';
       await ReactionService.toggleReaction(entityType, entityId, emoji, userName);
+      
+      // Immediately refetch to update UI
+      const updatedReactions = await ReactionService.getReactions(entityType, entityId);
+      setReactions(updatedReactions);
     } catch (error) {
       console.error('Error toggling reaction:', error);
       toast.error("Failed to update reaction");
