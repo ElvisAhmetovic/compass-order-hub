@@ -73,7 +73,7 @@ export const EmojiReactionBar = ({
     setLoading(emoji);
 
     try {
-      const userName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'Unknown User';
+      const userName = user.full_name || user.email || 'Unknown User';
       await ReactionService.toggleReaction(entityType, entityId, emoji, userName);
     } catch (error) {
       console.error('Error toggling reaction:', error);

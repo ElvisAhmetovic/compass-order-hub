@@ -98,7 +98,7 @@ export class ReactionService {
       .eq('entity_id', entityId)
       .eq('user_id', user.id)
       .eq('emoji', emoji)
-      .single();
+      .maybeSingle();
 
     if (existing) {
       await this.removeReaction(entityType, entityId, emoji);
