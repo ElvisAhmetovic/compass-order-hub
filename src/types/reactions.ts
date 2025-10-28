@@ -15,5 +15,8 @@ export interface ReactionGroup {
   hasUserReacted: boolean;
 }
 
-export const AVAILABLE_EMOJIS = ['❤️', '👍', '👀', '🔥', '❗', '✅', '❌', '💬'] as const;
+export const AVAILABLE_EMOJIS = [
+  '❤️', '👍', '👎', '👀', '🔥', '❗', '✅', '❌', 
+  '💬', '⏰', '🎯', '💡', '🤔', '👏', '⚠️', '📌'
+] as const;
 export type AvailableEmoji = typeof AVAILABLE_EMOJIS[number];
