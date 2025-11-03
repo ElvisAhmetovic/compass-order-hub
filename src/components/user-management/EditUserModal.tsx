@@ -115,6 +115,66 @@ export const EditUserModal: React.FC<EditUserModalProps> = ({
 
       console.log('Successfully updated profiles table');
 
+      // Update user_permissions table if role changed
+      if (canEditRole && values.role !== user.role) {
+        console.log('Role changed, updating user_permissions for user:', user.id);
+        
+        if (values.role === 'admin') {
+          // Grant all permissions for admin role
+          const { error: permissionsError } = await supabase
+            .from('user_permissions')
+            .update({
+              role: 'admin',
+              dashboard_access: true,
+              active_orders_view: true,
+              active_orders_modify: true,
+              complaints_view: true,
+              complaints_modify: true,
+              completed_view: true,
+              completed_modify: true,
+              cancelled_view: true,
+              cancelled_modify: true,
+              deleted_view: true,
+              deleted_modify: true,
+              invoice_sent_view: true,
+              invoice_sent_modify: true,
+              invoice_paid_view: true,
+              invoice_paid_modify: true,
+              companies_view: true,
+              companies_modify: true,
+              reviews_view: true,
+              reviews_modify: true,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', user.id);
+
+          if (permissionsError) {
+            console.error('Permissions update error:', permissionsError);
+            // Don't throw - continue with profile update
+            toast({
+              variant: "destructive",
+              title: "Warning",
+              description: "User role updated but permissions may need manual adjustment."
+            });
+          } else {
+            console.log('Successfully updated user_permissions to admin');
+          }
+        } else {
+          // For non-admin roles, update role but keep limited permissions
+          const { error: permissionsError } = await supabase
+            .from('user_permissions')
+            .update({
+              role: values.role,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', user.id);
+
+          if (permissionsError) {
+            console.error('Permissions role update error:', permissionsError);
+          }
+        }
+      }
+
       // Update assigned_to_name in orders table if name changed
       if (values.fullName !== user.full_name) {
         console.log('Updating assigned_to_name in orders for user:', user.id);
