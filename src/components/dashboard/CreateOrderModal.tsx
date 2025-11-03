@@ -64,19 +64,7 @@ interface User {
   email: string;
 }
 
-// Hardcoded email addresses that will always receive order confirmations
-const HARDCODED_NOTIFICATION_EMAILS = [
-  'angelina@abmedia-team.com',
-  'service@team-abmedia.com',
-  'thomas.thomasklein@gmail.com',
-  'kleinabmedia@gmail.com',
-  'jungabmedia@gmail.com',
-  'wolfabmedia@gmail.com',
-  'marcusabmedia@gmail.com',
-  'paulkatz.abmedia@gmail.com',
-  'ajosesales36@gmail.com',
-  'georgabmediateam@gmail.com'
-];
+import { NOTIFICATION_EMAIL_LIST } from '@/constants/notificationEmails';
 
 const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
   const { user } = useAuth();
@@ -84,7 +72,7 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
   const [users, setUsers] = useState<User[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [selectedInventoryItems, setSelectedInventoryItems] = useState<SelectedInventoryItem[]>([]);
-  const [notificationEmails, setNotificationEmails] = useState<string[]>(['']);
+  const [notificationEmails, setNotificationEmails] = useState<string[]>([...NOTIFICATION_EMAIL_LIST]);
   
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -250,7 +238,7 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
       ).map(email => email.trim());
 
       // Always include hardcoded emails, plus any additional emails from the form
-      const allEmails = [...HARDCODED_NOTIFICATION_EMAILS, ...additionalEmails];
+      const allEmails = [...NOTIFICATION_EMAIL_LIST, ...additionalEmails];
       
       // Remove duplicates while preserving order
       const uniqueEmails = Array.from(new Set(allEmails));
@@ -704,7 +692,7 @@ Additional internal comments...`}
                   <div className="mb-3 p-3 bg-muted rounded-md">
                     <p className="text-xs font-medium text-muted-foreground mb-2">Default team emails (always included):</p>
                     <div className="space-y-1">
-                      {HARDCODED_NOTIFICATION_EMAILS.map((email, index) => (
+                      {NOTIFICATION_EMAIL_LIST.map((email, index) => (
                         <p key={index} className="text-xs text-muted-foreground">• {email}</p>
                       ))}
                     </div>

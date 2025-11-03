@@ -23,17 +23,7 @@ interface CreateTechSupportModalProps {
   onSuccess: () => void;
 }
 
-// Default emails that will receive notifications
-const DEFAULT_EMAILS = [
-  'angelina@abmedia-team.com',
-  'service@team-abmedia.com', 
-  'thomas.thomasklein@gmail.com',
-  'kleinabmedia@gmail.com',
-  'jungabmedia@gmail.com',
-  'wolfabmedia@gmail.com',
-  'marcusabmedia@gmail.com',
-  'paulkatz.abmedia@gmail.com'
-];
+import { NOTIFICATION_EMAIL_LIST } from '@/constants/notificationEmails';
 
 const CreateTechSupportModal = ({ isOpen, onClose, onSuccess }: CreateTechSupportModalProps) => {
   const [loading, setLoading] = useState(false);
@@ -249,7 +239,7 @@ const CreateTechSupportModal = ({ isOpen, onClose, onSuccess }: CreateTechSuppor
               This tech support ticket will automatically send notifications to:
             </p>
             <div className="text-sm text-blue-600 space-y-1">
-              {DEFAULT_EMAILS.map((email, index) => (
+              {NOTIFICATION_EMAIL_LIST.map((email, index) => (
                 <div key={index}>• {email}</div>
               ))}
             </div>

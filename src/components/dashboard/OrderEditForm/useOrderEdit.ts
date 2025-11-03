@@ -5,6 +5,7 @@ import { OrderService } from "@/services/orderService";
 import { useToast } from "@/hooks/use-toast";
 import { OrderFormData, ValidationErrors, validateOrderForm } from "./validation";
 import { SelectedInventoryItem } from "../InventoryItemsSelector";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ExtendedOrderFormData extends OrderFormData {
   assigned_to?: string;
@@ -170,6 +171,45 @@ export const useOrderEdit = (
       });
       
       console.log('Order updated successfully via edit form');
+
+      // Send order update notification to team
+      try {
+        const { NOTIFICATION_EMAIL_LIST } = await import('@/constants/notificationEmails');
+        const session = await supabase.auth.getSession();
+        
+        console.log('Sending order update notification emails...');
+        
+        const response = await fetch(
+          `https://fjybmlugiqmiggsdrkiq.supabase.co/functions/v1/send-order-confirmation`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${session.data.session?.access_token}`,
+            },
+            body: JSON.stringify({
+              orderData: {
+                ...updateData,
+                id: order.id,
+                created_at: order.created_at,
+                isUpdate: true
+              },
+              emails: [...NOTIFICATION_EMAIL_LIST],
+              assignedToName: updateData.assigned_to_name || order.assigned_to_name || 'Unassigned',
+              selectedInventoryItems: selectedInventoryItems || []
+            }),
+          }
+        );
+
+        if (response.ok) {
+          console.log('Order update notification sent successfully');
+        } else {
+          console.error('Failed to send order update notification:', await response.text());
+        }
+      } catch (emailError) {
+        console.error('Error sending order update notification:', emailError);
+        // Don't block the update if email fails
+      }
       
       setIsEditing(false);
       setValidationErrors({});

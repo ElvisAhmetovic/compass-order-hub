@@ -45,7 +45,8 @@ interface TicketRequest {
     'marcusabmedia@gmail.com',
     'paulkatz.abmedia@gmail.com',
     'ajosesales36@gmail.com',
-    'georgabmediateam@gmail.com'
+    'georgabmediateam@gmail.com',
+    'jannes@scoolfinanceedu.com'
   ];
 
 const handler = async (req: Request): Promise<Response> => {
