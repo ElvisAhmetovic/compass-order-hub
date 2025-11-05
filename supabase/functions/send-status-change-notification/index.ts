@@ -207,7 +207,7 @@ const handler = async (req: Request): Promise<Response> => {
       
       try {
         const emailResponse = await resend.emails.send({
-          from: "CSM Notifications <onboarding@resend.dev>",
+          from: "Empria Dental <noreply@empriadental.de>",
           to: [email],
           subject: emailSubject,
           html: emailHtml,
