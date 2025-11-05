@@ -618,6 +618,24 @@ export class OrderService {
         console.error('Error creating notification:', notificationError);
       }
     }
+
+    // Send email notification to team if enabled
+    try {
+      const { StatusChangeNotificationService } = await import('./statusChangeNotificationService');
+      await StatusChangeNotificationService.notifyStatusChange({
+        orderId: orderId,
+        status: status,
+        enabled: enabled,
+        changedBy: {
+          id: user.id,
+          name: user.user_metadata?.full_name || user.email || 'Unknown'
+        },
+        orderData: currentOrder
+      });
+    } catch (emailError) {
+      console.error('Error sending status change notification:', emailError);
+      // Don't block status update if email fails
+    }
   }
 
   // Get all active statuses for an order

@@ -597,6 +597,128 @@ export type Database = {
           },
         ]
       }
+      notification_logs: {
+        Row: {
+          changed_by_id: string | null
+          changed_by_name: string
+          created_at: string
+          email_error: string | null
+          email_sent: boolean
+          email_subject: string
+          id: string
+          new_status: string | null
+          old_status: string | null
+          order_id: string
+          recipient_emails: string[]
+          sent_at: string | null
+          status_change: string
+        }
+        Insert: {
+          changed_by_id?: string | null
+          changed_by_name: string
+          created_at?: string
+          email_error?: string | null
+          email_sent?: boolean
+          email_subject: string
+          id?: string
+          new_status?: string | null
+          old_status?: string | null
+          order_id: string
+          recipient_emails: string[]
+          sent_at?: string | null
+          status_change: string
+        }
+        Update: {
+          changed_by_id?: string | null
+          changed_by_name?: string
+          created_at?: string
+          email_error?: string | null
+          email_sent?: boolean
+          email_subject?: string
+          id?: string
+          new_status?: string | null
+          old_status?: string | null
+          order_id?: string
+          recipient_emails?: string[]
+          sent_at?: string | null
+          status_change?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_logs_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_settings: {
+        Row: {
+          created_at: string
+          enabled: boolean
+          id: string
+          notify_on_status_cancelled: boolean
+          notify_on_status_complaint: boolean
+          notify_on_status_created: boolean
+          notify_on_status_deleted: boolean
+          notify_on_status_facebook: boolean
+          notify_on_status_google_deletion: boolean
+          notify_on_status_in_progress: boolean
+          notify_on_status_instagram: boolean
+          notify_on_status_invoice_paid: boolean
+          notify_on_status_invoice_sent: boolean
+          notify_on_status_resolved: boolean
+          notify_on_status_review: boolean
+          notify_on_status_trustpilot: boolean
+          notify_on_status_trustpilot_deletion: boolean
+          recipient_emails: string[]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          notify_on_status_cancelled?: boolean
+          notify_on_status_complaint?: boolean
+          notify_on_status_created?: boolean
+          notify_on_status_deleted?: boolean
+          notify_on_status_facebook?: boolean
+          notify_on_status_google_deletion?: boolean
+          notify_on_status_in_progress?: boolean
+          notify_on_status_instagram?: boolean
+          notify_on_status_invoice_paid?: boolean
+          notify_on_status_invoice_sent?: boolean
+          notify_on_status_resolved?: boolean
+          notify_on_status_review?: boolean
+          notify_on_status_trustpilot?: boolean
+          notify_on_status_trustpilot_deletion?: boolean
+          recipient_emails?: string[]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          notify_on_status_cancelled?: boolean
+          notify_on_status_complaint?: boolean
+          notify_on_status_created?: boolean
+          notify_on_status_deleted?: boolean
+          notify_on_status_facebook?: boolean
+          notify_on_status_google_deletion?: boolean
+          notify_on_status_in_progress?: boolean
+          notify_on_status_instagram?: boolean
+          notify_on_status_invoice_paid?: boolean
+          notify_on_status_invoice_sent?: boolean
+          notify_on_status_resolved?: boolean
+          notify_on_status_review?: boolean
+          notify_on_status_trustpilot?: boolean
+          notify_on_status_trustpilot_deletion?: boolean
+          recipient_emails?: string[]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           action_url: string | null

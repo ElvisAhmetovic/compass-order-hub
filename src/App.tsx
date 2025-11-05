@@ -25,6 +25,7 @@ import Settings from "./pages/Settings";
 import Profile from "./pages/Profile";
 import Security from "./pages/Security";
 import EmailManagement from "./pages/EmailManagement";
+import NotificationSettings from "./pages/NotificationSettings";
 import TeamCollaboration from "./pages/TeamCollaboration";
 import Deleted from "./pages/Deleted";
 import Reviews from "./pages/Reviews";
@@ -209,6 +210,13 @@ function App() {
                   <Route path="/email-management" element={
                     <RequireAuth>
                       <EmailManagement />
+                    </RequireAuth>
+                  } />
+                  <Route path="/settings/notifications" element={
+                    <RequireAuth>
+                      <AdminGuard>
+                        <NotificationSettings />
+                      </AdminGuard>
                     </RequireAuth>
                   } />
                   <Route path="/team-collaboration" element={
