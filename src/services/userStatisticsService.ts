@@ -9,10 +9,14 @@ export interface UserStatistics {
   monthlyOrders: number;
   weeklyOrders: number;
   todayOrders: number;
+  customPeriodOrders: number;
   lastOrderDate: string | null;
 }
 
-export const getUserStatistics = async (): Promise<UserStatistics[]> => {
+export const getUserStatistics = async (
+  startDate?: Date,
+  endDate?: Date
+): Promise<UserStatistics[]> => {
   try {
     // Fetch all profiles with user data
     const { data: profiles, error: profilesError } = await supabase
@@ -40,6 +44,9 @@ export const getUserStatistics = async (): Promise<UserStatistics[]> => {
     const startOfWeek = new Date(now);
     startOfWeek.setDate(now.getDate() - 7);
     const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    
+    const customStart = startDate || null;
+    const customEnd = endDate || null;
 
     const statistics: UserStatistics[] = await Promise.all(
       profiles?.map(async (profile) => {
@@ -49,6 +56,13 @@ export const getUserStatistics = async (): Promise<UserStatistics[]> => {
         const monthlyOrders = userOrders.filter(o => new Date(o.created_at) >= startOfMonth).length;
         const weeklyOrders = userOrders.filter(o => new Date(o.created_at) >= startOfWeek).length;
         const todayOrders = userOrders.filter(o => new Date(o.created_at) >= startOfToday).length;
+        
+        const customPeriodOrders = customStart && customEnd
+          ? userOrders.filter(o => {
+              const orderDate = new Date(o.created_at);
+              return orderDate >= customStart && orderDate <= customEnd;
+            }).length
+          : monthlyOrders;
         
         const lastOrder = userOrders.length > 0
           ? userOrders.reduce((latest, order) => 
@@ -69,6 +83,7 @@ export const getUserStatistics = async (): Promise<UserStatistics[]> => {
           monthlyOrders,
           weeklyOrders,
           todayOrders,
+          customPeriodOrders,
           lastOrderDate: lastOrder ? lastOrder.created_at : null,
         };
       }) || []

@@ -9,15 +9,17 @@ import { UserStatisticsTable } from "@/components/user-statistics/UserStatistics
 import { StatisticsFilters } from "@/components/user-statistics/StatisticsFilters";
 import { exportToCSV } from "@/utils/exportStatistics";
 import { useToast } from "@/hooks/use-toast";
+import { DateRange, getDateRangeLabel } from "@/utils/dateRangeHelpers";
 
 const UserStatistics = () => {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
 
   const { data: statistics, isLoading, error } = useQuery({
-    queryKey: ['user-statistics'],
-    queryFn: getUserStatistics,
+    queryKey: ['user-statistics', dateRange],
+    queryFn: () => getUserStatistics(dateRange?.from, dateRange?.to),
     refetchInterval: 60000, // Refresh every minute
   });
 
@@ -35,6 +37,16 @@ const UserStatistics = () => {
     });
   }, [statistics, searchTerm, roleFilter]);
 
+  const periodLabel = useMemo(() => {
+    if (!dateRange) return "This Month";
+    return getDateRangeLabel(dateRange);
+  }, [dateRange]);
+
+  const periodOrders = useMemo(() => {
+    if (!filteredData) return 0;
+    return filteredData.reduce((sum, stat) => sum + stat.customPeriodOrders, 0);
+  }, [filteredData]);
+
   const handleExport = () => {
     if (!filteredData || filteredData.length === 0) {
       toast({
@@ -46,7 +58,7 @@ const UserStatistics = () => {
     }
 
     try {
-      exportToCSV(filteredData);
+      exportToCSV(filteredData, dateRange);
       toast({
         title: "Export successful",
         description: `Exported ${filteredData.length} user statistics to CSV.`,
@@ -65,10 +77,6 @@ const UserStatistics = () => {
     return filteredData.reduce((sum, stat) => sum + stat.lifetimeOrders, 0);
   }, [filteredData]);
 
-  const monthlyOrders = useMemo(() => {
-    if (!filteredData) return 0;
-    return filteredData.reduce((sum, stat) => sum + stat.monthlyOrders, 0);
-  }, [filteredData]);
 
   const weeklyOrders = useMemo(() => {
     if (!filteredData) return 0;
@@ -100,8 +108,8 @@ const UserStatistics = () => {
           </Card>
           <Card>
             <CardHeader className="pb-2">
-              <CardDescription>Orders This Month</CardDescription>
-              <CardTitle className="text-3xl">{monthlyOrders}</CardTitle>
+              <CardDescription>Orders - {periodLabel}</CardDescription>
+              <CardTitle className="text-3xl">{periodOrders}</CardTitle>
             </CardHeader>
           </Card>
           <Card>
@@ -123,8 +131,10 @@ const UserStatistics = () => {
             <StatisticsFilters
               searchValue={searchTerm}
               roleFilter={roleFilter}
+              dateRange={dateRange}
               onSearchChange={setSearchTerm}
               onRoleFilterChange={setRoleFilter}
+              onDateRangeChange={setDateRange}
             />
 
             {isLoading ? (
@@ -136,7 +146,7 @@ const UserStatistics = () => {
                 Failed to load statistics. Please try again later.
               </div>
             ) : (
-              <UserStatisticsTable data={filteredData} />
+              <UserStatisticsTable data={filteredData} dateRange={dateRange} />
             )}
 
             {!isLoading && !error && filteredData.length > 0 && (

@@ -12,15 +12,17 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { UserStatistics } from "@/services/userStatisticsService";
 import { formatDate } from "@/lib/utils";
+import { DateRange, getDateRangeLabel } from "@/utils/dateRangeHelpers";
 
-type SortField = 'userName' | 'lifetimeOrders' | 'monthlyOrders' | 'weeklyOrders' | 'todayOrders';
+type SortField = 'userName' | 'lifetimeOrders' | 'monthlyOrders' | 'weeklyOrders' | 'todayOrders' | 'customPeriodOrders';
 type SortDirection = 'asc' | 'desc' | null;
 
 interface UserStatisticsTableProps {
   data: UserStatistics[];
+  dateRange?: DateRange;
 }
 
-export const UserStatisticsTable = ({ data }: UserStatisticsTableProps) => {
+export const UserStatisticsTable = ({ data, dateRange }: UserStatisticsTableProps) => {
   const [sortField, setSortField] = useState<SortField>('lifetimeOrders');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
 
@@ -108,33 +110,52 @@ export const UserStatisticsTable = ({ data }: UserStatisticsTableProps) => {
                 <SortIcon field="lifetimeOrders" />
               </div>
             </TableHead>
-            <TableHead 
-              className="cursor-pointer select-none"
-              onClick={() => handleSort('monthlyOrders')}
-            >
-              <div className="flex items-center">
-                Monthly
-                <SortIcon field="monthlyOrders" />
-              </div>
-            </TableHead>
-            <TableHead 
-              className="cursor-pointer select-none"
-              onClick={() => handleSort('weeklyOrders')}
-            >
-              <div className="flex items-center">
-                Weekly
-                <SortIcon field="weeklyOrders" />
-              </div>
-            </TableHead>
-            <TableHead 
-              className="cursor-pointer select-none"
-              onClick={() => handleSort('todayOrders')}
-            >
-              <div className="flex items-center">
-                Today
-                <SortIcon field="todayOrders" />
-              </div>
-            </TableHead>
+            {dateRange ? (
+              <TableHead 
+                className="cursor-pointer select-none"
+                onClick={() => handleSort('customPeriodOrders')}
+              >
+                <div className="flex items-center">
+                  <div className="flex flex-col">
+                    <span>Selected Period</span>
+                    <span className="text-xs font-normal text-muted-foreground">
+                      {getDateRangeLabel(dateRange)}
+                    </span>
+                  </div>
+                  <SortIcon field="customPeriodOrders" />
+                </div>
+              </TableHead>
+            ) : (
+              <>
+                <TableHead 
+                  className="cursor-pointer select-none"
+                  onClick={() => handleSort('monthlyOrders')}
+                >
+                  <div className="flex items-center">
+                    Monthly
+                    <SortIcon field="monthlyOrders" />
+                  </div>
+                </TableHead>
+                <TableHead 
+                  className="cursor-pointer select-none"
+                  onClick={() => handleSort('weeklyOrders')}
+                >
+                  <div className="flex items-center">
+                    Weekly
+                    <SortIcon field="weeklyOrders" />
+                  </div>
+                </TableHead>
+                <TableHead 
+                  className="cursor-pointer select-none"
+                  onClick={() => handleSort('todayOrders')}
+                >
+                  <div className="flex items-center">
+                    Today
+                    <SortIcon field="todayOrders" />
+                  </div>
+                </TableHead>
+              </>
+            )}
             <TableHead>Last Order</TableHead>
           </TableRow>
         </TableHeader>
@@ -165,9 +186,17 @@ export const UserStatisticsTable = ({ data }: UserStatisticsTableProps) => {
                 </Badge>
               </TableCell>
               <TableCell className="font-semibold">{stat.lifetimeOrders}</TableCell>
-              <TableCell>{stat.monthlyOrders}</TableCell>
-              <TableCell>{stat.weeklyOrders}</TableCell>
-              <TableCell>{stat.todayOrders}</TableCell>
+              {dateRange ? (
+                <TableCell className="font-semibold text-primary">
+                  {stat.customPeriodOrders}
+                </TableCell>
+              ) : (
+                <>
+                  <TableCell>{stat.monthlyOrders}</TableCell>
+                  <TableCell>{stat.weeklyOrders}</TableCell>
+                  <TableCell>{stat.todayOrders}</TableCell>
+                </>
+              )}
               <TableCell className="text-muted-foreground text-sm">
                 {stat.lastOrderDate ? formatDate(stat.lastOrderDate) : 'Never'}
               </TableCell>
