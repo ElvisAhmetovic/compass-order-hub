@@ -12,6 +12,7 @@ import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Analytics from "./pages/Analytics";
 import Rankings from "./pages/Rankings";
+import UserStatistics from "./pages/UserStatistics";
 import Companies from "./pages/Companies";
 import Inventory from "./pages/Inventory";
 import UserManagement from "./pages/UserManagement";
@@ -134,6 +135,11 @@ function App() {
                   <Route path="/rankings" element={
                     <RequireAuth>
                       <Rankings />
+                    </RequireAuth>
+                  } />
+                  <Route path="/user-statistics" element={
+                    <RequireAuth>
+                      <UserStatistics />
                     </RequireAuth>
                   } />
                   <Route path="/companies" element={
