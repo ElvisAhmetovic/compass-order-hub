@@ -52,27 +52,46 @@ export const getRankingsByDateRange = async (
   endDate: Date
 ): Promise<{ rankings: RankingData[]; summary: RankingsSummary }> => {
   try {
-    // Query orders with profile information
-    const { data: orders, error } = await supabase
+    // Query orders
+    const { data: orders, error: ordersError } = await supabase
       .from('orders')
-      .select('created_by, created_at, profiles(first_name, last_name)')
+      .select('created_by, created_at')
       .gte('created_at', startDate.toISOString())
       .lte('created_at', endDate.toISOString())
       .not('created_by', 'is', null);
 
-    if (error) {
-      console.error('Error fetching rankings:', error);
-      throw error;
+    if (ordersError) {
+      console.error('Error fetching orders:', ordersError);
+      throw ordersError;
     }
+
+    // Get unique user IDs
+    const userIds = [...new Set(orders?.map(o => o.created_by).filter(Boolean))];
+
+    // Fetch profiles for these users
+    const { data: profiles, error: profilesError } = await supabase
+      .from('profiles')
+      .select('id, first_name, last_name')
+      .in('id', userIds);
+
+    if (profilesError) {
+      console.error('Error fetching profiles:', profilesError);
+      throw profilesError;
+    }
+
+    // Create a map of user profiles
+    const profileMap = new Map(
+      profiles?.map(p => [p.id, `${p.first_name || ''} ${p.last_name || ''}`.trim() || 'Unknown User']) || []
+    );
 
     // Group orders by user and count
     const userOrderCounts = new Map<string, { name: string; count: number }>();
     let totalOrders = 0;
 
     orders?.forEach((order: any) => {
-      if (order.created_by && order.profiles) {
+      if (order.created_by) {
         const userId = order.created_by;
-        const userName = `${order.profiles.first_name || ''} ${order.profiles.last_name || ''}`.trim() || 'Unknown User';
+        const userName = profileMap.get(userId) || 'Unknown User';
         
         if (userOrderCounts.has(userId)) {
           userOrderCounts.get(userId)!.count++;

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import Layout from '@/components/layout/Layout';
+import Sidebar from '@/components/dashboard/Sidebar';
 import { PeriodFilter } from '@/components/rankings/PeriodFilter';
 import { RankingCard } from '@/components/rankings/RankingCard';
 import { StatsSummary } from '@/components/rankings/StatsSummary';
@@ -43,8 +44,11 @@ const Rankings = () => {
   };
 
   return (
-    <Layout>
-      <div className="container mx-auto p-6 space-y-6">
+    <div className="flex min-h-screen">
+      <Sidebar />
+      <div className="flex-1">
+        <Layout>
+          <div className="container mx-auto p-6 space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -139,7 +143,9 @@ const Rankings = () => {
           </CardContent>
         </Card>
       </div>
-    </Layout>
+        </Layout>
+      </div>
+    </div>
   );
 };
 
