@@ -1,8 +1,10 @@
+import { useEffect, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { RankingData } from '@/services/rankingService';
 import { Crown, Medal, Trophy } from 'lucide-react';
+import { useConfetti } from '@/hooks/useConfetti';
 
 interface RankingCardProps {
   ranking: RankingData;
@@ -10,6 +12,33 @@ interface RankingCardProps {
 }
 
 export const RankingCard = ({ ranking, maxCount }: RankingCardProps) => {
+  const cardRef = useRef<HTMLDivElement>(null);
+  const { triggerConfetti } = useConfetti();
+  const hasTriggeredRef = useRef(false);
+
+  useEffect(() => {
+    // Only trigger for rank 1 and only once per card appearance
+    if (ranking.rank === 1 && !hasTriggeredRef.current && cardRef.current) {
+      const timer = setTimeout(() => {
+        const rect = cardRef.current?.getBoundingClientRect();
+        if (rect) {
+          // Calculate origin point relative to the card position
+          const originX = (rect.left + rect.width / 2) / window.innerWidth;
+          const originY = (rect.top + rect.height / 2) / window.innerHeight;
+          
+          triggerConfetti({
+            origin: { x: originX, y: originY },
+            colors: ['#FFD700', '#FFA500', '#FFED4E', '#F59E0B'],
+          });
+          
+          hasTriggeredRef.current = true;
+        }
+      }, 600); // Delay to sync with card entrance animation
+
+      return () => clearTimeout(timer);
+    }
+  }, [ranking.rank, triggerConfetti]);
+
   const getRankIcon = (rank: number) => {
     switch (rank) {
       case 1:
@@ -39,7 +68,7 @@ export const RankingCard = ({ ranking, maxCount }: RankingCardProps) => {
   const progressPercentage = maxCount > 0 ? (ranking.orderCount / maxCount) * 100 : 0;
 
   return (
-    <Card className={`relative transition-all duration-300 ease-in-out hover:shadow-lg hover:scale-[1.02] hover:-translate-y-1 bg-gradient-to-br ${getRankColor(ranking.rank)}`}>
+    <Card ref={cardRef} className={`relative transition-all duration-300 ease-in-out hover:shadow-lg hover:scale-[1.02] hover:-translate-y-1 bg-gradient-to-br ${getRankColor(ranking.rank)}`}>
       {ranking.rank === 1 && (
         <div className="absolute inset-0 bg-yellow-500/10 rounded-lg blur-xl animate-pulse pointer-events-none" />
       )}
