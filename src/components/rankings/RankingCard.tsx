@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { RankingData } from '@/services/rankingService';
 import { Crown, Medal, Trophy } from 'lucide-react';
 import { useConfetti } from '@/hooks/useConfetti';
@@ -68,11 +69,29 @@ export const RankingCard = ({ ranking, maxCount }: RankingCardProps) => {
   const progressPercentage = maxCount > 0 ? (ranking.orderCount / maxCount) * 100 : 0;
 
   return (
-    <Card ref={cardRef} className={`relative transition-all duration-300 ease-in-out hover:shadow-lg hover:scale-[1.02] hover:-translate-y-1 bg-gradient-to-br ${getRankColor(ranking.rank)}`}>
-      {ranking.rank === 1 && (
-        <div className="absolute inset-0 bg-yellow-500/10 rounded-lg blur-xl animate-pulse pointer-events-none" />
-      )}
-      <CardContent className="p-6 relative">
+    <TooltipProvider>
+      <Card ref={cardRef} className={`relative transition-all duration-300 ease-in-out hover:shadow-lg hover:scale-[1.02] hover:-translate-y-1 bg-gradient-to-br ${getRankColor(ranking.rank)}`}>
+        {ranking.rank === 1 && (
+          <>
+            <div className="absolute inset-0 bg-yellow-500/10 rounded-lg blur-xl animate-pulse pointer-events-none" />
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="absolute top-2 right-2 z-10 cursor-pointer hover:scale-110 transition-transform duration-200">
+                  <img 
+                    src="https://media.giphy.com/media/87xihBthJ1DkA/giphy.gif" 
+                    alt="Wolf of Wall Street - Pump those numbers up"
+                    className="w-16 h-16 md:w-20 md:h-20 rounded-lg shadow-lg border-2 border-yellow-500/50 object-cover"
+                    loading="lazy"
+                  />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p className="font-semibold">👑 Those are rookie numbers!</p>
+              </TooltipContent>
+            </Tooltip>
+          </>
+        )}
+        <CardContent className="p-6 relative">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-4">
             <div className={`flex items-center justify-center w-12 h-12 rounded-full bg-muted ${ranking.rank <= 3 ? 'transition-transform duration-200 hover:scale-110' : ''} ${ranking.rank === 1 ? 'animate-pulse' : ''}`}>
@@ -113,5 +132,6 @@ export const RankingCard = ({ ranking, maxCount }: RankingCardProps) => {
         )}
       </CardContent>
     </Card>
+    </TooltipProvider>
   );
 };
