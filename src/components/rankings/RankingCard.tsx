@@ -1,0 +1,82 @@
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import { RankingData } from '@/services/rankingService';
+import { Crown, Medal, Trophy } from 'lucide-react';
+
+interface RankingCardProps {
+  ranking: RankingData;
+  maxCount: number;
+}
+
+export const RankingCard = ({ ranking, maxCount }: RankingCardProps) => {
+  const getRankIcon = (rank: number) => {
+    switch (rank) {
+      case 1:
+        return <Crown className="h-6 w-6 text-yellow-500" />;
+      case 2:
+        return <Medal className="h-6 w-6 text-gray-400" />;
+      case 3:
+        return <Medal className="h-6 w-6 text-amber-600" />;
+      default:
+        return null;
+    }
+  };
+
+  const getRankColor = (rank: number) => {
+    switch (rank) {
+      case 1:
+        return 'from-yellow-500/20 to-yellow-600/5 border-yellow-500/30';
+      case 2:
+        return 'from-gray-400/20 to-gray-500/5 border-gray-400/30';
+      case 3:
+        return 'from-amber-600/20 to-amber-700/5 border-amber-600/30';
+      default:
+        return 'from-background to-background';
+    }
+  };
+
+  const progressPercentage = maxCount > 0 ? (ranking.orderCount / maxCount) * 100 : 0;
+
+  return (
+    <Card className={`transition-all hover:shadow-md bg-gradient-to-br ${getRankColor(ranking.rank)}`}>
+      <CardContent className="p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center justify-center w-12 h-12 rounded-full bg-muted">
+              {getRankIcon(ranking.rank) || (
+                <span className="text-xl font-bold text-muted-foreground">#{ranking.rank}</span>
+              )}
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold">{ranking.userName}</h3>
+              <p className="text-sm text-muted-foreground">
+                {ranking.orderCount} {ranking.orderCount === 1 ? 'order' : 'orders'}
+              </p>
+            </div>
+          </div>
+          <div className="text-right">
+            <Badge variant={ranking.rank <= 3 ? 'default' : 'secondary'}>
+              {ranking.percentage.toFixed(1)}%
+            </Badge>
+          </div>
+        </div>
+        
+        <div className="space-y-2">
+          <div className="flex justify-between text-xs text-muted-foreground">
+            <span>Progress</span>
+            <span>{ranking.orderCount} / {maxCount}</span>
+          </div>
+          <Progress value={progressPercentage} className="h-2" />
+        </div>
+
+        {ranking.rank === 1 && (
+          <div className="mt-4 flex items-center gap-2 text-sm text-primary font-medium">
+            <Trophy className="h-4 w-4" />
+            <span>Current Leader</span>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+};

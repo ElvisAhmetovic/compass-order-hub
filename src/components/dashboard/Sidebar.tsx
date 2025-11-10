@@ -22,7 +22,8 @@ import {
   Facebook,
   Instagram,
   UserX,
-  Wrench
+  Wrench,
+  Trophy
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
@@ -39,6 +40,7 @@ const Sidebar = () => {
   const menuItems = [
     { href: '/dashboard', icon: Home, label: 'Dashboard', roles: ['admin', 'agent', 'user'] },
     { href: '/analytics', icon: BarChart3, label: 'Analytics', roles: ['admin', 'agent'] },
+    { href: '/rankings', icon: Trophy, label: 'Rankings', roles: ['admin', 'agent'] },
     { href: '/support', icon: HelpCircle, label: 'Support', roles: ['admin', 'agent', 'user'] },
     { href: '/tech-support', icon: Wrench, label: 'Tech Support', roles: ['admin', 'agent'] },
     { href: '/active-orders', icon: FileText, label: 'My Orders', roles: ['user'] }, // User-specific orders view

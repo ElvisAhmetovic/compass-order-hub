@@ -11,6 +11,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Analytics from "./pages/Analytics";
+import Rankings from "./pages/Rankings";
 import Companies from "./pages/Companies";
 import Inventory from "./pages/Inventory";
 import UserManagement from "./pages/UserManagement";
@@ -128,6 +129,11 @@ function App() {
                   <Route path="/analytics" element={
                     <RequireAuth>
                       <Analytics />
+                    </RequireAuth>
+                  } />
+                  <Route path="/rankings" element={
+                    <RequireAuth>
+                      <Rankings />
                     </RequireAuth>
                   } />
                   <Route path="/companies" element={
