@@ -131,12 +131,17 @@ const Rankings = () => {
               </div>
             ) : (
               <div className="space-y-4">
-                {rankings.map((ranking) => (
-                  <RankingCard
+                {rankings.map((ranking, index) => (
+                  <div
                     key={ranking.userId}
-                    ranking={ranking}
-                    maxCount={maxCount}
-                  />
+                    className="animate-fade-in"
+                    style={{ animationDelay: `${index * 100}ms`, animationFillMode: 'both' }}
+                  >
+                    <RankingCard
+                      ranking={ranking}
+                      maxCount={maxCount}
+                    />
+                  </div>
                 ))}
               </div>
             )}

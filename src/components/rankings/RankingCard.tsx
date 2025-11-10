@@ -39,11 +39,14 @@ export const RankingCard = ({ ranking, maxCount }: RankingCardProps) => {
   const progressPercentage = maxCount > 0 ? (ranking.orderCount / maxCount) * 100 : 0;
 
   return (
-    <Card className={`transition-all hover:shadow-md bg-gradient-to-br ${getRankColor(ranking.rank)}`}>
-      <CardContent className="p-6">
+    <Card className={`relative transition-all duration-300 ease-in-out hover:shadow-lg hover:scale-[1.02] hover:-translate-y-1 bg-gradient-to-br ${getRankColor(ranking.rank)}`}>
+      {ranking.rank === 1 && (
+        <div className="absolute inset-0 bg-yellow-500/10 rounded-lg blur-xl animate-pulse pointer-events-none" />
+      )}
+      <CardContent className="p-6 relative">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-4">
-            <div className="flex items-center justify-center w-12 h-12 rounded-full bg-muted">
+            <div className={`flex items-center justify-center w-12 h-12 rounded-full bg-muted ${ranking.rank <= 3 ? 'transition-transform duration-200 hover:scale-110' : ''} ${ranking.rank === 1 ? 'animate-pulse' : ''}`}>
               {getRankIcon(ranking.rank) || (
                 <span className="text-xl font-bold text-muted-foreground">#{ranking.rank}</span>
               )}
@@ -56,7 +59,10 @@ export const RankingCard = ({ ranking, maxCount }: RankingCardProps) => {
             </div>
           </div>
           <div className="text-right">
-            <Badge variant={ranking.rank <= 3 ? 'default' : 'secondary'}>
+            <Badge 
+              variant={ranking.rank <= 3 ? 'default' : 'secondary'}
+              className="animate-scale-in"
+            >
               {ranking.percentage.toFixed(1)}%
             </Badge>
           </div>
@@ -67,13 +73,13 @@ export const RankingCard = ({ ranking, maxCount }: RankingCardProps) => {
             <span>Progress</span>
             <span>{ranking.orderCount} / {maxCount}</span>
           </div>
-          <Progress value={progressPercentage} className="h-2" />
+          <Progress value={progressPercentage} className="h-2 transition-all duration-1000 ease-out" />
         </div>
 
         {ranking.rank === 1 && (
-          <div className="mt-4 flex items-center gap-2 text-sm text-primary font-medium">
-            <Trophy className="h-4 w-4" />
-            <span>Current Leader</span>
+          <div className="mt-4 flex items-center gap-2 text-sm text-primary font-medium animate-fade-in">
+            <Trophy className="h-4 w-4 animate-bounce" />
+            <span className="animate-pulse">Current Leader</span>
           </div>
         )}
       </CardContent>
