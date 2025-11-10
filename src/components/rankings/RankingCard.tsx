@@ -78,7 +78,7 @@ export const RankingCard = ({ ranking, maxCount }: RankingCardProps) => {
               <TooltipTrigger asChild>
                 <div className="absolute top-2 right-2 z-10 cursor-pointer hover:scale-110 transition-transform duration-200">
                   <img 
-                    src="https://media.giphy.com/media/87xihBthJ1DkA/giphy.gif" 
+                    src="https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExbnU1c3ZleDJ5eGN6b2QyMHJ1dDg5eWJjZGZmeWs3NDBxZjhqdmdxeCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/YVBC4HdSpB7z2/giphy.gif" 
                     alt="Wolf of Wall Street - Pump those numbers up"
                     className="w-16 h-16 md:w-20 md:h-20 rounded-lg shadow-lg border-2 border-yellow-500/50 object-cover"
                     loading="lazy"
