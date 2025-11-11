@@ -1276,6 +1276,54 @@ export type Database = {
         }
         Relationships: []
       }
+      team_challenges: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          created_by: string | null
+          description: string
+          end_date: string
+          id: string
+          is_active: boolean | null
+          is_completed: boolean | null
+          name: string
+          period: string
+          start_date: string
+          target: number
+          updated_at: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description: string
+          end_date: string
+          id?: string
+          is_active?: boolean | null
+          is_completed?: boolean | null
+          name: string
+          period: string
+          start_date: string
+          target: number
+          updated_at?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string
+          end_date?: string
+          id?: string
+          is_active?: boolean | null
+          is_completed?: boolean | null
+          name?: string
+          period?: string
+          start_date?: string
+          target?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       tech_support_tickets: {
         Row: {
           action_needed: string

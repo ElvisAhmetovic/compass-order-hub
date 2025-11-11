@@ -6,6 +6,7 @@ import { PeriodFilter } from '@/components/rankings/PeriodFilter';
 import { RankingCard } from '@/components/rankings/RankingCard';
 import { StatsSummary } from '@/components/rankings/StatsSummary';
 import { ActivityFeed } from '@/components/rankings/ActivityFeed';
+import { TeamChallenge } from '@/components/rankings/TeamChallenge';
 import { getRankingsByPeriod } from '@/services/rankingService';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Trophy, RefreshCw } from 'lucide-react';
@@ -92,6 +93,9 @@ const Rankings = () => {
 
         {/* Stats Summary */}
         <StatsSummary summary={summary} isLoading={isLoading} />
+
+        {/* Team Challenges */}
+        <TeamChallenge />
 
         {/* Main Content Grid - Rankings and Activity Feed */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
