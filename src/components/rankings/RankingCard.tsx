@@ -6,16 +6,35 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { RankingData } from '@/services/rankingService';
 import { Crown, Medal, Trophy } from 'lucide-react';
 import { useConfetti } from '@/hooks/useConfetti';
+import { useQuery } from '@tanstack/react-query';
+import { achievementsService } from '@/services/achievementsService';
+import { streaksService } from '@/services/streaksService';
+import { AchievementsList } from './AchievementsList';
+import { StreakIndicator } from './StreakIndicator';
 
 interface RankingCardProps {
   ranking: RankingData;
   maxCount: number;
+  showAchievements?: boolean;
+  showStreak?: boolean;
 }
 
-export const RankingCard = ({ ranking, maxCount }: RankingCardProps) => {
+export const RankingCard = ({ ranking, maxCount, showAchievements = true, showStreak = true }: RankingCardProps) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const { triggerConfetti } = useConfetti();
   const hasTriggeredRef = useRef(false);
+
+  const { data: userAchievements } = useQuery({
+    queryKey: ['user-achievements', ranking.userId],
+    queryFn: () => achievementsService.getUserAchievements(ranking.userId),
+    enabled: showAchievements,
+  });
+
+  const { data: userStreak } = useQuery({
+    queryKey: ['user-streak', ranking.userId],
+    queryFn: () => streaksService.getUserStreak(ranking.userId),
+    enabled: showStreak,
+  });
 
   useEffect(() => {
     // Only trigger for rank 1 and only once per card appearance
@@ -99,11 +118,30 @@ export const RankingCard = ({ ranking, maxCount }: RankingCardProps) => {
                 <span className="text-xl font-bold text-muted-foreground">#{ranking.rank}</span>
               )}
             </div>
-            <div>
+            <div className="flex-1">
               <h3 className="text-lg font-semibold">{ranking.userName}</h3>
               <p className="text-sm text-muted-foreground">
                 {ranking.orderCount} {ranking.orderCount === 1 ? 'order' : 'orders'}
               </p>
+              
+              {/* Achievements and Streak Row */}
+              {(showStreak || showAchievements) && (
+                <div className="flex items-center gap-3 mt-2">
+                  {showStreak && userStreak && (
+                    <StreakIndicator
+                      currentStreak={userStreak.current_streak}
+                      longestStreak={userStreak.longest_streak}
+                      size="sm"
+                    />
+                  )}
+                  {showAchievements && userAchievements && userAchievements.length > 0 && (
+                    <AchievementsList
+                      achievements={userAchievements}
+                      maxDisplay={3}
+                    />
+                  )}
+                </div>
+              )}
             </div>
           </div>
           <div className="text-right">

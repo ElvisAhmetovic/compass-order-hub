@@ -35,6 +35,8 @@ import { OrderService } from "@/services/orderService";
 import { supabase } from "@/integrations/supabase/client";
 import OrderSearchDropdown from "./OrderSearchDropdown";
 import InventoryItemsSelector, { SelectedInventoryItem } from "./InventoryItemsSelector";
+import { achievementsService } from "@/services/achievementsService";
+import { streaksService } from "@/services/streaksService";
 
 const formSchema = z.object({
   companyName: z.string().min(1, "Company name is required"),
@@ -231,6 +233,45 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
       }
 
       console.log('Order created successfully:', orderResult);
+
+      // Check and unlock achievements for the user
+      try {
+        const newAchievements = await achievementsService.checkAndUnlockAchievements(user.id);
+        const updatedStreak = await streaksService.updateStreakOnOrder(user.id);
+
+        // Show toast for new achievements
+        newAchievements.forEach(achievement => {
+          const achievementData = achievement.achievement as any;
+          if (achievementData) {
+            toast({
+              title: `🎉 Achievement Unlocked: ${achievementData.name}`,
+              description: achievementData.description,
+              duration: 5000,
+            });
+          }
+        });
+
+        // Show toast for streak milestones
+        if (updatedStreak.current_streak > 0 && updatedStreak.current_streak % 7 === 0) {
+          toast({
+            title: `🔥 ${updatedStreak.current_streak} Day Streak!`,
+            description: "You're on fire! Keep it up!",
+            duration: 5000,
+          });
+        }
+
+        // Show toast for new personal record
+        if (updatedStreak.current_streak === updatedStreak.longest_streak && updatedStreak.current_streak > 3) {
+          toast({
+            title: "🎯 New Personal Record!",
+            description: `${updatedStreak.current_streak} days is your longest streak ever!`,
+            duration: 5000,
+          });
+        }
+      } catch (achievementError) {
+        console.error('Error checking achievements:', achievementError);
+        // Don't show error to user, just log it
+      }
 
       // Combine hardcoded emails with any additional valid emails from the form
       const additionalEmails = notificationEmails.filter(email => 

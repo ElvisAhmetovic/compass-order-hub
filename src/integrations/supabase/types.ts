@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      achievement_definitions: {
+        Row: {
+          category: string
+          created_at: string | null
+          criteria: Json
+          description: string
+          icon: string
+          id: string
+          name: string
+          points: number | null
+          tier: string
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          criteria: Json
+          description: string
+          icon: string
+          id: string
+          name: string
+          points?: number | null
+          tier: string
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          criteria?: Json
+          description?: string
+          icon?: string
+          id?: string
+          name?: string
+          points?: number | null
+          tier?: string
+        }
+        Relationships: []
+      }
       app_users: {
         Row: {
           created_at: string
@@ -1361,6 +1397,38 @@ export type Database = {
           },
         ]
       }
+      user_achievements: {
+        Row: {
+          achievement_id: string
+          id: string
+          progress: number | null
+          unlocked_at: string | null
+          user_id: string
+        }
+        Insert: {
+          achievement_id: string
+          id?: string
+          progress?: number | null
+          unlocked_at?: string | null
+          user_id: string
+        }
+        Update: {
+          achievement_id?: string
+          id?: string
+          progress?: number | null
+          unlocked_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_achievements_achievement_id_fkey"
+            columns: ["achievement_id"]
+            isOneToOne: false
+            referencedRelation: "achievement_definitions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_audit_logs: {
         Row: {
           action: string
@@ -1511,6 +1579,36 @@ export type Database = {
           two_factor_enabled?: boolean | null
           two_factor_secret?: string | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      user_streaks: {
+        Row: {
+          created_at: string | null
+          current_streak: number | null
+          last_order_date: string | null
+          longest_streak: number | null
+          streak_freezes_used: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          current_streak?: number | null
+          last_order_date?: string | null
+          longest_streak?: number | null
+          streak_freezes_used?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          current_streak?: number | null
+          last_order_date?: string | null
+          longest_streak?: number | null
+          streak_freezes_used?: number | null
+          updated_at?: string | null
+          user_id?: string
         }
         Relationships: []
       }
