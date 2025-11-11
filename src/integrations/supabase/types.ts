@@ -1249,6 +1249,33 @@ export type Database = {
         }
         Relationships: []
       }
+      team_activities: {
+        Row: {
+          activity_type: string
+          created_at: string | null
+          data: Json
+          id: string
+          user_id: string
+          user_name: string
+        }
+        Insert: {
+          activity_type: string
+          created_at?: string | null
+          data?: Json
+          id?: string
+          user_id: string
+          user_name: string
+        }
+        Update: {
+          activity_type?: string
+          created_at?: string | null
+          data?: Json
+          id?: string
+          user_id?: string
+          user_name?: string
+        }
+        Relationships: []
+      }
       tech_support_tickets: {
         Row: {
           action_needed: string

@@ -37,6 +37,7 @@ import OrderSearchDropdown from "./OrderSearchDropdown";
 import InventoryItemsSelector, { SelectedInventoryItem } from "./InventoryItemsSelector";
 import { achievementsService } from "@/services/achievementsService";
 import { streaksService } from "@/services/streaksService";
+import { activityService } from "@/services/activityService";
 
 const formSchema = z.object({
   companyName: z.string().min(1, "Company name is required"),
@@ -239,20 +240,40 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
         const newAchievements = await achievementsService.checkAndUnlockAchievements(user.id);
         const updatedStreak = await streaksService.updateStreakOnOrder(user.id);
 
-        // Show toast for new achievements
-        newAchievements.forEach(achievement => {
+        // Log new achievements to activity feed
+        for (const achievement of newAchievements) {
           const achievementData = achievement.achievement as any;
           if (achievementData) {
+            await activityService.logActivity(
+              user.id,
+              user.full_name || 'User',
+              'achievement_unlocked',
+              {
+                achievementName: achievementData.name,
+                achievementIcon: achievementData.icon,
+                achievementTier: achievementData.tier,
+              }
+            );
+
             toast({
               title: `🎉 Achievement Unlocked: ${achievementData.name}`,
               description: achievementData.description,
               duration: 5000,
             });
           }
-        });
+        }
 
-        // Show toast for streak milestones
+        // Log streak milestones to activity feed
         if (updatedStreak.current_streak > 0 && updatedStreak.current_streak % 7 === 0) {
+          await activityService.logActivity(
+            user.id,
+            user.full_name || 'User',
+            'streak_milestone',
+            {
+              streakCount: updatedStreak.current_streak,
+            }
+          );
+
           toast({
             title: `🔥 ${updatedStreak.current_streak} Day Streak!`,
             description: "You're on fire! Keep it up!",
@@ -267,6 +288,24 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
             description: `${updatedStreak.current_streak} days is your longest streak ever!`,
             duration: 5000,
           });
+        }
+
+        // Log order creation milestone (every 10th order)
+        const { count: totalOrders } = await supabase
+          .from('orders')
+          .select('*', { count: 'exact', head: true })
+          .eq('created_by', user.id)
+          .is('deleted_at', null);
+
+        if (totalOrders && totalOrders % 10 === 0) {
+          await activityService.logActivity(
+            user.id,
+            user.full_name || 'User',
+            'milestone_reached',
+            {
+              milestoneCount: totalOrders,
+            }
+          );
         }
       } catch (achievementError) {
         console.error('Error checking achievements:', achievementError);

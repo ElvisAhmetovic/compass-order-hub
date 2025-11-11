@@ -5,6 +5,7 @@ import Sidebar from '@/components/dashboard/Sidebar';
 import { PeriodFilter } from '@/components/rankings/PeriodFilter';
 import { RankingCard } from '@/components/rankings/RankingCard';
 import { StatsSummary } from '@/components/rankings/StatsSummary';
+import { ActivityFeed } from '@/components/rankings/ActivityFeed';
 import { getRankingsByPeriod } from '@/services/rankingService';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Trophy, RefreshCw } from 'lucide-react';
@@ -92,61 +93,71 @@ const Rankings = () => {
         {/* Stats Summary */}
         <StatsSummary summary={summary} isLoading={isLoading} />
 
-        {/* Rankings List */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Leaderboard - {getPeriodLabel()}</CardTitle>
-            <CardDescription>
-              {!isLoading && rankings.length > 0 && (
-                <span className="text-xs">
-                  Last updated: {new Date().toLocaleTimeString()}
-                </span>
-              )}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <div className="space-y-4">
-                {[1, 2, 3, 4, 5].map((i) => (
-                  <Card key={i} className="animate-pulse">
-                    <CardContent className="p-6">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-full bg-muted"></div>
-                        <div className="flex-1 space-y-2">
-                          <div className="h-4 bg-muted rounded w-32"></div>
-                          <div className="h-3 bg-muted rounded w-24"></div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            ) : rankings.length === 0 ? (
-              <div className="text-center py-12">
-                <Trophy className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No Rankings Yet</h3>
-                <p className="text-muted-foreground">
-                  No orders have been created in this period.
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {rankings.map((ranking, index) => (
-                  <div
-                    key={ranking.userId}
-                    className="animate-fade-in"
-                    style={{ animationDelay: `${index * 100}ms`, animationFillMode: 'both' }}
-                  >
-                    <RankingCard
-                      ranking={ranking}
-                      maxCount={maxCount}
-                    />
+        {/* Main Content Grid - Rankings and Activity Feed */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Rankings List - Takes 2 columns */}
+          <div className="lg:col-span-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>Leaderboard - {getPeriodLabel()}</CardTitle>
+                <CardDescription>
+                  {!isLoading && rankings.length > 0 && (
+                    <span className="text-xs">
+                      Last updated: {new Date().toLocaleTimeString()}
+                    </span>
+                  )}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {isLoading ? (
+                  <div className="space-y-4">
+                    {[1, 2, 3, 4, 5].map((i) => (
+                      <Card key={i} className="animate-pulse">
+                        <CardContent className="p-6">
+                          <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-full bg-muted"></div>
+                            <div className="flex-1 space-y-2">
+                              <div className="h-4 bg-muted rounded w-32"></div>
+                              <div className="h-3 bg-muted rounded w-24"></div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
                   </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                ) : rankings.length === 0 ? (
+                  <div className="text-center py-12">
+                    <Trophy className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">No Rankings Yet</h3>
+                    <p className="text-muted-foreground">
+                      No orders have been created in this period.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {rankings.map((ranking, index) => (
+                      <div
+                        key={ranking.userId}
+                        className="animate-fade-in"
+                        style={{ animationDelay: `${index * 100}ms`, animationFillMode: 'both' }}
+                      >
+                        <RankingCard
+                          ranking={ranking}
+                          maxCount={maxCount}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Activity Feed - Takes 1 column */}
+          <div className="lg:col-span-1">
+            <ActivityFeed />
+          </div>
+        </div>
       </div>
         </Layout>
       </div>
