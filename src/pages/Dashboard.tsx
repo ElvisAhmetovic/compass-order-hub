@@ -8,7 +8,7 @@ import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import { Order, UserRole, OrderStatus } from "@/types";
 import ActiveOrdersTabs from "@/components/dashboard/ActiveOrdersTabs";
 import Sidebar from "@/components/dashboard/Sidebar";
-import { useLocation } from "react-router-dom";
+import { useLocation, useSearchParams } from "react-router-dom";
 import { useOrderModal } from "@/hooks/useOrderModal";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ import { MigrationService } from "@/services/migrationService";
 import { toast } from "@/hooks/use-toast";
 import TeamEncouragement from "@/components/dashboard/TeamEncouragement";
 import TemporaryNotificationBanner from "@/components/notifications/TemporaryNotificationBanner";
+import { supabase } from "@/integrations/supabase/client";
 
 const Dashboard = () => {
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -24,6 +25,7 @@ const Dashboard = () => {
   const [showMigrationButton, setShowMigrationButton] = useState(false);
   const location = useLocation();
   const path = location.pathname;
+  const [searchParams] = useSearchParams();
   
   // Use the order modal hook
   const { currentOrder, isOpen, open, close } = useOrderModal();
@@ -32,6 +34,43 @@ const Dashboard = () => {
   const { user } = useAuth();
   const userRole: UserRole = user?.role || "user";
   const isAdmin = userRole === "admin";
+
+  // Handle orderId from URL query parameter (for email links)
+  useEffect(() => {
+    const orderId = searchParams.get('orderId');
+    if (orderId && user) {
+      const fetchAndOpenOrder = async () => {
+        try {
+          const { data: order, error } = await supabase
+            .from('orders')
+            .select('*')
+            .eq('id', orderId)
+            .single();
+
+          if (error) throw error;
+
+          if (order) {
+            open(order as Order);
+          } else {
+            toast({
+              title: "Order Not Found",
+              description: "The order you're looking for doesn't exist.",
+              variant: "destructive"
+            });
+          }
+        } catch (error) {
+          console.error('Error fetching order:', error);
+          toast({
+            title: "Error",
+            description: "Failed to load the order. Please try again.",
+            variant: "destructive"
+          });
+        }
+      };
+
+      fetchAndOpenOrder();
+    }
+  }, [searchParams, user, open]);
 
   // Check if there's localStorage data to migrate
   useEffect(() => {

@@ -100,7 +100,8 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Generate email content
     const emailSubject = `[CSM Alert] Status Update: ${order.company_name} - ${oldStatus || "New"} → ${newStatus}`;
-    const dashboardLink = `https://fjybmlugiqmiggsdrkiq.supabase.co/dashboard/orders/${orderId}`;
+    const appUrl = Deno.env.get("APP_URL") || "https://www.empriadental.de";
+    const dashboardLink = `${appUrl}/dashboard?orderId=${orderId}`;
     const timestamp = new Date().toLocaleString("en-US", {
       dateStyle: "full",
       timeStyle: "short",
