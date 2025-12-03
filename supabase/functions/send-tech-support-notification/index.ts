@@ -126,6 +126,7 @@ const handler = async (req: Request): Promise<Response> => {
       });
     };
 
+    const appUrl = Deno.env.get("APP_URL") || "https://www.empriadental.de";
     const emailSubject = `🔧 Tech Support Ticket - ${ticketData.company_name}`;
     
     const emailHtml = `
@@ -201,7 +202,7 @@ const handler = async (req: Request): Promise<Response> => {
             <div style="space-y: 15px;">
               <div style="margin-bottom: 15px;">
                 <strong style="color: #374151; display: block; margin-bottom: 5px;">🔗 Dashboard Link:</strong>
-                <a href="https://ab4babd7-978c-4acd-b78b-5f6332997961.lovableproject.com/tech-support" style="color: #2563eb; text-decoration: none; font-weight: 500;" target="_blank">View in Dashboard</a>
+                <a href="${appUrl}/tech-support?ticketId=${ticketData.id}" style="color: #2563eb; text-decoration: none; font-weight: 500;" target="_blank">View in Dashboard</a>
               </div>
               
               <div style="margin-bottom: 15px;">
@@ -282,7 +283,7 @@ const handler = async (req: Request): Promise<Response> => {
             Diese E-Mail wurde automatisch vom ABMedia Tech Support System generiert.
           </p>
           <p style="margin: 0; color: #6b7280; font-size: 14px;">
-            Für weitere Informationen besuchen Sie das <a href="https://ab4babd7-978c-4acd-b78b-5f6332997961.lovableproject.com/tech-support" style="color: #2563eb; text-decoration: none; font-weight: 500;" target="_blank">Tech Support Dashboard</a>
+            Für weitere Informationen besuchen Sie das <a href="${appUrl}/tech-support" style="color: #2563eb; text-decoration: none; font-weight: 500;" target="_blank">Tech Support Dashboard</a>
           </p>
         </div>
       </body>
