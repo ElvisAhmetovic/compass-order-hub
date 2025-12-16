@@ -259,6 +259,9 @@ const handler = async (req: Request): Promise<Response> => {
     await new Promise(resolve => setTimeout(resolve, 500));
 
     // Build team notification email
+    // Always use "Thomas Klein" as the sender name for team notifications
+    const displaySenderName = "Thomas Klein";
+    
     const teamEmailHtml = `
       <!DOCTYPE html>
       <html>
@@ -272,7 +275,7 @@ const handler = async (req: Request): Promise<Response> => {
         </div>
         
         <div style="background: #ffffff; padding: 20px; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 10px 10px;">
-          <p>A payment reminder has been sent to the following client by <strong>${sentByName}</strong>:</p>
+          <p>A payment reminder has been sent to the following client by <strong>${displaySenderName}</strong>:</p>
           
           <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin: 15px 0;">
             <table style="width: 100%; border-collapse: collapse;">
@@ -356,6 +359,29 @@ const handler = async (req: Request): Promise<Response> => {
         console.error("Error logging email to database:", logError);
       } else {
         console.log("Email log saved to database successfully");
+      }
+
+      // Also log to payment_reminder_logs for the Activity Log panel
+      const { error: reminderLogError } = await supabaseClient
+        .from("payment_reminder_logs")
+        .insert({
+          order_id: orderId,
+          reminder_id: null,
+          action: "sent",
+          actor_name: displaySenderName,
+          company_name: companyName,
+          details: {
+            type: "client_email",
+            sent_to: clientEmail,
+            amount: formattedPrice,
+            template_used: templateName || "Default",
+          },
+        });
+
+      if (reminderLogError) {
+        console.error("Error logging to payment_reminder_logs:", reminderLogError);
+      } else {
+        console.log("Activity log saved to payment_reminder_logs successfully");
       }
     } catch (dbError) {
       console.error("Error connecting to database for logging:", dbError);
