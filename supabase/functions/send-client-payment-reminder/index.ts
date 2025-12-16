@@ -28,6 +28,7 @@ interface ClientReminderRequest {
   clientEmail: string;
   companyName: string;
   contactPhone: string | null;
+  companyLink: string | null;
   orderCreatedAt: string;
   orderDescription: string | null;
   orderPrice: number | null;
@@ -65,6 +66,7 @@ const getDefaultEmailHtml = (
   companyName: string,
   clientEmail: string,
   contactPhone: string | null,
+  companyLink: string | null,
   formattedDate: string,
   orderDescription: string | null,
   formattedPrice: string,
@@ -104,6 +106,12 @@ const getDefaultEmailHtml = (
             <tr>
               <td style="padding: 8px 0; color: #666;">Phone Number:</td>
               <td style="padding: 8px 0;">${contactPhone}</td>
+            </tr>
+            ` : ''}
+            ${companyLink ? `
+            <tr>
+              <td style="padding: 8px 0; color: #666;">Website:</td>
+              <td style="padding: 8px 0;"><a href="${companyLink}" style="color: #1976d2;">${companyLink}</a></td>
             </tr>
             ` : ''}
             <tr>
@@ -193,6 +201,7 @@ const handler = async (req: Request): Promise<Response> => {
       clientEmail,
       companyName,
       contactPhone,
+      companyLink,
       orderCreatedAt,
       orderDescription,
       orderPrice,
@@ -230,6 +239,7 @@ const handler = async (req: Request): Promise<Response> => {
         companyName,
         clientEmail,
         contactPhone,
+        companyLink,
         formattedDate,
         orderDescription,
         formattedPrice,
@@ -286,6 +296,22 @@ const handler = async (req: Request): Promise<Response> => {
               <tr>
                 <td style="padding: 5px 0; color: #666;">Client Email:</td>
                 <td style="padding: 5px 0;">${clientEmail}</td>
+              </tr>
+              ${contactPhone ? `
+              <tr>
+                <td style="padding: 5px 0; color: #666;">Phone:</td>
+                <td style="padding: 5px 0;">${contactPhone}</td>
+              </tr>
+              ` : ''}
+              ${companyLink ? `
+              <tr>
+                <td style="padding: 5px 0; color: #666;">Website:</td>
+                <td style="padding: 5px 0;"><a href="${companyLink}" style="color: #1976d2;">${companyLink}</a></td>
+              </tr>
+              ` : ''}
+              <tr>
+                <td style="padding: 5px 0; color: #666;">Order Date:</td>
+                <td style="padding: 5px 0;">${formattedDate}</td>
               </tr>
               <tr>
                 <td style="padding: 5px 0; color: #666;">Amount:</td>
