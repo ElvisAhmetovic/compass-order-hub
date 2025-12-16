@@ -56,3 +56,6 @@ verify_jwt = true
 
 [functions.send-order-payment-reminders]
 verify_jwt = false
+
+[functions.send-client-payment-reminder]
+verify_jwt = false

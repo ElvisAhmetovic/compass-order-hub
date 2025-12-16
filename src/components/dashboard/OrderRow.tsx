@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
-import { MoreHorizontal, FileText, Send, Receipt, ArrowLeft, X, Bell } from "lucide-react";
+import { MoreHorizontal, FileText, Send, Receipt, ArrowLeft, X, Bell, Mail, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -20,6 +20,7 @@ import { PaymentReminderService, PaymentReminder } from "@/services/paymentRemin
 import MultiStatusBadges from "./MultiStatusBadges";
 import { formatCurrency } from "@/utils/currencyUtils";
 import ScheduleReminderModal from "@/components/orders/ScheduleReminderModal";
+import SendClientReminderModal from "@/components/orders/SendClientReminderModal";
 
 interface OrderRowProps {
   order: Order;
@@ -46,6 +47,7 @@ const OrderRow = ({
   const [isCreatingInvoice, setIsCreatingInvoice] = useState(false);
   const [isRemovingReview, setIsRemovingReview] = useState(false);
   const [showReminderModal, setShowReminderModal] = useState(false);
+  const [showClientReminderModal, setShowClientReminderModal] = useState(false);
   const [activeReminder, setActiveReminder] = useState<PaymentReminder | null>(null);
   const { user } = useAuth();
   const { toast } = useToast();
@@ -605,7 +607,7 @@ const OrderRow = ({
             </Button>
           )}
 
-          {/* Set Payment Reminder button */}
+          {/* Set Payment Reminder button (internal team) */}
           <Button
             variant={activeReminder ? "default" : "outline"}
             size="sm"
@@ -617,6 +619,25 @@ const OrderRow = ({
           >
             <Bell className="h-4 w-4 mr-1" />
             {activeReminder ? "Reminder Set" : "Reminder"}
+          </Button>
+
+          {/* Send Client Reminder button */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowClientReminderModal(true);
+            }}
+            className={`h-8 px-2 w-full ${!order.contact_email ? "border-amber-500 text-amber-600" : "border-blue-500 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950"}`}
+            title={!order.contact_email ? "No client email on this order" : "Send reminder to client"}
+          >
+            {!order.contact_email ? (
+              <AlertCircle className="h-4 w-4 mr-1" />
+            ) : (
+              <Mail className="h-4 w-4 mr-1" />
+            )}
+            To Client
           </Button>
 
           {/* Create Invoice button - visible to all users */}
@@ -686,13 +707,20 @@ const OrderRow = ({
         </div>
       </TableCell>
 
-      {/* Payment Reminder Modal */}
+      {/* Payment Reminder Modal (internal team) */}
       <ScheduleReminderModal
         open={showReminderModal}
         onOpenChange={setShowReminderModal}
         order={order}
         existingReminder={activeReminder}
         onReminderUpdated={handleReminderUpdated}
+      />
+
+      {/* Send Client Reminder Modal */}
+      <SendClientReminderModal
+        open={showClientReminderModal}
+        onOpenChange={setShowClientReminderModal}
+        order={order}
       />
     </TableRow>
   );
