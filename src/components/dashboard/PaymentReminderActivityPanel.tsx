@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { X, Bell, Clock, Edit, Ban, Send, ChevronRight, Loader2 } from 'lucide-react';
+import { X, Bell, Clock, Edit, Ban, Send, ChevronRight, Loader2, ArrowUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { PaymentReminderLogService, PaymentReminderLog } from '@/services/paymentReminderLogService';
-import { formatDistanceToNow, format, isToday, isYesterday, startOfDay } from 'date-fns';
+import { format, isToday, isYesterday, startOfDay } from 'date-fns';
 import { useSearchParams } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 
@@ -49,8 +49,10 @@ export const PaymentReminderActivityPanel: React.FC<PaymentReminderActivityPanel
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
+  const [showScrollTop, setShowScrollTop] = useState(false);
   const [, setSearchParams] = useSearchParams();
   const observerTarget = useRef<HTMLDivElement>(null);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   const fetchLogs = useCallback(async (offset: number = 0, append: boolean = false) => {
     if (offset === 0) {
@@ -111,6 +113,24 @@ export const PaymentReminderActivityPanel: React.FC<PaymentReminderActivityPanel
     return () => observer.disconnect();
   }, [hasMore, loadingMore, loading, loadMore]);
 
+  // Track scroll position for "Jump to top" button
+  useEffect(() => {
+    const scrollContainer = scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]');
+    if (!scrollContainer) return;
+
+    const handleScroll = () => {
+      setShowScrollTop(scrollContainer.scrollTop > 200);
+    };
+
+    scrollContainer.addEventListener('scroll', handleScroll);
+    return () => scrollContainer.removeEventListener('scroll', handleScroll);
+  }, [isOpen, loading]);
+
+  const scrollToTop = () => {
+    const scrollContainer = scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]');
+    scrollContainer?.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const handleViewOrder = (orderId: string) => {
     setSearchParams({ orderId });
     onClose();
@@ -159,7 +179,8 @@ export const PaymentReminderActivityPanel: React.FC<PaymentReminderActivityPanel
       </div>
 
       {/* Content */}
-      <ScrollArea className="flex-1">
+      <div className="flex-1 relative">
+        <ScrollArea className="h-full" ref={scrollAreaRef}>
         {loading ? (
           <div className="p-4 text-center text-muted-foreground">
             <Loader2 className="h-5 w-5 animate-spin mx-auto mb-2" />
@@ -246,7 +267,20 @@ export const PaymentReminderActivityPanel: React.FC<PaymentReminderActivityPanel
             </div>
           </div>
         )}
-      </ScrollArea>
+        </ScrollArea>
+        
+        {/* Jump to top button */}
+        {showScrollTop && (
+          <Button
+            variant="secondary"
+            size="icon"
+            className="absolute bottom-4 right-4 rounded-full shadow-lg z-10"
+            onClick={scrollToTop}
+          >
+            <ArrowUp className="h-4 w-4" />
+          </Button>
+        )}
+      </div>
     </div>
   );
 };
