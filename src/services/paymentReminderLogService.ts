@@ -18,6 +18,8 @@ export interface LogFilters {
   companySearch?: string;
 }
 
+export type SortOption = 'newest' | 'oldest' | 'company_asc' | 'company_desc';
+
 export const PaymentReminderLogService = {
   async logAction(params: {
     reminderId: string | null;
@@ -47,11 +49,32 @@ export const PaymentReminderLogService = {
     }
   },
 
-  async getRecentLogs(limit: number = 30, offset: number = 0, filters?: LogFilters): Promise<PaymentReminderLog[]> {
+  async getRecentLogs(
+    limit: number = 30, 
+    offset: number = 0, 
+    filters?: LogFilters,
+    sort: SortOption = 'newest'
+  ): Promise<PaymentReminderLog[]> {
     let query = supabase
       .from('payment_reminder_logs')
-      .select('*')
-      .order('created_at', { ascending: false });
+      .select('*');
+
+    // Apply sorting
+    switch (sort) {
+      case 'oldest':
+        query = query.order('created_at', { ascending: true });
+        break;
+      case 'company_asc':
+        query = query.order('company_name', { ascending: true, nullsFirst: false });
+        break;
+      case 'company_desc':
+        query = query.order('company_name', { ascending: false, nullsFirst: false });
+        break;
+      case 'newest':
+      default:
+        query = query.order('created_at', { ascending: false });
+        break;
+    }
 
     // Apply filters
     if (filters?.action) {

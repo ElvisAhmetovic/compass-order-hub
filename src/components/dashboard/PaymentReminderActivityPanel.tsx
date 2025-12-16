@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { X, Bell, Clock, Edit, Ban, Send, ChevronRight, Loader2, ArrowUp, Filter, Search } from 'lucide-react';
+import { X, Bell, Clock, Edit, Ban, Send, ChevronRight, Loader2, ArrowUp, Filter, Search, ArrowUpDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { PaymentReminderLogService, PaymentReminderLog, LogFilters } from '@/services/paymentReminderLogService';
+import { PaymentReminderLogService, PaymentReminderLog, LogFilters, SortOption } from '@/services/paymentReminderLogService';
 import { format, isToday, isYesterday, startOfDay } from 'date-fns';
 import { useSearchParams } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible';
 
 interface PaymentReminderActivityPanelProps {
   isOpen: boolean;
@@ -44,6 +44,13 @@ const actionConfig = {
   },
 };
 
+const sortOptions = [
+  { value: 'newest', label: 'Newest First' },
+  { value: 'oldest', label: 'Oldest First' },
+  { value: 'company_asc', label: 'Company (A-Z)' },
+  { value: 'company_desc', label: 'Company (Z-A)' },
+];
+
 export const PaymentReminderActivityPanel: React.FC<PaymentReminderActivityPanelProps> = ({
   isOpen,
   onClose,
@@ -57,11 +64,12 @@ export const PaymentReminderActivityPanel: React.FC<PaymentReminderActivityPanel
   const observerTarget = useRef<HTMLDivElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
-  // Filter state
+  // Filter and sort state
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [actionFilter, setActionFilter] = useState<string>('all');
   const [actorFilter, setActorFilter] = useState<string>('all');
   const [companySearch, setCompanySearch] = useState('');
+  const [sortOption, setSortOption] = useState<SortOption>('newest');
   const [uniqueActors, setUniqueActors] = useState<string[]>([]);
   const searchTimeoutRef = useRef<NodeJS.Timeout>();
 
@@ -70,8 +78,9 @@ export const PaymentReminderActivityPanel: React.FC<PaymentReminderActivityPanel
     if (actionFilter !== 'all') count++;
     if (actorFilter !== 'all') count++;
     if (companySearch.trim()) count++;
+    if (sortOption !== 'newest') count++;
     return count;
-  }, [actionFilter, actorFilter, companySearch]);
+  }, [actionFilter, actorFilter, companySearch, sortOption]);
 
   const buildFilters = useCallback((): LogFilters | undefined => {
     const filters: LogFilters = {};
@@ -95,7 +104,7 @@ export const PaymentReminderActivityPanel: React.FC<PaymentReminderActivityPanel
     }
 
     const filters = buildFilters();
-    const data = await PaymentReminderLogService.getRecentLogs(PAGE_SIZE, offset, filters);
+    const data = await PaymentReminderLogService.getRecentLogs(PAGE_SIZE, offset, filters, sortOption);
     
     if (append) {
       setLogs((prev) => [...prev, ...data]);
@@ -106,7 +115,7 @@ export const PaymentReminderActivityPanel: React.FC<PaymentReminderActivityPanel
     setHasMore(data.length === PAGE_SIZE);
     setLoading(false);
     setLoadingMore(false);
-  }, [buildFilters]);
+  }, [buildFilters, sortOption]);
 
   const loadMore = useCallback(() => {
     if (!loadingMore && hasMore) {
@@ -136,7 +145,12 @@ export const PaymentReminderActivityPanel: React.FC<PaymentReminderActivityPanel
         (newLog.company_name?.toLowerCase().includes(filters.companySearch.toLowerCase()));
       
       if (matchesAction && matchesActor && matchesCompany) {
-        setLogs((prev) => [newLog, ...prev]);
+        // For newest sort, prepend; otherwise refetch to maintain sort order
+        if (sortOption === 'newest') {
+          setLogs((prev) => [newLog, ...prev]);
+        } else {
+          fetchLogs(0, false);
+        }
       }
 
       // Update unique actors if new actor
@@ -148,7 +162,7 @@ export const PaymentReminderActivityPanel: React.FC<PaymentReminderActivityPanel
     return () => {
       unsubscribe();
     };
-  }, [isOpen, fetchLogs, buildFilters, uniqueActors]);
+  }, [isOpen, fetchLogs, buildFilters, uniqueActors, sortOption]);
 
   // Debounced company search
   useEffect(() => {
@@ -166,12 +180,12 @@ export const PaymentReminderActivityPanel: React.FC<PaymentReminderActivityPanel
     };
   }, [companySearch]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Refetch when action or actor filter changes
+  // Refetch when action, actor filter, or sort changes
   useEffect(() => {
     if (isOpen) {
       fetchLogs(0, false);
     }
-  }, [actionFilter, actorFilter]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [actionFilter, actorFilter, sortOption]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Intersection Observer for infinite scroll
   useEffect(() => {
@@ -218,26 +232,40 @@ export const PaymentReminderActivityPanel: React.FC<PaymentReminderActivityPanel
     setActionFilter('all');
     setActorFilter('all');
     setCompanySearch('');
+    setSortOption('newest');
   };
 
-  // Group logs by date
+  // Group logs by date or company letter depending on sort
   const getDateLabel = (date: Date): string => {
     if (isToday(date)) return 'Today';
     if (isYesterday(date)) return 'Yesterday';
     return format(date, 'MMM d, yyyy');
   };
 
+  const getCompanyLetter = (companyName: string | null): string => {
+    if (!companyName) return '#';
+    const firstChar = companyName.trim().charAt(0).toUpperCase();
+    return /[A-Z]/.test(firstChar) ? firstChar : '#';
+  };
+
   const groupedLogs = useMemo(() => {
-    const groups: { label: string; date: Date; logs: PaymentReminderLog[] }[] = [];
-    let currentGroup: { label: string; date: Date; logs: PaymentReminderLog[] } | null = null;
+    const groups: { label: string; logs: PaymentReminderLog[] }[] = [];
+    let currentGroup: { label: string; logs: PaymentReminderLog[] } | null = null;
+
+    const isCompanySort = sortOption === 'company_asc' || sortOption === 'company_desc';
 
     logs.forEach((log) => {
-      const logDate = new Date(log.created_at);
-      const dayStart = startOfDay(logDate);
-      const label = getDateLabel(logDate);
+      let label: string;
+      
+      if (isCompanySort) {
+        label = getCompanyLetter(log.company_name);
+      } else {
+        const logDate = new Date(log.created_at);
+        label = getDateLabel(logDate);
+      }
 
       if (!currentGroup || currentGroup.label !== label) {
-        currentGroup = { label, date: dayStart, logs: [log] };
+        currentGroup = { label, logs: [log] };
         groups.push(currentGroup);
       } else {
         currentGroup.logs.push(log);
@@ -245,9 +273,11 @@ export const PaymentReminderActivityPanel: React.FC<PaymentReminderActivityPanel
     });
 
     return groups;
-  }, [logs]);
+  }, [logs, sortOption]);
 
   if (!isOpen) return null;
+
+  const isCompanySort = sortOption === 'company_asc' || sortOption === 'company_desc';
 
   return (
     <div className="w-80 border-l border-border bg-card flex flex-col h-full">
@@ -281,6 +311,26 @@ export const PaymentReminderActivityPanel: React.FC<PaymentReminderActivityPanel
       <Collapsible open={filtersOpen} onOpenChange={setFiltersOpen}>
         <CollapsibleContent className="border-b border-border">
           <div className="p-3 space-y-3 bg-muted/30">
+            {/* Sort Option */}
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                <ArrowUpDown className="h-3 w-3" />
+                Sort By
+              </label>
+              <Select value={sortOption} onValueChange={(v) => setSortOption(v as SortOption)}>
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue placeholder="Sort by..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {sortOptions.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             {/* Action Type Filter */}
             <div className="space-y-1">
               <label className="text-xs font-medium text-muted-foreground">Action Type</label>
@@ -338,7 +388,7 @@ export const PaymentReminderActivityPanel: React.FC<PaymentReminderActivityPanel
                 onClick={clearFilters}
                 className="w-full h-7 text-xs"
               >
-                Clear Filters
+                Clear All
               </Button>
             )}
           </div>
@@ -361,7 +411,7 @@ export const PaymentReminderActivityPanel: React.FC<PaymentReminderActivityPanel
           <div className="p-2">
             {groupedLogs.map((group) => (
               <div key={group.label}>
-                {/* Date separator */}
+                {/* Group separator */}
                 <div className="sticky top-0 bg-card/95 backdrop-blur-sm py-2 px-3 mb-1">
                   <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     {group.label}
@@ -412,7 +462,10 @@ export const PaymentReminderActivityPanel: React.FC<PaymentReminderActivityPanel
                           )}
                           
                           <p className="text-xs text-muted-foreground mt-1">
-                            {format(new Date(log.created_at), 'HH:mm')}
+                            {isCompanySort 
+                              ? format(new Date(log.created_at), 'dd.MM.yyyy HH:mm')
+                              : format(new Date(log.created_at), 'HH:mm')
+                            }
                           </p>
                         </div>
                         <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
