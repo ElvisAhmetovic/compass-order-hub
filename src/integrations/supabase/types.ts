@@ -1716,8 +1716,8 @@ export type Database = {
         }[]
       }
       get_user_role:
-        | { Args: { user_id: string }; Returns: string }
         | { Args: never; Returns: string }
+        | { Args: { user_id: string }; Returns: string }
       is_admin: { Args: never; Returns: boolean }
       recalculate_invoice_totals: {
         Args: { invoice_id_param: string }
