@@ -26,10 +26,19 @@ const Dashboard = () => {
   const [showMigrationButton, setShowMigrationButton] = useState(false);
   const location = useLocation();
   const path = location.pathname;
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   
   // Use the order modal hook
   const { currentOrder, isOpen, open, close } = useOrderModal();
+
+  // Wrapper close function that clears the orderId from URL when closing
+  const handleCloseModal = () => {
+    if (searchParams.has('orderId')) {
+      searchParams.delete('orderId');
+      setSearchParams(searchParams, { replace: true });
+    }
+    close();
+  };
   
   // Get user role from auth context
   const { user } = useAuth();
@@ -268,7 +277,7 @@ const Dashboard = () => {
             <OrderModal 
               order={currentOrder} 
               open={isOpen} 
-              onClose={close}
+              onClose={handleCloseModal}
               userRole={userRole}
             />
 
