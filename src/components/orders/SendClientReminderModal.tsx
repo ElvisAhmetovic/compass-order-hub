@@ -9,12 +9,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { Order } from "@/types";
 import { formatCurrency } from "@/utils/currencyUtils";
 import { formatDate } from "@/lib/utils";
-import { Send, AlertCircle, Mail, Phone, Calendar, Building2, Eye, Code } from "lucide-react";
+import { Send, AlertCircle, Mail, Phone, Calendar, Building2, Eye, Globe } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import TemplateSelector from "@/components/email-templates/TemplateSelector";
 import { EmailTemplate, emailTemplateService } from "@/services/emailTemplateService";
+import { emailTranslationService, SupportedLanguage, SUPPORTED_LANGUAGES } from "@/services/emailTranslationService";
 
 interface SendClientReminderModalProps {
   open: boolean;
@@ -27,6 +29,8 @@ const SendClientReminderModal = ({ open, onOpenChange, order, onEmailSent }: Sen
   const [customMessage, setCustomMessage] = useState("");
   const [selectedTemplate, setSelectedTemplate] = useState<EmailTemplate | null>(null);
   const [emailSubject, setEmailSubject] = useState("");
+  const [emailBody, setEmailBody] = useState("");
+  const [selectedLanguage, setSelectedLanguage] = useState<SupportedLanguage>("en");
   const [previewMode, setPreviewMode] = useState<"info" | "preview">("info");
   const [isSending, setIsSending] = useState(false);
   const [currentUser, setCurrentUser] = useState<{ id: string; name: string } | null>(null);
@@ -55,17 +59,39 @@ const SendClientReminderModal = ({ open, onOpenChange, order, onEmailSent }: Sen
     fetchUser();
   }, []);
 
-  // Update subject when template changes
+  // Update subject and body when template or language changes
   useEffect(() => {
     if (selectedTemplate) {
       const formattedPrice = formatCurrency(order.price || 0, order.currency || "EUR");
+      
+      // Check if this template has translations available
+      if (emailTranslationService.hasTranslations(selectedTemplate.name)) {
+        const translated = emailTranslationService.getTranslatedTemplate(
+          selectedTemplate.name,
+          selectedLanguage
+        );
+        
+        if (translated) {
+          // Use translated subject
+          const translatedSubject = emailTemplateService.replaceVariables(translated.subject, {
+            companyName: order.company_name,
+            amount: formattedPrice,
+          });
+          setEmailSubject(translatedSubject);
+          setEmailBody(translated.body);
+          return;
+        }
+      }
+      
+      // Fallback to original template
       const subject = emailTemplateService.replaceVariables(selectedTemplate.subject, {
         companyName: order.company_name,
         amount: formattedPrice,
       });
       setEmailSubject(subject);
+      setEmailBody(selectedTemplate.body);
     }
-  }, [selectedTemplate, order]);
+  }, [selectedTemplate, selectedLanguage, order]);
 
   const getTemplateVariables = () => {
     const formattedPrice = formatCurrency(order.price || 0, order.currency || "EUR");
@@ -85,8 +111,8 @@ const SendClientReminderModal = ({ open, onOpenChange, order, onEmailSent }: Sen
   };
 
   const getPreviewHtml = () => {
-    if (!selectedTemplate) return "";
-    return emailTemplateService.replaceVariables(selectedTemplate.body, getTemplateVariables());
+    if (!emailBody) return "";
+    return emailTemplateService.replaceVariables(emailBody, getTemplateVariables());
   };
 
   const handleSendReminder = async () => {
@@ -112,7 +138,7 @@ const SendClientReminderModal = ({ open, onOpenChange, order, onEmailSent }: Sen
 
     try {
       const variables = getTemplateVariables();
-      const emailBody = emailTemplateService.replaceVariables(selectedTemplate.body, variables);
+      const finalEmailBody = emailTemplateService.replaceVariables(emailBody, variables);
 
       const { data, error } = await supabase.functions.invoke("send-client-payment-reminder", {
         body: {
@@ -130,9 +156,10 @@ const SendClientReminderModal = ({ open, onOpenChange, order, onEmailSent }: Sen
           sentById: currentUser?.id || null,
           // Custom template data
           emailSubject: emailSubject,
-          emailBodyHtml: emailBody,
+          emailBodyHtml: finalEmailBody,
           templateId: selectedTemplate.id,
           templateName: selectedTemplate.name,
+          language: selectedLanguage,
         },
       });
 
@@ -140,9 +167,10 @@ const SendClientReminderModal = ({ open, onOpenChange, order, onEmailSent }: Sen
         throw error;
       }
 
+      const languageLabel = SUPPORTED_LANGUAGES.find(l => l.code === selectedLanguage)?.label || selectedLanguage;
       toast({
         title: "Reminder Sent Successfully",
-        description: `Payment reminder sent to ${order.contact_email} and team notified.`,
+        description: `Payment reminder (${languageLabel}) sent to ${order.contact_email} and team notified.`,
       });
 
       setCustomMessage("");
@@ -160,6 +188,8 @@ const SendClientReminderModal = ({ open, onOpenChange, order, onEmailSent }: Sen
     }
   };
 
+  const hasTranslations = selectedTemplate ? emailTranslationService.hasTranslations(selectedTemplate.name) : false;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
@@ -169,7 +199,7 @@ const SendClientReminderModal = ({ open, onOpenChange, order, onEmailSent }: Sen
             Send Payment Reminder to Client
           </DialogTitle>
           <DialogDescription>
-            Select a template and customize your payment reminder email.
+            Select a template, language, and customize your payment reminder email.
           </DialogDescription>
         </DialogHeader>
 
@@ -184,13 +214,45 @@ const SendClientReminderModal = ({ open, onOpenChange, order, onEmailSent }: Sen
             </Alert>
           )}
 
-          {/* Template Selector */}
-          <TemplateSelector
-            type="payment_reminder"
-            selectedTemplateId={selectedTemplate?.id || null}
-            onTemplateSelect={setSelectedTemplate}
-            disabled={isSending}
-          />
+          {/* Template and Language Selection Row */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Template Selector */}
+            <TemplateSelector
+              type="payment_reminder"
+              selectedTemplateId={selectedTemplate?.id || null}
+              onTemplateSelect={setSelectedTemplate}
+              disabled={isSending}
+            />
+
+            {/* Language Selector */}
+            <div className="space-y-2">
+              <Label htmlFor="language">Email Language</Label>
+              <Select
+                value={selectedLanguage}
+                onValueChange={(value) => setSelectedLanguage(value as SupportedLanguage)}
+                disabled={isSending}
+              >
+                <SelectTrigger id="language">
+                  <SelectValue placeholder="Select language" />
+                </SelectTrigger>
+                <SelectContent>
+                  {SUPPORTED_LANGUAGES.map((lang) => (
+                    <SelectItem key={lang.code} value={lang.code}>
+                      <span className="flex items-center gap-2">
+                        <span>{lang.flag}</span>
+                        <span>{lang.label}</span>
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {selectedTemplate && !hasTranslations && (
+                <p className="text-xs text-amber-600 dark:text-amber-400">
+                  Custom templates use original content (no translation)
+                </p>
+              )}
+            </div>
+          </div>
 
           {/* Email Subject */}
           {selectedTemplate && (
@@ -247,6 +309,16 @@ const SendClientReminderModal = ({ open, onOpenChange, order, onEmailSent }: Sen
                       <span className="font-medium">{order.contact_phone}</span>
                     </div>
                   )}
+
+                  {order.company_link && (
+                    <div className="flex items-center gap-2">
+                      <Globe className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-muted-foreground">Website:</span>
+                      <a href={order.company_link} target="_blank" rel="noopener noreferrer" className="font-medium text-primary hover:underline truncate max-w-[300px]">
+                        {order.company_link}
+                      </a>
+                    </div>
+                  )}
                   
                   <div className="flex items-center gap-2">
                     <Calendar className="h-4 w-4 text-muted-foreground" />
@@ -269,6 +341,9 @@ const SendClientReminderModal = ({ open, onOpenChange, order, onEmailSent }: Sen
                 <div className="border rounded-lg p-4 bg-white dark:bg-gray-900 max-h-[300px] overflow-y-auto">
                   <div className="mb-2 pb-2 border-b">
                     <p className="text-sm text-muted-foreground">Subject: <span className="font-medium text-foreground">{emailSubject}</span></p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Language: {SUPPORTED_LANGUAGES.find(l => l.code === selectedLanguage)?.flag} {SUPPORTED_LANGUAGES.find(l => l.code === selectedLanguage)?.label}
+                    </p>
                   </div>
                   <div
                     className="prose prose-sm max-w-none dark:prose-invert"
