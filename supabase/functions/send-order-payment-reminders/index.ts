@@ -236,11 +236,45 @@ const handler = async (req: Request): Promise<Response> => {
                 details: {
                   emails_sent: emailsSent,
                   remind_at: reminder.remind_at,
+                  price: order.price,
+                  currency: order.currency || 'EUR',
                 }
               });
             console.log(`Logged sent action for reminder ${reminder.id}`);
           } catch (logError) {
             console.error(`Error logging sent action for reminder ${reminder.id}:`, logError);
+          }
+
+          // Create in-app notifications for all team members
+          try {
+            // Get all user IDs from profiles
+            const { data: profiles, error: profilesError } = await supabase
+              .from("profiles")
+              .select("id")
+              .eq("disabled", false);
+
+            if (!profilesError && profiles && profiles.length > 0) {
+              const notifications = profiles.map((profile) => ({
+                user_id: profile.id,
+                title: "💰 Payment Reminder Due",
+                message: `${order.company_name} - ${price} payment follow-up is now due`,
+                type: "warning",
+                order_id: order.id,
+                action_url: `/dashboard?orderId=${order.id}`,
+              }));
+
+              const { error: notifError } = await supabase
+                .from("notifications")
+                .insert(notifications);
+
+              if (notifError) {
+                console.error(`Error creating notifications:`, notifError);
+              } else {
+                console.log(`Created ${notifications.length} in-app notifications for reminder ${reminder.id}`);
+              }
+            }
+          } catch (notifError) {
+            console.error(`Error creating in-app notifications for reminder ${reminder.id}:`, notifError);
           }
           processedCount++;
         }

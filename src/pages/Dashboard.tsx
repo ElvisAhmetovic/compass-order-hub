@@ -20,6 +20,9 @@ import TemporaryNotificationBanner from "@/components/notifications/TemporaryNot
 import { supabase } from "@/integrations/supabase/client";
 import PaymentReminderActivityPanel from "@/components/dashboard/PaymentReminderActivityPanel";
 import { Clock } from "lucide-react";
+import { usePaymentReminderDueNotifications } from "@/hooks/usePaymentReminderDueNotifications";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 const Dashboard = () => {
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -27,6 +30,9 @@ const Dashboard = () => {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [showMigrationButton, setShowMigrationButton] = useState(false);
   const [activityPanelOpen, setActivityPanelOpen] = useState(false);
+  
+  // Payment reminder due notifications
+  const { dueCount, clearDueCount } = usePaymentReminderDueNotifications();
   const location = useLocation();
   const path = location.pathname;
   const [searchParams, setSearchParams] = useSearchParams();
@@ -241,11 +247,27 @@ const Dashboard = () => {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setActivityPanelOpen(!activityPanelOpen)}
-                className="shrink-0"
+                onClick={() => {
+                  setActivityPanelOpen(!activityPanelOpen);
+                  if (!activityPanelOpen) {
+                    clearDueCount();
+                  }
+                }}
+                className={cn(
+                  "shrink-0 relative",
+                  dueCount > 0 && "ring-2 ring-amber-500 ring-offset-2"
+                )}
               >
                 <Clock className="h-4 w-4 mr-2" />
                 Activity Log
+                {dueCount > 0 && (
+                  <Badge 
+                    variant="destructive" 
+                    className="absolute -top-2 -right-2 h-5 min-w-5 px-1.5 text-xs animate-pulse bg-amber-500 hover:bg-amber-500"
+                  >
+                    {dueCount > 9 ? '9+' : dueCount}
+                  </Badge>
+                )}
               </Button>
             </div>
             
