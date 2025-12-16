@@ -41,12 +41,12 @@ export const PaymentReminderLogService = {
     }
   },
 
-  async getRecentLogs(limit: number = 30): Promise<PaymentReminderLog[]> {
+  async getRecentLogs(limit: number = 30, offset: number = 0): Promise<PaymentReminderLog[]> {
     const { data, error } = await supabase
       .from('payment_reminder_logs')
       .select('*')
       .order('created_at', { ascending: false })
-      .limit(limit);
+      .range(offset, offset + limit - 1);
 
     if (error) {
       console.error('Error fetching reminder logs:', error);
