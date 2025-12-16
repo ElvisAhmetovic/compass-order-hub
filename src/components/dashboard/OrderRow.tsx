@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
-import { MoreHorizontal, FileText, Send, Receipt, ArrowLeft, X } from "lucide-react";
+import { MoreHorizontal, FileText, Send, Receipt, ArrowLeft, X, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -16,8 +16,10 @@ import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { InvoiceService } from "@/services/invoiceService";
 import { OrderService } from "@/services/orderService";
+import { PaymentReminderService, PaymentReminder } from "@/services/paymentReminderService";
 import MultiStatusBadges from "./MultiStatusBadges";
 import { formatCurrency } from "@/utils/currencyUtils";
+import ScheduleReminderModal from "@/components/orders/ScheduleReminderModal";
 
 interface OrderRowProps {
   order: Order;
@@ -43,9 +45,33 @@ const OrderRow = ({
   const [isMovingToActive, setIsMovingToActive] = useState(false);
   const [isCreatingInvoice, setIsCreatingInvoice] = useState(false);
   const [isRemovingReview, setIsRemovingReview] = useState(false);
+  const [showReminderModal, setShowReminderModal] = useState(false);
+  const [activeReminder, setActiveReminder] = useState<PaymentReminder | null>(null);
   const { user } = useAuth();
   const { toast } = useToast();
   const isAdmin = user?.role === "admin";
+
+  // Fetch reminder status for this order
+  useEffect(() => {
+    const fetchReminder = async () => {
+      try {
+        const reminder = await PaymentReminderService.getReminderForOrder(order.id);
+        setActiveReminder(reminder);
+      } catch (error) {
+        console.error("Error fetching reminder:", error);
+      }
+    };
+    fetchReminder();
+  }, [order.id]);
+
+  const handleReminderUpdated = async () => {
+    try {
+      const reminder = await PaymentReminderService.getReminderForOrder(order.id);
+      setActiveReminder(reminder);
+    } catch (error) {
+      console.error("Error refreshing reminder:", error);
+    }
+  };
 
   const getStatusColor = (status: string) => {
     const statusClasses = {
@@ -579,6 +605,20 @@ const OrderRow = ({
             </Button>
           )}
 
+          {/* Set Payment Reminder button */}
+          <Button
+            variant={activeReminder ? "default" : "outline"}
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowReminderModal(true);
+            }}
+            className={`h-8 px-2 w-full ${activeReminder ? "bg-amber-500 hover:bg-amber-600 text-white" : ""}`}
+          >
+            <Bell className="h-4 w-4 mr-1" />
+            {activeReminder ? "Reminder Set" : "Reminder"}
+          </Button>
+
           {/* Create Invoice button - visible to all users */}
           <Button
             variant="outline"
@@ -645,6 +685,15 @@ const OrderRow = ({
           )}
         </div>
       </TableCell>
+
+      {/* Payment Reminder Modal */}
+      <ScheduleReminderModal
+        open={showReminderModal}
+        onOpenChange={setShowReminderModal}
+        order={order}
+        existingReminder={activeReminder}
+        onReminderUpdated={handleReminderUpdated}
+      />
     </TableRow>
   );
 };
