@@ -160,6 +160,7 @@ export const emailTemplateService = {
       companyName?: string;
       clientEmail?: string;
       contactPhone?: string;
+      website?: string;
       orderDate?: string;
       orderDescription?: string;
       amount?: string;
@@ -177,6 +178,11 @@ export const emailTemplateService = {
     }
     if (variables.contactPhone) {
       result = result.replace(/{contactPhone}/g, variables.contactPhone || "N/A");
+    }
+    if (variables.website) {
+      result = result.replace(/{website}/g, variables.website);
+    } else {
+      result = result.replace(/{website}/g, "N/A");
     }
     if (variables.orderDate) {
       result = result.replace(/{orderDate}/g, variables.orderDate);
