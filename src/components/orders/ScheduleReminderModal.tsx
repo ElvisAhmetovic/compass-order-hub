@@ -244,24 +244,27 @@ const ScheduleReminderModal = ({
           </div>
         </div>
 
-        <DialogFooter className="flex gap-2">
-          {existingReminder && (
-            <Button
-              variant="destructive"
-              onClick={handleCancel}
-              disabled={isDeleting || isLoading}
-              className="mr-auto"
-            >
-              <Trash2 className="h-4 w-4 mr-1" />
-              {isDeleting ? "Cancelling..." : "Cancel Reminder"}
+        <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-between gap-2 w-full">
+          <div className="flex justify-start">
+            {existingReminder && (
+              <Button
+                variant="destructive"
+                onClick={handleCancel}
+                disabled={isDeleting || isLoading}
+              >
+                <Trash2 className="h-4 w-4 mr-1" />
+                {isDeleting ? "Cancelling..." : "Cancel Reminder"}
+              </Button>
+            )}
+          </div>
+          <div className="flex gap-2 justify-end">
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              Close
             </Button>
-          )}
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Close
-          </Button>
-          <Button onClick={handleSave} disabled={isLoading || !date}>
-            {isLoading ? "Saving..." : existingReminder ? "Update Reminder" : "Schedule Reminder"}
-          </Button>
+            <Button onClick={handleSave} disabled={isLoading || !date}>
+              {isLoading ? "Saving..." : existingReminder ? "Update Reminder" : "Schedule Reminder"}
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

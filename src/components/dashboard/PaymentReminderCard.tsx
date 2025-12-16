@@ -1,8 +1,9 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { Bell } from "lucide-react";
+import { Bell, ChevronRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import { PaymentReminderService } from "@/services/paymentReminderService";
 import { useAuth } from "@/context/AuthContext";
+import { PaymentRemindersListModal } from "./PaymentRemindersListModal";
 
 interface ReminderStats {
   totalCount: number;
@@ -13,23 +14,24 @@ interface ReminderStats {
 export const PaymentReminderCard = () => {
   const [stats, setStats] = useState<ReminderStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [modalOpen, setModalOpen] = useState(false);
   const { user } = useAuth();
 
-  useEffect(() => {
-    const fetchStats = async () => {
-      if (!user) return;
-      
-      try {
-        setLoading(true);
-        const data = await PaymentReminderService.getActiveRemindersStats();
-        setStats(data);
-      } catch (error) {
-        console.error("Error fetching reminder stats:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchStats = async () => {
+    if (!user) return;
+    
+    try {
+      setLoading(true);
+      const data = await PaymentReminderService.getActiveRemindersStats();
+      setStats(data);
+    } catch (error) {
+      console.error("Error fetching reminder stats:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchStats();
 
     // Listen for order changes to refresh
@@ -42,6 +44,10 @@ export const PaymentReminderCard = () => {
       window.removeEventListener('orderStatusChanged', handleOrderChange);
     };
   }, [user]);
+
+  const handleReminderUpdated = () => {
+    fetchStats();
+  };
 
   if (!user) return null;
 
@@ -66,32 +72,44 @@ export const PaymentReminderCard = () => {
   }
 
   return (
-    <Card className="border shadow-sm border-amber-200 bg-amber-50/50 dark:bg-amber-950/20 dark:border-amber-800">
-      <CardContent className="p-6">
-        <div className="flex items-center gap-4">
-          <div className="p-3 bg-amber-100 dark:bg-amber-900/50 rounded-full">
-            <Bell className="h-6 w-6 text-amber-600 dark:text-amber-400" />
-          </div>
-          <div className="flex-1">
-            <h3 className="font-semibold text-lg text-amber-800 dark:text-amber-200">
-              Payment Reminders
-            </h3>
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-amber-700 dark:text-amber-300">
-              <span>
-                {stats.totalCount} {stats.totalCount === 1 ? 'order' : 'orders'} scheduled
-              </span>
-              {stats.dueTodayCount > 0 && (
-                <span className="font-semibold text-amber-900 dark:text-amber-100 bg-amber-200 dark:bg-amber-800 px-2 py-0.5 rounded-full text-xs">
-                  {stats.dueTodayCount} due today
-                </span>
-              )}
-              <span>
-                €{stats.totalValue.toFixed(2)} total
-              </span>
+    <>
+      <Card 
+        className="border shadow-sm border-amber-200 bg-amber-50/50 dark:bg-amber-950/20 dark:border-amber-800 cursor-pointer hover:bg-amber-100/50 dark:hover:bg-amber-950/30 transition-colors"
+        onClick={() => setModalOpen(true)}
+      >
+        <CardContent className="p-6">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-amber-100 dark:bg-amber-900/50 rounded-full">
+              <Bell className="h-6 w-6 text-amber-600 dark:text-amber-400" />
             </div>
+            <div className="flex-1">
+              <h3 className="font-semibold text-lg text-amber-800 dark:text-amber-200">
+                Payment Reminders
+              </h3>
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-amber-700 dark:text-amber-300">
+                <span>
+                  {stats.totalCount} {stats.totalCount === 1 ? 'order' : 'orders'} scheduled
+                </span>
+                {stats.dueTodayCount > 0 && (
+                  <span className="font-semibold text-amber-900 dark:text-amber-100 bg-amber-200 dark:bg-amber-800 px-2 py-0.5 rounded-full text-xs">
+                    {stats.dueTodayCount} due today
+                  </span>
+                )}
+                <span>
+                  €{stats.totalValue.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} total
+                </span>
+              </div>
+            </div>
+            <ChevronRight className="h-5 w-5 text-amber-600 dark:text-amber-400" />
           </div>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+
+      <PaymentRemindersListModal
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        onReminderUpdated={handleReminderUpdated}
+      />
+    </>
   );
 };
