@@ -18,12 +18,15 @@ import { toast } from "@/hooks/use-toast";
 import TeamEncouragement from "@/components/dashboard/TeamEncouragement";
 import TemporaryNotificationBanner from "@/components/notifications/TemporaryNotificationBanner";
 import { supabase } from "@/integrations/supabase/client";
+import PaymentReminderActivityPanel from "@/components/dashboard/PaymentReminderActivityPanel";
+import { Clock } from "lucide-react";
 
 const Dashboard = () => {
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("All");
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [showMigrationButton, setShowMigrationButton] = useState(false);
+  const [activityPanelOpen, setActivityPanelOpen] = useState(false);
   const location = useLocation();
   const path = location.pathname;
   const [searchParams, setSearchParams] = useSearchParams();
@@ -221,18 +224,30 @@ const Dashboard = () => {
       <TemporaryNotificationBanner />
       <div className="flex min-h-screen">
         <Sidebar />
-        <div className="flex-1">
+        <div className="flex-1 flex">
           <Layout userRole={userRole}>
           <div className="space-y-6">
-            <DashboardHeader 
-              title={getPageTitle()}
-              description={
-                isDashboardHome 
-                  ? "Here's an overview of your order statuses" 
-                  : `Manage and track all ${getPageTitle().toLowerCase()} in the system`
-              }
-              onCreateOrder={isAdmin ? () => setCreateModalOpen(true) : undefined}
-            />
+            <div className="flex justify-between items-start">
+              <DashboardHeader 
+                title={getPageTitle()}
+                description={
+                  isDashboardHome 
+                    ? "Here's an overview of your order statuses" 
+                    : `Manage and track all ${getPageTitle().toLowerCase()} in the system`
+                }
+                onCreateOrder={isAdmin ? () => setCreateModalOpen(true) : undefined}
+              />
+              {/* Activity Log Toggle Button */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setActivityPanelOpen(!activityPanelOpen)}
+                className="shrink-0"
+              >
+                <Clock className="h-4 w-4 mr-2" />
+                Activity Log
+              </Button>
+            </div>
             
             {/* Team Encouragement Messages - Only on dashboard home */}
             {isDashboardHome && (
@@ -291,6 +306,12 @@ const Dashboard = () => {
             />
           </div>
         </Layout>
+        
+        {/* Activity Panel */}
+        <PaymentReminderActivityPanel 
+          isOpen={activityPanelOpen} 
+          onClose={() => setActivityPanelOpen(false)} 
+        />
       </div>
     </div>
     </>
