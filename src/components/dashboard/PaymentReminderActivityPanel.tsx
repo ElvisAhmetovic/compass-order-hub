@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { X, Bell, Clock, Edit, Ban, Send, ChevronRight, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { PaymentReminderLogService, PaymentReminderLog } from '@/services/paymentReminderLogService';
-import { formatDistanceToNow, format } from 'date-fns';
+import { formatDistanceToNow, format, isToday, isYesterday, startOfDay } from 'date-fns';
 import { useSearchParams } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 
@@ -116,6 +116,33 @@ export const PaymentReminderActivityPanel: React.FC<PaymentReminderActivityPanel
     onClose();
   };
 
+  // Group logs by date
+  const getDateLabel = (date: Date): string => {
+    if (isToday(date)) return 'Today';
+    if (isYesterday(date)) return 'Yesterday';
+    return format(date, 'MMM d, yyyy');
+  };
+
+  const groupedLogs = useMemo(() => {
+    const groups: { label: string; date: Date; logs: PaymentReminderLog[] }[] = [];
+    let currentGroup: { label: string; date: Date; logs: PaymentReminderLog[] } | null = null;
+
+    logs.forEach((log) => {
+      const logDate = new Date(log.created_at);
+      const dayStart = startOfDay(logDate);
+      const label = getDateLabel(logDate);
+
+      if (!currentGroup || currentGroup.label !== label) {
+        currentGroup = { label, date: dayStart, logs: [log] };
+        groups.push(currentGroup);
+      } else {
+        currentGroup.logs.push(log);
+      }
+    });
+
+    return groups;
+  }, [logs]);
+
   if (!isOpen) return null;
 
   return (
@@ -144,58 +171,69 @@ export const PaymentReminderActivityPanel: React.FC<PaymentReminderActivityPanel
           </div>
         ) : (
           <div className="p-2">
-            {logs.map((log) => {
-              const config = actionConfig[log.action as keyof typeof actionConfig] || actionConfig.created;
-              const Icon = config.icon;
-              const details = log.details as Record<string, any> | null;
-
-              return (
-                <div
-                  key={log.id}
-                  className="p-3 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer group"
-                  onClick={() => handleViewOrder(log.order_id)}
-                >
-                  <div className="flex items-start gap-3">
-                    <div className={cn('p-2 rounded-full', config.bgColor)}>
-                      <Icon className={cn('h-4 w-4', config.color)} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-foreground truncate">
-                        {log.actor_name}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {config.label}
-                      </p>
-                      <p className="text-sm text-foreground font-medium truncate mt-1">
-                        {log.company_name || 'Unknown Company'}
-                      </p>
-                      
-                      {/* Additional details */}
-                      {details && (
-                        <div className="mt-1 text-xs text-muted-foreground">
-                          {details.remind_at && (
-                            <p>Due: {format(new Date(details.remind_at), 'dd.MM.yyyy HH:mm')}</p>
-                          )}
-                          {details.old_date && details.new_date && (
-                            <p>
-                              {format(new Date(details.old_date), 'dd.MM')} → {format(new Date(details.new_date), 'dd.MM.yyyy')}
-                            </p>
-                          )}
-                          {details.note && (
-                            <p className="truncate italic">"{details.note}"</p>
-                          )}
-                        </div>
-                      )}
-                      
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {formatDistanceToNow(new Date(log.created_at), { addSuffix: true })}
-                      </p>
-                    </div>
-                    <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </div>
+            {groupedLogs.map((group) => (
+              <div key={group.label}>
+                {/* Date separator */}
+                <div className="sticky top-0 bg-card/95 backdrop-blur-sm py-2 px-3 mb-1">
+                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    {group.label}
+                  </span>
                 </div>
-              );
-            })}
+                
+                {group.logs.map((log) => {
+                  const config = actionConfig[log.action as keyof typeof actionConfig] || actionConfig.created;
+                  const Icon = config.icon;
+                  const details = log.details as Record<string, any> | null;
+
+                  return (
+                    <div
+                      key={log.id}
+                      className="p-3 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer group"
+                      onClick={() => handleViewOrder(log.order_id)}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className={cn('p-2 rounded-full', config.bgColor)}>
+                          <Icon className={cn('h-4 w-4', config.color)} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-foreground truncate">
+                            {log.actor_name}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {config.label}
+                          </p>
+                          <p className="text-sm text-foreground font-medium truncate mt-1">
+                            {log.company_name || 'Unknown Company'}
+                          </p>
+                          
+                          {/* Additional details */}
+                          {details && (
+                            <div className="mt-1 text-xs text-muted-foreground">
+                              {details.remind_at && (
+                                <p>Due: {format(new Date(details.remind_at), 'dd.MM.yyyy HH:mm')}</p>
+                              )}
+                              {details.old_date && details.new_date && (
+                                <p>
+                                  {format(new Date(details.old_date), 'dd.MM')} → {format(new Date(details.new_date), 'dd.MM.yyyy')}
+                                </p>
+                              )}
+                              {details.note && (
+                                <p className="truncate italic">"{details.note}"</p>
+                              )}
+                            </div>
+                          )}
+                          
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {format(new Date(log.created_at), 'HH:mm')}
+                          </p>
+                        </div>
+                        <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
             
             {/* Infinite scroll trigger */}
             <div ref={observerTarget} className="h-10 flex items-center justify-center">
