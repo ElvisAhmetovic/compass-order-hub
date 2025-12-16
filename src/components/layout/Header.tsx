@@ -1,9 +1,9 @@
-
 import React from "react";
 import { LogoutButton } from "@/components/auth/LogoutButton";
 import { useAuth } from "@/context/AuthContext";
 import { UserRole } from "@/types";
 import { DarkModeToggle } from "@/components/theme/DarkModeToggle";
+import NotificationCenter from "@/components/notifications/NotificationCenter";
 
 interface HeaderProps {
   userRole?: UserRole;
@@ -26,6 +26,7 @@ const Header = ({ userRole = "user" }: HeaderProps) => {
             <DarkModeToggle />
             {user && (
               <div className="flex items-center space-x-3">
+                <NotificationCenter />
                 <span className="text-sm text-gray-700 dark:text-gray-300">
                   Welcome, {user.full_name || user.email}
                 </span>
