@@ -4,6 +4,7 @@ import OrderTable from "@/components/dashboard/OrderTable";
 import OrderModal from "@/components/dashboard/OrderModal";
 import CreateOrderModal from "@/components/dashboard/CreateOrderModal";
 import { DashboardCards } from "@/components/dashboard/DashboardCards";
+import { PaymentReminderCard } from "@/components/dashboard/PaymentReminderCard";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import { Order, UserRole, OrderStatus } from "@/types";
 import ActiveOrdersTabs from "@/components/dashboard/ActiveOrdersTabs";
@@ -248,8 +249,12 @@ const Dashboard = () => {
               </div>
             )}
             
-            {isDashboardHome && <DashboardCards />}
-            
+            {isDashboardHome && (
+              <div className="space-y-4">
+                <PaymentReminderCard />
+                <DashboardCards />
+              </div>
+            )}
             {path === "/active-orders" && (
               <ActiveOrdersTabs activeTab={activeTab} setActiveTab={setActiveTab} />
             )}
