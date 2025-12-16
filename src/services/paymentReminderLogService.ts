@@ -12,6 +12,12 @@ export interface PaymentReminderLog {
   created_at: string;
 }
 
+export interface LogFilters {
+  action?: 'created' | 'updated' | 'cancelled' | 'sent';
+  actorName?: string;
+  companySearch?: string;
+}
+
 export const PaymentReminderLogService = {
   async logAction(params: {
     reminderId: string | null;
@@ -41,12 +47,24 @@ export const PaymentReminderLogService = {
     }
   },
 
-  async getRecentLogs(limit: number = 30, offset: number = 0): Promise<PaymentReminderLog[]> {
-    const { data, error } = await supabase
+  async getRecentLogs(limit: number = 30, offset: number = 0, filters?: LogFilters): Promise<PaymentReminderLog[]> {
+    let query = supabase
       .from('payment_reminder_logs')
       .select('*')
-      .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1);
+      .order('created_at', { ascending: false });
+
+    // Apply filters
+    if (filters?.action) {
+      query = query.eq('action', filters.action);
+    }
+    if (filters?.actorName) {
+      query = query.eq('actor_name', filters.actorName);
+    }
+    if (filters?.companySearch) {
+      query = query.ilike('company_name', `%${filters.companySearch}%`);
+    }
+
+    const { data, error } = await query.range(offset, offset + limit - 1);
 
     if (error) {
       console.error('Error fetching reminder logs:', error);
@@ -54,6 +72,22 @@ export const PaymentReminderLogService = {
     }
 
     return (data || []) as PaymentReminderLog[];
+  },
+
+  async getUniqueActors(): Promise<string[]> {
+    const { data, error } = await supabase
+      .from('payment_reminder_logs')
+      .select('actor_name')
+      .order('actor_name');
+
+    if (error) {
+      console.error('Error fetching unique actors:', error);
+      return [];
+    }
+
+    // Get unique actor names
+    const uniqueActors = [...new Set((data || []).map(d => d.actor_name))];
+    return uniqueActors;
   },
 
   subscribeToLogs(onLog: (log: PaymentReminderLog) => void): () => void {

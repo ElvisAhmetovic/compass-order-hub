@@ -1,11 +1,14 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { X, Bell, Clock, Edit, Ban, Send, ChevronRight, Loader2, ArrowUp } from 'lucide-react';
+import { X, Bell, Clock, Edit, Ban, Send, ChevronRight, Loader2, ArrowUp, Filter, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { PaymentReminderLogService, PaymentReminderLog } from '@/services/paymentReminderLogService';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { PaymentReminderLogService, PaymentReminderLog, LogFilters } from '@/services/paymentReminderLogService';
 import { format, isToday, isYesterday, startOfDay } from 'date-fns';
 import { useSearchParams } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 interface PaymentReminderActivityPanelProps {
   isOpen: boolean;
@@ -54,6 +57,36 @@ export const PaymentReminderActivityPanel: React.FC<PaymentReminderActivityPanel
   const observerTarget = useRef<HTMLDivElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
+  // Filter state
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [actionFilter, setActionFilter] = useState<string>('all');
+  const [actorFilter, setActorFilter] = useState<string>('all');
+  const [companySearch, setCompanySearch] = useState('');
+  const [uniqueActors, setUniqueActors] = useState<string[]>([]);
+  const searchTimeoutRef = useRef<NodeJS.Timeout>();
+
+  const activeFilters = useMemo(() => {
+    let count = 0;
+    if (actionFilter !== 'all') count++;
+    if (actorFilter !== 'all') count++;
+    if (companySearch.trim()) count++;
+    return count;
+  }, [actionFilter, actorFilter, companySearch]);
+
+  const buildFilters = useCallback((): LogFilters | undefined => {
+    const filters: LogFilters = {};
+    if (actionFilter !== 'all') {
+      filters.action = actionFilter as LogFilters['action'];
+    }
+    if (actorFilter !== 'all') {
+      filters.actorName = actorFilter;
+    }
+    if (companySearch.trim()) {
+      filters.companySearch = companySearch.trim();
+    }
+    return Object.keys(filters).length > 0 ? filters : undefined;
+  }, [actionFilter, actorFilter, companySearch]);
+
   const fetchLogs = useCallback(async (offset: number = 0, append: boolean = false) => {
     if (offset === 0) {
       setLoading(true);
@@ -61,7 +94,8 @@ export const PaymentReminderActivityPanel: React.FC<PaymentReminderActivityPanel
       setLoadingMore(true);
     }
 
-    const data = await PaymentReminderLogService.getRecentLogs(PAGE_SIZE, offset);
+    const filters = buildFilters();
+    const data = await PaymentReminderLogService.getRecentLogs(PAGE_SIZE, offset, filters);
     
     if (append) {
       setLogs((prev) => [...prev, ...data]);
@@ -72,7 +106,7 @@ export const PaymentReminderActivityPanel: React.FC<PaymentReminderActivityPanel
     setHasMore(data.length === PAGE_SIZE);
     setLoading(false);
     setLoadingMore(false);
-  }, []);
+  }, [buildFilters]);
 
   const loadMore = useCallback(() => {
     if (!loadingMore && hasMore) {
@@ -80,20 +114,64 @@ export const PaymentReminderActivityPanel: React.FC<PaymentReminderActivityPanel
     }
   }, [loadingMore, hasMore, logs.length, fetchLogs]);
 
+  // Fetch unique actors for filter dropdown
+  useEffect(() => {
+    if (isOpen) {
+      PaymentReminderLogService.getUniqueActors().then(setUniqueActors);
+    }
+  }, [isOpen]);
+
   useEffect(() => {
     if (!isOpen) return;
 
     fetchLogs(0, false);
 
     // Subscribe to real-time updates
+    const filters = buildFilters();
     const unsubscribe = PaymentReminderLogService.subscribeToLogs((newLog) => {
-      setLogs((prev) => [newLog, ...prev]);
+      // Only add if it matches current filters
+      const matchesAction = !filters?.action || newLog.action === filters.action;
+      const matchesActor = !filters?.actorName || newLog.actor_name === filters.actorName;
+      const matchesCompany = !filters?.companySearch || 
+        (newLog.company_name?.toLowerCase().includes(filters.companySearch.toLowerCase()));
+      
+      if (matchesAction && matchesActor && matchesCompany) {
+        setLogs((prev) => [newLog, ...prev]);
+      }
+
+      // Update unique actors if new actor
+      if (newLog.actor_name && !uniqueActors.includes(newLog.actor_name)) {
+        setUniqueActors(prev => [...prev, newLog.actor_name].sort());
+      }
     });
 
     return () => {
       unsubscribe();
     };
-  }, [isOpen, fetchLogs]);
+  }, [isOpen, fetchLogs, buildFilters, uniqueActors]);
+
+  // Debounced company search
+  useEffect(() => {
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    searchTimeoutRef.current = setTimeout(() => {
+      fetchLogs(0, false);
+    }, 300);
+
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, [companySearch]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Refetch when action or actor filter changes
+  useEffect(() => {
+    if (isOpen) {
+      fetchLogs(0, false);
+    }
+  }, [actionFilter, actorFilter]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Intersection Observer for infinite scroll
   useEffect(() => {
@@ -136,6 +214,12 @@ export const PaymentReminderActivityPanel: React.FC<PaymentReminderActivityPanel
     onClose();
   };
 
+  const clearFilters = () => {
+    setActionFilter('all');
+    setActorFilter('all');
+    setCompanySearch('');
+  };
+
   // Group logs by date
   const getDateLabel = (date: Date): string => {
     if (isToday(date)) return 'Today';
@@ -173,10 +257,93 @@ export const PaymentReminderActivityPanel: React.FC<PaymentReminderActivityPanel
           <Clock className="h-5 w-5 text-primary" />
           <h3 className="font-semibold text-foreground">Activity Log</h3>
         </div>
-        <Button variant="ghost" size="icon" onClick={onClose}>
-          <X className="h-4 w-4" />
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button 
+            variant={filtersOpen ? "secondary" : "ghost"} 
+            size="icon" 
+            onClick={() => setFiltersOpen(!filtersOpen)}
+            className="relative"
+          >
+            <Filter className="h-4 w-4" />
+            {activeFilters > 0 && (
+              <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-primary text-primary-foreground text-[10px] flex items-center justify-center font-medium">
+                {activeFilters}
+              </span>
+            )}
+          </Button>
+          <Button variant="ghost" size="icon" onClick={onClose}>
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
+
+      {/* Filters */}
+      <Collapsible open={filtersOpen} onOpenChange={setFiltersOpen}>
+        <CollapsibleContent className="border-b border-border">
+          <div className="p-3 space-y-3 bg-muted/30">
+            {/* Action Type Filter */}
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">Action Type</label>
+              <Select value={actionFilter} onValueChange={setActionFilter}>
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue placeholder="All Actions" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Actions</SelectItem>
+                  <SelectItem value="created">Created</SelectItem>
+                  <SelectItem value="updated">Updated</SelectItem>
+                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                  <SelectItem value="sent">Sent</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Team Member Filter */}
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">Team Member</label>
+              <Select value={actorFilter} onValueChange={setActorFilter}>
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue placeholder="All Members" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Members</SelectItem>
+                  {uniqueActors.map((actor) => (
+                    <SelectItem key={actor} value={actor}>
+                      {actor}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Company Search */}
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">Company</label>
+              <div className="relative">
+                <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+                <Input
+                  placeholder="Search company..."
+                  value={companySearch}
+                  onChange={(e) => setCompanySearch(e.target.value)}
+                  className="h-8 text-xs pl-7"
+                />
+              </div>
+            </div>
+
+            {/* Clear Filters */}
+            {activeFilters > 0 && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={clearFilters}
+                className="w-full h-7 text-xs"
+              >
+                Clear Filters
+              </Button>
+            )}
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
 
       {/* Content */}
       <div className="flex-1 relative">
@@ -188,7 +355,7 @@ export const PaymentReminderActivityPanel: React.FC<PaymentReminderActivityPanel
           </div>
         ) : logs.length === 0 ? (
           <div className="p-4 text-center text-muted-foreground">
-            No reminder activity yet
+            {activeFilters > 0 ? 'No matching activity' : 'No reminder activity yet'}
           </div>
         ) : (
           <div className="p-2">
