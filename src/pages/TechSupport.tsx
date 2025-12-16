@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Plus, Calendar, CheckCircle, Clock, Trash2, Image } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -34,8 +34,18 @@ const TechSupport = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isCreateWithImageModalOpen, setIsCreateWithImageModalOpen] = useState(false);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const userRole: UserRole = user?.role || "user";
+
+  // Handle deep-link from email notifications
+  useEffect(() => {
+    const ticketId = searchParams.get('ticketId');
+    if (ticketId) {
+      // Navigate to the detail page, replacing the current history entry
+      navigate(`/tech-support/${ticketId}`, { replace: true });
+    }
+  }, [searchParams, navigate]);
 
   const fetchTickets = async () => {
     try {
