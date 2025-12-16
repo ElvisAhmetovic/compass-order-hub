@@ -156,5 +156,37 @@ export const PaymentReminderService = {
       dueTodayCount,
       totalValue
     };
+  },
+
+  async getAllActiveRemindersWithOrders(): Promise<Array<PaymentReminder & { order: { id: string; company_name: string; price: number | null; contact_email: string | null } }>> {
+    const { data: reminders, error: remindersError } = await supabase
+      .from('payment_reminders')
+      .select('*')
+      .eq('status', 'scheduled')
+      .order('remind_at', { ascending: true });
+
+    if (remindersError) throw remindersError;
+    if (!reminders || reminders.length === 0) return [];
+
+    const orderIds = [...new Set(reminders.map(r => r.order_id))];
+
+    const { data: orders, error: ordersError } = await supabase
+      .from('orders')
+      .select('id, company_name, price, contact_email')
+      .in('id', orderIds);
+
+    if (ordersError) throw ordersError;
+
+    const ordersMap = new Map((orders || []).map(o => [o.id, o]));
+
+    return reminders.map(reminder => ({
+      ...reminder as PaymentReminder,
+      order: ordersMap.get(reminder.order_id) || { 
+        id: reminder.order_id, 
+        company_name: 'Unknown', 
+        price: null, 
+        contact_email: null 
+      }
+    }));
   }
 };
