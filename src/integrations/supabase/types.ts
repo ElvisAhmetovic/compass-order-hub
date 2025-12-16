@@ -990,6 +990,50 @@ export type Database = {
           },
         ]
       }
+      payment_reminder_logs: {
+        Row: {
+          action: string
+          actor_id: string | null
+          actor_name: string
+          company_name: string | null
+          created_at: string | null
+          details: Json | null
+          id: string
+          order_id: string
+          reminder_id: string | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          actor_name: string
+          company_name?: string | null
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          order_id: string
+          reminder_id?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          actor_name?: string
+          company_name?: string | null
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          order_id?: string
+          reminder_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_reminder_logs_reminder_id_fkey"
+            columns: ["reminder_id"]
+            isOneToOne: false
+            referencedRelation: "payment_reminders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_reminders: {
         Row: {
           created_at: string

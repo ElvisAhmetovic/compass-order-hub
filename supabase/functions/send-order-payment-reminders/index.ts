@@ -222,6 +222,26 @@ const handler = async (req: Request): Promise<Response> => {
         if (updateError) {
           console.error(`Error updating reminder ${reminder.id}:`, updateError);
         } else {
+          // Log the sent action
+          try {
+            await supabase
+              .from("payment_reminder_logs")
+              .insert({
+                reminder_id: reminder.id,
+                order_id: order.id,
+                action: "sent",
+                actor_id: null,
+                actor_name: "System",
+                company_name: order.company_name,
+                details: {
+                  emails_sent: emailsSent,
+                  remind_at: reminder.remind_at,
+                }
+              });
+            console.log(`Logged sent action for reminder ${reminder.id}`);
+          } catch (logError) {
+            console.error(`Error logging sent action for reminder ${reminder.id}:`, logError);
+          }
           processedCount++;
         }
       } catch (reminderError) {

@@ -63,15 +63,20 @@ export const PaymentRemindersListModal = ({
     }
   }, [open]);
 
-  const handleCancelReminder = async (reminderId: string) => {
-    setDeletingId(reminderId);
+  const handleCancelReminder = async (reminder: ReminderWithOrder) => {
+    setDeletingId(reminder.id);
     try {
-      await PaymentReminderService.cancelReminder(reminderId);
+      await PaymentReminderService.cancelReminder(
+        reminder.id,
+        'System', // In list modal, we use System as actor
+        reminder.order.company_name,
+        reminder.order_id
+      );
       toast({
         title: "Reminder cancelled",
         description: "Payment reminder has been removed.",
       });
-      setReminders(prev => prev.filter(r => r.id !== reminderId));
+      setReminders(prev => prev.filter(r => r.id !== reminder.id));
       onReminderUpdated();
     } catch (error) {
       console.error("Error cancelling reminder:", error);
@@ -167,7 +172,7 @@ export const PaymentRemindersListModal = ({
                       <Button
                         variant="destructive"
                         size="sm"
-                        onClick={() => handleCancelReminder(reminder.id)}
+                        onClick={() => handleCancelReminder(reminder)}
                         disabled={deletingId === reminder.id}
                       >
                         <Trash2 className="h-4 w-4" />

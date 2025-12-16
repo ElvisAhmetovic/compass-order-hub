@@ -103,10 +103,15 @@ const ScheduleReminderModal = ({
       const userName = `${user.first_name || ""} ${user.last_name || ""}`.trim() || user.email || "Unknown";
       
       if (existingReminder) {
+        const oldRemindAt = new Date(existingReminder.remind_at);
         await PaymentReminderService.updateReminder(
           existingReminder.id,
           reminderDateTime,
-          note || null
+          note || null,
+          userName,
+          order.company_name,
+          order.id,
+          oldRemindAt
         );
         toast({
           title: "Reminder updated",
@@ -117,7 +122,8 @@ const ScheduleReminderModal = ({
           order.id,
           reminderDateTime,
           note || null,
-          userName
+          userName,
+          order.company_name
         );
         toast({
           title: "Reminder scheduled",
@@ -140,11 +146,17 @@ const ScheduleReminderModal = ({
   };
 
   const handleCancel = async () => {
-    if (!existingReminder) return;
+    if (!existingReminder || !user) return;
 
     setIsDeleting(true);
     try {
-      await PaymentReminderService.cancelReminder(existingReminder.id);
+      const userName = `${user.first_name || ""} ${user.last_name || ""}`.trim() || user.email || "Unknown";
+      await PaymentReminderService.cancelReminder(
+        existingReminder.id,
+        userName,
+        order.company_name,
+        order.id
+      );
       toast({
         title: "Reminder cancelled",
         description: "Payment reminder has been cancelled.",

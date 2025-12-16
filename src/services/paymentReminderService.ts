@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { PaymentReminderLogService } from "./paymentReminderLogService";
 
 export interface PaymentReminder {
   id: string;
@@ -18,7 +19,8 @@ export const PaymentReminderService = {
     orderId: string,
     remindAt: Date,
     note: string | null,
-    createdByName: string
+    createdByName: string,
+    companyName: string
   ): Promise<PaymentReminder> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("Not authenticated");
@@ -44,6 +46,20 @@ export const PaymentReminderService = {
       .single();
 
     if (error) throw error;
+
+    // Log the action
+    await PaymentReminderLogService.logAction({
+      reminderId: data.id,
+      orderId,
+      action: 'created',
+      actorName: createdByName,
+      companyName,
+      details: {
+        remind_at: remindAt.toISOString(),
+        note,
+      }
+    });
+
     return data as PaymentReminder;
   },
 
@@ -61,19 +77,32 @@ export const PaymentReminderService = {
     return data as PaymentReminder | null;
   },
 
-  async cancelReminder(id: string): Promise<void> {
+  async cancelReminder(id: string, actorName: string, companyName: string, orderId: string): Promise<void> {
     const { error } = await supabase
       .from('payment_reminders')
       .update({ status: 'cancelled' })
       .eq('id', id);
 
     if (error) throw error;
+
+    // Log the action
+    await PaymentReminderLogService.logAction({
+      reminderId: id,
+      orderId,
+      action: 'cancelled',
+      actorName,
+      companyName,
+    });
   },
 
   async updateReminder(
     id: string,
     remindAt: Date,
-    note: string | null
+    note: string | null,
+    actorName: string,
+    companyName: string,
+    orderId: string,
+    oldRemindAt?: Date
   ): Promise<PaymentReminder> {
     const { data, error } = await supabase
       .from('payment_reminders')
@@ -86,6 +115,22 @@ export const PaymentReminderService = {
       .single();
 
     if (error) throw error;
+
+    // Log the action
+    await PaymentReminderLogService.logAction({
+      reminderId: id,
+      orderId,
+      action: 'updated',
+      actorName,
+      companyName,
+      details: {
+        remind_at: remindAt.toISOString(),
+        old_date: oldRemindAt?.toISOString(),
+        new_date: remindAt.toISOString(),
+        note,
+      }
+    });
+
     return data as PaymentReminder;
   },
 
