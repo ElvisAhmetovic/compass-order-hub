@@ -24,6 +24,9 @@ const TEAM_EMAILS = [
 
 const APP_URL = Deno.env.get("APP_URL") || "https://www.empriadental.de";
 
+// Helper function to add delay between email sends
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
 const handler = async (req: Request): Promise<Response> => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -96,7 +99,10 @@ const handler = async (req: Request): Promise<Response> => {
         }
 
         const orderLink = `${APP_URL}/dashboard?orderId=${order.id}`;
-        const price = order.price ? `€${Number(order.price).toLocaleString()}` : "Not specified";
+        // Use German locale for proper European number formatting (comma as decimal separator)
+        const price = order.price 
+          ? `€${Number(order.price).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` 
+          : "Not specified";
 
         const emailHtml = `
           <!DOCTYPE html>
@@ -180,15 +186,29 @@ const handler = async (req: Request): Promise<Response> => {
           </html>
         `;
 
-        // Send email to all team members
-        const emailResponse = await resend.emails.send({
-          from: "EMPRIA Dental <noreply@empriadental.de>",
-          to: TEAM_EMAILS,
-          subject: `💰 Payment Reminder: ${order.company_name} - ${price}`,
-          html: emailHtml,
-        });
+        // Send email to each team member individually with delay to avoid rate limiting
+        let emailsSent = 0;
+        for (const email of TEAM_EMAILS) {
+          try {
+            await resend.emails.send({
+              from: "EMPRIA Dental <noreply@empriadental.de>",
+              to: [email],
+              subject: `💰 Payment Reminder: ${order.company_name} - ${price}`,
+              html: emailHtml,
+            });
+            emailsSent++;
+            console.log(`Email sent to ${email}`);
+            
+            // Add 500ms delay between sends to avoid rate limiting
+            if (emailsSent < TEAM_EMAILS.length) {
+              await delay(500);
+            }
+          } catch (emailError) {
+            console.error(`Failed to send email to ${email}:`, emailError);
+          }
+        }
 
-        console.log(`Email sent for reminder ${reminder.id}:`, emailResponse);
+        console.log(`Sent ${emailsSent}/${TEAM_EMAILS.length} emails for reminder ${reminder.id}`);
 
         // Update reminder status to sent
         const { error: updateError } = await supabase
