@@ -191,6 +191,56 @@ export type Database = {
         }
         Relationships: []
       }
+      client_email_logs: {
+        Row: {
+          company_name: string
+          created_at: string | null
+          currency: string | null
+          custom_message: string | null
+          id: string
+          order_id: string
+          order_price: number | null
+          sent_by: string | null
+          sent_by_name: string
+          sent_to: string
+          team_emails_sent: number | null
+        }
+        Insert: {
+          company_name: string
+          created_at?: string | null
+          currency?: string | null
+          custom_message?: string | null
+          id?: string
+          order_id: string
+          order_price?: number | null
+          sent_by?: string | null
+          sent_by_name: string
+          sent_to: string
+          team_emails_sent?: number | null
+        }
+        Update: {
+          company_name?: string
+          created_at?: string | null
+          currency?: string | null
+          custom_message?: string | null
+          id?: string
+          order_id?: string
+          order_price?: number | null
+          sent_by?: string | null
+          sent_by_name?: string
+          sent_to?: string
+          team_emails_sent?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_email_logs_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           address: string | null
