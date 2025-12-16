@@ -105,5 +105,56 @@ export const PaymentReminderService = {
       reminderMap[reminder.order_id] = reminder as PaymentReminder;
     });
     return reminderMap;
+  },
+
+  async getActiveRemindersStats(): Promise<{
+    totalCount: number;
+    dueTodayCount: number;
+    totalValue: number;
+  }> {
+    // Fetch all scheduled reminders with order details
+    const { data: reminders, error: remindersError } = await supabase
+      .from('payment_reminders')
+      .select('order_id, remind_at')
+      .eq('status', 'scheduled');
+
+    if (remindersError) throw remindersError;
+
+    if (!reminders || reminders.length === 0) {
+      return { totalCount: 0, dueTodayCount: 0, totalValue: 0 };
+    }
+
+    // Get unique order IDs
+    const orderIds = [...new Set(reminders.map(r => r.order_id))];
+
+    // Fetch order prices
+    const { data: orders, error: ordersError } = await supabase
+      .from('orders')
+      .select('id, price')
+      .in('id', orderIds);
+
+    if (ordersError) throw ordersError;
+
+    // Calculate total value
+    const totalValue = (orders || []).reduce((sum, order) => {
+      return sum + (parseFloat(order.price?.toString() || '0') || 0);
+    }, 0);
+
+    // Calculate due today count
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const dueTodayCount = reminders.filter(r => {
+      const remindAt = new Date(r.remind_at);
+      return remindAt >= today && remindAt < tomorrow;
+    }).length;
+
+    return {
+      totalCount: reminders.length,
+      dueTodayCount,
+      totalValue
+    };
   }
 };
