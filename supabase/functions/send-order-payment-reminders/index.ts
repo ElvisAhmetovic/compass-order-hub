@@ -38,10 +38,10 @@ const handler = async (req: Request): Promise<Response> => {
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const resendApiKey = Deno.env.get("RESEND_API_KEY");
+    const resendApiKey = Deno.env.get("RESEND_API_KEY_ABMEDIA");
 
     if (!resendApiKey) {
-      console.error("RESEND_API_KEY is not configured");
+      console.error("RESEND_API_KEY_ABMEDIA is not configured");
       return new Response(
         JSON.stringify({ error: "Email service not configured" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -191,7 +191,7 @@ const handler = async (req: Request): Promise<Response> => {
         for (const email of TEAM_EMAILS) {
           try {
             await resend.emails.send({
-              from: "AB Media Team <noreply@empriadental.de>",
+              from: "AB Media Team <noreply@abm-team.com>",
               to: [email],
               subject: `💰 Payment Reminder: ${order.company_name} - ${price}`,
               html: emailHtml,

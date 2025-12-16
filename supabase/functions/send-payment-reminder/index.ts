@@ -2,7 +2,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
 
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+const resend = new Resend(Deno.env.get("RESEND_API_KEY_ABMEDIA"));
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -34,7 +34,7 @@ const handler = async (req: Request): Promise<Response> => {
       .replace(/•/g, '&bull;');
 
     const emailResponse = await resend.emails.send({
-      from: "AB Media Team <noreply@empriadental.de>",
+      from: "AB Media Team <noreply@abm-team.com>",
       to: [to],
       subject: subject,
       html: `
