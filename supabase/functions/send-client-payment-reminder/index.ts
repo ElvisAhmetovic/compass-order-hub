@@ -255,6 +255,9 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log(`Successfully sent email to client: ${clientEmail}`, clientEmailResponse);
 
+    // Add delay before sending team notifications to avoid rate limiting
+    await new Promise(resolve => setTimeout(resolve, 500));
+
     // Build team notification email
     const teamEmailHtml = `
       <!DOCTYPE html>
