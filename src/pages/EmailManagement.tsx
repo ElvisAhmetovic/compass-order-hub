@@ -3,7 +3,7 @@ import React from "react";
 import Layout from "@/components/layout/Layout";
 import Sidebar from "@/components/dashboard/Sidebar";
 import { useAuth } from "@/context/AuthContext";
-import EmailTemplateManager from "@/components/invoices/EmailTemplateManager";
+import EmailTemplateManager from "@/components/email-templates/EmailTemplateManager";
 
 const EmailManagement = () => {
   const { user } = useAuth();
