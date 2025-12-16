@@ -330,7 +330,7 @@ const handler = async (req: Request): Promise<Response> => {
         console.log(`Attempting to send order confirmation to: ${email}`);
         
         const emailResponse = await resend.emails.send({
-          from: "Empria Dental <noreply@empriadental.de>",
+          from: "AB Media Team <noreply@empriadental.de>",
           to: [email],
           subject: emailSubject,
           html: emailHtml,

@@ -34,7 +34,7 @@ const handler = async (req: Request): Promise<Response> => {
       .replace(/•/g, '&bull;');
 
     const emailResponse = await resend.emails.send({
-      from: "AB Media Team <billing@empriadental.de>", // Using billing address
+      from: "AB Media Team <noreply@empriadental.de>",
       to: [to],
       subject: subject,
       html: `
