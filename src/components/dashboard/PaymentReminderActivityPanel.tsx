@@ -1,16 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import { X, Bell, Clock, Edit, Ban, Send, ChevronRight } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { X, Bell, Clock, Edit, Ban, Send, ChevronRight, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { PaymentReminderLogService, PaymentReminderLog } from '@/services/paymentReminderLogService';
 import { formatDistanceToNow, format } from 'date-fns';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 
 interface PaymentReminderActivityPanelProps {
   isOpen: boolean;
   onClose: () => void;
 }
+
+const PAGE_SIZE = 20;
 
 const actionConfig = {
   created: {
@@ -45,30 +47,69 @@ export const PaymentReminderActivityPanel: React.FC<PaymentReminderActivityPanel
 }) => {
   const [logs, setLogs] = useState<PaymentReminderLog[]>([]);
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
   const [, setSearchParams] = useSearchParams();
+  const observerTarget = useRef<HTMLDivElement>(null);
+
+  const fetchLogs = useCallback(async (offset: number = 0, append: boolean = false) => {
+    if (offset === 0) {
+      setLoading(true);
+    } else {
+      setLoadingMore(true);
+    }
+
+    const data = await PaymentReminderLogService.getRecentLogs(PAGE_SIZE, offset);
+    
+    if (append) {
+      setLogs((prev) => [...prev, ...data]);
+    } else {
+      setLogs(data);
+    }
+    
+    setHasMore(data.length === PAGE_SIZE);
+    setLoading(false);
+    setLoadingMore(false);
+  }, []);
+
+  const loadMore = useCallback(() => {
+    if (!loadingMore && hasMore) {
+      fetchLogs(logs.length, true);
+    }
+  }, [loadingMore, hasMore, logs.length, fetchLogs]);
 
   useEffect(() => {
     if (!isOpen) return;
 
-    const fetchLogs = async () => {
-      setLoading(true);
-      const data = await PaymentReminderLogService.getRecentLogs(30);
-      setLogs(data);
-      setLoading(false);
-    };
-
-    fetchLogs();
+    fetchLogs(0, false);
 
     // Subscribe to real-time updates
     const unsubscribe = PaymentReminderLogService.subscribeToLogs((newLog) => {
-      setLogs((prev) => [newLog, ...prev].slice(0, 30));
+      setLogs((prev) => [newLog, ...prev]);
     });
 
     return () => {
       unsubscribe();
     };
-  }, [isOpen]);
+  }, [isOpen, fetchLogs]);
+
+  // Intersection Observer for infinite scroll
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loadingMore && !loading) {
+          loadMore();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (observerTarget.current) {
+      observer.observe(observerTarget.current);
+    }
+
+    return () => observer.disconnect();
+  }, [hasMore, loadingMore, loading, loadMore]);
 
   const handleViewOrder = (orderId: string) => {
     setSearchParams({ orderId });
@@ -94,6 +135,7 @@ export const PaymentReminderActivityPanel: React.FC<PaymentReminderActivityPanel
       <ScrollArea className="flex-1">
         {loading ? (
           <div className="p-4 text-center text-muted-foreground">
+            <Loader2 className="h-5 w-5 animate-spin mx-auto mb-2" />
             Loading activity...
           </div>
         ) : logs.length === 0 ? (
@@ -154,6 +196,16 @@ export const PaymentReminderActivityPanel: React.FC<PaymentReminderActivityPanel
                 </div>
               );
             })}
+            
+            {/* Infinite scroll trigger */}
+            <div ref={observerTarget} className="h-10 flex items-center justify-center">
+              {loadingMore && (
+                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+              )}
+              {!hasMore && logs.length > 0 && (
+                <p className="text-xs text-muted-foreground">No more entries</p>
+              )}
+            </div>
           </div>
         )}
       </ScrollArea>
