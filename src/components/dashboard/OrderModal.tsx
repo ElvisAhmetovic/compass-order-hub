@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { X, Edit, Building2, MessageSquare, Bell } from "lucide-react";
+import { X, Edit, Building2, MessageSquare, Bell, Mail } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,6 +17,7 @@ import { EmojiReactionBar } from "@/components/reactions/EmojiReactionBar";
 import { SelectedInventoryItem } from "./InventoryItemsSelector";
 import ScheduleReminderModal from "@/components/orders/ScheduleReminderModal";
 import { PaymentReminderService, PaymentReminder } from "@/services/paymentReminderService";
+import ClientEmailHistory from "@/components/orders/ClientEmailHistory";
 
 interface OrderModalProps {
   order: Order | null;
@@ -130,6 +131,10 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
               <TabsTrigger value="details">Order Details</TabsTrigger>
               <TabsTrigger value="activity">Activity Timeline</TabsTrigger>
               <TabsTrigger value="collaboration">Collaboration</TabsTrigger>
+              <TabsTrigger value="email-history" className="flex items-center gap-1">
+                <Mail className="h-4 w-4" />
+                Email History
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="details" className="flex-1 overflow-hidden m-0">
@@ -234,6 +239,12 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
             <TabsContent value="collaboration" className="flex-1 overflow-hidden px-6 pb-6">
               <ScrollArea className="h-full">
                 <OrderCollaboration orderId={order.id} />
+              </ScrollArea>
+            </TabsContent>
+
+            <TabsContent value="email-history" className="flex-1 overflow-hidden px-6 pb-6">
+              <ScrollArea className="h-full">
+                <ClientEmailHistory orderId={order.id} />
               </ScrollArea>
             </TabsContent>
           </Tabs>

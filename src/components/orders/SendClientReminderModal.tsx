@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -15,14 +15,37 @@ interface SendClientReminderModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   order: Order;
+  onEmailSent?: () => void;
 }
 
-const SendClientReminderModal = ({ open, onOpenChange, order }: SendClientReminderModalProps) => {
+const SendClientReminderModal = ({ open, onOpenChange, order, onEmailSent }: SendClientReminderModalProps) => {
   const [customMessage, setCustomMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [currentUser, setCurrentUser] = useState<{ id: string; name: string } | null>(null);
   const { toast } = useToast();
 
   const hasClientEmail = !!order.contact_email && order.contact_email.trim() !== "";
+
+  // Get current user info
+  useEffect(() => {
+    const fetchUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("first_name, last_name")
+          .eq("id", user.id)
+          .single();
+        
+        const name = profile 
+          ? `${profile.first_name} ${profile.last_name}`.trim() || user.email || "Unknown"
+          : user.email || "Unknown";
+        
+        setCurrentUser({ id: user.id, name });
+      }
+    };
+    fetchUser();
+  }, []);
 
   const handleSendReminder = async () => {
     if (!hasClientEmail) {
@@ -48,6 +71,8 @@ const SendClientReminderModal = ({ open, onOpenChange, order }: SendClientRemind
           orderCurrency: order.currency || "EUR",
           customMessage: customMessage.trim() || null,
           orderId: order.id,
+          sentByName: currentUser?.name || "Team Member",
+          sentById: currentUser?.id || null,
         },
       });
 
@@ -62,6 +87,7 @@ const SendClientReminderModal = ({ open, onOpenChange, order }: SendClientRemind
 
       setCustomMessage("");
       onOpenChange(false);
+      onEmailSent?.();
     } catch (error: any) {
       console.error("Error sending client reminder:", error);
       toast({

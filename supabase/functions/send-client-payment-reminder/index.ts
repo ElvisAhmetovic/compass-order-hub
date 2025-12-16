@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY_ABMEDIA"));
 
@@ -33,6 +34,8 @@ interface ClientReminderRequest {
   orderCurrency: string;
   customMessage: string | null;
   orderId: string;
+  sentByName: string;
+  sentById: string | null;
 }
 
 const formatPrice = (price: number | null, currency: string): string => {
@@ -69,9 +72,11 @@ const handler = async (req: Request): Promise<Response> => {
       orderCurrency,
       customMessage,
       orderId,
+      sentByName,
+      sentById,
     }: ClientReminderRequest = await req.json();
 
-    console.log(`Sending client payment reminder to ${clientEmail} for order ${orderId}`);
+    console.log(`Sending client payment reminder to ${clientEmail} for order ${orderId} by ${sentByName}`);
 
     const formattedPrice = formatPrice(orderPrice, orderCurrency);
     const formattedDate = formatDate(orderCreatedAt);
@@ -189,7 +194,7 @@ const handler = async (req: Request): Promise<Response> => {
         </div>
         
         <div style="background: #ffffff; padding: 20px; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 10px 10px;">
-          <p>A payment reminder has been sent to the following client:</p>
+          <p>A payment reminder has been sent to the following client by <strong>${sentByName}</strong>:</p>
           
           <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin: 15px 0;">
             <table style="width: 100%; border-collapse: collapse;">
@@ -241,6 +246,35 @@ const handler = async (req: Request): Promise<Response> => {
         console.error(`Failed to send team notification to ${teamEmail}:`, error);
         teamEmailErrors.push(teamEmail);
       }
+    }
+
+    // Log to database
+    try {
+      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+      const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+      const supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
+
+      const { error: logError } = await supabaseClient
+        .from("client_email_logs")
+        .insert({
+          order_id: orderId,
+          sent_to: clientEmail,
+          sent_by: sentById || null,
+          sent_by_name: sentByName,
+          company_name: companyName,
+          order_price: orderPrice,
+          currency: orderCurrency || "EUR",
+          custom_message: customMessage || null,
+          team_emails_sent: teamEmailsSent,
+        });
+
+      if (logError) {
+        console.error("Error logging email to database:", logError);
+      } else {
+        console.log("Email log saved to database successfully");
+      }
+    } catch (dbError) {
+      console.error("Error connecting to database for logging:", dbError);
     }
 
     console.log(`Client payment reminder completed. Client email sent: true, Team emails sent: ${teamEmailsSent}/${TEAM_EMAILS.length}`);
