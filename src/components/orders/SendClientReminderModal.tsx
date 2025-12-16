@@ -3,13 +3,18 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Order } from "@/types";
 import { formatCurrency } from "@/utils/currencyUtils";
 import { formatDate } from "@/lib/utils";
-import { Send, AlertCircle, Mail, Phone, Calendar, Building2 } from "lucide-react";
+import { Send, AlertCircle, Mail, Phone, Calendar, Building2, Eye, Code } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Separator } from "@/components/ui/separator";
+import TemplateSelector from "@/components/email-templates/TemplateSelector";
+import { EmailTemplate, emailTemplateService } from "@/services/emailTemplateService";
 
 interface SendClientReminderModalProps {
   open: boolean;
@@ -20,6 +25,9 @@ interface SendClientReminderModalProps {
 
 const SendClientReminderModal = ({ open, onOpenChange, order, onEmailSent }: SendClientReminderModalProps) => {
   const [customMessage, setCustomMessage] = useState("");
+  const [selectedTemplate, setSelectedTemplate] = useState<EmailTemplate | null>(null);
+  const [emailSubject, setEmailSubject] = useState("");
+  const [previewMode, setPreviewMode] = useState<"info" | "preview">("info");
   const [isSending, setIsSending] = useState(false);
   const [currentUser, setCurrentUser] = useState<{ id: string; name: string } | null>(null);
   const { toast } = useToast();
@@ -47,6 +55,39 @@ const SendClientReminderModal = ({ open, onOpenChange, order, onEmailSent }: Sen
     fetchUser();
   }, []);
 
+  // Update subject when template changes
+  useEffect(() => {
+    if (selectedTemplate) {
+      const formattedPrice = formatCurrency(order.price || 0, order.currency || "EUR");
+      const subject = emailTemplateService.replaceVariables(selectedTemplate.subject, {
+        companyName: order.company_name,
+        amount: formattedPrice,
+      });
+      setEmailSubject(subject);
+    }
+  }, [selectedTemplate, order]);
+
+  const getTemplateVariables = () => {
+    const formattedPrice = formatCurrency(order.price || 0, order.currency || "EUR");
+    const formattedDate = formatDate(order.created_at);
+    
+    return {
+      companyName: order.company_name,
+      clientEmail: order.contact_email || "",
+      contactPhone: order.contact_phone || "",
+      orderDate: formattedDate,
+      orderDescription: order.description || "",
+      amount: formattedPrice,
+      customMessage: customMessage.trim() || undefined,
+      teamMemberName: currentUser?.name || "Team Member",
+    };
+  };
+
+  const getPreviewHtml = () => {
+    if (!selectedTemplate) return "";
+    return emailTemplateService.replaceVariables(selectedTemplate.body, getTemplateVariables());
+  };
+
   const handleSendReminder = async () => {
     if (!hasClientEmail) {
       toast({
@@ -57,9 +98,21 @@ const SendClientReminderModal = ({ open, onOpenChange, order, onEmailSent }: Sen
       return;
     }
 
+    if (!selectedTemplate) {
+      toast({
+        title: "No Template Selected",
+        description: "Please select an email template.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSending(true);
 
     try {
+      const variables = getTemplateVariables();
+      const emailBody = emailTemplateService.replaceVariables(selectedTemplate.body, variables);
+
       const { data, error } = await supabase.functions.invoke("send-client-payment-reminder", {
         body: {
           clientEmail: order.contact_email,
@@ -73,6 +126,11 @@ const SendClientReminderModal = ({ open, onOpenChange, order, onEmailSent }: Sen
           orderId: order.id,
           sentByName: currentUser?.name || "Team Member",
           sentById: currentUser?.id || null,
+          // Custom template data
+          emailSubject: emailSubject,
+          emailBodyHtml: emailBody,
+          templateId: selectedTemplate.id,
+          templateName: selectedTemplate.name,
         },
       });
 
@@ -102,14 +160,14 @@ const SendClientReminderModal = ({ open, onOpenChange, order, onEmailSent }: Sen
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Send className="h-5 w-5 text-primary" />
             Send Payment Reminder to Client
           </DialogTitle>
           <DialogDescription>
-            Send a professional payment reminder email to the client and notify your team.
+            Select a template and customize your payment reminder email.
           </DialogDescription>
         </DialogHeader>
 
@@ -124,47 +182,100 @@ const SendClientReminderModal = ({ open, onOpenChange, order, onEmailSent }: Sen
             </Alert>
           )}
 
-          {/* Order Details Card */}
-          <div className="bg-muted/50 rounded-lg p-4 space-y-3">
-            <h4 className="font-medium text-sm text-muted-foreground mb-3">Order Details (included in email)</h4>
-            
-            <div className="grid gap-2 text-sm">
-              <div className="flex items-center gap-2">
-                <Building2 className="h-4 w-4 text-muted-foreground" />
-                <span className="text-muted-foreground">Company:</span>
-                <span className="font-medium">{order.company_name}</span>
+          {/* Template Selector */}
+          <TemplateSelector
+            type="payment_reminder"
+            selectedTemplateId={selectedTemplate?.id || null}
+            onTemplateSelect={setSelectedTemplate}
+            disabled={isSending}
+          />
+
+          {/* Email Subject */}
+          {selectedTemplate && (
+            <div className="space-y-2">
+              <Label htmlFor="subject">Email Subject</Label>
+              <Input
+                id="subject"
+                value={emailSubject}
+                onChange={(e) => setEmailSubject(e.target.value)}
+                placeholder="Email subject..."
+              />
+            </div>
+          )}
+
+          <Separator />
+
+          {/* Tab view for Order Details / Email Preview */}
+          <Tabs value={previewMode} onValueChange={(v) => setPreviewMode(v as "info" | "preview")}>
+            <TabsList className="w-full">
+              <TabsTrigger value="info" className="flex-1">
+                <Building2 className="h-4 w-4 mr-2" />
+                Order Details
+              </TabsTrigger>
+              <TabsTrigger value="preview" className="flex-1" disabled={!selectedTemplate}>
+                <Eye className="h-4 w-4 mr-2" />
+                Email Preview
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="info" className="mt-4">
+              {/* Order Details Card */}
+              <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+                <h4 className="font-medium text-sm text-muted-foreground mb-3">Order Details (included in email)</h4>
+                
+                <div className="grid gap-2 text-sm">
+                  <div className="flex items-center gap-2">
+                    <Building2 className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">Company:</span>
+                    <span className="font-medium">{order.company_name}</span>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <Mail className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">Email:</span>
+                    <span className={`font-medium ${!hasClientEmail ? "text-destructive" : ""}`}>
+                      {order.contact_email || "Not provided"}
+                    </span>
+                  </div>
+                  
+                  {order.contact_phone && (
+                    <div className="flex items-center gap-2">
+                      <Phone className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-muted-foreground">Phone:</span>
+                      <span className="font-medium">{order.contact_phone}</span>
+                    </div>
+                  )}
+                  
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">Order Date:</span>
+                    <span className="font-medium">{formatDate(order.created_at)}</span>
+                  </div>
+                  
+                  <div className="flex items-center gap-2 pt-2 border-t border-border">
+                    <span className="text-muted-foreground">Amount Due:</span>
+                    <span className="font-bold text-lg text-primary">
+                      {formatCurrency(order.price || 0, order.currency || "EUR")}
+                    </span>
+                  </div>
+                </div>
               </div>
-              
-              <div className="flex items-center gap-2">
-                <Mail className="h-4 w-4 text-muted-foreground" />
-                <span className="text-muted-foreground">Email:</span>
-                <span className={`font-medium ${!hasClientEmail ? "text-destructive" : ""}`}>
-                  {order.contact_email || "Not provided"}
-                </span>
-              </div>
-              
-              {order.contact_phone && (
-                <div className="flex items-center gap-2">
-                  <Phone className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-muted-foreground">Phone:</span>
-                  <span className="font-medium">{order.contact_phone}</span>
+            </TabsContent>
+
+            <TabsContent value="preview" className="mt-4">
+              {selectedTemplate && (
+                <div className="border rounded-lg p-4 bg-white dark:bg-gray-900 max-h-[300px] overflow-y-auto">
+                  <div className="mb-2 pb-2 border-b">
+                    <p className="text-sm text-muted-foreground">Subject: <span className="font-medium text-foreground">{emailSubject}</span></p>
+                  </div>
+                  <div
+                    className="prose prose-sm max-w-none dark:prose-invert"
+                    dangerouslySetInnerHTML={{ __html: getPreviewHtml() }}
+                  />
                 </div>
               )}
-              
-              <div className="flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-muted-foreground" />
-                <span className="text-muted-foreground">Order Date:</span>
-                <span className="font-medium">{formatDate(order.created_at)}</span>
-              </div>
-              
-              <div className="flex items-center gap-2 pt-2 border-t border-border">
-                <span className="text-muted-foreground">Amount Due:</span>
-                <span className="font-bold text-lg text-primary">
-                  {formatCurrency(order.price || 0, order.currency || "EUR")}
-                </span>
-              </div>
-            </div>
-          </div>
+            </TabsContent>
+          </Tabs>
 
           {/* Custom Message */}
           <div className="space-y-2">
@@ -194,7 +305,7 @@ const SendClientReminderModal = ({ open, onOpenChange, order, onEmailSent }: Sen
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSending}>
             Cancel
           </Button>
-          <Button onClick={handleSendReminder} disabled={isSending || !hasClientEmail}>
+          <Button onClick={handleSendReminder} disabled={isSending || !hasClientEmail || !selectedTemplate}>
             {isSending ? (
               <>Sending...</>
             ) : (
