@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { X, Edit, Building2, MessageSquare } from "lucide-react";
+import { useState, useEffect } from "react";
+import { X, Edit, Building2, MessageSquare, Bell } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +15,8 @@ import EditModeHeader from "./OrderEditForm/EditModeHeader";
 import { useOrderEdit } from "./OrderEditForm/useOrderEdit";
 import { EmojiReactionBar } from "@/components/reactions/EmojiReactionBar";
 import { SelectedInventoryItem } from "./InventoryItemsSelector";
+import ScheduleReminderModal from "@/components/orders/ScheduleReminderModal";
+import { PaymentReminderService, PaymentReminder } from "@/services/paymentReminderService";
 
 interface OrderModalProps {
   order: Order | null;
@@ -26,6 +28,8 @@ interface OrderModalProps {
 const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [selectedInventoryItems, setSelectedInventoryItems] = useState<SelectedInventoryItem[]>([]);
+  const [showReminderModal, setShowReminderModal] = useState(false);
+  const [activeReminder, setActiveReminder] = useState<PaymentReminder | null>(null);
 
   const handleRefresh = () => {
     setRefreshTrigger(prev => prev + 1);
@@ -42,6 +46,17 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
     handleSave,
     handleCancel
   } = useOrderEdit(order, handleRefresh, selectedInventoryItems, setSelectedInventoryItems);
+
+  // Fetch existing reminder when modal opens
+  useEffect(() => {
+    const fetchReminder = async () => {
+      if (order && open) {
+        const reminder = await PaymentReminderService.getReminderForOrder(order.id);
+        setActiveReminder(reminder);
+      }
+    };
+    fetchReminder();
+  }, [order, open, refreshTrigger]);
 
   if (!order) return null;
 
@@ -67,6 +82,14 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
     onClose();
   };
 
+  const handleReminderUpdated = async () => {
+    setShowReminderModal(false);
+    if (order) {
+      const reminder = await PaymentReminderService.getReminderForOrder(order.id);
+      setActiveReminder(reminder);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={handleModalClose}>
       <DialogContent className="max-w-6xl h-[90vh] flex flex-col p-0">
@@ -81,6 +104,15 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
             <MultiStatusBadges order={order} onRefresh={handleRefresh} />
           </div>
           <div className="flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              size="icon" 
+              onClick={() => setShowReminderModal(true)}
+              className={activeReminder ? "text-amber-500 border-amber-500 hover:bg-amber-50 dark:hover:bg-amber-950" : ""}
+              title={activeReminder ? "Edit reminder" : "Set payment reminder"}
+            >
+              <Bell className="h-4 w-4" />
+            </Button>
             {isAdmin && !isEditing && (
               <Button variant="outline" size="icon" onClick={handleEdit}>
                 <Edit className="h-4 w-4" />
@@ -207,6 +239,14 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
           </Tabs>
         </div>
       </DialogContent>
+
+      <ScheduleReminderModal
+        open={showReminderModal}
+        onOpenChange={setShowReminderModal}
+        order={order}
+        existingReminder={activeReminder}
+        onReminderUpdated={handleReminderUpdated}
+      />
     </Dialog>
   );
 };
