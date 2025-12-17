@@ -214,7 +214,7 @@ const OrderTable = ({
 
     if (filteredOrders.length === 0) {
       return (
-        <div className="p-8 text-center">
+        <div className="p-8 text-center min-h-[200px] flex flex-col items-center justify-center">
           <p className="text-muted-foreground text-lg">No {isYearlyPackages ? 'yearly packages' : 'orders'} found.</p>
           <p className="text-sm text-muted-foreground mt-1">
             {isAdmin 
@@ -231,7 +231,7 @@ const OrderTable = ({
   const contentOverride = renderContent();
   if (contentOverride) {
     return (
-      <Card className="overflow-x-hidden">
+      <Card className="overflow-x-hidden w-full">
         <CardHeader className="pb-3">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
@@ -265,7 +265,7 @@ const OrderTable = ({
   const totalPages = Math.ceil(filteredOrders.length / rowsPerPage);
 
   return (
-    <Card className="overflow-x-hidden">
+    <Card className="overflow-x-hidden w-full">
       <CardHeader className="pb-3">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>

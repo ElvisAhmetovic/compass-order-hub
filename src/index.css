@@ -2,6 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Force consistent scrollbar to prevent horizontal layout shift */
+html {
+  overflow-y: scroll;
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;
