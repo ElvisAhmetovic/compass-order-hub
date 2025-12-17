@@ -11,10 +11,10 @@ interface LayoutProps {
 
 const Layout = ({ children, userRole = "admin" }: LayoutProps) => {
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="flex-1 min-w-0 min-h-screen bg-gray-50 dark:bg-gray-900">
       <GlobalNotifications />
       <Header userRole={userRole} />
-      <main className="container mx-auto px-4 py-8">
+      <main className="px-4 py-8 max-w-full">
         {children}
       </main>
       <Toaster />
