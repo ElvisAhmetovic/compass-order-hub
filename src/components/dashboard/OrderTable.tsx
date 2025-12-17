@@ -179,49 +179,27 @@ const OrderTable = ({
     setSearchFilters(filters);
   };
 
-  // Show authentication message if user is not logged in
-  if (!user) {
-    return (
-      <div>
-        <div className="space-y-4 mb-4">
-          <AdvancedSearch 
-            onFiltersChange={handleFiltersChange}
-            currentFilters={searchFilters}
-          />
-        </div>
-        <div className="p-8 text-center border rounded-md">
+  // Helper to render content based on state
+  const renderContent = () => {
+    if (!user) {
+      return (
+        <div className="p-8 text-center">
           <p className="text-muted-foreground text-lg">Please log in to view orders.</p>
         </div>
-      </div>
-    );
-  }
+      );
+    }
 
-  if (loading) {
-    return (
-      <div>
-        <div className="space-y-4 mb-4">
-          <AdvancedSearch 
-            onFiltersChange={handleFiltersChange}
-            currentFilters={searchFilters}
-          />
-        </div>
+    if (loading) {
+      return (
         <div className="flex justify-center items-center h-64">
           <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
           <span className="ml-2">Loading {isYearlyPackages ? 'yearly packages' : 'orders'}...</span>
         </div>
-      </div>
-    );
-  }
+      );
+    }
 
-  if (error) {
-    return (
-      <div>
-        <div className="space-y-4 mb-4">
-          <AdvancedSearch 
-            onFiltersChange={handleFiltersChange}
-            currentFilters={searchFilters}
-          />
-        </div>
+    if (error) {
+      return (
         <div className="p-4 text-center">
           <p className="text-destructive">{error}</p>
           <button 
@@ -231,20 +209,12 @@ const OrderTable = ({
             Retry
           </button>
         </div>
-      </div>
-    );
-  }
+      );
+    }
 
-  if (filteredOrders.length === 0) {
-    return (
-      <div>
-        <div className="space-y-4 mb-4">
-          <AdvancedSearch 
-            onFiltersChange={handleFiltersChange}
-            currentFilters={searchFilters}
-          />
-        </div>
-        <div className="p-8 text-center border rounded-md">
+    if (filteredOrders.length === 0) {
+      return (
+        <div className="p-8 text-center">
           <p className="text-muted-foreground text-lg">No {isYearlyPackages ? 'yearly packages' : 'orders'} found.</p>
           <p className="text-sm text-muted-foreground mt-1">
             {isAdmin 
@@ -252,7 +222,39 @@ const OrderTable = ({
               : "You have no orders assigned to you."}
           </p>
         </div>
-      </div>
+      );
+    }
+
+    return null;
+  };
+
+  const contentOverride = renderContent();
+  if (contentOverride) {
+    return (
+      <Card className="overflow-x-hidden">
+        <CardHeader className="pb-3">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <CardTitle className="text-lg font-semibold">
+                {isYearlyPackages ? 'Yearly Packages' : 'Orders'}
+              </CardTitle>
+              <CardDescription>
+                {isYearlyPackages 
+                  ? 'Manage your yearly package orders'
+                  : 'Manage and track your orders'
+                }
+              </CardDescription>
+            </div>
+            <div className="w-full sm:w-auto sm:min-w-[300px]">
+              <AdvancedSearch 
+                onFiltersChange={handleFiltersChange}
+                currentFilters={searchFilters}
+              />
+            </div>
+          </div>
+        </CardHeader>
+        {contentOverride}
+      </Card>
     );
   }
 
@@ -263,7 +265,7 @@ const OrderTable = ({
   const totalPages = Math.ceil(filteredOrders.length / rowsPerPage);
 
   return (
-    <Card>
+    <Card className="overflow-x-hidden">
       <CardHeader className="pb-3">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
@@ -277,7 +279,7 @@ const OrderTable = ({
               }
             </CardDescription>
           </div>
-          <div>
+          <div className="w-full sm:w-auto sm:min-w-[300px]">
             <AdvancedSearch 
               onFiltersChange={handleFiltersChange}
               currentFilters={searchFilters}
