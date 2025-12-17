@@ -135,8 +135,8 @@ const AdvancedSearch = ({ onFiltersChange, currentFilters }: AdvancedSearchProps
   };
 
   return (
-    <div className="flex items-center gap-2">
-      <div className="relative flex-1">
+    <div className="flex items-center gap-2 w-full">
+      <div className="relative flex-1 min-w-[200px]">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
         <Input
           placeholder="Search orders, companies, clients..."
