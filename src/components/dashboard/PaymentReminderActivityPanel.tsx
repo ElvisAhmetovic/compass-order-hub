@@ -275,13 +275,12 @@ export const PaymentReminderActivityPanel: React.FC<PaymentReminderActivityPanel
     return groups;
   }, [logs, sortOption]);
 
+  if (!isOpen) return null;
+
   const isCompanySort = sortOption === 'company_asc' || sortOption === 'company_desc';
 
   return (
-    <div className={cn(
-      "border-l border-border bg-card flex flex-col h-full transition-all duration-200 overflow-hidden",
-      isOpen ? "w-80" : "w-0 border-l-0"
-    )}>
+    <div className="w-80 border-l border-border bg-card flex flex-col h-full">
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-border">
         <div className="flex items-center gap-2">
