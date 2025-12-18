@@ -230,7 +230,7 @@ const Dashboard = () => {
       <TemporaryNotificationBanner />
       <div className="flex min-h-screen">
         <Sidebar />
-        <div className="flex-1 flex">
+        <div className="flex-1 flex overflow-x-hidden">
           <Layout userRole={userRole}>
           <div className="space-y-6">
             <div className="flex justify-between items-start">
@@ -329,18 +329,11 @@ const Dashboard = () => {
           </div>
         </Layout>
         
-        {/* Activity Panel Container - maintains layout stability */}
-        <div className={cn(
-          "flex-shrink-0 transition-[width] duration-200 ease-in-out overflow-hidden",
-          activityPanelOpen ? "w-80" : "w-0"
-        )}>
-          {activityPanelOpen && (
-            <PaymentReminderActivityPanel 
-              isOpen={activityPanelOpen} 
-              onClose={() => setActivityPanelOpen(false)} 
-            />
-          )}
-        </div>
+        {/* Activity Panel */}
+        <PaymentReminderActivityPanel 
+          isOpen={activityPanelOpen} 
+          onClose={() => setActivityPanelOpen(false)} 
+        />
       </div>
     </div>
     </>
