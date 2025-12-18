@@ -230,7 +230,7 @@ const Dashboard = () => {
       <TemporaryNotificationBanner />
       <div className="flex min-h-screen">
         <Sidebar />
-        <div className="flex-1 flex overflow-x-hidden">
+        <div className="flex-1 flex">
           <Layout userRole={userRole}>
           <div className="space-y-6">
             <div className="flex justify-between items-start">
