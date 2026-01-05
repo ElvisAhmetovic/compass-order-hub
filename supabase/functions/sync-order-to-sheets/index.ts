@@ -31,11 +31,17 @@ async function createJWT(clientEmail: string, privateKey: string): Promise<strin
   const encodedPayload = base64UrlEncode(JSON.stringify(payload));
   const signatureInput = `${encodedHeader}.${encodedPayload}`;
 
-  // Import the private key
-  const pemContents = privateKey
+  // Process the private key - handle escaped newlines from JSON
+  // Google service account keys have literal \n characters that need to be converted to actual newlines
+  const processedKey = privateKey.replace(/\\n/g, '\n');
+  
+  // Extract the base64 content from the PEM format
+  const pemContents = processedKey
     .replace(/-----BEGIN PRIVATE KEY-----/g, '')
     .replace(/-----END PRIVATE KEY-----/g, '')
-    .replace(/\s/g, '');
+    .replace(/[\r\n\s]/g, '');
+  
+  console.log('Private key length after processing:', pemContents.length);
   
   const binaryKey = Uint8Array.from(atob(pemContents), c => c.charCodeAt(0));
   
