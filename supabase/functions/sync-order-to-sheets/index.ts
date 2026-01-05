@@ -84,7 +84,28 @@ async function getAccessToken(clientEmail: string, privateKey: string): Promise<
   return data.access_token;
 }
 
-// Append row to Google Sheet
+// Format a single order into a row
+function formatOrderRow(orderData: any, syncType: string): string[] {
+  return [
+    orderData.id || '',
+    orderData.company_name || '',
+    orderData.contact_email || '',
+    orderData.contact_phone || '',
+    orderData.company_address || '',
+    orderData.price?.toString() || '0',
+    orderData.currency || 'EUR',
+    orderData.status || '',
+    orderData.priority || '',
+    orderData.description || '',
+    orderData.assigned_to_name || '',
+    orderData.is_yearly_package ? 'Yes' : 'No',
+    orderData.created_at || new Date().toISOString(),
+    orderData.updated_at || new Date().toISOString(),
+    syncType || 'create',
+  ];
+}
+
+// Append rows to Google Sheet
 async function appendToSheet(
   accessToken: string,
   spreadsheetId: string,
@@ -108,7 +129,7 @@ async function appendToSheet(
     throw new Error(`Failed to append to sheet: ${error}`);
   }
 
-  console.log('Successfully appended row to Google Sheet');
+  console.log(`Successfully appended ${values.length} row(s) to Google Sheet`);
 }
 
 serve(async (req) => {
@@ -130,8 +151,26 @@ serve(async (req) => {
       );
     }
 
-    const { orderData, syncType } = await req.json();
+    const { orderData, ordersData, syncType } = await req.json();
 
+    // Handle batch sync (multiple orders)
+    if (ordersData && Array.isArray(ordersData)) {
+      console.log(`Batch syncing ${ordersData.length} orders to Google Sheets`);
+      
+      const accessToken = await getAccessToken(clientEmail, privateKey);
+      const rows = ordersData.map((order: any) => formatOrderRow(order, syncType || 'bulk_sync'));
+      
+      await appendToSheet(accessToken, spreadsheetId, rows);
+      
+      console.log(`Successfully synced ${ordersData.length} orders`);
+      
+      return new Response(
+        JSON.stringify({ success: true, message: `${ordersData.length} orders synced to Google Sheets` }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Handle single order sync
     if (!orderData) {
       return new Response(
         JSON.stringify({ error: 'Order data is required' }),
@@ -144,26 +183,8 @@ serve(async (req) => {
     // Get access token
     const accessToken = await getAccessToken(clientEmail, privateKey);
 
-    // Format order data for sheet
-    const row = [
-      orderData.id || '',
-      orderData.company_name || '',
-      orderData.contact_email || '',
-      orderData.contact_phone || '',
-      orderData.company_address || '',
-      orderData.price?.toString() || '0',
-      orderData.currency || 'EUR',
-      orderData.status || '',
-      orderData.priority || '',
-      orderData.description || '',
-      orderData.assigned_to_name || '',
-      orderData.is_yearly_package ? 'Yes' : 'No',
-      orderData.created_at || new Date().toISOString(),
-      orderData.updated_at || new Date().toISOString(),
-      syncType || 'create',
-    ];
-
-    // Append to sheet
+    // Format and append single order
+    const row = formatOrderRow(orderData, syncType);
     await appendToSheet(accessToken, spreadsheetId, [row]);
 
     console.log(`Order ${orderData.id} synced successfully`);
