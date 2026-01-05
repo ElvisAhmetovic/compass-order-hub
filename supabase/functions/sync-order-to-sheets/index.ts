@@ -144,29 +144,39 @@ async function getExistingOrderIds(
   return orderIdToRow;
 }
 
-// Update a specific row in the sheet
-async function updateSheetRow(
+// Batch update multiple rows in single API call to avoid rate limits
+async function batchUpdateRows(
   accessToken: string,
   spreadsheetId: string,
-  rowNumber: number,
-  values: string[]
+  updates: { rowNumber: number; values: string[] }[]
 ): Promise<void> {
-  const range = `Sheet1!A${rowNumber}:O${rowNumber}`;
-  const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?valueInputOption=USER_ENTERED`;
+  if (updates.length === 0) return;
+
+  const data = updates.map(update => ({
+    range: `Sheet1!A${update.rowNumber}:O${update.rowNumber}`,
+    values: [update.values]
+  }));
+
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values:batchUpdate`;
 
   const response = await fetch(url, {
-    method: 'PUT',
+    method: 'POST',
     headers: {
       'Authorization': `Bearer ${accessToken}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ values: [values] }),
+    body: JSON.stringify({
+      valueInputOption: 'USER_ENTERED',
+      data
+    }),
   });
 
   if (!response.ok) {
     const error = await response.text();
-    throw new Error(`Failed to update row ${rowNumber}: ${error}`);
+    throw new Error(`Failed to batch update rows: ${error}`);
   }
+
+  console.log(`Successfully batch updated ${updates.length} rows`);
 }
 
 // Append rows to Google Sheet
@@ -175,6 +185,8 @@ async function appendToSheet(
   spreadsheetId: string,
   values: string[][]
 ): Promise<void> {
+  if (values.length === 0) return;
+
   const range = 'Sheet1!A:O';
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;
 
@@ -196,7 +208,7 @@ async function appendToSheet(
   console.log(`Successfully appended ${values.length} row(s) to Google Sheet`);
 }
 
-// Smart sync: update existing orders, append new ones
+// Smart sync: update existing orders, append new ones (uses batch API to avoid rate limits)
 async function smartSyncOrders(
   accessToken: string,
   spreadsheetId: string,
@@ -206,8 +218,7 @@ async function smartSyncOrders(
   // Get existing order IDs and their row numbers
   const orderIdToRow = await getExistingOrderIds(accessToken, spreadsheetId);
 
-  let updated = 0;
-  let added = 0;
+  const updates: { rowNumber: number; values: string[] }[] = [];
   const newOrders: string[][] = [];
 
   for (const order of orders) {
@@ -215,14 +226,17 @@ async function smartSyncOrders(
     const existingRowNumber = orderIdToRow.get(order.id);
 
     if (existingRowNumber) {
-      // Update existing row
-      await updateSheetRow(accessToken, spreadsheetId, existingRowNumber, row);
-      updated++;
+      // Collect updates for batch processing
+      updates.push({ rowNumber: existingRowNumber, values: row });
     } else {
       // Collect new orders to append in batch
       newOrders.push(row);
-      added++;
     }
+  }
+
+  // Batch update all existing orders in a single API call
+  if (updates.length > 0) {
+    await batchUpdateRows(accessToken, spreadsheetId, updates);
   }
 
   // Append all new orders at once
@@ -230,7 +244,8 @@ async function smartSyncOrders(
     await appendToSheet(accessToken, spreadsheetId, newOrders);
   }
 
-  return { updated, added };
+  console.log(`Sync complete: ${updates.length} updated, ${newOrders.length} added`);
+  return { updated: updates.length, added: newOrders.length };
 }
 
 serve(async (req) => {
