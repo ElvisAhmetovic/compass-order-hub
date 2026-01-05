@@ -127,6 +127,16 @@ export class OrderService {
 
       // Log order creation activity
       await this.logOrderActivity(data.id, 'Order Created', `Order created for ${data.company_name}`);
+
+      // Sync to Google Sheets
+      try {
+        await supabase.functions.invoke('sync-order-to-sheets', {
+          body: { orderData: data, syncType: 'create' }
+        });
+        console.log('Order synced to Google Sheets');
+      } catch (syncError) {
+        console.error('Failed to sync order to Google Sheets:', syncError);
+      }
       
       return data;
     } catch (error) {
@@ -188,6 +198,16 @@ export class OrderService {
 
       // Log yearly package creation activity
       await this.logOrderActivity(data.id, 'Yearly Package Created', `Yearly package created for ${data.company_name}`);
+
+      // Sync to Google Sheets
+      try {
+        await supabase.functions.invoke('sync-order-to-sheets', {
+          body: { orderData: data, syncType: 'create' }
+        });
+        console.log('Yearly package synced to Google Sheets');
+      } catch (syncError) {
+        console.error('Failed to sync yearly package to Google Sheets:', syncError);
+      }
       
       return data;
     } catch (error) {
