@@ -235,6 +235,22 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
 
       console.log('Order created successfully:', orderResult);
 
+      // Sync to Google Sheets immediately after creation
+      try {
+        const { error: syncError } = await supabase.functions.invoke('sync-order-to-sheets', {
+          body: { orderData: orderResult, syncType: 'create' }
+        });
+        
+        if (syncError) {
+          console.error('Failed to sync order to Google Sheets:', syncError);
+        } else {
+          console.log('Order synced to Google Sheets successfully');
+        }
+      } catch (syncError) {
+        console.error('Failed to sync order to Google Sheets:', syncError);
+        // Don't fail the order creation if sync fails
+      }
+
       // Check and unlock achievements for the user
       try {
         const newAchievements = await achievementsService.checkAndUnlockAchievements(user.id);
