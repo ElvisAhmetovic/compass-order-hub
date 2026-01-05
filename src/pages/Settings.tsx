@@ -1,4 +1,3 @@
-
 import { RequireAuth } from "@/components/auth/RequireAuth";
 import Layout from "@/components/layout/Layout";
 import { useAuth } from "@/context/AuthContext";
@@ -7,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
+import { GoogleSheetsSync } from "@/components/settings/GoogleSheetsSync";
 
 export default function SettingsPage() {
   const { user } = useAuth();
@@ -36,6 +36,20 @@ export default function SettingsPage() {
           <Separator />
 
           <div className="grid gap-6">
+            {user?.role === 'admin' && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Integrations</CardTitle>
+                  <CardDescription>
+                    Manage external service integrations and data sync.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <GoogleSheetsSync />
+                </CardContent>
+              </Card>
+            )}
+
             <Card>
               <CardHeader>
                 <CardTitle>Application Preferences</CardTitle>

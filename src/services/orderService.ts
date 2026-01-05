@@ -332,6 +332,16 @@ export class OrderService {
       } else {
         console.log('No changes detected, skipping email notifications');
       }
+
+      // Sync updated order to Google Sheets
+      try {
+        await supabase.functions.invoke('sync-order-to-sheets', {
+          body: { orderData: data, syncType: 'update' }
+        });
+        console.log('Order update synced to Google Sheets');
+      } catch (syncError) {
+        console.error('Failed to sync order update to Google Sheets:', syncError);
+      }
       
       return data;
     } catch (error) {
