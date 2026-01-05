@@ -88,11 +88,16 @@ async function getAccessToken(clientEmail: string, privateKey: string): Promise<
 
 // Format a single order into a row
 function formatOrderRow(orderData: any, syncType: string): string[] {
+  // Prefix phone with apostrophe to prevent Google Sheets from interpreting + as formula
+  const safePhone = orderData.contact_phone 
+    ? `'${orderData.contact_phone}` 
+    : '';
+
   return [
     orderData.id || '',
     orderData.company_name || '',
     orderData.contact_email || '',
-    orderData.contact_phone || '',
+    safePhone,
     orderData.company_address || '',
     orderData.price?.toString() || '0',
     orderData.currency || 'EUR',
