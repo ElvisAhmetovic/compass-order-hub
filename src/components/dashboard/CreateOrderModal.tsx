@@ -243,12 +243,28 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
         
         if (syncError) {
           console.error('Failed to sync order to Google Sheets:', syncError);
+          toast({
+            title: "⚠️ Google Sheets Sync Failed",
+            description: "Order created but failed to sync to Google Sheets. You can sync manually from Settings.",
+            variant: "destructive",
+            duration: 5000,
+          });
         } else {
           console.log('Order synced to Google Sheets successfully');
+          toast({
+            title: "✅ Synced to Google Sheets",
+            description: "Order has been added to your Google Sheet.",
+            duration: 3000,
+          });
         }
       } catch (syncError) {
         console.error('Failed to sync order to Google Sheets:', syncError);
-        // Don't fail the order creation if sync fails
+        toast({
+          title: "⚠️ Google Sheets Sync Failed",
+          description: "Order created but failed to sync to Google Sheets. You can sync manually from Settings.",
+          variant: "destructive",
+          duration: 5000,
+        });
       }
 
       // Check and unlock achievements for the user
