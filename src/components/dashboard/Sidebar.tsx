@@ -24,7 +24,8 @@ import {
   UserX,
   Wrench,
   Trophy,
-  BarChart2
+  BarChart2,
+  Settings
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
@@ -65,6 +66,7 @@ const Sidebar = () => {
     { href: '/clients', icon: UserCheck, label: 'Clients', roles: ['admin', 'agent'] },
     { href: '/inventory', icon: Package, label: 'Inventory', roles: ['admin', 'agent'] },
     { href: '/user-management', icon: Users, label: 'User Management', roles: ['admin'] }, // Admin only
+    { href: '/settings', icon: Settings, label: 'Settings', roles: ['admin'] }, // Admin only
     { href: '/deleted', icon: Trash2, label: 'Deleted', roles: ['admin'] }, // Admin only
     {
       href: "/team-collaboration",
