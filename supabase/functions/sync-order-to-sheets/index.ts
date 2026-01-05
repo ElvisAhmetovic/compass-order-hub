@@ -32,7 +32,6 @@ async function createJWT(clientEmail: string, privateKey: string): Promise<strin
   const signatureInput = `${encodedHeader}.${encodedPayload}`;
 
   // Process the private key - handle escaped newlines from JSON
-  // Google service account keys have literal \n characters that need to be converted to actual newlines
   const processedKey = privateKey.replace(/\\n/g, '\n');
   
   // Extract the base64 content from the PEM format
@@ -40,8 +39,6 @@ async function createJWT(clientEmail: string, privateKey: string): Promise<strin
     .replace(/-----BEGIN PRIVATE KEY-----/g, '')
     .replace(/-----END PRIVATE KEY-----/g, '')
     .replace(/[\r\n\s]/g, '');
-  
-  console.log('Private key length after processing:', pemContents.length);
   
   const binaryKey = Uint8Array.from(atob(pemContents), c => c.charCodeAt(0));
   
@@ -53,7 +50,6 @@ async function createJWT(clientEmail: string, privateKey: string): Promise<strin
     ['sign']
   );
 
-  // Sign the JWT
   const signature = await crypto.subtle.sign(
     'RSASSA-PKCS1-v1_5',
     cryptoKey,
@@ -111,13 +107,70 @@ function formatOrderRow(orderData: any, syncType: string): string[] {
   ];
 }
 
+// Get existing order IDs from column A
+async function getExistingOrderIds(
+  accessToken: string,
+  spreadsheetId: string
+): Promise<Map<string, number>> {
+  const range = 'Sheet1!A:A';
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}`;
+
+  const response = await fetch(url, {
+    headers: { 'Authorization': `Bearer ${accessToken}` },
+  });
+
+  const orderIdToRow = new Map<string, number>();
+
+  if (!response.ok) {
+    console.log('No existing data in sheet or error reading, starting fresh');
+    return orderIdToRow;
+  }
+
+  const data = await response.json();
+  const values = data.values || [];
+
+  values.forEach((row: string[], index: number) => {
+    if (row[0] && row[0] !== 'ID') { // Skip header row if exists
+      orderIdToRow.set(row[0], index + 1); // 1-indexed for Sheets API
+    }
+  });
+
+  console.log(`Found ${orderIdToRow.size} existing orders in sheet`);
+  return orderIdToRow;
+}
+
+// Update a specific row in the sheet
+async function updateSheetRow(
+  accessToken: string,
+  spreadsheetId: string,
+  rowNumber: number,
+  values: string[]
+): Promise<void> {
+  const range = `Sheet1!A${rowNumber}:O${rowNumber}`;
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?valueInputOption=USER_ENTERED`;
+
+  const response = await fetch(url, {
+    method: 'PUT',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ values: [values] }),
+  });
+
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(`Failed to update row ${rowNumber}: ${error}`);
+  }
+}
+
 // Append rows to Google Sheet
 async function appendToSheet(
   accessToken: string,
   spreadsheetId: string,
   values: string[][]
 ): Promise<void> {
-  const range = 'Sheet1!A:O'; // Columns A through O
+  const range = 'Sheet1!A:O';
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;
 
   const response = await fetch(url, {
@@ -136,6 +189,43 @@ async function appendToSheet(
   }
 
   console.log(`Successfully appended ${values.length} row(s) to Google Sheet`);
+}
+
+// Smart sync: update existing orders, append new ones
+async function smartSyncOrders(
+  accessToken: string,
+  spreadsheetId: string,
+  orders: any[],
+  syncType: string
+): Promise<{ updated: number; added: number }> {
+  // Get existing order IDs and their row numbers
+  const orderIdToRow = await getExistingOrderIds(accessToken, spreadsheetId);
+
+  let updated = 0;
+  let added = 0;
+  const newOrders: string[][] = [];
+
+  for (const order of orders) {
+    const row = formatOrderRow(order, syncType);
+    const existingRowNumber = orderIdToRow.get(order.id);
+
+    if (existingRowNumber) {
+      // Update existing row
+      await updateSheetRow(accessToken, spreadsheetId, existingRowNumber, row);
+      updated++;
+    } else {
+      // Collect new orders to append in batch
+      newOrders.push(row);
+      added++;
+    }
+  }
+
+  // Append all new orders at once
+  if (newOrders.length > 0) {
+    await appendToSheet(accessToken, spreadsheetId, newOrders);
+  }
+
+  return { updated, added };
 }
 
 serve(async (req) => {
@@ -159,24 +249,27 @@ serve(async (req) => {
 
     const { orderData, ordersData, syncType } = await req.json();
 
-    // Handle batch sync (multiple orders)
+    // Handle batch sync (multiple orders) with smart sync
     if (ordersData && Array.isArray(ordersData)) {
-      console.log(`Batch syncing ${ordersData.length} orders to Google Sheets`);
+      console.log(`Smart syncing ${ordersData.length} orders to Google Sheets`);
       
       const accessToken = await getAccessToken(clientEmail, privateKey);
-      const rows = ordersData.map((order: any) => formatOrderRow(order, syncType || 'bulk_sync'));
+      const result = await smartSyncOrders(accessToken, spreadsheetId, ordersData, syncType || 'smart_sync');
       
-      await appendToSheet(accessToken, spreadsheetId, rows);
-      
-      console.log(`Successfully synced ${ordersData.length} orders`);
+      console.log(`Smart sync complete: ${result.updated} updated, ${result.added} added`);
       
       return new Response(
-        JSON.stringify({ success: true, message: `${ordersData.length} orders synced to Google Sheets` }),
+        JSON.stringify({ 
+          success: true, 
+          message: `Synced ${ordersData.length} orders (${result.updated} updated, ${result.added} new)`,
+          updated: result.updated,
+          added: result.added
+        }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Handle single order sync
+    // Handle single order sync with smart sync
     if (!orderData) {
       return new Response(
         JSON.stringify({ error: 'Order data is required' }),
@@ -184,19 +277,21 @@ serve(async (req) => {
       );
     }
 
-    console.log(`Syncing order ${orderData.id} to Google Sheets (${syncType})`);
+    console.log(`Smart syncing order ${orderData.id} to Google Sheets (${syncType})`);
 
-    // Get access token
     const accessToken = await getAccessToken(clientEmail, privateKey);
+    const result = await smartSyncOrders(accessToken, spreadsheetId, [orderData], syncType || 'single_sync');
 
-    // Format and append single order
-    const row = formatOrderRow(orderData, syncType);
-    await appendToSheet(accessToken, spreadsheetId, [row]);
-
-    console.log(`Order ${orderData.id} synced successfully`);
+    const action = result.updated > 0 ? 'updated' : 'added';
+    console.log(`Order ${orderData.id} ${action} successfully`);
 
     return new Response(
-      JSON.stringify({ success: true, message: 'Order synced to Google Sheets' }),
+      JSON.stringify({ 
+        success: true, 
+        message: `Order ${action} in Google Sheets`,
+        updated: result.updated,
+        added: result.added
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
