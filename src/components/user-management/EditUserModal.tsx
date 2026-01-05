@@ -178,13 +178,14 @@ export const EditUserModal: React.FC<EditUserModalProps> = ({
       // Update assigned_to_name in orders table if name changed
       if (values.fullName !== user.full_name) {
         console.log('Updating assigned_to_name in orders for user:', user.id);
-        const { error: ordersError } = await supabase
+        const { error: ordersError, data: updatedOrders } = await supabase
           .from('orders')
           .update({ 
             assigned_to_name: values.fullName,
             updated_at: new Date().toISOString()
           })
-          .eq('assigned_to', user.id);
+          .eq('assigned_to', user.id)
+          .select();
 
         if (ordersError) {
           console.error('Orders update error:', ordersError);
@@ -196,6 +197,19 @@ export const EditUserModal: React.FC<EditUserModalProps> = ({
           });
         } else {
           console.log('Successfully updated assigned_to_name in orders');
+          
+          // Sync affected orders to Google Sheets
+          if (updatedOrders && updatedOrders.length > 0) {
+            try {
+              await supabase.functions.invoke('sync-order-to-sheets', {
+                body: { orders: updatedOrders, syncType: 'batch-update' }
+              });
+              console.log(`Synced ${updatedOrders.length} orders to Google Sheets after user name update`);
+            } catch (syncError) {
+              console.error('Failed to sync orders to Google Sheets after user name update:', syncError);
+              // Don't fail the user update if sync fails
+            }
+          }
         }
       }
 
