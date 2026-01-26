@@ -16,17 +16,20 @@ import {
   DialogTrigger,
   DialogFooter 
 } from "@/components/ui/dialog";
-import { EmailTemplate, EmailTemplateVariables } from "@/types/emailTemplate";
-import { 
-  getEmailTemplates, 
-  saveEmailTemplate, 
-  updateEmailTemplate, 
-  deleteEmailTemplate, 
-  getDefaultTemplate, 
-  replaceTemplateVariables 
-} from "@/utils/emailTemplateUtils";
+import { Skeleton } from "@/components/ui/skeleton";
+import { emailTemplateService, EmailTemplate } from "@/services/emailTemplateService";
 import { useToast } from "@/hooks/use-toast";
-import { Eye, Save, Trash2, Plus } from "lucide-react";
+import { Eye, Save, Plus, Loader2 } from "lucide-react";
+
+interface EmailTemplateVariables {
+  clientName: string;
+  invoiceNumber: string;
+  amount: string;
+  dueDate: string;
+  daysOverdue: number;
+  companyName: string;
+  paymentInstructions: string;
+}
 
 interface EmailTemplateEditorProps {
   invoiceData: {
@@ -40,12 +43,24 @@ interface EmailTemplateEditorProps {
   onCancel: () => void;
 }
 
+const replaceTemplateVariables = (template: string, variables: EmailTemplateVariables): string => {
+  return template
+    .replace(/\{clientName\}/g, variables.clientName)
+    .replace(/\{invoiceNumber\}/g, variables.invoiceNumber)
+    .replace(/\{amount\}/g, variables.amount)
+    .replace(/\{dueDate\}/g, variables.dueDate)
+    .replace(/\{daysOverdue\}/g, variables.daysOverdue.toString())
+    .replace(/\{companyName\}/g, variables.companyName)
+    .replace(/\{paymentInstructions\}/g, variables.paymentInstructions);
+};
+
 const EmailTemplateEditor: React.FC<EmailTemplateEditorProps> = ({
   invoiceData,
   onSendEmail,
   onCancel
 }) => {
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedTemplate, setSelectedTemplate] = useState<EmailTemplate | null>(null);
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
@@ -54,6 +69,7 @@ const EmailTemplateEditor: React.FC<EmailTemplateEditorProps> = ({
   const [templateName, setTemplateName] = useState("");
   const [isDefault, setIsDefault] = useState(false);
   const [sending, setSending] = useState(false);
+  const [saving, setSaving] = useState(false);
   const { toast } = useToast();
 
   const templateVariables: EmailTemplateVariables = {
@@ -70,15 +86,29 @@ const EmailTemplateEditor: React.FC<EmailTemplateEditorProps> = ({
     loadTemplates();
   }, []);
 
-  const loadTemplates = () => {
-    const savedTemplates = getEmailTemplates();
-    setTemplates(savedTemplates);
-    
-    // Load default template
-    const defaultTemplate = getDefaultTemplate();
-    setSelectedTemplate(defaultTemplate);
-    setSubject(defaultTemplate.subject);
-    setBody(defaultTemplate.body);
+  const loadTemplates = async () => {
+    try {
+      setLoading(true);
+      const data = await emailTemplateService.getTemplates("payment_reminder");
+      setTemplates(data);
+      
+      // Load default template or first available
+      const defaultTemplate = data.find(t => t.is_default) || data[0];
+      if (defaultTemplate) {
+        setSelectedTemplate(defaultTemplate);
+        setSubject(defaultTemplate.subject);
+        setBody(defaultTemplate.body);
+      }
+    } catch (error) {
+      console.error("Error loading templates:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load email templates",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleTemplateSelect = (templateId: string) => {
@@ -102,7 +132,7 @@ const EmailTemplateEditor: React.FC<EmailTemplateEditorProps> = ({
     };
   };
 
-  const handleSaveTemplate = () => {
+  const handleSaveTemplate = async () => {
     if (!templateName.trim()) {
       toast({
         title: "Template name required",
@@ -113,11 +143,13 @@ const EmailTemplateEditor: React.FC<EmailTemplateEditorProps> = ({
     }
 
     try {
-      const newTemplate = saveEmailTemplate({
+      setSaving(true);
+      const newTemplate = await emailTemplateService.createTemplate({
         name: templateName.trim(),
         subject,
         body,
-        isDefault
+        type: "payment_reminder",
+        is_default: isDefault
       });
 
       setTemplates(prev => [...prev, newTemplate]);
@@ -130,21 +162,14 @@ const EmailTemplateEditor: React.FC<EmailTemplateEditorProps> = ({
         description: `"${templateName}" has been saved successfully.`,
       });
     } catch (error) {
+      console.error("Error saving template:", error);
       toast({
         title: "Error",
         description: "Failed to save template.",
         variant: "destructive",
       });
-    }
-  };
-
-  const handleDeleteTemplate = (templateId: string) => {
-    if (deleteEmailTemplate(templateId)) {
-      setTemplates(prev => prev.filter(t => t.id !== templateId));
-      toast({
-        title: "Template deleted",
-        description: "Template has been removed.",
-      });
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -177,6 +202,21 @@ const EmailTemplateEditor: React.FC<EmailTemplateEditorProps> = ({
     { key: 'daysOverdue' as const, label: 'Days Overdue' },
     { key: 'companyName' as const, label: 'Company Name' },
   ];
+
+  if (loading) {
+    return (
+      <Card className="w-full">
+        <CardHeader>
+          <Skeleton className="h-6 w-48" />
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-32 w-full" />
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="w-full">
@@ -230,8 +270,15 @@ const EmailTemplateEditor: React.FC<EmailTemplateEditorProps> = ({
                   <Button variant="outline" onClick={() => setSaveDialogOpen(false)}>
                     Cancel
                   </Button>
-                  <Button onClick={handleSaveTemplate}>
-                    Save Template
+                  <Button onClick={handleSaveTemplate} disabled={saving}>
+                    {saving ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      "Save Template"
+                    )}
                   </Button>
                 </DialogFooter>
               </DialogContent>
@@ -255,7 +302,7 @@ const EmailTemplateEditor: React.FC<EmailTemplateEditorProps> = ({
                 <SelectItem key={template.id} value={template.id}>
                   <div className="flex items-center gap-2">
                     {template.name}
-                    {template.isDefault && <Badge variant="secondary" className="text-xs">Default</Badge>}
+                    {template.is_default && <Badge variant="secondary" className="text-xs">Default</Badge>}
                   </div>
                 </SelectItem>
               ))}
@@ -308,7 +355,7 @@ const EmailTemplateEditor: React.FC<EmailTemplateEditorProps> = ({
 
         {/* Preview */}
         {showPreview && (
-          <Card className="bg-gray-50">
+          <Card className="bg-muted/50">
             <CardHeader>
               <CardTitle className="text-sm">Preview</CardTitle>
             </CardHeader>
@@ -318,7 +365,7 @@ const EmailTemplateEditor: React.FC<EmailTemplateEditorProps> = ({
               </div>
               <div>
                 <strong>Body:</strong>
-                <div className="whitespace-pre-wrap text-sm mt-1 p-2 bg-white rounded border">
+                <div className="whitespace-pre-wrap text-sm mt-1 p-2 bg-background rounded border">
                   {getPreviewContent().body}
                 </div>
               </div>
@@ -332,7 +379,14 @@ const EmailTemplateEditor: React.FC<EmailTemplateEditorProps> = ({
             Cancel
           </Button>
           <Button onClick={handleSendEmail} disabled={sending}>
-            {sending ? "Sending..." : "Send Email"}
+            {sending ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Sending...
+              </>
+            ) : (
+              "Send Email"
+            )}
           </Button>
         </div>
       </CardContent>
