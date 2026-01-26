@@ -363,6 +363,93 @@ export type Database = {
         }
         Relationships: []
       }
+      company_settings: {
+        Row: {
+          account_holder: string | null
+          account_number: string | null
+          bank_code: string | null
+          bic: string | null
+          city: string | null
+          contact_person: string | null
+          country: string | null
+          created_at: string
+          director: string | null
+          email: string | null
+          fax: string | null
+          iban: string | null
+          id: string
+          logo: string | null
+          name: string
+          payment_method: string | null
+          phone: string | null
+          postal: string | null
+          registration_number: string | null
+          street: string | null
+          tax_number: string | null
+          updated_at: string
+          user_id: string | null
+          vat_id: string | null
+          website: string | null
+          wise: boolean | null
+        }
+        Insert: {
+          account_holder?: string | null
+          account_number?: string | null
+          bank_code?: string | null
+          bic?: string | null
+          city?: string | null
+          contact_person?: string | null
+          country?: string | null
+          created_at?: string
+          director?: string | null
+          email?: string | null
+          fax?: string | null
+          iban?: string | null
+          id?: string
+          logo?: string | null
+          name: string
+          payment_method?: string | null
+          phone?: string | null
+          postal?: string | null
+          registration_number?: string | null
+          street?: string | null
+          tax_number?: string | null
+          updated_at?: string
+          user_id?: string | null
+          vat_id?: string | null
+          website?: string | null
+          wise?: boolean | null
+        }
+        Update: {
+          account_holder?: string | null
+          account_number?: string | null
+          bank_code?: string | null
+          bic?: string | null
+          city?: string | null
+          contact_person?: string | null
+          country?: string | null
+          created_at?: string
+          director?: string | null
+          email?: string | null
+          fax?: string | null
+          iban?: string | null
+          id?: string
+          logo?: string | null
+          name?: string
+          payment_method?: string | null
+          phone?: string | null
+          postal?: string | null
+          registration_number?: string | null
+          street?: string | null
+          tax_number?: string | null
+          updated_at?: string
+          user_id?: string | null
+          vat_id?: string | null
+          website?: string | null
+          wise?: boolean | null
+        }
+        Relationships: []
+      }
       email_templates: {
         Row: {
           body: string
@@ -1232,6 +1319,36 @@ export type Database = {
           last_name?: string
           role?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      proposal_templates: {
+        Row: {
+          created_at: string
+          id: string
+          is_default: boolean | null
+          name: string
+          template_data: Json
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_default?: boolean | null
+          name: string
+          template_data: Json
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_default?: boolean | null
+          name?: string
+          template_data?: Json
+          updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
