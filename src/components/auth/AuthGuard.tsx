@@ -1,49 +1,19 @@
-
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { UserRole } from '@/types';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 
 interface AuthGuardProps {
   children: ReactNode;
   requiredRoles?: UserRole[];
 }
 
-interface UserSession {
-  id: string;
-  email: string;
-  role: UserRole;
-  full_name: string;
-}
-
 const AuthGuard = ({ children, requiredRoles = [] }: AuthGuardProps) => {
-  const [isLoading, setIsLoading] = useState(true);
-  const [userSession, setUserSession] = useState<UserSession | null>(null);
+  const { user, isLoading } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const checkAuth = () => {
-      try {
-        const sessionData = localStorage.getItem('userSession');
-        if (!sessionData) {
-          setUserSession(null);
-          return;
-        }
-        
-        const session = JSON.parse(sessionData);
-        setUserSession(session);
-      } catch (error) {
-        console.error('Error checking authentication:', error);
-        setUserSession(null);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    checkAuth();
-  }, []);
 
   const handleBackToDashboard = () => {
     navigate("/dashboard");
@@ -57,13 +27,13 @@ const AuthGuard = ({ children, requiredRoles = [] }: AuthGuardProps) => {
     );
   }
 
-  // Not authenticated
-  if (!userSession) {
+  // Not authenticated - use Supabase session, not localStorage
+  if (!user) {
     return <Navigate to="/login" state={{ from: location.pathname }} replace />;
   }
 
-  // Check if user has required role (if any required roles are specified)
-  if (requiredRoles.length > 0 && !requiredRoles.includes(userSession.role)) {
+  // Check if user has required role (role comes from profiles table via AuthContext)
+  if (requiredRoles.length > 0 && !requiredRoles.includes(user.role)) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4 text-center">
         <h1 className="text-2xl font-bold mb-2">Access Denied</h1>
@@ -78,7 +48,7 @@ const AuthGuard = ({ children, requiredRoles = [] }: AuthGuardProps) => {
           Back to Dashboard
         </Button>
         <p className="text-sm">
-          Your role: <span className="font-medium">{userSession.role}</span>
+          Your role: <span className="font-medium">{user.role}</span>
         </p>
       </div>
     );
