@@ -1,8 +1,6 @@
-
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { format } from "date-fns";
-import { SupportInquiry } from "@/types/support";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -17,6 +15,19 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+
+interface SupportInquiry {
+  id: string;
+  user_id: string;
+  user_email: string;
+  user_name: string;
+  subject: string;
+  message: string;
+  created_at: string;
+  status: "open" | "replied" | "closed";
+  reply_count?: number;
+}
 
 interface InquiriesListProps {
   showAll?: boolean;
@@ -24,43 +35,79 @@ interface InquiriesListProps {
 
 export const InquiriesList = ({ showAll = false }: InquiriesListProps) => {
   const [inquiries, setInquiries] = useState<SupportInquiry[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [inquiryToDelete, setInquiryToDelete] = useState<SupportInquiry | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const isAdmin = user?.role === "admin"; // Fixed comparison - only check for "admin" role
+  const isAdmin = user?.role === "admin";
 
   useEffect(() => {
     loadInquiries();
   }, [user, isAdmin, showAll]);
 
-  const loadInquiries = () => {
+  const loadInquiries = async () => {
+    if (!user) return;
+    
+    setIsLoading(true);
     try {
-      const storedInquiries: SupportInquiry[] = JSON.parse(
-        localStorage.getItem("supportInquiries") || "[]"
-      );
-      
-      // For admin showing all inquiries or the "open" tab
-      if (isAdmin && showAll) {
-        setInquiries(storedInquiries);
-        return;
-      }
-      
-      // For non-admin users, only show their own inquiries
+      let query = supabase
+        .from('support_inquiries')
+        .select(`
+          id,
+          user_id,
+          user_email,
+          user_name,
+          subject,
+          message,
+          created_at,
+          status
+        `)
+        .order('created_at', { ascending: false });
+
+      // Apply filters based on user role and view
       if (!isAdmin) {
-        const userInquiries = storedInquiries.filter(inquiry => inquiry.userId === user?.id);
-        setInquiries(userInquiries);
-        return;
+        // Non-admin users only see their own inquiries
+        query = query.eq('user_id', user.id);
+      } else if (!showAll) {
+        // Admin in "open" tab - only show open inquiries
+        query = query.eq('status', 'open');
       }
-      
-      // For admin in "open" tab, filter to show only open inquiries
-      const openInquiries = storedInquiries.filter(inquiry => inquiry.status === "open");
-      setInquiries(openInquiries);
+      // Admin with showAll=true sees all inquiries (no filter)
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+
+      // Get reply counts for each inquiry
+      const inquiriesWithCounts = await Promise.all(
+        (data || []).map(async (inquiry) => {
+          const { count } = await supabase
+            .from('support_replies')
+            .select('*', { count: 'exact', head: true })
+            .eq('inquiry_id', inquiry.id);
+          
+          return {
+            ...inquiry,
+            status: inquiry.status as "open" | "replied" | "closed",
+            reply_count: count || 0
+          };
+        })
+      );
+
+      setInquiries(inquiriesWithCounts);
     } catch (error) {
       console.error("Error loading inquiries:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to load support inquiries.",
+      });
       setInquiries([]);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -69,20 +116,25 @@ export const InquiriesList = ({ showAll = false }: InquiriesListProps) => {
     setIsDeleteDialogOpen(true);
   };
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (!inquiryToDelete) return;
     
     setIsDeleting(true);
     try {
-      const storedInquiries: SupportInquiry[] = JSON.parse(
-        localStorage.getItem("supportInquiries") || "[]"
-      );
+      // Delete replies first (foreign key constraint)
+      await supabase
+        .from('support_replies')
+        .delete()
+        .eq('inquiry_id', inquiryToDelete.id);
+
+      // Then delete the inquiry
+      const { error } = await supabase
+        .from('support_inquiries')
+        .delete()
+        .eq('id', inquiryToDelete.id);
+
+      if (error) throw error;
       
-      const updatedInquiries = storedInquiries.filter(
-        inquiry => inquiry.id !== inquiryToDelete.id
-      );
-      
-      localStorage.setItem("supportInquiries", JSON.stringify(updatedInquiries));
       setInquiries(prevInquiries => 
         prevInquiries.filter(inquiry => inquiry.id !== inquiryToDelete.id)
       );
@@ -122,12 +174,20 @@ export const InquiriesList = ({ showAll = false }: InquiriesListProps) => {
     navigate(`/support/${inquiryId}`);
   };
 
+  if (isLoading) {
+    return (
+      <div className="text-center py-10">
+        <p className="text-muted-foreground">Loading inquiries...</p>
+      </div>
+    );
+  }
+
   return (
     <>
       <div className="space-y-4">
         {inquiries.length === 0 ? (
           <div className="text-center py-10">
-            <p className="text-gray-500">No inquiries found.</p>
+            <p className="text-muted-foreground">No inquiries found.</p>
           </div>
         ) : (
           inquiries.map((inquiry) => (
@@ -137,7 +197,7 @@ export const InquiriesList = ({ showAll = false }: InquiriesListProps) => {
                   <div>
                     <CardTitle className="text-lg font-semibold">{inquiry.subject}</CardTitle>
                     <CardDescription>
-                      From: {inquiry.userName} ({inquiry.userEmail})
+                      From: {inquiry.user_name} ({inquiry.user_email})
                     </CardDescription>
                   </div>
                   <Badge className={getStatusColor(inquiry.status)}>
@@ -149,8 +209,8 @@ export const InquiriesList = ({ showAll = false }: InquiriesListProps) => {
                 <p className="text-sm whitespace-pre-wrap line-clamp-3">{inquiry.message}</p>
               </CardContent>
               <CardFooter className="flex justify-between items-center pt-2">
-                <span className="text-xs text-gray-500">
-                  {format(new Date(inquiry.createdAt), "PPpp")}
+                <span className="text-xs text-muted-foreground">
+                  {format(new Date(inquiry.created_at), "PPpp")}
                 </span>
                 <div className="flex gap-2">
                   {isAdmin && (
@@ -167,7 +227,7 @@ export const InquiriesList = ({ showAll = false }: InquiriesListProps) => {
                     size="sm"
                     onClick={() => handleViewInquiry(inquiry.id)}
                   >
-                    {inquiry.replies.length > 0 ? `View (${inquiry.replies.length} replies)` : "View"}
+                    {(inquiry.reply_count || 0) > 0 ? `View (${inquiry.reply_count} replies)` : "View"}
                   </Button>
                 </div>
               </CardFooter>
@@ -183,9 +243,9 @@ export const InquiriesList = ({ showAll = false }: InquiriesListProps) => {
             <DialogTitle>Delete Support Inquiry</DialogTitle>
             <DialogDescription>
               Are you sure you want to delete this inquiry? This action cannot be undone.
-              <div className="mt-4 p-3 bg-gray-50 rounded-md">
+              <div className="mt-4 p-3 bg-muted rounded-md">
                 <p className="font-medium">{inquiryToDelete?.subject}</p>
-                <p className="text-xs text-gray-500 mt-1">From: {inquiryToDelete?.userName}</p>
+                <p className="text-xs text-muted-foreground mt-1">From: {inquiryToDelete?.user_name}</p>
               </div>
             </DialogDescription>
           </DialogHeader>

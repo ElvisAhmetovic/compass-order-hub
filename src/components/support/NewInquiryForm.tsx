@@ -1,13 +1,11 @@
-
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { v4 as uuidv4 } from "uuid";
 import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-import { SupportInquiry } from "@/types/support";
+import { supabase } from "@/integrations/supabase/client";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -22,8 +20,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
 const formSchema = z.object({
-  subject: z.string().min(3, "Subject must be at least 3 characters"),
-  message: z.string().min(10, "Message must be at least 10 characters"),
+  subject: z.string().min(3, "Subject must be at least 3 characters").max(200, "Subject too long"),
+  message: z.string().min(10, "Message must be at least 10 characters").max(5000, "Message too long"),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -48,37 +46,24 @@ export const NewInquiryForm = () => {
     setIsSubmitting(true);
     
     try {
-      // Create a new inquiry
-      const newInquiry: SupportInquiry = {
-        id: uuidv4(),
-        userId: user.id,
-        userEmail: user.email,
-        userName: user.full_name || user.email,
-        subject: values.subject,
-        message: values.message,
-        createdAt: new Date().toISOString(),
-        status: "open",
-        replies: [],
-      };
+      const { error } = await supabase
+        .from('support_inquiries')
+        .insert({
+          user_id: user.id,
+          user_email: user.email,
+          user_name: user.full_name || user.email,
+          subject: values.subject,
+          message: values.message,
+          status: 'open'
+        });
 
-      // Get existing inquiries from localStorage or initialize empty array
-      const existingInquiries: SupportInquiry[] = JSON.parse(
-        localStorage.getItem("supportInquiries") || "[]"
-      );
+      if (error) throw error;
 
-      // Add new inquiry to the array
-      const updatedInquiries = [newInquiry, ...existingInquiries];
-
-      // Save back to localStorage
-      localStorage.setItem("supportInquiries", JSON.stringify(updatedInquiries));
-
-      // Show success toast
       toast({
         title: "Inquiry Submitted",
         description: "Your inquiry has been submitted to our support team.",
       });
 
-      // Redirect to the support page
       navigate("/support");
     } catch (error) {
       console.error("Error submitting inquiry:", error);
