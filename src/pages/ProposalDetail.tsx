@@ -37,6 +37,7 @@ interface ProposalLineItem {
 }
 
 interface ProposalData {
+  [key: string]: unknown; // Index signature for template compatibility
   id: string;
   number: string;
   customer: string;

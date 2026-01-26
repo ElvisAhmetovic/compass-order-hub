@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { 
   Dialog, 
@@ -11,20 +11,14 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { Save, File, RotateCcw } from "lucide-react";
-
-interface ProposalTemplate {
-  id: string;
-  name: string;
-  isDefault: boolean;
-  templateData: any;
-  createdAt: string;
-}
+import { Save, File, Loader2 } from "lucide-react";
+import { proposalTemplateService, ProposalTemplate } from "@/services/proposalTemplateService";
 
 interface TemplateManagerProps {
-  currentProposalData: any;
-  onLoadTemplate: (templateData: any) => void;
+  currentProposalData: Record<string, unknown>;
+  onLoadTemplate: (templateData: Record<string, unknown>) => void;
 }
 
 const TemplateManager: React.FC<TemplateManagerProps> = ({ 
@@ -35,24 +29,34 @@ const TemplateManager: React.FC<TemplateManagerProps> = ({
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isLoadDialogOpen, setIsLoadDialogOpen] = useState(false);
   const [templates, setTemplates] = useState<ProposalTemplate[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const { toast } = useToast();
 
-  React.useEffect(() => {
-    loadTemplates();
-  }, []);
+  useEffect(() => {
+    if (isLoadDialogOpen) {
+      loadTemplates();
+    }
+  }, [isLoadDialogOpen]);
 
-  const loadTemplates = () => {
+  const loadTemplates = async () => {
     try {
-      const savedTemplates = localStorage.getItem("proposalTemplates");
-      if (savedTemplates) {
-        setTemplates(JSON.parse(savedTemplates));
-      }
+      setLoading(true);
+      const data = await proposalTemplateService.getTemplates();
+      setTemplates(data);
     } catch (error) {
       console.error("Error loading templates:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load templates",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
-  const saveAsTemplate = () => {
+  const saveAsTemplate = async () => {
     if (!templateName.trim()) {
       toast({
         title: "Template name required",
@@ -63,50 +67,22 @@ const TemplateManager: React.FC<TemplateManagerProps> = ({
     }
 
     try {
-      const newTemplate: ProposalTemplate = {
-        id: `template_${Date.now()}`,
-        name: templateName.trim(),
-        isDefault: false,
-        templateData: {
-          ...currentProposalData,
-          // Remove unique identifiers that shouldn't be copied
-          id: undefined,
-          number: undefined,
-          created_at: undefined,
-          updated_at: undefined,
-          // Keep all the content and settings
-          customerName: currentProposalData.customerName,
-          customerAddress: currentProposalData.customerAddress,
-          customerEmail: currentProposalData.customerEmail,
-          customerCountry: currentProposalData.customerCountry,
-          proposalTitle: currentProposalData.proposalTitle,
-          proposalDescription: currentProposalData.proposalDescription,
-          content: currentProposalData.content,
-          deliveryTerms: currentProposalData.deliveryTerms,
-          paymentTerms: currentProposalData.paymentTerms,
-          termsAndConditions: currentProposalData.termsAndConditions,
-          footerContent: currentProposalData.footerContent,
-          accountNumber: currentProposalData.accountNumber,
-          accountName: currentProposalData.accountName,
-          paymentMethod: currentProposalData.paymentMethod,
-          currency: currentProposalData.currency,
-          vatEnabled: currentProposalData.vatEnabled,
-          vatRate: currentProposalData.vatRate,
-          lineItems: currentProposalData.lineItems?.map((item: any) => ({
-            ...item,
-            id: undefined, // Will be regenerated
-            proposal_id: undefined, // Will be set for new proposal
-            created_at: undefined
-          })) || [],
-          logo: currentProposalData.logo,
-          logoSize: currentProposalData.logoSize
-        },
-        createdAt: new Date().toISOString()
+      setSaving(true);
+      
+      // Prepare template data - remove unique identifiers
+      const templateData = {
+        ...currentProposalData,
+        id: undefined,
+        number: undefined,
+        created_at: undefined,
+        updated_at: undefined,
       };
 
-      const updatedTemplates = [...templates, newTemplate];
-      setTemplates(updatedTemplates);
-      localStorage.setItem("proposalTemplates", JSON.stringify(updatedTemplates));
+      await proposalTemplateService.createTemplate({
+        name: templateName.trim(),
+        template_data: templateData,
+        is_default: false
+      });
 
       toast({
         title: "Template saved",
@@ -122,19 +98,16 @@ const TemplateManager: React.FC<TemplateManagerProps> = ({
         description: "Failed to save template.",
         variant: "destructive",
       });
+    } finally {
+      setSaving(false);
     }
   };
 
-  const setAsDefault = (templateId: string) => {
+  const setAsDefault = async (templateId: string) => {
     try {
-      const updatedTemplates = templates.map(template => ({
-        ...template,
-        isDefault: template.id === templateId
-      }));
+      await proposalTemplateService.setAsDefault(templateId);
+      await loadTemplates();
       
-      setTemplates(updatedTemplates);
-      localStorage.setItem("proposalTemplates", JSON.stringify(updatedTemplates));
-
       toast({
         title: "Default template set",
         description: "This template will now be used for new proposals.",
@@ -150,7 +123,7 @@ const TemplateManager: React.FC<TemplateManagerProps> = ({
   };
 
   const loadTemplate = (template: ProposalTemplate) => {
-    onLoadTemplate(template.templateData);
+    onLoadTemplate(template.template_data);
     setIsLoadDialogOpen(false);
     toast({
       title: "Template loaded",
@@ -158,15 +131,23 @@ const TemplateManager: React.FC<TemplateManagerProps> = ({
     });
   };
 
-  const deleteTemplate = (templateId: string) => {
-    const updatedTemplates = templates.filter(t => t.id !== templateId);
-    setTemplates(updatedTemplates);
-    localStorage.setItem("proposalTemplates", JSON.stringify(updatedTemplates));
-    
-    toast({
-      title: "Template deleted",
-      description: "Template has been removed.",
-    });
+  const deleteTemplate = async (templateId: string) => {
+    try {
+      await proposalTemplateService.deleteTemplate(templateId);
+      setTemplates(prev => prev.filter(t => t.id !== templateId));
+      
+      toast({
+        title: "Template deleted",
+        description: "Template has been removed.",
+      });
+    } catch (error) {
+      console.error("Error deleting template:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete template.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -201,8 +182,15 @@ const TemplateManager: React.FC<TemplateManagerProps> = ({
             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={saveAsTemplate}>
-              Save Template
+            <Button onClick={saveAsTemplate} disabled={saving}>
+              {saving ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                "Save Template"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -224,8 +212,13 @@ const TemplateManager: React.FC<TemplateManagerProps> = ({
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 max-h-96 overflow-y-auto">
-            {templates.length === 0 ? (
-              <p className="text-center text-gray-500 py-8">
+            {loading ? (
+              <div className="space-y-3">
+                <Skeleton className="h-20 w-full" />
+                <Skeleton className="h-20 w-full" />
+              </div>
+            ) : templates.length === 0 ? (
+              <p className="text-center text-muted-foreground py-8">
                 No templates saved yet. Save your first template using the "Save as Template" button.
               </p>
             ) : (
@@ -234,13 +227,13 @@ const TemplateManager: React.FC<TemplateManagerProps> = ({
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
                       <h3 className="font-medium">{template.name}</h3>
-                      {template.isDefault && (
-                        <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded mt-1 inline-block">
+                      {template.is_default && (
+                        <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded mt-1 inline-block">
                           Default Template
                         </span>
                       )}
-                      <p className="text-sm text-gray-500 mt-1">
-                        Created: {new Date(template.createdAt).toLocaleDateString()}
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Created: {new Date(template.created_at).toLocaleDateString()}
                       </p>
                     </div>
                     <div className="flex gap-2 ml-4">
@@ -248,7 +241,7 @@ const TemplateManager: React.FC<TemplateManagerProps> = ({
                         variant="outline"
                         size="sm"
                         onClick={() => setAsDefault(template.id)}
-                        disabled={template.isDefault}
+                        disabled={template.is_default}
                       >
                         Set as Default
                       </Button>
