@@ -150,7 +150,33 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (profileUpdateError) {
       console.error("Error updating profile:", profileUpdateError);
-      // Don't fail the request if profile update fails, the user is still created
+    }
+
+    // Insert role into user_roles table (required for proper role-based access)
+    const { error: roleInsertError } = await supabaseAdmin
+      .from("user_roles")
+      .insert({
+        user_id: userData.user.id,
+        role: role || "user"
+      });
+
+    if (roleInsertError) {
+      console.error("Error inserting user role:", roleInsertError);
+    }
+
+    // Insert into app_users table (for email lookup)
+    const fullName = `${firstName || ""} ${lastName || ""}`.trim() || null;
+    const { error: appUserError } = await supabaseAdmin
+      .from("app_users")
+      .insert({
+        id: userData.user.id,
+        email: email,
+        role: role || "user",
+        full_name: fullName
+      });
+
+    if (appUserError) {
+      console.error("Error inserting app user:", appUserError);
     }
 
     return new Response(
