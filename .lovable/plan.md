@@ -1,96 +1,157 @@
 
-# Remove Internal Team Features from Client View
+# Fix Client User Creation - Missing user_roles Entry
 
-## Overview
+## Problem Identified
 
-This plan ensures that internal team features (Activity Log, Team Encouragement messages, and Team Chat) are never visible to client users. While the routing already redirects clients to their portal, this adds an extra layer of protection.
+When creating a client user via the "Add User" modal in User Management:
+1. The user is created in `auth.users` (correct)
+2. The profile is created/updated in `profiles` table (correct)
+3. **No entry is created in `user_roles` table** (BUG!)
+4. **No entry is created in `app_users` table** (Missing!)
 
-## Changes Required
+The `ClientAccessSection` dropdown shows "No clients found" because `getClientUsers()` queries the `user_roles` table, not the `profiles` table.
 
-### 1. Dashboard.tsx - Hide Activity Log Button
+### Database State Evidence
 
-The Activity Log button in the dashboard header should only be visible to admin, agent, and user roles - not clients.
+| Table | Client Entry Exists? |
+|-------|---------------------|
+| `auth.users` | Yes |
+| `profiles` | Yes (role='client') |
+| `user_roles` | **No** |
+| `app_users` | **No** |
 
-**Current code (lines 246-271):**
-```tsx
-{/* Activity Log Toggle Button */}
-<Button variant="outline" size="sm" ...>
-  <Clock className="h-4 w-4 mr-2" />
-  Activity Log
-  ...
-</Button>
-```
+---
 
-**Change:** Wrap the button in a role check:
-```tsx
-{userRole !== 'client' && (
-  <Button variant="outline" size="sm" ...>
-    <Clock className="h-4 w-4 mr-2" />
-    Activity Log
-    ...
-  </Button>
-)}
+## Solution
+
+Update the `create-user` Edge Function to also insert records into:
+1. `user_roles` table (required for role-based access control)
+2. `app_users` table (required for email lookup)
+
+### Architecture After Fix
+
+```text
+Admin creates user via Edge Function
+              │
+              ▼
+┌─────────────────────────────┐
+│   auth.admin.createUser()   │
+│   → Creates auth.users      │
+└─────────────────────────────┘
+              │ (trigger fires)
+              ▼
+┌─────────────────────────────┐
+│   profiles table            │
+│   (auto-created by trigger) │
+└─────────────────────────────┘
+              │
+              ▼
+┌─────────────────────────────┐
+│   UPDATE profiles           │  ← Currently done
+│   (role, first_name, etc.)  │
+└─────────────────────────────┘
+              │
+              ▼
+┌─────────────────────────────┐
+│   INSERT INTO user_roles    │  ← MISSING - Need to add
+│   (user_id, role)           │
+└─────────────────────────────┘
+              │
+              ▼
+┌─────────────────────────────┐
+│   INSERT INTO app_users     │  ← MISSING - Need to add
+│   (id, email, role, name)   │
+└─────────────────────────────┘
 ```
 
 ---
 
-### 2. Dashboard.tsx - Hide Team Encouragement Messages
+## Implementation
 
-The encouraging team messages are internal morale boosters and shouldn't appear in client views.
+### Modify Edge Function: `supabase/functions/create-user/index.ts`
 
-**Current code (lines 274-277):**
-```tsx
-{isDashboardHome && (
-  <TeamEncouragement />
-)}
-```
+Add two new database operations after the profile update:
 
-**Change:** Add role check:
-```tsx
-{isDashboardHome && userRole !== 'client' && (
-  <TeamEncouragement />
-)}
-```
+#### 1. Insert into user_roles
 
----
+```typescript
+// Insert role into user_roles table (required for proper role-based access)
+const { error: roleInsertError } = await supabaseAdmin
+  .from("user_roles")
+  .insert({
+    user_id: userData.user.id,
+    role: role || "user"
+  });
 
-### 3. Sidebar.tsx - Remove Team Chat from Client View
-
-The Team Chat sidebar item currently includes `user` in its roles array. Since the `client` role is not listed, it should already be hidden. However, for absolute clarity and safety, we should explicitly exclude client from seeing it.
-
-**Current code (lines 71-76):**
-```tsx
-{
-  href: "/team-collaboration",
-  icon: MessageSquare,
-  label: "Team Chat",
-  roles: ["admin", "agent", "user"]
+if (roleInsertError) {
+  console.error("Error inserting user role:", roleInsertError);
 }
 ```
 
-This is already correct - `client` is not in the roles array, so clients won't see this item. No change needed here.
+#### 2. Insert into app_users
+
+```typescript
+// Insert into app_users table (for email lookup)
+const { error: appUserError } = await supabaseAdmin
+  .from("app_users")
+  .insert({
+    id: userData.user.id,
+    email: email,
+    role: role || "user",
+    full_name: `${firstName || ""} ${lastName || ""}`.trim() || null
+  });
+
+if (appUserError) {
+  console.error("Error inserting app user:", appUserError);
+}
+```
 
 ---
 
-## Summary of File Changes
+## One-Time Fix for Existing Client
+
+Additionally, we need to fix the existing client user who was already created. This requires a manual SQL insert:
+
+```sql
+-- Insert the existing client into user_roles
+INSERT INTO user_roles (user_id, role)
+VALUES ('d0703084-6885-4525-8b3f-7c5f375e327c', 'client');
+
+-- Insert into app_users if not exists
+INSERT INTO app_users (id, email, role, full_name)
+SELECT 
+  'User''s ID here',
+  'client email',
+  'client',
+  'Doctor Tare'
+WHERE NOT EXISTS (
+  SELECT 1 FROM app_users WHERE id = 'd0703084-6885-4525-8b3f-7c5f375e327c'
+);
+```
+
+---
+
+## Files to Modify
 
 | File | Change |
 |------|--------|
-| `src/pages/Dashboard.tsx` | Wrap Activity Log button in `userRole !== 'client'` check |
-| `src/pages/Dashboard.tsx` | Add `userRole !== 'client'` to TeamEncouragement condition |
-| `src/components/dashboard/Sidebar.tsx` | No change needed (already excludes client role) |
+| `supabase/functions/create-user/index.ts` | Add INSERT into `user_roles` and `app_users` tables |
 
 ---
 
-## Why This Works
+## Testing After Fix
 
-1. **Primary protection**: `RequireAuth` redirects client users from `/dashboard` to `/client/dashboard`
-2. **Secondary protection**: Even if a client somehow accesses the admin dashboard, these internal features remain hidden
-3. **Clean separation**: Client Portal uses its own `ClientSidebar` which has only client-appropriate navigation items
+1. Create a new client user via User Management
+2. Open an order's Client Access section
+3. Click "Select a client..." dropdown
+4. The newly created client should appear in the list
 
-## Result
+---
 
-After these changes, clients will never see:
-- The Activity Log button (internal team feature)
-- Team Encouragement messages (internal morale feature)
-- Team Chat in the sidebar (already hidden, but verified)
+## Expected Outcome
+
+After this fix:
+- New users created via the Admin modal will have entries in all required tables
+- The Client Access dropdown will correctly show all client users
+- Role-based access control (RLS policies using `has_role()`) will work correctly
+- Email lookups via `app_users` will work correctly
