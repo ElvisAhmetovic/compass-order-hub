@@ -36,9 +36,35 @@ export const fetchClientOrders = async (): Promise<ClientOrder[]> => {
 
   // Fetch orders through the client_orders view using client_id (direct link)
   // Falls back to client_user_id for backwards compatibility
+  // Explicitly select only client-safe columns (no internal_notes, assigned_to, etc.)
   const { data, error } = await supabase
     .from("client_orders")
-    .select("*")
+    .select(`
+      id,
+      company_name,
+      description,
+      status,
+      created_at,
+      updated_at,
+      price,
+      currency,
+      priority,
+      status_created,
+      status_in_progress,
+      status_invoice_sent,
+      status_invoice_paid,
+      status_resolved,
+      status_cancelled,
+      contact_email,
+      contact_phone,
+      company_id,
+      client_id,
+      client_user_id,
+      linked_company_name,
+      company_email,
+      client_visible_update,
+      client_action_url
+    `)
     .or(`client_id.eq.${user.id},client_user_id.eq.${user.id}`)
     .order("created_at", { ascending: false });
 
@@ -57,9 +83,35 @@ export const fetchClientOrderById = async (orderId: string): Promise<ClientOrder
     throw new Error("User not authenticated");
   }
 
+  // Explicitly select only client-safe columns
   const { data, error } = await supabase
     .from("client_orders")
-    .select("*")
+    .select(`
+      id,
+      company_name,
+      description,
+      status,
+      created_at,
+      updated_at,
+      price,
+      currency,
+      priority,
+      status_created,
+      status_in_progress,
+      status_invoice_sent,
+      status_invoice_paid,
+      status_resolved,
+      status_cancelled,
+      contact_email,
+      contact_phone,
+      company_id,
+      client_id,
+      client_user_id,
+      linked_company_name,
+      company_email,
+      client_visible_update,
+      client_action_url
+    `)
     .eq("id", orderId)
     .or(`client_id.eq.${user.id},client_user_id.eq.${user.id}`)
     .maybeSingle();
