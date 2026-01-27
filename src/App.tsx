@@ -42,7 +42,17 @@ import TechSupportDetail from "./pages/TechSupportDetail";
 import NotFound from "./pages/NotFound";
 import { RequireAuth } from "./components/auth/RequireAuth";
 import AdminGuard from "./components/auth/AdminGuard";
+import ClientGuard from "./components/client-portal/ClientGuard";
 import NavigationProgress from "./components/layout/NavigationProgress";
+
+// Client Portal Pages
+import ClientDashboard from "./pages/client/ClientDashboard";
+import ClientOrders from "./pages/client/ClientOrders";
+import ClientOrderDetail from "./pages/client/ClientOrderDetail";
+import ClientInvoices from "./pages/client/ClientInvoices";
+import ClientSupport from "./pages/client/ClientSupport";
+import ClientProfile from "./pages/client/ClientProfile";
+import ClientLogin from "./pages/client/ClientLogin";
 
 const queryClient = new QueryClient();
 
@@ -245,6 +255,41 @@ function App() {
                       </AdminGuard>
                     </RequireAuth>
                   } />
+                  
+                  {/* Client Portal Routes */}
+                  <Route path="/client/login" element={<ClientLogin />} />
+                  <Route path="/client/dashboard" element={
+                    <ClientGuard>
+                      <ClientDashboard />
+                    </ClientGuard>
+                  } />
+                  <Route path="/client/orders" element={
+                    <ClientGuard>
+                      <ClientOrders />
+                    </ClientGuard>
+                  } />
+                  <Route path="/client/orders/:id" element={
+                    <ClientGuard>
+                      <ClientOrderDetail />
+                    </ClientGuard>
+                  } />
+                  <Route path="/client/invoices" element={
+                    <ClientGuard>
+                      <ClientInvoices />
+                    </ClientGuard>
+                  } />
+                  <Route path="/client/support" element={
+                    <ClientGuard>
+                      <ClientSupport />
+                    </ClientGuard>
+                  } />
+                  <Route path="/client/profile" element={
+                    <ClientGuard>
+                      <ClientProfile />
+                    </ClientGuard>
+                  } />
+                  <Route path="/client" element={<ClientLogin />} />
+                  
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </div>

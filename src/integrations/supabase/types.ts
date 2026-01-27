@@ -236,6 +236,13 @@ export type Database = {
             foreignKeyName: "client_email_logs_order_id_fkey"
             columns: ["order_id"]
             isOneToOne: false
+            referencedRelation: "client_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_email_logs_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
             referencedRelation: "orders"
             referencedColumns: ["id"]
           },
@@ -319,6 +326,13 @@ export type Database = {
             foreignKeyName: "comments_order_id_fkey"
             columns: ["order_id"]
             isOneToOne: false
+            referencedRelation: "client_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comments_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
             referencedRelation: "orders"
             referencedColumns: ["id"]
           },
@@ -327,6 +341,7 @@ export type Database = {
       companies: {
         Row: {
           address: string | null
+          client_user_id: string | null
           contact_person: string
           created_at: string
           email: string
@@ -339,6 +354,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          client_user_id?: string | null
           contact_person: string
           created_at?: string
           email: string
@@ -351,6 +367,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          client_user_id?: string | null
           contact_person?: string
           created_at?: string
           email?: string
@@ -857,6 +874,13 @@ export type Database = {
             foreignKeyName: "notification_logs_order_id_fkey"
             columns: ["order_id"]
             isOneToOne: false
+            referencedRelation: "client_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_logs_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
             referencedRelation: "orders"
             referencedColumns: ["id"]
           },
@@ -993,6 +1017,13 @@ export type Database = {
           order_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "order_audit_logs_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "client_orders"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "order_audit_logs_order_id_fkey"
             columns: ["order_id"]
@@ -1158,6 +1189,13 @@ export type Database = {
             foreignKeyName: "orders_company_id_fkey"
             columns: ["company_id"]
             isOneToOne: false
+            referencedRelation: "client_orders"
+            referencedColumns: ["company_id"]
+          },
+          {
+            foreignKeyName: "orders_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]
           },
@@ -1245,6 +1283,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "payment_reminders_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "client_orders"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "payment_reminders_order_id_fkey"
             columns: ["order_id"]
@@ -2123,7 +2168,32 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      client_orders: {
+        Row: {
+          client_user_id: string | null
+          company_email: string | null
+          company_id: string | null
+          company_name: string | null
+          contact_email: string | null
+          contact_phone: string | null
+          created_at: string | null
+          currency: string | null
+          description: string | null
+          id: string | null
+          linked_company_name: string | null
+          price: number | null
+          priority: string | null
+          status: string | null
+          status_cancelled: boolean | null
+          status_created: boolean | null
+          status_in_progress: boolean | null
+          status_invoice_paid: boolean | null
+          status_invoice_sent: boolean | null
+          status_resolved: boolean | null
+          updated_at: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       calculate_line_total: {
@@ -2153,6 +2223,10 @@ export type Database = {
         | { Args: never; Returns: string }
         | { Args: { user_id: string }; Returns: string }
       is_admin: { Args: never; Returns: boolean }
+      is_client_of_company: {
+        Args: { company_id_param: string }
+        Returns: boolean
+      }
       recalculate_invoice_totals: {
         Args: { invoice_id_param: string }
         Returns: undefined
