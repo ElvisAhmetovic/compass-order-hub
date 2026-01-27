@@ -24,6 +24,53 @@ export interface ClientSupportReply {
 }
 
 /**
+ * Notify all admins about a new support inquiry or reply
+ */
+async function notifyAdmins(params: {
+  title: string;
+  message: string;
+  actionUrl: string;
+}): Promise<void> {
+  try {
+    // Get all admin user IDs from user_roles table
+    const { data: admins, error: adminError } = await supabase
+      .from("user_roles")
+      .select("user_id")
+      .eq("role", "admin");
+
+    if (adminError) {
+      console.error("Error fetching admins:", adminError);
+      return;
+    }
+
+    if (!admins || admins.length === 0) {
+      console.log("No admins found to notify");
+      return;
+    }
+
+    // Create notifications for all admins
+    const notifications = admins.map(admin => ({
+      user_id: admin.user_id,
+      title: params.title,
+      message: params.message,
+      type: "info" as const,
+      action_url: params.actionUrl,
+      read: false
+    }));
+
+    const { error: notifyError } = await supabase
+      .from("notifications")
+      .insert(notifications);
+
+    if (notifyError) {
+      console.error("Error creating admin notifications:", notifyError);
+    }
+  } catch (error) {
+    console.error("Error in notifyAdmins:", error);
+  }
+}
+
+/**
  * Fetch all support inquiries for the logged-in client
  */
 export async function fetchClientInquiries(): Promise<ClientSupportInquiry[]> {
@@ -182,6 +229,13 @@ export async function createClientInquiry(params: {
     return { success: false, error: error.message };
   }
 
+  // Notify all admins about the new inquiry
+  await notifyAdmins({
+    title: "New Support Inquiry",
+    message: `${userName} submitted: "${params.subject}"`,
+    actionUrl: `/support/${data.id}`
+  });
+
   return { success: true, inquiryId: data.id };
 }
 
@@ -197,12 +251,21 @@ export async function addClientReply(
     return { success: false, error: "Not authenticated" };
   }
 
-  // Get profile info
+  // Get profile info including role from user_roles
   const { data: profile } = await supabase
     .from("profiles")
     .select("first_name, last_name, role")
     .eq("id", userData.user.id)
     .maybeSingle();
+
+  // Check if user is a client from user_roles table
+  const { data: userRole } = await supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userData.user.id)
+    .maybeSingle();
+
+  const isClient = userRole?.role === "client";
 
   const userName = profile
     ? `${profile.first_name} ${profile.last_name}`.trim() || "Client"
@@ -212,13 +275,31 @@ export async function addClientReply(
     inquiry_id: inquiryId,
     user_id: userData.user.id,
     user_name: userName,
-    user_role: profile?.role || "client",
+    user_role: userRole?.role || profile?.role || "client",
     message,
   });
 
   if (error) {
     console.error("Error adding reply:", error);
     return { success: false, error: error.message };
+  }
+
+  // If the replier is a client, notify all admins
+  if (isClient) {
+    // Get inquiry subject for context
+    const { data: inquiry } = await supabase
+      .from("support_inquiries")
+      .select("subject")
+      .eq("id", inquiryId)
+      .maybeSingle();
+
+    if (inquiry) {
+      await notifyAdmins({
+        title: "New Support Reply",
+        message: `${userName} replied to: "${inquiry.subject}"`,
+        actionUrl: `/support/${inquiryId}`
+      });
+    }
   }
 
   return { success: true };

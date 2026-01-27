@@ -41,7 +41,7 @@ interface SupportReply {
 }
 
 export const InquiryDetail = () => {
-  const { inquiryId } = useParams<{ inquiryId: string }>();
+  const { id: inquiryId } = useParams<{ id: string }>();
   const [inquiry, setInquiry] = useState<SupportInquiry | null>(null);
   const [replies, setReplies] = useState<SupportReply[]>([]);
   const [replyText, setReplyText] = useState("");
