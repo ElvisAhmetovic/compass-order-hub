@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, ArrowLeft, CheckCircle, Clock, FileText, XCircle, Paperclip, Download, ExternalLink } from "lucide-react";
+import { Loader2, ArrowLeft, CheckCircle, Clock, FileText, XCircle, Paperclip, Download, ExternalLink, Megaphone } from "lucide-react";
 import { fetchClientOrderById, getOrderAttachments, ClientOrder, OrderAttachment } from "@/services/clientOrderService";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -101,6 +101,27 @@ const ClientOrderDetail = () => {
 
         <div className="grid gap-6 lg:grid-cols-3">
           <div className="lg:col-span-2 space-y-6">
+            {/* Client Visible Update Card - Prominent placement */}
+            {order.client_visible_update && (
+              <Card className="border-primary/30 bg-primary/5">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg flex items-center gap-2 text-primary">
+                    <Megaphone className="h-5 w-5" />
+                    Latest Update
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-foreground whitespace-pre-wrap leading-relaxed">
+                    {order.client_visible_update}
+                  </p>
+                  {order.updated_at && (
+                    <p className="text-xs text-muted-foreground mt-3">
+                      Last updated: {format(new Date(order.updated_at), "PPP 'at' p")}
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            )}
             {/* Order Info Card */}
             <Card>
               <CardHeader>

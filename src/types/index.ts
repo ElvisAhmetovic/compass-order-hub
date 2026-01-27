@@ -74,6 +74,8 @@ export interface Order {
   is_yearly_package?: boolean;
   // Client access
   client_id?: string;
+  // Client visible update
+  client_visible_update?: string;
 }
 
 export interface InvoiceDetails {

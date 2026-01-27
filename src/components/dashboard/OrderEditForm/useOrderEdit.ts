@@ -11,6 +11,7 @@ interface ExtendedOrderFormData extends OrderFormData {
   assigned_to?: string;
   internal_notes?: string;
   description?: string;
+  client_visible_update?: string;
 }
 
 interface UseOrderEditProps {
@@ -38,7 +39,8 @@ export const useOrderEdit = (
     priority: "medium",
     assigned_to: "",
     internal_notes: "",
-    description: ""
+    description: "",
+    client_visible_update: ""
   });
   const [isSaving, setIsSaving] = useState(false);
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
@@ -59,7 +61,8 @@ export const useOrderEdit = (
       priority: (order.priority || "medium"),
       assigned_to: order.assigned_to || "",
       internal_notes: order.internal_notes || "",
-      description: order.description || ""
+      description: order.description || "",
+      client_visible_update: order.client_visible_update || ""
     };
     
     console.log('Starting edit mode with safe data:', safeOrderData);
@@ -122,7 +125,7 @@ export const useOrderEdit = (
     setValidationErrors({}); // Clear all errors if we're proceeding
     
     try {
-      // Prepare update data including internal notes and description
+      // Prepare update data including internal notes, description, and client visible update
       const updateData: Partial<Order> = {
         company_name: editedOrder.company_name || order.company_name || "",
         company_address: editedOrder.company_address || "",
@@ -133,7 +136,8 @@ export const useOrderEdit = (
         currency: editedOrder.currency || "EUR",
         priority: editedOrder.priority as OrderPriority || "medium",
         internal_notes: editedOrder.internal_notes || "",
-        description: editedOrder.description || ""
+        description: editedOrder.description || "",
+        client_visible_update: editedOrder.client_visible_update || ""
       };
 
       // Handle inventory items
@@ -244,7 +248,8 @@ export const useOrderEdit = (
       priority: "medium",
       assigned_to: "",
       internal_notes: "",
-      description: ""
+      description: "",
+      client_visible_update: ""
     });
     setValidationErrors({});
     

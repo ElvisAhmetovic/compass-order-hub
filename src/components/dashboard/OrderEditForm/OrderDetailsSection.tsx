@@ -3,7 +3,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { DollarSign, User, Calendar, Clock, Package, FileText } from "lucide-react";
+import { DollarSign, User, Calendar, Clock, Package, FileText, Megaphone, Lock } from "lucide-react";
 import { OrderFormData, ValidationErrors } from "./validation";
 import { Order, OrderPriority } from "@/types";
 import { formatDate } from "@/lib/utils";
@@ -14,10 +14,10 @@ import InventoryItemsSelector, { SelectedInventoryItem } from "../InventoryItems
 
 interface OrderDetailsSectionProps {
   order: Order;
-  data: OrderFormData & { assigned_to?: string; internal_notes?: string; description?: string };
+  data: OrderFormData & { assigned_to?: string; internal_notes?: string; description?: string; client_visible_update?: string };
   errors: ValidationErrors;
   isEditing: boolean;
-  onChange: (field: keyof (OrderFormData & { assigned_to?: string; internal_notes?: string; description?: string }), value: string | number) => void;
+  onChange: (field: keyof (OrderFormData & { assigned_to?: string; internal_notes?: string; description?: string; client_visible_update?: string }), value: string | number) => void;
   selectedInventoryItems?: SelectedInventoryItem[];
   onInventoryItemsChange?: (items: SelectedInventoryItem[]) => void;
 }
@@ -91,7 +91,8 @@ const OrderDetailsSection = ({
     priority: data.priority || order.priority || "medium",
     assigned_to: data.assigned_to || order.assigned_to || "unassigned",
     internal_notes: data.internal_notes !== undefined ? data.internal_notes : (order.internal_notes || ""),
-    description: data.description !== undefined ? data.description : (order.description || "")
+    description: data.description !== undefined ? data.description : (order.description || ""),
+    client_visible_update: data.client_visible_update !== undefined ? data.client_visible_update : (order.client_visible_update || "")
   };
 
   const handleAssignedToChange = (value: string) => {
@@ -167,11 +168,51 @@ Additional details in new paragraphs...`}
         )}
       </div>
 
-      {/* Internal Notes Section */}
-      <div>
-        <Label className="text-sm font-medium text-muted-foreground flex items-center gap-1">
-          <FileText className="h-3 w-3" />
+      {/* Client Update Section - Visible to Client */}
+      <div className="border-l-4 border-primary pl-4">
+        <Label className="text-sm font-medium text-foreground flex items-center gap-2">
+          <Megaphone className="h-3 w-3 text-primary" />
+          Client Update
+          <Badge variant="default" className="text-xs px-1.5 py-0.5 h-5">
+            Visible to Client
+          </Badge>
+        </Label>
+        {isEditing ? (
+          <div>
+            <Textarea
+              value={safeData.client_visible_update}
+              onChange={(e) => onChange('client_visible_update', e.target.value)}
+              placeholder={`Write a high-level update for your client...
+
+Example:
+"Your order is progressing well! We've completed the initial review and are now in the production phase. Expected completion in 2-3 business days."`}
+              className="mt-1 min-h-[100px] border-primary/30"
+            />
+            <p className="text-xs text-primary mt-1">
+              📢 This message will be displayed prominently to the client in their portal.
+            </p>
+          </div>
+        ) : (
+          <div className="mt-2">
+            {order.client_visible_update ? (
+              <div className="p-3 bg-primary/10 rounded-md text-sm border border-primary/20" style={{ whiteSpace: 'pre-wrap', lineHeight: '1.5' }}>
+                {formatTextDisplay(order.client_visible_update)}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground italic">No client update set</p>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Internal Notes Section - Hidden from clients */}
+      <div className="border-l-4 border-muted-foreground/30 pl-4">
+        <Label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+          <Lock className="h-3 w-3" />
           Internal Notes
+          <Badge variant="outline" className="text-xs px-1.5 py-0.5 h-5 text-muted-foreground">
+            Hidden from Client
+          </Badge>
         </Label>
         {isEditing ? (
           <div>
