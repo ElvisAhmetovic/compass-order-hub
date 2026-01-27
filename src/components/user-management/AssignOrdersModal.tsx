@@ -171,36 +171,38 @@ export function AssignOrdersModal({ user, open, onClose }: AssignOrdersModalProp
                     {orders.map(order => (
                       <div 
                         key={order.id} 
-                        className="flex items-center space-x-2 p-2 border rounded-md hover:bg-accent"
+                        className="flex items-start gap-3 p-3 border rounded-md hover:bg-accent"
                       >
                         <Checkbox 
                           id={`order-${order.id}`}
                           checked={selectedOrders.includes(order.id)}
                           onCheckedChange={() => toggleOrderSelection(order.id)}
+                          className="mt-0.5 flex-shrink-0"
                         />
-                        <div className="flex flex-1 justify-between items-center">
-                          <Label 
-                            htmlFor={`order-${order.id}`}
-                            className="flex-1 cursor-pointer text-sm"
-                          >
-                            <span className="font-medium">{order.company_name}</span>
-                            {order.contact_email && (
-                              <span className="ml-2 text-muted-foreground">{order.contact_email}</span>
-                            )}
-                          </Label>
-                          
-                          <div className="flex items-center gap-2">
-                            <Badge className={getStatusColor(order.status)}>
-                              {order.status}
-                            </Badge>
-                            <Badge variant="outline">
-                              {new Intl.NumberFormat('en-US', { 
-                                style: 'currency', 
-                                currency: order.currency || 'USD' 
-                              }).format(order.price || 0)}
-                            </Badge>
+                        <Label 
+                          htmlFor={`order-${order.id}`}
+                          className="flex-1 min-w-0 cursor-pointer"
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0 flex-1">
+                              <p className="font-medium text-sm truncate">{order.company_name}</p>
+                              {order.contact_email && (
+                                <p className="text-xs text-muted-foreground truncate">{order.contact_email}</p>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1.5 flex-shrink-0">
+                              <Badge className={`${getStatusColor(order.status)} text-xs px-2 py-0.5`}>
+                                {order.status}
+                              </Badge>
+                              <Badge variant="outline" className="text-xs px-2 py-0.5 whitespace-nowrap">
+                                {new Intl.NumberFormat('en-US', { 
+                                  style: 'currency', 
+                                  currency: order.currency || 'EUR' 
+                                }).format(order.price || 0)}
+                              </Badge>
+                            </div>
                           </div>
-                        </div>
+                        </Label>
                       </div>
                     ))}
                   </div>
