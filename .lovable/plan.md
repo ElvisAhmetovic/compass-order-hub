@@ -1,108 +1,183 @@
 
-
-# Fix Authentication Routing Issues
+# Add Supabase Realtime Subscriptions to Client Portal
 
 ## Overview
-This plan addresses the routing bug identified in the security audit where the root route (`/`) sends all authenticated users to `/dashboard`, causing an unnecessary redirect hop for clients who are then corrected by `RequireAuth`.
+Implement real-time order updates in the Client Portal so clients see status changes instantly without needing to refresh the page. This will follow existing patterns used elsewhere in the codebase (e.g., `activityService`, `notificationService`, `useGlobalChatNotifications`).
 
 ---
 
-## Issue Analysis
+## Current State Analysis
 
-### Current Behavior (Bug)
-```text
-Client logs in → Index.tsx → /dashboard → RequireAuth → /client/dashboard
-                              ↑                        ↑
-                         redirect #1              redirect #2 (correction)
-```
+### How Realtime Currently Works in the App
+The codebase has established patterns for Supabase Realtime:
+- **activityService.ts**: Subscribes to `team_activities` table with cleanup function
+- **notificationService.ts**: Subscribes to `notifications` table with user-specific filter
+- **useGlobalChatNotifications.ts**: Full hook implementation with connection state tracking
+- **SmartAlerts.tsx**: Subscribes to `orders` UPDATE events (admin side)
 
-### Expected Behavior (Fixed)
-```text
-Client logs in → Index.tsx → /client/dashboard
-                              ↑
-                         single redirect based on role
-```
+### What's Missing for Client Portal
+1. **Database**: The `orders` table is NOT enabled for Realtime (no `REPLICA IDENTITY FULL` or publication)
+2. **Service Layer**: No subscription method in `clientOrderService.ts`
+3. **Components**: Client Portal pages use one-time data fetching, no subscriptions
 
 ---
 
 ## Implementation Plan
 
-### Phase 1: Fix Index.tsx Role-Based Redirection
+### Phase 1: Enable Realtime for Orders Table
 
-**File: `src/pages/Index.tsx`**
+**Database Migration Required**
 
-Update the redirect logic to check user role and send clients directly to their dashboard:
+Create a new migration to enable realtime for the `orders` table:
 
-```typescript
-useEffect(() => {
-  console.log('Index page - Loading:', isLoading, 'User:', user?.email, 'Role:', user?.role);
-  
-  if (!isLoading) {
-    if (user) {
-      // Role-based redirection
-      if (user.role === 'client') {
-        console.log('Redirecting client to client dashboard');
-        navigate("/client/dashboard");
-      } else {
-        console.log('Redirecting admin/agent/user to dashboard');
-        navigate("/dashboard");
-      }
-    } else {
-      console.log('Redirecting to login');
-      navigate("/login");
-    }
-  }
-}, [navigate, user, isLoading]);
+```sql
+-- Enable realtime for orders table
+ALTER TABLE orders REPLICA IDENTITY FULL;
+
+-- Add the table to the realtime publication
+ALTER PUBLICATION supabase_realtime ADD TABLE orders;
 ```
 
-**Changes:**
-- Add role check before redirecting
-- Clients (`role === 'client'`) go directly to `/client/dashboard`
-- Admins, agents, and users go to `/dashboard`
-- Add role to console log for debugging
+This follows the exact pattern used for `team_activities` and `reactions` tables.
 
 ---
 
-## Manual Action Required: Supabase Postgres Upgrade
+### Phase 2: Create Client Orders Realtime Hook
 
-The Supabase linter detected that your Postgres database has security patches available. This cannot be fixed through code changes and requires manual action:
+**New File: `src/hooks/useClientOrdersRealtime.ts`**
 
-**Steps to apply the upgrade:**
-1. Go to your Supabase Dashboard
-2. Navigate to **Project Settings** → **Infrastructure**
-3. Look for the **Postgres Version** section
-4. Click **Upgrade** to apply the security patches
-5. Schedule a maintenance window (the upgrade will cause brief downtime)
+A custom hook that:
+- Subscribes to the `orders` table for UPDATE events
+- Filters changes relevant to the current client (using `client_id`)
+- Provides callbacks when orders are updated
+- Properly cleans up subscriptions on unmount
+- Tracks connection status
 
-**Note:** This is a critical security update and should be applied as soon as possible to protect your database.
+```typescript
+// Hook structure
+export const useClientOrdersRealtime = (
+  onOrderUpdate: (orderId: string) => void
+) => {
+  // Subscribe to orders table UPDATE events
+  // Filter by client_id matching current user
+  // Return cleanup function and connection status
+};
+```
+
+---
+
+### Phase 3: Integrate Realtime into Client Portal Components
+
+#### 3.1 ClientDashboard.tsx
+
+Update to use the realtime hook:
+- Subscribe to order updates on mount
+- Refetch dashboard data when an order is updated
+- Show a toast notification for status changes
+- Display connection indicator (optional)
+
+#### 3.2 ClientOrders.tsx
+
+Update to use the realtime hook:
+- Subscribe to order updates on mount
+- Update the orders list when changes occur
+- Show visual feedback (subtle flash on updated order cards)
+
+#### 3.3 ClientOrderDetail.tsx
+
+Update to use the realtime hook:
+- Subscribe specifically to the current order being viewed
+- Auto-refresh order data when status changes
+- Show toast notification with the new status
+
+---
+
+### Phase 4: Add Subscription to Service Layer
+
+**Update: `src/services/clientOrderService.ts`**
+
+Add a new function for subscribing to client order updates:
+
+```typescript
+export const subscribeToClientOrders = (
+  userId: string,
+  onUpdate: (order: ClientOrder) => void,
+  onInsert?: (order: ClientOrder) => void
+): (() => void) => {
+  // Create channel with unique name
+  // Subscribe to orders table with client_id filter
+  // Return cleanup function
+};
+```
+
+---
+
+## Technical Details
+
+### Realtime Channel Configuration
+
+```typescript
+const channel = supabase
+  .channel(`client-orders-${userId}`)
+  .on('postgres_changes', {
+    event: 'UPDATE',
+    schema: 'public',
+    table: 'orders',
+    filter: `client_id=eq.${userId}`
+  }, (payload) => {
+    // Handle update
+  })
+  .subscribe();
+```
+
+### Security Considerations
+
+- Realtime uses RLS policies, so clients can only receive events for orders they have access to
+- The `client_id` filter on the subscription provides additional client-side filtering
+- Existing RLS policy on `orders` table: `client_id = auth.uid()` ensures data isolation
+
+### Connection State Management
+
+The hook will track:
+- `isConnected`: Boolean indicating active subscription
+- Error handling for subscription failures
+- Automatic reconnection (handled by Supabase SDK)
+
+---
+
+## Files to Create/Modify
+
+| File | Action | Description |
+|------|--------|-------------|
+| `supabase/migrations/[timestamp].sql` | Create | Enable realtime for orders table |
+| `src/hooks/useClientOrdersRealtime.ts` | Create | Custom hook for realtime subscriptions |
+| `src/services/clientOrderService.ts` | Modify | Add subscription helper function |
+| `src/pages/client/ClientDashboard.tsx` | Modify | Integrate realtime hook |
+| `src/pages/client/ClientOrders.tsx` | Modify | Integrate realtime hook |
+| `src/pages/client/ClientOrderDetail.tsx` | Modify | Integrate realtime hook for single order |
+
+---
+
+## User Experience Improvements
+
+### Visual Feedback
+- **Toast Notification**: When an order status changes, show a friendly message like "Your order status has been updated"
+- **Badge Pulse**: Briefly highlight the updated order card
+- **Stats Auto-Update**: Dashboard stats update in real-time
+
+### Connection Status (Optional)
+- Small indicator showing realtime connection is active
+- Graceful fallback if connection drops (manual refresh available)
 
 ---
 
 ## Summary of Changes
 
-| Component | Change Type | Description |
-|-----------|-------------|-------------|
-| `src/pages/Index.tsx` | Modify | Add role-based redirection for root route |
+1. **Database**: Enable `orders` table for Supabase Realtime publication
+2. **Hook**: Create `useClientOrdersRealtime` hook following existing patterns
+3. **Service**: Add subscription helper to `clientOrderService.ts`
+4. **Dashboard**: Auto-refresh stats and recent orders on updates
+5. **Orders List**: Update list in real-time when status changes
+6. **Order Detail**: Refresh current order when it gets updated
 
----
-
-## Files to Modify
-
-1. **`src/pages/Index.tsx`** - Update useEffect to check user role before redirecting
-
----
-
-## Security Verification
-
-After implementation, the routing behavior will be:
-
-| User Role | Entry Point | Redirect To |
-|-----------|-------------|-------------|
-| Client | `/` | `/client/dashboard` (direct) |
-| Admin | `/` | `/dashboard` (direct) |
-| Agent | `/` | `/dashboard` (direct) |
-| User | `/` | `/dashboard` (direct) |
-| Not logged in | `/` | `/login` |
-
-This eliminates the double-redirect for clients and provides a cleaner user experience.
-
+This implementation ensures clients always see the latest order status without manual refresh, improving the overall user experience of the Client Portal.
