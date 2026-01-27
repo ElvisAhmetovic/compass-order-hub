@@ -48,6 +48,33 @@ export const InquiriesList = ({ showAll = false }: InquiriesListProps) => {
     loadInquiries();
   }, [user, isAdmin, showAll]);
 
+  // Real-time subscription for admins to auto-refresh when new inquiries arrive
+  useEffect(() => {
+    if (!user || !isAdmin) return;
+
+    const channel = supabase
+      .channel('admin-support-inquiries-list')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'support_inquiries'
+      }, () => {
+        loadInquiries();
+      })
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'support_replies'
+      }, () => {
+        loadInquiries();
+      })
+      .subscribe();
+
+    return () => {
+      channel.unsubscribe();
+    };
+  }, [user, isAdmin]);
+
   const loadInquiries = async () => {
     if (!user) return;
     

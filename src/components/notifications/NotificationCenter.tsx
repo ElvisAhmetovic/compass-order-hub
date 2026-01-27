@@ -1,11 +1,10 @@
-
 import { useState, useEffect } from 'react';
-import { Bell, X, Check, CheckCheck } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Bell, Check, CheckCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Separator } from '@/components/ui/separator';
 import { NotificationService, Notification } from '@/services/notificationService';
 import { useAuth } from '@/context/AuthContext';
 import { formatDistanceToNow } from 'date-fns';
@@ -14,6 +13,7 @@ const NotificationCenter = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (!user) return;
@@ -38,7 +38,8 @@ const NotificationCenter = () => {
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
-  const handleMarkAsRead = async (notificationId: string) => {
+  const handleMarkAsRead = async (notificationId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
     await NotificationService.markAsRead(notificationId);
     setNotifications(prev => 
       prev.map(n => n.id === notificationId ? { ...n, read: true } : n)
@@ -49,6 +50,22 @@ const NotificationCenter = () => {
     if (!user) return;
     await NotificationService.markAllAsRead(user.id);
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+  };
+
+  const handleNotificationClick = async (notification: Notification) => {
+    // Mark as read
+    if (!notification.read) {
+      await NotificationService.markAsRead(notification.id);
+      setNotifications(prev => 
+        prev.map(n => n.id === notification.id ? { ...n, read: true } : n)
+      );
+    }
+
+    // Navigate if action_url exists
+    if (notification.action_url) {
+      setIsOpen(false);
+      navigate(notification.action_url);
+    }
   };
 
   const getNotificationIcon = (type: Notification['type']) => {
@@ -99,7 +116,8 @@ const NotificationCenter = () => {
               {notifications.map((notification) => (
                 <div 
                   key={notification.id}
-                  className={`p-3 rounded-lg mb-2 border ${
+                  onClick={() => handleNotificationClick(notification)}
+                  className={`p-3 rounded-lg mb-2 border cursor-pointer transition-colors hover:bg-accent ${
                     notification.read ? 'bg-muted/30' : 'bg-background border-primary/20'
                   }`}
                 >
@@ -120,7 +138,7 @@ const NotificationCenter = () => {
                           <Button 
                             variant="ghost" 
                             size="sm" 
-                            onClick={() => handleMarkAsRead(notification.id)}
+                            onClick={(e) => handleMarkAsRead(notification.id, e)}
                           >
                             <Check className="h-3 w-3" />
                           </Button>
