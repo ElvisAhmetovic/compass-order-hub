@@ -1086,6 +1086,7 @@ export type Database = {
           amount: number | null
           assigned_to: string | null
           assigned_to_name: string | null
+          client_action_url: string | null
           client_id: string | null
           client_visible_update: string | null
           company_address: string | null
@@ -1128,6 +1129,7 @@ export type Database = {
           amount?: number | null
           assigned_to?: string | null
           assigned_to_name?: string | null
+          client_action_url?: string | null
           client_id?: string | null
           client_visible_update?: string | null
           company_address?: string | null
@@ -1170,6 +1172,7 @@ export type Database = {
           amount?: number | null
           assigned_to?: string | null
           assigned_to_name?: string | null
+          client_action_url?: string | null
           client_id?: string | null
           client_visible_update?: string | null
           company_address?: string | null
@@ -2232,6 +2235,7 @@ export type Database = {
     Views: {
       client_orders: {
         Row: {
+          client_action_url: string | null
           client_id: string | null
           client_user_id: string | null
           client_visible_update: string | null

@@ -5,11 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, ArrowLeft, CheckCircle, Clock, FileText, XCircle, Paperclip, Download, ExternalLink, Megaphone } from "lucide-react";
+import { Loader2, ArrowLeft, CheckCircle, Clock, FileText, XCircle, Paperclip, Download, ExternalLink, Megaphone, AlertTriangle } from "lucide-react";
 import { fetchClientOrderById, getOrderAttachments, ClientOrder, OrderAttachment } from "@/services/clientOrderService";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
-import { getClientStatusFromOrder, getClientStatusStep } from "@/utils/clientStatusTranslator";
+import { getClientStatusFromOrder, getClientStatusStep, getActionButtonConfig } from "@/utils/clientStatusTranslator";
 
 const ClientOrderDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -75,6 +75,7 @@ const ClientOrderDetail = () => {
   }
 
   const statusConfig = getClientStatusFromOrder(order);
+  const actionConfig = getActionButtonConfig(order);
   const isCancelled = order.status_cancelled;
 
   // Build status steps with client-friendly labels
@@ -101,6 +102,42 @@ const ClientOrderDetail = () => {
 
         <div className="grid gap-6 lg:grid-cols-3">
           <div className="lg:col-span-2 space-y-6">
+            {/* Action Required Card - Most prominent placement */}
+            {actionConfig.showButton && actionConfig.url && (
+              <Card className="border-destructive/50 bg-destructive/10">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg flex items-center gap-2 text-destructive">
+                    <AlertTriangle className="h-5 w-5" />
+                    Action Required
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <p className="text-foreground">
+                    Your feedback is needed to proceed with this order. Please review and provide your input.
+                  </p>
+                  <Button
+                    asChild
+                    variant="destructive"
+                    size="lg"
+                    className="w-full sm:w-auto"
+                  >
+                    <a 
+                      href={actionConfig.url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-2"
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                      {actionConfig.label}
+                    </a>
+                  </Button>
+                  <p className="text-xs text-muted-foreground">
+                    Opens: {actionConfig.url}
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+            
             {/* Client Visible Update Card - Prominent placement */}
             {order.client_visible_update && (
               <Card className="border-primary/30 bg-primary/5">

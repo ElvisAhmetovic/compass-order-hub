@@ -3,7 +3,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { DollarSign, User, Calendar, Clock, Package, FileText, Megaphone, Lock } from "lucide-react";
+import { DollarSign, User, Calendar, Clock, Package, FileText, Megaphone, Lock, Link as LinkIcon } from "lucide-react";
 import { OrderFormData, ValidationErrors } from "./validation";
 import { Order, OrderPriority } from "@/types";
 import { formatDate } from "@/lib/utils";
@@ -14,10 +14,10 @@ import InventoryItemsSelector, { SelectedInventoryItem } from "../InventoryItems
 
 interface OrderDetailsSectionProps {
   order: Order;
-  data: OrderFormData & { assigned_to?: string; internal_notes?: string; description?: string; client_visible_update?: string };
+  data: OrderFormData & { assigned_to?: string; internal_notes?: string; description?: string; client_visible_update?: string; client_action_url?: string };
   errors: ValidationErrors;
   isEditing: boolean;
-  onChange: (field: keyof (OrderFormData & { assigned_to?: string; internal_notes?: string; description?: string; client_visible_update?: string }), value: string | number) => void;
+  onChange: (field: keyof (OrderFormData & { assigned_to?: string; internal_notes?: string; description?: string; client_visible_update?: string; client_action_url?: string }), value: string | number) => void;
   selectedInventoryItems?: SelectedInventoryItem[];
   onInventoryItemsChange?: (items: SelectedInventoryItem[]) => void;
 }
@@ -92,7 +92,8 @@ const OrderDetailsSection = ({
     assigned_to: data.assigned_to || order.assigned_to || "unassigned",
     internal_notes: data.internal_notes !== undefined ? data.internal_notes : (order.internal_notes || ""),
     description: data.description !== undefined ? data.description : (order.description || ""),
-    client_visible_update: data.client_visible_update !== undefined ? data.client_visible_update : (order.client_visible_update || "")
+    client_visible_update: data.client_visible_update !== undefined ? data.client_visible_update : (order.client_visible_update || ""),
+    client_action_url: data.client_action_url !== undefined ? data.client_action_url : (order.client_action_url || "")
   };
 
   const handleAssignedToChange = (value: string) => {
@@ -203,6 +204,47 @@ Example:
             )}
           </div>
         )}
+        
+        {/* Client Action URL - within the client-visible section */}
+        <div className="mt-3">
+          <Label className="text-sm font-medium text-foreground flex items-center gap-2">
+            <LinkIcon className="h-3 w-3 text-primary" />
+            Client Action URL
+            <Badge variant="outline" className="text-xs px-1.5 py-0.5 h-5 text-primary border-primary/50">
+              Optional
+            </Badge>
+          </Label>
+          {isEditing ? (
+            <div>
+              <Input
+                type="url"
+                value={safeData.client_action_url}
+                onChange={(e) => onChange('client_action_url', e.target.value)}
+                placeholder="https://example.com/feedback-form or mockup link"
+                className="mt-1 border-primary/30"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                When status is 'Action Required', this URL appears as a button for clients to provide feedback or view mockups.
+              </p>
+            </div>
+          ) : (
+            <div className="mt-1">
+              {order.client_action_url ? (
+                <a 
+                  href={order.client_action_url} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-sm text-primary hover:underline flex items-center gap-1"
+                >
+                  <LinkIcon className="h-3 w-3" />
+                  {order.client_action_url}
+                </a>
+              ) : (
+                <p className="text-sm text-muted-foreground italic">No action URL set</p>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Internal Notes Section - Hidden from clients */}

@@ -12,6 +12,7 @@ interface ExtendedOrderFormData extends OrderFormData {
   internal_notes?: string;
   description?: string;
   client_visible_update?: string;
+  client_action_url?: string;
 }
 
 interface UseOrderEditProps {
@@ -40,7 +41,8 @@ export const useOrderEdit = (
     assigned_to: "",
     internal_notes: "",
     description: "",
-    client_visible_update: ""
+    client_visible_update: "",
+    client_action_url: ""
   });
   const [isSaving, setIsSaving] = useState(false);
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
@@ -62,7 +64,8 @@ export const useOrderEdit = (
       assigned_to: order.assigned_to || "",
       internal_notes: order.internal_notes || "",
       description: order.description || "",
-      client_visible_update: order.client_visible_update || ""
+      client_visible_update: order.client_visible_update || "",
+      client_action_url: order.client_action_url || ""
     };
     
     console.log('Starting edit mode with safe data:', safeOrderData);
@@ -137,7 +140,8 @@ export const useOrderEdit = (
         priority: editedOrder.priority as OrderPriority || "medium",
         internal_notes: editedOrder.internal_notes || "",
         description: editedOrder.description || "",
-        client_visible_update: editedOrder.client_visible_update || ""
+        client_visible_update: editedOrder.client_visible_update || "",
+        client_action_url: editedOrder.client_action_url || ""
       };
 
       // Handle inventory items
@@ -249,7 +253,8 @@ export const useOrderEdit = (
       assigned_to: "",
       internal_notes: "",
       description: "",
-      client_visible_update: ""
+      client_visible_update: "",
+      client_action_url: ""
     });
     setValidationErrors({});
     
