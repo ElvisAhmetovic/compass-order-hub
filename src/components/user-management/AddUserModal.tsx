@@ -29,11 +29,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { UserRole, User } from "@/types";
+import { UserRole } from "@/types";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { Eye, EyeOff } from "lucide-react";
 
 const formSchema = z.object({
   email: z.string().email({ message: "Invalid email address" }),
+  password: z.string().min(8, {
+    message: "Password must be at least 8 characters.",
+  }),
   fullName: z.string().min(2, {
     message: "Full name must be at least 2 characters.",
   }),
@@ -43,21 +48,23 @@ const formSchema = z.object({
 interface AddUserModalProps {
   open: boolean;
   onClose: () => void;
-  onAddUser: (user: User) => void;
+  onSuccess: () => void;
 }
 
 export const AddUserModal: React.FC<AddUserModalProps> = ({
   open,
   onClose,
-  onAddUser,
+  onSuccess,
 }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       email: "",
+      password: "",
       fullName: "",
       role: "user",
     },
@@ -66,40 +73,45 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsSubmitting(true);
     try {
-      // Generate a UUID for the user profile
-      const userId = crypto.randomUUID();
-      
       // Split full name for first and last name
       const nameParts = values.fullName.trim().split(' ');
       const firstName = nameParts[0] || '';
       const lastName = nameParts.slice(1).join(' ') || '';
 
-      // Create new user object
-      const newUser: User = {
-        id: userId,
-        email: values.email,
-        role: values.role,
-        full_name: values.fullName,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
+      // Call the Edge Function to create the user
+      const { data, error } = await supabase.functions.invoke('create-user', {
+        body: {
+          email: values.email,
+          password: values.password,
+          firstName,
+          lastName,
+          role: values.role,
+        },
+      });
 
-      // Pass new user to parent component
-      onAddUser(newUser);
+      if (error) {
+        throw new Error(error.message || 'Failed to create user');
+      }
+
+      if (data?.error) {
+        throw new Error(data.error);
+      }
 
       toast({
-        title: "User profile created",
-        description: "New user profile has been created successfully. Note: This creates a profile entry - the user will need to register separately with this email.",
+        title: "User created successfully",
+        description: `${values.fullName} can now log in with the provided credentials.`,
       });
 
       // Reset form and close modal
       form.reset();
       onClose();
-    } catch (error) {
+      onSuccess();
+    } catch (error: any) {
+      console.error("Error creating user:", error);
       toast({
         variant: "destructive",
-        title: "Failed to create user profile",
-        description: "Something went wrong. Please try again later.",
+        title: "Failed to create user",
+        description: error.message || "Something went wrong. Please try again later.",
       });
     } finally {
       setIsSubmitting(false);
@@ -110,9 +122,9 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Add User Profile</DialogTitle>
+          <DialogTitle>Add New User</DialogTitle>
           <DialogDescription>
-            Create a new user profile. The user will need to register separately with this email.
+            Create a new user account. The user will be able to log in immediately with these credentials.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -125,6 +137,38 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({
                   <FormLabel>Email</FormLabel>
                   <FormControl>
                     <Input type="email" placeholder="user@example.com" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="password"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Password</FormLabel>
+                  <FormControl>
+                    <div className="relative">
+                      <Input 
+                        type={showPassword ? "text" : "password"} 
+                        placeholder="Min. 8 characters" 
+                        {...field} 
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                        onClick={() => setShowPassword(!showPassword)}
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4 text-muted-foreground" />
+                        ) : (
+                          <Eye className="h-4 w-4 text-muted-foreground" />
+                        )}
+                      </Button>
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -173,7 +217,7 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({
                 </Button>
               </DialogClose>
               <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Creating..." : "Create Profile"}
+                {isSubmitting ? "Creating..." : "Create User"}
               </Button>
             </DialogFooter>
           </form>

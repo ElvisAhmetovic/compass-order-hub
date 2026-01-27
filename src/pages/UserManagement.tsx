@@ -108,39 +108,9 @@ const UserManagement = () => {
     loadUsers();
   }, [currentUser]);
   
-  const handleAddUser = async (newUser: User) => {
-    try {
-      console.log('Adding new user profile:', newUser);
-      
-      const nameParts = newUser.full_name.split(' ');
-      const { error } = await supabase
-        .from('profiles')
-        .insert({
-          id: newUser.id,
-          first_name: nameParts[0] || '',
-          last_name: nameParts.slice(1).join(' ') || '',
-          role: newUser.role
-        });
-
-      if (error) {
-        throw error;
-      }
-
-      // Reload users to show the new one
-      await loadUsers();
-      
-      toast({
-        title: "User profile created",
-        description: "New user profile has been added successfully."
-      });
-    } catch (error: any) {
-      console.error("Error adding user:", error);
-      toast({
-        variant: "destructive",
-        title: "Error adding user",
-        description: error.message || "Could not add the new user to database."
-      });
-    }
+  const handleUserCreated = async () => {
+    // Simply reload the users list after successful creation
+    await loadUsers();
   };
   
   return (
@@ -158,7 +128,7 @@ const UserManagement = () => {
                   </p>
                 </div>
                 <Button onClick={() => setIsAddUserModalOpen(true)}>
-                  Add User Profile
+                  Add User
                 </Button>
               </div>
               
@@ -180,7 +150,7 @@ const UserManagement = () => {
               <AddUserModal 
                 open={isAddUserModalOpen} 
                 onClose={() => setIsAddUserModalOpen(false)}
-                onAddUser={handleAddUser}
+                onSuccess={handleUserCreated}
               />
             </div>
           </Layout>
