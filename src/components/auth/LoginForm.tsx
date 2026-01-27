@@ -58,8 +58,35 @@ const LoginForm = () => {
       const success = await login(email, password);
       
       if (success) {
-        console.log("Login successful, navigating to dashboard");
-        navigate("/dashboard");
+        console.log("Login successful, fetching user role for redirect...");
+        // Wait a moment for the auth context to update with user data
+        setTimeout(async () => {
+          const { data: { user: supabaseUser } } = await import('@/integrations/supabase/client').then(m => m.supabase.auth.getUser());
+          
+          if (supabaseUser) {
+            // Check role from user_roles table
+            const { data: roleData } = await import('@/integrations/supabase/client').then(m => 
+              m.supabase
+                .from('user_roles')
+                .select('role')
+                .eq('user_id', supabaseUser.id)
+                .maybeSingle()
+            );
+            
+            const userRole = roleData?.role || 'user';
+            console.log("User role:", userRole);
+            
+            if (userRole === 'client') {
+              console.log("Redirecting client to /client/dashboard");
+              navigate("/client/dashboard");
+            } else {
+              console.log("Redirecting to /dashboard");
+              navigate("/dashboard");
+            }
+          } else {
+            navigate("/dashboard");
+          }
+        }, 100);
       } else {
         setErrors(prev => ({ ...prev, auth: "Invalid email or password" }));
       }

@@ -105,3 +105,34 @@ export const getClientOrderStats = async () => {
     resolved: orders.filter(o => o.status_resolved).length,
   };
 };
+
+export interface OrderAttachment {
+  id: string;
+  file_name: string;
+  file_url: string;
+  file_type: string;
+  file_size: number | null;
+  created_at: string;
+  uploaded_by_name: string;
+}
+
+export const getOrderAttachments = async (orderId: string): Promise<OrderAttachment[]> => {
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) {
+    throw new Error("User not authenticated");
+  }
+
+  const { data, error } = await supabase
+    .from("file_attachments")
+    .select("id, file_name, file_url, file_type, file_size, created_at, uploaded_by_name")
+    .eq("order_id", orderId)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("Error fetching order attachments:", error);
+    throw error;
+  }
+
+  return (data as OrderAttachment[]) || [];
+};
