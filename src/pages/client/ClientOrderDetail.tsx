@@ -1,15 +1,16 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 import ClientLayout from "@/components/client-portal/ClientLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, ArrowLeft, CheckCircle, Clock, FileText, XCircle, Paperclip, Download, ExternalLink, Megaphone, AlertTriangle } from "lucide-react";
+import { Loader2, ArrowLeft, CheckCircle, Clock, FileText, XCircle, Paperclip, Download, ExternalLink, Megaphone, AlertTriangle, Wifi, WifiOff } from "lucide-react";
 import { fetchClientOrderById, getOrderAttachments, ClientOrder, OrderAttachment } from "@/services/clientOrderService";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { getClientStatusFromOrder, getClientStatusStep, getActionButtonConfig } from "@/utils/clientStatusTranslator";
+import { useClientOrdersRealtime } from "@/hooks/useClientOrdersRealtime";
 
 const ClientOrderDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -18,31 +19,41 @@ const ClientOrderDetail = () => {
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
-  useEffect(() => {
-    const loadOrder = async () => {
-      if (!id) return;
-      
-      try {
-        const [orderData, attachmentData] = await Promise.all([
-          fetchClientOrderById(id),
-          getOrderAttachments(id).catch(() => [] as OrderAttachment[])
-        ]);
-        setOrder(orderData);
-        setAttachments(attachmentData);
-      } catch (error) {
-        console.error("Error loading order:", error);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to load order details"
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadOrder();
+  const loadOrder = useCallback(async () => {
+    if (!id) return;
+    
+    try {
+      const [orderData, attachmentData] = await Promise.all([
+        fetchClientOrderById(id),
+        getOrderAttachments(id).catch(() => [] as OrderAttachment[])
+      ]);
+      setOrder(orderData);
+      setAttachments(attachmentData);
+    } catch (error) {
+      console.error("Error loading order:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to load order details"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   }, [id, toast]);
+
+  // Set up realtime subscription for this specific order
+  const { isConnected } = useClientOrdersRealtime({
+    orderId: id,
+    onOrderUpdate: () => {
+      console.log("[ClientOrderDetail] Realtime update received, refreshing order...");
+      loadOrder();
+    },
+    showToast: true,
+  });
+
+  useEffect(() => {
+    loadOrder();
+  }, [loadOrder]);
 
   if (isLoading) {
     return (

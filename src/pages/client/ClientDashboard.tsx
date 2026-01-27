@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import ClientLayout from "@/components/client-portal/ClientLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,6 +8,7 @@ import { getClientOrderStats, getClientCompany, fetchClientOrders, ClientOrder }
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
 import ClientOrderCard from "@/components/client-portal/ClientOrderCard";
+import { useClientOrdersRealtime } from "@/hooks/useClientOrdersRealtime";
 
 interface OrderStats {
   total: number;
@@ -34,32 +35,41 @@ const ClientDashboard = () => {
   const { toast } = useToast();
   const { user } = useAuth();
 
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        const [orderStats, companyData, orders] = await Promise.all([
-          getClientOrderStats(),
-          getClientCompany(),
-          fetchClientOrders()
-        ]);
-        setStats(orderStats);
-        setCompany(companyData);
-        // Get most recent 5 orders
-        setRecentOrders(orders.slice(0, 5));
-      } catch (error) {
-        console.error("Error loading dashboard data:", error);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to load dashboard data"
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadData();
+  const loadData = useCallback(async () => {
+    try {
+      const [orderStats, companyData, orders] = await Promise.all([
+        getClientOrderStats(),
+        getClientCompany(),
+        fetchClientOrders()
+      ]);
+      setStats(orderStats);
+      setCompany(companyData);
+      // Get most recent 5 orders
+      setRecentOrders(orders.slice(0, 5));
+    } catch (error) {
+      console.error("Error loading dashboard data:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to load dashboard data"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   }, [toast]);
+
+  // Set up realtime subscription
+  const { isConnected } = useClientOrdersRealtime({
+    onOrderUpdate: () => {
+      console.log("[ClientDashboard] Realtime update received, refreshing data...");
+      loadData();
+    },
+    showToast: true,
+  });
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   if (isLoading) {
     return (

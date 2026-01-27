@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { RealtimeChannel } from "@supabase/supabase-js";
 
 export interface ClientOrder {
   id: string;
@@ -189,4 +190,60 @@ export const getOrderAttachments = async (orderId: string): Promise<OrderAttachm
   }
 
   return (data as OrderAttachment[]) || [];
+};
+
+/**
+ * Subscribe to real-time updates for client orders
+ * @param userId - The client's user ID
+ * @param onUpdate - Callback when an order is updated
+ * @param onInsert - Optional callback when a new order is inserted
+ * @returns Cleanup function to unsubscribe
+ */
+export const subscribeToClientOrders = (
+  userId: string,
+  onUpdate: (payload: { new: Partial<ClientOrder>; old: Partial<ClientOrder> }) => void,
+  onInsert?: (payload: { new: Partial<ClientOrder> }) => void
+): (() => void) => {
+  const channelName = `client-orders-service-${userId}`;
+  
+  let channel: RealtimeChannel = supabase
+    .channel(channelName)
+    .on(
+      'postgres_changes',
+      {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'orders',
+        filter: `client_id=eq.${userId}`,
+      },
+      (payload) => {
+        console.log("[ClientOrderService] Order updated:", payload);
+        onUpdate(payload as unknown as { new: Partial<ClientOrder>; old: Partial<ClientOrder> });
+      }
+    );
+  
+  if (onInsert) {
+    channel = channel.on(
+      'postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'orders',
+        filter: `client_id=eq.${userId}`,
+      },
+      (payload) => {
+        console.log("[ClientOrderService] Order inserted:", payload);
+        onInsert(payload as unknown as { new: Partial<ClientOrder> });
+      }
+    );
+  }
+  
+  channel.subscribe((status) => {
+    console.log("[ClientOrderService] Subscription status:", status);
+  });
+
+  return () => {
+    console.log("[ClientOrderService] Unsubscribing from:", channelName);
+    supabase.removeChannel(channel);
+  };
 };
