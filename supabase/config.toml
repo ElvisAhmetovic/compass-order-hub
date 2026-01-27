@@ -68,3 +68,6 @@ verify_jwt = false
 
 [functions.send-client-status-notification]
 verify_jwt = false
+
+[functions.create-user]
+verify_jwt = false
