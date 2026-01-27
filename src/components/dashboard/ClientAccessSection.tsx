@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo } from "react";
-import { Shield, UserPlus, Mail, UserX, Loader2, Check, ChevronsUpDown, Search } from "lucide-react";
+import { Shield, UserPlus, Mail, UserX, Loader2, Check, ChevronsUpDown, Send } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Popover,
   PopoverContent,
@@ -26,6 +27,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
 import {
@@ -36,6 +45,7 @@ import {
   sendClientInvite,
   ClientUser,
 } from "@/services/clientAccessService";
+import { ClientNotificationService } from "@/services/clientNotificationService";
 import { cn } from "@/lib/utils";
 
 interface ClientAccessSectionProps {
@@ -60,8 +70,11 @@ const ClientAccessSection = ({
   const [isLinking, setIsLinking] = useState(false);
   const [isUnlinking, setIsUnlinking] = useState(false);
   const [isSendingInvite, setIsSendingInvite] = useState(false);
+  const [isSendingUpdate, setIsSendingUpdate] = useState(false);
   const [open, setOpen] = useState(false);
   const [showRemoveDialog, setShowRemoveDialog] = useState(false);
+  const [showUpdateDialog, setShowUpdateDialog] = useState(false);
+  const [updateMessage, setUpdateMessage] = useState("");
 
   useEffect(() => {
     loadClients();
@@ -177,6 +190,34 @@ const ClientAccessSection = ({
       });
     }
     setIsSendingInvite(false);
+  };
+
+  const handleSendUpdate = async () => {
+    if (!currentClient || !user?.id || !updateMessage.trim()) return;
+
+    setIsSendingUpdate(true);
+    const result = await ClientNotificationService.sendManualUpdate({
+      orderId,
+      message: updateMessage.trim(),
+      senderId: user.id,
+      senderName: user.full_name || user.email || "Admin",
+    });
+
+    if (result.success) {
+      toast({
+        title: "Update Sent",
+        description: `Update email sent to ${currentClient.email}`,
+      });
+      setUpdateMessage("");
+      setShowUpdateDialog(false);
+    } else {
+      toast({
+        title: "Error Sending Update",
+        description: result.error || "Failed to send update email",
+        variant: "destructive",
+      });
+    }
+    setIsSendingUpdate(false);
   };
 
   return (
@@ -308,6 +349,20 @@ const ClientAccessSection = ({
               <Button
                 variant="outline"
                 size="sm"
+                onClick={() => setShowUpdateDialog(true)}
+                disabled={isSendingUpdate}
+                className="text-primary border-primary/20 hover:bg-primary/10"
+              >
+                {isSendingUpdate ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                ) : (
+                  <Send className="h-4 w-4 mr-1" />
+                )}
+                Send Update
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => setShowRemoveDialog(true)}
                 disabled={isUnlinking}
                 className="text-destructive hover:text-destructive"
@@ -350,6 +405,57 @@ const ClientAccessSection = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Send Update Dialog */}
+      <Dialog open={showUpdateDialog} onOpenChange={setShowUpdateDialog}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Send className="h-5 w-5 text-primary" />
+              Send Update to Client
+            </DialogTitle>
+            <DialogDescription>
+              Send a custom update message to <strong>{currentClient?.name}</strong> ({currentClient?.email}).
+              They will receive an email with your message.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Textarea
+              placeholder="Write your update message here... e.g., 'Your order is being processed and will be ready soon!'"
+              value={updateMessage}
+              onChange={(e) => setUpdateMessage(e.target.value)}
+              rows={5}
+              className="resize-none"
+            />
+            <p className="text-xs text-muted-foreground mt-2">
+              This message will be included in the email to the client.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowUpdateDialog(false);
+                setUpdateMessage("");
+              }}
+              disabled={isSendingUpdate}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSendUpdate}
+              disabled={!updateMessage.trim() || isSendingUpdate}
+            >
+              {isSendingUpdate ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-1" />
+              ) : (
+                <Send className="h-4 w-4 mr-1" />
+              )}
+              Send Update
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };

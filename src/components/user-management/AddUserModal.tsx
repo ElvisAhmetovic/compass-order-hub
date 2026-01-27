@@ -37,7 +37,7 @@ const formSchema = z.object({
   fullName: z.string().min(2, {
     message: "Full name must be at least 2 characters.",
   }),
-  role: z.enum(["user", "admin", "agent"] as const),
+  role: z.enum(["user", "admin", "agent", "client"] as const),
 });
 
 interface AddUserModalProps {
@@ -159,6 +159,7 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({
                       <SelectItem value="user">User</SelectItem>
                       <SelectItem value="admin">Admin</SelectItem>
                       <SelectItem value="agent">Agent</SelectItem>
+                      <SelectItem value="client">Client</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />

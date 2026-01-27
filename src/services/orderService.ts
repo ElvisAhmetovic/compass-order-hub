@@ -666,6 +666,32 @@ export class OrderService {
       console.error('Error sending status change notification:', emailError);
       // Don't block status update if email fails
     }
+
+    // Send notification to linked client if order has a client_id
+    if (enabled && currentOrder.client_id) {
+      try {
+        const { ClientNotificationService } = await import('./clientNotificationService');
+        
+        // Get previous statuses to determine old status
+        const previousStatuses = this.getActiveStatuses(currentOrder);
+        const oldStatus = previousStatuses.length > 0 
+          ? previousStatuses.filter(s => s !== status)[0] || null 
+          : null;
+
+        await ClientNotificationService.notifyClientStatusChange({
+          orderId: orderId,
+          oldStatus: oldStatus,
+          newStatus: status,
+          changedBy: {
+            id: user.id,
+            name: user.user_metadata?.full_name || user.email || 'Unknown'
+          }
+        });
+      } catch (clientError) {
+        console.error('Error sending client status notification:', clientError);
+        // Don't block status update if client notification fails
+      }
+    }
   }
 
   // Get all active statuses for an order
