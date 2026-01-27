@@ -1069,6 +1069,7 @@ export type Database = {
           amount: number | null
           assigned_to: string | null
           assigned_to_name: string | null
+          client_id: string | null
           company_address: string | null
           company_id: string | null
           company_link: string | null
@@ -1109,6 +1110,7 @@ export type Database = {
           amount?: number | null
           assigned_to?: string | null
           assigned_to_name?: string | null
+          client_id?: string | null
           company_address?: string | null
           company_id?: string | null
           company_link?: string | null
@@ -1149,6 +1151,7 @@ export type Database = {
           amount?: number | null
           assigned_to?: string | null
           assigned_to_name?: string | null
+          client_id?: string | null
           company_address?: string | null
           company_id?: string | null
           company_link?: string | null
@@ -2088,6 +2091,27 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_settings: {
         Row: {
           api_key: string | null
@@ -2170,6 +2194,7 @@ export type Database = {
     Views: {
       client_orders: {
         Row: {
+          client_id: string | null
           client_user_id: string | null
           company_email: string | null
           company_id: string | null
@@ -2222,7 +2247,15 @@ export type Database = {
       get_user_role:
         | { Args: never; Returns: string }
         | { Args: { user_id: string }; Returns: string }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       is_admin: { Args: never; Returns: boolean }
+      is_client: { Args: never; Returns: boolean }
       is_client_of_company: {
         Args: { company_id_param: string }
         Returns: boolean
@@ -2238,6 +2271,7 @@ export type Database = {
       }
     }
     Enums: {
+      app_role: "admin" | "agent" | "user" | "client"
       user_role: "user" | "admin" | "agent"
     }
     CompositeTypes: {
@@ -2366,6 +2400,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: ["admin", "agent", "user", "client"],
       user_role: ["user", "admin", "agent"],
     },
   },
