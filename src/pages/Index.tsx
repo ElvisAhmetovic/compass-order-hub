@@ -8,15 +8,19 @@ const Index = () => {
   const { user, isLoading } = useAuth();
 
   useEffect(() => {
-    console.log('Index page - Loading:', isLoading, 'User:', user?.email);
+    console.log('Index page - Loading:', isLoading, 'User:', user?.email, 'Role:', user?.role);
     
     if (!isLoading) {
       if (user) {
-        // User is authenticated, redirect to dashboard
-        console.log('Redirecting to dashboard');
-        navigate("/dashboard");
+        // Role-based redirection
+        if (user.role === 'client') {
+          console.log('Redirecting client to client dashboard');
+          navigate("/client/dashboard");
+        } else {
+          console.log('Redirecting admin/agent/user to dashboard');
+          navigate("/dashboard");
+        }
       } else {
-        // User is not authenticated, redirect to login
         console.log('Redirecting to login');
         navigate("/login");
       }
