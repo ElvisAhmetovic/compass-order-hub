@@ -1,15 +1,13 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Layout from "@/components/layout/Layout";
 import Sidebar from "@/components/dashboard/Sidebar";
 import { useAuth } from "@/context/AuthContext";
-import { Proposal } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { PlusCircle, FileEdit, Trash2, Download, File, CheckCircle2, XCircle, Send } from "lucide-react";
+import { PlusCircle, FileEdit, Trash2, Download, File, CheckCircle2, XCircle, Send, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { v4 as uuidv4 } from "uuid";
 import { useNavigate } from "react-router-dom";
 import { 
   DropdownMenu,
@@ -18,6 +16,7 @@ import {
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 import { generateProposalPDF } from "@/utils/proposalUtils";
+import { proposalService, Proposal } from "@/services/proposalService";
 
 // Define the available proposal statuses
 export const PROPOSAL_STATUSES = [
@@ -50,67 +49,11 @@ const Proposals = () => {
   const [loading, setLoading] = useState(true);
   const [filterText, setFilterText] = useState("");
   
-  const loadProposals = () => {
+  const loadProposals = useCallback(async () => {
     try {
-      const savedProposals = localStorage.getItem("proposals");
-      if (savedProposals) {
-        const proposals = JSON.parse(savedProposals);
-        
-        // Load detailed proposals to get complete data
-        const savedDetailedProposals = localStorage.getItem("detailedProposals");
-        let detailedProposals = [];
-        if (savedDetailedProposals) {
-          detailedProposals = JSON.parse(savedDetailedProposals);
-        }
-        
-        // Merge basic and detailed proposal data
-        const mergedProposals = proposals.map((basicProposal: any) => {
-          const detailedProposal = detailedProposals.find((dp: any) => dp.id === basicProposal.id);
-          return {
-            ...basicProposal,
-            // Use customer name from detailed data if available
-            customer: detailedProposal?.customerName || detailedProposal?.customer || basicProposal.customer,
-            // Ensure currency is available
-            currency: detailedProposal?.currency || basicProposal.currency || 'EUR',
-            // Ensure VAT settings are available
-            vatEnabled: detailedProposal?.vatEnabled !== undefined ? detailedProposal.vatEnabled : basicProposal.vatEnabled
-          };
-        });
-        
-        setProposals(mergedProposals);
-      } else {
-        // Set some mock data if nothing exists
-        const mockProposals: Proposal[] = [
-          {
-            id: uuidv4(),
-            reference: "REF-2025-001",
-            number: "AN-9984",
-            customer: "Acme Corporation",
-            subject: "Website Redesign",
-            amount: "2500.00",
-            status: "Draft",
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-            currency: 'EUR',
-            vatEnabled: true
-          },
-          {
-            id: uuidv4(),
-            reference: "REF-2025-002",
-            number: "AN-9985",
-            customer: "TechStart Inc.",
-            subject: "Mobile App Development",
-            amount: "5000.00",
-            status: "Sent",
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-            currency: 'USD',
-            vatEnabled: false
-          }
-        ];
-        setProposals(mockProposals);
-        localStorage.setItem("proposals", JSON.stringify(mockProposals));
-      }
+      setLoading(true);
+      const data = await proposalService.getProposals();
+      setProposals(data);
     } catch (error) {
       console.error("Error loading proposals:", error);
       toast({
@@ -121,11 +64,11 @@ const Proposals = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
   useEffect(() => {
     loadProposals();
-  }, []);
+  }, [loadProposals]);
 
   // Reload proposals when returning to this page
   useEffect(() => {
@@ -136,125 +79,127 @@ const Proposals = () => {
     window.addEventListener('focus', handleFocus);
     window.addEventListener('popstate', loadProposals);
     
-    // Add a special listener for new proposals
-    const checkForNewProposals = () => {
-      const savedProposals = localStorage.getItem("proposals");
-      if (savedProposals) {
-        const parsedProposals = JSON.parse(savedProposals);
-        if (parsedProposals.length !== proposals.length) {
-          loadProposals();
-        }
-      }
-    };
-    
-    // Check every few seconds for new proposals
-    const interval = setInterval(checkForNewProposals, 3000);
-    
     return () => {
       window.removeEventListener('focus', handleFocus);
       window.removeEventListener('popstate', loadProposals);
-      clearInterval(interval);
     };
-  }, [proposals.length]);
+  }, [loadProposals]);
 
-  const handleDeleteProposal = (id: string) => {
-    const updatedProposals = proposals.filter(p => p.id !== id);
-    setProposals(updatedProposals);
-    localStorage.setItem("proposals", JSON.stringify(updatedProposals));
-    
-    toast({
-      title: "Proposal deleted",
-      description: "Proposal has been deleted successfully.",
-    });
+  const handleDeleteProposal = async (id: string) => {
+    try {
+      await proposalService.deleteProposal(id);
+      setProposals(prev => prev.filter(p => p.id !== id));
+      
+      toast({
+        title: "Proposal deleted",
+        description: "Proposal has been deleted successfully.",
+      });
+    } catch (error) {
+      console.error("Error deleting proposal:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete proposal.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleCreateProposal = () => {
     navigate("/proposals/new");
   };
 
-  const handleUpdateStatus = (id: string, newStatus: string) => {
-    const updatedProposals = proposals.map(proposal => {
-      if (proposal.id === id) {
-        return {
-          ...proposal,
-          status: newStatus,
-          updated_at: new Date().toISOString()
-        };
-      }
-      return proposal;
-    });
-    
-    setProposals(updatedProposals);
-    localStorage.setItem("proposals", JSON.stringify(updatedProposals));
-    
-    toast({
-      title: "Status updated",
-      description: `Proposal status changed to ${newStatus}`,
-    });
+  const handleRefresh = () => {
+    loadProposals();
+  };
+
+  const handleUpdateStatus = async (id: string, newStatus: string) => {
+    try {
+      await proposalService.updateProposal(id, { status: newStatus });
+      
+      setProposals(prev => prev.map(proposal => {
+        if (proposal.id === id) {
+          return {
+            ...proposal,
+            status: newStatus,
+            updated_at: new Date().toISOString()
+          };
+        }
+        return proposal;
+      }));
+      
+      toast({
+        title: "Status updated",
+        description: `Proposal status changed to ${newStatus}`,
+      });
+    } catch (error) {
+      console.error("Error updating status:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update status.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleDownloadProposal = async (proposal: Proposal) => {
     try {
-      // Load detailed proposal data for PDF generation
-      const savedDetailedProposals = localStorage.getItem("detailedProposals");
-      let detailedProposal = null;
+      // Load full proposal data for PDF generation
+      const fullProposal = await proposalService.getProposal(proposal.id);
       
-      if (savedDetailedProposals) {
-        const detailedProposals = JSON.parse(savedDetailedProposals);
-        detailedProposal = detailedProposals.find((p: any) => p.id === proposal.id);
+      if (!fullProposal) {
+        throw new Error('Proposal not found');
       }
       
       // Create comprehensive proposal data object for PDF generation
       const proposalData = {
-        ...proposal,
-        ...detailedProposal,
+        ...fullProposal,
         // Ensure basic fields are available
-        number: proposal.number,
-        customer: detailedProposal?.customerName || proposal.customer,
-        subject: proposal.subject,
-        reference: proposal.reference,
-        date: proposal.created_at,
-        amount: proposal.amount,
+        number: fullProposal.number,
+        customer: fullProposal.customer_name || fullProposal.customer,
+        subject: fullProposal.subject,
+        reference: fullProposal.reference,
+        date: fullProposal.created_at,
+        amount: fullProposal.amount,
         
         // Customer details
-        customerName: detailedProposal?.customerName || proposal.customer,
-        customerAddress: detailedProposal?.customerAddress || '',
-        customerEmail: detailedProposal?.customerEmail || '',
-        customerCountry: detailedProposal?.customerCountry || '',
-        customerRef: detailedProposal?.customerRef || proposal.reference,
+        customerName: fullProposal.customer_name || fullProposal.customer,
+        customerAddress: fullProposal.customer_address || '',
+        customerEmail: fullProposal.customer_email || '',
+        customerCountry: fullProposal.customer_country || '',
+        customerRef: fullProposal.customer_ref || fullProposal.reference,
         
         // Contact details
-        yourContact: detailedProposal?.internalContact || detailedProposal?.yourContact || 'Thomas Klein',
+        yourContact: fullProposal.internal_contact || fullProposal.your_contact || 'Thomas Klein',
         
         // Proposal content
-        proposalTitle: detailedProposal?.proposalTitle || proposal.subject,
-        proposalDescription: detailedProposal?.proposalDescription || 'Thank you for your enquiry.',
-        content: detailedProposal?.content || '',
+        proposalTitle: fullProposal.proposal_title || fullProposal.subject,
+        proposalDescription: fullProposal.proposal_description || 'Thank you for your enquiry.',
+        content: fullProposal.content || '',
         
         // Financial data
-        netAmount: detailedProposal?.netAmount || parseFloat(proposal.amount) || 0,
-        vatEnabled: detailedProposal?.vatEnabled !== undefined ? detailedProposal.vatEnabled : (proposal.vatEnabled || false),
-        vatRate: detailedProposal?.vatRate || 19,
-        vatAmount: detailedProposal?.vatAmount || 0,
-        totalAmount: detailedProposal?.totalAmount || parseFloat(proposal.amount) || 0,
+        netAmount: fullProposal.net_amount || parseFloat(fullProposal.amount) || 0,
+        vatEnabled: fullProposal.vat_enabled !== undefined ? fullProposal.vat_enabled : true,
+        vatRate: fullProposal.vat_rate || 19,
+        vatAmount: fullProposal.vat_amount || 0,
+        totalAmount: fullProposal.total_amount || parseFloat(fullProposal.amount) || 0,
         
         // Line items
-        lineItems: detailedProposal?.lineItems || [],
+        lineItems: fullProposal.lineItems || [],
         
         // Terms
-        deliveryTerms: detailedProposal?.deliveryTerms || '7 days after receipt of invoice',
-        paymentTerms: detailedProposal?.paymentTerms || 'By placing your order you agree to pay for the services included in this offer within 7 days of receipt of the invoice.',
-        termsAndConditions: detailedProposal?.termsAndConditions || '',
-        footerContent: detailedProposal?.footerContent || '',
+        deliveryTerms: fullProposal.delivery_terms || '7 days after receipt of invoice',
+        paymentTerms: fullProposal.payment_terms || 'By placing your order you agree to pay for the services included in this offer within 7 days of receipt of the invoice.',
+        termsAndConditions: fullProposal.terms_and_conditions || '',
+        footerContent: fullProposal.footer_content || '',
         
         // Currency
-        currency: proposal.currency || 'EUR'
+        currency: fullProposal.currency || 'EUR'
       };
 
       console.log('Downloading proposal with data:', proposalData);
 
       // Generate and download PDF
-      const result = await generateProposalPDF(proposalData, 'en', `proposal-${proposal.number}.pdf`);
+      const result = await generateProposalPDF(proposalData, fullProposal.pdf_language || 'en', `proposal-${proposal.number}.pdf`);
       
       if (result) {
         toast({
@@ -320,10 +265,15 @@ const Proposals = () => {
           <div className="container mx-auto py-8">
             <div className="flex justify-between items-center mb-6">
               <h1 className="text-2xl font-bold">Proposals</h1>
-              <Button onClick={handleCreateProposal} className="flex items-center gap-2">
-                <PlusCircle size={16} />
-                Create Proposal
-              </Button>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={handleRefresh} disabled={loading}>
+                  <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
+                </Button>
+                <Button onClick={handleCreateProposal} className="flex items-center gap-2">
+                  <PlusCircle size={16} />
+                  Create Proposal
+                </Button>
+              </div>
             </div>
 
             <Card>
@@ -380,7 +330,7 @@ const Proposals = () => {
                               </a>
                             </div>
                           </TableCell>
-                          <TableCell>{proposal.customer}</TableCell>
+                          <TableCell>{proposal.customer_name || proposal.customer}</TableCell>
                           <TableCell>{proposal.subject}</TableCell>
                           <TableCell>{proposal.reference}</TableCell>
                           <TableCell>

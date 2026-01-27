@@ -39,6 +39,14 @@ export const useNotificationSound = (shouldPlay: boolean) => {
     return () => {
       document.removeEventListener('click', handleUserInteraction);
       document.removeEventListener('keydown', handleUserInteraction);
+      // Close AudioContext to free resources
+      if (audioContextRef.current) {
+        audioContextRef.current.close().catch(err => {
+          console.warn('Error closing AudioContext:', err);
+        });
+        audioContextRef.current = null;
+        isInitializedRef.current = false;
+      }
     };
   }, [initializeAudio]);
 
