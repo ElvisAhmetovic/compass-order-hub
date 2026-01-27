@@ -1,147 +1,143 @@
 
-# Add Supabase Realtime Subscriptions to Client Portal
+# Fix User Creation in User Management
 
-## Overview
-Implement real-time order updates in the Client Portal so clients see status changes instantly without needing to refresh the page. This will follow existing patterns used elsewhere in the codebase (e.g., `activityService`, `notificationService`, `useGlobalChatNotifications`).
+## Problem Identified
 
----
+The error `"insert or update on table 'profiles' violates foreign key constraint 'profiles_id_fkey'"` occurs because:
 
-## Current State Analysis
+1. The `profiles` table has a foreign key constraint that requires the `id` to exist in `auth.users` first
+2. The current `AddUserModal` tries to create a profile with a random UUID that doesn't exist in `auth.users`
+3. This is the wrong approach - you cannot create a profile without first creating an auth user
 
-### How Realtime Currently Works in the App
-The codebase has established patterns for Supabase Realtime:
-- **activityService.ts**: Subscribes to `team_activities` table with cleanup function
-- **notificationService.ts**: Subscribes to `notifications` table with user-specific filter
-- **useGlobalChatNotifications.ts**: Full hook implementation with connection state tracking
-- **SmartAlerts.tsx**: Subscribes to `orders` UPDATE events (admin side)
+## Root Cause
 
-### What's Missing for Client Portal
-1. **Database**: The `orders` table is NOT enabled for Realtime (no `REPLICA IDENTITY FULL` or publication)
-2. **Service Layer**: No subscription method in `clientOrderService.ts`
-3. **Components**: Client Portal pages use one-time data fetching, no subscriptions
-
----
-
-## Implementation Plan
-
-### Phase 1: Enable Realtime for Orders Table
-
-**Database Migration Required**
-
-Create a new migration to enable realtime for the `orders` table:
-
-```sql
--- Enable realtime for orders table
-ALTER TABLE orders REPLICA IDENTITY FULL;
-
--- Add the table to the realtime publication
-ALTER PUBLICATION supabase_realtime ADD TABLE orders;
+```
+profiles.id → auth.users.id (FOREIGN KEY)
 ```
 
-This follows the exact pattern used for `team_activities` and `reactions` tables.
+When a user registers through Supabase Auth, a trigger (`handle_new_user`) automatically creates their profile. The current modal bypasses this flow entirely.
 
 ---
 
-### Phase 2: Create Client Orders Realtime Hook
+## Solution
 
-**New File: `src/hooks/useClientOrdersRealtime.ts`**
+Create a new Edge Function that uses the Supabase Admin API to properly create users, similar to `create-admin-user` but for any role.
 
-A custom hook that:
-- Subscribes to the `orders` table for UPDATE events
-- Filters changes relevant to the current client (using `client_id`)
-- Provides callbacks when orders are updated
-- Properly cleans up subscriptions on unmount
-- Tracks connection status
+### Architecture
 
-```typescript
-// Hook structure
-export const useClientOrdersRealtime = (
-  onOrderUpdate: (orderId: string) => void
-) => {
-  // Subscribe to orders table UPDATE events
-  // Filter by client_id matching current user
-  // Return cleanup function and connection status
-};
+```text
+Admin clicks "Add User"
+       │
+       ▼
+┌─────────────────────┐
+│   AddUserModal      │
+│   (collect info)    │
+└─────────────────────┘
+       │
+       ▼
+┌─────────────────────┐
+│  Edge Function      │
+│  create-user        │
+│  (uses Admin API)   │
+└─────────────────────┘
+       │
+       ▼
+┌─────────────────────┐
+│  auth.users         │
+│  (user created)     │
+└─────────────────────┘
+       │ (trigger fires)
+       ▼
+┌─────────────────────┐
+│  profiles table     │
+│  (auto-created)     │
+└─────────────────────┘
+       │
+       ▼
+┌─────────────────────┐
+│  Update profile     │
+│  with role + name   │
+└─────────────────────┘
 ```
 
 ---
 
-### Phase 3: Integrate Realtime into Client Portal Components
+## Implementation Steps
 
-#### 3.1 ClientDashboard.tsx
+### 1. Create New Edge Function: `create-user`
 
-Update to use the realtime hook:
-- Subscribe to order updates on mount
-- Refetch dashboard data when an order is updated
-- Show a toast notification for status changes
-- Display connection indicator (optional)
+Create `supabase/functions/create-user/index.ts`:
 
-#### 3.2 ClientOrders.tsx
+- Accept: email, password, firstName, lastName, role
+- Use `supabase.auth.admin.createUser()` to create the auth user
+- User metadata will trigger profile creation
+- Update the profile with the specified role
+- Return success with user details
 
-Update to use the realtime hook:
-- Subscribe to order updates on mount
-- Update the orders list when changes occur
-- Show visual feedback (subtle flash on updated order cards)
+### 2. Update AddUserModal
 
-#### 3.3 ClientOrderDetail.tsx
+Modify `src/components/user-management/AddUserModal.tsx`:
 
-Update to use the realtime hook:
-- Subscribe specifically to the current order being viewed
-- Auto-refresh order data when status changes
-- Show toast notification with the new status
+- Add a password field (required for user creation)
+- Call the `create-user` Edge Function instead of direct profile insert
+- Show appropriate feedback on success/error
 
----
+### 3. Update UserManagement Page
 
-### Phase 4: Add Subscription to Service Layer
+Modify `src/pages/UserManagement.tsx`:
 
-**Update: `src/services/clientOrderService.ts`**
-
-Add a new function for subscribing to client order updates:
-
-```typescript
-export const subscribeToClientOrders = (
-  userId: string,
-  onUpdate: (order: ClientOrder) => void,
-  onInsert?: (order: ClientOrder) => void
-): (() => void) => {
-  // Create channel with unique name
-  // Subscribe to orders table with client_id filter
-  // Return cleanup function
-};
-```
+- Remove the direct profile insert in `handleAddUser`
+- The modal will handle the API call directly
+- Just reload users after successful creation
 
 ---
 
 ## Technical Details
 
-### Realtime Channel Configuration
+### Edge Function Implementation
 
 ```typescript
-const channel = supabase
-  .channel(`client-orders-${userId}`)
-  .on('postgres_changes', {
-    event: 'UPDATE',
-    schema: 'public',
-    table: 'orders',
-    filter: `client_id=eq.${userId}`
-  }, (payload) => {
-    // Handle update
+// Key parts of create-user Edge Function
+const { data: userData, error: userError } = 
+  await supabaseAdmin.auth.admin.createUser({
+    email: email,
+    password: password,
+    email_confirm: true, // Auto-confirm email
+    user_metadata: {
+      first_name: firstName,
+      last_name: lastName,
+      role: role
+    }
+  });
+
+// Profile is auto-created by trigger
+// Then update with correct role
+await supabaseAdmin
+  .from("profiles")
+  .update({ 
+    role: role,
+    first_name: firstName,
+    last_name: lastName 
   })
-  .subscribe();
+  .eq("id", userData.user.id);
 ```
 
-### Security Considerations
+### Updated Modal Form
 
-- Realtime uses RLS policies, so clients can only receive events for orders they have access to
-- The `client_id` filter on the subscription provides additional client-side filtering
-- Existing RLS policy on `orders` table: `client_id = auth.uid()` ensures data isolation
+The modal will now include:
+- Email field (existing)
+- Password field (new - required)
+- Full Name field (existing)
+- Role selector (existing)
 
-### Connection State Management
+---
 
-The hook will track:
-- `isConnected`: Boolean indicating active subscription
-- Error handling for subscription failures
-- Automatic reconnection (handled by Supabase SDK)
+## Security Considerations
+
+1. **Admin-only access**: The Edge Function will verify the caller is an admin before creating users
+2. **Password requirements**: Enforce minimum 8 characters
+3. **Service role key**: Used only in the Edge Function (server-side)
+4. **No client-side admin API**: All admin operations go through the Edge Function
 
 ---
 
@@ -149,35 +145,18 @@ The hook will track:
 
 | File | Action | Description |
 |------|--------|-------------|
-| `supabase/migrations/[timestamp].sql` | Create | Enable realtime for orders table |
-| `src/hooks/useClientOrdersRealtime.ts` | Create | Custom hook for realtime subscriptions |
-| `src/services/clientOrderService.ts` | Modify | Add subscription helper function |
-| `src/pages/client/ClientDashboard.tsx` | Modify | Integrate realtime hook |
-| `src/pages/client/ClientOrders.tsx` | Modify | Integrate realtime hook |
-| `src/pages/client/ClientOrderDetail.tsx` | Modify | Integrate realtime hook for single order |
+| `supabase/functions/create-user/index.ts` | Create | New Edge Function for user creation |
+| `src/components/user-management/AddUserModal.tsx` | Modify | Add password field, call Edge Function |
+| `src/pages/UserManagement.tsx` | Modify | Simplify handleAddUser to just reload |
+| `supabase/config.toml` | Modify | Register new Edge Function |
 
 ---
 
-## User Experience Improvements
+## Expected Outcome
 
-### Visual Feedback
-- **Toast Notification**: When an order status changes, show a friendly message like "Your order status has been updated"
-- **Badge Pulse**: Briefly highlight the updated order card
-- **Stats Auto-Update**: Dashboard stats update in real-time
-
-### Connection Status (Optional)
-- Small indicator showing realtime connection is active
-- Graceful fallback if connection drops (manual refresh available)
-
----
-
-## Summary of Changes
-
-1. **Database**: Enable `orders` table for Supabase Realtime publication
-2. **Hook**: Create `useClientOrdersRealtime` hook following existing patterns
-3. **Service**: Add subscription helper to `clientOrderService.ts`
-4. **Dashboard**: Auto-refresh stats and recent orders on updates
-5. **Orders List**: Update list in real-time when status changes
-6. **Order Detail**: Refresh current order when it gets updated
-
-This implementation ensures clients always see the latest order status without manual refresh, improving the overall user experience of the Client Portal.
+After this fix:
+1. Admins can create new users with any role (user, admin, agent, client)
+2. Users are properly created in `auth.users` first
+3. Profiles are auto-created via the existing trigger
+4. The new user can immediately log in with the provided credentials
+5. No more foreign key constraint errors
