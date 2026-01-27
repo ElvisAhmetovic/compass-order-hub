@@ -1,237 +1,306 @@
 
-# Client Portal Integration Plan
 
-## Current Architecture Analysis
+# Backend Infrastructure Plan for Client Portal Security
 
-### Existing Role System
-Your application currently uses 3 roles stored in the `profiles` table:
-- **admin** - Full access to all features and data
-- **agent** - Access to most operational features, sees their assigned orders
-- **user** - Limited access, used for internal team members
+## Current State Analysis
 
-**Current Implementation:**
-- Roles are stored in `profiles.role` column (NOT in a separate `user_roles` table as per security best practices)
-- `AuthContext.tsx` fetches roles from the profiles table on login
-- `AdminGuard.tsx` restricts admin-only routes
-- `Sidebar.tsx` filters navigation items based on role
+### Existing Implementation
+Based on my investigation, the current system has:
 
-### Orders-User Relationship
-Orders currently link to internal users via:
-- `created_by` (UUID) - who created the order
-- `assigned_to` (UUID) - internal staff assigned to the order
-- `assigned_to_name` (text) - display name of assignee
-- `company_id` (UUID) - links to the companies table
+1. **Roles stored in `profiles` table** - Currently using `role` column directly in profiles (admin, agent, user, client)
+2. **`client_user_id` column in `companies` table** - Already exists, links companies to client users
+3. **`client_orders` view** - Already exists with `security_invoker=on`, showing filtered order data
+4. **`is_client_of_company()` function** - Security definer function that checks client access
+5. **No `user_roles` table** - Roles are stored directly in profiles (security anti-pattern)
+6. **No `client_id` on orders table** - Orders link to companies via `company_id`, not directly to clients
 
-**There is NO client user linking mechanism currently** - orders reference company data but not client user accounts.
-
-### Companies Table
-Companies have a `user_id` column (nullable) but it's used for internal user ownership, not client portal access.
+### Security Issues Found
+1. **Overly permissive RLS on `orders` table** - Multiple policies allow `SELECT` with `qual: true` (anyone can read)
+2. **No RLS on `client_orders` view** - Views don't have RLS policies (empty result)
+3. **Roles in profiles table** - Best practice is to use a separate `user_roles` table to prevent privilege escalation
 
 ---
 
-## Proposed Architecture: "Client" Role Addition
+## Proposed Changes
 
-### 1. Role System Upgrade (Safe Approach)
+### Phase 1: Create Proper Role Infrastructure
 
-**Minimal Change Strategy:**
-We will add `"client"` as a 4th valid role value to the existing `profiles.role` column. This is the safest approach because:
-- No changes to existing admin/agent/user functionality
-- Uses existing authentication infrastructure
-- Existing RLS policies continue to work
+**1.1 Create `app_role` enum and `user_roles` table**
 
-```text
-Old roles: "admin" | "agent" | "user"
-New roles: "admin" | "agent" | "user" | "client"
-```
-
-**TypeScript Type Update:**
-```typescript
-// src/types/index.ts
-export type UserRole = "admin" | "agent" | "user" | "client";
-```
-
-### 2. Client-Order Linking Strategy
-
-**Option A: Use `company_id` Linking (Recommended)**
-Link client users to companies, then show orders that belong to those companies.
-
-New columns needed:
-- Add `client_user_id` to `companies` table to link a company to a client user account
-
-**Data Flow:**
-```text
-Client User → profiles.id → companies.client_user_id → companies.id → orders.company_id → Orders
-```
-
-**Option B: Direct Order Linking (Not Recommended)**
-Add `client_user_id` directly to orders table. This creates data duplication and is harder to maintain.
-
-### 3. New Database Changes
+Following security best practices, we'll create a separate table for roles:
 
 ```sql
--- Add client_user_id to companies table to link companies to client portal users
-ALTER TABLE companies 
-ADD COLUMN client_user_id UUID REFERENCES auth.users(id);
+-- Create enum for roles
+CREATE TYPE public.app_role AS ENUM ('admin', 'agent', 'user', 'client');
+
+-- Create user_roles table
+CREATE TABLE public.user_roles (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+    role app_role NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    UNIQUE (user_id, role)
+);
+
+-- Enable RLS
+ALTER TABLE public.user_roles ENABLE ROW LEVEL SECURITY;
+
+-- Index for performance
+CREATE INDEX idx_user_roles_user_id ON public.user_roles(user_id);
+```
+
+**1.2 Create secure `has_role()` function**
+
+```sql
+CREATE OR REPLACE FUNCTION public.has_role(_user_id UUID, _role app_role)
+RETURNS BOOLEAN
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1
+    FROM public.user_roles
+    WHERE user_id = _user_id
+      AND role = _role
+  )
+$$;
+```
+
+**1.3 Create `is_client()` helper function**
+
+```sql
+CREATE OR REPLACE FUNCTION public.is_client()
+RETURNS BOOLEAN
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.user_roles 
+    WHERE user_id = auth.uid() AND role = 'client'
+  )
+$$;
+```
+
+**1.4 Migrate existing roles to new table**
+
+```sql
+-- Copy existing roles from profiles to user_roles
+INSERT INTO public.user_roles (user_id, role)
+SELECT id, role::app_role
+FROM public.profiles
+WHERE role IS NOT NULL
+ON CONFLICT (user_id, role) DO NOTHING;
+```
+
+---
+
+### Phase 2: Add Direct Client Linking to Orders
+
+**2.1 Add `client_id` column to orders table**
+
+```sql
+-- Add client_id to orders for direct client access
+ALTER TABLE public.orders
+ADD COLUMN client_id UUID REFERENCES auth.users(id);
 
 -- Create index for efficient client lookups
-CREATE INDEX idx_companies_client_user_id ON companies(client_user_id);
-
--- Create a view for client-accessible order data (hides internal notes, agent info)
-CREATE VIEW client_orders WITH (security_invoker=on) AS
-SELECT 
-  o.id,
-  o.company_name,
-  o.description,
-  o.status,
-  o.created_at,
-  o.updated_at,
-  o.price,
-  o.currency,
-  o.priority,
-  o.status_created,
-  o.status_in_progress,
-  o.status_invoice_sent,
-  o.status_invoice_paid,
-  o.status_resolved,
-  o.status_cancelled,
-  c.id as company_id,
-  c.client_user_id
-FROM orders o
-LEFT JOIN companies c ON o.company_id = c.id
-WHERE o.deleted_at IS NULL AND o.status_deleted = false;
+CREATE INDEX idx_orders_client_id ON public.orders(client_id);
 ```
 
-**RLS Policies for Client Access:**
+**2.2 Populate `client_id` from existing company relationships**
+
 ```sql
--- Allow clients to view their company's orders
-CREATE POLICY "Clients can view their company orders"
-  ON client_orders FOR SELECT
+-- Update existing orders with client_id from their linked company
+UPDATE public.orders o
+SET client_id = c.client_user_id
+FROM public.companies c
+WHERE o.company_id = c.id
+  AND c.client_user_id IS NOT NULL
+  AND o.client_id IS NULL;
+```
+
+---
+
+### Phase 3: Secure RLS Policies for Orders
+
+**3.1 Remove overly permissive policies**
+
+```sql
+-- Drop the dangerous policies that allow anyone to read all orders
+DROP POLICY IF EXISTS "Allow select on orders for all" ON public.orders;
+DROP POLICY IF EXISTS "Allow users to view orders" ON public.orders;
+DROP POLICY IF EXISTS "Users can view orders" ON public.orders;
+```
+
+**3.2 Create secure client-specific SELECT policy**
+
+```sql
+-- Clients can ONLY read orders where client_id = their user ID
+CREATE POLICY "Clients can view their own orders"
+  ON public.orders
+  FOR SELECT
   USING (
-    client_user_id = auth.uid() 
-    AND EXISTS (
-      SELECT 1 FROM profiles 
-      WHERE id = auth.uid() AND role = 'client'
-    )
+    -- Client can only see orders assigned to them
+    (client_id = auth.uid() AND public.has_role(auth.uid(), 'client'))
+    -- OR internal users with proper permissions (preserved)
+    OR public.has_role(auth.uid(), 'admin')
+    OR public.has_role(auth.uid(), 'agent')
+    OR public.has_role(auth.uid(), 'user')
   );
 ```
 
-### 4. Client Portal Routes (Completely Isolated)
+**3.3 Ensure clients cannot modify orders**
 
-New routes that won't touch existing admin functionality:
+```sql
+-- Explicit deny for client INSERT/UPDATE/DELETE
+-- (No policies = no access for operations not covered by existing policies)
 
-```text
-/client                    → Client login landing
-/client/dashboard          → Client's order overview
-/client/orders             → List of their orders
-/client/orders/:id         → Order detail (read-only)
-/client/invoices           → Their invoices
-/client/support            → Client support tickets
-/client/profile            → Client profile settings
+-- Keep existing INSERT policy for internal users only
+DROP POLICY IF EXISTS "Users can insert orders" ON public.orders;
+CREATE POLICY "Internal users can insert orders"
+  ON public.orders
+  FOR INSERT
+  WITH CHECK (
+    (auth.uid() = created_by AND NOT public.has_role(auth.uid(), 'client'))
+    OR public.has_role(auth.uid(), 'admin')
+  );
+
+-- Keep existing UPDATE policy for internal users only  
+DROP POLICY IF EXISTS "Users can update assigned orders" ON public.orders;
+CREATE POLICY "Internal users can update orders"
+  ON public.orders
+  FOR UPDATE
+  USING (
+    (auth.uid() = assigned_to AND NOT public.has_role(auth.uid(), 'client'))
+    OR (auth.uid() = created_by AND NOT public.has_role(auth.uid(), 'client'))
+    OR public.has_role(auth.uid(), 'admin')
+  );
 ```
 
-**Route Protection Pattern:**
+---
+
+### Phase 4: RLS Policies for user_roles Table
+
+```sql
+-- Only admins can view all roles
+CREATE POLICY "Admins can view all roles"
+  ON public.user_roles
+  FOR SELECT
+  USING (public.has_role(auth.uid(), 'admin'));
+
+-- Users can view their own roles
+CREATE POLICY "Users can view own roles"
+  ON public.user_roles
+  FOR SELECT
+  USING (user_id = auth.uid());
+
+-- Only admins can manage roles
+CREATE POLICY "Admins can manage roles"
+  ON public.user_roles
+  FOR ALL
+  USING (public.has_role(auth.uid(), 'admin'));
+```
+
+---
+
+### Phase 5: Update client_orders View
+
+```sql
+-- Drop and recreate view to include client_id
+DROP VIEW IF EXISTS public.client_orders;
+
+CREATE VIEW public.client_orders WITH (security_invoker=on) AS
+SELECT 
+    o.id,
+    o.company_name,
+    o.description,
+    o.status,
+    o.created_at,
+    o.updated_at,
+    o.price,
+    o.currency,
+    o.priority,
+    o.status_created,
+    o.status_in_progress,
+    o.status_invoice_sent,
+    o.status_invoice_paid,
+    o.status_resolved,
+    o.status_cancelled,
+    o.contact_email,
+    o.contact_phone,
+    o.client_id,
+    c.id AS company_id,
+    c.client_user_id,
+    c.name AS linked_company_name,
+    c.email AS company_email
+FROM orders o
+LEFT JOIN companies c ON o.company_id = c.id
+WHERE o.deleted_at IS NULL 
+  AND (o.status_deleted = false OR o.status_deleted IS NULL);
+```
+
+---
+
+### Phase 6: Update AuthContext to Use user_roles Table
+
+The `AuthContext.tsx` needs to be updated to fetch roles from the new `user_roles` table instead of the `profiles` table:
+
 ```typescript
-// New ClientGuard component
-const ClientGuard = ({ children }) => {
-  const { user } = useAuth();
-  
-  if (!user || user.role !== 'client') {
-    return <Navigate to="/client/login" />;
-  }
-  
-  return <>{children}</>;
-};
-```
+// In convertToAuthUser function, change:
+const { data: roleData } = await supabase
+  .from('user_roles')
+  .select('role')
+  .eq('user_id', supabaseUser.id)
+  .single();
 
-### 5. Component Structure (New Files Only)
-
-```text
-src/
-├── components/
-│   └── client-portal/           # NEW - All client portal components
-│       ├── ClientLayout.tsx     # Separate layout from admin
-│       ├── ClientSidebar.tsx    # Client navigation
-│       ├── ClientHeader.tsx     # Client header
-│       ├── ClientOrderCard.tsx  # Order display component
-│       ├── ClientOrderList.tsx  # Orders list view
-│       └── ClientGuard.tsx      # Client route protection
-├── pages/
-│   └── client/                  # NEW - All client portal pages
-│       ├── ClientDashboard.tsx
-│       ├── ClientOrders.tsx
-│       ├── ClientOrderDetail.tsx
-│       ├── ClientInvoices.tsx
-│       ├── ClientSupport.tsx
-│       └── ClientLogin.tsx      # Optional: Separate login page
-└── services/
-    └── clientOrderService.ts    # NEW - Client-specific data fetching
+if (roleData) {
+  userRole = roleData.role as UserRole;
+}
 ```
 
 ---
 
-## What Will NOT Change (Preserving Existing Functionality)
+## Security Summary
 
-| Component | Status | Reason |
-|-----------|--------|--------|
-| `/dashboard` route | Unchanged | Admin/agent only |
-| `AdminGuard.tsx` | Unchanged | Still checks for `role === 'admin'` |
-| `AuthGuard.tsx` | Unchanged | Still protects admin routes |
-| `Sidebar.tsx` | Unchanged | Already filters by role |
-| `OrderService.ts` | Unchanged | New service for clients |
-| `OrderTable.tsx` | Unchanged | Admin-only component |
-| All RLS policies | Unchanged | New policies added, none modified |
-| `profiles` table | Minimal change | Just allows 'client' as valid role |
+| Action | Before | After |
+|--------|--------|-------|
+| Role Storage | `profiles.role` column | Separate `user_roles` table |
+| Role Check Function | `is_admin()` reads profiles | `has_role()` reads user_roles |
+| Orders SELECT Policy | `qual: true` (anyone) | `client_id = auth.uid()` for clients |
+| Orders INSERT/UPDATE | Available to clients | Blocked for clients |
+| Client Access Path | Company → Orders (indirect) | Direct via `client_id` column |
 
 ---
 
-## Implementation Phases
+## Files to Modify
 
-### Phase 1: Database Foundation (Safe)
-1. Add `client_user_id` column to `companies` table
-2. Create `client_orders` view with limited columns
-3. Add RLS policies for client access
+### Database (Migration)
+1. Create `app_role` enum
+2. Create `user_roles` table with RLS
+3. Create `has_role()` and `is_client()` functions
+4. Add `client_id` column to `orders` table
+5. Migrate existing roles from profiles
+6. Update orders with client_id from companies
+7. Drop dangerous RLS policies
+8. Create new secure RLS policies
+9. Recreate `client_orders` view
 
-### Phase 2: Authentication Updates (Minimal)
-1. Update `UserRole` type to include `"client"`
-2. Create `ClientGuard.tsx` component
-3. Create client login flow (or reuse existing login with redirect logic)
-
-### Phase 3: Client Portal UI (New Files Only)
-1. Create `ClientLayout.tsx` with separate navigation
-2. Create `ClientDashboard.tsx` page
-3. Create `ClientOrderList.tsx` and `ClientOrderDetail.tsx`
-4. Add routes to `App.tsx` under `/client/*`
-
-### Phase 4: Admin Features for Client Management
-1. Add "Invite Client" button in Companies view
-2. Create client user management in Admin settings
-3. Add ability to link existing company to client user
+### Frontend (Code Changes)
+1. **`src/context/AuthContext.tsx`** - Fetch roles from `user_roles` table
+2. **`src/services/clientOrderService.ts`** - Use `client_id` filter instead of `client_user_id`
+3. **`src/types/index.ts`** - Keep `UserRole` type as-is (already includes 'client')
 
 ---
 
-## Security Considerations
+## What Will NOT Change
 
-1. **Role Isolation**: Clients cannot access admin routes due to:
-   - `ClientGuard` only allowing `role === 'client'`
-   - Existing guards blocking non-admin access
-   
-2. **Data Isolation**: Clients only see their data via:
-   - RLS policies checking `client_user_id = auth.uid()`
-   - `client_orders` view hiding internal notes and agent info
-   
-3. **No Shared Components**: Client portal uses entirely new components, preventing accidental data leakage
-
----
-
-## Technical Summary
-
-| Item | Current State | After Implementation |
-|------|---------------|---------------------|
-| Role types | admin, agent, user | admin, agent, user, client |
-| profiles table | No changes | Accepts 'client' role value |
-| companies table | user_id (internal) | + client_user_id (portal access) |
-| orders table | No changes | Accessed via view for clients |
-| Admin routes | Protected | Unchanged (still protected) |
-| Client routes | Don't exist | New `/client/*` namespace |
-| RLS policies | Admin/agent focused | + New client-specific policies |
+- Existing admin/agent/user workflows
+- UI components (no changes this phase)
+- Existing order creation/management for internal users
+- Company management features
+- All other tables and their RLS policies
 
