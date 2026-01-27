@@ -72,6 +72,8 @@ export interface Order {
   status_google_deletion?: boolean;
   // Yearly package field
   is_yearly_package?: boolean;
+  // Client access
+  client_id?: string;
 }
 
 export interface InvoiceDetails {
