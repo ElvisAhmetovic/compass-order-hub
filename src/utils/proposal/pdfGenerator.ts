@@ -1,9 +1,9 @@
-
 import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
 import { getCompanyInfo } from "./companyInfo";
 import { translations, SUPPORTED_LANGUAGES } from "../proposalTranslations";
 import { translateProposalData } from "../../services/translationService";
+import { sanitizeHtml } from "../sanitize";
 
 // Get appropriate font family for each language
 const getLanguageFont = (language: string) => {
@@ -549,19 +549,19 @@ const createSecondPageContent = (proposalData: any, language: string = "en") => 
 const generateMultiPagePDF = async (firstPageHtml: string, secondPageHtml: string, scale: number = 2): Promise<jsPDF> => {
   console.log('Starting multi-page PDF generation');
   
-  // Create temporary divs for both pages
+  // Create temporary divs for both pages with sanitized HTML
   const tempDiv1 = document.createElement("div");
   tempDiv1.style.position = "absolute";
   tempDiv1.style.left = "-9999px";
   tempDiv1.style.top = "-9999px";
-  tempDiv1.innerHTML = firstPageHtml;
+  tempDiv1.innerHTML = sanitizeHtml(firstPageHtml);
   document.body.appendChild(tempDiv1);
   
   const tempDiv2 = document.createElement("div");
   tempDiv2.style.position = "absolute";
   tempDiv2.style.left = "-9999px";
   tempDiv2.style.top = "-9999px";
-  tempDiv2.innerHTML = secondPageHtml;
+  tempDiv2.innerHTML = sanitizeHtml(secondPageHtml);
   document.body.appendChild(tempDiv2);
   
   // Wait for rendering

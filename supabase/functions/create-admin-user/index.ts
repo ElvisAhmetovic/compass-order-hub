@@ -20,6 +20,34 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    // Get credentials from request body - never hardcode credentials
+    const { email, password, firstName, lastName } = await req.json();
+
+    // Validate required fields
+    if (!email || !password) {
+      return new Response(
+        JSON.stringify({ error: "Email and password are required" }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return new Response(
+        JSON.stringify({ error: "Invalid email format" }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    // Validate password strength
+    if (password.length < 8) {
+      return new Response(
+        JSON.stringify({ error: "Password must be at least 8 characters" }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
@@ -30,14 +58,14 @@ const handler = async (req: Request): Promise<Response> => {
       },
     });
 
-    // Create the admin user
+    // Create the admin user with provided credentials
     const { data: userData, error: userError } = await supabaseAdmin.auth.admin.createUser({
-      email: "ajosesales36@gmail.com",
-      password: "Admin@12345!",
-      email_confirm: true, // Skip email verification
+      email: email,
+      password: password,
+      email_confirm: true,
       user_metadata: {
-        first_name: "Admir",
-        last_name: "Karalic",
+        first_name: firstName || "",
+        last_name: lastName || "",
         role: "admin"
       }
     });
@@ -55,7 +83,11 @@ const handler = async (req: Request): Promise<Response> => {
     // Update the profile to set admin role
     const { error: profileError } = await supabaseAdmin
       .from("profiles")
-      .update({ role: "admin", first_name: "Admir", last_name: "Karalic" })
+      .update({ 
+        role: "admin", 
+        first_name: firstName || "", 
+        last_name: lastName || "" 
+      })
       .eq("id", userData.user.id);
 
     if (profileError) {

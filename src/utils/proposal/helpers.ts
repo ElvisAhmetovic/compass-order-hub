@@ -1,5 +1,5 @@
-
 import { InventoryItem, ProposalLineItem } from "@/types";
+import { supabase } from "@/integrations/supabase/client";
 
 export const getProposalStatusColor = (status: string) => {
   switch (status) {
@@ -20,19 +20,47 @@ export const getProposalStatusColor = (status: string) => {
   }
 };
 
+/**
+ * @deprecated Use loadInventoryItemsAsync instead for Supabase data
+ */
 export const loadInventoryItems = () => {
-  const savedInventory = localStorage.getItem("inventoryItems");
-  if (savedInventory) {
-    return JSON.parse(savedInventory);
-  }
-  
-  // Check alternative storage keys
-  const savedInventoryItems = localStorage.getItem("inventory");
-  if (savedInventoryItems) {
-    return JSON.parse(savedInventoryItems);
-  }
-  
+  console.warn('loadInventoryItems is deprecated. Use loadInventoryItemsAsync instead.');
   return [];
+};
+
+/**
+ * Load inventory items from Supabase database
+ */
+export const loadInventoryItemsAsync = async (): Promise<InventoryItem[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('inventory_items')
+      .select('*')
+      .order('name', { ascending: true });
+
+    if (error) {
+      console.error('Error loading inventory items:', error);
+      return [];
+    }
+
+    return (data || []).map(item => ({
+      id: item.id,
+      name: item.name,
+      category: item.category as "Article" | "Service",
+      description: item.description || '',
+      lastBooking: item.last_booking,
+      stock: item.stock || 0,
+      unit: item.unit || 'Stk',
+      price: item.price || 'EUR0.00',
+      buyingPrice: item.buying_price || 'EUR0.00',
+      buyingPriceGross: item.buying_price_gross,
+      priceGross: item.price_gross,
+      internalNote: item.internal_note || ''
+    }));
+  } catch (error) {
+    console.error('Failed to load inventory items:', error);
+    return [];
+  }
 };
 
 export const formatInventoryItemForProposal = (item: InventoryItem, quantity: number = 1): ProposalLineItem => {
