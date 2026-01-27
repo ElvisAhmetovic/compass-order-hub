@@ -159,13 +159,13 @@ const ClientSupport = () => {
                   <Label htmlFor="order">Related Order (Optional)</Label>
                   <Select
                     value={selectedOrderId}
-                    onValueChange={setSelectedOrderId}
+                    onValueChange={(value) => setSelectedOrderId(value === "none" ? "" : value)}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select an order..." />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">No specific order</SelectItem>
+                      <SelectItem value="none">No specific order</SelectItem>
                       {orders.map((order) => (
                         <SelectItem key={order.id} value={order.id}>
                           {order.company_name}
