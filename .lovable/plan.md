@@ -1,265 +1,318 @@
 
 
-# Production-Ready Fixes and QA Test Script Implementation
+# Status Translator Implementation Plan
 
 ## Overview
-This plan addresses all critical production issues identified in the Client Portal implementation and includes a comprehensive QA test script to verify everything works correctly.
+Create a centralized "Status Translator" utility that maps internal technical status values (e.g., 'Dev-Sprint', 'QA', 'Briefing') to client-friendly display labels with optional emojis and visual styling. This translation applies **only** to client-facing components while the admin dashboard continues to display raw internal statuses.
 
 ---
 
-## Part 1: Production Fixes
+## Current State Analysis
 
-### Fix 1: Real Email Invite System (Edge Function)
+### Existing Status Handling:
+1. **Admin Dashboard (`OrderRow.tsx`)**: Uses raw status values like "Created", "In Progress", "Invoice Sent", etc. with color-coded badges
+2. **Client Components**: Currently use boolean flags (`status_created`, `status_in_progress`, etc.) to derive progress labels
+3. **Order Types**: `OrderStatus` type in `types/index.ts` defines available statuses
+4. **No Translation Layer**: Currently no mechanism to map internal → client-friendly terminology
 
-**Current State**: The "Send Login Invite" button in `ClientAccessSection.tsx` only shows a toast and logs to `order_audit_logs`. No actual email is sent.
-
-**Solution**: Create a new Edge Function `send-client-invite` that sends a real email to the client with their portal access information.
-
-**New File: `supabase/functions/send-client-invite/index.ts`**
-
-The Edge Function will:
-1. Accept `clientEmail`, `clientName`, `orderId`, `companyName`, `senderName` as parameters
-2. Use the existing `RESEND_API_KEY_ABMEDIA` secret (already configured)
-3. Send from `ThomasKlein@abm-team.com` (following existing pattern from `send-client-payment-reminder`)
-4. Generate a professional HTML email with:
-   - Welcome message
-   - Login URL: `https://www.empriadental.de/client/login`
-   - Brief instructions on accessing their orders
-5. Log the invite to `order_audit_logs`
-
-**Update: `src/services/clientAccessService.ts`**
-- Replace `logInviteSent()` with `sendClientInvite()` that calls the Edge Function
-- Handle success/error responses appropriately
-
-**Update: `src/components/dashboard/ClientAccessSection.tsx`**
-- Update `handleSendInvite()` to call the new service function
-- Show appropriate success/error toasts based on Edge Function response
+### Files That Display Status to Clients:
+- `src/components/client-portal/ClientOrderCard.tsx` - Order cards with progress bars
+- `src/pages/client/ClientOrders.tsx` - Order list with status badges  
+- `src/pages/client/ClientOrderDetail.tsx` - Order detail with progress steps
 
 ---
 
-### Fix 2: Confirmation Dialog for Remove Access
+## Implementation Plan
 
-**Current State**: The "Remove Access" button immediately removes the client without confirmation, risking accidental clicks.
+### Step 1: Create Status Translation Utility
 
-**Solution**: Add an AlertDialog confirmation before unlinking.
+**New File: `src/utils/clientStatusTranslator.ts`**
 
-**Update: `src/components/dashboard/ClientAccessSection.tsx`**
+This file will contain:
 
-Add confirmation dialog with:
-- Title: "Remove Client Access?"
-- Description: "This will revoke [Client Name]'s access to this order. They will no longer be able to view this order in their portal."
-- Cancel and Confirm buttons
-- Only proceed with `unlinkClientFromOrder()` if confirmed
+1. **Status Translation Map**: Object mapping internal statuses to client-friendly versions
 
----
-
-### Fix 3: Client Support System
-
-**Current State**: `ClientSupport.tsx` is a placeholder with "Coming Soon" message.
-
-**Solution**: Create a functional support inquiry system for clients using the existing `support_inquiries` and `support_replies` tables.
-
-#### 3.1 Database Migration
-
-Add `order_id` column to `support_inquiries` to link support tickets to specific orders:
-
-```sql
--- Add order_id to support_inquiries for order-specific support
-ALTER TABLE public.support_inquiries
-ADD COLUMN order_id UUID REFERENCES public.orders(id) ON DELETE SET NULL;
-
--- Update RLS policy to allow clients to view/create their own inquiries
-CREATE POLICY "Clients can view their own inquiries"
-  ON public.support_inquiries
-  FOR SELECT
-  USING (user_id = auth.uid());
-
-CREATE POLICY "Clients can create inquiries"
-  ON public.support_inquiries
-  FOR INSERT
-  WITH CHECK (user_id = auth.uid());
-
--- Allow clients to view replies to their inquiries
-CREATE POLICY "Clients can view replies to their inquiries"
-  ON public.support_replies
-  FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.support_inquiries si
-      WHERE si.id = support_replies.inquiry_id
-        AND si.user_id = auth.uid()
-    )
-  );
-```
-
-#### 3.2 New Service: `src/services/clientSupportService.ts`
-
-Functions needed:
-- `fetchClientInquiries()`: Get all support tickets for the logged-in client
-- `fetchClientInquiryById(id)`: Get a specific ticket with replies
-- `createClientInquiry({ subject, message, orderId? })`: Create new support ticket
-- `addClientReply(inquiryId, message)`: Add a reply to an existing ticket
-
-#### 3.3 Update: `src/pages/client/ClientSupport.tsx`
-
-Complete redesign with:
-- List of client's support inquiries with status badges (Open, In Progress, Closed)
-- "New Inquiry" button that opens a form
-- Option to link inquiry to a specific order (dropdown of client's orders)
-
-#### 3.4 New Page: `src/pages/client/ClientSupportDetail.tsx`
-
-Ticket detail view with:
-- Original inquiry details
-- Thread of replies (from client and support team)
-- Reply form at the bottom
-- Status indicator
-
-#### 3.5 Update: `src/App.tsx`
-
-Add route: `/client/support/:ticketId` for the detail page
-
----
-
-### Fix 4: Client Search/Filter in Admin Dropdown
-
-**Current State**: If there are many client users, the Select dropdown becomes unwieldy.
-
-**Solution**: Replace the basic Select with a Combobox that supports search filtering.
-
-**Update: `src/components/dashboard/ClientAccessSection.tsx`**
-
-Replace `Select` with `Popover` + `Command` pattern (combobox):
-- Search input to filter clients by name or email
-- Scrollable list of matching clients
-- Same selection behavior as before
-
----
-
-### Fix 5: Enhanced Audit Logging
-
-**Current State**: Audit logs record actions but lack detail about which client was linked/unlinked.
-
-**Solution**: Include client details in audit log entries.
-
-**Update: `src/services/clientAccessService.ts`**
-
-Enhance `linkClientToOrder()`:
 ```typescript
-details: `Client "${clientName}" (${clientEmail}) linked to order`
+interface ClientStatusConfig {
+  label: string;           // Client-friendly label
+  emoji: string;           // Optional emoji prefix
+  badgeVariant: 'default' | 'secondary' | 'destructive' | 'outline' | 'action';
+  badgeClassName?: string; // Custom styling
+  progress: number;        // Progress bar percentage
+  requiresAction?: boolean; // Flag for "Action Required" states
+}
+
+const STATUS_TRANSLATION_MAP: Record<string, ClientStatusConfig> = {
+  // Internal Status -> Client Display
+  "Created": { 
+    label: "Order Received", 
+    emoji: "📋", 
+    badgeVariant: "secondary",
+    progress: 10 
+  },
+  "In Progress": { 
+    label: "In Progress", 
+    emoji: "🏗️", 
+    badgeVariant: "default",
+    progress: 40 
+  },
+  "Invoice Sent": { 
+    label: "Invoice Sent", 
+    emoji: "📄", 
+    badgeVariant: "outline",
+    progress: 60 
+  },
+  "Invoice Paid": { 
+    label: "Payment Received", 
+    emoji: "✅", 
+    badgeVariant: "default",
+    progress: 80 
+  },
+  "Resolved": { 
+    label: "Completed", 
+    emoji: "🎉", 
+    badgeVariant: "default",
+    badgeClassName: "bg-green-500 hover:bg-green-600",
+    progress: 100 
+  },
+  "Cancelled": { 
+    label: "Cancelled", 
+    emoji: "❌", 
+    badgeVariant: "destructive",
+    progress: 0 
+  },
+  // Extended technical statuses (examples from user request)
+  "Dev-Backend": { 
+    label: "In Progress", 
+    emoji: "🏗️", 
+    badgeVariant: "default",
+    progress: 35 
+  },
+  "Dev-Sprint": { 
+    label: "In Progress", 
+    emoji: "🏗️", 
+    badgeVariant: "default",
+    progress: 45 
+  },
+  "QA": { 
+    label: "Quality Review", 
+    emoji: "🔍", 
+    badgeVariant: "secondary",
+    progress: 70 
+  },
+  "Briefing": { 
+    label: "Getting Started", 
+    emoji: "📝", 
+    badgeVariant: "secondary",
+    progress: 15 
+  },
+  "Awaiting-Client-Feedback": { 
+    label: "Action Required", 
+    emoji: "🕒", 
+    badgeVariant: "action",
+    badgeClassName: "bg-red-500 hover:bg-red-600 text-white",
+    progress: 50,
+    requiresAction: true 
+  },
+  "Review": { 
+    label: "Under Review", 
+    emoji: "👀", 
+    badgeVariant: "secondary",
+    progress: 55 
+  },
+};
 ```
 
-Enhance `unlinkClientFromOrder()`:
+2. **Helper Functions**:
+
 ```typescript
-// Fetch current client before unlinking
-details: `Client "${clientName}" (${clientEmail}) access revoked`
+// Get translated status from internal status string
+export function getClientStatus(internalStatus: string): ClientStatusConfig
+
+// Get translated status from order with boolean flags
+export function getClientStatusFromOrder(order: ClientOrder): ClientStatusConfig
+
+// Get just the display label with emoji
+export function getClientStatusLabel(internalStatus: string, includeEmoji?: boolean): string
+
+// Check if status requires client action
+export function statusRequiresAction(internalStatus: string): boolean
 ```
 
 ---
 
-## Part 2: Comprehensive QA Test Script
+### Step 2: Update ClientOrderCard Component
 
-After implementing the fixes, the following test cases should be verified:
+**Modify: `src/components/client-portal/ClientOrderCard.tsx`**
 
-### Authentication & Role-Based Access Tests
+Changes:
+1. Import the new `getClientStatusFromOrder` function
+2. Replace hardcoded `getProgressFromStatus` with the translator
+3. Update badge display to use translated labels with emojis
+4. Add special styling for "Action Required" states
 
-| Test ID | Test Case | Steps | Expected Result |
-|---------|-----------|-------|-----------------|
-| AUTH-01 | Client login redirects correctly | 1. Log in with client credentials at /login | Redirect to /client/dashboard |
-| AUTH-02 | Admin login redirects correctly | 1. Log in with admin credentials at /login | Redirect to /dashboard |
-| AUTH-03 | Client cannot access admin routes | 1. As client, navigate to /dashboard directly | Redirect to /client/dashboard |
-| AUTH-04 | Admin can access admin routes | 1. As admin, navigate to /dashboard | Access granted, dashboard loads |
-| AUTH-05 | Unauthenticated redirect | 1. Visit /client/dashboard without logging in | Redirect to /client/login |
+```text
+Before:
+  const getProgressFromStatus = (order) => {
+    if (order.status_cancelled) return { progress: 0, label: "Cancelled" };
+    if (order.status_resolved) return { progress: 100, label: "Completed" };
+    ...
+  }
 
-### Client Portal Tests
-
-| Test ID | Test Case | Steps | Expected Result |
-|---------|-----------|-------|-----------------|
-| CLIENT-01 | Dashboard loads stats | 1. Log in as client 2. View dashboard | Stats cards show correct counts |
-| CLIENT-02 | Recent orders display | 1. View dashboard | Up to 5 recent orders with progress bars |
-| CLIENT-03 | View all orders | 1. Click "View All" or go to /client/orders | Full order list displayed |
-| CLIENT-04 | Order detail view | 1. Click on an order | Order details, progress bar, attachments shown |
-| CLIENT-05 | Profile update | 1. Go to /client/profile 2. Update name 3. Save | Name updated successfully |
-| CLIENT-06 | Password change | 1. Go to /client/profile 2. Enter new password 3. Submit | Password changed, can re-login |
-| CLIENT-07 | Client sees only their orders | 1. Check orders list | Only orders with client_id matching user shown |
-
-### Client Support Tests (New Feature)
-
-| Test ID | Test Case | Steps | Expected Result |
-|---------|-----------|-------|-----------------|
-| SUPPORT-01 | View support page | 1. Navigate to /client/support | List of inquiries or empty state |
-| SUPPORT-02 | Create new inquiry | 1. Click New Inquiry 2. Fill form 3. Submit | Inquiry created, appears in list |
-| SUPPORT-03 | Link inquiry to order | 1. Create inquiry 2. Select order from dropdown | Inquiry shows linked order |
-| SUPPORT-04 | View inquiry detail | 1. Click on inquiry | Detail page with replies thread |
-| SUPPORT-05 | Add reply to inquiry | 1. Open inquiry 2. Type reply 3. Submit | Reply appears in thread |
-
-### Admin Client Access Tests
-
-| Test ID | Test Case | Steps | Expected Result |
-|---------|-----------|-------|-----------------|
-| ADMIN-01 | Client Access section visible | 1. As admin, open order modal | Client Access section visible |
-| ADMIN-02 | Non-admin cannot see section | 1. As agent/user, open order modal | Client Access section NOT visible |
-| ADMIN-03 | Link client to order | 1. Select client from dropdown 2. Click Link | Client linked, order updated |
-| ADMIN-04 | Send invite email | 1. With client linked, click Send Login Invite | Email sent, success toast |
-| ADMIN-05 | Remove access confirmation | 1. Click Remove Access | Confirmation dialog appears |
-| ADMIN-06 | Confirm remove access | 1. Click Remove Access 2. Confirm | Client unlinked, access revoked |
-| ADMIN-07 | Search clients in dropdown | 1. Click client dropdown 2. Type search term | Filtered list shows matching clients |
-
-### Security & RLS Tests
-
-| Test ID | Test Case | Steps | Expected Result |
-|---------|-----------|-------|-----------------|
-| SEC-01 | Client cannot see other client's orders | 1. As Client A, try to access Client B's order via URL | 404 or access denied |
-| SEC-02 | Client cannot modify orders | 1. Attempt direct Supabase update on order | RLS blocks operation |
-| SEC-03 | Client cannot delete orders | 1. Attempt direct Supabase delete on order | RLS blocks operation |
-| SEC-04 | Audit logs capture all actions | 1. Link/unlink clients 2. Check order_audit_logs | All actions logged with details |
-| SEC-05 | Attachments access control | 1. As client, view order attachments | Only see attachments for own orders |
-
-### Edge Cases Tests
-
-| Test ID | Test Case | Steps | Expected Result |
-|---------|-----------|-------|-----------------|
-| EDGE-01 | No orders assigned | 1. Log in as client with no orders | Dashboard shows empty state gracefully |
-| EDGE-02 | Order with no attachments | 1. View order without attachments | Attachments section shows "No files" |
-| EDGE-03 | Invalid order ID access | 1. Navigate to /client/orders/invalid-uuid | Error handled, redirect or 404 |
-| EDGE-04 | Session timeout handling | 1. Let session expire 2. Try action | Redirect to login |
-| EDGE-05 | Rapid button clicks | 1. Click Link/Unlink rapidly | Only one operation processed, no duplicates |
+After:
+  import { getClientStatusFromOrder } from "@/utils/clientStatusTranslator";
+  
+  const ClientOrderCard = ({ order }) => {
+    const statusConfig = getClientStatusFromOrder(order);
+    const displayLabel = `${statusConfig.emoji} ${statusConfig.label}`;
+    ...
+  }
+```
 
 ---
 
-## Implementation Summary
+### Step 3: Update ClientOrders Page
 
-| Component | Change Type | Priority | Description |
-|-----------|-------------|----------|-------------|
-| send-client-invite Edge Function | Create | High | Real email sending for client invites |
-| ClientAccessSection.tsx | Modify | High | Confirmation dialog, search dropdown, real email integration |
-| clientAccessService.ts | Modify | High | Enhanced audit logs, email sending |
-| support_inquiries migration | Create | Medium | Add order_id column and RLS policies |
-| clientSupportService.ts | Create | Medium | Support ticket service for clients |
-| ClientSupport.tsx | Rewrite | Medium | Full support system UI |
-| ClientSupportDetail.tsx | Create | Medium | Support ticket detail view |
-| App.tsx | Modify | Medium | Add support detail route |
+**Modify: `src/pages/client/ClientOrders.tsx`**
+
+Changes:
+1. Import translator functions
+2. Replace `getStatusBadge` with translated version
+3. Apply proper badge styling based on `badgeClassName`
+
+```text
+Before:
+  if (order.status_resolved) return <Badge>Resolved</Badge>;
+  if (order.status_invoice_paid) return <Badge>Paid</Badge>;
+  ...
+
+After:
+  import { getClientStatusFromOrder, getClientStatusBadge } from "@/utils/clientStatusTranslator";
+  
+  const getStatusBadge = (order: ClientOrder) => {
+    const config = getClientStatusFromOrder(order);
+    return (
+      <Badge 
+        variant={config.badgeVariant}
+        className={config.badgeClassName}
+      >
+        {config.emoji} {config.label}
+      </Badge>
+    );
+  };
+```
 
 ---
 
-## Files to Create
+### Step 4: Update ClientOrderDetail Page
 
-1. `supabase/functions/send-client-invite/index.ts` - Email sending Edge Function
-2. `src/services/clientSupportService.ts` - Client support service
-3. `src/pages/client/ClientSupportDetail.tsx` - Support ticket detail page
+**Modify: `src/pages/client/ClientOrderDetail.tsx`**
 
-## Files to Modify
+Changes:
+1. Import translator functions
+2. Replace hardcoded `statusSteps` with translated labels
+3. Update progress bar calculation to use translator
+4. Keep the step-by-step timeline but with client-friendly labels
 
-1. `src/components/dashboard/ClientAccessSection.tsx` - Add confirmation, search, email
-2. `src/services/clientAccessService.ts` - Enhanced logging and email integration
-3. `src/pages/client/ClientSupport.tsx` - Full support system
-4. `src/App.tsx` - Add support detail route
-5. Database migration for `support_inquiries`
+```text
+Before:
+  const statusSteps = [
+    { key: "created", label: "Created", active: order.status_created, icon: Clock },
+    { key: "in_progress", label: "In Progress", ... },
+    ...
+  ];
 
-## Secrets Already Configured
+After:
+  import { translateStatusStep, getClientStatusFromOrder } from "@/utils/clientStatusTranslator";
+  
+  const statusSteps = [
+    translateStatusStep("created", order.status_created),
+    translateStatusStep("in_progress", order.status_in_progress),
+    ...
+  ];
+```
 
-All required secrets exist:
-- `RESEND_API_KEY_ABMEDIA` - For sending emails from abm-team.com domain
-- `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` - For database operations in Edge Functions
-- `APP_URL` - For generating portal links (https://www.empriadental.de)
+---
+
+### Step 5: Add Badge Variant for "Action Required"
+
+**Modify: `src/components/ui/badge.tsx`**
+
+Add a new variant for action-required states:
+
+```typescript
+variants: {
+  variant: {
+    default: "...",
+    secondary: "...",
+    destructive: "...",
+    outline: "...",
+    action: "border-transparent bg-red-500 text-white hover:bg-red-600 animate-pulse", // NEW
+  },
+},
+```
+
+This creates a visually distinct, attention-grabbing badge for states requiring client action.
+
+---
+
+## Summary of Changes
+
+| Component | Change Type | Description |
+|-----------|-------------|-------------|
+| `clientStatusTranslator.ts` | Create | New utility with translation map and helper functions |
+| `ClientOrderCard.tsx` | Modify | Use translator for progress and labels |
+| `ClientOrders.tsx` | Modify | Use translator for status badges |
+| `ClientOrderDetail.tsx` | Modify | Use translator for progress steps |
+| `badge.tsx` | Modify | Add "action" variant for attention states |
+
+---
+
+## Technical Details
+
+### Files to Create:
+1. `src/utils/clientStatusTranslator.ts` - Status translation utility
+
+### Files to Modify:
+1. `src/components/client-portal/ClientOrderCard.tsx` - Order card component
+2. `src/pages/client/ClientOrders.tsx` - Orders list page
+3. `src/pages/client/ClientOrderDetail.tsx` - Order detail page
+4. `src/components/ui/badge.tsx` - Add action variant
+
+### No Changes Required:
+- **Admin Dashboard**: All admin components (`OrderRow.tsx`, `OrderModal.tsx`, etc.) continue to use raw internal statuses unchanged
+- **Database**: No schema changes needed
+- **Services**: No API changes needed
+
+---
+
+## Example Translation Scenarios
+
+| Internal Status | Client Sees | Badge Style |
+|-----------------|-------------|-------------|
+| `Created` | 📋 Order Received | Gray/Secondary |
+| `In Progress` | 🏗️ In Progress | Blue/Default |
+| `Dev-Backend` | 🏗️ In Progress | Blue/Default |
+| `Dev-Sprint` | 🏗️ In Progress | Blue/Default |
+| `QA` | 🔍 Quality Review | Gray/Secondary |
+| `Briefing` | 📝 Getting Started | Gray/Secondary |
+| `Awaiting-Client-Feedback` | 🕒 Action Required | Red/Pulsing |
+| `Invoice Sent` | 📄 Invoice Sent | Outline |
+| `Invoice Paid` | ✅ Payment Received | Blue/Default |
+| `Resolved` | 🎉 Completed | Green |
+| `Cancelled` | ❌ Cancelled | Red/Destructive |
+
+---
+
+## Extensibility
+
+The translation map is designed to be easily extended:
+
+1. **Add new internal statuses**: Simply add a new entry to `STATUS_TRANSLATION_MAP`
+2. **Change client labels**: Update the `label` field in the map
+3. **Adjust progress weights**: Modify the `progress` value
+4. **Add action states**: Set `requiresAction: true` for any status needing client attention
+5. **Custom styling**: Use `badgeClassName` for any status-specific colors
+
+The fallback behavior ensures any unmapped status displays gracefully as "Status: [raw value]" with a neutral badge.
 
