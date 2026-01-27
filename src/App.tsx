@@ -51,6 +51,7 @@ import ClientOrders from "./pages/client/ClientOrders";
 import ClientOrderDetail from "./pages/client/ClientOrderDetail";
 import ClientInvoices from "./pages/client/ClientInvoices";
 import ClientSupport from "./pages/client/ClientSupport";
+import ClientSupportDetail from "./pages/client/ClientSupportDetail";
 import ClientProfile from "./pages/client/ClientProfile";
 import ClientLogin from "./pages/client/ClientLogin";
 
@@ -281,6 +282,11 @@ function App() {
                   <Route path="/client/support" element={
                     <ClientGuard>
                       <ClientSupport />
+                    </ClientGuard>
+                  } />
+                  <Route path="/client/support/:ticketId" element={
+                    <ClientGuard>
+                      <ClientSupportDetail />
                     </ClientGuard>
                   } />
                   <Route path="/client/profile" element={
