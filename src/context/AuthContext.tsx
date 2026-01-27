@@ -44,39 +44,59 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     let lastName = supabaseUser.user_metadata?.last_name || '';
     
     try {
-      // Fetch the most current role from profiles table
-      const { data: profile, error } = await supabase
+      // Fetch profile for name info
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('role, first_name, last_name')
+        .select('first_name, last_name')
         .eq('id', supabaseUser.id)
-        .single();
+        .maybeSingle();
       
-      if (error && error.code !== 'PGRST116') {
-        console.error('Error fetching profile:', error);
+      if (profileError) {
+        console.error('Error fetching profile:', profileError);
       } else if (profile) {
-        userRole = profile.role as UserRole;
         if (profile.first_name || profile.last_name) {
           firstName = profile.first_name || '';
           lastName = profile.last_name || '';
           fullName = `${firstName} ${lastName}`.trim();
         }
-        console.log('User role from profiles table:', userRole);
+      }
+
+      // Fetch role from user_roles table (security best practice)
+      const { data: roleData, error: roleError } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', supabaseUser.id)
+        .maybeSingle();
+      
+      if (roleError) {
+        console.error('Error fetching user role:', roleError);
+      } else if (roleData) {
+        userRole = roleData.role as UserRole;
+        console.log('User role from user_roles table:', userRole);
       } else {
-        // If profile doesn't exist, create it with default role
-        console.log('Creating new profile for user');
+        // If no role exists, user is a new user - create profile and assign default role
+        console.log('Creating new profile and role for user');
         const nameParts = fullName.split(' ');
-        const { error: insertError } = await supabase
-          .from('profiles')
-          .insert({
-            id: supabaseUser.id,
-            first_name: nameParts[0] || '',
-            last_name: nameParts.slice(1).join(' ') || '',
-            role: 'user'
-          });
         
-        if (insertError) {
-          console.error('Error creating profile:', insertError);
+        // Create profile if it doesn't exist
+        if (!profile) {
+          const { error: insertProfileError } = await supabase
+            .from('profiles')
+            .insert({
+              id: supabaseUser.id,
+              first_name: nameParts[0] || '',
+              last_name: nameParts.slice(1).join(' ') || '',
+              role: 'user' // Keep for backwards compatibility
+            });
+          
+          if (insertProfileError) {
+            console.error('Error creating profile:', insertProfileError);
+          }
         }
+        
+        // Note: user_roles insertion requires admin privileges
+        // New users will need an admin to assign their role
+        userRole = 'user';
       }
     } catch (error) {
       console.error('Error in convertToAuthUser:', error);
