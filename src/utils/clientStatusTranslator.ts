@@ -7,6 +7,7 @@ export interface ClientStatusConfig {
   badgeClassName?: string;
   progress: number;
   requiresAction?: boolean;
+  actionButtonLabel?: string;
 }
 
 // Translation map: Internal Status -> Client-Friendly Display
@@ -81,7 +82,8 @@ const STATUS_TRANSLATION_MAP: Record<string, ClientStatusConfig> = {
     badgeVariant: "action",
     badgeClassName: "bg-red-500 hover:bg-red-600 text-white",
     progress: 50,
-    requiresAction: true 
+    requiresAction: true,
+    actionButtonLabel: "Provide Feedback"
   },
   "Review": { 
     label: "Under Review", 
@@ -182,6 +184,23 @@ export function getClientStatusLabel(internalStatus: string, includeEmoji: boole
 export function statusRequiresAction(internalStatus: string): boolean {
   const config = getClientStatus(internalStatus);
   return config.requiresAction === true;
+}
+
+/**
+ * Get action button configuration for an order
+ */
+export function getActionButtonConfig(order: ClientOrder): {
+  showButton: boolean;
+  label: string;
+  url: string | null;
+} {
+  const statusConfig = getClientStatusFromOrder(order);
+  
+  return {
+    showButton: statusConfig.requiresAction === true && !!order.client_action_url,
+    label: statusConfig.actionButtonLabel || "Take Action",
+    url: order.client_action_url || null
+  };
 }
 
 /**

@@ -24,6 +24,7 @@ export interface ClientOrder {
   linked_company_name: string | null;
   company_email: string | null;
   client_visible_update: string | null;
+  client_action_url: string | null;
 }
 
 export const fetchClientOrders = async (): Promise<ClientOrder[]> => {

@@ -2,10 +2,11 @@ import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Paperclip, Calendar, ArrowRight, Megaphone } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Paperclip, Calendar, ArrowRight, Megaphone, ExternalLink } from "lucide-react";
 import { format } from "date-fns";
 import { ClientOrder } from "@/services/clientOrderService";
-import { getClientStatusFromOrder } from "@/utils/clientStatusTranslator";
+import { getClientStatusFromOrder, getActionButtonConfig } from "@/utils/clientStatusTranslator";
 
 interface ClientOrderCardProps {
   order: ClientOrder;
@@ -14,6 +15,7 @@ interface ClientOrderCardProps {
 
 const ClientOrderCard = ({ order, attachmentCount = 0 }: ClientOrderCardProps) => {
   const statusConfig = getClientStatusFromOrder(order);
+  const actionConfig = getActionButtonConfig(order);
   const isCancelled = order.status_cancelled;
   const isCompleted = order.status_resolved;
 
@@ -42,8 +44,28 @@ const ClientOrderCard = ({ order, attachmentCount = 0 }: ClientOrderCardProps) =
                 <span>{format(new Date(order.created_at), "MMM d, yyyy")}</span>
               </div>
 
-              {/* Progress Bar */}
-              {!isCancelled && (
+              {/* Action Button OR Progress Bar */}
+              {actionConfig.showButton && actionConfig.url ? (
+                <div className="pt-1">
+                  <Button
+                    asChild
+                    variant="destructive"
+                    size="sm"
+                    className="w-full"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <a 
+                      href={actionConfig.url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-2"
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                      {actionConfig.label}
+                    </a>
+                  </Button>
+                </div>
+              ) : !isCancelled && (
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-muted-foreground">Progress</span>

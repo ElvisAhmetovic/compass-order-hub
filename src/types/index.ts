@@ -76,6 +76,8 @@ export interface Order {
   client_id?: string;
   // Client visible update
   client_visible_update?: string;
+  // Client action URL for feedback/mockups
+  client_action_url?: string;
 }
 
 export interface InvoiceDetails {
