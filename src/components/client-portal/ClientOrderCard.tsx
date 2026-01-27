@@ -5,24 +5,15 @@ import { Progress } from "@/components/ui/progress";
 import { Paperclip, Calendar, ArrowRight } from "lucide-react";
 import { format } from "date-fns";
 import { ClientOrder } from "@/services/clientOrderService";
+import { getClientStatusFromOrder } from "@/utils/clientStatusTranslator";
 
 interface ClientOrderCardProps {
   order: ClientOrder;
   attachmentCount?: number;
 }
 
-const getProgressFromStatus = (order: ClientOrder): { progress: number; label: string } => {
-  if (order.status_cancelled) return { progress: 0, label: "Cancelled" };
-  if (order.status_resolved) return { progress: 100, label: "Completed" };
-  if (order.status_invoice_paid) return { progress: 80, label: "Invoice Paid" };
-  if (order.status_invoice_sent) return { progress: 60, label: "Invoice Sent" };
-  if (order.status_in_progress) return { progress: 40, label: "In Progress" };
-  if (order.status_created) return { progress: 10, label: "Created" };
-  return { progress: 0, label: "Unknown" };
-};
-
 const ClientOrderCard = ({ order, attachmentCount = 0 }: ClientOrderCardProps) => {
-  const { progress, label } = getProgressFromStatus(order);
+  const statusConfig = getClientStatusFromOrder(order);
   const isCancelled = order.status_cancelled;
   const isCompleted = order.status_resolved;
 
@@ -37,13 +28,12 @@ const ClientOrderCard = ({ order, attachmentCount = 0 }: ClientOrderCardProps) =
                 <h3 className="font-semibold text-foreground truncate">
                   {order.company_name}
                 </h3>
-                {isCancelled ? (
-                  <Badge variant="destructive" className="text-xs">Cancelled</Badge>
-                ) : isCompleted ? (
-                  <Badge className="bg-green-500 hover:bg-green-600 text-xs">Completed</Badge>
-                ) : (
-                  <Badge variant="secondary" className="text-xs">{label}</Badge>
-                )}
+                <Badge 
+                  variant={statusConfig.badgeVariant}
+                  className={statusConfig.badgeClassName}
+                >
+                  {statusConfig.emoji} {statusConfig.label}
+                </Badge>
               </div>
 
               {/* Date Created */}
@@ -57,10 +47,10 @@ const ClientOrderCard = ({ order, attachmentCount = 0 }: ClientOrderCardProps) =
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-muted-foreground">Progress</span>
-                    <span className="font-medium text-foreground">{progress}%</span>
+                    <span className="font-medium text-foreground">{statusConfig.progress}%</span>
                   </div>
                   <Progress 
-                    value={progress} 
+                    value={statusConfig.progress} 
                     className="h-2"
                   />
                 </div>

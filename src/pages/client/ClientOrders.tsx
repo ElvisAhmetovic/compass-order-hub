@@ -8,15 +8,18 @@ import { Loader2, Eye, Package } from "lucide-react";
 import { fetchClientOrders, ClientOrder } from "@/services/clientOrderService";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { getClientStatusFromOrder } from "@/utils/clientStatusTranslator";
 
 const getStatusBadge = (order: ClientOrder) => {
-  if (order.status_resolved) return <Badge className="bg-primary text-primary-foreground">Resolved</Badge>;
-  if (order.status_invoice_paid) return <Badge className="bg-primary/80 text-primary-foreground">Paid</Badge>;
-  if (order.status_invoice_sent) return <Badge className="bg-accent text-accent-foreground">Invoice Sent</Badge>;
-  if (order.status_in_progress) return <Badge className="bg-secondary text-secondary-foreground">In Progress</Badge>;
-  if (order.status_cancelled) return <Badge variant="destructive">Cancelled</Badge>;
-  if (order.status_created) return <Badge variant="secondary">Created</Badge>;
-  return <Badge variant="outline">{order.status}</Badge>;
+  const config = getClientStatusFromOrder(order);
+  return (
+    <Badge 
+      variant={config.badgeVariant}
+      className={config.badgeClassName}
+    >
+      {config.emoji} {config.label}
+    </Badge>
+  );
 };
 
 const ClientOrders = () => {

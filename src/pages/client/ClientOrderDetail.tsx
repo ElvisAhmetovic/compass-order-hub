@@ -9,16 +9,7 @@ import { Loader2, ArrowLeft, CheckCircle, Clock, FileText, XCircle, Paperclip, D
 import { fetchClientOrderById, getOrderAttachments, ClientOrder, OrderAttachment } from "@/services/clientOrderService";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
-
-const getProgressFromStatus = (order: ClientOrder): { progress: number; label: string } => {
-  if (order.status_cancelled) return { progress: 0, label: "Cancelled" };
-  if (order.status_resolved) return { progress: 100, label: "Completed" };
-  if (order.status_invoice_paid) return { progress: 80, label: "Invoice Paid" };
-  if (order.status_invoice_sent) return { progress: 60, label: "Invoice Sent" };
-  if (order.status_in_progress) return { progress: 40, label: "In Progress" };
-  if (order.status_created) return { progress: 10, label: "Created" };
-  return { progress: 0, label: "Unknown" };
-};
+import { getClientStatusFromOrder, getClientStatusStep } from "@/utils/clientStatusTranslator";
 
 const ClientOrderDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -83,15 +74,16 @@ const ClientOrderDetail = () => {
     );
   }
 
-  const { progress, label } = getProgressFromStatus(order);
+  const statusConfig = getClientStatusFromOrder(order);
   const isCancelled = order.status_cancelled;
 
+  // Build status steps with client-friendly labels
   const statusSteps = [
-    { key: "created", label: "Created", active: order.status_created, icon: Clock },
-    { key: "in_progress", label: "In Progress", active: order.status_in_progress, icon: Clock },
-    { key: "invoice_sent", label: "Invoice Sent", active: order.status_invoice_sent, icon: FileText },
-    { key: "invoice_paid", label: "Paid", active: order.status_invoice_paid, icon: CheckCircle },
-    { key: "resolved", label: "Completed", active: order.status_resolved, icon: CheckCircle },
+    { ...getClientStatusStep("created", !!order.status_created), icon: Clock },
+    { ...getClientStatusStep("in_progress", !!order.status_in_progress), icon: Clock },
+    { ...getClientStatusStep("invoice_sent", !!order.status_invoice_sent), icon: FileText },
+    { ...getClientStatusStep("invoice_paid", !!order.status_invoice_paid), icon: CheckCircle },
+    { ...getClientStatusStep("resolved", !!order.status_resolved), icon: CheckCircle },
   ];
 
   return (
@@ -114,13 +106,12 @@ const ClientOrderDetail = () => {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle>{order.company_name}</CardTitle>
-                  {order.status_cancelled ? (
-                    <Badge variant="destructive">Cancelled</Badge>
-                  ) : order.status_resolved ? (
-                    <Badge className="bg-green-500">Completed</Badge>
-                  ) : (
-                    <Badge variant="secondary">Active</Badge>
-                  )}
+                  <Badge 
+                    variant={statusConfig.badgeVariant}
+                    className={statusConfig.badgeClassName}
+                  >
+                    {statusConfig.emoji} {statusConfig.label}
+                  </Badge>
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -171,10 +162,12 @@ const ClientOrderDetail = () => {
                   <div className="space-y-2">
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-muted-foreground">Overall Progress</span>
-                      <span className="font-medium text-foreground">{progress}%</span>
+                      <span className="font-medium text-foreground">{statusConfig.progress}%</span>
                     </div>
-                    <Progress value={progress} className="h-3" />
-                    <p className="text-sm text-muted-foreground">Current status: <span className="font-medium text-foreground">{label}</span></p>
+                    <Progress value={statusConfig.progress} className="h-3" />
+                    <p className="text-sm text-muted-foreground">
+                      Current status: <span className="font-medium text-foreground">{statusConfig.emoji} {statusConfig.label}</span>
+                    </p>
                   </div>
                 )}
 
