@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { X, Edit, Building2, MessageSquare, Bell, Mail } from "lucide-react";
+import ClientAccessSection from "./ClientAccessSection";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -208,6 +209,17 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
                         onInventoryItemsChange={setSelectedInventoryItems}
                       />
                     </div>
+
+                    {/* Client Access - Admin Only */}
+                    {isAdmin && (
+                      <div className="col-span-1 lg:col-span-2 pt-6 border-t border-border">
+                        <ClientAccessSection
+                          orderId={order.id}
+                          currentClientId={order.client_id || null}
+                          onClientLinked={handleRefresh}
+                        />
+                      </div>
+                    )}
 
                     {/* Emoji Reactions */}
                     <div className="col-span-1 lg:col-span-2 pt-6 border-t border-border">
