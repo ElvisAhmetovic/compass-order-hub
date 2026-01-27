@@ -1,193 +1,237 @@
 
-# Plan: Continuation of Bug Fixes and Improvements
+# Client Portal Integration Plan
 
-## Summary of Progress
-We have completed the critical security fixes and migrated several data sources to Supabase:
-- ✅ **RLS Security** - Fixed 10+ vulnerable policies across tables
-- ✅ **Legacy Auth Removal** - Deleted insecure `authService.ts` and `adminPermissionHelper.ts`
-- ✅ **Support Inquiries** - Migrated from localStorage to Supabase
-- ✅ **Email Templates** - Migrated from localStorage to Supabase  
-- ✅ **Proposal Templates** - Migrated from localStorage to Supabase
-- ✅ **Company Settings** - Migrated from localStorage to Supabase
+## Current Architecture Analysis
 
----
+### Existing Role System
+Your application currently uses 3 roles stored in the `profiles` table:
+- **admin** - Full access to all features and data
+- **agent** - Access to most operational features, sees their assigned orders
+- **user** - Limited access, used for internal team members
 
-## Remaining Issues to Fix
+**Current Implementation:**
+- Roles are stored in `profiles.role` column (NOT in a separate `user_roles` table as per security best practices)
+- `AuthContext.tsx` fetches roles from the profiles table on login
+- `AdminGuard.tsx` restricts admin-only routes
+- `Sidebar.tsx` filters navigation items based on role
 
-### High Priority: Proposals Data (Data Loss Risk)
-**Problem**: The main `Proposals` (not templates) are still stored in `localStorage` using two keys: `"proposals"` (basic data) and `"detailedProposals"` (full data with line items). If a user clears their browser cache, all proposal data is lost.
+### Orders-User Relationship
+Orders currently link to internal users via:
+- `created_by` (UUID) - who created the order
+- `assigned_to` (UUID) - internal staff assigned to the order
+- `assigned_to_name` (text) - display name of assignee
+- `company_id` (UUID) - links to the companies table
 
-**Current State**: 
-- A `proposals` table exists in Supabase but only has basic fields (id, number, customer, reference, amount, status, user_id, timestamps)
-- Missing: subject, currency, vatEnabled, and detailed data (line items, customer details, payment terms, etc.)
-- No `proposal_line_items` table exists
+**There is NO client user linking mechanism currently** - orders reference company data but not client user accounts.
 
-**Solution**:
-1. Extend the `proposals` table with additional columns for complete proposal data
-2. Create a `proposal_line_items` table for line items
-3. Create a `proposalService.ts` service layer
-4. Update `Proposals.tsx` and `ProposalDetail.tsx` to use Supabase instead of localStorage
-5. Update `templateUtils.ts` to work with the new async service
+### Companies Table
+Companies have a `user_id` column (nullable) but it's used for internal user ownership, not client portal access.
 
 ---
 
-### Medium Priority: Performance Issues
+## Proposed Architecture: "Client" Role Addition
 
-#### 1. Polling in Proposals.tsx (Lines 140-151)
-**Problem**: Every 3 seconds, the page reads and parses `localStorage` to check for new proposals, even when nothing has changed.
+### 1. Role System Upgrade (Safe Approach)
 
-**Current Code**:
-```javascript
-const interval = setInterval(checkForNewProposals, 3000);
+**Minimal Change Strategy:**
+We will add `"client"` as a 4th valid role value to the existing `profiles.role` column. This is the safest approach because:
+- No changes to existing admin/agent/user functionality
+- Uses existing authentication infrastructure
+- Existing RLS policies continue to work
+
+```text
+Old roles: "admin" | "agent" | "user"
+New roles: "admin" | "agent" | "user" | "client"
 ```
 
-**Solution**: Once proposals are migrated to Supabase, we can:
-- Use Supabase realtime subscriptions for live updates, OR
-- Remove polling entirely since data updates will be triggered by user actions
-- Add a manual "Refresh" button for edge cases
+**TypeScript Type Update:**
+```typescript
+// src/types/index.ts
+export type UserRole = "admin" | "agent" | "user" | "client";
+```
 
-#### 2. DashboardCards.tsx - No Issue Found
-Upon review, `DashboardCards.tsx` is well-implemented:
-- Uses proper React Query pattern with `OrderService`
-- Listens for `orderStatusChanged` events for updates
-- No redundant polling detected
-- **No changes needed**
+### 2. Client-Order Linking Strategy
 
----
+**Option A: Use `company_id` Linking (Recommended)**
+Link client users to companies, then show orders that belong to those companies.
 
-### Low Priority: Code Quality Issues
+New columns needed:
+- Add `client_user_id` to `companies` table to link a company to a client user account
 
-#### 1. AudioContext Cleanup in useNotificationSound.ts
-**Problem**: The `AudioContext` is created but never explicitly closed, which could lead to resource leaks in long-running sessions.
+**Data Flow:**
+```text
+Client User → profiles.id → companies.client_user_id → companies.id → orders.company_id → Orders
+```
 
-**Current Code**: Only removes event listeners on cleanup, but doesn't close the AudioContext.
+**Option B: Direct Order Linking (Not Recommended)**
+Add `client_user_id` directly to orders table. This creates data duplication and is harder to maintain.
 
-**Solution**: Add cleanup for the AudioContext in the useEffect return function:
-```javascript
-return () => {
-  // Remove event listeners
-  document.removeEventListener('click', handleUserInteraction);
-  document.removeEventListener('keydown', handleUserInteraction);
-  // Close AudioContext to free resources
-  if (audioContextRef.current) {
-    audioContextRef.current.close();
+### 3. New Database Changes
+
+```sql
+-- Add client_user_id to companies table to link companies to client portal users
+ALTER TABLE companies 
+ADD COLUMN client_user_id UUID REFERENCES auth.users(id);
+
+-- Create index for efficient client lookups
+CREATE INDEX idx_companies_client_user_id ON companies(client_user_id);
+
+-- Create a view for client-accessible order data (hides internal notes, agent info)
+CREATE VIEW client_orders WITH (security_invoker=on) AS
+SELECT 
+  o.id,
+  o.company_name,
+  o.description,
+  o.status,
+  o.created_at,
+  o.updated_at,
+  o.price,
+  o.currency,
+  o.priority,
+  o.status_created,
+  o.status_in_progress,
+  o.status_invoice_sent,
+  o.status_invoice_paid,
+  o.status_resolved,
+  o.status_cancelled,
+  c.id as company_id,
+  c.client_user_id
+FROM orders o
+LEFT JOIN companies c ON o.company_id = c.id
+WHERE o.deleted_at IS NULL AND o.status_deleted = false;
+```
+
+**RLS Policies for Client Access:**
+```sql
+-- Allow clients to view their company's orders
+CREATE POLICY "Clients can view their company orders"
+  ON client_orders FOR SELECT
+  USING (
+    client_user_id = auth.uid() 
+    AND EXISTS (
+      SELECT 1 FROM profiles 
+      WHERE id = auth.uid() AND role = 'client'
+    )
+  );
+```
+
+### 4. Client Portal Routes (Completely Isolated)
+
+New routes that won't touch existing admin functionality:
+
+```text
+/client                    → Client login landing
+/client/dashboard          → Client's order overview
+/client/orders             → List of their orders
+/client/orders/:id         → Order detail (read-only)
+/client/invoices           → Their invoices
+/client/support            → Client support tickets
+/client/profile            → Client profile settings
+```
+
+**Route Protection Pattern:**
+```typescript
+// New ClientGuard component
+const ClientGuard = ({ children }) => {
+  const { user } = useAuth();
+  
+  if (!user || user.role !== 'client') {
+    return <Navigate to="/client/login" />;
   }
+  
+  return <>{children}</>;
 };
 ```
 
-#### 2. Invoice Settings (useInvoiceSettings.ts) - Partial localStorage Usage
-**Problem**: While company settings are now in Supabase via `companySettingsService`, the `useInvoiceSettings` hook still saves template settings (logo, VAT rate, language, etc.) to `localStorage`.
+### 5. Component Structure (New Files Only)
 
-**Solution**: This is acceptable for now because:
-- These are user preferences, not critical business data
-- They can be regenerated easily
-- Full migration would require an `invoice_settings` table
-
-**Recommendation**: Mark as "Future Enhancement" rather than a bug.
-
----
-
-## Recommended Implementation Order
-
-### Phase 1: Complete the High-Priority Fix
-1. **Migrate Proposals to Supabase** (largest remaining data loss risk)
-   - Extend `proposals` table with missing columns (subject, currency, vatEnabled, customer details, terms)
-   - Create `proposal_line_items` table with RLS
-   - Create `proposalService.ts`
-   - Update pages to use the service
-   - Remove the 3-second polling (performance fix is bundled)
-
-### Phase 2: Apply Low-Priority Fixes
-2. **Fix AudioContext cleanup** in useNotificationSound.ts
-
----
-
-## Technical Details
-
-### Database Migration for Proposals
-
-**Extend proposals table:**
-```sql
-ALTER TABLE proposals 
-ADD COLUMN IF NOT EXISTS subject TEXT,
-ADD COLUMN IF NOT EXISTS currency TEXT DEFAULT 'EUR',
-ADD COLUMN IF NOT EXISTS vat_enabled BOOLEAN DEFAULT true,
-ADD COLUMN IF NOT EXISTS vat_rate NUMERIC DEFAULT 19,
-ADD COLUMN IF NOT EXISTS customer_name TEXT,
-ADD COLUMN IF NOT EXISTS customer_address TEXT,
-ADD COLUMN IF NOT EXISTS customer_email TEXT,
-ADD COLUMN IF NOT EXISTS customer_country TEXT,
-ADD COLUMN IF NOT EXISTS customer_ref TEXT,
-ADD COLUMN IF NOT EXISTS your_contact TEXT,
-ADD COLUMN IF NOT EXISTS proposal_title TEXT,
-ADD COLUMN IF NOT EXISTS proposal_description TEXT,
-ADD COLUMN IF NOT EXISTS delivery_terms TEXT,
-ADD COLUMN IF NOT EXISTS payment_terms TEXT,
-ADD COLUMN IF NOT EXISTS terms_and_conditions TEXT,
-ADD COLUMN IF NOT EXISTS footer_content TEXT,
-ADD COLUMN IF NOT EXISTS include_payment_data BOOLEAN DEFAULT true,
-ADD COLUMN IF NOT EXISTS logo TEXT,
-ADD COLUMN IF NOT EXISTS logo_size INTEGER DEFAULT 33,
-ADD COLUMN IF NOT EXISTS net_amount NUMERIC DEFAULT 0,
-ADD COLUMN IF NOT EXISTS vat_amount NUMERIC DEFAULT 0,
-ADD COLUMN IF NOT EXISTS total_amount NUMERIC DEFAULT 0,
-ADD COLUMN IF NOT EXISTS pdf_language TEXT DEFAULT 'en';
+```text
+src/
+├── components/
+│   └── client-portal/           # NEW - All client portal components
+│       ├── ClientLayout.tsx     # Separate layout from admin
+│       ├── ClientSidebar.tsx    # Client navigation
+│       ├── ClientHeader.tsx     # Client header
+│       ├── ClientOrderCard.tsx  # Order display component
+│       ├── ClientOrderList.tsx  # Orders list view
+│       └── ClientGuard.tsx      # Client route protection
+├── pages/
+│   └── client/                  # NEW - All client portal pages
+│       ├── ClientDashboard.tsx
+│       ├── ClientOrders.tsx
+│       ├── ClientOrderDetail.tsx
+│       ├── ClientInvoices.tsx
+│       ├── ClientSupport.tsx
+│       └── ClientLogin.tsx      # Optional: Separate login page
+└── services/
+    └── clientOrderService.ts    # NEW - Client-specific data fetching
 ```
 
-**Create proposal_line_items table:**
-```sql
-CREATE TABLE proposal_line_items (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  proposal_id UUID REFERENCES proposals(id) ON DELETE CASCADE,
-  item_id TEXT,
-  name TEXT NOT NULL,
-  description TEXT,
-  quantity NUMERIC DEFAULT 1,
-  unit_price NUMERIC DEFAULT 0,
-  total_price NUMERIC DEFAULT 0,
-  unit TEXT DEFAULT 'unit',
-  category TEXT,
-  created_at TIMESTAMPTZ DEFAULT now()
-);
+---
 
--- RLS policies
-ALTER TABLE proposal_line_items ENABLE ROW LEVEL SECURITY;
+## What Will NOT Change (Preserving Existing Functionality)
 
-CREATE POLICY "Users can manage their proposal line items"
-  ON proposal_line_items FOR ALL
-  USING (EXISTS (
-    SELECT 1 FROM proposals 
-    WHERE proposals.id = proposal_line_items.proposal_id 
-    AND proposals.user_id = auth.uid()
-  ));
-```
-
-### Service Layer Pattern
-Create `src/services/proposalService.ts` following the existing pattern in `proposalTemplateService.ts` and `companySettingsService.ts`:
-- `getProposals()` - Fetch all user proposals
-- `getProposal(id)` - Fetch single proposal with line items
-- `createProposal(data)` - Create new proposal
-- `updateProposal(id, data)` - Update existing proposal
-- `deleteProposal(id)` - Delete proposal
+| Component | Status | Reason |
+|-----------|--------|--------|
+| `/dashboard` route | Unchanged | Admin/agent only |
+| `AdminGuard.tsx` | Unchanged | Still checks for `role === 'admin'` |
+| `AuthGuard.tsx` | Unchanged | Still protects admin routes |
+| `Sidebar.tsx` | Unchanged | Already filters by role |
+| `OrderService.ts` | Unchanged | New service for clients |
+| `OrderTable.tsx` | Unchanged | Admin-only component |
+| All RLS policies | Unchanged | New policies added, none modified |
+| `profiles` table | Minimal change | Just allows 'client' as valid role |
 
 ---
 
-## Risk Mitigation
+## Implementation Phases
 
-1. **Data Preservation**: The migration will not delete existing localStorage data, allowing users to still access old proposals if migration fails
-2. **Backward Compatibility**: Keep the basic localStorage fallback in case of Supabase errors
-3. **Incremental Changes**: Each file update is isolated to minimize cascading failures
-4. **Existing Workflows**: All proposal creation, editing, viewing, and PDF download workflows will remain the same from a user perspective
+### Phase 1: Database Foundation (Safe)
+1. Add `client_user_id` column to `companies` table
+2. Create `client_orders` view with limited columns
+3. Add RLS policies for client access
+
+### Phase 2: Authentication Updates (Minimal)
+1. Update `UserRole` type to include `"client"`
+2. Create `ClientGuard.tsx` component
+3. Create client login flow (or reuse existing login with redirect logic)
+
+### Phase 3: Client Portal UI (New Files Only)
+1. Create `ClientLayout.tsx` with separate navigation
+2. Create `ClientDashboard.tsx` page
+3. Create `ClientOrderList.tsx` and `ClientOrderDetail.tsx`
+4. Add routes to `App.tsx` under `/client/*`
+
+### Phase 4: Admin Features for Client Management
+1. Add "Invite Client" button in Companies view
+2. Create client user management in Admin settings
+3. Add ability to link existing company to client user
 
 ---
 
-## What Won't Change (Preserving Existing Functionality)
+## Security Considerations
 
-- Proposal number generation logic (AN-XXXX format)
-- PDF generation and download
-- Template loading and application
-- Line item management (add/remove/edit)
-- VAT calculations
-- Status update workflow
-- Filter and search functionality
-- UI layout and styling
+1. **Role Isolation**: Clients cannot access admin routes due to:
+   - `ClientGuard` only allowing `role === 'client'`
+   - Existing guards blocking non-admin access
+   
+2. **Data Isolation**: Clients only see their data via:
+   - RLS policies checking `client_user_id = auth.uid()`
+   - `client_orders` view hiding internal notes and agent info
+   
+3. **No Shared Components**: Client portal uses entirely new components, preventing accidental data leakage
+
+---
+
+## Technical Summary
+
+| Item | Current State | After Implementation |
+|------|---------------|---------------------|
+| Role types | admin, agent, user | admin, agent, user, client |
+| profiles table | No changes | Accepts 'client' role value |
+| companies table | user_id (internal) | + client_user_id (portal access) |
+| orders table | No changes | Accessed via view for clients |
+| Admin routes | Protected | Unchanged (still protected) |
+| Client routes | Don't exist | New `/client/*` namespace |
+| RLS policies | Admin/agent focused | + New client-specific policies |
+
