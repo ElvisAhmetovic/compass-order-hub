@@ -1,29 +1,23 @@
 
-
-# Client Notes (Privacy Filter) Implementation Plan
+# Call to Action Button Implementation Plan
 
 ## Overview
-Add a new "Client Visible Update" feature that allows admins to write high-level updates specifically for clients, while ensuring sensitive internal data (`internal_notes`, `profit_margin`, `assigned_to`, etc.) remains hidden from the client view.
+Add a prominent "Call to Action" system to the Client Portal that displays context-aware buttons based on order status. When an order requires client action (like "Awaiting-Client-Feedback"), show a prominent button linking to feedback/mockups. For orders "In Progress", show a progress bar instead.
 
 ---
 
-## Current Security Architecture
+## Current State Analysis
 
-### What Clients CAN See (via `client_orders` view):
-- Order identifiers: `id`, `company_name`, `description`, `status`
-- Status flags: `status_created`, `status_in_progress`, etc.
-- Financials: `price`, `currency`
-- Contact: `contact_email`, `contact_phone`
-- Timestamps: `created_at`, `updated_at`
+### Existing Infrastructure:
+1. **Status Translator** (`src/utils/clientStatusTranslator.ts`): Already has `requiresAction: true` flag for "Awaiting-Client-Feedback" status
+2. **ClientOrderCard**: Shows progress bars for orders but no action buttons
+3. **ClientOrderDetail**: Shows order details but no action buttons
+4. **No Action URL Field**: The `orders` table has no field for storing action/feedback URLs
 
-### What Clients CANNOT See (excluded from view):
-- `internal_notes` - Already hidden (internal team notes)
-- `assigned_to`, `assigned_to_name` - Internal assignment
-- `inventory_items` - Internal product details
-- `created_by`, `agent_name` - Internal staff info
-- Any future sensitive columns like `profit_margin`
-
-This plan maintains this security model while adding a new client-visible field.
+### Components Affected:
+- `ClientOrderCard.tsx` - Dashboard order cards
+- `ClientOrderDetail.tsx` - Order detail page
+- Admin order form - To set the action URL
 
 ---
 
@@ -35,54 +29,15 @@ This plan maintains this security model while adding a new client-visible field.
 
 ```sql
 ALTER TABLE public.orders
-ADD COLUMN client_visible_update TEXT DEFAULT NULL;
+ADD COLUMN client_action_url TEXT DEFAULT NULL;
 
-COMMENT ON COLUMN public.orders.client_visible_update 
-IS 'High-level status update visible to clients. Admin-editable only.';
+COMMENT ON COLUMN public.orders.client_action_url 
+IS 'URL for client action (feedback forms, mockup links, etc.). Visible when status requires action.';
 ```
 
 **Update `client_orders` view to include the new column:**
 
-```sql
-DROP VIEW IF EXISTS public.client_orders;
-
-CREATE VIEW public.client_orders WITH (security_invoker=on) AS
-SELECT 
-    o.id,
-    o.company_name,
-    o.description,
-    o.status,
-    o.created_at,
-    o.updated_at,
-    o.price,
-    o.currency,
-    o.priority,
-    o.status_created,
-    o.status_in_progress,
-    o.status_invoice_sent,
-    o.status_invoice_paid,
-    o.status_resolved,
-    o.status_cancelled,
-    o.contact_email,
-    o.contact_phone,
-    o.client_id,
-    o.client_visible_update,  -- NEW: Client-facing update note
-    c.id AS company_id,
-    c.client_user_id,
-    c.name AS linked_company_name,
-    c.email AS company_email
-FROM orders o
-LEFT JOIN companies c ON o.company_id = c.id
-WHERE o.deleted_at IS NULL 
-  AND (o.status_deleted = false OR o.status_deleted IS NULL);
-```
-
-**Key Security Point:** The view continues to explicitly exclude:
-- `internal_notes`
-- `assigned_to` / `assigned_to_name`
-- `inventory_items`
-- `created_by` / `agent_name`
-- `amount` (if used as profit tracking)
+The `client_orders` view must be recreated to include `client_action_url` while continuing to exclude sensitive fields like `internal_notes`, `assigned_to`, etc.
 
 ---
 
@@ -90,95 +45,165 @@ WHERE o.deleted_at IS NULL
 
 **Modify: `src/types/index.ts`**
 
-Add to Order interface:
 ```typescript
 export interface Order {
   // ... existing fields ...
-  client_visible_update?: string;  // Client-facing status update
+  client_action_url?: string;  // URL for client feedback/mockups
 }
 ```
 
 **Modify: `src/services/clientOrderService.ts`**
 
-Add to ClientOrder interface:
 ```typescript
 export interface ClientOrder {
   // ... existing fields ...
-  client_visible_update: string | null;  // Status update from admin
+  client_action_url: string | null;  // Action URL for feedback/mockups
 }
 ```
 
 ---
 
-### Phase 3: Admin UI - Edit Client Update
+### Phase 3: Admin UI - Set Action URL
 
 **Modify: `src/components/dashboard/OrderEditForm/OrderDetailsSection.tsx`**
 
-Add a new "Client Update" textarea section between Description and Internal Notes:
+Add a new "Client Action URL" input field near the Client Update textarea:
 
 ```text
-Current Layout:
-1. Description (visible to client)
-2. Internal Notes (hidden from client)
-3. Inventory Items
-4. Price, Currency, Priority...
-
-New Layout:
-1. Description (visible to client)
-2. 📢 Client Update (NEW - visible to client, highlighted)
-3. 🔒 Internal Notes (hidden from client)
-4. Inventory Items
-5. Price, Currency, Priority...
+Layout within Client Update section:
+┌─────────────────────────────────────────────────┐
+│ 📢 Client Update                                │
+│ [Textarea for status update message]            │
+│                                                 │
+│ 🔗 Client Action URL (optional)                 │
+│ [Input field for feedback/mockup URL]           │
+│ Help: "When status is 'Action Required', this   │
+│        URL will appear as a button to clients"  │
+└─────────────────────────────────────────────────┘
 ```
-
-**UI Design for Client Update section:**
-- Label: "📢 Client Update" with a badge "Visible to Client"
-- Help text: "This message will be displayed to the client in their portal. Use it for high-level status updates."
-- Highlighted border (blue/info color) to distinguish from internal notes
-- Textarea with placeholder suggesting content: "e.g., 'Your order is progressing well! We've completed the initial review and are now in the production phase.'"
 
 **Modify: `src/components/dashboard/OrderEditForm/useOrderEdit.ts`**
 
-Add `client_visible_update` to the form data interface and save handler.
+Add `client_action_url` to form state and save handler.
 
 ---
 
-### Phase 4: Client Portal - Display Update Prominently
+### Phase 4: Update Status Translator
+
+**Modify: `src/utils/clientStatusTranslator.ts`**
+
+Add action button configuration to the `ClientStatusConfig` interface:
+
+```typescript
+export interface ClientStatusConfig {
+  label: string;
+  emoji: string;
+  badgeVariant: 'default' | 'secondary' | 'destructive' | 'outline' | 'action';
+  badgeClassName?: string;
+  progress: number;
+  requiresAction?: boolean;
+  actionButtonLabel?: string;  // NEW: Button text like "Provide Feedback" or "View Mockups"
+}
+
+// Update Awaiting-Client-Feedback entry:
+"Awaiting-Client-Feedback": { 
+  label: "Action Required", 
+  emoji: "🕒", 
+  badgeVariant: "action",
+  badgeClassName: "bg-red-500 hover:bg-red-600 text-white",
+  progress: 50,
+  requiresAction: true,
+  actionButtonLabel: "Provide Feedback"  // NEW
+},
+```
+
+Add helper function:
+
+```typescript
+/**
+ * Get action button configuration for an order
+ */
+export function getActionButtonConfig(order: ClientOrder): {
+  showButton: boolean;
+  label: string;
+  url: string | null;
+} | null
+```
+
+---
+
+### Phase 5: Client Portal - Action Buttons
+
+**Modify: `src/components/client-portal/ClientOrderCard.tsx`**
+
+Replace or augment the progress bar based on status:
+
+```text
+Current behavior (all statuses):
+  - Show progress bar
+
+New behavior:
+  - If requiresAction && client_action_url exists:
+    - Show prominent "Provide Feedback" button (red/action color)
+    - Hide or minimize progress bar
+  - Else if requiresAction && no URL:
+    - Show "Action Required" badge (already exists) + progress bar
+  - Else (normal In Progress):
+    - Show progress bar (current behavior)
+```
+
+**Visual Design:**
+```text
+┌─────────────────────────────────────────────────────────┐
+│ Company Name               [🕒 Action Required]         │
+│ Created: Jan 27, 2026                                   │
+│                                                         │
+│ ┌─────────────────────────────────────────────────────┐ │
+│ │  [🔔 Provide Feedback]                              │ │
+│ │       prominent red button                          │ │
+│ └─────────────────────────────────────────────────────┘ │
+│                                                     →   │
+└─────────────────────────────────────────────────────────┘
+```
 
 **Modify: `src/pages/client/ClientOrderDetail.tsx`**
 
-Add a prominent "Latest Update" card at the top of the order details, before the main order info:
+Add a prominent Call to Action card at the top when action is required:
 
 ```text
-Page Layout (if client_visible_update exists):
+Page Layout (if action required with URL):
 ┌─────────────────────────────────────────────────┐
-│ 📢 Latest Update from [Company]                 │
+│ ⚠️ Action Required                              │
 │ ───────────────────────────────────             │
-│ "Your order is progressing well! We've          │
-│  completed the initial review and are now       │
-│  in the production phase."                      │
+│ Your feedback is needed to proceed.             │
 │                                                 │
-│ Last updated: Jan 27, 2026                      │
+│ [🔔 Provide Feedback] (large primary button)    │
+│                                                 │
+│ Opens: [mockups.example.com/project-123]        │
 └─────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────┐
-│ Order Details Card (existing)                   │
+│ 📢 Latest Update (if exists)                    │
+│ ...                                             │
+└─────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────┐
+│ Order Details                                   │
 │ ...                                             │
 └─────────────────────────────────────────────────┘
 ```
 
-**Styling:**
-- Card with info/primary color accent
-- Megaphone or Bell icon
-- Prominent placement at the very top
-- Timestamp showing when the update was last modified
-- Only rendered if `client_visible_update` has content
+---
 
-**Modify: `src/components/client-portal/ClientOrderCard.tsx`**
+## Conditional Display Logic
 
-Add a small indicator on the order card if there's a client update:
-- Small badge or icon showing "📢 Update available"
-- Truncated preview of the update text (first 50 chars)
+| Order Status | Has Action URL? | Display on Dashboard Card | Display on Detail Page |
+|--------------|-----------------|---------------------------|------------------------|
+| In Progress | N/A | Progress bar | Progress bar |
+| Awaiting-Client-Feedback | Yes | "Provide Feedback" button | Action Required card with button |
+| Awaiting-Client-Feedback | No | Progress bar + Action badge | Progress bar + Action badge |
+| Resolved | N/A | Progress bar (100%) | Progress bar (100%) |
+| Cancelled | N/A | No progress | Cancelled badge |
 
 ---
 
@@ -186,47 +211,35 @@ Add a small indicator on the order card if there's a client update:
 
 | Component | Change Type | Description |
 |-----------|-------------|-------------|
-| Database Migration | Create | Add `client_visible_update` column and update `client_orders` view |
-| `src/types/index.ts` | Modify | Add `client_visible_update` to Order interface |
-| `src/services/clientOrderService.ts` | Modify | Add `client_visible_update` to ClientOrder interface |
-| `OrderDetailsSection.tsx` | Modify | Add Client Update textarea with "Visible to Client" indicator |
-| `useOrderEdit.ts` | Modify | Include `client_visible_update` in form handling |
-| `ClientOrderDetail.tsx` | Modify | Add prominent "Latest Update" card |
-| `ClientOrderCard.tsx` | Modify | Add update indicator on order cards |
+| Database Migration | Create | Add `client_action_url` column and update `client_orders` view |
+| `src/types/index.ts` | Modify | Add `client_action_url` to Order interface |
+| `src/services/clientOrderService.ts` | Modify | Add `client_action_url` to ClientOrder interface |
+| `src/utils/clientStatusTranslator.ts` | Modify | Add `actionButtonLabel` to config and helper function |
+| `OrderDetailsSection.tsx` | Modify | Add Client Action URL input field |
+| `useOrderEdit.ts` | Modify | Include `client_action_url` in form handling |
+| `ClientOrderCard.tsx` | Modify | Show action button when `requiresAction` with URL |
+| `ClientOrderDetail.tsx` | Modify | Add prominent Action Required card with button |
 
 ---
 
-## Security Verification
+## Technical Details
 
-After implementation, verify these security constraints:
+### Files to Create/Modify:
 
-| Column | Orders Table | client_orders View | Client Can See |
-|--------|--------------|-------------------|----------------|
-| `internal_notes` | Yes | **No** | **No** |
-| `assigned_to` | Yes | **No** | **No** |
-| `assigned_to_name` | Yes | **No** | **No** |
-| `inventory_items` | Yes | **No** | **No** |
-| `created_by` | Yes | **No** | **No** |
-| `agent_name` | Yes | **No** | **No** |
-| `client_visible_update` | Yes | **Yes** | **Yes** |
-| `description` | Yes | Yes | Yes |
-| `price` | Yes | Yes | Yes |
-
-The `client_orders` view acts as a privacy filter, only exposing client-safe fields.
-
----
-
-## Files to Create/Modify
-
-### Database:
-1. Migration to add `client_visible_update` column
+**Database:**
+1. Migration to add `client_action_url` column
 2. Migration to recreate `client_orders` view with new column
 
-### Frontend:
+**Frontend:**
 1. `src/types/index.ts` - Add field to Order interface
 2. `src/services/clientOrderService.ts` - Add field to ClientOrder interface
-3. `src/components/dashboard/OrderEditForm/OrderDetailsSection.tsx` - Add admin textarea
-4. `src/components/dashboard/OrderEditForm/useOrderEdit.ts` - Include in form handling
-5. `src/pages/client/ClientOrderDetail.tsx` - Display prominent update card
-6. `src/components/client-portal/ClientOrderCard.tsx` - Add update indicator
+3. `src/utils/clientStatusTranslator.ts` - Add button config and helper
+4. `src/components/dashboard/OrderEditForm/OrderDetailsSection.tsx` - Add admin input
+5. `src/components/dashboard/OrderEditForm/useOrderEdit.ts` - Include in form handling
+6. `src/components/client-portal/ClientOrderCard.tsx` - Conditional action button
+7. `src/pages/client/ClientOrderDetail.tsx` - Action Required card with button
 
+### Security Considerations:
+- The `client_action_url` is admin-controlled only
+- Clients cannot modify this field (view-only through `client_orders` view)
+- URL opens in new tab with `rel="noopener noreferrer"` for security
