@@ -17,10 +17,11 @@ import { v4 as uuidv4 } from "uuid";
 import { generateProposalPDF, previewProposalPDF, PROPOSAL_STATUSES, formatInventoryItemForProposal } from "@/utils/proposalUtils";
 import InventoryAutocomplete from "@/components/inventory/InventoryAutocomplete";
 import TemplateManager from "@/components/proposals/TemplateManager";
-import { getDefaultTemplate, createProposalFromTemplate } from "@/utils/templateUtils";
+import { getDefaultTemplate, createProposalFromTemplate, getDefaultTemplateAsync, createProposalFromTemplateAsync } from "@/utils/templateUtils";
 import { useInventory } from "@/hooks/useInventory";
 import { SUPPORTED_LANGUAGES } from "@/utils/proposalTranslations";
 import { PREDEFINED_PACKAGES, type PredefinedPackage } from "@/data/predefinedPackages";
+import { proposalService } from "@/services/proposalService";
 
 interface ProposalLineItem {
   id: string;
@@ -175,68 +176,111 @@ const ProposalDetail = () => {
   }, [id]);
 
   useEffect(() => {
-    if (!isNewProposal) {
-      const savedDetailedProposals = localStorage.getItem("detailedProposals");
-      if (savedDetailedProposals) {
-        const detailedProposals = JSON.parse(savedDetailedProposals);
-        const detailedProposal = detailedProposals.find((p: any) => p.id === id);
-        if (detailedProposal?.pdfLanguage) {
-          setPdfLanguage(detailedProposal.pdfLanguage);
+    // Load PDF language from database if editing existing proposal
+    const loadPdfLanguage = async () => {
+      if (!isNewProposal && id) {
+        try {
+          const proposal = await proposalService.getProposal(id);
+          if (proposal?.pdf_language) {
+            setPdfLanguage(proposal.pdf_language);
+          }
+        } catch (error) {
+          console.error("Error loading PDF language:", error);
         }
       }
-    }
+    };
+    loadPdfLanguage();
   }, [id, isNewProposal]);
 
-  const loadProposal = () => {
+  const loadProposal = async () => {
     try {
       if (isNewProposal) {
-        // Check for default template first
-        const defaultTemplate = getDefaultTemplate();
+        // Check for default template first (async from Supabase)
+        const defaultTemplate = await getDefaultTemplateAsync();
         
         if (defaultTemplate) {
           // Use default template as starting point
-          const templateProposal = createProposalFromTemplate(defaultTemplate, uuidv4());
-          setProposalData(templateProposal);
+          const templateProposal = await createProposalFromTemplateAsync(defaultTemplate, uuidv4());
+          setProposalData(prev => ({
+            ...prev,
+            ...templateProposal as Partial<ProposalData>
+          }));
         } else {
-          // Generate a new proposal number for blank proposal
-          const savedProposals = localStorage.getItem("proposals");
-          const proposals = savedProposals ? JSON.parse(savedProposals) : [];
-          const nextNumber = `AN-${(9984 + proposals.length + 1).toString()}`;
+          // Generate a new proposal number from the service
+          const [nextNumber, reference] = await Promise.all([
+            proposalService.getNextProposalNumber(),
+            proposalService.getNextReference()
+          ]);
           
           setProposalData(prev => ({
             ...prev,
             number: nextNumber,
-            reference: `REF-${new Date().getFullYear()}-${(proposals.length + 1).toString().padStart(3, '0')}`
+            reference: reference
           }));
         }
       } else {
-        const savedProposals = localStorage.getItem("proposals");
-        if (savedProposals) {
-          const proposals = JSON.parse(savedProposals);
-          const proposal = proposals.find((p: any) => p.id === id);
+        // Load proposal from Supabase
+        const proposal = await proposalService.getProposal(id!);
+        
+        if (proposal) {
+          // Map Supabase data to local ProposalData format
+          const mergedData: ProposalData = {
+            ...proposalData,
+            id: proposal.id,
+            number: proposal.number,
+            customer: proposal.customer,
+            subject: proposal.subject || '',
+            reference: proposal.reference,
+            amount: proposal.amount,
+            status: proposal.status,
+            created_at: proposal.created_at,
+            updated_at: proposal.updated_at || proposal.created_at,
+            currency: proposal.currency || 'EUR',
+            vatEnabled: proposal.vat_enabled ?? true,
+            vatRate: proposal.vat_rate ?? 19,
+            proposalDate: proposal.proposal_date || new Date().toISOString().split('T')[0],
+            proposalTime: proposal.proposal_time || new Date().toTimeString().slice(0, 5),
+            customerName: proposal.customer_name || proposal.customer || '',
+            customerAddress: proposal.customer_address || '',
+            customerEmail: proposal.customer_email || '',
+            customerCountry: proposal.customer_country || '',
+            customerRef: proposal.customer_ref || '',
+            yourContact: proposal.your_contact || 'Thomas Klein',
+            internalContact: proposal.internal_contact || 'Thomas Klein',
+            proposalTitle: proposal.proposal_title || '',
+            proposalDescription: proposal.proposal_description || '',
+            content: proposal.content || '',
+            deliveryTerms: proposal.delivery_terms || '7 days after receipt of invoice',
+            paymentTerms: proposal.payment_terms || 'By placing your order you agree to pay for the services included in this offer within 7 days of receipt of the invoice.',
+            termsAndConditions: proposal.terms_and_conditions || '',
+            iban: proposal.iban || 'BE79967023897833',
+            bic: proposal.bic || 'TRWIBEB1XXX',
+            blzKonto: proposal.blz_konto || '967 KONTO: 967023897833',
+            footerContent: proposal.footer_content || '',
+            logo: proposal.logo,
+            logoSize: proposal.logo_size ?? 33,
+            includePaymentData: proposal.include_payment_data ?? true,
+            lineItems: (proposal.lineItems || []).map(item => ({
+              id: item.id,
+              proposal_id: item.proposal_id,
+              item_id: item.item_id,
+              name: item.name,
+              description: item.description || '',
+              quantity: item.quantity,
+              unit_price: item.unit_price,
+              total_price: item.total_price,
+              category: item.category,
+              unit: item.unit || 'unit',
+              created_at: item.created_at || new Date().toISOString()
+            })),
+            netAmount: (proposal.net_amount ?? parseFloat(proposal.amount)) || 0,
+            vatAmount: proposal.vat_amount ?? 0,
+            totalAmount: (proposal.total_amount ?? parseFloat(proposal.amount)) || 0
+          };
           
-          if (proposal) {
-            // Load detailed proposal data
-            const savedDetailedProposals = localStorage.getItem("detailedProposals");
-            let detailedProposal = null;
-            
-            if (savedDetailedProposals) {
-              const detailedProposals = JSON.parse(savedDetailedProposals);
-              detailedProposal = detailedProposals.find((p: any) => p.id === id);
-            }
-            
-            // Merge basic and detailed data
-            const mergedData = {
-              ...proposalData,
-              ...proposal,
-              ...detailedProposal,
-              lineItems: detailedProposal?.lineItems || [],
-              netAmount: detailedProposal?.netAmount || parseFloat(proposal.amount) || 0,
-              vatAmount: detailedProposal?.vatAmount || 0,
-              totalAmount: detailedProposal?.totalAmount || parseFloat(proposal.amount) || 0
-            };
-            
-            setProposalData(mergedData);
+          setProposalData(mergedData);
+          if (proposal.pdf_language) {
+            setPdfLanguage(proposal.pdf_language);
           }
         }
       }
@@ -252,9 +296,12 @@ const ProposalDetail = () => {
     }
   };
 
-  const handleLoadTemplate = (templateData: any) => {
-    const newProposalData = createProposalFromTemplate(templateData, proposalData.id);
-    setProposalData(newProposalData);
+  const handleLoadTemplate = async (templateData: Record<string, unknown>) => {
+    const newProposalData = await createProposalFromTemplateAsync(templateData, proposalData.id);
+    setProposalData(prev => ({
+      ...prev,
+      ...newProposalData as Partial<ProposalData>
+    }));
     
     toast({
       title: "Template applied",
@@ -525,59 +572,73 @@ const ProposalDetail = () => {
   const saveProposal = async () => {
     setSaving(true);
     try {
-      // Save to basic proposals list
-      const savedProposals = localStorage.getItem("proposals");
-      const proposals = savedProposals ? JSON.parse(savedProposals) : [];
-      
-      const basicProposalData = {
-        id: proposalData.id,
+      // Prepare proposal data for Supabase
+      const proposalInput = {
         number: proposalData.number,
         customer: proposalData.customerName || proposalData.customer,
         subject: proposalData.subject,
         reference: proposalData.reference,
         amount: proposalData.amount,
         status: proposalData.status,
-        created_at: proposalData.created_at,
-        updated_at: new Date().toISOString(),
         currency: proposalData.currency,
-        vatEnabled: proposalData.vatEnabled
+        vat_enabled: proposalData.vatEnabled,
+        vat_rate: proposalData.vatRate,
+        customer_name: proposalData.customerName,
+        customer_address: proposalData.customerAddress,
+        customer_email: proposalData.customerEmail,
+        customer_country: proposalData.customerCountry,
+        customer_ref: proposalData.customerRef,
+        your_contact: proposalData.yourContact,
+        internal_contact: proposalData.internalContact,
+        proposal_title: proposalData.proposalTitle,
+        proposal_description: proposalData.proposalDescription,
+        delivery_terms: proposalData.deliveryTerms,
+        payment_terms: proposalData.paymentTerms,
+        terms_and_conditions: proposalData.termsAndConditions,
+        footer_content: proposalData.footerContent,
+        include_payment_data: proposalData.includePaymentData,
+        logo: proposalData.logo,
+        logo_size: proposalData.logoSize,
+        net_amount: proposalData.netAmount,
+        vat_amount: proposalData.vatAmount,
+        total_amount: proposalData.totalAmount,
+        pdf_language: pdfLanguage,
+        proposal_date: proposalData.proposalDate,
+        proposal_time: proposalData.proposalTime,
+        iban: proposalData.iban,
+        bic: proposalData.bic,
+        blz_konto: proposalData.blzKonto,
+        content: proposalData.content,
+        lineItems: proposalData.lineItems.map(item => ({
+          item_id: item.item_id,
+          name: item.name,
+          description: item.description,
+          quantity: item.quantity,
+          unit_price: item.unit_price,
+          total_price: item.total_price,
+          unit: item.unit,
+          category: item.category
+        }))
       };
-      
-      const existingIndex = proposals.findIndex((p: any) => p.id === proposalData.id);
-      if (existingIndex >= 0) {
-        proposals[existingIndex] = basicProposalData;
-      } else {
-        proposals.push(basicProposalData);
-      }
-      
-      localStorage.setItem("proposals", JSON.stringify(proposals));
-      
-      // Save detailed proposal data with PDF language
-      const savedDetailedProposals = localStorage.getItem("detailedProposals");
-      const detailedProposals = savedDetailedProposals ? JSON.parse(savedDetailedProposals) : [];
-      
-      const detailedExistingIndex = detailedProposals.findIndex((p: any) => p.id === proposalData.id);
-      const updatedProposalData = {
-        ...proposalData,
-        pdfLanguage: pdfLanguage, // Save PDF language instead of interface language
-        updated_at: new Date().toISOString()
-      };
-      
-      if (detailedExistingIndex >= 0) {
-        detailedProposals[detailedExistingIndex] = updatedProposalData;
-      } else {
-        detailedProposals.push(updatedProposalData);
-      }
-      
-      localStorage.setItem("detailedProposals", JSON.stringify(detailedProposals));
-      
-      toast({
-        title: "Proposal saved",
-        description: "Proposal has been saved successfully.",
-      });
       
       if (isNewProposal) {
-        navigate(`/proposals/${proposalData.id}`);
+        // Create new proposal
+        const created = await proposalService.createProposal(proposalInput);
+        
+        toast({
+          title: "Proposal saved",
+          description: "Proposal has been created successfully.",
+        });
+        
+        navigate(`/proposals/${created.id}`);
+      } else {
+        // Update existing proposal
+        await proposalService.updateProposal(proposalData.id, proposalInput);
+        
+        toast({
+          title: "Proposal saved",
+          description: "Proposal has been saved successfully.",
+        });
       }
     } catch (error) {
       console.error("Error saving proposal:", error);

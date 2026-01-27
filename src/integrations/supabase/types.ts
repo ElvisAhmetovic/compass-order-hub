@@ -1322,6 +1322,56 @@ export type Database = {
         }
         Relationships: []
       }
+      proposal_line_items: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          item_id: string | null
+          name: string
+          proposal_id: string
+          quantity: number | null
+          total_price: number | null
+          unit: string | null
+          unit_price: number | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          item_id?: string | null
+          name: string
+          proposal_id: string
+          quantity?: number | null
+          total_price?: number | null
+          unit?: string | null
+          unit_price?: number | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          item_id?: string | null
+          name?: string
+          proposal_id?: string
+          quantity?: number | null
+          total_price?: number | null
+          unit?: string | null
+          unit_price?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proposal_line_items_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "proposals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       proposal_templates: {
         Row: {
           created_at: string
@@ -1355,36 +1405,126 @@ export type Database = {
       proposals: {
         Row: {
           amount: string
+          bic: string | null
+          blz_konto: string | null
+          content: string | null
           created_at: string
+          currency: string | null
           customer: string
+          customer_address: string | null
+          customer_country: string | null
+          customer_email: string | null
+          customer_name: string | null
+          customer_ref: string | null
+          delivery_terms: string | null
+          footer_content: string | null
+          iban: string | null
           id: string
+          include_payment_data: boolean | null
+          internal_contact: string | null
+          logo: string | null
+          logo_size: number | null
+          net_amount: number | null
           number: string
+          payment_terms: string | null
+          pdf_language: string | null
+          proposal_date: string | null
+          proposal_description: string | null
+          proposal_time: string | null
+          proposal_title: string | null
           reference: string
           status: string
+          subject: string | null
+          terms_and_conditions: string | null
+          total_amount: number | null
           updated_at: string | null
           user_id: string | null
+          vat_amount: number | null
+          vat_enabled: boolean | null
+          vat_rate: number | null
+          your_contact: string | null
         }
         Insert: {
           amount: string
+          bic?: string | null
+          blz_konto?: string | null
+          content?: string | null
           created_at?: string
+          currency?: string | null
           customer: string
+          customer_address?: string | null
+          customer_country?: string | null
+          customer_email?: string | null
+          customer_name?: string | null
+          customer_ref?: string | null
+          delivery_terms?: string | null
+          footer_content?: string | null
+          iban?: string | null
           id?: string
+          include_payment_data?: boolean | null
+          internal_contact?: string | null
+          logo?: string | null
+          logo_size?: number | null
+          net_amount?: number | null
           number: string
+          payment_terms?: string | null
+          pdf_language?: string | null
+          proposal_date?: string | null
+          proposal_description?: string | null
+          proposal_time?: string | null
+          proposal_title?: string | null
           reference: string
           status: string
+          subject?: string | null
+          terms_and_conditions?: string | null
+          total_amount?: number | null
           updated_at?: string | null
           user_id?: string | null
+          vat_amount?: number | null
+          vat_enabled?: boolean | null
+          vat_rate?: number | null
+          your_contact?: string | null
         }
         Update: {
           amount?: string
+          bic?: string | null
+          blz_konto?: string | null
+          content?: string | null
           created_at?: string
+          currency?: string | null
           customer?: string
+          customer_address?: string | null
+          customer_country?: string | null
+          customer_email?: string | null
+          customer_name?: string | null
+          customer_ref?: string | null
+          delivery_terms?: string | null
+          footer_content?: string | null
+          iban?: string | null
           id?: string
+          include_payment_data?: boolean | null
+          internal_contact?: string | null
+          logo?: string | null
+          logo_size?: number | null
+          net_amount?: number | null
           number?: string
+          payment_terms?: string | null
+          pdf_language?: string | null
+          proposal_date?: string | null
+          proposal_description?: string | null
+          proposal_time?: string | null
+          proposal_title?: string | null
           reference?: string
           status?: string
+          subject?: string | null
+          terms_and_conditions?: string | null
+          total_amount?: number | null
           updated_at?: string | null
           user_id?: string | null
+          vat_amount?: number | null
+          vat_enabled?: boolean | null
+          vat_rate?: number | null
+          your_contact?: string | null
         }
         Relationships: []
       }
