@@ -59,21 +59,25 @@ export const EditUserModal: React.FC<EditUserModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
+  // Ensure role is compatible with the form schema (internal users only)
+  const internalRole = user.role === "client" ? "user" : user.role;
+  
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       email: user.email,
       fullName: user.full_name,
-      role: user.role,
+      role: internalRole,
     },
   });
 
   // Reset form when user changes
   useEffect(() => {
+    const resetRole = user.role === "client" ? "user" : user.role;
     form.reset({
       email: user.email,
       fullName: user.full_name,
-      role: user.role,
+      role: resetRole,
     });
   }, [user, form]);
 
