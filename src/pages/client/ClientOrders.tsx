@@ -1,14 +1,15 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import ClientLayout from "@/components/client-portal/ClientLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, Eye, Package } from "lucide-react";
+import { Loader2, Eye, Package, Wifi, WifiOff } from "lucide-react";
 import { fetchClientOrders, ClientOrder } from "@/services/clientOrderService";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { getClientStatusFromOrder } from "@/utils/clientStatusTranslator";
+import { useClientOrdersRealtime } from "@/hooks/useClientOrdersRealtime";
 
 const getStatusBadge = (order: ClientOrder) => {
   const config = getClientStatusFromOrder(order);
@@ -25,27 +26,40 @@ const getStatusBadge = (order: ClientOrder) => {
 const ClientOrders = () => {
   const [orders, setOrders] = useState<ClientOrder[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [updatedOrderId, setUpdatedOrderId] = useState<string | null>(null);
   const { toast } = useToast();
 
-  useEffect(() => {
-    const loadOrders = async () => {
-      try {
-        const data = await fetchClientOrders();
-        setOrders(data);
-      } catch (error) {
-        console.error("Error loading orders:", error);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to load orders"
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadOrders();
+  const loadOrders = useCallback(async () => {
+    try {
+      const data = await fetchClientOrders();
+      setOrders(data);
+    } catch (error) {
+      console.error("Error loading orders:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to load orders"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   }, [toast]);
+
+  // Set up realtime subscription
+  const { isConnected } = useClientOrdersRealtime({
+    onOrderUpdate: (orderId) => {
+      console.log("[ClientOrders] Realtime update received for order:", orderId);
+      setUpdatedOrderId(orderId);
+      loadOrders();
+      // Clear the highlight after animation
+      setTimeout(() => setUpdatedOrderId(null), 2000);
+    },
+    showToast: true,
+  });
+
+  useEffect(() => {
+    loadOrders();
+  }, [loadOrders]);
 
   if (isLoading) {
     return (
@@ -60,11 +74,26 @@ const ClientOrders = () => {
   return (
     <ClientLayout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Your Orders</h1>
-          <p className="text-muted-foreground mt-1">
-            View and track your order history
-          </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">Your Orders</h1>
+            <p className="text-muted-foreground mt-1">
+              View and track your order history
+            </p>
+          </div>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            {isConnected ? (
+              <>
+                <Wifi className="h-3 w-3 text-primary" />
+                <span className="hidden sm:inline">Live updates</span>
+              </>
+            ) : (
+              <>
+                <WifiOff className="h-3 w-3 text-muted-foreground" />
+                <span className="hidden sm:inline">Connecting...</span>
+              </>
+            )}
+          </div>
         </div>
 
         {orders.length === 0 ? (
@@ -80,7 +109,14 @@ const ClientOrders = () => {
         ) : (
           <div className="grid gap-4">
             {orders.map((order) => (
-              <Card key={order.id} className="hover:shadow-md transition-shadow">
+              <Card 
+                key={order.id} 
+                className={`hover:shadow-md transition-all duration-300 ${
+                  updatedOrderId === order.id 
+                    ? "ring-2 ring-primary ring-offset-2 ring-offset-background" 
+                    : ""
+                }`}
+              >
                 <CardHeader className="pb-2">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-lg">{order.company_name}</CardTitle>
