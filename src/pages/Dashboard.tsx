@@ -243,36 +243,38 @@ const Dashboard = () => {
                 }
                 onCreateOrder={isAdmin ? () => setCreateModalOpen(true) : undefined}
               />
-              {/* Activity Log Toggle Button */}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setActivityPanelOpen(!activityPanelOpen);
-                  if (!activityPanelOpen) {
-                    clearDueCount();
-                  }
-                }}
-                className={cn(
-                  "shrink-0 relative",
-                  dueCount > 0 && "ring-2 ring-amber-500 ring-offset-2"
-                )}
-              >
-                <Clock className="h-4 w-4 mr-2" />
-                Activity Log
-                {dueCount > 0 && (
-                  <Badge 
-                    variant="destructive" 
-                    className="absolute -top-2 -right-2 h-5 min-w-5 px-1.5 text-xs animate-pulse bg-amber-500 hover:bg-amber-500"
-                  >
-                    {dueCount > 9 ? '9+' : dueCount}
-                  </Badge>
-                )}
-              </Button>
+              {/* Activity Log Toggle Button - Hidden from clients */}
+              {userRole !== 'client' && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setActivityPanelOpen(!activityPanelOpen);
+                    if (!activityPanelOpen) {
+                      clearDueCount();
+                    }
+                  }}
+                  className={cn(
+                    "shrink-0 relative",
+                    dueCount > 0 && "ring-2 ring-amber-500 ring-offset-2"
+                  )}
+                >
+                  <Clock className="h-4 w-4 mr-2" />
+                  Activity Log
+                  {dueCount > 0 && (
+                    <Badge 
+                      variant="destructive" 
+                      className="absolute -top-2 -right-2 h-5 min-w-5 px-1.5 text-xs animate-pulse bg-amber-500 hover:bg-amber-500"
+                    >
+                      {dueCount > 9 ? '9+' : dueCount}
+                    </Badge>
+                  )}
+                </Button>
+              )}
             </div>
             
-            {/* Team Encouragement Messages - Only on dashboard home */}
-            {isDashboardHome && (
+            {/* Team Encouragement Messages - Only on dashboard home, hidden from clients */}
+            {isDashboardHome && userRole !== 'client' && (
               <TeamEncouragement />
             )}
             
