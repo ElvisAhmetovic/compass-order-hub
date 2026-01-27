@@ -17,6 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import TemplateSelector from "@/components/email-templates/TemplateSelector";
 import { EmailTemplate, emailTemplateService } from "@/services/emailTemplateService";
 import { emailTranslationService, SupportedLanguage, SUPPORTED_LANGUAGES } from "@/services/emailTranslationService";
+import { sanitizeHtml } from "@/utils/sanitize";
 
 interface SendClientReminderModalProps {
   open: boolean;
@@ -347,7 +348,7 @@ const SendClientReminderModal = ({ open, onOpenChange, order, onEmailSent }: Sen
                   </div>
                   <div
                     className="prose prose-sm max-w-none dark:prose-invert"
-                    dangerouslySetInnerHTML={{ __html: getPreviewHtml() }}
+                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(getPreviewHtml()) }}
                   />
                 </div>
               )}

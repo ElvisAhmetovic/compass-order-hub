@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { emailTemplateService, EmailTemplate, EmailTemplateInput } from "@/services/emailTemplateService";
 import { Plus, Edit, Trash2, Copy, Star, FileText, Eye, Code } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { sanitizeHtml } from "@/utils/sanitize";
 
 const TEMPLATE_TYPES = [
   { value: "payment_reminder", label: "Payment Reminder" },
@@ -379,7 +380,7 @@ const EmailTemplateManager = () => {
                 <div className="border rounded-lg p-4 min-h-[300px] bg-white">
                   <div
                     className="prose prose-sm max-w-none"
-                    dangerouslySetInnerHTML={{ __html: getPreviewHtml() }}
+                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(getPreviewHtml()) }}
                   />
                 </div>
               )}

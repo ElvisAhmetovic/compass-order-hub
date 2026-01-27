@@ -1,8 +1,8 @@
-
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { Invoice, InvoiceLineItem, Client } from '@/types/invoice';
 import { formatCurrency } from '@/utils/currencyUtils';
+import { sanitizeHtml } from '@/utils/sanitize';
 
 interface InvoicePDFData {
   invoice?: Invoice;
@@ -32,14 +32,15 @@ export const generateInvoicePDF = async (data: InvoicePDFData): Promise<void> =>
   document.body.appendChild(container);
 
   try {
-    // Generate the invoice HTML with the correct currency
-    container.innerHTML = generateInvoiceHTML({
+    // Generate the invoice HTML with the correct currency and sanitize it
+    const invoiceHtml = generateInvoiceHTML({
       ...data,
       templateSettings: {
         ...templateSettings,
         currency: currentCurrency
       }
     });
+    container.innerHTML = sanitizeHtml(invoiceHtml);
     
     // Wait for images to load
     const images = container.querySelectorAll('img');
