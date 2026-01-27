@@ -91,7 +91,9 @@ export async function getClientById(clientId: string): Promise<ClientUser | null
 export async function linkClientToOrder(
   orderId: string,
   clientId: string,
-  actorId: string
+  actorId: string,
+  clientName: string,
+  clientEmail: string
 ): Promise<{ success: boolean; error?: string }> {
   const { error } = await supabase
     .from("orders")
@@ -103,12 +105,12 @@ export async function linkClientToOrder(
     return { success: false, error: error.message };
   }
 
-  // Log the action
+  // Log the action with client details
   await supabase.from("order_audit_logs").insert({
     order_id: orderId,
     actor_id: actorId,
     action: "Client Access Granted",
-    details: `Client linked to order`,
+    details: `Client "${clientName}" (${clientEmail}) linked to order`,
   });
 
   return { success: true };
@@ -119,7 +121,9 @@ export async function linkClientToOrder(
  */
 export async function unlinkClientFromOrder(
   orderId: string,
-  actorId: string
+  actorId: string,
+  clientName: string,
+  clientEmail: string
 ): Promise<{ success: boolean; error?: string }> {
   const { error } = await supabase
     .from("orders")
@@ -131,29 +135,45 @@ export async function unlinkClientFromOrder(
     return { success: false, error: error.message };
   }
 
-  // Log the action
+  // Log the action with client details
   await supabase.from("order_audit_logs").insert({
     order_id: orderId,
     actor_id: actorId,
     action: "Client Access Revoked",
-    details: `Client unlinked from order`,
+    details: `Client "${clientName}" (${clientEmail}) access revoked`,
   });
 
   return { success: true };
 }
 
 /**
- * Log a mock invite action
+ * Send client portal invite via Edge Function
  */
-export async function logInviteSent(
-  orderId: string,
-  actorId: string,
-  clientEmail: string
-): Promise<void> {
-  await supabase.from("order_audit_logs").insert({
-    order_id: orderId,
-    actor_id: actorId,
-    action: "Login Invite Sent",
-    details: `Login invite sent to ${clientEmail}`,
-  });
+export async function sendClientInvite(params: {
+  clientEmail: string;
+  clientName: string;
+  orderId: string;
+  companyName: string;
+  senderName: string;
+  senderId: string | null;
+}): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { data, error } = await supabase.functions.invoke("send-client-invite", {
+      body: params,
+    });
+
+    if (error) {
+      console.error("Error invoking send-client-invite:", error);
+      return { success: false, error: error.message };
+    }
+
+    if (data?.error) {
+      return { success: false, error: data.error };
+    }
+
+    return { success: true };
+  } catch (err: any) {
+    console.error("Exception sending client invite:", err);
+    return { success: false, error: err.message || "Failed to send invite" };
+  }
 }

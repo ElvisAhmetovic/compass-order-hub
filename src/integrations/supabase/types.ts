@@ -1628,6 +1628,7 @@ export type Database = {
           created_at: string | null
           id: string
           message: string
+          order_id: string | null
           status: string
           subject: string
           updated_at: string | null
@@ -1639,6 +1640,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           message: string
+          order_id?: string | null
           status?: string
           subject: string
           updated_at?: string | null
@@ -1650,6 +1652,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           message?: string
+          order_id?: string | null
           status?: string
           subject?: string
           updated_at?: string | null
@@ -1657,7 +1660,22 @@ export type Database = {
           user_id?: string
           user_name?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "support_inquiries_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "client_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "support_inquiries_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       support_replies: {
         Row: {

@@ -215,6 +215,7 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
                       <div className="col-span-1 lg:col-span-2 pt-6 border-t border-border">
                         <ClientAccessSection
                           orderId={order.id}
+                          companyName={order.company_name}
                           currentClientId={order.client_id || null}
                           onClientLinked={handleRefresh}
                         />
