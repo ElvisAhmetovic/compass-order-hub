@@ -1087,6 +1087,7 @@ export type Database = {
           assigned_to: string | null
           assigned_to_name: string | null
           client_id: string | null
+          client_visible_update: string | null
           company_address: string | null
           company_id: string | null
           company_link: string | null
@@ -1128,6 +1129,7 @@ export type Database = {
           assigned_to?: string | null
           assigned_to_name?: string | null
           client_id?: string | null
+          client_visible_update?: string | null
           company_address?: string | null
           company_id?: string | null
           company_link?: string | null
@@ -1169,6 +1171,7 @@ export type Database = {
           assigned_to?: string | null
           assigned_to_name?: string | null
           client_id?: string | null
+          client_visible_update?: string | null
           company_address?: string | null
           company_id?: string | null
           company_link?: string | null
@@ -2231,6 +2234,7 @@ export type Database = {
         Row: {
           client_id: string | null
           client_user_id: string | null
+          client_visible_update: string | null
           company_email: string | null
           company_id: string | null
           company_name: string | null

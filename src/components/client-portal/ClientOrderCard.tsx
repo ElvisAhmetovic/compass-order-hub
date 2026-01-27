@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Paperclip, Calendar, ArrowRight } from "lucide-react";
+import { Paperclip, Calendar, ArrowRight, Megaphone } from "lucide-react";
 import { format } from "date-fns";
 import { ClientOrder } from "@/services/clientOrderService";
 import { getClientStatusFromOrder } from "@/utils/clientStatusTranslator";
@@ -61,6 +61,18 @@ const ClientOrderCard = ({ order, attachmentCount = 0 }: ClientOrderCardProps) =
                 <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
                   <Paperclip className="h-3.5 w-3.5" />
                   <span>{attachmentCount} file{attachmentCount !== 1 ? 's' : ''}</span>
+                </div>
+              )}
+
+              {/* Client Update Indicator */}
+              {order.client_visible_update && (
+                <div className="flex items-center gap-1.5 text-sm text-primary">
+                  <Megaphone className="h-3.5 w-3.5" />
+                  <span className="truncate max-w-[200px]">
+                    {order.client_visible_update.length > 50 
+                      ? order.client_visible_update.substring(0, 50) + '...' 
+                      : order.client_visible_update}
+                  </span>
                 </div>
               )}
             </div>
