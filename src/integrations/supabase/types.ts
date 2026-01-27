@@ -512,6 +512,7 @@ export type Database = {
           file_url: string
           id: string
           message_id: string | null
+          order_id: string | null
           task_id: string | null
           uploaded_by: string
           uploaded_by_name: string
@@ -524,6 +525,7 @@ export type Database = {
           file_url: string
           id?: string
           message_id?: string | null
+          order_id?: string | null
           task_id?: string | null
           uploaded_by: string
           uploaded_by_name: string
@@ -536,6 +538,7 @@ export type Database = {
           file_url?: string
           id?: string
           message_id?: string | null
+          order_id?: string | null
           task_id?: string | null
           uploaded_by?: string
           uploaded_by_name?: string
@@ -546,6 +549,20 @@ export type Database = {
             columns: ["message_id"]
             isOneToOne: false
             referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "file_attachments_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "client_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "file_attachments_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
             referencedColumns: ["id"]
           },
           {
