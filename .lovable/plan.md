@@ -1,209 +1,80 @@
 
-# Call to Action Button Implementation Plan
+
+# Fix Authentication Routing Issues
 
 ## Overview
-Add a prominent "Call to Action" system to the Client Portal that displays context-aware buttons based on order status. When an order requires client action (like "Awaiting-Client-Feedback"), show a prominent button linking to feedback/mockups. For orders "In Progress", show a progress bar instead.
+This plan addresses the routing bug identified in the security audit where the root route (`/`) sends all authenticated users to `/dashboard`, causing an unnecessary redirect hop for clients who are then corrected by `RequireAuth`.
 
 ---
 
-## Current State Analysis
+## Issue Analysis
 
-### Existing Infrastructure:
-1. **Status Translator** (`src/utils/clientStatusTranslator.ts`): Already has `requiresAction: true` flag for "Awaiting-Client-Feedback" status
-2. **ClientOrderCard**: Shows progress bars for orders but no action buttons
-3. **ClientOrderDetail**: Shows order details but no action buttons
-4. **No Action URL Field**: The `orders` table has no field for storing action/feedback URLs
+### Current Behavior (Bug)
+```text
+Client logs in → Index.tsx → /dashboard → RequireAuth → /client/dashboard
+                              ↑                        ↑
+                         redirect #1              redirect #2 (correction)
+```
 
-### Components Affected:
-- `ClientOrderCard.tsx` - Dashboard order cards
-- `ClientOrderDetail.tsx` - Order detail page
-- Admin order form - To set the action URL
+### Expected Behavior (Fixed)
+```text
+Client logs in → Index.tsx → /client/dashboard
+                              ↑
+                         single redirect based on role
+```
 
 ---
 
 ## Implementation Plan
 
-### Phase 1: Database Schema Update
+### Phase 1: Fix Index.tsx Role-Based Redirection
 
-**Add new column to `orders` table:**
+**File: `src/pages/Index.tsx`**
 
-```sql
-ALTER TABLE public.orders
-ADD COLUMN client_action_url TEXT DEFAULT NULL;
-
-COMMENT ON COLUMN public.orders.client_action_url 
-IS 'URL for client action (feedback forms, mockup links, etc.). Visible when status requires action.';
-```
-
-**Update `client_orders` view to include the new column:**
-
-The `client_orders` view must be recreated to include `client_action_url` while continuing to exclude sensitive fields like `internal_notes`, `assigned_to`, etc.
-
----
-
-### Phase 2: Update TypeScript Types
-
-**Modify: `src/types/index.ts`**
+Update the redirect logic to check user role and send clients directly to their dashboard:
 
 ```typescript
-export interface Order {
-  // ... existing fields ...
-  client_action_url?: string;  // URL for client feedback/mockups
-}
+useEffect(() => {
+  console.log('Index page - Loading:', isLoading, 'User:', user?.email, 'Role:', user?.role);
+  
+  if (!isLoading) {
+    if (user) {
+      // Role-based redirection
+      if (user.role === 'client') {
+        console.log('Redirecting client to client dashboard');
+        navigate("/client/dashboard");
+      } else {
+        console.log('Redirecting admin/agent/user to dashboard');
+        navigate("/dashboard");
+      }
+    } else {
+      console.log('Redirecting to login');
+      navigate("/login");
+    }
+  }
+}, [navigate, user, isLoading]);
 ```
 
-**Modify: `src/services/clientOrderService.ts`**
-
-```typescript
-export interface ClientOrder {
-  // ... existing fields ...
-  client_action_url: string | null;  // Action URL for feedback/mockups
-}
-```
+**Changes:**
+- Add role check before redirecting
+- Clients (`role === 'client'`) go directly to `/client/dashboard`
+- Admins, agents, and users go to `/dashboard`
+- Add role to console log for debugging
 
 ---
 
-### Phase 3: Admin UI - Set Action URL
+## Manual Action Required: Supabase Postgres Upgrade
 
-**Modify: `src/components/dashboard/OrderEditForm/OrderDetailsSection.tsx`**
+The Supabase linter detected that your Postgres database has security patches available. This cannot be fixed through code changes and requires manual action:
 
-Add a new "Client Action URL" input field near the Client Update textarea:
+**Steps to apply the upgrade:**
+1. Go to your Supabase Dashboard
+2. Navigate to **Project Settings** → **Infrastructure**
+3. Look for the **Postgres Version** section
+4. Click **Upgrade** to apply the security patches
+5. Schedule a maintenance window (the upgrade will cause brief downtime)
 
-```text
-Layout within Client Update section:
-┌─────────────────────────────────────────────────┐
-│ 📢 Client Update                                │
-│ [Textarea for status update message]            │
-│                                                 │
-│ 🔗 Client Action URL (optional)                 │
-│ [Input field for feedback/mockup URL]           │
-│ Help: "When status is 'Action Required', this   │
-│        URL will appear as a button to clients"  │
-└─────────────────────────────────────────────────┘
-```
-
-**Modify: `src/components/dashboard/OrderEditForm/useOrderEdit.ts`**
-
-Add `client_action_url` to form state and save handler.
-
----
-
-### Phase 4: Update Status Translator
-
-**Modify: `src/utils/clientStatusTranslator.ts`**
-
-Add action button configuration to the `ClientStatusConfig` interface:
-
-```typescript
-export interface ClientStatusConfig {
-  label: string;
-  emoji: string;
-  badgeVariant: 'default' | 'secondary' | 'destructive' | 'outline' | 'action';
-  badgeClassName?: string;
-  progress: number;
-  requiresAction?: boolean;
-  actionButtonLabel?: string;  // NEW: Button text like "Provide Feedback" or "View Mockups"
-}
-
-// Update Awaiting-Client-Feedback entry:
-"Awaiting-Client-Feedback": { 
-  label: "Action Required", 
-  emoji: "🕒", 
-  badgeVariant: "action",
-  badgeClassName: "bg-red-500 hover:bg-red-600 text-white",
-  progress: 50,
-  requiresAction: true,
-  actionButtonLabel: "Provide Feedback"  // NEW
-},
-```
-
-Add helper function:
-
-```typescript
-/**
- * Get action button configuration for an order
- */
-export function getActionButtonConfig(order: ClientOrder): {
-  showButton: boolean;
-  label: string;
-  url: string | null;
-} | null
-```
-
----
-
-### Phase 5: Client Portal - Action Buttons
-
-**Modify: `src/components/client-portal/ClientOrderCard.tsx`**
-
-Replace or augment the progress bar based on status:
-
-```text
-Current behavior (all statuses):
-  - Show progress bar
-
-New behavior:
-  - If requiresAction && client_action_url exists:
-    - Show prominent "Provide Feedback" button (red/action color)
-    - Hide or minimize progress bar
-  - Else if requiresAction && no URL:
-    - Show "Action Required" badge (already exists) + progress bar
-  - Else (normal In Progress):
-    - Show progress bar (current behavior)
-```
-
-**Visual Design:**
-```text
-┌─────────────────────────────────────────────────────────┐
-│ Company Name               [🕒 Action Required]         │
-│ Created: Jan 27, 2026                                   │
-│                                                         │
-│ ┌─────────────────────────────────────────────────────┐ │
-│ │  [🔔 Provide Feedback]                              │ │
-│ │       prominent red button                          │ │
-│ └─────────────────────────────────────────────────────┘ │
-│                                                     →   │
-└─────────────────────────────────────────────────────────┘
-```
-
-**Modify: `src/pages/client/ClientOrderDetail.tsx`**
-
-Add a prominent Call to Action card at the top when action is required:
-
-```text
-Page Layout (if action required with URL):
-┌─────────────────────────────────────────────────┐
-│ ⚠️ Action Required                              │
-│ ───────────────────────────────────             │
-│ Your feedback is needed to proceed.             │
-│                                                 │
-│ [🔔 Provide Feedback] (large primary button)    │
-│                                                 │
-│ Opens: [mockups.example.com/project-123]        │
-└─────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────┐
-│ 📢 Latest Update (if exists)                    │
-│ ...                                             │
-└─────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────┐
-│ Order Details                                   │
-│ ...                                             │
-└─────────────────────────────────────────────────┘
-```
-
----
-
-## Conditional Display Logic
-
-| Order Status | Has Action URL? | Display on Dashboard Card | Display on Detail Page |
-|--------------|-----------------|---------------------------|------------------------|
-| In Progress | N/A | Progress bar | Progress bar |
-| Awaiting-Client-Feedback | Yes | "Provide Feedback" button | Action Required card with button |
-| Awaiting-Client-Feedback | No | Progress bar + Action badge | Progress bar + Action badge |
-| Resolved | N/A | Progress bar (100%) | Progress bar (100%) |
-| Cancelled | N/A | No progress | Cancelled badge |
+**Note:** This is a critical security update and should be applied as soon as possible to protect your database.
 
 ---
 
@@ -211,35 +82,27 @@ Page Layout (if action required with URL):
 
 | Component | Change Type | Description |
 |-----------|-------------|-------------|
-| Database Migration | Create | Add `client_action_url` column and update `client_orders` view |
-| `src/types/index.ts` | Modify | Add `client_action_url` to Order interface |
-| `src/services/clientOrderService.ts` | Modify | Add `client_action_url` to ClientOrder interface |
-| `src/utils/clientStatusTranslator.ts` | Modify | Add `actionButtonLabel` to config and helper function |
-| `OrderDetailsSection.tsx` | Modify | Add Client Action URL input field |
-| `useOrderEdit.ts` | Modify | Include `client_action_url` in form handling |
-| `ClientOrderCard.tsx` | Modify | Show action button when `requiresAction` with URL |
-| `ClientOrderDetail.tsx` | Modify | Add prominent Action Required card with button |
+| `src/pages/Index.tsx` | Modify | Add role-based redirection for root route |
 
 ---
 
-## Technical Details
+## Files to Modify
 
-### Files to Create/Modify:
+1. **`src/pages/Index.tsx`** - Update useEffect to check user role before redirecting
 
-**Database:**
-1. Migration to add `client_action_url` column
-2. Migration to recreate `client_orders` view with new column
+---
 
-**Frontend:**
-1. `src/types/index.ts` - Add field to Order interface
-2. `src/services/clientOrderService.ts` - Add field to ClientOrder interface
-3. `src/utils/clientStatusTranslator.ts` - Add button config and helper
-4. `src/components/dashboard/OrderEditForm/OrderDetailsSection.tsx` - Add admin input
-5. `src/components/dashboard/OrderEditForm/useOrderEdit.ts` - Include in form handling
-6. `src/components/client-portal/ClientOrderCard.tsx` - Conditional action button
-7. `src/pages/client/ClientOrderDetail.tsx` - Action Required card with button
+## Security Verification
 
-### Security Considerations:
-- The `client_action_url` is admin-controlled only
-- Clients cannot modify this field (view-only through `client_orders` view)
-- URL opens in new tab with `rel="noopener noreferrer"` for security
+After implementation, the routing behavior will be:
+
+| User Role | Entry Point | Redirect To |
+|-----------|-------------|-------------|
+| Client | `/` | `/client/dashboard` (direct) |
+| Admin | `/` | `/dashboard` (direct) |
+| Agent | `/` | `/dashboard` (direct) |
+| User | `/` | `/dashboard` (direct) |
+| Not logged in | `/` | `/login` |
+
+This eliminates the double-redirect for clients and provides a cleaner user experience.
+
