@@ -1,233 +1,204 @@
 
 
-# Enhanced Client Dashboard Implementation Plan
+# Admin "Client Access" Section Implementation Plan
 
 ## Overview
-This plan enhances the existing client portal at `/client/dashboard` with a more professional, progress-focused layout while adding role-based login redirects and order attachment support.
+Add a "Client Access" section to the internal Admin Order Detail page (`OrderModal.tsx`) that allows admins to link client users to specific orders and send mock invites. This section will only be visible to users with the `admin` role.
 
 ---
 
 ## Current State Analysis
 
 ### What Already Exists:
-- **Client Portal Routes**: `/client/dashboard`, `/client/orders`, `/client/profile` ✅
-- **ClientGuard**: Role-based protection for client routes ✅
-- **ClientLogin**: Redirects clients to `/client/dashboard` and non-clients to `/dashboard` ✅
-- **ClientDashboard**: Basic stats cards + company info ✅
-- **ClientOrders**: Order list with status badges ✅
-- **ClientOrderDetail**: Order details with progress steps ✅
-- **ClientProfile**: Name + password update forms ✅
+- **`OrderModal.tsx`**: The main admin order detail modal with tabs (Details, Activity, Collaboration, Email History)
+- **`client_id` column on orders table**: Already exists in the database to link orders to client users
+- **`user_roles` table**: Contains roles including the `client` role
+- **`has_role()` function**: Security definer function for role checking
+- **Admin check in modal**: `const isAdmin = userRole === "admin"` already exists on line 64
 
 ### What's Missing:
-1. **Admin Login Redirect**: The main `/login` page always redirects to `/dashboard` regardless of role
-2. **Order Attachments**: No direct order-file relationship exists in the database
-3. **Recent Orders on Dashboard**: Dashboard only shows stats, not actual orders
-4. **Progress Bars**: Order status shown as badges, not progress indicators
-5. **Enhanced Profile Section**: Profile doesn't show company info for editing
+1. **Client users fetch**: No existing service to fetch only client-role users
+2. **Client assignment UI**: No dropdown/section to select and link clients to orders
+3. **Invite functionality**: No button to generate/send client access invite
+4. **`client_id` update service**: OrderService needs method to update the client_id field
 
 ---
 
 ## Implementation Plan
 
-### Phase 1: Role-Based Login Redirects
+### Phase 1: Create Client Access Service
 
-**Goal**: When any user logs in, redirect them to the appropriate dashboard based on their role.
+**New file: `src/services/clientAccessService.ts`**
 
-#### 1.1 Update LoginForm.tsx
-Modify the success handler to check user role after login and redirect accordingly:
+Service functions needed:
+```typescript
+// Fetch all users with 'client' role for dropdown
+async function getClientUsers(): Promise<{id: string, name: string, email: string}[]>
 
+// Link a client to an order by updating client_id
+async function linkClientToOrder(orderId: string, clientId: string): Promise<void>
+
+// Unlink client from order (set client_id to null)
+async function unlinkClientFromOrder(orderId: string): Promise<void>
+```
+
+**Data Flow:**
 ```text
-Login Flow:
-1. User submits credentials
-2. Login succeeds → fetch user role from context
-3. If role === 'client' → redirect to /client/dashboard
-4. If role === 'admin' | 'agent' | 'user' → redirect to /dashboard
+1. Fetch clients: user_roles (role='client') → JOIN profiles → Get id, name
+2. Link client: UPDATE orders SET client_id = ? WHERE id = ?
+3. Log activity: INSERT order_audit_logs with "Client Access Granted"
 ```
 
-**Files to modify:**
-- `src/components/auth/LoginForm.tsx` - Add role-based redirect logic
+### Phase 2: Create ClientAccessSection Component
 
-#### 1.2 Update RequireAuth Component
-Ensure the `RequireAuth` component also handles role-based redirection for users trying to access admin routes:
+**New file: `src/components/dashboard/ClientAccessSection.tsx`**
 
-**Files to modify:**
-- `src/components/auth/RequireAuth.tsx` - Redirect clients away from admin routes
-
----
-
-### Phase 2: Order Attachments Support
-
-**Goal**: Allow files to be attached to orders and displayed to clients.
-
-#### 2.1 Database Migration
-Add `order_id` column to `file_attachments` table to enable order-file linking:
-
-```sql
--- Add order_id to file_attachments for order attachments
-ALTER TABLE public.file_attachments
-ADD COLUMN order_id UUID REFERENCES public.orders(id) ON DELETE CASCADE;
-
--- Create index for efficient lookups
-CREATE INDEX idx_file_attachments_order_id ON public.file_attachments(order_id);
-
--- RLS Policy: Allow clients to view attachments for their orders
-CREATE POLICY "Clients can view their order attachments"
-  ON public.file_attachments
-  FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.orders o
-      WHERE o.id = file_attachments.order_id
-        AND (o.client_id = auth.uid() OR 
-             EXISTS (
-               SELECT 1 FROM public.companies c 
-               WHERE c.id = o.company_id AND c.client_user_id = auth.uid()
-             ))
-    )
-    OR public.has_role(auth.uid(), 'admin')
-    OR public.has_role(auth.uid(), 'agent')
-    OR public.has_role(auth.uid(), 'user')
-  );
-```
-
-#### 2.2 Create Order Attachments Service
-New service function to fetch attachments for an order:
-
-**Files to create:**
-- Add function `getOrderAttachments(orderId: string)` to `src/services/clientOrderService.ts`
-
----
-
-### Phase 3: Enhanced Client Dashboard UI
-
-**Goal**: Create a professional, progress-focused dashboard showing recent orders with progress bars.
-
-#### 3.1 Update ClientDashboard Layout
-
-**New Dashboard Structure:**
+**Component Structure:**
 ```text
 ┌─────────────────────────────────────────────────────────────┐
-│  Welcome, [Client Name]!                                    │
-│  Quick overview of your orders and projects                 │
+│  🔐 Client Access                           [Admin Only]    │
 ├─────────────────────────────────────────────────────────────┤
-│  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐           │
-│  │ Total   │ │ Active  │ │ Invoice │ │ Compl.  │           │
-│  │ Orders  │ │ Orders  │ │ Pending │ │  Jobs   │           │
-│  │   12    │ │    4    │ │    2    │ │    6    │           │
-│  └─────────┘ └─────────┘ └─────────┘ └─────────┘           │
-├─────────────────────────────────────────────────────────────┤
-│  Recent Orders                                     View All →│
-│  ┌─────────────────────────────────────────────────────────┐│
-│  │ Project: Company ABC                                     ││
-│  │ Created: Jan 15, 2026                                    ││
-│  │ Progress: ████████████░░░░░░░░ 60%                      ││
-│  │ Status: In Progress → Invoice Sent                       ││
-│  │ Attachments: 📎 2 files                                  ││
-│  └─────────────────────────────────────────────────────────┘│
-│  ┌─────────────────────────────────────────────────────────┐│
-│  │ ...more orders...                                        ││
-│  └─────────────────────────────────────────────────────────┘│
-├─────────────────────────────────────────────────────────────┤
-│  Quick Profile                              Edit Profile →  │
-│  Name: John Doe                                             │
-│  Email: john@company.com                                    │
-│  Company: Company ABC                                       │
+│                                                             │
+│  Current Client: [None / John Doe (john@client.com)]       │
+│                                                             │
+│  ┌─────────────────────────────────────┐                   │
+│  │ Select Client ▾                     │  [Link Client]    │
+│  └─────────────────────────────────────┘                   │
+│                                                             │
+│  OR                                                         │
+│                                                             │
+│  [📧 Send Login Invite]  [❌ Remove Access]                │
+│                                                             │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-**Files to modify:**
-- `src/pages/client/ClientDashboard.tsx` - Complete redesign
+**Features:**
+1. **Client Dropdown**: Select component listing all client-role users
+2. **Link Button**: Links selected client to the order (updates `client_id`)
+3. **Send Invite Button**: Mock action showing toast notification (future: real email)
+4. **Remove Access Button**: Unlinks client (sets `client_id` to null)
+5. **Current Client Display**: Shows currently linked client (if any)
 
-#### 3.2 Create ClientOrderCard Component
-Reusable card showing order with progress bar and attachments:
-
-**Progress Bar Logic:**
-```text
-Status Weight:
-- Created: 10%
-- In Progress: 40%
-- Invoice Sent: 60%
-- Invoice Paid: 80%
-- Resolved: 100%
-- Cancelled: Shows "Cancelled" badge instead of progress
+**Props:**
+```typescript
+interface ClientAccessSectionProps {
+  orderId: string;
+  currentClientId: string | null;
+  onClientLinked: () => void; // Callback to refresh order data
+}
 ```
 
-**Files to create:**
-- `src/components/client-portal/ClientOrderCard.tsx`
+### Phase 3: Integrate into OrderModal
 
-#### 3.3 Update ClientOrderDetail
-Add attachments section to order detail page:
+**Modify: `src/components/dashboard/OrderModal.tsx`**
 
-**Files to modify:**
-- `src/pages/client/ClientOrderDetail.tsx` - Add attachments viewer
+Changes:
+1. Import the new `ClientAccessSection` component
+2. Add the section inside the "Order Details" tab, below the existing content
+3. Only render when `isAdmin === true`
+4. Pass `order.client_id` as current client (need to add `client_id` to Order type)
 
----
+**Placement in modal:**
+```text
+<TabsContent value="details">
+  ...existing content...
+  
+  {/* Client Access - Admin Only */}
+  {isAdmin && (
+    <div className="col-span-1 lg:col-span-2 pt-6 border-t border-border">
+      <ClientAccessSection 
+        orderId={order.id}
+        currentClientId={order.client_id || null}
+        onClientLinked={handleRefresh}
+      />
+    </div>
+  )}
+  
+  ...emoji reactions...
+</TabsContent>
+```
 
-### Phase 4: Enhanced Profile Section on Dashboard
+### Phase 4: Update Order Type
 
-**Goal**: Show a quick profile summary with link to full edit page.
+**Modify: `src/types/index.ts`**
 
-#### 4.1 Update ClientDashboard
-Add a "Quick Profile" card showing:
-- Client name
-- Email
-- Linked company name
-- "Edit Profile" button
-
-**Already covered in Phase 3.1**
+Add `client_id` field to Order interface:
+```typescript
+export interface Order {
+  // ...existing fields...
+  client_id?: string;  // UUID of linked client user
+}
+```
 
 ---
 
 ## Technical Details
 
 ### Files to Create:
-1. `src/components/client-portal/ClientOrderCard.tsx` - Order card with progress bar
+1. `src/services/clientAccessService.ts` - Service for client access operations
+2. `src/components/dashboard/ClientAccessSection.tsx` - UI component for admin
 
 ### Files to Modify:
-1. `src/components/auth/LoginForm.tsx` - Role-based redirect
-2. `src/components/auth/RequireAuth.tsx` - Redirect clients from admin routes
-3. `src/pages/client/ClientDashboard.tsx` - Enhanced layout with recent orders
-4. `src/pages/client/ClientOrderDetail.tsx` - Add attachments section
-5. `src/services/clientOrderService.ts` - Add getOrderAttachments function
+1. `src/components/dashboard/OrderModal.tsx` - Add ClientAccessSection
+2. `src/types/index.ts` - Add client_id to Order interface
 
-### Database Migration:
-1. Add `order_id` column to `file_attachments` table
-2. Add RLS policy for client attachment access
+### Database Queries:
+
+**Fetch client users:**
+```sql
+SELECT p.id, p.first_name, p.last_name
+FROM user_roles ur
+JOIN profiles p ON ur.user_id = p.id
+WHERE ur.role = 'client'
+ORDER BY p.first_name, p.last_name;
+```
+
+**Get client email (for display):**
+```sql
+-- Use Supabase auth.users via admin API or store email in profiles
+```
+
+**Link client to order:**
+```sql
+UPDATE orders 
+SET client_id = $clientId, updated_at = now()
+WHERE id = $orderId;
+```
 
 ---
 
-## Component Architecture
+## Component Dependencies
 
-```text
-ClientDashboard.tsx
-├── Stats Cards (4x)
-│   └── Card component with icon + value
-├── Recent Orders Section
-│   └── ClientOrderCard.tsx (up to 5 recent orders)
-│       ├── Order name/company
-│       ├── Date created
-│       ├── Progress bar (using Progress component)
-│       ├── Status text
-│       └── Attachments count with icon
-└── Quick Profile Card
-    ├── Name, Email, Company
-    └── Edit Profile button → links to /client/profile
+Uses existing shadcn/ui components:
+- `Select`, `SelectTrigger`, `SelectValue`, `SelectContent`, `SelectItem` - Client dropdown
+- `Button` - Link, Invite, Remove actions
+- `Card`, `CardHeader`, `CardContent` - Section container
+- `Badge` - Show current client status
+- `useToast` - Toast notifications
 
-ClientOrderDetail.tsx
-├── Order info (existing)
-├── Progress steps (existing)
-├── Contact info (existing)
-└── Attachments section (NEW)
-    └── File list with download links
-```
+Icons from lucide-react:
+- `UserPlus` - Add client
+- `Mail` - Send invite
+- `UserX` - Remove access
+- `Shield` - Admin-only indicator
 
 ---
 
 ## Security Considerations
 
-1. **RLS on file_attachments**: Clients can ONLY view attachments for their own orders
-2. **RequireAuth Update**: Clients cannot access admin routes even if they type the URL manually
-3. **Attachment Access**: Use signed URLs (same pattern as ticket-attachments) with expiration
+1. **Admin-Only Visibility**: Component only rendered when `userRole === "admin"`
+2. **RLS Protection**: The orders table has existing RLS policies that allow admins to update
+3. **Role Validation**: Client dropdown only fetches users with `role = 'client'` from `user_roles`
+4. **Audit Trail**: All client linking/unlinking actions logged to `order_audit_logs`
+
+---
+
+## Mock Invite Behavior
+
+For now, the "Send Login Invite" button will:
+1. Show a success toast: "Login information sent to {client_email}"
+2. Log the invite action to order_audit_logs
+3. (Future enhancement: Connect to real email service)
 
 ---
 
@@ -235,23 +206,18 @@ ClientOrderDetail.tsx
 
 | Component | Change Type | Description |
 |-----------|-------------|-------------|
-| LoginForm.tsx | Modify | Add role-based redirect after login |
-| RequireAuth.tsx | Modify | Redirect clients to /client/dashboard |
-| ClientDashboard.tsx | Rewrite | Enhanced UI with orders + profile |
-| ClientOrderCard.tsx | Create | New component with progress bar |
-| ClientOrderDetail.tsx | Modify | Add attachments section |
-| clientOrderService.ts | Modify | Add getOrderAttachments function |
-| Database | Migration | Add order_id to file_attachments |
+| clientAccessService.ts | Create | Service for fetching clients and linking orders |
+| ClientAccessSection.tsx | Create | Admin-only UI for managing client access |
+| OrderModal.tsx | Modify | Add ClientAccessSection in details tab |
+| types/index.ts | Modify | Add client_id to Order interface |
 
 ---
 
-## Dependencies
+## What Will NOT Change
 
-Uses existing components:
-- `Progress` from `@/components/ui/progress`
-- `Card` from `@/components/ui/card`
-- `Badge` from `@/components/ui/badge`
-- `Button` from `@/components/ui/button`
-
-No new npm packages required.
+- Overall layout of OrderModal (only adding new section)
+- Existing order update functionality
+- Non-admin user experience
+- Other tabs in the modal (Activity, Collaboration, Email History)
+- Any client portal components or routes
 
