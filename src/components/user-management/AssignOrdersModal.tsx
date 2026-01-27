@@ -25,6 +25,9 @@ export function AssignOrdersModal({ user, open, onClose }: AssignOrdersModalProp
   
   const { toast } = useToast();
   
+  // Check if user is a client (for client linking vs internal assignment)
+  const isClientUser = user.role === "client";
+  
   // Load orders from Supabase
   useEffect(() => {
     if (open) {
@@ -38,9 +41,15 @@ export function AssignOrdersModal({ user, open, onClose }: AssignOrdersModalProp
       const allOrders = await OrderService.getOrders();
       setOrders(allOrders);
       
-      // Pre-select orders already assigned to this user
+      // Pre-select orders based on user type
+      // For clients: pre-select orders where client_id matches
+      // For internal users: pre-select orders where assigned_to matches
       const userOrders = allOrders
-        .filter((order: Order) => order.assigned_to === user.id)
+        .filter((order: Order) => 
+          isClientUser 
+            ? order.client_id === user.id 
+            : order.assigned_to === user.id
+        )
         .map((order: Order) => order.id);
       
       setSelectedOrders(userOrders);
@@ -67,25 +76,42 @@ export function AssignOrdersModal({ user, open, onClose }: AssignOrdersModalProp
   const handleAssignOrders = async () => {
     setIsSubmitting(true);
     try {
-      // Get user's display name from the user object
-      const assigneeName = user.full_name || user.email || 'Unknown User';
+      const userName = user.full_name || user.email || 'Unknown User';
       
-      // Process each order
+      // Process each order based on user type
       for (const order of orders) {
-        if (selectedOrders.includes(order.id)) {
-          // Assign to this user if not already assigned
-          if (order.assigned_to !== user.id) {
-            await OrderService.assignOrder(order.id, user.id, assigneeName);
+        const isSelected = selectedOrders.includes(order.id);
+        
+        if (isClientUser) {
+          // For clients: update client_id field
+          if (isSelected && order.client_id !== user.id) {
+            // Link client to order
+            await supabase
+              .from("orders")
+              .update({ client_id: user.id, updated_at: new Date().toISOString() })
+              .eq("id", order.id);
+          } else if (!isSelected && order.client_id === user.id) {
+            // Unlink client from order
+            await supabase
+              .from("orders")
+              .update({ client_id: null, updated_at: new Date().toISOString() })
+              .eq("id", order.id);
           }
-        } else if (order.assigned_to === user.id) {
-          // Unassign if previously assigned to this user but not selected now
-          await OrderService.unassignOrder(order.id);
+        } else {
+          // For internal users: update assigned_to field (existing behavior)
+          if (isSelected && order.assigned_to !== user.id) {
+            await OrderService.assignOrder(order.id, user.id, userName);
+          } else if (!isSelected && order.assigned_to === user.id) {
+            await OrderService.unassignOrder(order.id);
+          }
         }
       }
       
       toast({
-        title: "Orders assigned",
-        description: `Successfully updated order assignments for ${assigneeName}.`,
+        title: isClientUser ? "Orders linked" : "Orders assigned",
+        description: isClientUser 
+          ? `Successfully updated client access for ${userName}.`
+          : `Successfully updated order assignments for ${userName}.`,
       });
       
       onClose();
@@ -94,7 +120,7 @@ export function AssignOrdersModal({ user, open, onClose }: AssignOrdersModalProp
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to assign orders. Please try again."
+        description: "Failed to update orders. Please try again."
       });
     } finally {
       setIsSubmitting(false);
@@ -121,7 +147,7 @@ export function AssignOrdersModal({ user, open, onClose }: AssignOrdersModalProp
       <DialogContent className="sm:max-w-md md:max-w-lg max-h-[90vh]">
         <DialogHeader>
           <DialogTitle>
-            Assign Orders to {user.full_name || user.email}
+            {isClientUser ? "Link Orders to Client" : "Assign Orders to"} {user.full_name || user.email}
           </DialogTitle>
         </DialogHeader>
         
@@ -133,7 +159,10 @@ export function AssignOrdersModal({ user, open, onClose }: AssignOrdersModalProp
           <>
             <div className="py-2">
               <p className="text-sm text-muted-foreground mb-4">
-                Select orders to assign to this user. Currently showing {orders.length} orders.
+                {isClientUser 
+                  ? `Select orders to grant client portal access. Currently showing ${orders.length} orders.`
+                  : `Select orders to assign to this user. Currently showing ${orders.length} orders.`
+                }
               </p>
               
               {orders.length > 0 ? (
