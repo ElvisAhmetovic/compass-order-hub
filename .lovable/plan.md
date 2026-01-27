@@ -1,258 +1,184 @@
 
 
-# Status Translator Implementation Plan
+# Client Notes (Privacy Filter) Implementation Plan
 
 ## Overview
-Create a centralized "Status Translator" utility that maps internal technical status values (e.g., 'Dev-Sprint', 'QA', 'Briefing') to client-friendly display labels with optional emojis and visual styling. This translation applies **only** to client-facing components while the admin dashboard continues to display raw internal statuses.
+Add a new "Client Visible Update" feature that allows admins to write high-level updates specifically for clients, while ensuring sensitive internal data (`internal_notes`, `profit_margin`, `assigned_to`, etc.) remains hidden from the client view.
 
 ---
 
-## Current State Analysis
+## Current Security Architecture
 
-### Existing Status Handling:
-1. **Admin Dashboard (`OrderRow.tsx`)**: Uses raw status values like "Created", "In Progress", "Invoice Sent", etc. with color-coded badges
-2. **Client Components**: Currently use boolean flags (`status_created`, `status_in_progress`, etc.) to derive progress labels
-3. **Order Types**: `OrderStatus` type in `types/index.ts` defines available statuses
-4. **No Translation Layer**: Currently no mechanism to map internal → client-friendly terminology
+### What Clients CAN See (via `client_orders` view):
+- Order identifiers: `id`, `company_name`, `description`, `status`
+- Status flags: `status_created`, `status_in_progress`, etc.
+- Financials: `price`, `currency`
+- Contact: `contact_email`, `contact_phone`
+- Timestamps: `created_at`, `updated_at`
 
-### Files That Display Status to Clients:
-- `src/components/client-portal/ClientOrderCard.tsx` - Order cards with progress bars
-- `src/pages/client/ClientOrders.tsx` - Order list with status badges  
-- `src/pages/client/ClientOrderDetail.tsx` - Order detail with progress steps
+### What Clients CANNOT See (excluded from view):
+- `internal_notes` - Already hidden (internal team notes)
+- `assigned_to`, `assigned_to_name` - Internal assignment
+- `inventory_items` - Internal product details
+- `created_by`, `agent_name` - Internal staff info
+- Any future sensitive columns like `profit_margin`
+
+This plan maintains this security model while adding a new client-visible field.
 
 ---
 
 ## Implementation Plan
 
-### Step 1: Create Status Translation Utility
+### Phase 1: Database Schema Update
 
-**New File: `src/utils/clientStatusTranslator.ts`**
+**Add new column to `orders` table:**
 
-This file will contain:
+```sql
+ALTER TABLE public.orders
+ADD COLUMN client_visible_update TEXT DEFAULT NULL;
 
-1. **Status Translation Map**: Object mapping internal statuses to client-friendly versions
+COMMENT ON COLUMN public.orders.client_visible_update 
+IS 'High-level status update visible to clients. Admin-editable only.';
+```
 
+**Update `client_orders` view to include the new column:**
+
+```sql
+DROP VIEW IF EXISTS public.client_orders;
+
+CREATE VIEW public.client_orders WITH (security_invoker=on) AS
+SELECT 
+    o.id,
+    o.company_name,
+    o.description,
+    o.status,
+    o.created_at,
+    o.updated_at,
+    o.price,
+    o.currency,
+    o.priority,
+    o.status_created,
+    o.status_in_progress,
+    o.status_invoice_sent,
+    o.status_invoice_paid,
+    o.status_resolved,
+    o.status_cancelled,
+    o.contact_email,
+    o.contact_phone,
+    o.client_id,
+    o.client_visible_update,  -- NEW: Client-facing update note
+    c.id AS company_id,
+    c.client_user_id,
+    c.name AS linked_company_name,
+    c.email AS company_email
+FROM orders o
+LEFT JOIN companies c ON o.company_id = c.id
+WHERE o.deleted_at IS NULL 
+  AND (o.status_deleted = false OR o.status_deleted IS NULL);
+```
+
+**Key Security Point:** The view continues to explicitly exclude:
+- `internal_notes`
+- `assigned_to` / `assigned_to_name`
+- `inventory_items`
+- `created_by` / `agent_name`
+- `amount` (if used as profit tracking)
+
+---
+
+### Phase 2: Update TypeScript Types
+
+**Modify: `src/types/index.ts`**
+
+Add to Order interface:
 ```typescript
-interface ClientStatusConfig {
-  label: string;           // Client-friendly label
-  emoji: string;           // Optional emoji prefix
-  badgeVariant: 'default' | 'secondary' | 'destructive' | 'outline' | 'action';
-  badgeClassName?: string; // Custom styling
-  progress: number;        // Progress bar percentage
-  requiresAction?: boolean; // Flag for "Action Required" states
+export interface Order {
+  // ... existing fields ...
+  client_visible_update?: string;  // Client-facing status update
 }
-
-const STATUS_TRANSLATION_MAP: Record<string, ClientStatusConfig> = {
-  // Internal Status -> Client Display
-  "Created": { 
-    label: "Order Received", 
-    emoji: "📋", 
-    badgeVariant: "secondary",
-    progress: 10 
-  },
-  "In Progress": { 
-    label: "In Progress", 
-    emoji: "🏗️", 
-    badgeVariant: "default",
-    progress: 40 
-  },
-  "Invoice Sent": { 
-    label: "Invoice Sent", 
-    emoji: "📄", 
-    badgeVariant: "outline",
-    progress: 60 
-  },
-  "Invoice Paid": { 
-    label: "Payment Received", 
-    emoji: "✅", 
-    badgeVariant: "default",
-    progress: 80 
-  },
-  "Resolved": { 
-    label: "Completed", 
-    emoji: "🎉", 
-    badgeVariant: "default",
-    badgeClassName: "bg-green-500 hover:bg-green-600",
-    progress: 100 
-  },
-  "Cancelled": { 
-    label: "Cancelled", 
-    emoji: "❌", 
-    badgeVariant: "destructive",
-    progress: 0 
-  },
-  // Extended technical statuses (examples from user request)
-  "Dev-Backend": { 
-    label: "In Progress", 
-    emoji: "🏗️", 
-    badgeVariant: "default",
-    progress: 35 
-  },
-  "Dev-Sprint": { 
-    label: "In Progress", 
-    emoji: "🏗️", 
-    badgeVariant: "default",
-    progress: 45 
-  },
-  "QA": { 
-    label: "Quality Review", 
-    emoji: "🔍", 
-    badgeVariant: "secondary",
-    progress: 70 
-  },
-  "Briefing": { 
-    label: "Getting Started", 
-    emoji: "📝", 
-    badgeVariant: "secondary",
-    progress: 15 
-  },
-  "Awaiting-Client-Feedback": { 
-    label: "Action Required", 
-    emoji: "🕒", 
-    badgeVariant: "action",
-    badgeClassName: "bg-red-500 hover:bg-red-600 text-white",
-    progress: 50,
-    requiresAction: true 
-  },
-  "Review": { 
-    label: "Under Review", 
-    emoji: "👀", 
-    badgeVariant: "secondary",
-    progress: 55 
-  },
-};
 ```
 
-2. **Helper Functions**:
+**Modify: `src/services/clientOrderService.ts`**
 
+Add to ClientOrder interface:
 ```typescript
-// Get translated status from internal status string
-export function getClientStatus(internalStatus: string): ClientStatusConfig
-
-// Get translated status from order with boolean flags
-export function getClientStatusFromOrder(order: ClientOrder): ClientStatusConfig
-
-// Get just the display label with emoji
-export function getClientStatusLabel(internalStatus: string, includeEmoji?: boolean): string
-
-// Check if status requires client action
-export function statusRequiresAction(internalStatus: string): boolean
+export interface ClientOrder {
+  // ... existing fields ...
+  client_visible_update: string | null;  // Status update from admin
+}
 ```
 
 ---
 
-### Step 2: Update ClientOrderCard Component
+### Phase 3: Admin UI - Edit Client Update
 
-**Modify: `src/components/client-portal/ClientOrderCard.tsx`**
+**Modify: `src/components/dashboard/OrderEditForm/OrderDetailsSection.tsx`**
 
-Changes:
-1. Import the new `getClientStatusFromOrder` function
-2. Replace hardcoded `getProgressFromStatus` with the translator
-3. Update badge display to use translated labels with emojis
-4. Add special styling for "Action Required" states
+Add a new "Client Update" textarea section between Description and Internal Notes:
 
 ```text
-Before:
-  const getProgressFromStatus = (order) => {
-    if (order.status_cancelled) return { progress: 0, label: "Cancelled" };
-    if (order.status_resolved) return { progress: 100, label: "Completed" };
-    ...
-  }
+Current Layout:
+1. Description (visible to client)
+2. Internal Notes (hidden from client)
+3. Inventory Items
+4. Price, Currency, Priority...
 
-After:
-  import { getClientStatusFromOrder } from "@/utils/clientStatusTranslator";
-  
-  const ClientOrderCard = ({ order }) => {
-    const statusConfig = getClientStatusFromOrder(order);
-    const displayLabel = `${statusConfig.emoji} ${statusConfig.label}`;
-    ...
-  }
+New Layout:
+1. Description (visible to client)
+2. 📢 Client Update (NEW - visible to client, highlighted)
+3. 🔒 Internal Notes (hidden from client)
+4. Inventory Items
+5. Price, Currency, Priority...
 ```
+
+**UI Design for Client Update section:**
+- Label: "📢 Client Update" with a badge "Visible to Client"
+- Help text: "This message will be displayed to the client in their portal. Use it for high-level status updates."
+- Highlighted border (blue/info color) to distinguish from internal notes
+- Textarea with placeholder suggesting content: "e.g., 'Your order is progressing well! We've completed the initial review and are now in the production phase.'"
+
+**Modify: `src/components/dashboard/OrderEditForm/useOrderEdit.ts`**
+
+Add `client_visible_update` to the form data interface and save handler.
 
 ---
 
-### Step 3: Update ClientOrders Page
-
-**Modify: `src/pages/client/ClientOrders.tsx`**
-
-Changes:
-1. Import translator functions
-2. Replace `getStatusBadge` with translated version
-3. Apply proper badge styling based on `badgeClassName`
-
-```text
-Before:
-  if (order.status_resolved) return <Badge>Resolved</Badge>;
-  if (order.status_invoice_paid) return <Badge>Paid</Badge>;
-  ...
-
-After:
-  import { getClientStatusFromOrder, getClientStatusBadge } from "@/utils/clientStatusTranslator";
-  
-  const getStatusBadge = (order: ClientOrder) => {
-    const config = getClientStatusFromOrder(order);
-    return (
-      <Badge 
-        variant={config.badgeVariant}
-        className={config.badgeClassName}
-      >
-        {config.emoji} {config.label}
-      </Badge>
-    );
-  };
-```
-
----
-
-### Step 4: Update ClientOrderDetail Page
+### Phase 4: Client Portal - Display Update Prominently
 
 **Modify: `src/pages/client/ClientOrderDetail.tsx`**
 
-Changes:
-1. Import translator functions
-2. Replace hardcoded `statusSteps` with translated labels
-3. Update progress bar calculation to use translator
-4. Keep the step-by-step timeline but with client-friendly labels
+Add a prominent "Latest Update" card at the top of the order details, before the main order info:
 
 ```text
-Before:
-  const statusSteps = [
-    { key: "created", label: "Created", active: order.status_created, icon: Clock },
-    { key: "in_progress", label: "In Progress", ... },
-    ...
-  ];
+Page Layout (if client_visible_update exists):
+┌─────────────────────────────────────────────────┐
+│ 📢 Latest Update from [Company]                 │
+│ ───────────────────────────────────             │
+│ "Your order is progressing well! We've          │
+│  completed the initial review and are now       │
+│  in the production phase."                      │
+│                                                 │
+│ Last updated: Jan 27, 2026                      │
+└─────────────────────────────────────────────────┘
 
-After:
-  import { translateStatusStep, getClientStatusFromOrder } from "@/utils/clientStatusTranslator";
-  
-  const statusSteps = [
-    translateStatusStep("created", order.status_created),
-    translateStatusStep("in_progress", order.status_in_progress),
-    ...
-  ];
+┌─────────────────────────────────────────────────┐
+│ Order Details Card (existing)                   │
+│ ...                                             │
+└─────────────────────────────────────────────────┘
 ```
 
----
+**Styling:**
+- Card with info/primary color accent
+- Megaphone or Bell icon
+- Prominent placement at the very top
+- Timestamp showing when the update was last modified
+- Only rendered if `client_visible_update` has content
 
-### Step 5: Add Badge Variant for "Action Required"
+**Modify: `src/components/client-portal/ClientOrderCard.tsx`**
 
-**Modify: `src/components/ui/badge.tsx`**
-
-Add a new variant for action-required states:
-
-```typescript
-variants: {
-  variant: {
-    default: "...",
-    secondary: "...",
-    destructive: "...",
-    outline: "...",
-    action: "border-transparent bg-red-500 text-white hover:bg-red-600 animate-pulse", // NEW
-  },
-},
-```
-
-This creates a visually distinct, attention-grabbing badge for states requiring client action.
+Add a small indicator on the order card if there's a client update:
+- Small badge or icon showing "📢 Update available"
+- Truncated preview of the update text (first 50 chars)
 
 ---
 
@@ -260,59 +186,47 @@ This creates a visually distinct, attention-grabbing badge for states requiring 
 
 | Component | Change Type | Description |
 |-----------|-------------|-------------|
-| `clientStatusTranslator.ts` | Create | New utility with translation map and helper functions |
-| `ClientOrderCard.tsx` | Modify | Use translator for progress and labels |
-| `ClientOrders.tsx` | Modify | Use translator for status badges |
-| `ClientOrderDetail.tsx` | Modify | Use translator for progress steps |
-| `badge.tsx` | Modify | Add "action" variant for attention states |
+| Database Migration | Create | Add `client_visible_update` column and update `client_orders` view |
+| `src/types/index.ts` | Modify | Add `client_visible_update` to Order interface |
+| `src/services/clientOrderService.ts` | Modify | Add `client_visible_update` to ClientOrder interface |
+| `OrderDetailsSection.tsx` | Modify | Add Client Update textarea with "Visible to Client" indicator |
+| `useOrderEdit.ts` | Modify | Include `client_visible_update` in form handling |
+| `ClientOrderDetail.tsx` | Modify | Add prominent "Latest Update" card |
+| `ClientOrderCard.tsx` | Modify | Add update indicator on order cards |
 
 ---
 
-## Technical Details
+## Security Verification
 
-### Files to Create:
-1. `src/utils/clientStatusTranslator.ts` - Status translation utility
+After implementation, verify these security constraints:
 
-### Files to Modify:
-1. `src/components/client-portal/ClientOrderCard.tsx` - Order card component
-2. `src/pages/client/ClientOrders.tsx` - Orders list page
-3. `src/pages/client/ClientOrderDetail.tsx` - Order detail page
-4. `src/components/ui/badge.tsx` - Add action variant
+| Column | Orders Table | client_orders View | Client Can See |
+|--------|--------------|-------------------|----------------|
+| `internal_notes` | Yes | **No** | **No** |
+| `assigned_to` | Yes | **No** | **No** |
+| `assigned_to_name` | Yes | **No** | **No** |
+| `inventory_items` | Yes | **No** | **No** |
+| `created_by` | Yes | **No** | **No** |
+| `agent_name` | Yes | **No** | **No** |
+| `client_visible_update` | Yes | **Yes** | **Yes** |
+| `description` | Yes | Yes | Yes |
+| `price` | Yes | Yes | Yes |
 
-### No Changes Required:
-- **Admin Dashboard**: All admin components (`OrderRow.tsx`, `OrderModal.tsx`, etc.) continue to use raw internal statuses unchanged
-- **Database**: No schema changes needed
-- **Services**: No API changes needed
-
----
-
-## Example Translation Scenarios
-
-| Internal Status | Client Sees | Badge Style |
-|-----------------|-------------|-------------|
-| `Created` | 📋 Order Received | Gray/Secondary |
-| `In Progress` | 🏗️ In Progress | Blue/Default |
-| `Dev-Backend` | 🏗️ In Progress | Blue/Default |
-| `Dev-Sprint` | 🏗️ In Progress | Blue/Default |
-| `QA` | 🔍 Quality Review | Gray/Secondary |
-| `Briefing` | 📝 Getting Started | Gray/Secondary |
-| `Awaiting-Client-Feedback` | 🕒 Action Required | Red/Pulsing |
-| `Invoice Sent` | 📄 Invoice Sent | Outline |
-| `Invoice Paid` | ✅ Payment Received | Blue/Default |
-| `Resolved` | 🎉 Completed | Green |
-| `Cancelled` | ❌ Cancelled | Red/Destructive |
+The `client_orders` view acts as a privacy filter, only exposing client-safe fields.
 
 ---
 
-## Extensibility
+## Files to Create/Modify
 
-The translation map is designed to be easily extended:
+### Database:
+1. Migration to add `client_visible_update` column
+2. Migration to recreate `client_orders` view with new column
 
-1. **Add new internal statuses**: Simply add a new entry to `STATUS_TRANSLATION_MAP`
-2. **Change client labels**: Update the `label` field in the map
-3. **Adjust progress weights**: Modify the `progress` value
-4. **Add action states**: Set `requiresAction: true` for any status needing client attention
-5. **Custom styling**: Use `badgeClassName` for any status-specific colors
-
-The fallback behavior ensures any unmapped status displays gracefully as "Status: [raw value]" with a neutral badge.
+### Frontend:
+1. `src/types/index.ts` - Add field to Order interface
+2. `src/services/clientOrderService.ts` - Add field to ClientOrder interface
+3. `src/components/dashboard/OrderEditForm/OrderDetailsSection.tsx` - Add admin textarea
+4. `src/components/dashboard/OrderEditForm/useOrderEdit.ts` - Include in form handling
+5. `src/pages/client/ClientOrderDetail.tsx` - Display prominent update card
+6. `src/components/client-portal/ClientOrderCard.tsx` - Add update indicator
 
