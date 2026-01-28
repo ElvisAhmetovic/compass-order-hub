@@ -1,141 +1,116 @@
 
 
-# Speed Up Inquiry Submission with Background Email Sending
+# Fix: Mark Support Notifications as Read When Viewing Inquiry
 
 ## Problem
 
-Current flow takes ~11 seconds because:
-1. Edge function sends 11 emails sequentially with 600ms delays
-2. Client-side code `await`s the entire process
-3. User sees loading spinner for the full duration
-
-From the session replay: 11.5 seconds between loading spinner → success toast.
+When a support inquiry or reply is created, notifications are sent to the `notifications` table. However:
+- Clicking "View" on an inquiry card navigates to the detail page
+- The notification bell badge stays showing "1" because the notification was never marked as read
+- The sidebar badge (admin side) shows open inquiry count, not unread notifications
 
 ## Solution
 
-Use Supabase's `EdgeRuntime.waitUntil()` to run email sending as a **background task**. The edge function returns immediately, and emails continue sending after the response is returned.
+When viewing an inquiry detail page, automatically mark any related notifications as read. This needs to happen on both:
+- Admin side (`InquiryDetail.tsx`)
+- Client side (`ClientSupportDetail.tsx`)
 
-```text
-BEFORE (Blocking - 11+ seconds):
-Client → Edge Function → [Send Email 1] → [600ms] → [Send Email 2] → ... → [Send Email 11] → Response → Client
+## How Notifications Are Created
 
-AFTER (Background - ~200ms):
-Client → Edge Function → Response → Client ✓ (instant!)
-                      └──► [Background: Send all emails at its own pace]
-```
+1. **Client creates inquiry** → Admins get notification with `action_url: /support/{inquiryId}`
+2. **Client replies** → Admins get notification with `action_url: /support/{inquiryId}`
+3. **Admin replies** → Client gets notification with `action_url: /client/support/{inquiryId}`
 
 ## Technical Changes
 
-### File 1: Edge Function Update
-**File**: `supabase/functions/send-support-inquiry-notification/index.ts`
+### File 1: Update supportReadService.ts
 
-Use `EdgeRuntime.waitUntil()` to defer email sending:
+Add a new function to mark notifications as read by action_url pattern:
 
 ```typescript
-const handler = async (req: Request): Promise<Response> => {
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+/**
+ * Mark notifications as read for a specific inquiry
+ * This clears the bell notification when viewing the inquiry
+ */
+export async function markSupportNotificationsAsRead(inquiryId: string): Promise<void> {
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData.user) return;
+
+  // Mark notifications that link to this inquiry as read
+  // Matches both /support/{id} (admin) and /client/support/{id} (client)
+  const { error } = await supabase
+    .from("notifications")
+    .update({ read: true })
+    .eq("user_id", userData.user.id)
+    .eq("read", false)
+    .or(`action_url.eq./support/${inquiryId},action_url.eq./client/support/${inquiryId}`);
+
+  if (error) {
+    console.error("Error marking support notifications as read:", error);
   }
-
-  try {
-    const { inquiryData, emails }: SupportInquiryNotificationRequest = await req.json();
-
-    console.log("Received support inquiry notification request:", {
-      inquiryId: inquiryData.id,
-      recipientCount: emails.length,
-    });
-
-    // Validate required fields
-    if (!inquiryData.id || !inquiryData.subject || !emails.length) {
-      throw new Error("Missing required fields");
-    }
-
-    // Define the background email sending task
-    const sendEmailsInBackground = async () => {
-      const appUrl = Deno.env.get("APP_URL") || "https://www.empriadental.de";
-      const emailHtml = generateEmailHtml(inquiryData, appUrl);
-
-      for (const email of emails) {
-        try {
-          console.log(`[Background] Sending email to: ${email}`);
-          const { error } = await resend.emails.send({
-            from: "AB Media Team <noreply@empriadental.de>",
-            to: [email],
-            subject: `New Support Inquiry: ${inquiryData.subject}`,
-            html: emailHtml,
-          });
-
-          if (error) {
-            console.error(`[Background] Failed to send to ${email}:`, error);
-          } else {
-            console.log(`[Background] Successfully sent to: ${email}`);
-          }
-
-          // Rate limiting delay
-          await new Promise((resolve) => setTimeout(resolve, 600));
-        } catch (sendError: any) {
-          console.error(`[Background] Error sending to ${email}:`, sendError);
-        }
-      }
-      console.log(`[Background] Email notification complete for inquiry ${inquiryData.id}`);
-    };
-
-    // Schedule background task - function continues running after response
-    EdgeRuntime.waitUntil(sendEmailsInBackground());
-
-    // Return immediately - client doesn't wait for emails
-    return new Response(
-      JSON.stringify({
-        success: true,
-        message: "Inquiry received, email notifications queued",
-      }),
-      {
-        status: 200,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      }
-    );
-  } catch (error: any) {
-    console.error("Error in send-support-inquiry-notification:", error);
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      }
-    );
-  }
-};
+}
 ```
 
-### How `EdgeRuntime.waitUntil()` Works
+### File 2: Update InquiryDetail.tsx (Admin)
 
-- Returns response to client immediately (~200ms)
-- Edge function instance stays alive to complete background task
-- Emails send at their own pace without blocking user
-- Logs still work for debugging (`[Background]` prefix for clarity)
+Call the new function when marking the inquiry as read:
+
+```typescript
+import { getLastReadAt, markInquiryAsRead, markSupportNotificationsAsRead } from "@/services/supportReadService";
+
+// In the useEffect that marks as read (lines 68-77):
+useEffect(() => {
+  if (!inquiryId || !inquiry || hasMarkedRead.current) return;
+  
+  const timer = setTimeout(async () => {
+    await markInquiryAsRead(inquiryId);
+    await markSupportNotificationsAsRead(inquiryId); // ADD THIS
+    hasMarkedRead.current = true;
+  }, 1000);
+
+  return () => clearTimeout(timer);
+}, [inquiryId, inquiry]);
+```
+
+### File 3: Update ClientSupportDetail.tsx (Client)
+
+Same change for client side:
+
+```typescript
+import { getLastReadAt, markInquiryAsRead, markSupportNotificationsAsRead } from "@/services/supportReadService";
+
+// In the useEffect that marks as read (lines 44-54):
+useEffect(() => {
+  if (!ticketId || !inquiry || hasMarkedRead.current) return;
+  
+  const timer = setTimeout(async () => {
+    await markInquiryAsRead(ticketId);
+    await markSupportNotificationsAsRead(ticketId); // ADD THIS
+    hasMarkedRead.current = true;
+  }, 1000);
+
+  return () => clearTimeout(timer);
+}, [ticketId, inquiry]);
+```
 
 ## Files to Modify
 
-| File | Action | Description |
-|------|--------|-------------|
-| `supabase/functions/send-support-inquiry-notification/index.ts` | Modify | Add background task with `EdgeRuntime.waitUntil()` |
+| File | Changes |
+|------|---------|
+| `src/services/supportReadService.ts` | Add `markSupportNotificationsAsRead()` function |
+| `src/components/support/InquiryDetail.tsx` | Call `markSupportNotificationsAsRead()` when viewing |
+| `src/pages/client/ClientSupportDetail.tsx` | Call `markSupportNotificationsAsRead()` when viewing |
 
-## No Client-Side Changes Needed
+## Expected Outcome
 
-The `clientSupportService.ts` code stays the same - it still awaits the edge function, but now the edge function returns instantly.
+1. User clicks on inquiry card → navigates to detail page
+2. After 1 second delay (same as existing "mark as read" logic):
+   - `support_reply_reads` table is updated (existing behavior)
+   - `notifications` table is updated to mark matching notifications as read (new)
+3. Bell notification badge decrements automatically
+4. Sidebar red dot (unread replies) clears (existing behavior)
 
-## Expected Performance Improvement
+## Why 1-Second Delay?
 
-| Metric | Before | After |
-|--------|--------|-------|
-| User wait time | ~11-12 seconds | ~0.5-1 second |
-| Email delivery | Same | Same (background) |
-| Error visibility | Same | Same (logs still work) |
-
-## Outcome
-
-1. Client submits inquiry → sees success toast in under 1 second
-2. Emails still send to all 11 team members in the background
-3. No emails are lost - the edge function stays alive until complete
-4. Better user experience, same functionality
+The delay ensures users have time to see the "NEW" badges on replies before they're cleared. This matches the existing behavior for the unread reply tracking.
 
