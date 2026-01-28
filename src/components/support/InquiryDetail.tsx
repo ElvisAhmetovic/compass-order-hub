@@ -4,7 +4,7 @@ import { useAuth } from "@/context/AuthContext";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { getLastReadAt, markInquiryAsRead } from "@/services/supportReadService";
+import { getLastReadAt, markInquiryAsRead, markSupportNotificationsAsRead } from "@/services/supportReadService";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -70,6 +70,7 @@ export const InquiryDetail = () => {
     
     const timer = setTimeout(async () => {
       await markInquiryAsRead(inquiryId);
+      await markSupportNotificationsAsRead(inquiryId);
       hasMarkedRead.current = true;
     }, 1000);
 

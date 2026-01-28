@@ -143,3 +143,25 @@ export async function getUnreadCountsForInquiries(
 
   return result;
 }
+
+/**
+ * Mark notifications as read for a specific inquiry
+ * This clears the bell notification when viewing the inquiry
+ */
+export async function markSupportNotificationsAsRead(inquiryId: string): Promise<void> {
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData.user) return;
+
+  // Mark notifications that link to this inquiry as read
+  // Matches both /support/{id} (admin) and /client/support/{id} (client)
+  const { error } = await supabase
+    .from("notifications")
+    .update({ read: true })
+    .eq("user_id", userData.user.id)
+    .eq("read", false)
+    .or(`action_url.eq./support/${inquiryId},action_url.eq./client/support/${inquiryId}`);
+
+  if (error) {
+    console.error("Error marking support notifications as read:", error);
+  }
+}

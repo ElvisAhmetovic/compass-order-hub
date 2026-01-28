@@ -13,7 +13,7 @@ import {
   ClientSupportInquiry,
   ClientSupportReply,
 } from "@/services/clientSupportService";
-import { getLastReadAt, markInquiryAsRead } from "@/services/supportReadService";
+import { getLastReadAt, markInquiryAsRead, markSupportNotificationsAsRead } from "@/services/supportReadService";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 
@@ -47,6 +47,7 @@ const ClientSupportDetail = () => {
     
     const timer = setTimeout(async () => {
       await markInquiryAsRead(ticketId);
+      await markSupportNotificationsAsRead(ticketId);
       hasMarkedRead.current = true;
     }, 1000);
 
