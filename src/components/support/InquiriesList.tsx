@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { getUnreadCountsForInquiries } from "@/services/supportReadService";
 
 interface SupportInquiry {
   id: string;
@@ -27,6 +28,7 @@ interface SupportInquiry {
   created_at: string;
   status: "open" | "replied" | "closed";
   reply_count?: number;
+  unread_count?: number;
 }
 
 interface InquiriesListProps {
@@ -119,12 +121,22 @@ export const InquiriesList = ({ showAll = false }: InquiriesListProps) => {
           return {
             ...inquiry,
             status: inquiry.status as "open" | "replied" | "closed",
-            reply_count: count || 0
+            reply_count: count || 0,
+            unread_count: 0
           };
         })
       );
 
-      setInquiries(inquiriesWithCounts);
+      // Get unread counts
+      const inquiryIds = inquiriesWithCounts.map(i => i.id);
+      const unreadCounts = await getUnreadCountsForInquiries(inquiryIds);
+      
+      const inquiriesWithUnread = inquiriesWithCounts.map(inquiry => ({
+        ...inquiry,
+        unread_count: unreadCounts.get(inquiry.id) || 0
+      }));
+
+      setInquiries(inquiriesWithUnread);
     } catch (error) {
       console.error("Error loading inquiries:", error);
       toast({
@@ -249,13 +261,21 @@ export const InquiriesList = ({ showAll = false }: InquiriesListProps) => {
                       <Trash className="h-4 w-4" />
                     </Button>
                   )}
-                  <Button
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => handleViewInquiry(inquiry.id)}
-                  >
-                    {(inquiry.reply_count || 0) > 0 ? `View (${inquiry.reply_count} replies)` : "View"}
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => handleViewInquiry(inquiry.id)}
+                    >
+                      {(inquiry.reply_count || 0) > 0 ? `View (${inquiry.reply_count} replies)` : "View"}
+                    </Button>
+                    {(inquiry.unread_count || 0) > 0 && (
+                      <span className="relative flex h-2.5 w-2.5">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500" />
+                      </span>
+                    )}
+                  </div>
                 </div>
               </CardFooter>
             </Card>

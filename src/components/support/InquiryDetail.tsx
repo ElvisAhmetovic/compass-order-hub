@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { getLastReadAt, markInquiryAsRead } from "@/services/supportReadService";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -38,6 +39,7 @@ interface SupportReply {
   user_role: string;
   message: string;
   created_at: string;
+  isUnread?: boolean;
 }
 
 export const InquiryDetail = () => {
@@ -49,6 +51,8 @@ export const InquiryDetail = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [lastReadAt, setLastReadAt] = useState<string | null>(null);
+  const hasMarkedRead = useRef(false);
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -57,7 +61,26 @@ export const InquiryDetail = () => {
   useEffect(() => {
     if (!inquiryId) return;
     loadInquiry();
+    loadLastReadAt();
   }, [inquiryId, user, isAdmin]);
+
+  // Mark as read after a short delay
+  useEffect(() => {
+    if (!inquiryId || !inquiry || hasMarkedRead.current) return;
+    
+    const timer = setTimeout(async () => {
+      await markInquiryAsRead(inquiryId);
+      hasMarkedRead.current = true;
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [inquiryId, inquiry]);
+
+  const loadLastReadAt = async () => {
+    if (!inquiryId) return;
+    const readAt = await getLastReadAt(inquiryId);
+    setLastReadAt(readAt);
+  };
 
   // Real-time subscription for replies on this inquiry
   useEffect(() => {
@@ -129,7 +152,13 @@ export const InquiryDetail = () => {
 
       if (repliesError) throw repliesError;
 
-      setReplies(repliesData || []);
+      // Mark replies as unread if created after lastReadAt
+      const repliesWithUnreadStatus = (repliesData || []).map(reply => ({
+        ...reply,
+        isUnread: lastReadAt ? new Date(reply.created_at) > new Date(lastReadAt) && reply.user_id !== user?.id : false
+      }));
+
+      setReplies(repliesWithUnreadStatus);
     } catch (error) {
       console.error("Error loading inquiry:", error);
       toast({
@@ -358,12 +387,19 @@ export const InquiryDetail = () => {
             <Card key={reply.id} className={`${reply.user_role === "admin" ? "border-l-4 border-l-blue-500" : ""}`}>
               <CardHeader className="py-3">
                 <div className="flex justify-between items-center">
-                  <CardTitle className="text-sm font-medium">
-                    {reply.user_name}
+                  <div className="flex items-center gap-2">
+                    <CardTitle className="text-sm font-medium">
+                      {reply.user_name}
+                    </CardTitle>
                     {reply.user_role === "admin" && (
-                      <Badge className="ml-2 bg-blue-500">Admin</Badge>
+                      <Badge className="bg-blue-500">Admin</Badge>
                     )}
-                  </CardTitle>
+                    {reply.isUnread && (
+                      <Badge className="bg-red-500 text-white text-[10px] px-1.5 py-0.5">
+                        NEW
+                      </Badge>
+                    )}
+                  </div>
                   <span className="text-xs text-muted-foreground">
                     {format(new Date(reply.created_at), "PPpp")}
                   </span>
