@@ -71,3 +71,6 @@ verify_jwt = false
 
 [functions.create-user]
 verify_jwt = false
+
+[functions.send-support-inquiry-notification]
+verify_jwt = false

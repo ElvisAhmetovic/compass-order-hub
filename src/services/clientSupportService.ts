@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { NOTIFICATION_EMAIL_LIST } from "@/constants/notificationEmails";
 
 export interface ClientSupportInquiry {
   id: string;
@@ -229,12 +230,45 @@ export async function createClientInquiry(params: {
     return { success: false, error: error.message };
   }
 
-  // Notify all admins about the new inquiry
+  // Notify all admins about the new inquiry (in-app)
   await notifyAdmins({
     title: "New Support Inquiry",
     message: `${userName} submitted: "${params.subject}"`,
     actionUrl: `/support/${data.id}`
   });
+
+  // Send email notifications to all team members
+  try {
+    // If order is linked, fetch company name
+    let orderCompanyName: string | undefined;
+    if (params.orderId) {
+      const { data: order } = await supabase
+        .from("orders")
+        .select("company_name")
+        .eq("id", params.orderId)
+        .maybeSingle();
+      orderCompanyName = order?.company_name;
+    }
+
+    await supabase.functions.invoke("send-support-inquiry-notification", {
+      body: {
+        inquiryData: {
+          id: data.id,
+          subject: params.subject,
+          message: params.message,
+          clientName: userName,
+          clientEmail: userData.user.email || "",
+          orderCompanyName,
+          createdAt: new Date().toISOString(),
+        },
+        emails: NOTIFICATION_EMAIL_LIST,
+      },
+    });
+    console.log("Support inquiry email notifications sent");
+  } catch (emailError) {
+    console.error("Error sending email notifications:", emailError);
+    // Don't block inquiry creation if email fails
+  }
 
   return { success: true, inquiryId: data.id };
 }
