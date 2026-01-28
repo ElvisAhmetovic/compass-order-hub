@@ -1,160 +1,141 @@
 
 
-# Unread Reply Indicators for Support System
+# Speed Up Inquiry Submission with Background Email Sending
 
-## Overview
+## Problem
 
-Add visual "red dot" indicators to show unread replies in the support inquiry system for both clients and admins. This requires tracking which replies each user has read.
+Current flow takes ~11 seconds because:
+1. Edge function sends 11 emails sequentially with 600ms delays
+2. Client-side code `await`s the entire process
+3. User sees loading spinner for the full duration
 
-## Current State
+From the session replay: 11.5 seconds between loading spinner → success toast.
 
-- Notifications are sent to bell icon when replies are added (working)
-- No tracking of which replies have been "read" by which users
-- No visual indicator on inquiry cards or reply messages
+## Solution
 
-## Solution Design
+Use Supabase's `EdgeRuntime.waitUntil()` to run email sending as a **background task**. The edge function returns immediately, and emails continue sending after the response is returned.
 
-### Part 1: Database - Track Read Status
+```text
+BEFORE (Blocking - 11+ seconds):
+Client → Edge Function → [Send Email 1] → [600ms] → [Send Email 2] → ... → [Send Email 11] → Response → Client
 
-Create a new table `support_reply_reads` to track which replies each user has read:
-
-```sql
-CREATE TABLE public.support_reply_reads (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  inquiry_id UUID NOT NULL REFERENCES support_inquiries(id) ON DELETE CASCADE,
-  last_read_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  UNIQUE(user_id, inquiry_id)
-);
-
--- RLS policies
-ALTER TABLE public.support_reply_reads ENABLE ROW LEVEL SECURITY;
-
--- Users can manage their own read status
-CREATE POLICY "Users can manage own read status"
-  ON public.support_reply_reads
-  FOR ALL
-  USING (auth.uid() = user_id)
-  WITH CHECK (auth.uid() = user_id);
+AFTER (Background - ~200ms):
+Client → Edge Function → Response → Client ✓ (instant!)
+                      └──► [Background: Send all emails at its own pace]
 ```
 
-### Part 2: Service Functions
+## Technical Changes
 
-**File**: `src/services/clientSupportService.ts`
+### File 1: Edge Function Update
+**File**: `supabase/functions/send-support-inquiry-notification/index.ts`
 
-Add functions to:
-1. Get unread count per inquiry
-2. Mark inquiry as read when opened
+Use `EdgeRuntime.waitUntil()` to defer email sending:
 
 ```typescript
-// Mark an inquiry as read (updates last_read_at)
-export async function markInquiryAsRead(inquiryId: string): Promise<void>
+const handler = async (req: Request): Promise<Response> => {
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
+  }
 
-// Get unread reply count for an inquiry
-export async function getUnreadReplyCount(inquiryId: string): Promise<number>
+  try {
+    const { inquiryData, emails }: SupportInquiryNotificationRequest = await req.json();
+
+    console.log("Received support inquiry notification request:", {
+      inquiryId: inquiryData.id,
+      recipientCount: emails.length,
+    });
+
+    // Validate required fields
+    if (!inquiryData.id || !inquiryData.subject || !emails.length) {
+      throw new Error("Missing required fields");
+    }
+
+    // Define the background email sending task
+    const sendEmailsInBackground = async () => {
+      const appUrl = Deno.env.get("APP_URL") || "https://www.empriadental.de";
+      const emailHtml = generateEmailHtml(inquiryData, appUrl);
+
+      for (const email of emails) {
+        try {
+          console.log(`[Background] Sending email to: ${email}`);
+          const { error } = await resend.emails.send({
+            from: "AB Media Team <noreply@empriadental.de>",
+            to: [email],
+            subject: `New Support Inquiry: ${inquiryData.subject}`,
+            html: emailHtml,
+          });
+
+          if (error) {
+            console.error(`[Background] Failed to send to ${email}:`, error);
+          } else {
+            console.log(`[Background] Successfully sent to: ${email}`);
+          }
+
+          // Rate limiting delay
+          await new Promise((resolve) => setTimeout(resolve, 600));
+        } catch (sendError: any) {
+          console.error(`[Background] Error sending to ${email}:`, sendError);
+        }
+      }
+      console.log(`[Background] Email notification complete for inquiry ${inquiryData.id}`);
+    };
+
+    // Schedule background task - function continues running after response
+    EdgeRuntime.waitUntil(sendEmailsInBackground());
+
+    // Return immediately - client doesn't wait for emails
+    return new Response(
+      JSON.stringify({
+        success: true,
+        message: "Inquiry received, email notifications queued",
+      }),
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      }
+    );
+  } catch (error: any) {
+    console.error("Error in send-support-inquiry-notification:", error);
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      }
+    );
+  }
+};
 ```
 
-### Part 3: UI Updates - Inquiry Lists
+### How `EdgeRuntime.waitUntil()` Works
 
-**Files**: 
-- `src/components/support/InquiriesList.tsx` (Admin)
-- `src/pages/client/ClientSupport.tsx` (Client)
+- Returns response to client immediately (~200ms)
+- Edge function instance stays alive to complete background task
+- Emails send at their own pace without blocking user
+- Logs still work for debugging (`[Background]` prefix for clarity)
 
-Add red dot indicator when inquiry has unread replies:
-
-```text
-┌─────────────────────────────────────────────────┐
-│ [Subject Title]                      [Status]   │
-│ From: Client Name                               │
-│ Message preview...                              │
-│                                                 │
-│ Jan 28, 2026        [View (3 replies)] 🔴       │
-│                                    ▲            │
-│                      Red dot = unread replies   │
-└─────────────────────────────────────────────────┘
-```
-
-### Part 4: UI Updates - Reply Cards
-
-**Files**:
-- `src/components/support/InquiryDetail.tsx` (Admin)
-- `src/pages/client/ClientSupportDetail.tsx` (Client)
-
-1. Show "NEW" badge on replies posted after last_read_at
-2. Auto-mark as read when page loads (after small delay)
-
-```text
-┌─────────────────────────────────────────────────┐
-│ [Avatar] John Doe         [Support Team] [NEW]  │
-│          Jan 28, 2026 at 2:30 PM         🔴     │
-│ ─────────────────────────────────────────────── │
-│ Reply message content here...                   │
-└─────────────────────────────────────────────────┘
-```
-
-## Data Flow
-
-```text
-User opens inquiry list
-        │
-        ▼
-┌───────────────────────┐
-│ Fetch inquiries       │
-│ + unread counts       │──────────▶ Show red dot if unread > 0
-└───────────────────────┘
-
-User clicks on inquiry
-        │
-        ▼
-┌───────────────────────┐
-│ Fetch replies         │
-│ + last_read_at        │──────────▶ Show "NEW" badge on replies
-└───────────────────────┘            after last_read_at
-        │
-        │ (after 1 second delay)
-        ▼
-┌───────────────────────┐
-│ Mark inquiry as read  │──────────▶ Update last_read_at = now()
-└───────────────────────┘
-```
-
-## Files to Create/Modify
+## Files to Modify
 
 | File | Action | Description |
 |------|--------|-------------|
-| Database migration | Create | Add `support_reply_reads` table |
-| `src/services/supportReadService.ts` | Create | Functions to track/mark read status |
-| `src/components/support/InquiriesList.tsx` | Modify | Add unread indicator to inquiry cards |
-| `src/components/support/InquiryDetail.tsx` | Modify | Add NEW badge to replies, mark as read |
-| `src/pages/client/ClientSupport.tsx` | Modify | Add unread indicator to client inquiry list |
-| `src/pages/client/ClientSupportDetail.tsx` | Modify | Add NEW badge to replies, mark as read |
+| `supabase/functions/send-support-inquiry-notification/index.ts` | Modify | Add background task with `EdgeRuntime.waitUntil()` |
 
-## Visual Design
+## No Client-Side Changes Needed
 
-### Red Dot Indicator (List)
-```tsx
-{unreadCount > 0 && (
-  <span className="relative flex h-2.5 w-2.5">
-    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
-    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500" />
-  </span>
-)}
-```
+The `clientSupportService.ts` code stays the same - it still awaits the edge function, but now the edge function returns instantly.
 
-### NEW Badge (Reply Card)
-```tsx
-{isUnread && (
-  <Badge className="bg-red-500 text-white text-[10px] px-1.5 py-0.5">
-    NEW
-  </Badge>
-)}
-```
+## Expected Performance Improvement
 
-## Expected Outcome
+| Metric | Before | After |
+|--------|--------|-------|
+| User wait time | ~11-12 seconds | ~0.5-1 second |
+| Email delivery | Same | Same (background) |
+| Error visibility | Same | Same (logs still work) |
 
-1. **Inquiry List**: Red pulsing dot appears next to inquiries with unread replies
-2. **Inquiry Detail**: "NEW" badge appears on replies you haven't seen
-3. **Auto-clear**: Red dot and NEW badges disappear after viewing (1 second delay)
-4. **Both sides**: Works for both clients and admins
-5. **Real-time**: Red dots update in real-time when new replies arrive
+## Outcome
+
+1. Client submits inquiry → sees success toast in under 1 second
+2. Emails still send to all 11 team members in the background
+3. No emails are lost - the edge function stays alive until complete
+4. Better user experience, same functionality
 
