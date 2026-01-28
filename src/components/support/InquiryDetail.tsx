@@ -59,6 +59,27 @@ export const InquiryDetail = () => {
     loadInquiry();
   }, [inquiryId, user, isAdmin]);
 
+  // Real-time subscription for replies on this inquiry
+  useEffect(() => {
+    if (!inquiryId) return;
+
+    const channel = supabase
+      .channel(`admin-support-detail-${inquiryId}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'support_replies',
+        filter: `inquiry_id=eq.${inquiryId}`
+      }, () => {
+        loadInquiry();
+      })
+      .subscribe();
+
+    return () => {
+      channel.unsubscribe();
+    };
+  }, [inquiryId]);
+
   const loadInquiry = async () => {
     if (!inquiryId || !user) return;
     
