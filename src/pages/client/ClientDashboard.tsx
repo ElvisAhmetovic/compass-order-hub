@@ -93,26 +93,26 @@ const ClientDashboard = () => {
       <div className="space-y-8">
         {/* Welcome Header */}
         <div>
-          <h1 className="text-3xl font-bold text-foreground">
+          <h1 className="text-2xl md:text-3xl font-bold text-foreground">
             Welcome{user?.first_name ? `, ${user.first_name}` : ''}!
           </h1>
-          <p className="text-muted-foreground mt-1">
+          <p className="text-muted-foreground mt-1 text-sm md:text-base">
             Here's a quick overview of your orders and projects
           </p>
         </div>
 
         {/* Stats Grid */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-3 md:gap-4 grid-cols-2 lg:grid-cols-4">
           {statCards.map((stat) => (
             <Card key={stat.title} className="border-border/50">
-              <CardContent className="p-5">
-                <div className="flex items-center gap-4">
-                  <div className={`p-3 rounded-xl ${stat.bgColor}`}>
-                    <stat.icon className={`h-6 w-6 ${stat.color}`} />
+              <CardContent className="p-3 md:p-5">
+                <div className="flex items-center gap-3 md:gap-4">
+                  <div className={`p-2 md:p-3 rounded-xl ${stat.bgColor}`}>
+                    <stat.icon className={`h-5 w-5 md:h-6 md:w-6 ${stat.color}`} />
                   </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">{stat.title}</p>
-                    <p className="text-2xl font-bold text-foreground">{stat.value}</p>
+                  <div className="min-w-0">
+                    <p className="text-xs md:text-sm text-muted-foreground truncate">{stat.title}</p>
+                    <p className="text-xl md:text-2xl font-bold text-foreground">{stat.value}</p>
                   </div>
                 </div>
               </CardContent>
