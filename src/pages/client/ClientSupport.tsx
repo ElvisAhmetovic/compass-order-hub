@@ -38,6 +38,7 @@ import {
   fetchClientOrders,
   ClientSupportInquiry,
 } from "@/services/clientSupportService";
+import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 
 const ClientSupport = () => {
@@ -56,6 +57,31 @@ const ClientSupport = () => {
 
   useEffect(() => {
     loadData();
+  }, []);
+
+  // Real-time subscription for support updates
+  useEffect(() => {
+    const channel = supabase
+      .channel('client-support-realtime')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'support_inquiries'
+      }, () => {
+        loadData();
+      })
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'support_replies'
+      }, () => {
+        loadData();
+      })
+      .subscribe();
+
+    return () => {
+      channel.unsubscribe();
+    };
   }, []);
 
   const loadData = async () => {

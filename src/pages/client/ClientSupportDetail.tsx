@@ -13,6 +13,7 @@ import {
   ClientSupportInquiry,
   ClientSupportReply,
 } from "@/services/clientSupportService";
+import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 
 const ClientSupportDetail = () => {
@@ -30,6 +31,27 @@ const ClientSupportDetail = () => {
     if (ticketId) {
       loadInquiry();
     }
+  }, [ticketId]);
+
+  // Real-time subscription for replies on this ticket
+  useEffect(() => {
+    if (!ticketId) return;
+
+    const channel = supabase
+      .channel(`client-support-detail-${ticketId}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'support_replies',
+        filter: `inquiry_id=eq.${ticketId}`
+      }, () => {
+        loadInquiry();
+      })
+      .subscribe();
+
+    return () => {
+      channel.unsubscribe();
+    };
   }, [ticketId]);
 
   const loadInquiry = async () => {
