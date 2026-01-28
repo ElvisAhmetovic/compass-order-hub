@@ -1,156 +1,190 @@
 
+# Mobile QA Testing Results: Client Dashboard & Portal
 
-# Add Email Notifications for Client Support Inquiries
+## Summary of QA Testing
 
-## Overview
+After reviewing all client portal components, I identified **7 mobile responsiveness issues** that need to be fixed for a proper mobile experience.
 
-Send email notifications to all admin team members when a client submits a new support inquiry. This provides an additional notification channel beyond the in-app notifications already implemented.
+---
 
-## Current Infrastructure
+## Issues Found
 
-**Existing patterns to follow:**
-- `send-tech-support-notification` edge function uses Resend API with `RESEND_API_KEY`
-- Email sender: `"AB Media Team <noreply@empriadental.de>"`
-- `NOTIFICATION_EMAIL_LIST` contains 11 team member emails
-- Rate limiting: 600ms delay between emails to respect Resend limits
-- `APP_URL` environment variable for deep linking
+### Issue 1: ClientHeader - Welcome Text Overflow
+**File**: `src/components/client-portal/ClientHeader.tsx`
+**Problem**: The welcome message `"Welcome, {full_name}"` can overflow on small screens with long names/emails. The header has fixed padding (`px-6`) which is too large for mobile.
+**Fix**: Add responsive padding and truncate long text.
 
-**Current flow:**
-1. Client creates inquiry via `createClientInquiry()` in `clientSupportService.ts`
-2. In-app notifications are created for all admins
-3. **Missing:** Email notifications are NOT sent
+### Issue 2: ClientHeader - Missing Mobile Menu Trigger
+**File**: `src/components/client-portal/ClientHeader.tsx`
+**Problem**: On mobile, the sidebar is hidden (rendered as a Sheet/drawer), but there's no way to open it from the header. The `SidebarTrigger` is only in the sidebar itself, which is hidden on mobile.
+**Fix**: Add a `SidebarTrigger` (hamburger menu) to the header for mobile.
 
-## Solution
+### Issue 3: ClientLayout - Main Content Padding Too Large
+**File**: `src/components/client-portal/ClientLayout.tsx`
+**Problem**: The main content has fixed `p-6` padding which is too large on mobile, reducing usable space.
+**Fix**: Use responsive padding `p-4 md:p-6`.
 
-### Part 1: Create New Edge Function
+### Issue 4: ClientDashboard - Title Font Size
+**File**: `src/pages/client/ClientDashboard.tsx`
+**Problem**: The `text-3xl` title is too large for mobile screens.
+**Fix**: Use responsive font sizing `text-2xl md:text-3xl`.
 
-**File**: `supabase/functions/send-support-inquiry-notification/index.ts`
+### Issue 5: ClientDashboard - Stats Cards Icon/Text Cramped
+**File**: `src/pages/client/ClientDashboard.tsx`
+**Problem**: Stats cards with `p-5` and `gap-4` can feel cramped on the smallest devices.
+**Fix**: Adjust to `p-4` and `gap-3` for better mobile spacing.
 
-Create a new edge function that:
-- Receives inquiry details (id, subject, message, client name, client email, order info)
-- Sends formatted HTML emails to all notification recipients
-- Includes deep link to `/support/{inquiryId}` for quick access
+### Issue 6: ClientOrderCard - Update Text Truncation
+**File**: `src/components/client-portal/ClientOrderCard.tsx`
+**Problem**: The client update indicator has a fixed `max-w-[200px]` which may be too wide or too narrow depending on screen size.
+**Fix**: Use responsive max-width class.
 
-```typescript
-interface SupportInquiryNotificationRequest {
-  inquiryData: {
-    id: string;
-    subject: string;
-    message: string;
-    clientName: string;
-    clientEmail: string;
-    orderCompanyName?: string;
-    createdAt: string;
-  };
-  emails: string[];
-}
+### Issue 7: ClientSupportDetail - Header Layout Wrapping
+**File**: `src/pages/client/ClientSupportDetail.tsx`
+**Problem**: The header with back button, title, status badge, and date is all on one line and can break awkwardly on mobile.
+**Fix**: Stack header elements vertically on mobile.
+
+---
+
+## Files to Modify
+
+| File | Changes |
+|------|---------|
+| `src/components/client-portal/ClientHeader.tsx` | Add mobile hamburger menu, responsive padding, truncate text |
+| `src/components/client-portal/ClientLayout.tsx` | Responsive main content padding |
+| `src/pages/client/ClientDashboard.tsx` | Responsive title size, stats card padding |
+| `src/components/client-portal/ClientOrderCard.tsx` | Responsive max-width for update text |
+| `src/pages/client/ClientSupportDetail.tsx` | Stack header on mobile |
+
+---
+
+## Technical Details
+
+### ClientHeader.tsx Changes
+
+```tsx
+import { SidebarTrigger } from "@/components/ui/sidebar";
+import { useIsMobile } from "@/hooks/use-mobile";
+
+const ClientHeader = () => {
+  const { user, logout } = useAuth();
+  const isMobile = useIsMobile();
+
+  return (
+    <header className="h-14 md:h-16 border-b border-border bg-card px-3 md:px-6 flex items-center justify-between gap-2">
+      <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
+        {/* Mobile hamburger menu */}
+        <SidebarTrigger className="md:hidden" />
+        <Building2 className="h-5 w-5 md:h-6 md:w-6 text-primary flex-shrink-0" />
+        <span className="font-medium text-foreground text-sm md:text-base truncate">
+          {isMobile ? (user?.first_name || "Welcome") : `Welcome, ${user?.full_name || user?.email}`}
+        </span>
+      </div>
+
+      <div className="flex items-center gap-2 md:gap-4">
+        <NotificationCenter />
+        <DarkModeToggle />
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={logout}
+          className="flex items-center gap-2 text-muted-foreground hover:text-foreground px-2"
+        >
+          <LogOut className="h-4 w-4" />
+          <span className="hidden sm:inline">Logout</span>
+        </Button>
+      </div>
+    </header>
+  );
+};
 ```
 
-**Email template features:**
-- Professional HTML layout matching existing email styles
-- Inquiry subject and message preview
-- Client contact information
-- Link to related order (if applicable)
-- Direct "View in Dashboard" button linking to `/support/{id}`
+### ClientLayout.tsx Changes
 
-### Part 2: Update Config
-
-**File**: `supabase/config.toml`
-
-Add configuration for the new edge function:
-```toml
-[functions.send-support-inquiry-notification]
-verify_jwt = false
+```tsx
+<main className="flex-1 p-4 md:p-6 overflow-auto">
+  {children}
+</main>
 ```
 
-### Part 3: Call Edge Function from Service
+### ClientDashboard.tsx Changes
 
-**File**: `src/services/clientSupportService.ts`
+```tsx
+{/* Welcome Header */}
+<div>
+  <h1 className="text-2xl md:text-3xl font-bold text-foreground">
+    Welcome{user?.first_name ? `, ${user.first_name}` : ''}!
+  </h1>
+  <p className="text-muted-foreground mt-1 text-sm md:text-base">
+    Here's a quick overview of your orders and projects
+  </p>
+</div>
 
-Update `createClientInquiry()` to invoke the edge function after creating the inquiry:
-
-```typescript
-// After successful inquiry creation and in-app notifications
-try {
-  await supabase.functions.invoke('send-support-inquiry-notification', {
-    body: {
-      inquiryData: {
-        id: data.id,
-        subject: params.subject,
-        message: params.message,
-        clientName: userName,
-        clientEmail: userData.user.email,
-        orderCompanyName: orderCompanyName, // fetch if orderId provided
-        createdAt: new Date().toISOString()
-      },
-      emails: NOTIFICATION_EMAIL_LIST
-    }
-  });
-} catch (emailError) {
-  console.error("Error sending email notification:", emailError);
-  // Don't block the inquiry creation if email fails
-}
+{/* Stats Cards - adjust padding */}
+<CardContent className="p-4 md:p-5">
+  <div className="flex items-center gap-3 md:gap-4">
+    <div className={`p-2.5 md:p-3 rounded-xl ${stat.bgColor}`}>
+      <stat.icon className={`h-5 w-5 md:h-6 md:w-6 ${stat.color}`} />
+    </div>
+    <div>
+      <p className="text-xs md:text-sm text-muted-foreground">{stat.title}</p>
+      <p className="text-xl md:text-2xl font-bold text-foreground">{stat.value}</p>
+    </div>
+  </div>
+</CardContent>
 ```
 
-## Data Flow
+### ClientOrderCard.tsx Changes
 
-```text
-Client Portal                     Backend                           Email Service
-┌──────────────┐                 ┌─────────────────┐               ┌─────────────┐
-│ New Inquiry  │                 │ clientSupport   │               │ Resend API  │
-│ Form Submit  │────────────────▶│ Service.ts      │               │             │
-└──────────────┘                 │                 │               └──────────────┘
-                                 │ 1. Insert       │                      ▲
-                                 │    inquiry      │                      │
-                                 │                 │                      │
-                                 │ 2. Create       │                      │
-                                 │    in-app       │                      │
-                                 │    notifications│                      │
-                                 │                 │                      │
-                                 │ 3. Invoke       │    ┌─────────────────┘
-                                 │    edge func ───┼───▶│ send-support-
-                                 └─────────────────┘    │ inquiry-
-                                                        │ notification
-                                                        │
-                                                        │ 4. Send emails
-                                                        │    to all admins
-                                                        │    (11 recipients)
-                                                        └─────────────────
+```tsx
+{/* Client Update Indicator - responsive max-width */}
+{order.client_visible_update && (
+  <div className="flex items-center gap-1.5 text-sm text-primary">
+    <Megaphone className="h-3.5 w-3.5 flex-shrink-0" />
+    <span className="truncate max-w-[150px] sm:max-w-[200px] md:max-w-[250px]">
+      {order.client_visible_update}
+    </span>
+  </div>
+)}
 ```
 
-## Files to Create/Modify
+### ClientSupportDetail.tsx Header Changes
 
-| File | Action | Description |
-|------|--------|-------------|
-| `supabase/functions/send-support-inquiry-notification/index.ts` | Create | New edge function for sending support inquiry emails |
-| `supabase/config.toml` | Modify | Add function configuration |
-| `src/services/clientSupportService.ts` | Modify | Add edge function invocation after inquiry creation |
+```tsx
+{/* Header - stack on mobile */}
+<div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+  <Button variant="ghost" size="sm" onClick={() => navigate("/client/support")} className="w-fit">
+    <ArrowLeft className="h-4 w-4 mr-2" />
+    Back
+  </Button>
+  <div className="flex-1 min-w-0">
+    <h1 className="text-xl sm:text-2xl font-bold text-foreground truncate">{inquiry.subject}</h1>
+    <div className="flex flex-wrap items-center gap-2 mt-1">
+      {getStatusBadge(inquiry.status)}
+      <span className="text-xs sm:text-sm text-muted-foreground">
+        Created {format(new Date(inquiry.created_at), "MMM d, yyyy")}
+      </span>
+    </div>
+  </div>
+</div>
+```
 
-## Email Template Design
+---
 
-The email will include:
-- Header with "New Support Inquiry" title
-- Client information section (name, email)
-- Linked order info (if applicable)
-- Inquiry subject prominently displayed
-- Message content preview
-- "View Inquiry" CTA button linking to dashboard
-- Footer with automatic generation notice
+## Additional Improvements
 
-## Error Handling
+1. **All client pages**: Responsive title sizes (`text-2xl md:text-3xl`)
+2. **ClientOrders.tsx**: Already has good `flex-col md:flex-row` responsive layout
+3. **ClientProfile.tsx**: Already constrained to `max-w-2xl` which works well on mobile
 
-- Email sending is wrapped in try/catch
-- Failure to send emails does NOT block inquiry creation
-- Errors are logged for debugging
-- Each recipient is sent individually with 600ms delay
-- Results tracked per-recipient for monitoring
+---
 
 ## Expected Outcome
 
-1. Client submits support inquiry
-2. Inquiry saved to database (existing)
-3. In-app notifications created for admins (existing)
-4. **NEW:** Email sent to all 11 team members
-5. Email includes deep link to specific inquiry
-6. Admin clicks email → opens dashboard at `/support/{id}`
+After these fixes:
+- Mobile users can open the sidebar via hamburger menu in the header
+- Text won't overflow or get cut off on small screens
+- Padding and spacing is optimized for touch targets
+- Cards and content are properly sized for mobile viewports
+- The overall experience feels native and polished on phones
 
