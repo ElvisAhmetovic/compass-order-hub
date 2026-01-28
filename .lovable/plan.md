@@ -1,181 +1,156 @@
 
-# Real-time Support Updates for Both Admin and Client
+
+# Add Email Notifications for Client Support Inquiries
 
 ## Overview
 
-Add real-time Supabase subscriptions to both admin and client support pages so they automatically update when:
-- New inquiries are created
-- New replies are added to existing threads
-- Notification badges update and clear when clicked
+Send email notifications to all admin team members when a client submits a new support inquiry. This provides an additional notification channel beyond the in-app notifications already implemented.
 
-## Current State Analysis
+## Current Infrastructure
 
-**Already working:**
-- NotificationCenter has real-time subscription for new notifications (INSERT events)
-- Clicking a notification marks it as read and updates local state, which clears the badge
-- Admin sidebar has real-time badge for open support tickets
-- InquiriesList (admin) has real-time subscription
+**Existing patterns to follow:**
+- `send-tech-support-notification` edge function uses Resend API with `RESEND_API_KEY`
+- Email sender: `"AB Media Team <noreply@empriadental.de>"`
+- `NOTIFICATION_EMAIL_LIST` contains 11 team member emails
+- Rate limiting: 600ms delay between emails to respect Resend limits
+- `APP_URL` environment variable for deep linking
 
-**Missing real-time updates:**
-- Client support list (`ClientSupport.tsx`) - needs to refresh when replies are added
-- Client support detail (`ClientSupportDetail.tsx`) - needs to refresh when admin replies
-- Admin support detail (`InquiryDetail.tsx`) - needs to refresh when client replies
+**Current flow:**
+1. Client creates inquiry via `createClientInquiry()` in `clientSupportService.ts`
+2. In-app notifications are created for all admins
+3. **Missing:** Email notifications are NOT sent
 
-## Implementation
+## Solution
 
-### Part 1: Add Real-time to Client Support List
+### Part 1: Create New Edge Function
 
-**File**: `src/pages/client/ClientSupport.tsx`
+**File**: `supabase/functions/send-support-inquiry-notification/index.ts`
 
-Add Supabase subscription to refresh inquiries when new replies arrive:
-
-```typescript
-// Add inside component after existing useEffect
-useEffect(() => {
-  const channel = supabase
-    .channel('client-support-inquiries')
-    .on('postgres_changes', {
-      event: '*',
-      schema: 'public',
-      table: 'support_inquiries'
-    }, () => {
-      loadData();
-    })
-    .on('postgres_changes', {
-      event: '*',
-      schema: 'public',
-      table: 'support_replies'
-    }, () => {
-      loadData();
-    })
-    .subscribe();
-
-  return () => {
-    channel.unsubscribe();
-  };
-}, []);
-```
-
-### Part 2: Add Real-time to Client Support Detail
-
-**File**: `src/pages/client/ClientSupportDetail.tsx`
-
-Add subscription to refresh when new replies arrive:
+Create a new edge function that:
+- Receives inquiry details (id, subject, message, client name, client email, order info)
+- Sends formatted HTML emails to all notification recipients
+- Includes deep link to `/support/{inquiryId}` for quick access
 
 ```typescript
-// Add after existing useEffect
-useEffect(() => {
-  if (!ticketId) return;
-
-  const channel = supabase
-    .channel(`client-support-detail-${ticketId}`)
-    .on('postgres_changes', {
-      event: 'INSERT',
-      schema: 'public',
-      table: 'support_replies',
-      filter: `inquiry_id=eq.${ticketId}`
-    }, () => {
-      loadInquiry();
-    })
-    .subscribe();
-
-  return () => {
-    channel.unsubscribe();
+interface SupportInquiryNotificationRequest {
+  inquiryData: {
+    id: string;
+    subject: string;
+    message: string;
+    clientName: string;
+    clientEmail: string;
+    orderCompanyName?: string;
+    createdAt: string;
   };
-}, [ticketId]);
+  emails: string[];
+}
 ```
 
-### Part 3: Add Real-time to Admin Support Detail
+**Email template features:**
+- Professional HTML layout matching existing email styles
+- Inquiry subject and message preview
+- Client contact information
+- Link to related order (if applicable)
+- Direct "View in Dashboard" button linking to `/support/{id}`
 
-**File**: `src/components/support/InquiryDetail.tsx`
+### Part 2: Update Config
 
-Add subscription to refresh when new replies arrive:
+**File**: `supabase/config.toml`
+
+Add configuration for the new edge function:
+```toml
+[functions.send-support-inquiry-notification]
+verify_jwt = false
+```
+
+### Part 3: Call Edge Function from Service
+
+**File**: `src/services/clientSupportService.ts`
+
+Update `createClientInquiry()` to invoke the edge function after creating the inquiry:
 
 ```typescript
-// Add after existing useEffect
-useEffect(() => {
-  if (!inquiryId) return;
-
-  const channel = supabase
-    .channel(`admin-support-detail-${inquiryId}`)
-    .on('postgres_changes', {
-      event: 'INSERT',
-      schema: 'public',
-      table: 'support_replies',
-      filter: `inquiry_id=eq.${inquiryId}`
-    }, () => {
-      loadInquiry();
-    })
-    .subscribe();
-
-  return () => {
-    channel.unsubscribe();
-  };
-}, [inquiryId]);
+// After successful inquiry creation and in-app notifications
+try {
+  await supabase.functions.invoke('send-support-inquiry-notification', {
+    body: {
+      inquiryData: {
+        id: data.id,
+        subject: params.subject,
+        message: params.message,
+        clientName: userName,
+        clientEmail: userData.user.email,
+        orderCompanyName: orderCompanyName, // fetch if orderId provided
+        createdAt: new Date().toISOString()
+      },
+      emails: NOTIFICATION_EMAIL_LIST
+    }
+  });
+} catch (emailError) {
+  console.error("Error sending email notification:", emailError);
+  // Don't block the inquiry creation if email fails
+}
 ```
 
-## Data Flow Summary
+## Data Flow
 
 ```text
-┌─────────────────────────────────────────────────────────────────────────┐
-│                           CLIENT PORTAL                                  │
-│  ClientSupport.tsx              ClientSupportDetail.tsx                 │
-│  ┌────────────────────┐         ┌────────────────────┐                 │
-│  │ Real-time sub:     │         │ Real-time sub:     │                 │
-│  │ - support_inquiries│         │ - support_replies  │                 │
-│  │ - support_replies  │         │   (filtered by id) │                 │
-│  │ → Auto-refresh list│         │ → Auto-refresh     │                 │
-│  └────────────────────┘         └────────────────────┘                 │
-│                                                                         │
-│  ClientHeader.tsx                                                       │
-│  ┌────────────────────┐                                                │
-│  │ NotificationCenter │ ← Real-time notifications subscription         │
-│  │ Badge clears on    │                                                │
-│  │ click (marks read) │                                                │
-│  └────────────────────┘                                                │
-└─────────────────────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────────────────────┐
-│                           ADMIN PANEL                                    │
-│  InquiriesList.tsx              InquiryDetail.tsx                       │
-│  ┌────────────────────┐         ┌────────────────────┐                 │
-│  │ Real-time sub:     │         │ Real-time sub:     │                 │
-│  │ - support_inquiries│ (done)  │ - support_replies  │ ← NEW           │
-│  │ - support_replies  │ (done)  │   (filtered by id) │                 │
-│  │ → Auto-refresh list│         │ → Auto-refresh     │                 │
-│  └────────────────────┘         └────────────────────┘                 │
-│                                                                         │
-│  Header.tsx + Sidebar.tsx                                               │
-│  ┌────────────────────┐                                                │
-│  │ NotificationCenter │ ← Real-time notifications (done)               │
-│  │ + Sidebar badge    │ ← Real-time open count (done)                  │
-│  └────────────────────┘                                                │
-└─────────────────────────────────────────────────────────────────────────┘
+Client Portal                     Backend                           Email Service
+┌──────────────┐                 ┌─────────────────┐               ┌─────────────┐
+│ New Inquiry  │                 │ clientSupport   │               │ Resend API  │
+│ Form Submit  │────────────────▶│ Service.ts      │               │             │
+└──────────────┘                 │                 │               └──────────────┘
+                                 │ 1. Insert       │                      ▲
+                                 │    inquiry      │                      │
+                                 │                 │                      │
+                                 │ 2. Create       │                      │
+                                 │    in-app       │                      │
+                                 │    notifications│                      │
+                                 │                 │                      │
+                                 │ 3. Invoke       │    ┌─────────────────┘
+                                 │    edge func ───┼───▶│ send-support-
+                                 └─────────────────┘    │ inquiry-
+                                                        │ notification
+                                                        │
+                                                        │ 4. Send emails
+                                                        │    to all admins
+                                                        │    (11 recipients)
+                                                        └─────────────────
 ```
 
-## Files to Modify
+## Files to Create/Modify
 
-| File | Change |
-|------|--------|
-| `src/pages/client/ClientSupport.tsx` | Add real-time subscription for inquiries and replies |
-| `src/pages/client/ClientSupportDetail.tsx` | Add real-time subscription for replies on current ticket |
-| `src/components/support/InquiryDetail.tsx` | Add real-time subscription for replies on current inquiry |
+| File | Action | Description |
+|------|--------|-------------|
+| `supabase/functions/send-support-inquiry-notification/index.ts` | Create | New edge function for sending support inquiry emails |
+| `supabase/config.toml` | Modify | Add function configuration |
+| `src/services/clientSupportService.ts` | Modify | Add edge function invocation after inquiry creation |
 
-## How Notification Badge Works (Already Implemented)
+## Email Template Design
 
-The notification badge in `NotificationCenter.tsx` already handles:
+The email will include:
+- Header with "New Support Inquiry" title
+- Client information section (name, email)
+- Linked order info (if applicable)
+- Inquiry subject prominently displayed
+- Message content preview
+- "View Inquiry" CTA button linking to dashboard
+- Footer with automatic generation notice
 
-1. **Badge shows count**: `unreadCount = notifications.filter(n => !n.read).length`
-2. **Click marks as read**: `handleNotificationClick()` calls `markAsRead()` and updates local state
-3. **Badge disappears**: When all notifications are read, `unreadCount` becomes 0, hiding the badge
+## Error Handling
 
-No changes needed for notification badge behavior - it already works correctly.
+- Email sending is wrapped in try/catch
+- Failure to send emails does NOT block inquiry creation
+- Errors are logged for debugging
+- Each recipient is sent individually with 600ms delay
+- Results tracked per-recipient for monitoring
 
 ## Expected Outcome
 
-After implementation:
-1. Client opens support page → sees their inquiries
-2. Admin replies to inquiry → Client's support detail page auto-updates with new reply
-3. Client's notification bell shows badge → Client clicks → badge disappears + navigates to inquiry
-4. Admin's InquiryDetail page auto-updates when client adds reply
-5. Both list pages auto-refresh when new activity occurs
+1. Client submits support inquiry
+2. Inquiry saved to database (existing)
+3. In-app notifications created for admins (existing)
+4. **NEW:** Email sent to all 11 team members
+5. Email includes deep link to specific inquiry
+6. Admin clicks email → opens dashboard at `/support/{id}`
+
