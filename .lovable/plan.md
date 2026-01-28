@@ -1,214 +1,181 @@
 
-
-# Add Client Notifications for Admin Support Replies
+# Real-time Support Updates for Both Admin and Client
 
 ## Overview
 
-Implement notifications for clients when an admin replies to their support inquiry, allowing clients to know when they have a new response without constantly checking.
+Add real-time Supabase subscriptions to both admin and client support pages so they automatically update when:
+- New inquiries are created
+- New replies are added to existing threads
+- Notification badges update and clear when clicked
 
-## Current State
+## Current State Analysis
 
-**Admin → Client notification flow is missing:**
-- When admin replies via `InquiryDetail.tsx`, it directly inserts to `support_replies` table
-- No notification is created for the client who submitted the inquiry
-- Client header (`ClientHeader.tsx`) has no notification bell - clients can't see any notifications
+**Already working:**
+- NotificationCenter has real-time subscription for new notifications (INSERT events)
+- Clicking a notification marks it as read and updates local state, which clears the badge
+- Admin sidebar has real-time badge for open support tickets
+- InquiriesList (admin) has real-time subscription
 
-**Existing infrastructure:**
-- `NotificationService` handles CRUD for notifications + real-time subscriptions
-- `NotificationCenter` component displays notifications with click-to-navigate
-- `notifications` table stores all notifications with `user_id`, `action_url`, etc.
+**Missing real-time updates:**
+- Client support list (`ClientSupport.tsx`) - needs to refresh when replies are added
+- Client support detail (`ClientSupportDetail.tsx`) - needs to refresh when admin replies
+- Admin support detail (`InquiryDetail.tsx`) - needs to refresh when client replies
 
-## Solution
+## Implementation
 
-### Part 1: Add Notification Bell to Client Header
+### Part 1: Add Real-time to Client Support List
 
-**File**: `src/components/client-portal/ClientHeader.tsx`
+**File**: `src/pages/client/ClientSupport.tsx`
 
-Import and add the existing `NotificationCenter` component:
-
-```tsx
-import NotificationCenter from "@/components/notifications/NotificationCenter";
-
-// In the header JSX, add before DarkModeToggle:
-<NotificationCenter />
-```
-
-The existing NotificationCenter already:
-- Fetches notifications filtered by current user ID
-- Subscribes to real-time updates
-- Marks as read on click
-- Navigates to action_url
-
-### Part 2: Create Client Notification Function
-
-**File**: `src/services/clientSupportService.ts`
-
-Add a new function to notify the inquiry owner when someone (admin) replies:
+Add Supabase subscription to refresh inquiries when new replies arrive:
 
 ```typescript
-/**
- * Notify the inquiry owner (client) about a new reply
- */
-async function notifyInquiryOwner(params: {
-  inquiryId: string;
-  inquiryUserId: string;
-  inquirySubject: string;
-  replierName: string;
-}): Promise<void> {
-  try {
-    const { error } = await supabase
-      .from("notifications")
-      .insert({
-        user_id: params.inquiryUserId,
-        title: "New Reply to Your Inquiry",
-        message: `${params.replierName} replied to: "${params.inquirySubject}"`,
-        type: "info",
-        action_url: `/client/support/${params.inquiryId}`,
-        read: false
-      });
+// Add inside component after existing useEffect
+useEffect(() => {
+  const channel = supabase
+    .channel('client-support-inquiries')
+    .on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'support_inquiries'
+    }, () => {
+      loadData();
+    })
+    .on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'support_replies'
+    }, () => {
+      loadData();
+    })
+    .subscribe();
 
-    if (error) {
-      console.error("Error notifying inquiry owner:", error);
-    }
-  } catch (error) {
-    console.error("Error in notifyInquiryOwner:", error);
-  }
-}
+  return () => {
+    channel.unsubscribe();
+  };
+}, []);
 ```
 
-### Part 3: Update Admin Reply Flow
+### Part 2: Add Real-time to Client Support Detail
+
+**File**: `src/pages/client/ClientSupportDetail.tsx`
+
+Add subscription to refresh when new replies arrive:
+
+```typescript
+// Add after existing useEffect
+useEffect(() => {
+  if (!ticketId) return;
+
+  const channel = supabase
+    .channel(`client-support-detail-${ticketId}`)
+    .on('postgres_changes', {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'support_replies',
+      filter: `inquiry_id=eq.${ticketId}`
+    }, () => {
+      loadInquiry();
+    })
+    .subscribe();
+
+  return () => {
+    channel.unsubscribe();
+  };
+}, [ticketId]);
+```
+
+### Part 3: Add Real-time to Admin Support Detail
 
 **File**: `src/components/support/InquiryDetail.tsx`
 
-Modify `handleSubmitReply()` to notify the client after admin successfully submits a reply:
+Add subscription to refresh when new replies arrive:
 
 ```typescript
-// After successful reply insert, if admin replied, notify the client
-if (isAdmin && inquiry.user_id !== user.id) {
-  // Import and call notification function
-  await supabase
-    .from("notifications")
-    .insert({
-      user_id: inquiry.user_id,
-      title: "New Reply to Your Inquiry",
-      message: `${user.full_name || 'Support Team'} replied to: "${inquiry.subject}"`,
-      type: "info",
-      action_url: `/client/support/${inquiry.id}`,
-      read: false
-    });
-}
+// Add after existing useEffect
+useEffect(() => {
+  if (!inquiryId) return;
+
+  const channel = supabase
+    .channel(`admin-support-detail-${inquiryId}`)
+    .on('postgres_changes', {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'support_replies',
+      filter: `inquiry_id=eq.${inquiryId}`
+    }, () => {
+      loadInquiry();
+    })
+    .subscribe();
+
+  return () => {
+    channel.unsubscribe();
+  };
+}, [inquiryId]);
 ```
 
-**Alternative approach**: Create an exported function in clientSupportService.ts that InquiryDetail.tsx can call.
-
-## Data Flow
+## Data Flow Summary
 
 ```text
-Admin Panel                          Client Portal
-┌──────────────────┐                ┌──────────────────┐
-│ InquiryDetail    │                │ ClientHeader     │
-│                  │                │ ┌──────────────┐ │
-│ [Reply Form]     │                │ │ 🔔 (2)       │ │
-│ [Send Reply] ────┼───┐            │ └──────────────┘ │
-└──────────────────┘   │            │                  │
-                       │            │ ClientSupport    │
-                       ▼            │ Detail           │
-              ┌─────────────────┐   │ Shows replies    │
-              │ support_replies │   └────────┬─────────┘
-              │ + notification  │            │
-              │   insert        │            │
-              └────────┬────────┘            │
-                       │                     │
-                       ▼                     │
-              ┌─────────────────┐            │
-              │ notifications   │────────────┘
-              │ (client's row)  │  Real-time subscription
-              └─────────────────┘  triggers bell update
+┌─────────────────────────────────────────────────────────────────────────┐
+│                           CLIENT PORTAL                                  │
+│  ClientSupport.tsx              ClientSupportDetail.tsx                 │
+│  ┌────────────────────┐         ┌────────────────────┐                 │
+│  │ Real-time sub:     │         │ Real-time sub:     │                 │
+│  │ - support_inquiries│         │ - support_replies  │                 │
+│  │ - support_replies  │         │   (filtered by id) │                 │
+│  │ → Auto-refresh list│         │ → Auto-refresh     │                 │
+│  └────────────────────┘         └────────────────────┘                 │
+│                                                                         │
+│  ClientHeader.tsx                                                       │
+│  ┌────────────────────┐                                                │
+│  │ NotificationCenter │ ← Real-time notifications subscription         │
+│  │ Badge clears on    │                                                │
+│  │ click (marks read) │                                                │
+│  └────────────────────┘                                                │
+└─────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│                           ADMIN PANEL                                    │
+│  InquiriesList.tsx              InquiryDetail.tsx                       │
+│  ┌────────────────────┐         ┌────────────────────┐                 │
+│  │ Real-time sub:     │         │ Real-time sub:     │                 │
+│  │ - support_inquiries│ (done)  │ - support_replies  │ ← NEW           │
+│  │ - support_replies  │ (done)  │   (filtered by id) │                 │
+│  │ → Auto-refresh list│         │ → Auto-refresh     │                 │
+│  └────────────────────┘         └────────────────────┘                 │
+│                                                                         │
+│  Header.tsx + Sidebar.tsx                                               │
+│  ┌────────────────────┐                                                │
+│  │ NotificationCenter │ ← Real-time notifications (done)               │
+│  │ + Sidebar badge    │ ← Real-time open count (done)                  │
+│  └────────────────────┘                                                │
+└─────────────────────────────────────────────────────────────────────────┘
 ```
 
 ## Files to Modify
 
 | File | Change |
 |------|--------|
-| `src/components/client-portal/ClientHeader.tsx` | Add NotificationCenter component |
-| `src/components/support/InquiryDetail.tsx` | Add notification insert after admin reply |
-| `src/services/clientSupportService.ts` | (Optional) Add exportable notifyInquiryOwner function |
+| `src/pages/client/ClientSupport.tsx` | Add real-time subscription for inquiries and replies |
+| `src/pages/client/ClientSupportDetail.tsx` | Add real-time subscription for replies on current ticket |
+| `src/components/support/InquiryDetail.tsx` | Add real-time subscription for replies on current inquiry |
 
-## Implementation Details
+## How Notification Badge Works (Already Implemented)
 
-### ClientHeader.tsx Changes
+The notification badge in `NotificationCenter.tsx` already handles:
 
-```tsx
-import NotificationCenter from "@/components/notifications/NotificationCenter";
+1. **Badge shows count**: `unreadCount = notifications.filter(n => !n.read).length`
+2. **Click marks as read**: `handleNotificationClick()` calls `markAsRead()` and updates local state
+3. **Badge disappears**: When all notifications are read, `unreadCount` becomes 0, hiding the badge
 
-const ClientHeader = () => {
-  const { user, logout } = useAuth();
-
-  return (
-    <header className="h-16 border-b border-border bg-card px-6 flex items-center justify-between">
-      <div className="flex items-center gap-3">
-        <Building2 className="h-6 w-6 text-primary" />
-        <span className="font-medium text-foreground">
-          Welcome, {user?.full_name || user?.email}
-        </span>
-      </div>
-
-      <div className="flex items-center gap-4">
-        <NotificationCenter />  {/* ADD THIS */}
-        <DarkModeToggle />
-        <Button ... >
-          <LogOut ... />
-        </Button>
-      </div>
-    </header>
-  );
-};
-```
-
-### InquiryDetail.tsx Changes
-
-In the `handleSubmitReply` function, after the reply is inserted successfully:
-
-```typescript
-const handleSubmitReply = async () => {
-  // ... existing reply insert code ...
-
-  if (replyError) throw replyError;
-
-  // NEW: Notify the client if an admin/staff replied
-  if (isAdmin && inquiry.user_id !== user.id) {
-    try {
-      await supabase
-        .from("notifications")
-        .insert({
-          user_id: inquiry.user_id,
-          title: "New Reply to Your Inquiry",
-          message: `${user.full_name || 'Support Team'} replied to: "${inquiry.subject}"`,
-          type: "info" as const,
-          action_url: `/client/support/${inquiry.id}`,
-          read: false
-        });
-    } catch (notifyError) {
-      console.error("Error notifying client:", notifyError);
-      // Don't block the reply if notification fails
-    }
-  }
-
-  // ... rest of existing code ...
-};
-```
+No changes needed for notification badge behavior - it already works correctly.
 
 ## Expected Outcome
 
-1. Client submits support inquiry
-2. Admin views and replies via `/support/:id`
-3. Client immediately sees notification bell badge increment (real-time)
-4. Client clicks notification → marks as read → navigates to `/client/support/:id`
-5. Client sees the admin's reply in the thread
-
-## Edge Cases Handled
-
-- **Self-reply**: If the inquiry owner replies to their own inquiry, no notification is created (condition: `inquiry.user_id !== user.id`)
-- **Notification failure**: Wrapped in try/catch so reply still succeeds even if notification fails
-- **Real-time sync**: Uses existing Supabase real-time subscription in NotificationCenter
-
+After implementation:
+1. Client opens support page → sees their inquiries
+2. Admin replies to inquiry → Client's support detail page auto-updates with new reply
+3. Client's notification bell shows badge → Client clicks → badge disappears + navigates to inquiry
+4. Admin's InquiryDetail page auto-updates when client adds reply
+5. Both list pages auto-refresh when new activity occurs
