@@ -38,13 +38,18 @@ import {
   fetchClientOrders,
   ClientSupportInquiry,
 } from "@/services/clientSupportService";
+import { getUnreadCountsForInquiries } from "@/services/supportReadService";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
+
+interface InquiryWithUnread extends ClientSupportInquiry {
+  unread_count: number;
+}
 
 const ClientSupport = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [inquiries, setInquiries] = useState<ClientSupportInquiry[]>([]);
+  const [inquiries, setInquiries] = useState<InquiryWithUnread[]>([]);
   const [orders, setOrders] = useState<{ id: string; company_name: string }[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
@@ -90,7 +95,17 @@ const ClientSupport = () => {
       fetchClientInquiries(),
       fetchClientOrders(),
     ]);
-    setInquiries(inquiriesData);
+    
+    // Get unread counts
+    const inquiryIds = inquiriesData.map(i => i.id);
+    const unreadCounts = await getUnreadCountsForInquiries(inquiryIds);
+    
+    const inquiriesWithUnread = inquiriesData.map(inquiry => ({
+      ...inquiry,
+      unread_count: unreadCounts.get(inquiry.id) || 0
+    }));
+    
+    setInquiries(inquiriesWithUnread);
     setOrders(ordersData);
     setIsLoading(false);
   };
@@ -278,9 +293,22 @@ const ClientSupport = () => {
                   <p className="text-sm text-muted-foreground line-clamp-2">
                     {inquiry.message}
                   </p>
-                  <div className="flex items-center gap-1 mt-3 text-xs text-primary">
-                    <MessageSquare className="h-3.5 w-3.5" />
-                    View conversation
+                  <div className="flex items-center justify-between mt-3">
+                    <div className="flex items-center gap-1 text-xs text-primary">
+                      <MessageSquare className="h-3.5 w-3.5" />
+                      View conversation
+                    </div>
+                    {inquiry.unread_count > 0 && (
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs text-red-500 font-medium">
+                          {inquiry.unread_count} new
+                        </span>
+                        <span className="relative flex h-2.5 w-2.5">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500" />
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>

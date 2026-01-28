@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Send, Clock, User, Loader2, Package } from "lucide-react";
 import ClientLayout from "@/components/client-portal/ClientLayout";
@@ -13,8 +13,13 @@ import {
   ClientSupportInquiry,
   ClientSupportReply,
 } from "@/services/clientSupportService";
+import { getLastReadAt, markInquiryAsRead } from "@/services/supportReadService";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
+
+interface ReplyWithUnread extends ClientSupportReply {
+  isUnread?: boolean;
+}
 
 const ClientSupportDetail = () => {
   const { ticketId } = useParams();
@@ -22,16 +27,37 @@ const ClientSupportDetail = () => {
   const { toast } = useToast();
 
   const [inquiry, setInquiry] = useState<ClientSupportInquiry | null>(null);
-  const [replies, setReplies] = useState<ClientSupportReply[]>([]);
+  const [replies, setReplies] = useState<ReplyWithUnread[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [replyMessage, setReplyMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [lastReadAt, setLastReadAt] = useState<string | null>(null);
+  const hasMarkedRead = useRef(false);
 
   useEffect(() => {
     if (ticketId) {
       loadInquiry();
+      loadLastReadAt();
     }
   }, [ticketId]);
+
+  // Mark as read after a short delay
+  useEffect(() => {
+    if (!ticketId || !inquiry || hasMarkedRead.current) return;
+    
+    const timer = setTimeout(async () => {
+      await markInquiryAsRead(ticketId);
+      hasMarkedRead.current = true;
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [ticketId, inquiry]);
+
+  const loadLastReadAt = async () => {
+    if (!ticketId) return;
+    const readAt = await getLastReadAt(ticketId);
+    setLastReadAt(readAt);
+  };
 
   // Real-time subscription for replies on this ticket
   useEffect(() => {
@@ -60,7 +86,20 @@ const ClientSupportDetail = () => {
     setIsLoading(true);
     const result = await fetchClientInquiryById(ticketId);
     setInquiry(result.inquiry);
-    setReplies(result.replies);
+    
+    // Get current user to determine which replies are unread
+    const { data: userData } = await supabase.auth.getUser();
+    const currentUserId = userData.user?.id;
+    
+    // Mark replies as unread if created after lastReadAt and not by current user
+    const repliesWithUnread = result.replies.map(reply => ({
+      ...reply,
+      isUnread: lastReadAt 
+        ? new Date(reply.created_at) > new Date(lastReadAt) && reply.user_id !== currentUserId
+        : false
+    }));
+    
+    setReplies(repliesWithUnread);
     setIsLoading(false);
   };
 
@@ -213,6 +252,11 @@ const ClientSupportDetail = () => {
                           {isSupport && (
                             <Badge variant="outline" className="text-xs">
                               Support Team
+                            </Badge>
+                          )}
+                          {reply.isUnread && (
+                            <Badge className="bg-red-500 text-white text-[10px] px-1.5 py-0.5">
+                              NEW
                             </Badge>
                           )}
                         </div>
