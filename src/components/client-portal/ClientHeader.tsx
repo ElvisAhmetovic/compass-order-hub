@@ -2,6 +2,7 @@ import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { LogOut, Building2 } from "lucide-react";
 import { DarkModeToggle } from "@/components/theme/DarkModeToggle";
+import NotificationCenter from "@/components/notifications/NotificationCenter";
 
 const ClientHeader = () => {
   const { user, logout } = useAuth();
@@ -16,6 +17,7 @@ const ClientHeader = () => {
       </div>
 
       <div className="flex items-center gap-4">
+        <NotificationCenter />
         <DarkModeToggle />
         <Button
           variant="ghost"
