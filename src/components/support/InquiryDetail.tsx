@@ -184,6 +184,25 @@ export const InquiryDetail = () => {
 
       if (replyError) throw replyError;
 
+      // Notify the client if an admin/staff replied (and it's not the client's own inquiry)
+      if (isAdmin && inquiry.user_id !== user.id) {
+        try {
+          await supabase
+            .from("notifications")
+            .insert({
+              user_id: inquiry.user_id,
+              title: "New Reply to Your Inquiry",
+              message: `${user.full_name || 'Support Team'} replied to: "${inquiry.subject}"`,
+              type: "info" as const,
+              action_url: `/client/support/${inquiry.id}`,
+              read: false
+            });
+        } catch (notifyError) {
+          console.error("Error notifying client:", notifyError);
+          // Don't block the reply if notification fails
+        }
+      }
+
       // Update inquiry status if admin replied
       if (isAdmin && inquiry.status === 'open') {
         const { error: updateError } = await supabase
