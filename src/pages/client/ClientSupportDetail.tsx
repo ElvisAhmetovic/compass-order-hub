@@ -132,17 +132,17 @@ const ClientSupportDetail = () => {
     <ClientLayout>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" onClick={() => navigate("/client/support")}>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+          <Button variant="ghost" size="sm" onClick={() => navigate("/client/support")} className="w-fit">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back
           </Button>
-          <div className="flex-1">
-            <h1 className="text-2xl font-bold text-foreground">{inquiry.subject}</h1>
-            <div className="flex items-center gap-3 mt-1">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground truncate">{inquiry.subject}</h1>
+            <div className="flex flex-wrap items-center gap-2 mt-1">
               {getStatusBadge(inquiry.status)}
-              <span className="text-sm text-muted-foreground">
-                Created {format(new Date(inquiry.created_at), "MMM d, yyyy 'at' h:mm a")}
+              <span className="text-xs sm:text-sm text-muted-foreground">
+                Created {format(new Date(inquiry.created_at), "MMM d, yyyy")}
               </span>
             </div>
           </div>

@@ -89,8 +89,8 @@ const ClientOrderCard = ({ order, attachmentCount = 0 }: ClientOrderCardProps) =
               {/* Client Update Indicator */}
               {order.client_visible_update && (
                 <div className="flex items-center gap-1.5 text-sm text-primary">
-                  <Megaphone className="h-3.5 w-3.5" />
-                  <span className="truncate max-w-[200px]">
+                  <Megaphone className="h-3.5 w-3.5 flex-shrink-0" />
+                  <span className="truncate max-w-[120px] sm:max-w-[180px] md:max-w-[250px]">
                     {order.client_visible_update.length > 50 
                       ? order.client_visible_update.substring(0, 50) + '...' 
                       : order.client_visible_update}
