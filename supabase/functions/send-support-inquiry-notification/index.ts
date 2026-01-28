@@ -165,53 +165,45 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("Missing required fields: inquiryData.id, inquiryData.subject, or emails");
     }
 
-    const appUrl = Deno.env.get("APP_URL") || "https://www.empriadental.de";
-    const emailHtml = generateEmailHtml(inquiryData, appUrl);
+    // Define the background email sending task
+    const sendEmailsInBackground = async () => {
+      const appUrl = Deno.env.get("APP_URL") || "https://www.empriadental.de";
+      const emailHtml = generateEmailHtml(inquiryData, appUrl);
 
-    const results: { email: string; success: boolean; error?: string }[] = [];
+      for (const email of emails) {
+        try {
+          console.log(`[Background] Sending email to: ${email}`);
+          
+          const { error } = await resend.emails.send({
+            from: "AB Media Team <noreply@empriadental.de>",
+            to: [email],
+            subject: `New Support Inquiry: ${inquiryData.subject}`,
+            html: emailHtml,
+          });
 
-    // Send to each recipient with delay to respect rate limits
-    for (const email of emails) {
-      try {
-        console.log(`Sending email to: ${email}`);
-        
-        const { error } = await resend.emails.send({
-          from: "AB Media Team <noreply@empriadental.de>",
-          to: [email],
-          subject: `New Support Inquiry: ${inquiryData.subject}`,
-          html: emailHtml,
-        });
+          if (error) {
+            console.error(`[Background] Failed to send to ${email}:`, error);
+          } else {
+            console.log(`[Background] Successfully sent to: ${email}`);
+          }
 
-        if (error) {
-          console.error(`Failed to send to ${email}:`, error);
-          results.push({ email, success: false, error: error.message });
-        } else {
-          console.log(`Successfully sent to: ${email}`);
-          results.push({ email, success: true });
+          // Rate limiting: 600ms delay between sends
+          await new Promise((resolve) => setTimeout(resolve, 600));
+        } catch (sendError: any) {
+          console.error(`[Background] Error sending to ${email}:`, sendError);
         }
-
-        // Rate limiting: 600ms delay between sends
-        await new Promise((resolve) => setTimeout(resolve, 600));
-      } catch (sendError: any) {
-        console.error(`Error sending to ${email}:`, sendError);
-        results.push({ email, success: false, error: sendError.message });
       }
-    }
+      console.log(`[Background] Email notification complete for inquiry ${inquiryData.id}`);
+    };
 
-    const successCount = results.filter((r) => r.success).length;
-    const failCount = results.filter((r) => !r.success).length;
+    // Schedule background task - function continues running after response
+    EdgeRuntime.waitUntil(sendEmailsInBackground());
 
-    console.log(`Email notification complete: ${successCount} sent, ${failCount} failed`);
-
+    // Return immediately - client doesn't wait for emails
     return new Response(
       JSON.stringify({
         success: true,
-        summary: {
-          total: emails.length,
-          sent: successCount,
-          failed: failCount,
-        },
-        results,
+        message: "Inquiry received, email notifications queued",
       }),
       {
         status: 200,
