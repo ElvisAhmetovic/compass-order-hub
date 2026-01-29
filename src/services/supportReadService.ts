@@ -153,13 +153,14 @@ export async function markSupportNotificationsAsRead(inquiryId: string): Promise
   if (!userData.user) return;
 
   // Mark notifications that link to this inquiry as read
-  // Matches both /support/{id} (admin) and /client/support/{id} (client)
+  // Uses LIKE matching to handle URLs with query params
+  // Matches both /support/{id}% (admin) and /client/support/{id}% (client)
   const { error } = await supabase
     .from("notifications")
     .update({ read: true })
     .eq("user_id", userData.user.id)
     .eq("read", false)
-    .or(`action_url.eq./support/${inquiryId},action_url.eq./client/support/${inquiryId}`);
+    .or(`action_url.like./support/${inquiryId}%,action_url.like./client/support/${inquiryId}%`);
 
   if (error) {
     console.error("Error marking support notifications as read:", error);

@@ -34,44 +34,47 @@ import { supabase } from '@/integrations/supabase/client';
 const Sidebar = () => {
   const location = useLocation();
   const { user } = useAuth();
-  const [openSupportCount, setOpenSupportCount] = useState(0);
+  const [unreadSupportCount, setUnreadSupportCount] = useState(0);
 
   const isAdmin = user?.role === 'admin';
   const isAdminOrAgent = user?.role === 'admin' || user?.role === 'agent';
 
-  // Fetch open support inquiries count for admins/agents
+  // Fetch unread support notifications count for admins/agents
   useEffect(() => {
-    if (!isAdminOrAgent) return;
+    if (!isAdminOrAgent || !user?.id) return;
 
-    const fetchOpenSupportCount = async () => {
+    const fetchUnreadSupportCount = async () => {
       const { count, error } = await supabase
-        .from('support_inquiries')
+        .from('notifications')
         .select('*', { count: 'exact', head: true })
-        .eq('status', 'open');
+        .eq('user_id', user.id)
+        .eq('read', false)
+        .like('action_url', '/support/%');
 
       if (!error && count !== null) {
-        setOpenSupportCount(count);
+        setUnreadSupportCount(count);
       }
     };
 
-    fetchOpenSupportCount();
+    fetchUnreadSupportCount();
 
-    // Real-time subscription for support inquiries changes
+    // Real-time subscription for notifications changes
     const channel = supabase
-      .channel('support-inquiries-sidebar')
+      .channel(`support-notifications-sidebar-${user.id}`)
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
-        table: 'support_inquiries'
+        table: 'notifications',
+        filter: `user_id=eq.${user.id}`
       }, () => {
-        fetchOpenSupportCount();
+        fetchUnreadSupportCount();
       })
       .subscribe();
 
     return () => {
       channel.unsubscribe();
     };
-  }, [isAdminOrAgent]);
+  }, [isAdminOrAgent, user?.id]);
 
   // Define sidebar items with role restrictions
   const menuItems = [
@@ -138,7 +141,7 @@ const Sidebar = () => {
               (item.href !== '/dashboard' && item.href !== '/active-orders' && location.pathname.startsWith(item.href)) ||
               (item.href === '/active-orders' && location.pathname.startsWith('/active-orders'));
             
-            const showSupportBadge = item.showBadge && isAdminOrAgent && openSupportCount > 0;
+            const showSupportBadge = item.showBadge && isAdminOrAgent && unreadSupportCount > 0;
             
             return (
               <Link
@@ -155,7 +158,7 @@ const Sidebar = () => {
                 </div>
                 {showSupportBadge && (
                   <Badge variant="destructive" className="h-5 min-w-[20px] px-1.5 flex items-center justify-center text-xs">
-                    {openSupportCount > 99 ? '99+' : openSupportCount}
+                    {unreadSupportCount > 99 ? '99+' : unreadSupportCount}
                   </Badge>
                 )}
               </Link>
