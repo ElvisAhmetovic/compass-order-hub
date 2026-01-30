@@ -27,6 +27,10 @@ const NotificationCenter = () => {
 
     fetchNotifications();
 
+    // Fallback: listen for manual "notifications changed" events
+    const handleNotificationsChanged = () => fetchNotifications();
+    window.addEventListener("notifications:changed", handleNotificationsChanged);
+
     // Subscribe to real-time notifications (INSERT and UPDATE)
     const channel = supabase
       .channel(`notifications-realtime-${user.id}`)
@@ -52,6 +56,7 @@ const NotificationCenter = () => {
       .subscribe();
 
     return () => {
+      window.removeEventListener("notifications:changed", handleNotificationsChanged);
       channel.unsubscribe();
     };
   }, [user]);
