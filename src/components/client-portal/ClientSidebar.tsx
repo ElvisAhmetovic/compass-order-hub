@@ -47,12 +47,19 @@ const ClientSidebar = () => {
         .eq('read', false)
         .like('action_url', '/client/support/%');
 
-      if (!error && count !== null) {
-        setUnreadSupportCount(count);
+      if (error) {
+        console.error("Error fetching client unread support count:", error);
+        setUnreadSupportCount(0);
+      } else {
+        setUnreadSupportCount(count ?? 0);
       }
     };
 
     fetchUnreadSupportCount();
+
+    // Fallback: listen for manual "notifications changed" events
+    const handleNotificationsChanged = () => fetchUnreadSupportCount();
+    window.addEventListener("notifications:changed", handleNotificationsChanged);
 
     // Real-time subscription for notifications changes
     const channel = supabase
@@ -68,6 +75,7 @@ const ClientSidebar = () => {
       .subscribe();
 
     return () => {
+      window.removeEventListener("notifications:changed", handleNotificationsChanged);
       channel.unsubscribe();
     };
   }, [user?.id]);

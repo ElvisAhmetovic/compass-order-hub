@@ -164,5 +164,8 @@ export async function markSupportNotificationsAsRead(inquiryId: string): Promise
 
   if (error) {
     console.error("Error marking support notifications as read:", error);
+  } else {
+    // Dispatch event for UI components to refresh immediately (fallback for Realtime)
+    window.dispatchEvent(new Event("notifications:changed"));
   }
 }
