@@ -1,53 +1,45 @@
 
 
-# Add "Create Order" Button to Every Sidebar Page
+# Fix: Login Succeeds But Stays on /login
 
-## Approach
+## Root Cause
 
-Instead of duplicating `CreateOrderModal` across 20+ pages, we'll embed it directly in the **Sidebar component** itself. This way, every page that uses the Sidebar automatically gets access to the "Create Order" button -- zero changes needed to individual pages.
+Two issues combine to cause this:
 
-## What changes
+1. **No error handling in post-login redirect** (`LoginForm.tsx` lines 63-88): After `login()` returns `true`, a `setTimeout` callback runs async code (dynamic imports, DB queries) with NO try/catch. If anything throws, navigation silently fails.
 
-### Sidebar (`src/components/dashboard/Sidebar.tsx`)
-- Add a "Create Order" button (with the Plus icon) near the top of the sidebar, below the "Navigation" heading
-- Only visible for admin users (same permission check as today)
-- Import and render `CreateOrderModal` inside the Sidebar
-- Manage open/close state locally within the Sidebar
+2. **Login page doesn't redirect authenticated users**: Unlike the Index page which watches the `user` state and redirects, the Login page has no such logic. So even when `AuthContext` successfully sets the user via `onAuthStateChange`, the Login page just sits there.
 
-### Pages that already have their own Create Order button
-These pages already have their own `DashboardHeader` with `onCreateOrder` and their own `CreateOrderModal`:
-- Dashboard, Facebook, Instagram, Trustpilot, TrustpilotDeletion, GoogleDeletion, YearlyPackages
+## Fix
 
-We'll **keep those as-is** so nothing breaks. The sidebar button is simply an additional access point that works everywhere, including pages like Analytics, Rankings, Companies, Proposals, Invoices, Support, Settings, etc.
+### 1. Add authenticated-user redirect to Login page (`src/pages/Login.tsx`)
 
-## Visual placement
+Add a `useEffect` that watches the `user` from `useAuth()`. When `user` becomes non-null (either from a fresh login or an existing session), redirect based on role:
+- `client` role --> `/client/dashboard`
+- all others --> `/dashboard`
 
-```text
-+---------------------------+
-|  Navigation               |
-|  [+ Create Order] (button)|
-|                           |
-|  Dashboard                |
-|  Analytics                |
-|  Rankings                 |
-|  ...                      |
-+---------------------------+
-```
+This is the same pattern used in `Index.tsx` and `ClientLogin.tsx`.
 
-The button will be styled as a primary button, matching the existing "Create Order" button style, placed in the sidebar header area so it's always visible and easy to reach.
+### 2. Simplify LoginForm redirect logic (`src/components/auth/LoginForm.tsx`)
 
-## Technical details
+Remove the fragile `setTimeout` + dynamic import + role query block entirely. Since Login.tsx now handles the redirect via `useEffect` watching the auth state, LoginForm only needs to:
+- Call `login(email, password)`
+- If it fails, show the error
+- If it succeeds, do nothing -- the Login page's useEffect will handle navigation once AuthContext updates
 
-- Import `CreateOrderModal` and `useState` into `Sidebar.tsx`
-- Add a `createModalOpen` state
-- Render a `Button` with `Plus` icon, gated by `isAdmin`
-- Render `CreateOrderModal` with `open={createModalOpen}` and `onClose` that sets it to false
-- The modal functions identically to the existing one (same component, same behavior)
+This eliminates the unhandled promise rejection and the race condition.
 
 ## Files to modify
+
 | File | Change |
 |------|--------|
-| `src/components/dashboard/Sidebar.tsx` | Add Create Order button + CreateOrderModal |
+| `src/pages/Login.tsx` | Add `useAuth()` + `useEffect` to redirect when user is set |
+| `src/components/auth/LoginForm.tsx` | Remove the `setTimeout` redirect block (lines 62-89), keep only the error handling |
 
-One file, minimal change, works on every page.
+## Why this is robust
+
+- The redirect is driven by **AuthContext state**, not a fragile setTimeout chain
+- Works for fresh logins AND page refreshes with existing sessions
+- Matches the pattern already used by `Index.tsx` and `ClientLogin.tsx`
+- No dynamic imports, no unhandled async errors
 
