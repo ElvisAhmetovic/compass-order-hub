@@ -24,17 +24,21 @@ import {
   Wrench,
   Trophy,
   BarChart2,
-  Settings
+  Settings,
+  Plus
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
+import CreateOrderModal from '@/components/dashboard/CreateOrderModal';
 
 const Sidebar = () => {
   const location = useLocation();
   const { user } = useAuth();
   const [unreadSupportCount, setUnreadSupportCount] = useState(0);
+  const [createModalOpen, setCreateModalOpen] = useState(false);
 
   const isAdmin = user?.role === 'admin';
   const isAdminOrAgent = user?.role === 'admin' || user?.role === 'agent';
@@ -131,13 +135,18 @@ const Sidebar = () => {
   });
 
   return (
-    <div className="w-64 bg-white border-r border-gray-200 min-h-screen">
+    <div className="w-64 bg-background border-r border-border min-h-screen">
       <div className="p-6">
-        <h2 className="text-xl font-semibold text-gray-800">Navigation</h2>
+        <h2 className="text-xl font-semibold text-foreground">Navigation</h2>
+        {isAdmin && (
+          <Button onClick={() => setCreateModalOpen(true)} className="w-full mt-3 justify-start" size="sm">
+            <Plus className="mr-2 h-4 w-4" /> Create Order
+          </Button>
+        )}
       </div>
-      <nav className="mt-6">
+      <nav className="mt-2">
         {visibleItems.length === 0 ? (
-          <div className="px-6 py-3 text-gray-500 text-sm">
+          <div className="px-6 py-3 text-muted-foreground text-sm">
             No menu items available
             <br />
             Role: {user?.role || 'No role'}
@@ -156,8 +165,8 @@ const Sidebar = () => {
                 key={`${item.href}-${item.label}`}
                 to={item.href}
                 className={cn(
-                  "flex items-center justify-between px-6 py-3 text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors",
-                  isActive && "bg-blue-50 text-blue-700 border-r-2 border-blue-700"
+                  "flex items-center justify-between px-6 py-3 text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors",
+                  isActive && "bg-primary/10 text-primary border-r-2 border-primary"
                 )}
               >
                 <div className="flex items-center">
@@ -174,6 +183,7 @@ const Sidebar = () => {
           })
         )}
       </nav>
+      <CreateOrderModal open={createModalOpen} onClose={() => setCreateModalOpen(false)} />
     </div>
   );
 };
