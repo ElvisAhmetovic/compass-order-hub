@@ -1,43 +1,43 @@
 
 
-## Fix: Tech Support Ticket CORS Crash on Live Site
+## Fix: Autofill Dropdown Unclickable Inside Create Order Modal
 
 ### Root Cause
 
-In `supabase/functions/create-tech-support-ticket/index.ts`, line 42 references an undefined variable `origin`:
+The `OrderSearchDropdown` uses a Radix **Popover** which renders its content via a **Portal** (outside the Dialog DOM). The Radix **Dialog** (Create Order Modal) has a built-in **focus trap** that blocks all pointer events and keyboard interaction with elements outside its DOM subtree. This is why you can see the dropdown but can't click or scroll it.
 
-```typescript
-console.log('Handling OPTIONS preflight request from origin:', origin);
-//                                                             ^^^^^^ NOT DEFINED
+This works in the Lovable editor because the preview iframe handles focus differently, but on a real deployed site the focus trap is fully active.
+
+### Solution
+
+Replace the Radix Popover with a simple absolutely-positioned `div` that stays **inside** the Dialog's DOM tree, bypassing the focus trap entirely. This is a common pattern for dropdowns nested inside modals.
+
+### Changes
+
+**File: `src/components/dashboard/OrderSearchDropdown.tsx`**
+
+Remove the Radix Popover/PopoverContent/PopoverTrigger imports and replace with a plain div-based dropdown:
+
+- The trigger button toggles a boolean state
+- When open, render an absolutely-positioned `div` directly below the button (using `relative` parent + `absolute` child)
+- The div contains the search input and scrollable order list (same UI as before)
+- Click-outside handling via a simple `useRef` + `mousedown` listener
+- This keeps the dropdown inside the Dialog DOM, so the focus trap allows interaction
+
+```
+Before (broken):
+  Dialog (portal, focus trap)
+    -> Popover
+      -> PopoverContent (PORTAL - renders OUTSIDE Dialog)
+         -> Can't interact! Focus trap blocks it.
+
+After (works):
+  Dialog (portal, focus trap)
+    -> div (relative)
+      -> Button (trigger)
+      -> div (absolute, inside Dialog DOM)
+         -> Fully interactive! Inside the focus trap.
 ```
 
-This causes a **runtime crash** in the OPTIONS preflight handler. Since the handler crashes, no `Access-Control-Allow-Origin` header is returned, and the browser blocks the request with a CORS error.
-
-The CORS headers themselves are correct -- the function just never gets to return them because it crashes first.
-
-### Fix
-
-**File:** `supabase/functions/create-tech-support-ticket/index.ts`
-
-Replace the broken `console.log` on line 42 with one that reads the origin from the request headers:
-
-```typescript
-// BEFORE (crashes - 'origin' is undefined)
-console.log('Handling OPTIONS preflight request from origin:', origin);
-
-// AFTER (works)
-console.log('Handling OPTIONS preflight request from origin:', req.headers.get('origin'));
-```
-
-That is the only change needed. After this fix, the edge function will be redeployed automatically, and both "Create Ticket" and "Create Ticket with Image" will work on `empriatech.com` and `compass-order-hub.lovable.app`.
-
-### Why it only fails on the live site
-
-In the Lovable editor preview, requests go through a proxy that may handle CORS differently. On the real published domains (`empriatech.com`, `compass-order-hub.lovable.app`), the browser sends a proper OPTIONS preflight that hits this crash.
-
-### Files to modify
-
-| File | Change |
-|------|--------|
-| `supabase/functions/create-tech-support-ticket/index.ts` (line 42) | Fix undefined `origin` variable reference |
+No other files need to change. The component's props and behavior remain identical.
 
