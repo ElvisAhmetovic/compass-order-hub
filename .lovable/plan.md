@@ -1,113 +1,120 @@
 
-## What’s actually happening (why it “still shows 1”)
-From the network logs, your app *is* successfully marking the support notification as read:
 
-- A `PATCH /rest/v1/notifications ... {"read": true}` returns **204** (success)
-- But the UI badge doesn’t update because your UI currently depends on **Realtime “postgres_changes” events** (or a re-fetch) to refresh the count after the DB update.
+# Fix: Features Not Working on Live/Published Site
 
-Key finding from the database:
-- Your Supabase Realtime publication `supabase_realtime` currently includes only:
-  - `public.orders`
-  - `public.team_activities`
-- **`public.notifications` is NOT in the Realtime publication**, so your subscriptions for notifications **never receive UPDATE events**.
-  - That means Sidebar + NotificationCenter never re-fetch/update when `read` becomes true.
-  - Result: badge stays “1” until a full refresh or remount.
+## Root Cause Analysis
 
-## Goals
-1. When you open `/support/:id` (or `/client/support/:id`), the badge clears automatically after the existing 1s “mark as read” delay.
-2. This should work even if Realtime is not configured (fallback).
-3. Avoid stale badge counts if a fetch errors.
+Two separate issues are preventing features from working on the published site (`compass-order-hub.lovable.app`):
 
----
+### Problem 1: "Failed to fetch" on Order Creation and Other Actions
 
-## Implementation plan
+Multiple components call Supabase Edge Functions using raw `fetch()` instead of the Supabase SDK's `supabase.functions.invoke()`. This causes CORS preflight failures on the live site because:
 
-### Step 1 — Fix the root cause: enable Realtime for `notifications` (recommended)
-**Change in Supabase (SQL migration):**
-- Add `public.notifications` to the `supabase_realtime` publication (idempotent).
-- Optionally set `REPLICA IDENTITY FULL` on `notifications` to ensure robust UPDATE payloads (not strictly required but helps consistency).
+- The browser sends additional headers (like `x-supabase-client-platform`) that aren't listed in the edge function's `Access-Control-Allow-Headers`
+- One edge function (`create-tech-support-ticket`) has a hardcoded allowlist of origins that **does not include** your published URL (`compass-order-hub.lovable.app`)
+- In the Lovable editor preview, the iframe context is more lenient with CORS
 
-**Expected effect:**
-- Your existing subscriptions in:
-  - `src/components/notifications/NotificationCenter.tsx` (INSERT/UPDATE)
-  - `src/components/dashboard/Sidebar.tsx` (event: '*')
-  - `src/components/client-portal/ClientSidebar.tsx` (event: '*')
-  will start receiving events and update instantly.
+**Affected files (5 files with raw `fetch()` calls):**
+- `src/components/dashboard/CreateOrderModal.tsx` (line 378)
+- `src/components/dashboard/OrderEditForm/useOrderEdit.ts` (line 190)
+- `src/services/statusChangeNotificationService.ts` (line 46)
+- `src/components/tech-support/CreateTechSupportModal.tsx` (line 105)
+- `src/components/tech-support/CreateTechSupportWithImageModal.tsx` (line 95)
 
-**SQL outline (we’ll implement safely):**
-- Check membership via `pg_publication_tables`
-- `ALTER PUBLICATION supabase_realtime ADD TABLE public.notifications;`
-- Optional: `ALTER TABLE public.notifications REPLICA IDENTITY FULL;`
+### Problem 2: Autofill Dropdown Not Scrollable/Clickable
+
+The "Search existing orders" dropdown (`OrderSearchDropdown`) uses a Radix `Popover` rendered inside a Radix `Dialog` (the Create Order modal). On the live site, the popover's scroll area and click events are blocked because:
+
+- The Dialog's focus trap prevents interaction with the Popover content
+- The Popover portal may render behind the Dialog overlay due to z-index stacking
 
 ---
 
-### Step 2 — Add a UI fallback so it clears even without Realtime (important)
-Even with Realtime enabled, it’s good to have a fallback for:
-- temporary websocket disconnects
-- publication misconfiguration in one environment
-- edge cases where subscription isn’t mounted yet
+## Implementation Plan
 
-**Change in app code (small and reliable):**
-- After `markSupportNotificationsAsRead(inquiryId)` completes, trigger a local “notifications changed” signal that Sidebar + NotificationCenter can react to.
+### Step 1: Replace all raw `fetch()` calls with `supabase.functions.invoke()`
 
-Two simple options (we’ll pick one consistent approach):
+The Supabase SDK handles CORS, auth tokens, and headers automatically. This is the correct way to call edge functions from the frontend.
 
-**Option A: global window event**
-- In `markSupportNotificationsAsRead` (service), dispatch a custom event like:
-  - `window.dispatchEvent(new Event("notifications:changed"))`
-- In Sidebar + ClientSidebar + NotificationCenter, add a listener to:
-  - re-fetch unread counts / notifications list immediately.
+**For each of the 5 affected files**, replace the pattern:
 
-**Option B: lightweight NotificationsContext**
-- Create a small context that stores a `version` counter.
-- Increment it after marking read.
-- Consumers re-fetch when the version changes.
+```typescript
+// BEFORE (broken on live site)
+const response = await fetch(
+  `https://fjybmlugiqmiggsdrkiq.supabase.co/functions/v1/send-order-confirmation`,
+  {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer <key>`,
+    },
+    body: JSON.stringify(payload),
+  }
+);
+const result = await response.json();
+```
 
-Option A is the fastest, least intrusive.
+With:
+
+```typescript
+// AFTER (works everywhere)
+const { data, error } = await supabase.functions.invoke('send-order-confirmation', {
+  body: payload,
+});
+if (error) throw error;
+```
+
+**Files to change:**
+
+| File | Edge Function Called |
+|------|---------------------|
+| `CreateOrderModal.tsx` | `send-order-confirmation` |
+| `useOrderEdit.ts` | `send-order-confirmation` |
+| `statusChangeNotificationService.ts` | `send-status-change-notification` |
+| `CreateTechSupportModal.tsx` | `create-tech-support-ticket` |
+| `CreateTechSupportWithImageModal.tsx` | `create-tech-support-ticket` |
+
+### Step 2: Update all edge function CORS headers
+
+Update every edge function to use the complete set of headers that the Supabase client sends:
+
+```typescript
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
+};
+```
+
+**All 23 edge functions** will be updated for consistency.
+
+Special case: `create-tech-support-ticket` currently has a hardcoded origin allowlist missing `compass-order-hub.lovable.app`. We'll switch it to use `*` like all the other functions (since auth is handled via the JWT token, not CORS origin).
+
+### Step 3: Fix the autofill dropdown inside the modal
+
+Update `OrderSearchDropdown.tsx` to ensure the Popover content renders above the Dialog:
+
+- Add explicit `z-[100]` class to `PopoverContent` (higher than Dialog's `z-50`)
+- Add `onOpenAutoFocus={(e) => e.preventDefault()}` to prevent focus stealing
+- Ensure `ScrollArea` has proper pointer-events
 
 ---
 
-### Step 3 — Prevent stale badges when fetch fails
-Right now, if `fetchUnreadSupportCount()` errors, it can leave an old value in state.
+## Files to Modify
 
-**Change:**
-- If the count query returns an error, set the unread count to `0` (or re-fetch once).
-- Also log the error to console with enough detail to debug quickly.
+| File | Change |
+|------|--------|
+| `src/components/dashboard/CreateOrderModal.tsx` | Replace raw `fetch()` with `supabase.functions.invoke()` |
+| `src/components/dashboard/OrderEditForm/useOrderEdit.ts` | Replace raw `fetch()` with `supabase.functions.invoke()` |
+| `src/services/statusChangeNotificationService.ts` | Replace raw `fetch()` with `supabase.functions.invoke()` |
+| `src/components/tech-support/CreateTechSupportModal.tsx` | Replace raw `fetch()` with `supabase.functions.invoke()` |
+| `src/components/tech-support/CreateTechSupportWithImageModal.tsx` | Replace raw `fetch()` with `supabase.functions.invoke()` |
+| `src/components/dashboard/OrderSearchDropdown.tsx` | Fix z-index and focus handling for Popover inside Dialog |
+| All 23 edge functions in `supabase/functions/` | Standardize CORS headers |
 
----
+## Expected Outcome
 
-### Step 4 — Verify behavior end-to-end (admin + client)
-**Admin-side test**
-1. Create a new client inquiry (so admin gets a `/support/:id` notification).
-2. Confirm Sidebar shows “1” and bell shows “1”.
-3. Open the inquiry detail page.
-4. Wait ~1 second.
-5. Confirm:
-   - bell badge decrements immediately
-   - sidebar “Support” badge disappears immediately (no refresh)
+After these changes:
+1. Order creation, status changes, and tech support ticket creation will work on the live published site
+2. The autofill dropdown will be scrollable and clickable inside the modal on both editor and live site
+3. All edge function calls will be more robust and consistent
 
-**Client-side test**
-1. Admin replies to a client inquiry (creates `/client/support/:id` notification).
-2. Client sees badge.
-3. Client opens `/client/support/:id`.
-4. Wait ~1 second.
-5. Badge clears immediately.
-
----
-
-## Files involved (code changes)
-- `src/services/supportReadService.ts` (emit “notifications changed” fallback after successful update)
-- `src/components/notifications/NotificationCenter.tsx` (listen for fallback event and re-fetch or patch state)
-- `src/components/dashboard/Sidebar.tsx` (listen for fallback event and re-fetch count)
-- `src/components/client-portal/ClientSidebar.tsx` (listen for fallback event and re-fetch count)
-
-## Supabase changes (DB)
-- Add `public.notifications` to `supabase_realtime` publication
-- Optional: set replica identity for `public.notifications`
-
----
-
-## Why this will fix it
-- Right now the DB update succeeds, but the UI doesn’t “hear about it”.
-- Enabling Realtime for `notifications` makes your existing subscriptions actually work.
-- The fallback event ensures the badge clears even if realtime events don’t arrive for any reason.
