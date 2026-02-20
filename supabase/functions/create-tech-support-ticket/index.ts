@@ -39,7 +39,7 @@ const handler = async (req: Request): Promise<Response> => {
 
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    console.log('Handling OPTIONS preflight request from origin:', origin);
+    console.log('Handling OPTIONS preflight request from origin:', req.headers.get('origin'));
     return new Response('ok', { 
       headers: corsHeaders,
       status: 200 
