@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { Search, ChevronDown } from "lucide-react";
+import { Search, ChevronDown, RefreshCw } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -25,10 +25,11 @@ const OrderSearchDropdown = ({ onOrderSelect, className }: OrderSearchDropdownPr
   const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
 
-  // Load orders when dropdown opens
+  // Load orders when dropdown opens - always refresh
   useEffect(() => {
-    if (isOpen && orders.length === 0) {
+    if (isOpen) {
       loadOrders();
     }
   }, [isOpen]);
@@ -49,21 +50,24 @@ const OrderSearchDropdown = ({ onOrderSelect, className }: OrderSearchDropdownPr
     }
   }, [searchQuery, orders]);
 
-  const loadOrders = async () => {
+  const loadOrders = async (isRetry = false) => {
     setLoading(true);
+    setError(false);
     try {
-      // Fetch both regular orders and yearly packages
       const [regularOrders, yearlyPackages] = await Promise.all([
         OrderService.getOrders(),
         OrderService.getYearlyPackages()
       ]);
-      
-      // Combine both arrays
       const allOrders = [...regularOrders, ...yearlyPackages];
       setOrders(allOrders);
       setFilteredOrders(allOrders);
-    } catch (error) {
-      console.error("Error loading orders:", error);
+    } catch (err) {
+      console.error("Error loading orders:", err);
+      if (!isRetry) {
+        await new Promise(r => setTimeout(r, 500));
+        return loadOrders(true);
+      }
+      setError(true);
     } finally {
       setLoading(false);
     }
@@ -113,6 +117,19 @@ const OrderSearchDropdown = ({ onOrderSelect, className }: OrderSearchDropdownPr
           {loading ? (
             <div className="p-4 text-center text-muted-foreground">
               Loading orders...
+            </div>
+          ) : error ? (
+            <div className="p-4 text-center">
+              <p className="text-destructive mb-2">Failed to load orders</p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => loadOrders()}
+                className="gap-2"
+              >
+                <RefreshCw className="h-4 w-4" />
+                Retry
+              </Button>
             </div>
           ) : filteredOrders.length === 0 ? (
             <div className="p-4 text-center text-muted-foreground">
