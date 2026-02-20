@@ -183,36 +183,27 @@ export const useOrderEdit = (
       // Send order update notification to team
       try {
         const { NOTIFICATION_EMAIL_LIST } = await import('@/constants/notificationEmails');
-        const session = await supabase.auth.getSession();
         
         console.log('Sending order update notification emails...');
         
-        const response = await fetch(
-          `https://fjybmlugiqmiggsdrkiq.supabase.co/functions/v1/send-order-confirmation`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${session.data.session?.access_token}`,
+        const { data, error: invokeError } = await supabase.functions.invoke('send-order-confirmation', {
+          body: {
+            orderData: {
+              ...updateData,
+              id: order.id,
+              created_at: order.created_at,
+              isUpdate: true
             },
-            body: JSON.stringify({
-              orderData: {
-                ...updateData,
-                id: order.id,
-                created_at: order.created_at,
-                isUpdate: true
-              },
-              emails: [...NOTIFICATION_EMAIL_LIST],
-              assignedToName: updateData.assigned_to_name || order.assigned_to_name || 'Unassigned',
-              selectedInventoryItems: selectedInventoryItems || []
-            }),
-          }
-        );
+            emails: [...NOTIFICATION_EMAIL_LIST],
+            assignedToName: updateData.assigned_to_name || order.assigned_to_name || 'Unassigned',
+            selectedInventoryItems: selectedInventoryItems || []
+          },
+        });
 
-        if (response.ok) {
-          console.log('Order update notification sent successfully');
+        if (invokeError) {
+          console.error('Failed to send order update notification:', invokeError);
         } else {
-          console.error('Failed to send order update notification:', await response.text());
+          console.log('Order update notification sent successfully');
         }
       } catch (emailError) {
         console.error('Error sending order update notification:', emailError);
