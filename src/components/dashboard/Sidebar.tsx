@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
   Home, 
@@ -31,62 +31,17 @@ import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { supabase } from '@/integrations/supabase/client';
+import { useNotifications } from '@/hooks/useNotifications';
 import CreateOrderModal from '@/components/dashboard/CreateOrderModal';
 
 const Sidebar = () => {
   const location = useLocation();
   const { user } = useAuth();
-  const [unreadSupportCount, setUnreadSupportCount] = useState(0);
   const [createModalOpen, setCreateModalOpen] = useState(false);
+  const { unreadSupportCount } = useNotifications();
 
   const isAdmin = user?.role === 'admin';
   const isAdminOrAgent = user?.role === 'admin' || user?.role === 'agent';
-
-  // Fetch unread support notifications count for admins/agents
-  useEffect(() => {
-    if (!isAdminOrAgent || !user?.id) return;
-
-    const fetchUnreadSupportCount = async () => {
-      const { count, error } = await supabase
-        .from('notifications')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-        .eq('read', false)
-        .like('action_url', '/support/%');
-
-      if (error) {
-        console.error("Error fetching unread support count:", error);
-        setUnreadSupportCount(0);
-      } else {
-        setUnreadSupportCount(count ?? 0);
-      }
-    };
-
-    fetchUnreadSupportCount();
-
-    // Fallback: listen for manual "notifications changed" events
-    const handleNotificationsChanged = () => fetchUnreadSupportCount();
-    window.addEventListener("notifications:changed", handleNotificationsChanged);
-
-    // Real-time subscription for notifications changes
-    const channel = supabase
-      .channel(`support-notifications-sidebar-${user.id}`)
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'notifications',
-        filter: `user_id=eq.${user.id}`
-      }, () => {
-        fetchUnreadSupportCount();
-      })
-      .subscribe();
-
-    return () => {
-      window.removeEventListener("notifications:changed", handleNotificationsChanged);
-      channel.unsubscribe();
-    };
-  }, [isAdminOrAgent, user?.id]);
 
   // Define sidebar items with role restrictions
   const menuItems = [

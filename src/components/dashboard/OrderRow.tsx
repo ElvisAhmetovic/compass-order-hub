@@ -29,6 +29,7 @@ interface OrderRowProps {
   assigneeName: string;
   hideActions?: boolean;
   hidePriority?: boolean;
+  paymentReminder?: PaymentReminder | null;
 }
 
 const OrderRow = ({ 
@@ -37,7 +38,8 @@ const OrderRow = ({
   onRefresh, 
   assigneeName, 
   hideActions = false, 
-  hidePriority = false 
+  hidePriority = false,
+  paymentReminder: paymentReminderProp
 }: OrderRowProps) => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
@@ -48,23 +50,17 @@ const OrderRow = ({
   const [isRemovingReview, setIsRemovingReview] = useState(false);
   const [showReminderModal, setShowReminderModal] = useState(false);
   const [showClientReminderModal, setShowClientReminderModal] = useState(false);
-  const [activeReminder, setActiveReminder] = useState<PaymentReminder | null>(null);
+  const [activeReminder, setActiveReminder] = useState<PaymentReminder | null>(paymentReminderProp ?? null);
   const { user } = useAuth();
   const { toast } = useToast();
   const isAdmin = user?.role === "admin";
 
-  // Fetch reminder status for this order
+  // Sync prop to state when it changes
   useEffect(() => {
-    const fetchReminder = async () => {
-      try {
-        const reminder = await PaymentReminderService.getReminderForOrder(order.id);
-        setActiveReminder(reminder);
-      } catch (error) {
-        console.error("Error fetching reminder:", error);
-      }
-    };
-    fetchReminder();
-  }, [order.id]);
+    if (paymentReminderProp !== undefined) {
+      setActiveReminder(paymentReminderProp);
+    }
+  }, [paymentReminderProp]);
 
   const handleReminderUpdated = async () => {
     try {
