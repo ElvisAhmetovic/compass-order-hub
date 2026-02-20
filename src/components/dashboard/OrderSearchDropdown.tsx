@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { Search, ChevronDown, RefreshCw } from "lucide-react";
+import { Search, ChevronDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,7 +13,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Order } from "@/types";
 import { OrderService } from "@/services/orderService";
 import { formatCurrency } from "@/utils/currencyUtils";
-import { fetchWithRetry } from "@/utils/fetchWithRetry";
 
 interface OrderSearchDropdownProps {
   onOrderSelect: (order: Order) => void;
@@ -26,11 +25,10 @@ const OrderSearchDropdown = ({ onOrderSelect, className }: OrderSearchDropdownPr
   const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(false);
 
-  // Load orders when dropdown opens - always refresh
+  // Load orders when dropdown opens
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && orders.length === 0) {
       loadOrders();
     }
   }, [isOpen]);
@@ -53,20 +51,19 @@ const OrderSearchDropdown = ({ onOrderSelect, className }: OrderSearchDropdownPr
 
   const loadOrders = async () => {
     setLoading(true);
-    setError(false);
     try {
-      const allOrders = await fetchWithRetry(async () => {
-        const [regularOrders, yearlyPackages] = await Promise.all([
-          OrderService.getOrders(),
-          OrderService.getYearlyPackages()
-        ]);
-        return [...regularOrders, ...yearlyPackages];
-      });
+      // Fetch both regular orders and yearly packages
+      const [regularOrders, yearlyPackages] = await Promise.all([
+        OrderService.getOrders(),
+        OrderService.getYearlyPackages()
+      ]);
+      
+      // Combine both arrays
+      const allOrders = [...regularOrders, ...yearlyPackages];
       setOrders(allOrders);
       setFilteredOrders(allOrders);
-    } catch (err) {
-      console.error("Error loading orders:", err);
-      setError(true);
+    } catch (error) {
+      console.error("Error loading orders:", error);
     } finally {
       setLoading(false);
     }
@@ -116,19 +113,6 @@ const OrderSearchDropdown = ({ onOrderSelect, className }: OrderSearchDropdownPr
           {loading ? (
             <div className="p-4 text-center text-muted-foreground">
               Loading orders...
-            </div>
-          ) : error ? (
-            <div className="p-4 text-center">
-              <p className="text-destructive mb-2">Failed to load orders</p>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => loadOrders()}
-                className="gap-2"
-              >
-                <RefreshCw className="h-4 w-4" />
-                Retry
-              </Button>
             </div>
           ) : filteredOrders.length === 0 ? (
             <div className="p-4 text-center text-muted-foreground">

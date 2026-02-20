@@ -1,28 +1,92 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bell, Check, CheckCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Notification } from '@/services/notificationService';
-import { useNotifications } from '@/hooks/useNotifications';
+import { NotificationService, Notification } from '@/services/notificationService';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/context/AuthContext';
 import { formatDistanceToNow } from 'date-fns';
 
 const NotificationCenter = () => {
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
-  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
+  const { user } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!user) return;
+
+    // Fetch notifications
+    const fetchNotifications = async () => {
+      const data = await NotificationService.getNotifications(user.id);
+      setNotifications(data);
+    };
+
+    fetchNotifications();
+
+    // Fallback: listen for manual "notifications changed" events
+    const handleNotificationsChanged = () => fetchNotifications();
+    window.addEventListener("notifications:changed", handleNotificationsChanged);
+
+    // Subscribe to real-time notifications (INSERT and UPDATE)
+    const channel = supabase
+      .channel(`notifications-realtime-${user.id}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'notifications',
+        filter: `user_id=eq.${user.id}`
+      }, (payload) => {
+        setNotifications(prev => [payload.new as Notification, ...prev]);
+      })
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'notifications',
+        filter: `user_id=eq.${user.id}`
+      }, (payload) => {
+        const updated = payload.new as Notification;
+        setNotifications(prev => 
+          prev.map(n => n.id === updated.id ? updated : n)
+        );
+      })
+      .subscribe();
+
+    return () => {
+      window.removeEventListener("notifications:changed", handleNotificationsChanged);
+      channel.unsubscribe();
+    };
+  }, [user]);
+
+  const unreadCount = notifications.filter(n => !n.read).length;
 
   const handleMarkAsRead = async (notificationId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    await markAsRead(notificationId);
+    await NotificationService.markAsRead(notificationId);
+    setNotifications(prev => 
+      prev.map(n => n.id === notificationId ? { ...n, read: true } : n)
+    );
+  };
+
+  const handleMarkAllAsRead = async () => {
+    if (!user) return;
+    await NotificationService.markAllAsRead(user.id);
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
   };
 
   const handleNotificationClick = async (notification: Notification) => {
+    // Mark as read
     if (!notification.read) {
-      await markAsRead(notification.id);
+      await NotificationService.markAsRead(notification.id);
+      setNotifications(prev => 
+        prev.map(n => n.id === notification.id ? { ...n, read: true } : n)
+      );
     }
+
+    // Navigate if action_url exists
     if (notification.action_url) {
       setIsOpen(false);
       navigate(notification.action_url);
@@ -59,7 +123,7 @@ const NotificationCenter = () => {
             <h3 className="font-semibold">Notifications</h3>
             <div className="flex gap-2">
               {unreadCount > 0 && (
-                <Button variant="ghost" size="sm" onClick={markAllAsRead}>
+                <Button variant="ghost" size="sm" onClick={handleMarkAllAsRead}>
                   <CheckCheck className="h-4 w-4 mr-1" />
                   Mark all read
                 </Button>

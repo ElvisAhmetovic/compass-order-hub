@@ -18,9 +18,6 @@ import { useAuth } from "@/context/AuthContext";
 import { OrderService } from "@/services/orderService";
 import { SearchService, SearchFilters } from "@/services/searchService";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { fetchWithRetry } from "@/utils/fetchWithRetry";
-import { supabase } from "@/integrations/supabase/client";
-import { PaymentReminder } from "@/services/paymentReminderService";
 
 interface OrderTableProps {
   onOrderClick: (order: Order) => void;
@@ -39,7 +36,6 @@ const OrderTable = ({
   const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [reminderMap, setReminderMap] = useState<Record<string, PaymentReminder>>({});
   
   // Sorting state
   const [sortField, setSortField] = useState<'created_at' | 'updated_at'>('created_at');
@@ -69,34 +65,33 @@ const OrderTable = ({
       setLoading(true);
       setError(null);
       
-      let fetchedOrders: Order[];
+      let orders: Order[];
 
-      const fetchFn = async () => {
-        if (isYearlyPackages) {
-          if (statusFilter && statusFilter !== "All") {
-            return OrderService.getOrdersByStatus(statusFilter, true);
-          } else {
-            return OrderService.getYearlyPackages();
-          }
+      if (isYearlyPackages) {
+        console.log('OrderTable: Fetching yearly packages only');
+        if (statusFilter && statusFilter !== "All") {
+          orders = await OrderService.getOrdersByStatus(statusFilter, true);
         } else {
-          if (statusFilter && statusFilter !== "All") {
-            return OrderService.getOrdersByStatus(statusFilter, false);
-          } else {
-            return OrderService.getOrders(false);
-          }
+          orders = await OrderService.getYearlyPackages();
         }
-      };
+      } else {
+        console.log('OrderTable: Fetching regular orders (excluding yearly packages)');
+        if (statusFilter && statusFilter !== "All") {
+          orders = await OrderService.getOrdersByStatus(statusFilter, false);
+        } else {
+          orders = await OrderService.getOrders(false); // false means exclude yearly packages
+        }
+      }
 
-      fetchedOrders = await fetchWithRetry(fetchFn);
-
-      console.log(`OrderTable: Successfully fetched ${fetchedOrders.length} orders`);
+      console.log(`OrderTable: Successfully fetched ${orders.length} ${isYearlyPackages ? 'yearly package' : 'regular'} orders`);
       
       // Filter orders for non-admin users to only show their assigned orders
       if (!isAdmin && user) {
-        fetchedOrders = fetchedOrders.filter(order => order.assigned_to === user.id);
+        orders = orders.filter(order => order.assigned_to === user.id);
+        console.log(`OrderTable: Filtered to ${orders.length} orders for user ${user.id}`);
       }
       
-      setOrders(fetchedOrders);
+      setOrders(orders);
     } catch (error) {
       console.error("OrderTable: Error fetching orders:", error);
       setError("Failed to load orders. Please try again.");
@@ -184,41 +179,6 @@ const OrderTable = ({
     setSearchFilters(filters);
   };
 
-  // Get current page of orders (computed before hooks to keep hook order stable)
-  const indexOfLastOrder = currentPage * rowsPerPage;
-  const indexOfFirstOrder = indexOfLastOrder - rowsPerPage;
-  const currentOrders = filteredOrders.slice(indexOfFirstOrder, indexOfLastOrder);
-  const totalPages = Math.ceil(filteredOrders.length / rowsPerPage);
-  const currentOrderIdsKey = currentOrders.map(o => o.id).join(',');
-
-  // Batch fetch payment reminders for current page orders
-  useEffect(() => {
-    const orderIds = currentOrderIdsKey.split(',').filter(Boolean);
-    if (orderIds.length === 0) {
-      setReminderMap({});
-      return;
-    }
-
-    const fetchReminders = async () => {
-      try {
-        const { data } = await supabase
-          .from('payment_reminders')
-          .select('*')
-          .in('order_id', orderIds)
-          .eq('status', 'scheduled');
-
-        if (data) {
-          const map: Record<string, PaymentReminder> = {};
-          data.forEach(r => { map[r.order_id] = r as PaymentReminder; });
-          setReminderMap(map);
-        }
-      } catch (err) {
-        console.error('Error batch-fetching reminders:', err);
-      }
-    };
-    fetchReminders();
-  }, [currentOrderIdsKey]);
-
   // Helper to render content based on state
   const renderContent = () => {
     if (!user) {
@@ -297,6 +257,12 @@ const OrderTable = ({
       </Card>
     );
   }
+
+  // Get current page of orders
+  const indexOfLastOrder = currentPage * rowsPerPage;
+  const indexOfFirstOrder = indexOfLastOrder - rowsPerPage;
+  const currentOrders = filteredOrders.slice(indexOfFirstOrder, indexOfLastOrder);
+  const totalPages = Math.ceil(filteredOrders.length / rowsPerPage);
 
   return (
     <Card className="overflow-x-hidden w-full">
@@ -380,7 +346,6 @@ const OrderTable = ({
                 assigneeName={order.assigned_to_name || "Unassigned"}
                 hideActions={!isAdmin}
                 hidePriority={!isAdmin}
-                paymentReminder={reminderMap[order.id] ?? null}
               />
             ))}
           </TableBody>

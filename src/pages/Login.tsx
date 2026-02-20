@@ -1,20 +1,9 @@
 
-import React, { useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React from 'react';
+import { Link } from 'react-router-dom';
 import LoginForm from '@/components/auth/LoginForm';
-import { useAuth } from '@/context/AuthContext';
 
 const Login = () => {
-  const { user, isLoading } = useAuth();
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    if (!isLoading && user) {
-      const path = user.role === 'client' ? '/client/dashboard' : '/dashboard';
-      navigate(path);
-    }
-  }, [user, isLoading, navigate]);
-
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
       <div className="mb-6 text-center">

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
   Home, 
@@ -24,24 +24,65 @@ import {
   Wrench,
   Trophy,
   BarChart2,
-  Settings,
-  Plus
+  Settings
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { useNotifications } from '@/hooks/useNotifications';
-import CreateOrderModal from '@/components/dashboard/CreateOrderModal';
+import { supabase } from '@/integrations/supabase/client';
 
 const Sidebar = () => {
   const location = useLocation();
   const { user } = useAuth();
-  const [createModalOpen, setCreateModalOpen] = useState(false);
-  const { unreadSupportCount } = useNotifications();
+  const [unreadSupportCount, setUnreadSupportCount] = useState(0);
 
   const isAdmin = user?.role === 'admin';
   const isAdminOrAgent = user?.role === 'admin' || user?.role === 'agent';
+
+  // Fetch unread support notifications count for admins/agents
+  useEffect(() => {
+    if (!isAdminOrAgent || !user?.id) return;
+
+    const fetchUnreadSupportCount = async () => {
+      const { count, error } = await supabase
+        .from('notifications')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('read', false)
+        .like('action_url', '/support/%');
+
+      if (error) {
+        console.error("Error fetching unread support count:", error);
+        setUnreadSupportCount(0);
+      } else {
+        setUnreadSupportCount(count ?? 0);
+      }
+    };
+
+    fetchUnreadSupportCount();
+
+    // Fallback: listen for manual "notifications changed" events
+    const handleNotificationsChanged = () => fetchUnreadSupportCount();
+    window.addEventListener("notifications:changed", handleNotificationsChanged);
+
+    // Real-time subscription for notifications changes
+    const channel = supabase
+      .channel(`support-notifications-sidebar-${user.id}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'notifications',
+        filter: `user_id=eq.${user.id}`
+      }, () => {
+        fetchUnreadSupportCount();
+      })
+      .subscribe();
+
+    return () => {
+      window.removeEventListener("notifications:changed", handleNotificationsChanged);
+      channel.unsubscribe();
+    };
+  }, [isAdminOrAgent, user?.id]);
 
   // Define sidebar items with role restrictions
   const menuItems = [
@@ -90,18 +131,13 @@ const Sidebar = () => {
   });
 
   return (
-    <div className="w-64 bg-background border-r border-border min-h-screen">
+    <div className="w-64 bg-white border-r border-gray-200 min-h-screen">
       <div className="p-6">
-        <h2 className="text-xl font-semibold text-foreground">Navigation</h2>
-        {isAdmin && (
-          <Button onClick={() => setCreateModalOpen(true)} className="w-full mt-3 justify-start" size="sm">
-            <Plus className="mr-2 h-4 w-4" /> Create Order
-          </Button>
-        )}
+        <h2 className="text-xl font-semibold text-gray-800">Navigation</h2>
       </div>
-      <nav className="mt-2">
+      <nav className="mt-6">
         {visibleItems.length === 0 ? (
-          <div className="px-6 py-3 text-muted-foreground text-sm">
+          <div className="px-6 py-3 text-gray-500 text-sm">
             No menu items available
             <br />
             Role: {user?.role || 'No role'}
@@ -120,8 +156,8 @@ const Sidebar = () => {
                 key={`${item.href}-${item.label}`}
                 to={item.href}
                 className={cn(
-                  "flex items-center justify-between px-6 py-3 text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors",
-                  isActive && "bg-primary/10 text-primary border-r-2 border-primary"
+                  "flex items-center justify-between px-6 py-3 text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors",
+                  isActive && "bg-blue-50 text-blue-700 border-r-2 border-blue-700"
                 )}
               >
                 <div className="flex items-center">
@@ -138,7 +174,6 @@ const Sidebar = () => {
           })
         )}
       </nav>
-      <CreateOrderModal open={createModalOpen} onClose={() => setCreateModalOpen(false)} />
     </div>
   );
 };
