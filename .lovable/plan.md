@@ -1,45 +1,45 @@
 
 
-# Fix: Login Succeeds But Stays on /login
+# Fix: Order Search Dropdown Shows "No Orders Available"
 
 ## Root Cause
 
-Two issues combine to cause this:
+When you open the Create Order modal and click "Search existing orders to autofill," the `OrderSearchDropdown` component calls `OrderService.getOrders()` and `OrderService.getYearlyPackages()` simultaneously. If these requests fail (due to the intermittent rate-limiting / connection issue), the error is caught silently and `orders` stays as an empty array, showing "No orders available" with no way to retry.
 
-1. **No error handling in post-login redirect** (`LoginForm.tsx` lines 63-88): After `login()` returns `true`, a `setTimeout` callback runs async code (dynamic imports, DB queries) with NO try/catch. If anything throws, navigation silently fails.
-
-2. **Login page doesn't redirect authenticated users**: Unlike the Index page which watches the `user` state and redirects, the Login page has no such logic. So even when `AuthContext` successfully sets the user via `onAuthStateChange`, the Login page just sits there.
+This is directly related to the broader "failed to fetch" issue -- the dropdown is a victim of the same overloaded request pattern.
 
 ## Fix
 
-### 1. Add authenticated-user redirect to Login page (`src/pages/Login.tsx`)
+### `src/components/dashboard/OrderSearchDropdown.tsx`
 
-Add a `useEffect` that watches the `user` from `useAuth()`. When `user` becomes non-null (either from a fresh login or an existing session), redirect based on role:
-- `client` role --> `/client/dashboard`
-- all others --> `/dashboard`
+1. **Add an error state** so users see "Failed to load orders" instead of the misleading "No orders available"
+2. **Add a "Retry" button** when loading fails, so users can try again without closing/reopening the modal
+3. **Add retry logic** inside `loadOrders` -- automatically retry once after a short delay before showing the error
+4. **Reset orders on each open** -- remove the `orders.length === 0` guard so orders are refreshed each time the dropdown opens (the stale cache from a previous failed load was preventing retries)
 
-This is the same pattern used in `Index.tsx` and `ClientLogin.tsx`.
+### Changes in detail
 
-### 2. Simplify LoginForm redirect logic (`src/components/auth/LoginForm.tsx`)
+```text
+Current flow:
+  Open dropdown --> if orders empty, fetch --> if fetch fails, show "No orders available"
 
-Remove the fragile `setTimeout` + dynamic import + role query block entirely. Since Login.tsx now handles the redirect via `useEffect` watching the auth state, LoginForm only needs to:
-- Call `login(email, password)`
-- If it fails, show the error
-- If it succeeds, do nothing -- the Login page's useEffect will handle navigation once AuthContext updates
+New flow:
+  Open dropdown --> fetch (with 1 auto-retry) --> if still fails, show error + Retry button
+```
 
-This eliminates the unhandled promise rejection and the race condition.
+## Technical details
 
-## Files to modify
+- Add `error` state (`boolean`)
+- In `loadOrders`: wrap in try/catch with one automatic retry (500ms delay), set `error = true` on final failure
+- In the `useEffect` that triggers on `isOpen`: always call `loadOrders()` when opening (remove `orders.length === 0` check)
+- In the JSX: when `error` is true, show "Failed to load orders" message with a Retry button that calls `loadOrders()`
+- The Retry button resets the error state and tries again
+
+## File to modify
 
 | File | Change |
 |------|--------|
-| `src/pages/Login.tsx` | Add `useAuth()` + `useEffect` to redirect when user is set |
-| `src/components/auth/LoginForm.tsx` | Remove the `setTimeout` redirect block (lines 62-89), keep only the error handling |
+| `src/components/dashboard/OrderSearchDropdown.tsx` | Add error state, retry logic, and retry button |
 
-## Why this is robust
-
-- The redirect is driven by **AuthContext state**, not a fragile setTimeout chain
-- Works for fresh logins AND page refreshes with existing sessions
-- Matches the pattern already used by `Index.tsx` and `ClientLogin.tsx`
-- No dynamic imports, no unhandled async errors
+Single file change. No impact on other components.
 
