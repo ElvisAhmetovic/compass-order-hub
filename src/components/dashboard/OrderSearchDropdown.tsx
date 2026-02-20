@@ -13,6 +13,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Order } from "@/types";
 import { OrderService } from "@/services/orderService";
 import { formatCurrency } from "@/utils/currencyUtils";
+import { fetchWithRetry } from "@/utils/fetchWithRetry";
 
 interface OrderSearchDropdownProps {
   onOrderSelect: (order: Order) => void;
@@ -50,23 +51,21 @@ const OrderSearchDropdown = ({ onOrderSelect, className }: OrderSearchDropdownPr
     }
   }, [searchQuery, orders]);
 
-  const loadOrders = async (isRetry = false) => {
+  const loadOrders = async () => {
     setLoading(true);
     setError(false);
     try {
-      const [regularOrders, yearlyPackages] = await Promise.all([
-        OrderService.getOrders(),
-        OrderService.getYearlyPackages()
-      ]);
-      const allOrders = [...regularOrders, ...yearlyPackages];
+      const allOrders = await fetchWithRetry(async () => {
+        const [regularOrders, yearlyPackages] = await Promise.all([
+          OrderService.getOrders(),
+          OrderService.getYearlyPackages()
+        ]);
+        return [...regularOrders, ...yearlyPackages];
+      });
       setOrders(allOrders);
       setFilteredOrders(allOrders);
     } catch (err) {
       console.error("Error loading orders:", err);
-      if (!isRetry) {
-        await new Promise(r => setTimeout(r, 500));
-        return loadOrders(true);
-      }
       setError(true);
     } finally {
       setLoading(false);

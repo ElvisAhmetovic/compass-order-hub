@@ -1,5 +1,5 @@
 
-import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
+import { createContext, ReactNode, useContext, useEffect, useRef, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { UserRole } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
@@ -32,6 +32,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const convertingRef = useRef(false);
   const { toast } = useToast();
 
   // Convert Supabase user to our AuthUser format
@@ -169,9 +170,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (!mounted) return;
         
         if (session?.user) {
-          // Don't call convertToAuthUser here to avoid infinite loops
-          // Just update the loading state, the session check above will handle user conversion
-          setTimeout(async () => {
+          if (convertingRef.current) return;
+          convertingRef.current = true;
+          (async () => {
             try {
               const authUser = await convertToAuthUser(session.user);
               if (mounted) {
@@ -184,8 +185,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 setUser(null);
                 setIsLoading(false);
               }
+            } finally {
+              convertingRef.current = false;
             }
-          }, 0);
+          })();
         } else {
           if (mounted) {
             setUser(null);
