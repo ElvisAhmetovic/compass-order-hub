@@ -100,7 +100,7 @@ const OrderSearchDropdown = ({ onOrderSelect, className }: OrderSearchDropdownPr
           <ChevronDown className="h-4 w-4" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[500px] p-0" align="start">
+      <PopoverContent className="w-[500px] p-0 z-[100]" align="start" onOpenAutoFocus={(e) => e.preventDefault()} onCloseAutoFocus={(e) => e.preventDefault()}>
         <div className="p-3 border-b">
           <Input
             placeholder="Search by company name, email, status, or order ID..."

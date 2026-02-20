@@ -372,30 +372,18 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
       console.log('Email payload being sent:', JSON.stringify(emailPayload, null, 2));
 
       try {
-        // Call the edge function directly with fetch for better error handling
+        // Call the edge function using Supabase SDK for proper CORS handling
         console.log('Calling send-order-confirmation edge function...');
         
-        const response = await fetch(
-          `https://fjybmlugiqmiggsdrkiq.supabase.co/functions/v1/send-order-confirmation`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZqeWJtbHVnaXFtaWdnc2Rya2lxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUyNDYxNjAsImV4cCI6MjA2MDgyMjE2MH0.zdCS-vPtsg15ucfw0HAoNzNLbevhJA3njyLzf_XrzvQ`,
-            },
-            body: JSON.stringify(emailPayload),
-          }
-        );
+        const { data: emailResult, error: emailError } = await supabase.functions.invoke('send-order-confirmation', {
+          body: emailPayload,
+        });
 
-        console.log('Edge function response status:', response.status);
-        
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error('Edge function error response:', errorText);
-          throw new Error(`HTTP ${response.status}: ${errorText}`);
+        if (emailError) {
+          console.error('Edge function error:', emailError);
+          throw emailError;
         }
 
-        const emailResult = await response.json();
         console.log('Order confirmation emails sent successfully:', emailResult);
         
         toast({

@@ -42,30 +42,20 @@ export class StatusChangeNotificationService {
         ? activeStatuses.filter(s => s !== status)[0] || null
         : null;
 
-      // Call edge function to send notifications
-      const response = await fetch(
-        `https://fjybmlugiqmiggsdrkiq.supabase.co/functions/v1/send-status-change-notification`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZqeWJtbHVnaXFtaWdnc2Rya2lxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUyNDYxNjAsImV4cCI6MjA2MDgyMjE2MH0.zdCS-vPtsg15ucfw0HAoNzNLbevhJA3njyLzf_XrzvQ'}`,
-          },
-          body: JSON.stringify({
-            orderId,
-            oldStatus,
-            newStatus: this.formatStatusName(status),
-            changedBy,
-          }),
-        }
-      );
+      // Call edge function using Supabase SDK for proper CORS handling
+      const { data, error } = await supabase.functions.invoke('send-status-change-notification', {
+        body: {
+          orderId,
+          oldStatus,
+          newStatus: this.formatStatusName(status),
+          changedBy,
+        },
+      });
 
-      if (!response.ok) {
-        const error = await response.json();
+      if (error) {
         console.error('Failed to send status change notification:', error);
       } else {
-        const result = await response.json();
-        console.log('Status change notification sent:', result);
+        console.log('Status change notification sent:', data);
       }
     } catch (error) {
       console.error('Error sending status change notification:', error);

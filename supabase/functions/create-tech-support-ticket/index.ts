@@ -1,23 +1,9 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.8';
 
-// CORS configuration for Lovable projects
-const ALLOWED_ORIGINS = [
-  'https://ab4babd7-978c-4acd-b78b-5f6332997961.lovableproject.com',
-  'https://www.empriadental.de',
-  'http://localhost:5173', // For local development
-  'http://localhost:3000'
-];
-
-const getCorsHeaders = (origin: string | null) => {
-  const allowedOrigin = origin && ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
-  return {
-    'Access-Control-Allow-Origin': allowedOrigin,
-    'Access-Control-Allow-Methods': 'OPTIONS, POST',
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-    'Access-Control-Max-Age': '86400',
-    'Vary': 'Origin'
-  };
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
 interface AttachmentData {
@@ -50,8 +36,6 @@ interface TicketRequest {
   ];
 
 const handler = async (req: Request): Promise<Response> => {
-  const origin = req.headers.get('origin');
-  const corsHeaders = getCorsHeaders(origin);
 
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {

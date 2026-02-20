@@ -91,42 +91,21 @@ const CreateTechSupportWithImageModal: React.FC<CreateTechSupportWithImageModalP
         attachmentCount: serializedAttachments.length
       });
 
-      // Call the atomic API
-      const response = await fetch(
-        `https://fjybmlugiqmiggsdrkiq.supabase.co/functions/v1/create-tech-support-ticket`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
-          },
-          body: JSON.stringify({
-            company_name: formData.company_name.trim(),
-            problem_description: formData.problem_description.trim(),
-            action_needed: formData.action_needed.trim(),
-            attachments: serializedAttachments
-          }),
-        }
-      );
+      // Call edge function using Supabase SDK for proper CORS handling
+      const { data: result, error: invokeError } = await supabase.functions.invoke('create-tech-support-ticket', {
+        body: {
+          company_name: formData.company_name.trim(),
+          problem_description: formData.problem_description.trim(),
+          action_needed: formData.action_needed.trim(),
+          attachments: serializedAttachments
+        },
+      });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Network error occurred' }));
-        
-        // Show more specific error messages
-        let errorMessage = errorData.error || 'Failed to create ticket';
-        
-        if (response.status === 401) {
-          errorMessage = 'Authentication failed. Please refresh the page and try again.';
-        } else if (response.status === 413 || errorMessage.includes('payload')) {
-          errorMessage = 'Upload too large. Please reduce image sizes or number of files.';
-        } else if (response.status >= 500) {
-          errorMessage = 'Server error. Please try again in a moment.';
-        }
-        
+      if (invokeError) {
+        let errorMessage = invokeError.message || 'Failed to create ticket';
         throw new Error(errorMessage);
       }
 
-      const result = await response.json();
       console.log('Ticket created successfully:', result);
 
       // Handle both old and new response formats
