@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   HelpCircle,
   Plus,
@@ -48,6 +48,7 @@ interface InquiryWithUnread extends ClientSupportInquiry {
 
 const ClientSupport = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const [inquiries, setInquiries] = useState<InquiryWithUnread[]>([]);
   const [orders, setOrders] = useState<{ id: string; company_name: string }[]>([]);
@@ -63,6 +64,27 @@ const ClientSupport = () => {
   useEffect(() => {
     loadData();
   }, []);
+
+  // Auto-open complaint dialog from email link
+  useEffect(() => {
+    const isComplaint = searchParams.get("complaint") === "true";
+    const complaintOrderId = searchParams.get("orderId");
+
+    if (isComplaint && orders.length > 0) {
+      // Find the matching order to get company name
+      const matchedOrder = orders.find(o => o.id === complaintOrderId);
+      if (matchedOrder) {
+        setSubject(`Einwand / Complaint - ${matchedOrder.company_name}`);
+        setSelectedOrderId(matchedOrder.id);
+      } else {
+        setSubject("Einwand / Complaint");
+        if (complaintOrderId) setSelectedOrderId(complaintOrderId);
+      }
+      setDialogOpen(true);
+      // Clear query params so it doesn't re-trigger
+      setSearchParams({}, { replace: true });
+    }
+  }, [orders, searchParams]);
 
   // Real-time subscription for support updates
   useEffect(() => {
