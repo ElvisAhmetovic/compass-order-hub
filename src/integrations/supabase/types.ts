@@ -467,6 +467,57 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_tickets: {
+        Row: {
+          client_email: string
+          client_name: string | null
+          company_name: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          order_id: string
+          status: string
+          subject: string
+        }
+        Insert: {
+          client_email: string
+          client_name?: string | null
+          company_name?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          order_id: string
+          status?: string
+          subject?: string
+        }
+        Update: {
+          client_email?: string
+          client_name?: string | null
+          company_name?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          order_id?: string
+          status?: string
+          subject?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_tickets_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "client_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_tickets_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_templates: {
         Row: {
           body: string

@@ -39,6 +39,8 @@ import TrustpilotDeletion from "./pages/TrustpilotDeletion";
 import GoogleDeletion from "./pages/GoogleDeletion";
 import TechSupport from "./pages/TechSupport";
 import TechSupportDetail from "./pages/TechSupportDetail";
+import CustomerTickets from "./pages/CustomerTickets";
+import CustomerTicketDetail from "./pages/CustomerTicketDetail";
 import NotFound from "./pages/NotFound";
 import { RequireAuth } from "./components/auth/RequireAuth";
 import AdminGuard from "./components/auth/AdminGuard";
@@ -215,6 +217,16 @@ function App() {
                   <Route path="/tech-support/:ticketId" element={
                     <RequireAuth>
                       <TechSupportDetail />
+                    </RequireAuth>
+                  } />
+                  <Route path="/customer-tickets" element={
+                    <RequireAuth>
+                      <CustomerTickets />
+                    </RequireAuth>
+                  } />
+                  <Route path="/customer-tickets/:id" element={
+                    <RequireAuth>
+                      <CustomerTicketDetail />
                     </RequireAuth>
                   } />
                   <Route path="/settings" element={

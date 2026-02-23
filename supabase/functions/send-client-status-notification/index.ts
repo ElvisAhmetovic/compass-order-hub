@@ -28,6 +28,8 @@ const getClientEmailHtml = (
   oldStatus: string | null,
   newStatus: string,
   portalUrl: string,
+  orderId: string,
+  clientEmail: string,
   customMessage?: string
 ): string => {
   return `
@@ -73,6 +75,10 @@ const getClientEmailHtml = (
         
         <div style="text-align: center; margin: 30px 0;">
           <a href="${portalUrl}" style="display: inline-block; background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%); color: #ffffff; text-decoration: none; padding: 15px 40px; border-radius: 8px; font-weight: bold; font-size: 16px;">View in Client Portal</a>
+        </div>
+        
+        <div style="text-align: center; margin: 20px 0;">
+          <a href="${Deno.env.get("SUPABASE_URL")}/functions/v1/create-client-ticket?orderId=${orderId}&email=${clientEmail}" style="display: inline-block; background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%); color: #ffffff; text-decoration: none; padding: 12px 35px; border-radius: 8px; font-weight: bold; font-size: 14px;">🎫 Need Help? Open a Ticket</a>
         </div>
         
         <div style="background: #fff3e0; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ff9800;">
@@ -199,6 +205,8 @@ const handler = async (req: Request): Promise<Response> => {
       oldStatus,
       newStatus,
       portalUrl,
+      orderId,
+      clientEmail,
       customMessage
     );
 
