@@ -1,45 +1,24 @@
 
+## Fix: Redeploy Edge Function and Add Error Logging
 
-## Send Status Change Notifications to `contact_email` (Not Just Portal Users)
+### Root Cause
 
-### Problem
+The code in `orderService.ts` and the edge function `send-client-status-notification` both have the correct logic to send emails to `contact_email`. However, the edge function was likely **not redeployed** after the last code changes. The deployed version still has the old code that only works with `client_id` (portal users).
 
-Currently, the client status notification (`send-client-status-notification`) only works for orders with a linked `client_id` (portal users). If a client doesn't have a portal account but the order has a `contact_email`, they get nothing.
+Evidence:
+- The Resend dashboard (image 3) shows [CSM Alert] team notifications were sent successfully -- so the team notification edge function works fine
+- But **zero** logs exist for `send-client-status-notification` -- meaning either it wasn't called or the deployed version crashed before logging
+- Email History tab (image 2) shows no client emails were sent
 
-### Solution
+### Fix
 
-Two changes:
+1. **Redeploy the edge function** `send-client-status-notification` so the deployed version includes the `contact_email` fallback path
 
-**1. Frontend: Remove the `client_id` gate in `orderService.ts`**
-
-Currently (line 671): `if (enabled && currentOrder.client_id)` -- this blocks the notification for orders without a portal client. Change to also fire when `contact_email` exists:
-
-```
-if (enabled && (currentOrder.client_id || currentOrder.contact_email))
-```
-
-**2. Edge Function: `send-client-status-notification/index.ts`**
-
-Currently the function bails out at line 137 if there's no `client_id`. Instead, add a fallback path:
-
-- If `client_id` exists: use the current flow (fetch profile name + app_users email)
-- If no `client_id` but order has `contact_email`: use `contact_email` as recipient and `company_name` / company `contact_person` as the client name
-- Only bail if neither exists
-
-This keeps the existing portal flow intact while adding support for non-portal clients.
+2. **Add better console logging** in `orderService.ts` around the client notification call so we can see in the browser console whether the function was invoked and what happened
 
 ### Files to Modify
 
 | File | Change |
 |------|--------|
-| `src/services/orderService.ts` | Line 671: expand condition to include `contact_email` |
-| `supabase/functions/send-client-status-notification/index.ts` | Add fallback to `contact_email` when no `client_id`, use company contact person as name |
-
-### What Stays the Same
-
-- The "Service Delivered" email for Resolved status (already sends to `contact_email`)
-- The team notification (unchanged)
-- The email template HTML (same for both paths)
-- The custom message support (works for both paths)
-- The 30-second throttle (works for both paths)
-
+| `supabase/functions/send-client-status-notification/index.ts` | Redeploy (no code change needed -- code is already correct) |
+| `src/services/orderService.ts` | Add console.log before and after the client notification call for debugging visibility |
