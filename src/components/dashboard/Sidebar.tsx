@@ -24,7 +24,8 @@ import {
   Wrench,
   Trophy,
   BarChart2,
-  Settings
+  Settings,
+  Ticket
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
@@ -35,6 +36,7 @@ const Sidebar = () => {
   const location = useLocation();
   const { user } = useAuth();
   const [unreadSupportCount, setUnreadSupportCount] = useState(0);
+  const [openTicketCount, setOpenTicketCount] = useState(0);
 
   const isAdmin = user?.role === 'admin';
   const isAdminOrAgent = user?.role === 'admin' || user?.role === 'agent';
@@ -84,6 +86,31 @@ const Sidebar = () => {
     };
   }, [isAdminOrAgent, user?.id]);
 
+  // Fetch open customer tickets count
+  useEffect(() => {
+    if (!isAdminOrAgent) return;
+
+    const fetchOpenTickets = async () => {
+      const { count, error } = await supabase
+        .from('customer_tickets')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'open');
+
+      if (!error) setOpenTicketCount(count ?? 0);
+    };
+
+    fetchOpenTickets();
+
+    const ticketChannel = supabase
+      .channel('customer-tickets-sidebar')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'customer_tickets' }, () => {
+        fetchOpenTickets();
+      })
+      .subscribe();
+
+    return () => { ticketChannel.unsubscribe(); };
+  }, [isAdminOrAgent]);
+
   // Define sidebar items with role restrictions
   const menuItems = [
     { href: '/dashboard', icon: Home, label: 'Dashboard', roles: ['admin', 'agent', 'user'] },
@@ -91,6 +118,7 @@ const Sidebar = () => {
     { href: '/rankings', icon: Trophy, label: 'Rankings', roles: ['admin', 'agent'] },
     { href: '/user-statistics', icon: BarChart2, label: 'User Statistics', roles: ['admin', 'agent'] },
     { href: '/support', icon: HelpCircle, label: 'Support', roles: ['admin', 'agent', 'user'], showBadge: true },
+    { href: '/customer-tickets', icon: Ticket, label: 'Customer Tickets', roles: ['admin', 'agent'], showTicketBadge: true },
     { href: '/tech-support', icon: Wrench, label: 'Tech Support', roles: ['admin', 'agent'] },
     { href: '/active-orders', icon: FileText, label: 'My Orders', roles: ['user'] },
     { href: '/active-orders', icon: Clock, label: 'Active Orders', roles: ['admin', 'agent'] },
@@ -150,6 +178,7 @@ const Sidebar = () => {
               (item.href === '/active-orders' && location.pathname.startsWith('/active-orders'));
             
             const showSupportBadge = item.showBadge && isAdminOrAgent && unreadSupportCount > 0;
+            const showTicketBadge = (item as any).showTicketBadge && isAdminOrAgent && openTicketCount > 0;
             
             return (
               <Link
@@ -167,6 +196,11 @@ const Sidebar = () => {
                 {showSupportBadge && (
                   <Badge variant="destructive" className="h-5 min-w-[20px] px-1.5 flex items-center justify-center text-xs">
                     {unreadSupportCount > 99 ? '99+' : unreadSupportCount}
+                  </Badge>
+                )}
+                {showTicketBadge && (
+                  <Badge variant="destructive" className="h-5 min-w-[20px] px-1.5 flex items-center justify-center text-xs">
+                    {openTicketCount > 99 ? '99+' : openTicketCount}
                   </Badge>
                 )}
               </Link>
