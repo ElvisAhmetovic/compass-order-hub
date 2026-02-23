@@ -74,3 +74,6 @@ verify_jwt = false
 
 [functions.send-support-inquiry-notification]
 verify_jwt = false
+
+[functions.send-service-delivered-notification]
+verify_jwt = false

@@ -692,6 +692,24 @@ export class OrderService {
         // Don't block status update if client notification fails
       }
     }
+
+    // Send "Service Delivered" formal email when Resolved is enabled
+    if (enabled && status === 'Resolved' && currentOrder.contact_email) {
+      try {
+        await supabase.functions.invoke('send-service-delivered-notification', {
+          body: {
+            orderId,
+            changedBy: {
+              id: user.id,
+              name: user.user_metadata?.full_name || user.email || 'Unknown'
+            }
+          }
+        });
+        console.log('Service delivered notification sent for order:', orderId);
+      } catch (serviceDeliveredError) {
+        console.error('Error sending service delivered notification:', serviceDeliveredError);
+      }
+    }
   }
 
   // Get all active statuses for an order
