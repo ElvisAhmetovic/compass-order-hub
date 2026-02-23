@@ -5,8 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Mail, Building2, FileText, Calendar, Ticket, Trash2 } from 'lucide-react';
-import { customerTicketService, CustomerTicket } from '@/services/customerTicketService';
+import { ArrowLeft, Mail, Building2, FileText, Calendar, Ticket, Trash2, UserPlus, X } from 'lucide-react';
+import { customerTicketService, CustomerTicket, ClientUser } from '@/services/customerTicketService';
 import { useParams, useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { toast } from '@/hooks/use-toast';
@@ -20,6 +20,9 @@ const CustomerTicketDetail = () => {
   const [loading, setLoading] = useState(true);
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
+  const [clientUsers, setClientUsers] = useState<ClientUser[]>([]);
+  const [selectedClientId, setSelectedClientId] = useState<string>('');
+  const [assigning, setAssigning] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -37,6 +40,10 @@ const CustomerTicketDetail = () => {
     };
     fetch();
   }, [id]);
+
+  useEffect(() => {
+    customerTicketService.getClientUsers().then(setClientUsers).catch(console.error);
+  }, []);
 
   const handleStatusChange = async (status: string) => {
     if (!id || !ticket) return;
@@ -73,6 +80,45 @@ const CustomerTicketDetail = () => {
     }
   };
 
+  const handleAssign = async () => {
+    if (!id || !ticket || !selectedClientId) return;
+    const client = clientUsers.find(c => c.id === selectedClientId);
+    if (!client) return;
+    setAssigning(true);
+    try {
+      await customerTicketService.assignToClient(id, {
+        clientId: client.id,
+        clientName: client.name,
+        clientEmail: client.email,
+        orderId: ticket.order_id,
+        subject: ticket.subject,
+      });
+      setTicket({
+        ...ticket,
+        assigned_client_id: client.id,
+        assigned_client_name: client.name,
+        assigned_client_email: client.email,
+      });
+      setSelectedClientId('');
+      toast({ title: 'Ticket assigned', description: `Assigned to ${client.name}` });
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message || 'Failed to assign ticket', variant: 'destructive' });
+    } finally {
+      setAssigning(false);
+    }
+  };
+
+  const handleUnassign = async () => {
+    if (!id || !ticket) return;
+    try {
+      await customerTicketService.unassignClient(id);
+      setTicket({ ...ticket, assigned_client_id: null, assigned_client_name: null, assigned_client_email: null });
+      toast({ title: 'Client unassigned' });
+    } catch {
+      toast({ title: 'Error', description: 'Failed to unassign', variant: 'destructive' });
+    }
+  };
+
   if (loading) {
     return <Layout><div className="flex justify-center p-8">Loading...</div></Layout>;
   }
@@ -100,6 +146,12 @@ const CustomerTicketDetail = () => {
             <Ticket className="w-6 h-6" />
             Ticket Details
           </h1>
+          {ticket.assigned_client_name && (
+            <Badge variant="outline" className="ml-auto flex items-center gap-1">
+              <UserPlus className="w-3 h-3" />
+              {ticket.assigned_client_name}
+            </Badge>
+          )}
         </div>
 
         <Card>
@@ -141,6 +193,47 @@ const CustomerTicketDetail = () => {
                 </div>
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Assign to Client */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <UserPlus className="w-5 h-5" />
+              Assign to Client Portal User
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {ticket.assigned_client_id ? (
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium">{ticket.assigned_client_name}</p>
+                  <p className="text-sm text-muted-foreground">{ticket.assigned_client_email}</p>
+                </div>
+                <Button variant="outline" size="sm" onClick={handleUnassign}>
+                  <X className="w-4 h-4 mr-1" /> Unassign
+                </Button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-3">
+                <Select value={selectedClientId} onValueChange={setSelectedClientId}>
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder="Select a client user..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {clientUsers.map(c => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name} {c.email ? `(${c.email})` : ''}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button onClick={handleAssign} disabled={!selectedClientId || assigning}>
+                  {assigning ? 'Assigning...' : 'Assign'}
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
 

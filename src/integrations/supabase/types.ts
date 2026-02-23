@@ -469,6 +469,9 @@ export type Database = {
       }
       customer_tickets: {
         Row: {
+          assigned_client_email: string | null
+          assigned_client_id: string | null
+          assigned_client_name: string | null
           client_email: string
           client_name: string | null
           company_name: string | null
@@ -480,6 +483,9 @@ export type Database = {
           subject: string
         }
         Insert: {
+          assigned_client_email?: string | null
+          assigned_client_id?: string | null
+          assigned_client_name?: string | null
           client_email: string
           client_name?: string | null
           company_name?: string | null
@@ -491,6 +497,9 @@ export type Database = {
           subject?: string
         }
         Update: {
+          assigned_client_email?: string | null
+          assigned_client_id?: string | null
+          assigned_client_name?: string | null
           client_email?: string
           client_name?: string | null
           company_name?: string | null
