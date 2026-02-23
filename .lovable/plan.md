@@ -1,109 +1,57 @@
 
 
-# "Service Delivered" Automatic Email on Resolved Status
+## Add Custom Message Input When Toggling Order Statuses
 
-## Overview
+### What Already Works
 
-When a team member sets an order's status to **Resolved**, the system will automatically send a professional German-language email to the order's `contact_email` (not just linked portal clients). The email informs the client that the service is delivered, includes a live link to verify the work, the invoice details, and two action options: "Everything OK" or "Report a Problem" (which creates a new complaint ticket in the system).
+The backend is fully ready:
+- `ClientNotificationService` interface already has an optional `customMessage` field
+- The `send-client-status-notification` edge function already renders custom messages in a styled blue box in the email
+- The `send-service-delivered-notification` function fires separately for "Resolved"
 
-## What Changes
+The only missing piece is the **UI** -- there's no way for team members to type a message before confirming a status change.
 
-### 1. New Edge Function: `send-service-delivered-notification`
+### Solution
 
-A new Supabase Edge Function that sends the formal German email template you specified. It will:
+Create a small confirmation dialog that appears when a status is toggled. It shows the status being changed and an optional textarea for a personalized note. The message gets threaded through `toggleOrderStatus` to the client notification email.
 
-- Accept the order ID and triggering user info
-- Look up the order details (company name, price, description, contact email, company link)
-- Look up any linked invoice (invoice number, amount, download link)
-- Build the German email template with all dynamic placeholders:
-  - `{customer_name}` -- from `company_name` or `contact_person` on the order/company
-  - `{ticket_id}` -- the order ID (shortened)
-  - `{service_name}` -- from the order `description`
-  - `{invoice_number}` -- from linked invoice if exists
-  - `{invoice_amount}` -- formatted in EUR with de-DE locale (comma separator)
-  - `{invoice_link}` -- link to invoice in the client portal (or dashboard)
-  - `{service_live_link}` -- from the order's `company_link` field (Google Maps, Trustpilot, etc.)
-  - `{ticket_reply_link}` -- a deep link to the client support page to open a complaint
-  - `{today_date}` -- formatted as dd.MM.yyyy
-- Send via Resend using `RESEND_API_KEY_ABMEDIA` from `noreply@empriadental.de`
-- Log the email in `client_email_logs` for audit trail
+### Changes
 
-### 2. Trigger: Hook into `toggleOrderStatus` for "Resolved"
+**1. New Component: `StatusChangeDialog.tsx`**
 
-In `src/services/orderService.ts`, inside the `toggleOrderStatus` method (around line 670-694), add a new block that fires **only when status "Resolved" is enabled**:
+A simple Dialog with:
+- Title: "Add Resolved" / "Remove Complaint" (dynamic)
+- Optional textarea: "Add a message for the client (optional)"
+- Placeholder: e.g. "Your complaint has been resolved and the review has been removed."
+- Two buttons: "Skip Message & Confirm" and "Send with Message"
+- Both confirm the status change; the second passes the custom message
 
-- Calls the new edge function via `supabase.functions.invoke('send-service-delivered-notification', ...)`
-- Sends to the order's `contact_email` (works for ALL orders, not just those with `client_id`)
-- Falls back to the existing generic client notification for portal-linked clients
+**2. Modify `OrderService.toggleOrderStatus`**
 
-### 3. Complaint Link Flow
+Add an optional 4th parameter `customMessage?: string`. Pass it through to the `ClientNotificationService.notifyClientStatusChange` call (line 681) and the `send-service-delivered-notification` invocation (line 699). No other logic changes.
 
-The "Ich habe ein Problem" button in the email will link to:
-- **If order has `client_id`**: `{APP_URL}/client/support?complaint=true&orderId={orderId}` -- opens the client portal support page with a pre-filled complaint form
-- **If no portal account**: `mailto:service@team-abmedia.com?subject=Einwand zu Auftrag {orderId}` -- fallback to email
+**3. Modify `MultiStatusBadges.tsx`**
 
-On the client support page (`ClientSupport.tsx`), we will read the `complaint` and `orderId` query parameters and auto-open the "New Inquiry" dialog pre-populated with:
-- Subject: "Einwand / Complaint - {company_name}"
-- The linked order pre-selected
-- Focus on the message field
+Instead of calling `OrderService.toggleOrderStatus` directly from the checkbox handler, open the new `StatusChangeDialog` first. On confirm, call `toggleOrderStatus` with the optional message.
 
-### 4. Email Template (German)
+**4. Modify `OrderActions.tsx`**
 
-Exactly as you specified:
+Same change for the status toggle menu items in the admin dropdown -- open the dialog instead of calling directly.
 
-**Subject:** `Dienstleistung abgeschlossen -- Bitte prufen & Rechnung begleichen (AB MEDIA TEAM)`
+### Files
 
-**Body:** Your full German template with all placeholders dynamically filled.
+| File | Action |
+|------|--------|
+| `src/components/dashboard/StatusChangeDialog.tsx` | **Create** -- confirmation dialog with optional message textarea |
+| `src/services/orderService.ts` | **Modify** -- add `customMessage` param to `toggleOrderStatus`, pass to notifications |
+| `src/components/dashboard/MultiStatusBadges.tsx` | **Modify** -- use dialog before toggling |
+| `src/components/dashboard/OrderActions.tsx` | **Modify** -- use dialog before toggling |
 
-Two action buttons:
-- "Alles in Ordnung" -- no action needed, just a confirmation text
-- "Ich habe ein Problem" -- links to the complaint form
+### User Experience
 
-## Files to Create/Modify
+1. Admin clicks a status checkbox (e.g. "Resolved") in the dropdown or badge area
+2. A small dialog appears: **"Add status: Resolved"** with a textarea
+3. They can type "Your issue has been resolved, the negative review has been removed" or leave it blank
+4. Click confirm -- status updates and the client email includes their personalized note in a styled message box
 
-| File | Action | Description |
-|------|--------|-------------|
-| `supabase/functions/send-service-delivered-notification/index.ts` | **Create** | New edge function with German email template |
-| `src/services/orderService.ts` | **Modify** | Add call to new edge function when "Resolved" is toggled on (lines ~670-694) |
-| `src/pages/client/ClientSupport.tsx` | **Modify** | Read `complaint` + `orderId` query params, auto-open complaint dialog |
-
-## Technical Details
-
-### Edge Function Structure
-
-```
-send-service-delivered-notification
-  Input: { orderId, changedBy: { id, name } }
-  Process:
-    1. Fetch order (company_name, contact_email, company_link, price, description)
-    2. Fetch linked invoice (if exists) for invoice_number and amount
-    3. Build German HTML email with all placeholders
-    4. Send via Resend to contact_email
-    5. Log in client_email_logs
-  Output: { success, emailId }
-```
-
-### Order Service Integration
-
-Inside `toggleOrderStatus`, after the existing client notification block (~line 694), add:
-
-```
-if (enabled && status === 'Resolved' && currentOrder.contact_email) {
-  // Send "Service Delivered" formal email to order's contact email
-  await supabase.functions.invoke('send-service-delivered-notification', {
-    body: { orderId, changedBy: { id: user.id, name: ... } }
-  });
-}
-```
-
-### Client Support Auto-Open
-
-On mount, `ClientSupport.tsx` checks URL params:
-- `?complaint=true&orderId=xxx`
-- If present: opens the new inquiry dialog, pre-selects the order, sets subject to complaint format
-
-## What This Does NOT Include (Future Phases)
-
-- **Sales CRM integration / tagging** ("SERVICE_DELIVERED" tag, pipeline stage changes) -- this requires a CRM system integration that doesn't currently exist in Empria
-- **"Alles in Ordnung" tracking** -- the "everything OK" button is informational only (no server action); could be added later as a confirmation endpoint
-
+The dialog is lightweight and doesn't block workflow -- the "Skip" button is prominent so it's one extra click when no message is needed.
