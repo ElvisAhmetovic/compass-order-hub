@@ -667,8 +667,8 @@ export class OrderService {
       // Don't block status update if email fails
     }
 
-    // Send notification to linked client if order has a client_id
-    if (enabled && currentOrder.client_id) {
+    // Send notification to linked client if order has a client_id or contact_email
+    if (enabled && (currentOrder.client_id || currentOrder.contact_email)) {
       try {
         const { ClientNotificationService } = await import('./clientNotificationService');
         

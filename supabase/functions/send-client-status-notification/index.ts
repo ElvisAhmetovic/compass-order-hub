@@ -133,47 +133,64 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Check if order has a linked client
-    if (!order.client_id) {
-      console.log("No client linked to this order, skipping notification");
+    let clientName: string;
+    let clientEmail: string;
+
+    if (order.client_id) {
+      // Portal user path: fetch profile name + app_users email
+      const { data: clientProfile, error: profileError } = await supabase
+        .from("profiles")
+        .select("id, first_name, last_name")
+        .eq("id", order.client_id)
+        .single();
+
+      if (profileError || !clientProfile) {
+        console.error("Error fetching client profile:", profileError);
+        return new Response(
+          JSON.stringify({ error: "Client profile not found" }),
+          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const { data: appUser, error: appUserError } = await supabase
+        .from("app_users")
+        .select("email")
+        .eq("id", order.client_id)
+        .single();
+
+      if (appUserError || !appUser?.email) {
+        console.error("Error fetching client email:", appUserError);
+        return new Response(
+          JSON.stringify({ error: "Client email not found" }),
+          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      clientName = `${clientProfile.first_name || ''} ${clientProfile.last_name || ''}`.trim() || "Valued Customer";
+      clientEmail = appUser.email;
+    } else if (order.contact_email) {
+      // Non-portal path: use order's contact_email and company contact person
+      clientEmail = order.contact_email;
+
+      // Try to get contact person name from linked company
+      let contactPerson: string | null = null;
+      if (order.company_id) {
+        const { data: company } = await supabase
+          .from("companies")
+          .select("contact_person")
+          .eq("id", order.company_id)
+          .single();
+        contactPerson = company?.contact_person || null;
+      }
+
+      clientName = contactPerson || order.company_name || "Valued Customer";
+    } else {
+      console.log("No client_id or contact_email, skipping notification");
       return new Response(
-        JSON.stringify({ message: "No client linked to this order" }),
+        JSON.stringify({ message: "No client_id or contact_email on this order" }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-
-    // Fetch client profile
-    const { data: clientProfile, error: profileError } = await supabase
-      .from("profiles")
-      .select("id, first_name, last_name")
-      .eq("id", order.client_id)
-      .single();
-
-    if (profileError || !clientProfile) {
-      console.error("Error fetching client profile:", profileError);
-      return new Response(
-        JSON.stringify({ error: "Client profile not found" }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Fetch client email from app_users
-    const { data: appUser, error: appUserError } = await supabase
-      .from("app_users")
-      .select("email")
-      .eq("id", order.client_id)
-      .single();
-
-    if (appUserError || !appUser?.email) {
-      console.error("Error fetching client email:", appUserError);
-      return new Response(
-        JSON.stringify({ error: "Client email not found" }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    const clientName = `${clientProfile.first_name || ''} ${clientProfile.last_name || ''}`.trim() || "Valued Customer";
-    const clientEmail = appUser.email;
     const portalUrl = `${APP_URL}/client/orders`;
 
     const emailHtml = getClientEmailHtml(
