@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Ticket, Mail, Building2, Calendar, RefreshCw } from 'lucide-react';
+import { Ticket, Mail, Building2, Calendar, RefreshCw, ArrowLeft } from 'lucide-react';
 import { customerTicketService, CustomerTicket } from '@/services/customerTicketService';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -72,12 +72,22 @@ const CustomerTickets = () => {
     <Layout>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
-              <Ticket className="w-8 h-8" />
-              Customer Tickets
-            </h1>
-            <p className="text-muted-foreground mt-1">Support requests from clients via email</p>
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              onClick={() => navigate('/dashboard')}
+              className="flex items-center gap-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to Dashboard
+            </Button>
+            <div>
+              <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
+                <Ticket className="w-8 h-8" />
+                Customer Tickets
+              </h1>
+              <p className="text-muted-foreground mt-1">Support requests from clients via email</p>
+            </div>
           </div>
           <Button variant="outline" onClick={fetchTickets} disabled={loading}>
             <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
