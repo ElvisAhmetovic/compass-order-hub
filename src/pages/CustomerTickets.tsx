@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Ticket, Mail, Building2, Calendar, RefreshCw, ArrowLeft } from 'lucide-react';
+import { Ticket, Mail, Building2, Calendar, RefreshCw, ArrowLeft, UserPlus } from 'lucide-react';
 import { customerTicketService, CustomerTicket } from '@/services/customerTicketService';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -153,9 +153,10 @@ const CustomerTickets = () => {
                   <TableRow>
                     <TableHead>Client</TableHead>
                     <TableHead>Company</TableHead>
-                    <TableHead>Subject</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Date</TableHead>
+                     <TableHead>Subject</TableHead>
+                     <TableHead>Assigned To</TableHead>
+                     <TableHead>Status</TableHead>
+                     <TableHead>Date</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -181,6 +182,16 @@ const CustomerTickets = () => {
                         </div>
                       </TableCell>
                       <TableCell>{ticket.subject}</TableCell>
+                      <TableCell>
+                        {ticket.assigned_client_name ? (
+                          <Badge variant="outline" className="flex items-center gap-1 w-fit">
+                            <UserPlus className="w-3 h-3" />
+                            {ticket.assigned_client_name}
+                          </Badge>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </TableCell>
                       <TableCell>
                         <Badge variant={statusColor(ticket.status) as any}>
                           {statusLabel(ticket.status)}

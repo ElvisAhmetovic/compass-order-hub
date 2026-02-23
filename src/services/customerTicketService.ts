@@ -10,6 +10,15 @@ export interface CustomerTicket {
   status: 'open' | 'in_progress' | 'closed';
   created_at: string;
   notes: string | null;
+  assigned_client_id: string | null;
+  assigned_client_name: string | null;
+  assigned_client_email: string | null;
+}
+
+export interface ClientUser {
+  id: string;
+  name: string;
+  email: string;
 }
 
 export const customerTicketService = {
@@ -69,5 +78,70 @@ export const customerTicketService = {
 
     if (error) return 0;
     return count ?? 0;
+  },
+
+  async getClientUsers(): Promise<ClientUser[]> {
+    // Get client users by querying app_users with role 'client' or profiles with role 'client'
+    const { data, error } = await supabase
+      .from('app_users')
+      .select('id, full_name, email')
+      .eq('role', 'client');
+
+    if (error) {
+      console.error('Error fetching client users from app_users:', error);
+      // Fallback: try profiles
+      const { data: profiles, error: profileError } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name, role')
+        .eq('role', 'client');
+
+      if (profileError) throw profileError;
+      return (profiles || []).map(p => ({
+        id: p.id,
+        name: `${p.first_name} ${p.last_name}`.trim() || 'Unknown',
+        email: '',
+      }));
+    }
+
+    return (data || []).map(u => ({
+      id: u.id,
+      name: u.full_name || u.email,
+      email: u.email,
+    }));
+  },
+
+  async assignToClient(ticketId: string, params: {
+    clientId: string;
+    clientName: string;
+    clientEmail: string;
+    orderId: string;
+    subject: string;
+  }): Promise<void> {
+    const { data, error } = await supabase.functions.invoke('assign-customer-ticket', {
+      body: {
+        ticketId,
+        clientId: params.clientId,
+        clientName: params.clientName,
+        clientEmail: params.clientEmail,
+        orderId: params.orderId,
+        subject: params.subject,
+      },
+    });
+
+    if (error) throw error;
+    if (data?.error) throw new Error(data.error);
+  },
+
+  async unassignClient(ticketId: string): Promise<void> {
+    const { error } = await supabase
+      .from('customer_tickets')
+      .update({
+        assigned_client_id: null,
+        assigned_client_name: null,
+        assigned_client_email: null,
+      } as any)
+      .eq('id', ticketId);
+
+    if (error) throw error;
   },
 };
