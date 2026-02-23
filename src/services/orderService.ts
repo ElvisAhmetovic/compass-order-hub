@@ -668,6 +668,12 @@ export class OrderService {
     }
 
     // Send notification to linked client if order has a client_id or contact_email
+    console.log('📧 Client notification check:', { 
+      enabled, 
+      client_id: currentOrder.client_id, 
+      contact_email: currentOrder.contact_email,
+      willSend: enabled && (currentOrder.client_id || currentOrder.contact_email)
+    });
     if (enabled && (currentOrder.client_id || currentOrder.contact_email)) {
       try {
         const { ClientNotificationService } = await import('./clientNotificationService');
@@ -678,7 +684,8 @@ export class OrderService {
           ? previousStatuses.filter(s => s !== status)[0] || null 
           : null;
 
-        await ClientNotificationService.notifyClientStatusChange({
+        console.log('📧 Invoking client status notification:', { orderId, oldStatus, newStatus: status, hasCustomMessage: !!customMessage });
+        const result = await ClientNotificationService.notifyClientStatusChange({
           orderId: orderId,
           oldStatus: oldStatus,
           newStatus: status,
@@ -688,8 +695,9 @@ export class OrderService {
           },
           customMessage
         });
+        console.log('📧 Client notification result:', result);
       } catch (clientError) {
-        console.error('Error sending client status notification:', clientError);
+        console.error('📧 Error sending client status notification:', clientError);
         // Don't block status update if client notification fails
       }
     }
