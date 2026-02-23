@@ -569,7 +569,7 @@ export class OrderService {
   }
 
   // New method to toggle a specific status on an order
-  static async toggleOrderStatus(orderId: string, status: OrderStatus, enabled: boolean): Promise<void> {
+  static async toggleOrderStatus(orderId: string, status: OrderStatus, enabled: boolean, customMessage?: string): Promise<void> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
 
@@ -685,7 +685,8 @@ export class OrderService {
           changedBy: {
             id: user.id,
             name: user.user_metadata?.full_name || user.email || 'Unknown'
-          }
+          },
+          customMessage
         });
       } catch (clientError) {
         console.error('Error sending client status notification:', clientError);
@@ -702,7 +703,8 @@ export class OrderService {
             changedBy: {
               id: user.id,
               name: user.user_metadata?.full_name || user.email || 'Unknown'
-            }
+            },
+            customMessage
           }
         });
         console.log('Service delivered notification sent for order:', orderId);

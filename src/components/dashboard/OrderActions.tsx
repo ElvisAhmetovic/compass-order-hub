@@ -1,4 +1,5 @@
 import { useState } from "react";
+import StatusChangeDialog from "./StatusChangeDialog";
 import { 
   DropdownMenu,
   DropdownMenuContent,
@@ -24,6 +25,9 @@ interface OrderActionsProps {
 
 const OrderActions = ({ order, onOrderView, onRefresh }: OrderActionsProps) => {
   const [isLoading, setIsLoading] = useState(false);
+  const [statusDialogOpen, setStatusDialogOpen] = useState(false);
+  const [pendingStatus, setPendingStatus] = useState<OrderStatus | null>(null);
+  const [pendingEnabled, setPendingEnabled] = useState(true);
   const { toast } = useToast();
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
@@ -220,7 +224,7 @@ const OrderActions = ({ order, onOrderView, onRefresh }: OrderActionsProps) => {
     }
   };
 
-  const handleStatusToggle = async (newStatus: OrderStatus, enabled: boolean) => {
+  const openStatusDialog = (newStatus: OrderStatus, enabled: boolean) => {
     if (!isAdmin) {
       toast({
         title: "Permission Denied",
@@ -239,41 +243,42 @@ const OrderActions = ({ order, onOrderView, onRefresh }: OrderActionsProps) => {
       return;
     }
 
+    setPendingStatus(newStatus);
+    setPendingEnabled(enabled);
+    setStatusDialogOpen(true);
+  };
+
+  const handleStatusToggleConfirm = async (customMessage?: string) => {
+    if (!pendingStatus || !user) return;
+
     setIsLoading(true);
     
     try {
-      console.log(`Toggling order ${order.id} status ${newStatus} to ${enabled}`);
+      console.log(`Toggling order ${order.id} status ${pendingStatus} to ${pendingEnabled}`);
       
-      // Update order status using Supabase
-      await OrderService.toggleOrderStatus(order.id, newStatus, enabled);
+      await OrderService.toggleOrderStatus(order.id, pendingStatus, pendingEnabled, customMessage);
       
       console.log('Order status toggled successfully');
       
-      // Trigger workflow automation based on status change
-      if (enabled) {
-        switch (newStatus) {
+      if (pendingEnabled) {
+        switch (pendingStatus) {
           case "Invoice Sent":
           case "Invoice Paid":
-            await createInvoiceFromOrder(order.id, order, newStatus);
+            await createInvoiceFromOrder(order.id, order, pendingStatus);
             break;
           case "Resolved":
             if (OrderService.getActiveStatuses(order).includes("Complaint")) {
               await WorkflowService.handleComplaintResolved(order.id);
             }
             break;
-          case "Invoice Paid":
-            await WorkflowService.handlePaymentReceived(order.id);
-            break;
         }
       }
       
-      // Show success message
       toast({
-        title: enabled ? "Status Added" : "Status Removed",
-        description: `Order ${enabled ? 'marked as' : 'unmarked as'} "${newStatus}".`
+        title: pendingEnabled ? "Status Added" : "Status Removed",
+        description: `Order ${pendingEnabled ? 'marked as' : 'unmarked as'} "${pendingStatus}".`
       });
       
-      // Trigger refresh and notify about the status change
       onRefresh();
       window.dispatchEvent(new CustomEvent('orderStatusChanged'));
       
@@ -461,6 +466,7 @@ const OrderActions = ({ order, onOrderView, onRefresh }: OrderActionsProps) => {
   }
 
   return (
+    <>
     <DropdownMenu>
       <DropdownMenuTrigger asChild disabled={isLoading}>
         <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -502,25 +508,25 @@ const OrderActions = ({ order, onOrderView, onRefresh }: OrderActionsProps) => {
         <DropdownMenuSeparator />
         
         {/* Add/Remove status options */}
-        <DropdownMenuItem onClick={() => handleStatusToggle("In Progress", !activeStatuses.includes("In Progress"))}>
+        <DropdownMenuItem onClick={() => openStatusDialog("In Progress", !activeStatuses.includes("In Progress"))}>
           {activeStatuses.includes("In Progress") ? "Remove" : "Add"} In Progress
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => handleStatusToggle("Complaint", !activeStatuses.includes("Complaint"))}>
+        <DropdownMenuItem onClick={() => openStatusDialog("Complaint", !activeStatuses.includes("Complaint"))}>
           {activeStatuses.includes("Complaint") ? "Remove" : "Add"} Complaint
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => handleStatusToggle("Review", !activeStatuses.includes("Review"))}>
+        <DropdownMenuItem onClick={() => openStatusDialog("Review", !activeStatuses.includes("Review"))}>
           {activeStatuses.includes("Review") ? "Remove" : "Add"} Review
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => handleStatusToggle("Invoice Sent", !activeStatuses.includes("Invoice Sent"))}>
+        <DropdownMenuItem onClick={() => openStatusDialog("Invoice Sent", !activeStatuses.includes("Invoice Sent"))}>
           {activeStatuses.includes("Invoice Sent") ? "Remove" : "Add"} Invoice Sent
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => handleStatusToggle("Invoice Paid", !activeStatuses.includes("Invoice Paid"))}>
+        <DropdownMenuItem onClick={() => openStatusDialog("Invoice Paid", !activeStatuses.includes("Invoice Paid"))}>
           {activeStatuses.includes("Invoice Paid") ? "Remove" : "Add"} Invoice Paid
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => handleStatusToggle("Resolved", !activeStatuses.includes("Resolved"))}>
+        <DropdownMenuItem onClick={() => openStatusDialog("Resolved", !activeStatuses.includes("Resolved"))}>
           {activeStatuses.includes("Resolved") ? "Remove" : "Add"} Resolved
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => handleStatusToggle("Cancelled", !activeStatuses.includes("Cancelled"))}>
+        <DropdownMenuItem onClick={() => openStatusDialog("Cancelled", !activeStatuses.includes("Cancelled"))}>
           {activeStatuses.includes("Cancelled") ? "Remove" : "Add"} Cancelled
         </DropdownMenuItem>
         
@@ -534,6 +540,15 @@ const OrderActions = ({ order, onOrderView, onRefresh }: OrderActionsProps) => {
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
+
+    <StatusChangeDialog
+      open={statusDialogOpen}
+      onOpenChange={setStatusDialogOpen}
+      status={pendingStatus}
+      enabling={pendingEnabled}
+      onConfirm={handleStatusToggleConfirm}
+    />
+    </>
   );
 };
 
