@@ -1,57 +1,45 @@
 
 
-## Add Custom Message Input When Toggling Order Statuses
+## Send Status Change Notifications to `contact_email` (Not Just Portal Users)
 
-### What Already Works
+### Problem
 
-The backend is fully ready:
-- `ClientNotificationService` interface already has an optional `customMessage` field
-- The `send-client-status-notification` edge function already renders custom messages in a styled blue box in the email
-- The `send-service-delivered-notification` function fires separately for "Resolved"
-
-The only missing piece is the **UI** -- there's no way for team members to type a message before confirming a status change.
+Currently, the client status notification (`send-client-status-notification`) only works for orders with a linked `client_id` (portal users). If a client doesn't have a portal account but the order has a `contact_email`, they get nothing.
 
 ### Solution
 
-Create a small confirmation dialog that appears when a status is toggled. It shows the status being changed and an optional textarea for a personalized note. The message gets threaded through `toggleOrderStatus` to the client notification email.
+Two changes:
 
-### Changes
+**1. Frontend: Remove the `client_id` gate in `orderService.ts`**
 
-**1. New Component: `StatusChangeDialog.tsx`**
+Currently (line 671): `if (enabled && currentOrder.client_id)` -- this blocks the notification for orders without a portal client. Change to also fire when `contact_email` exists:
 
-A simple Dialog with:
-- Title: "Add Resolved" / "Remove Complaint" (dynamic)
-- Optional textarea: "Add a message for the client (optional)"
-- Placeholder: e.g. "Your complaint has been resolved and the review has been removed."
-- Two buttons: "Skip Message & Confirm" and "Send with Message"
-- Both confirm the status change; the second passes the custom message
+```
+if (enabled && (currentOrder.client_id || currentOrder.contact_email))
+```
 
-**2. Modify `OrderService.toggleOrderStatus`**
+**2. Edge Function: `send-client-status-notification/index.ts`**
 
-Add an optional 4th parameter `customMessage?: string`. Pass it through to the `ClientNotificationService.notifyClientStatusChange` call (line 681) and the `send-service-delivered-notification` invocation (line 699). No other logic changes.
+Currently the function bails out at line 137 if there's no `client_id`. Instead, add a fallback path:
 
-**3. Modify `MultiStatusBadges.tsx`**
+- If `client_id` exists: use the current flow (fetch profile name + app_users email)
+- If no `client_id` but order has `contact_email`: use `contact_email` as recipient and `company_name` / company `contact_person` as the client name
+- Only bail if neither exists
 
-Instead of calling `OrderService.toggleOrderStatus` directly from the checkbox handler, open the new `StatusChangeDialog` first. On confirm, call `toggleOrderStatus` with the optional message.
+This keeps the existing portal flow intact while adding support for non-portal clients.
 
-**4. Modify `OrderActions.tsx`**
+### Files to Modify
 
-Same change for the status toggle menu items in the admin dropdown -- open the dialog instead of calling directly.
-
-### Files
-
-| File | Action |
+| File | Change |
 |------|--------|
-| `src/components/dashboard/StatusChangeDialog.tsx` | **Create** -- confirmation dialog with optional message textarea |
-| `src/services/orderService.ts` | **Modify** -- add `customMessage` param to `toggleOrderStatus`, pass to notifications |
-| `src/components/dashboard/MultiStatusBadges.tsx` | **Modify** -- use dialog before toggling |
-| `src/components/dashboard/OrderActions.tsx` | **Modify** -- use dialog before toggling |
+| `src/services/orderService.ts` | Line 671: expand condition to include `contact_email` |
+| `supabase/functions/send-client-status-notification/index.ts` | Add fallback to `contact_email` when no `client_id`, use company contact person as name |
 
-### User Experience
+### What Stays the Same
 
-1. Admin clicks a status checkbox (e.g. "Resolved") in the dropdown or badge area
-2. A small dialog appears: **"Add status: Resolved"** with a textarea
-3. They can type "Your issue has been resolved, the negative review has been removed" or leave it blank
-4. Click confirm -- status updates and the client email includes their personalized note in a styled message box
+- The "Service Delivered" email for Resolved status (already sends to `contact_email`)
+- The team notification (unchanged)
+- The email template HTML (same for both paths)
+- The custom message support (works for both paths)
+- The 30-second throttle (works for both paths)
 
-The dialog is lightweight and doesn't block workflow -- the "Skip" button is prominent so it's one extra click when no message is needed.
