@@ -25,58 +25,15 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const getConfirmationHtml = (companyName: string): string => `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ticket Submitted</title>
-  <style>
-    body { font-family: Arial, sans-serif; background: #f5f5f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-    .card { background: white; border-radius: 12px; padding: 40px; max-width: 500px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
-    .icon { font-size: 48px; margin-bottom: 16px; }
-    h1 { color: #1a1a2e; font-size: 24px; margin-bottom: 12px; }
-    p { color: #666; line-height: 1.6; }
-    .company { color: #1976d2; font-weight: bold; }
-  </style>
-</head>
-<body>
-  <div class="card">
-    <div class="icon">✅</div>
-    <h1>Ticket Submitted Successfully</h1>
-    <p>Your support request for <span class="company">${companyName}</span> has been received.</p>
-    <p>Our team has been notified and will contact you shortly.</p>
-  </div>
-</body>
-</html>
-`;
+const redirectTo = (status: string, company?: string) => {
+  const params = new URLSearchParams({ status });
+  if (company) params.set("company", company);
+  return new Response(null, {
+    status: 302,
+    headers: { ...corsHeaders, Location: `${APP_URL}/ticket-submitted?${params.toString()}` },
+  });
+};
 
-const getDuplicateHtml = (): string => `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ticket Already Submitted</title>
-  <style>
-    body { font-family: Arial, sans-serif; background: #f5f5f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-    .card { background: white; border-radius: 12px; padding: 40px; max-width: 500px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
-    .icon { font-size: 48px; margin-bottom: 16px; }
-    h1 { color: #1a1a2e; font-size: 24px; margin-bottom: 12px; }
-    p { color: #666; line-height: 1.6; }
-  </style>
-</head>
-<body>
-  <div class="card">
-    <div class="icon">📋</div>
-    <h1>Ticket Already Submitted</h1>
-    <p>You have already submitted a support request for this order recently.</p>
-    <p>Our team has been notified and will contact you shortly.</p>
-  </div>
-</body>
-</html>
-`;
 
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
@@ -89,10 +46,7 @@ const handler = async (req: Request): Promise<Response> => {
     const email = url.searchParams.get("email");
 
     if (!orderId || !email) {
-      return new Response("<h1>Invalid request</h1>", {
-        status: 400,
-        headers: { "Content-Type": "text/html", ...corsHeaders },
-      });
+      return redirectTo("error");
     }
 
     const supabase = createClient(
@@ -109,10 +63,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (orderError || !order) {
       console.error("Order not found:", orderError);
-      return new Response("<h1>Order not found</h1>", {
-        status: 404,
-        headers: { "Content-Type": "text/html", ...corsHeaders },
-      });
+      return redirectTo("error");
     }
 
     // Check for duplicate ticket in last 5 minutes
@@ -127,10 +78,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (existing && existing.length > 0) {
       console.log("Duplicate ticket prevented for", email, orderId);
-      return new Response(getDuplicateHtml(), {
-        status: 200,
-        headers: { "Content-Type": "text/html", ...corsHeaders },
-      });
+      return redirectTo("duplicate", order.company_name);
     }
 
     // Get client name from company contact_person if available
@@ -162,10 +110,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (insertError) {
       console.error("Error creating ticket:", insertError);
-      return new Response("<h1>Error creating ticket</h1>", {
-        status: 500,
-        headers: { "Content-Type": "text/html", ...corsHeaders },
-      });
+      return redirectTo("error", order.company_name);
     }
 
     console.log("Customer ticket created for", email, "order", orderId);
@@ -233,16 +178,10 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
-    return new Response(getConfirmationHtml(order.company_name), {
-      status: 200,
-      headers: { "Content-Type": "text/html", ...corsHeaders },
-    });
+    return redirectTo("success", order.company_name);
   } catch (error: any) {
     console.error("Error in create-client-ticket:", error);
-    return new Response("<h1>Something went wrong</h1>", {
-      status: 500,
-      headers: { "Content-Type": "text/html", ...corsHeaders },
-    });
+    return redirectTo("error");
   }
 };
 

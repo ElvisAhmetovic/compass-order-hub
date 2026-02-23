@@ -42,6 +42,7 @@ import TechSupportDetail from "./pages/TechSupportDetail";
 import CustomerTickets from "./pages/CustomerTickets";
 import CustomerTicketDetail from "./pages/CustomerTicketDetail";
 import NotFound from "./pages/NotFound";
+import TicketSubmitted from "./pages/TicketSubmitted";
 import { RequireAuth } from "./components/auth/RequireAuth";
 import AdminGuard from "./components/auth/AdminGuard";
 import ClientGuard from "./components/client-portal/ClientGuard";
@@ -70,6 +71,7 @@ function App() {
               <div className="min-h-screen bg-background">
                 <Routes>
                   <Route path="/" element={<Index />} />
+                  <Route path="/ticket-submitted" element={<TicketSubmitted />} />
                   <Route path="/login" element={<Login />} />
                   <Route path="/register" element={<Register />} />
                   <Route path="/dashboard" element={
