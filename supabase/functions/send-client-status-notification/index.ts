@@ -78,7 +78,7 @@ const getClientEmailHtml = (
         </div>
         
         <div style="text-align: center; margin: 20px 0;">
-          <a href="${Deno.env.get("SUPABASE_URL")}/functions/v1/create-client-ticket?orderId=${orderId}&email=${clientEmail}" style="display: inline-block; background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%); color: #ffffff; text-decoration: none; padding: 12px 35px; border-radius: 8px; font-weight: bold; font-size: 14px;">🎫 Need Help? Open a Ticket</a>
+          <a href="${APP_URL}/ticket-loading?orderId=${orderId}&email=${encodeURIComponent(clientEmail)}" style="display: inline-block; background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%); color: #ffffff; text-decoration: none; padding: 12px 35px; border-radius: 8px; font-weight: bold; font-size: 14px;">🎫 Need Help? Open a Ticket</a>
         </div>
         
         <div style="background: #fff3e0; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ff9800;">
