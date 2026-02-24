@@ -1,30 +1,35 @@
 
 
-## Fix Login Redirect Flow
+## Fix Email Display in User Management
 
 ### Problem
-After logging in, the toast says "Login successful" but the user stays on `/login`. The redirect logic in `LoginForm.tsx` uses a fragile `setTimeout` with manual Supabase queries that race against the AuthContext state update, often failing silently.
-
-### Root Cause
-`LoginForm.tsx` tries to handle redirection itself with a `setTimeout` + manual role fetch, instead of letting the parent `Login.tsx` page react to the AuthContext `user` state change. Meanwhile, `Login.tsx` has zero redirect logic -- it just renders the form.
+Emails show as "Email not available" because the code tries `supabase.auth.admin.listUsers()` which requires the service role key and always fails from the browser client. The fallback only covers the current user.
 
 ### Solution
-Follow the same pattern that `ClientLogin.tsx` already uses successfully:
+The `app_users` table already stores emails for users (confirmed by checking the database -- it has email data). Instead of trying the admin API, query `app_users` to get emails.
 
-1. **`Login.tsx`** -- Add a `useEffect` that watches `user` from AuthContext. When `user` becomes non-null after login, redirect based on role (client -> `/client/dashboard`, others -> `/dashboard`). Also redirect immediately if user is already logged in when visiting `/login`.
-
-2. **`LoginForm.tsx`** -- Remove the hacky `setTimeout` redirect logic. The `login()` function just returns `true`/`false` -- let the parent page handle navigation.
-
-### Files to Change
+### Change
 
 | File | Change |
 |------|--------|
-| `src/pages/Login.tsx` | Add `useEffect` watching `user` from `useAuth()` to redirect on login. Redirect already-authenticated users immediately. |
-| `src/components/auth/LoginForm.tsx` | Remove the `setTimeout` block and manual Supabase role-fetching after successful login. Keep only the `login()` call and error handling. |
+| `src/pages/UserManagement.tsx` | Replace the `auth.admin.listUsers()` call with a query to `app_users` table. Join profile data with `app_users` emails by matching on `id`. |
 
-### Why This Works
-- The AuthContext `onAuthStateChange` listener already updates `user` with the correct role after `signInWithPassword` succeeds
-- The `Login.tsx` `useEffect` fires when `user` changes from `null` to a valid user object
-- No race conditions, no manual Supabase queries, no timeouts
-- Matches the working pattern in `ClientLogin.tsx`
+### Implementation Detail
+
+In `loadUsers()`, replace lines 41-51 (the `auth.admin.listUsers` block) with a simple query:
+
+```ts
+const { data: appUsers } = await supabase
+  .from('app_users')
+  .select('id, email');
+```
+
+Then in the mapping, look up email from `appUsers` instead of `authUsers`:
+
+```ts
+const appUser = appUsers?.find(u => u.id === profile.id);
+let userEmail = appUser?.email || currentUser?.email || 'Email not available';
+```
+
+This removes the dependency on the admin API entirely and uses data that's already available and properly secured by RLS (admins can read `app_users`).
 
