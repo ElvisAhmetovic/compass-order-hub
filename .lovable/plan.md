@@ -1,35 +1,22 @@
 
 
-## Fix Email Display in User Management
+## Set Favicon / Browser Icon
 
-### Problem
-Emails show as "Email not available" because the code tries `supabase.auth.admin.listUsers()` which requires the service role key and always fails from the browser client. The fallback only covers the current user.
+Copy the uploaded image to the public directory and update `index.html` to use it as the favicon, apple touch icon, etc.
 
-### Solution
-The `app_users` table already stores emails for users (confirmed by checking the database -- it has email data). Instead of trying the admin API, query `app_users` to get emails.
-
-### Change
+### Files to Change
 
 | File | Change |
 |------|--------|
-| `src/pages/UserManagement.tsx` | Replace the `auth.admin.listUsers()` call with a query to `app_users` table. Join profile data with `app_users` emails by matching on `id`. |
+| `public/favicon.png` | Copy uploaded image here |
+| `index.html` | Replace existing favicon link with new `<link>` tags pointing to `/favicon.png` |
 
-### Implementation Detail
+### Implementation
 
-In `loadUsers()`, replace lines 41-51 (the `auth.admin.listUsers` block) with a simple query:
-
-```ts
-const { data: appUsers } = await supabase
-  .from('app_users')
-  .select('id, email');
-```
-
-Then in the mapping, look up email from `appUsers` instead of `authUsers`:
-
-```ts
-const appUser = appUsers?.find(u => u.id === profile.id);
-let userEmail = appUser?.email || currentUser?.email || 'Email not available';
-```
-
-This removes the dependency on the admin API entirely and uses data that's already available and properly secured by RLS (admins can read `app_users`).
+1. Copy `user-uploads://WhatsApp_Slika_2025-09-17_u_12.06.09_1ee167d7-removebg-preview.png` → `public/favicon.png`
+2. In `index.html` `<head>`, add/replace:
+   ```html
+   <link rel="icon" href="/favicon.png" type="image/png" />
+   <link rel="apple-touch-icon" href="/favicon.png" />
+   ```
 
