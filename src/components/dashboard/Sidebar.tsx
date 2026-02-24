@@ -35,11 +35,18 @@ import { supabase } from '@/integrations/supabase/client';
 const Sidebar = () => {
   const location = useLocation();
   const { user } = useAuth();
+  const [currentTime, setCurrentTime] = useState(new Date());
   const [unreadSupportCount, setUnreadSupportCount] = useState(0);
   const [openTicketCount, setOpenTicketCount] = useState(0);
 
   const isAdmin = user?.role === 'admin';
   const isAdminOrAgent = user?.role === 'admin' || user?.role === 'agent';
+
+  // Live clock for Sarajevo time
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   // Fetch unread support notifications count for admins/agents
   useEffect(() => {
@@ -161,7 +168,16 @@ const Sidebar = () => {
   return (
     <div className="w-64 bg-white border-r border-gray-200 min-h-screen">
       <div className="p-6">
-        <h2 className="text-xl font-semibold text-gray-800">Navigation</h2>
+        <h2 className="text-xl font-semibold text-foreground">Navigation</h2>
+        <div className="mt-2 text-muted-foreground">
+          <div className="font-mono text-lg font-semibold text-foreground">
+            {currentTime.toLocaleTimeString('de-DE', { timeZone: 'Europe/Sarajevo' })}
+          </div>
+          <div className="text-xs">
+            {currentTime.toLocaleDateString('de-DE', { timeZone: 'Europe/Sarajevo', day: '2-digit', month: '2-digit', year: 'numeric' })}
+            {' · '}Sarajevo
+          </div>
+        </div>
       </div>
       <nav className="mt-6">
         {visibleItems.length === 0 ? (
