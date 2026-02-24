@@ -38,10 +38,8 @@ const LoginForm = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Clear any previous auth errors
     setErrors(prev => ({ ...prev, auth: undefined }));
     
-    // Validate form before submitting
     const emailError = validateEmail(email);
     const passwordError = validatePassword(password);
     
@@ -54,42 +52,12 @@ const LoginForm = () => {
     }
 
     try {
-      console.log(`Attempting to log in with: ${email}`);
       const success = await login(email, password);
       
-      if (success) {
-        console.log("Login successful, fetching user role for redirect...");
-        // Wait a moment for the auth context to update with user data
-        setTimeout(async () => {
-          const { data: { user: supabaseUser } } = await import('@/integrations/supabase/client').then(m => m.supabase.auth.getUser());
-          
-          if (supabaseUser) {
-            // Check role from user_roles table
-            const { data: roleData } = await import('@/integrations/supabase/client').then(m => 
-              m.supabase
-                .from('user_roles')
-                .select('role')
-                .eq('user_id', supabaseUser.id)
-                .maybeSingle()
-            );
-            
-            const userRole = roleData?.role || 'user';
-            console.log("User role:", userRole);
-            
-            if (userRole === 'client') {
-              console.log("Redirecting client to /client/dashboard");
-              navigate("/client/dashboard");
-            } else {
-              console.log("Redirecting to /dashboard");
-              navigate("/dashboard");
-            }
-          } else {
-            navigate("/dashboard");
-          }
-        }, 100);
-      } else {
+      if (!success) {
         setErrors(prev => ({ ...prev, auth: "Invalid email or password" }));
       }
+      // Redirect is handled by Login.tsx useEffect watching AuthContext user
     } catch (error) {
       console.error("Login error:", error);
       setErrors(prev => ({ ...prev, auth: "An unexpected error occurred." }));
