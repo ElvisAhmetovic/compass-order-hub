@@ -38,29 +38,17 @@ const UserManagement = () => {
 
       console.log('Profiles data:', profiles);
 
-      // Try to get auth users data, but don't fail if we can't
-      let authUsers: any[] = [];
-      try {
-        const { data: authData, error: authError } = await supabase.auth.admin.listUsers();
-        if (!authError && authData.users) {
-          authUsers = authData.users;
-          console.log('Successfully fetched auth users');
-        }
-      } catch (error) {
-        console.log('Could not fetch auth users, continuing without emails:', error);
-      }
+      // Get emails from app_users table
+      const { data: appUsers } = await supabase
+        .from('app_users')
+        .select('id, email');
 
       // Convert profiles to User format
       const formattedUsers: User[] = (profiles || []).map(profile => {
-        // Try to find corresponding auth user for email
-        const authUser = authUsers.find((user: any) => user.id === profile.id);
+        const appUser = appUsers?.find(u => u.id === profile.id);
         
-        // Use available email sources in order of preference
-        let userEmail = 'Email not available';
-        if (authUser?.email) {
-          userEmail = authUser.email;
-        } else if (profile.id === currentUser?.id && currentUser?.email) {
-          // If it's the current user, use their email from context
+        let userEmail = appUser?.email || 'Email not available';
+        if (userEmail === 'Email not available' && profile.id === currentUser?.id && currentUser?.email) {
           userEmail = currentUser.email;
         }
         
@@ -71,7 +59,7 @@ const UserManagement = () => {
           email: userEmail,
           role: profile.role,
           full_name: fullName || 'No Name',
-          created_at: authUser?.created_at || new Date().toISOString(),
+          created_at: new Date().toISOString(),
           updated_at: profile.updated_at || new Date().toISOString()
         };
       });
