@@ -60,7 +60,14 @@ import ClientSupportDetail from "./pages/client/ClientSupportDetail";
 import ClientProfile from "./pages/client/ClientProfile";
 import ClientLogin from "./pages/client/ClientLogin";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: true,
+      staleTime: 1000 * 60 * 5, // 5 minutes
+    },
+  },
+});
 
 function App() {
   return (

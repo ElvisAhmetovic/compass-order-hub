@@ -195,9 +195,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     );
 
+    // Refresh session when tab becomes visible after being in background
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState === 'visible' && mounted) {
+        console.log('Tab became visible, refreshing session...');
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.user && mounted) {
+            const authUser = await convertToAuthUser(session.user);
+            if (mounted) setUser(authUser);
+          } else if (!session && mounted) {
+            setUser(null);
+          }
+        } catch (error) {
+          console.error('Error refreshing session on visibility change:', error);
+        }
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
     return () => {
       mounted = false;
       subscription.unsubscribe();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, []);
 
