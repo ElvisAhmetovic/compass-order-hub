@@ -3,6 +3,7 @@ import html2canvas from 'html2canvas';
 import { Invoice, InvoiceLineItem, Client } from '@/types/invoice';
 import { formatCurrency } from '@/utils/currencyUtils';
 import { sanitizeHtml } from '@/utils/sanitize';
+import { getDefaultTerms } from '@/components/invoices/constants';
 
 interface InvoicePDFData {
   invoice?: Invoice;
@@ -731,8 +732,7 @@ const generateInvoiceHTML = (data: InvoicePDFData): string => {
         <div>
           <div style="font-weight: bold; color: #374151; margin-bottom: 12px; font-size: 16px;">${getTranslatedText('notes')}</div>
           <div style="font-size: 14px; color: #4b5563; line-height: 1.6; background: #f9fafb; padding: 16px; border-radius: 8px;">
-            ${templateSettings.customTerms || formData?.notes || 
-             "We verzoeken dat de door ons gefactureerde diensten binnen 3 dagen worden gecrediteerd/overgemaakt. Alle belastingen en sociale premies worden door ons aangegeven en afgedragen aan de autoriteiten."}
+            ${templateSettings.customTerms || formData?.notes || getDefaultTerms(templateSettings.language)}
           </div>
         </div>
         

@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/utils/currencyUtils";
 import { Invoice, InvoiceLineItem, Client } from "@/types/invoice";
+import { getDefaultTerms } from "@/components/invoices/constants";
 
 interface InvoicePreviewProps {
   invoice?: Invoice;
@@ -656,8 +657,7 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
             <div>
               <div className="font-bold text-gray-700 mb-3 text-lg">{getTranslatedText('notes')}</div>
               <div className="text-sm text-gray-600 bg-gray-50 p-4 rounded-lg leading-relaxed">
-                {templateSettings.customTerms || 
-                 "We verzoeken dat de door ons gefactureerde diensten binnen 3 dagen worden gecrediteerd/overgemaakt. Alle belastingen en sociale premies worden door ons aangegeven en afgedragen aan de autoriteiten."}
+                {templateSettings.customTerms || getDefaultTerms(templateSettings.language)}
               </div>
             </div>
             
