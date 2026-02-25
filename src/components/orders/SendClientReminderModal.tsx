@@ -31,6 +31,7 @@ const SendClientReminderModal = ({ open, onOpenChange, order, onEmailSent }: Sen
   const [selectedTemplate, setSelectedTemplate] = useState<EmailTemplate | null>(null);
   const [emailSubject, setEmailSubject] = useState("");
   const [emailBody, setEmailBody] = useState("");
+  const [emailDescription, setEmailDescription] = useState("");
   const [selectedLanguage, setSelectedLanguage] = useState<SupportedLanguage>("en");
   const [previewMode, setPreviewMode] = useState<"info" | "preview">("info");
   const [isSending, setIsSending] = useState(false);
@@ -38,6 +39,13 @@ const SendClientReminderModal = ({ open, onOpenChange, order, onEmailSent }: Sen
   const { toast } = useToast();
 
   const hasClientEmail = !!order.contact_email && order.contact_email.trim() !== "";
+
+  // Initialize emailDescription when modal opens
+  useEffect(() => {
+    if (open) {
+      setEmailDescription(order.description || "");
+    }
+  }, [open, order.description]);
 
   // Get current user info
   useEffect(() => {
@@ -104,7 +112,7 @@ const SendClientReminderModal = ({ open, onOpenChange, order, onEmailSent }: Sen
       contactPhone: order.contact_phone || "",
       website: order.company_link || "",
       orderDate: formattedDate,
-      orderDescription: order.description || "",
+      orderDescription: emailDescription,
       amount: formattedPrice,
       customMessage: customMessage.trim() || undefined,
       teamMemberName: currentUser?.name || "Team Member",
@@ -148,7 +156,7 @@ const SendClientReminderModal = ({ open, onOpenChange, order, onEmailSent }: Sen
           contactPhone: order.contact_phone,
           companyLink: order.company_link || null,
           orderCreatedAt: order.created_at,
-          orderDescription: order.description,
+          orderDescription: emailDescription,
           orderPrice: order.price,
           orderCurrency: order.currency || "EUR",
           customMessage: customMessage.trim() || null,
@@ -267,6 +275,21 @@ const SendClientReminderModal = ({ open, onOpenChange, order, onEmailSent }: Sen
               />
             </div>
           )}
+
+          {/* Editable Description */}
+          <div className="space-y-2">
+            <Label htmlFor="emailDescription">Description (included in email)</Label>
+            <Input
+              id="emailDescription"
+              value={emailDescription}
+              onChange={(e) => setEmailDescription(e.target.value)}
+              placeholder="Description that will appear in the client email..."
+              disabled={isSending}
+            />
+            <p className="text-xs text-muted-foreground">
+              Edit this to control what the client sees. Pre-filled from the order description.
+            </p>
+          </div>
 
           <Separator />
 
