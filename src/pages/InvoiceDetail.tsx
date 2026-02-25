@@ -24,6 +24,7 @@ import PaymentTracker from "@/components/invoices/PaymentTracker";
 import InvoiceTemplateSettings from "@/components/invoices/InvoiceTemplateSettings";
 import InvoicePreview from "@/components/invoices/InvoicePreview";
 import { generateInvoicePDF } from "@/utils/invoicePdfGenerator";
+import SendInvoicePDFDialog from "@/components/invoices/SendInvoicePDFDialog";
 
 const InvoiceDetail = () => {
   const { id } = useParams();
@@ -38,6 +39,7 @@ const InvoiceDetail = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [sendDialogOpen, setSendDialogOpen] = useState(false);
+  const [sendPDFDialogOpen, setSendPDFDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("edit");
   const [templateSettings, setTemplateSettings] = useState({
     currency: 'EUR', // Default currency
@@ -617,10 +619,14 @@ const InvoiceDetail = () => {
 
               <TabsContent value="preview">
                 <div className="space-y-4">
-                  <div className="flex justify-end">
+                  <div className="flex justify-end gap-2">
                     <Button onClick={handleDownloadPDF} variant="outline">
                       <Download size={16} className="mr-2" />
                       Download PDF
+                    </Button>
+                    <Button onClick={() => setSendPDFDialogOpen(true)}>
+                      <Mail size={16} className="mr-2" />
+                      Send to Client
                     </Button>
                   </div>
                   <InvoicePreview
@@ -643,6 +649,16 @@ const InvoiceDetail = () => {
                 invoice={invoice}
               />
             )}
+
+            <SendInvoicePDFDialog
+              open={sendPDFDialogOpen}
+              onOpenChange={setSendPDFDialogOpen}
+              invoice={invoice}
+              lineItems={lineItems}
+              client={selectedClient}
+              templateSettings={{ ...templateSettings, currency: formData.currency }}
+              formData={formData}
+            />
           </div>
         </Layout>
       </div>
