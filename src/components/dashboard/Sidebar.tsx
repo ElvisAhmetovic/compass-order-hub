@@ -171,11 +171,11 @@ const Sidebar = () => {
         <h2 className="text-xl font-semibold text-foreground">Navigation</h2>
         <div className="mt-2 text-muted-foreground">
           <div className="font-mono text-lg font-semibold text-foreground">
-            {currentTime.toLocaleTimeString('de-DE', { timeZone: 'Europe/Sarajevo' })}
+            {currentTime.toLocaleTimeString('de-DE', { timeZone: 'Europe/Berlin' })}
           </div>
           <div className="text-xs">
-            {currentTime.toLocaleDateString('de-DE', { timeZone: 'Europe/Sarajevo', day: '2-digit', month: '2-digit', year: 'numeric' })}
-            {' · '}Sarajevo
+            {currentTime.toLocaleDateString('de-DE', { timeZone: 'Europe/Berlin', day: '2-digit', month: '2-digit', year: 'numeric' })}
+            {' · '}Duisburg, Germany
           </div>
         </div>
       </div>
