@@ -121,7 +121,13 @@ export const generateInvoicePDFBase64 = async (data: InvoicePDFData): Promise<st
     const imgHeight = (canvas.height * imgWidth) / canvas.width;
     pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
 
-    return pdf.output('datauristring');
+    const pdfOutput = pdf.output('arraybuffer');
+    const bytes = new Uint8Array(pdfOutput);
+    let binary = '';
+    for (let i = 0; i < bytes.length; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binary);
   } finally {
     document.body.removeChild(container);
   }
