@@ -42,7 +42,7 @@ const InvoiceDetail = () => {
   const [templateSettings, setTemplateSettings] = useState({
     currency: 'EUR', // Default currency
     vatEnabled: true,
-    vatRate: 0.19,
+    vatRate: 19,
     language: 'en',
     selectedPaymentAccount: 'belgium',
     companyInfo: {

@@ -46,7 +46,7 @@ export const useInvoiceSettings = (initialSettings?: any) => {
       selectedPaymentAccount: "belgium",
       customTerms: "",
       vatEnabled: true,
-      vatRate: 21,
+      vatRate: 19,
       currency: "EUR",
       invoiceNumberPrefix: "RE NR:",
     };
