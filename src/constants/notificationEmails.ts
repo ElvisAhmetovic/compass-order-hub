@@ -13,5 +13,6 @@ export const NOTIFICATION_EMAIL_LIST = [
   'paulkatz.abmedia@gmail.com',
   'ajosesales36@gmail.com',
   'georgabmediateam@gmail.com',
-  'jannes@scoolfinanceedu.com'
+  'jannes@scoolfinanceedu.com',
+  'johan@team-abmedia.com'
 ] as const;

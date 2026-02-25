@@ -15,7 +15,8 @@ const NOTIFICATION_EMAILS = [
   'paulkatz.abmedia@gmail.com',
   'ajosesales36@gmail.com',
   'georgabmediateam@gmail.com',
-  'jannes@scoolfinanceedu.com'
+  'jannes@scoolfinanceedu.com',
+  'johan@team-abmedia.com'
 ];
 
 const APP_URL = Deno.env.get("APP_URL") || "https://www.empriadental.de";
