@@ -2323,6 +2323,45 @@ export type Database = {
         }
         Relationships: []
       }
+      work_hours: {
+        Row: {
+          break_time: string | null
+          created_at: string
+          date: string
+          end_time: string | null
+          id: string
+          note: string | null
+          start_time: string | null
+          updated_at: string
+          user_id: string
+          working_hours: number | null
+        }
+        Insert: {
+          break_time?: string | null
+          created_at?: string
+          date: string
+          end_time?: string | null
+          id?: string
+          note?: string | null
+          start_time?: string | null
+          updated_at?: string
+          user_id: string
+          working_hours?: number | null
+        }
+        Update: {
+          break_time?: string | null
+          created_at?: string
+          date?: string
+          end_time?: string | null
+          id?: string
+          note?: string | null
+          start_time?: string | null
+          updated_at?: string
+          user_id?: string
+          working_hours?: number | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       client_orders: {
