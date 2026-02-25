@@ -122,9 +122,8 @@ const Sidebar = () => {
   // Define sidebar items with role restrictions
   const menuItems = [
     { href: '/dashboard', icon: Home, label: 'Dashboard', roles: ['admin', 'agent', 'user'] },
-    { href: '/analytics', icon: BarChart3, label: 'Analytics', roles: ['admin', 'agent'] },
-    { href: '/rankings', icon: Trophy, label: 'Rankings', roles: ['admin', 'agent'] },
-    { href: '/user-statistics', icon: BarChart2, label: 'User Statistics', roles: ['admin', 'agent'] },
+    { href: '/work-hours', icon: ClockIcon, label: 'Work Hours', roles: ['admin', 'agent'] },
+    { href: '/user-management', icon: Users, label: 'User Management', roles: ['admin'] },
     { href: '/support', icon: HelpCircle, label: 'Support', roles: ['admin', 'agent', 'user'], showBadge: true },
     { href: '/customer-tickets', icon: Ticket, label: 'Customer Tickets', roles: ['admin', 'agent'], showTicketBadge: true },
     { href: '/tech-support', icon: Wrench, label: 'Tech Support', roles: ['admin', 'agent'] },
@@ -144,8 +143,9 @@ const Sidebar = () => {
     { href: '/invoices', icon: Receipt, label: 'Invoices', roles: ['admin', 'agent'] },
     { href: '/clients', icon: UserCheck, label: 'Clients', roles: ['admin', 'agent'] },
     { href: '/inventory', icon: Package, label: 'Inventory', roles: ['admin', 'agent'] },
-    { href: '/user-management', icon: Users, label: 'User Management', roles: ['admin'] },
-    { href: '/work-hours', icon: ClockIcon, label: 'Work Hours', roles: ['admin', 'agent'] },
+    { href: '/rankings', icon: Trophy, label: 'Rankings', roles: ['admin', 'agent'] },
+    { href: '/analytics', icon: BarChart3, label: 'Analytics', roles: ['admin', 'agent'] },
+    { href: '/user-statistics', icon: BarChart2, label: 'User Statistics', roles: ['admin', 'agent'] },
     { href: '/settings', icon: Settings, label: 'Settings', roles: ['admin'] },
     { href: '/deleted', icon: Trash2, label: 'Deleted', roles: ['admin'] },
     {
