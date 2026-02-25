@@ -1,18 +1,43 @@
 
 
-## Hide Unused Sidebar Items
+## Reorder Sidebar Navigation Items
 
-Remove Instagram, Trustpilot, and Trustpilot Deletion from the sidebar navigation in `src/components/dashboard/Sidebar.tsx`.
+### What
+Move **Work Hours** and **User Management** up near the top (right after Dashboard), and move **Analytics** and **User Statistics** down toward the bottom of the sidebar.
 
 ### Change
 
-Delete these three entries from the `menuItems` array:
+**`src/components/dashboard/Sidebar.tsx`** — Reorder the `menuItems` array:
 
 ```
-{ href: '/instagram', icon: Instagram, label: 'Instagram', ... }
-{ href: '/trustpilot', icon: Star, label: 'Trustpilot', ... }
-{ href: '/trustpilot-deletion', icon: UserX, label: 'Trustpilot Deletion', ... }
+Dashboard
+Work Hours           ← moved up
+User Management      ← moved up
+Support
+Customer Tickets
+Tech Support
+My Orders / Active Orders
+Yearly Packages
+Facebook
+Google Deletion
+Complaints
+Completed
+Cancelled
+Reviews
+Invoice Sent
+Invoice Paid
+Companies
+Proposals
+Invoices
+Clients
+Inventory
+Rankings
+Analytics            ← moved down
+User Statistics      ← moved down
+Settings
+Deleted
+Team Chat
 ```
 
-No other files need changes — the routes/pages remain in the codebase but just won't be linked from the sidebar.
+Single file change, just reordering entries in the array.
 
