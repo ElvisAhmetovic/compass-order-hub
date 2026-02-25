@@ -35,7 +35,7 @@ const WorkHours = () => {
         <div className="max-w-6xl mx-auto">
           <div className="flex items-center gap-3 mb-6">
             <Clock className="h-6 w-6 text-primary" />
-            <h1 className="text-2xl font-bold">Radni Sati</h1>
+            <h1 className="text-2xl font-bold">Work Hours</h1>
           </div>
 
           <div className="flex flex-wrap items-center gap-4 mb-6">
@@ -44,7 +44,7 @@ const WorkHours = () => {
             {isAdmin && users.length > 0 && (
               <Select value={selectedUserId} onValueChange={setSelectedUserId}>
                 <SelectTrigger className="w-[220px]">
-                  <SelectValue placeholder="Mitarbeiter wählen" />
+                  <SelectValue placeholder="Select employee" />
                 </SelectTrigger>
                 <SelectContent>
                   {users.map(u => (

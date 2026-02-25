@@ -5,7 +5,7 @@ import { fetchWorkHours, upsertWorkHour, WorkHourEntry } from '@/services/workHo
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
-const DAY_NAMES = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 interface WorkHoursTableProps {
   userId: string;
@@ -25,7 +25,7 @@ const getWeekdays = (year: number, month: number) => {
 };
 
 const formatDate = (d: Date) =>
-  `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}.${d.getFullYear()}`;
+  `${DAY_NAMES[d.getDay()]}, ${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}.${d.getFullYear()}`;
 
 const toIso = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -76,14 +76,13 @@ const WorkHoursTable = ({ userId, month, year }: WorkHoursTableProps) => {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-[50px]">Nr.</TableHead>
-            <TableHead className="w-[40px]">Tag</TableHead>
-            <TableHead className="w-[120px]">Datum</TableHead>
-            <TableHead className="w-[100px]">Početak</TableHead>
-            <TableHead className="w-[140px]">1 Pauza</TableHead>
-            <TableHead className="w-[100px]">Radno Vrijeme</TableHead>
-            <TableHead className="w-[100px]">Kraj</TableHead>
-            <TableHead>Notiz</TableHead>
+            <TableHead className="w-[50px]">#</TableHead>
+            <TableHead className="w-[200px]">Date</TableHead>
+            <TableHead className="w-[100px]">Start</TableHead>
+            <TableHead className="w-[140px]">Break</TableHead>
+            <TableHead className="w-[100px]">Hours</TableHead>
+            <TableHead className="w-[100px]">End</TableHead>
+            <TableHead>Note</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -95,8 +94,7 @@ const WorkHoursTable = ({ userId, month, year }: WorkHoursTableProps) => {
             return (
               <TableRow key={iso} className={cn(isVacation && 'bg-green-50 dark:bg-green-950/30')}>
                 <TableCell className="text-muted-foreground text-sm">{idx + 1}</TableCell>
-                <TableCell className="text-sm font-medium">{DAY_NAMES[day.getDay()]}</TableCell>
-                <TableCell className="text-sm">{formatDate(day)}</TableCell>
+                <TableCell className="text-sm font-medium">{formatDate(day)}</TableCell>
                 <TableCell>
                   <Input
                     className="h-8 text-sm"
@@ -134,7 +132,7 @@ const WorkHoursTable = ({ userId, month, year }: WorkHoursTableProps) => {
                 <TableCell>
                   <Input
                     className="h-8 text-sm"
-                    placeholder="z.B. GODISNJI"
+                    placeholder="e.g. VACATION"
                     defaultValue={entry.note || ''}
                     onBlur={e => save(iso, 'note', e.target.value || null)}
                   />
@@ -145,7 +143,7 @@ const WorkHoursTable = ({ userId, month, year }: WorkHoursTableProps) => {
         </TableBody>
         <TableFooter>
           <TableRow>
-            <TableCell colSpan={5} className="text-right font-semibold">Gesamt Stunden:</TableCell>
+            <TableCell colSpan={4} className="text-right font-semibold">Total Hours:</TableCell>
             <TableCell className="font-bold text-lg">{totalHours}</TableCell>
             <TableCell colSpan={2} />
           </TableRow>
