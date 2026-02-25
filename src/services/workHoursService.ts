@@ -50,6 +50,27 @@ export const upsertWorkHour = async (entry: WorkHourEntry) => {
   return data;
 };
 
+export const bulkUpsertWorkHours = async (entries: WorkHourEntry[]) => {
+  if (entries.length === 0) return [];
+  const { data, error } = await supabase
+    .from('work_hours')
+    .upsert(
+      entries.map(e => ({
+        user_id: e.user_id,
+        date: e.date,
+        start_time: e.start_time,
+        break_time: e.break_time,
+        working_hours: e.working_hours,
+        end_time: e.end_time,
+        note: e.note,
+      })),
+      { onConflict: 'user_id,date' }
+    )
+    .select();
+  if (error) throw error;
+  return data;
+};
+
 export const fetchAllUsers = async () => {
   const { data, error } = await supabase
     .from('profiles')
