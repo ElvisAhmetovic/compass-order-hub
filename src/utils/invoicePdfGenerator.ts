@@ -82,6 +82,51 @@ export const generateInvoicePDF = async (data: InvoicePDFData): Promise<void> =>
   }
 };
 
+export const generateInvoicePDFBase64 = async (data: InvoicePDFData): Promise<string> => {
+  const { invoice, lineItems, client, templateSettings, formData } = data;
+  const currentCurrency = formData?.currency || templateSettings.currency || 'EUR';
+
+  const container = document.createElement('div');
+  container.style.position = 'absolute';
+  container.style.left = '-9999px';
+  container.style.top = '0';
+  container.style.width = '794px';
+  container.style.backgroundColor = 'white';
+  container.style.padding = '40px';
+  container.style.fontFamily = 'Arial, sans-serif';
+  document.body.appendChild(container);
+
+  try {
+    const invoiceHtml = generateInvoiceHTML({
+      ...data,
+      templateSettings: { ...templateSettings, currency: currentCurrency }
+    });
+    container.innerHTML = sanitizeHtml(invoiceHtml);
+
+    const images = container.querySelectorAll('img');
+    await Promise.all(Array.from(images).map(img =>
+      new Promise((resolve) => {
+        if (img.complete) resolve(null);
+        else { img.onload = () => resolve(null); img.onerror = () => resolve(null); }
+      })
+    ));
+
+    const canvas = await html2canvas(container, {
+      scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff'
+    });
+
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const imgData = canvas.toDataURL('image/png');
+    const imgWidth = 210;
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+
+    return pdf.output('datauristring');
+  } finally {
+    document.body.removeChild(container);
+  }
+};
+
 const generateInvoiceHTML = (data: InvoicePDFData): string => {
   const { invoice, lineItems, client, templateSettings, formData } = data;
   
