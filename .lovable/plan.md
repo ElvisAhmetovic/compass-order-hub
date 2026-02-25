@@ -1,27 +1,30 @@
 
 
-## Auto-Fill Work Hours Month
+## Add Nickname Field to Work Hours User Selector
 
 ### What
-Add a button to the Work Hours page that pre-fills all weekdays in the selected month with default values: Start 09:00, Break 12:00-13:00h, Hours 6.5, End 17:00. Only fills days that don't already have data.
+Add a `nickname` column to the `profiles` table and display it under each admin/agent's name in the Work Hours employee selector dropdown, allowing admins to set a short descriptor for each user.
 
 ### Changes
 
-| File | Change |
-|------|--------|
-| `src/components/work-hours/WorkHoursTable.tsx` | Add an "Auto-Fill Month" button above the table. On click, iterate all weekdays for the month, skip any that already have data, and upsert default values for the rest. Update local state to reflect the new entries. |
-| `src/services/workHoursService.ts` | Add a `bulkUpsertWorkHours(entries: WorkHourEntry[])` function that upserts multiple rows at once using `.upsert(entries, { onConflict: 'user_id,date' })` |
+**Database migration**: Add `nickname` column to `profiles` table.
+```sql
+ALTER TABLE public.profiles ADD COLUMN nickname text DEFAULT NULL;
+```
 
-### Default Values
-- `start_time`: `"09:00"`
-- `break_time`: `"12:00-13:00h"`
-- `working_hours`: `6.5`
-- `end_time`: `"17:00"`
-- `note`: `null`
+**`src/services/workHoursService.ts`**: Update `fetchAllUsers` to also select the `nickname` column.
 
-### Behavior
-- Button labeled "Auto-Fill Month" with a wand/zap icon
-- Only fills days that have NO existing entry (won't overwrite manually entered data)
-- Shows a confirmation toast after filling
-- Updates the table immediately without requiring a page reload
+**`src/pages/WorkHours.tsx`**: Update the `SelectItem` rendering to show the nickname below the user's name in a smaller, muted style. Also add an inline editable nickname field — a small text input shown below the employee selector that lets admins set/update the nickname for the currently selected user.
+
+**`src/integrations/supabase/types.ts`**: Will auto-update after migration.
+
+### UI
+
+The employee dropdown items will show:
+```
+John Doe
+  Marketing Lead        ← nickname in smaller muted text
+```
+
+Below the selector, a small input field: "Nickname: [___________]" that saves on blur, letting admins quickly add or edit a nickname for the selected user.
 
