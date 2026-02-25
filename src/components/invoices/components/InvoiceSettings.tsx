@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { LANGUAGES, CURRENCIES } from "../constants";
+import { LANGUAGES, CURRENCIES, getDefaultTerms } from "../constants";
 
 interface InvoiceSettingsProps {
   language: string;
@@ -108,7 +108,7 @@ export const InvoiceSettings: React.FC<InvoiceSettingsProps> = ({
           <Textarea
             value={customTerms}
             onChange={(e) => onCustomTermsChange(e.target.value)}
-            placeholder="We verzoeken dat de door ons gefactureerde diensten binnen 3 dagen worden gecrediteerd/overgemaakt. Alle belastingen en sociale premies worden door ons aangegeven en afgedragen aan de autoriteiten."
+            placeholder={getDefaultTerms(language)}
             rows={3}
           />
         </div>
