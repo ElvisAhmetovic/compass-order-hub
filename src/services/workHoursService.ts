@@ -74,7 +74,7 @@ export const bulkUpsertWorkHours = async (entries: WorkHourEntry[]) => {
 export const fetchAllUsers = async () => {
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, first_name, last_name, role')
+    .select('id, first_name, last_name, role, nickname')
     .in('role', ['admin', 'agent'])
     .order('first_name');
 
