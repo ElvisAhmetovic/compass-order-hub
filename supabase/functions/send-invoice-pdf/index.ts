@@ -50,9 +50,8 @@ serve(async (req) => {
       </div>
     `;
 
-    // Use raw base64 directly (data URI prefix already stripped client-side)
+    // Extract raw base64 data (remove data URI prefix if present)
     const base64Data = pdf_base64.includes(',') ? pdf_base64.split(',')[1] : pdf_base64;
-    console.log('PDF attachment size (base64 chars):', base64Data.length);
 
     // Send to client
     const clientRes = await fetch('https://api.resend.com/emails', {
