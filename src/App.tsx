@@ -42,6 +42,7 @@ import TechSupportDetail from "./pages/TechSupportDetail";
 import CustomerTickets from "./pages/CustomerTickets";
 import CustomerTicketDetail from "./pages/CustomerTicketDetail";
 import NotFound from "./pages/NotFound";
+import WorkHours from "./pages/WorkHours";
 import TicketSubmitted from "./pages/TicketSubmitted";
 import TicketLoading from "./pages/TicketLoading";
 import { RequireAuth } from "./components/auth/RequireAuth";
@@ -258,6 +259,11 @@ function App() {
                       <AdminGuard>
                         <NotificationSettings />
                       </AdminGuard>
+                    </RequireAuth>
+                  } />
+                  <Route path="/work-hours" element={
+                    <RequireAuth>
+                      <WorkHours />
                     </RequireAuth>
                   } />
                   <Route path="/team-collaboration" element={

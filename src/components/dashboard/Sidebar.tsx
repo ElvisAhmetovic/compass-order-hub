@@ -25,7 +25,8 @@ import {
   Trophy,
   BarChart2,
   Settings,
-  Ticket
+  Ticket,
+  Clock as ClockIcon
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
@@ -147,6 +148,7 @@ const Sidebar = () => {
     { href: '/clients', icon: UserCheck, label: 'Clients', roles: ['admin', 'agent'] },
     { href: '/inventory', icon: Package, label: 'Inventory', roles: ['admin', 'agent'] },
     { href: '/user-management', icon: Users, label: 'User Management', roles: ['admin'] },
+    { href: '/work-hours', icon: ClockIcon, label: 'Work Hours', roles: ['admin', 'agent'] },
     { href: '/settings', icon: Settings, label: 'Settings', roles: ['admin'] },
     { href: '/deleted', icon: Trash2, label: 'Deleted', roles: ['admin'] },
     {
