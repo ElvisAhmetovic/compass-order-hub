@@ -1,17 +1,50 @@
 
 
-## Add johan@team-abmedia.com to All Team Email Lists
+## Reorder Sidebar Menu Items
 
-There are 6 files with hardcoded team email lists. The new email needs to be added to each one.
+Move "Invoice Sent", "Invoice Paid", "Invoices", and "Proposals" to appear directly after "Active Orders" in the sidebar.
 
-### Changes
+### Change
 
-1. **`src/constants/notificationEmails.ts`** — Add `'johan@team-abmedia.com'` to the array
-2. **`supabase/functions/send-client-payment-reminder/index.ts`** — Add `"johan@team-abmedia.com"` to `TEAM_EMAILS`
-3. **`supabase/functions/send-order-payment-reminders/index.ts`** — Add `"johan@team-abmedia.com"` to `TEAM_EMAILS`
-4. **`supabase/functions/create-tech-support-ticket/index.ts`** — Add `'johan@team-abmedia.com'` to `DEFAULT_EMAILS`
-5. **`supabase/functions/create-client-ticket/index.ts`** — Add `'johan@team-abmedia.com'` to `NOTIFICATION_EMAILS`
-6. **`src/services/orderService.ts`** — Add `johan@team-abmedia.com` to the comma-separated default emails string
+**`src/components/dashboard/Sidebar.tsx`** — Reorder the `menuItems` array:
 
-All additions will be appended at the end of each list, before the closing bracket/quote. Three edge functions will need redeployment after the change.
+Current order (relevant section):
+```
+Active Orders
+Yearly Packages
+Facebook
+Google Deletion
+Complaints
+Completed
+Cancelled
+Reviews
+Invoice Sent
+Invoice Paid
+Companies
+Proposals
+Invoices
+Clients
+...
+```
+
+New order:
+```
+Active Orders
+Invoice Sent
+Invoice Paid
+Invoices
+Proposals
+Yearly Packages
+Facebook
+Google Deletion
+Complaints
+Completed
+Cancelled
+Reviews
+Companies
+Clients
+...
+```
+
+Single file change — reordering items within the `menuItems` array.
 
