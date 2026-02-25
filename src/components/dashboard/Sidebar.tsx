@@ -88,8 +88,15 @@ const Sidebar = () => {
       })
       .subscribe();
 
+    // Re-fetch when tab becomes visible again
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') fetchUnreadSupportCount();
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
     return () => {
       window.removeEventListener("notifications:changed", handleNotificationsChanged);
+      document.removeEventListener('visibilitychange', handleVisibility);
       channel.unsubscribe();
     };
   }, [isAdminOrAgent, user?.id]);
@@ -116,7 +123,15 @@ const Sidebar = () => {
       })
       .subscribe();
 
-    return () => { ticketChannel.unsubscribe(); };
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') fetchOpenTickets();
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      ticketChannel.unsubscribe();
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
   }, [isAdminOrAgent]);
 
   // Define sidebar items with role restrictions
