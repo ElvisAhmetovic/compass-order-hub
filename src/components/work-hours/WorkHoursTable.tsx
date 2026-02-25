@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from '@/components/ui/table';
-import { fetchWorkHours, upsertWorkHour, WorkHourEntry } from '@/services/workHoursService';
+import { fetchWorkHours, upsertWorkHour, bulkUpsertWorkHours, WorkHourEntry } from '@/services/workHoursService';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { Wand2 } from 'lucide-react';
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -33,6 +35,7 @@ const toIso = (d: Date) =>
 const WorkHoursTable = ({ userId, month, year }: WorkHoursTableProps) => {
   const [rows, setRows] = useState<Record<string, WorkHourEntry>>({});
   const [loading, setLoading] = useState(true);
+  const [filling, setFilling] = useState(false);
 
   const weekdays = getWeekdays(year, month);
 
@@ -67,12 +70,53 @@ const WorkHoursTable = ({ userId, month, year }: WorkHoursTableProps) => {
     }
   };
 
+  const handleAutoFill = async () => {
+    setFilling(true);
+    try {
+      const entriesToFill: WorkHourEntry[] = weekdays
+        .map(day => toIso(day))
+        .filter(iso => !rows[iso])
+        .map(iso => ({
+          user_id: userId,
+          date: iso,
+          start_time: '09:00',
+          break_time: '12:00-13:00h',
+          working_hours: 6.5,
+          end_time: '17:00',
+          note: null,
+        }));
+
+      if (entriesToFill.length === 0) {
+        toast({ title: 'All days already have data', description: 'Nothing to fill.' });
+        setFilling(false);
+        return;
+      }
+
+      await bulkUpsertWorkHours(entriesToFill);
+      const newRows = { ...rows };
+      entriesToFill.forEach(e => { newRows[e.date] = e; });
+      setRows(newRows);
+      toast({ title: 'Auto-filled successfully', description: `${entriesToFill.length} days filled with default hours.` });
+    } catch (e: any) {
+      toast({ title: 'Auto-fill error', description: e.message, variant: 'destructive' });
+    } finally {
+      setFilling(false);
+    }
+  };
+
   const totalHours = Object.values(rows).reduce((sum, r) => sum + (r.working_hours || 0), 0);
 
   if (loading) return <div className="py-8 text-center text-muted-foreground">Loading...</div>;
 
   return (
-    <div className="border rounded-lg overflow-auto">
+    <div>
+      <div className="flex justify-end mb-3">
+        <Button onClick={handleAutoFill} disabled={filling} variant="outline" size="sm">
+          <Wand2 className="h-4 w-4 mr-1" />
+          {filling ? 'Filling...' : 'Auto-Fill Month'}
+        </Button>
+      </div>
+      <div className="border rounded-lg overflow-auto">
       <Table>
         <TableHeader>
           <TableRow>
@@ -149,6 +193,7 @@ const WorkHoursTable = ({ userId, month, year }: WorkHoursTableProps) => {
           </TableRow>
         </TableFooter>
       </Table>
+      </div>
     </div>
   );
 };
