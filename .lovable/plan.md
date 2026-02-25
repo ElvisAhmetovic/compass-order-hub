@@ -1,45 +1,40 @@
 
 
-## Fix Dutch Custom Terms & QA Analysis of Invoice Creation
+## Fix VAT Rate Scale Inconsistency
 
-### Problem: Custom Terms Always Dutch
-The custom terms default/fallback text is hardcoded in Dutch in three places:
-1. **`src/components/invoices/components/InvoiceSettings.tsx`** (line 96) — placeholder text in the textarea
-2. **`src/components/invoices/InvoicePreview.tsx`** (line 660) — fallback when `customTerms` is empty
-3. **`src/utils/invoicePdfGenerator.ts`** (line 735) — fallback when `customTerms` is empty in PDF generation
+### Problem
+Two different VAT rate scales are used:
+- **Template settings** (`useInvoiceSettings.ts`): stores as percentage integer (`21`)
+- **Line items** (`InvoiceDetail.tsx`): stores as decimal (`0.19`)
+- **Preview/PDF display**: shows `templateSettings.vatRate` directly as `21%`, which only works with the integer format
 
-### Fix
-Add a `getDefaultTerms(language)` helper that returns translated default terms based on the selected language. Use it in all three locations instead of the hardcoded Dutch string.
-
-**Translations for default terms** (the Dutch text roughly says: "We request that our invoiced services are credited/transferred within 3 days. All taxes and social contributions are declared and paid by us to the authorities."):
-- **en**: "We request that our invoiced services are credited/transferred within 3 days. All taxes and social contributions are declared and paid by us to the authorities."
-- **nl**: (current Dutch text)
-- **de**: "Wir bitten darum, dass unsere in Rechnung gestellten Leistungen innerhalb von 3 Tagen gutgeschrieben/überwiesen werden. Alle Steuern und Sozialabgaben werden von uns bei den Behörden angemeldet und abgeführt."
-- **fr/es/da/no/cs/pl/sv**: Respective translations
+The line items and template settings are independent — line items default to `0.19` regardless of what the template settings say. The standard German VAT rate of 19% should be the default everywhere.
 
 ### Changes
 
-**`src/components/invoices/constants.ts`**: Add a `DEFAULT_TERMS` translations object exported as a function `getDefaultTerms(language: string): string`.
+**`src/components/invoices/hooks/useInvoiceSettings.ts`** (line 49)
+- Change default `vatRate` from `21` to `19`
 
-**`src/components/invoices/components/InvoiceSettings.tsx`**: Import `getDefaultTerms` and use it for the placeholder, passing the current `language` prop.
+**`src/pages/InvoiceDetail.tsx`**
+- Line 45: Change `vatRate: 0.19` to `vatRate: 19` — normalize template settings to percentage format (matching how it's displayed in the UI and PDF)
+- Line 150: Change default `vat_rate: 0.19` to `vat_rate: 0.19` — keep at 0.19 (19% as decimal), since line items use decimal internally and the `LineItemRow` component converts to/from percentage for display
 
-**`src/components/invoices/InvoicePreview.tsx`** (line 659-660): Replace the hardcoded Dutch fallback with `getDefaultTerms(templateSettings.language)`.
+Actually, the real inconsistency is that `InvoiceDetail.tsx` line 45 sets `vatRate: 0.19` in `templateSettings`, but the preview and PDF display it as `${templateSettings.vatRate}%` — showing "0.19%" instead of "19%". Meanwhile `useInvoiceSettings` defaults to `21` which displays correctly as "21%".
 
-**`src/utils/invoicePdfGenerator.ts`** (line 734-735): Replace the hardcoded Dutch fallback with `getDefaultTerms(templateSettings.language)`.
+### Normalized approach
+- **Template settings `vatRate`**: always store as percentage integer (19, 21, etc.) — this is what the UI input and display expect
+- **Line item `vat_rate`**: always store as decimal (0.19, 0.21, etc.) — this is what the calculation logic expects
+- Default both to 19% (German standard)
 
----
+### File changes
 
-### QA Analysis of Invoice Creation Section
+1. **`src/components/invoices/hooks/useInvoiceSettings.ts`** (line 49): `vatRate: 21` → `vatRate: 19`
 
-After reviewing `InvoiceDetail.tsx`, `InvoicePreview.tsx`, `InvoiceTemplateSettings.tsx`, `useInvoiceSettings.ts`, `invoicePdfGenerator.ts`, and related files, here are the findings:
+2. **`src/pages/InvoiceDetail.tsx`** (line 45): `vatRate: 0.19` → `vatRate: 19` (was incorrectly using decimal format for template settings display)
 
-**Issues Found:**
+3. **`src/pages/InvoiceDetail.tsx`** (line 150): keep `vat_rate: 0.19` (correct decimal for line item calculations)
 
-1. **Custom terms language bug** (described above) — primary fix
-2. **Template settings currency vs form currency disconnect**: `InvoiceDetail.tsx` maintains its own `templateSettings` state (line 42-57) separate from `InvoiceTemplateSettings` component. When language/VAT/payment account are changed in the Template Settings tab, those changes propagate via `onSettingsChange`. However, the currency in the edit form (`formData.currency`) overrides `templateSettings.currency` (line 75-80), which is correct — but changing currency in Template Settings tab won't update the edit form's currency. This is a minor UX inconsistency but not a blocker since the edit tab currency is the source of truth.
-3. **VAT rate mismatch**: `useInvoiceSettings` defaults `vatRate` to `21` (line 49), but `InvoiceDetail.tsx` defaults it to `0.19` (line 45) — one is a percentage number (21), the other a decimal (0.19). The line items use decimal format (`vat_rate: 0.19`). This means template settings VAT display and line item VAT calculation use different scales. This is existing behavior and likely intentional (template shows 21%, line items store 0.19), but worth noting.
-4. **No issues with save flow**: Create and update paths look correct — line items are properly handled for both new (temp IDs) and existing invoices.
-5. **PDF generation**: Correctly uses form currency, handles missing data gracefully.
+4. **`src/components/dashboard/OrderActions.tsx`** (line 126, 143): keep `vat_rate: 0.19` (correct decimal for line items)
 
-**No critical bugs** besides the Dutch terms issue. The invoice creation, editing, line item management, preview, and PDF download all function correctly.
+This is a two-line fix: change the default vatRate in `useInvoiceSettings` from 21→19, and fix the scale in `InvoiceDetail.tsx` templateSettings from 0.19→19.
 
