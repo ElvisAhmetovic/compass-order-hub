@@ -167,7 +167,7 @@ const Sidebar = () => {
   return (
     <div className="w-64 bg-white border-r border-gray-200 min-h-screen">
       <div className="p-6">
-        <h2 className="text-xl font-semibold text-foreground">Navigation</h2>
+        <h2 className="text-xl font-semibold text-foreground">EmpriaTech CRM System</h2>
         <div className="mt-2 text-muted-foreground">
           <div className="font-mono text-lg font-semibold text-foreground">
             {currentTime.toLocaleTimeString('de-DE', { timeZone: 'Europe/Berlin' })}
