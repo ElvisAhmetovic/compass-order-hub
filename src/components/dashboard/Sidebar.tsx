@@ -173,7 +173,7 @@ const Sidebar = () => {
             {currentTime.toLocaleTimeString('de-DE', { timeZone: 'Europe/Berlin' })}
           </div>
           <div className="text-xs">
-            {currentTime.toLocaleDateString('de-DE', { timeZone: 'Europe/Berlin', weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' })}
+            {currentTime.toLocaleDateString('en-US', { timeZone: 'Europe/Berlin', weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' })}
             {' · '}Duisburg, Germany
           </div>
         </div>
