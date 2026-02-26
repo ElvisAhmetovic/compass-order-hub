@@ -168,24 +168,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         console.log('Auth state changed:', event, session?.user?.email);
         if (!mounted) return;
         
-        if (session?.user) {
-          // Don't call convertToAuthUser here to avoid infinite loops
-          // Just update the loading state, the session check above will handle user conversion
-          setTimeout(async () => {
-            try {
-              const authUser = await convertToAuthUser(session.user);
-              if (mounted) {
-                setUser(authUser);
-                setIsLoading(false);
-              }
-            } catch (error) {
-              console.error('Error converting user in auth state change:', error);
-              if (mounted) {
-                setUser(null);
-                setIsLoading(false);
-              }
-            }
-          }, 0);
+         if (session?.user) {
+           setTimeout(async () => {
+             try {
+               const authUser = await convertToAuthUser(session.user);
+               if (mounted) {
+                 setUser(prev => {
+                   if (prev && prev.id === authUser.id && prev.role === authUser.role) return prev;
+                   return authUser;
+                 });
+                 setIsLoading(false);
+               }
+             } catch (error) {
+               console.error('Error converting user in auth state change:', error);
+               if (mounted) {
+                 setUser(null);
+                 setIsLoading(false);
+               }
+             }
+           }, 0);
         } else {
           if (mounted) {
             setUser(null);
@@ -195,33 +196,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     );
 
-    // Refresh session when tab becomes visible after being in background
-    const handleVisibilityChange = async () => {
-      if (document.visibilityState === 'visible' && mounted) {
-        try {
-          const { data: { session } } = await supabase.auth.getSession();
-          if (session?.user && mounted) {
-            setUser(prev => {
-              if (prev?.id === session.user.id) return prev;
-              convertToAuthUser(session.user).then(authUser => {
-                if (mounted) setUser(authUser);
-              });
-              return prev;
-            });
-          } else if (!session && mounted) {
-            setUser(prev => prev === null ? prev : null);
-          }
-        } catch (error) {
-          console.error('Error refreshing session on visibility change:', error);
-        }
-      }
-    };
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
     return () => {
       mounted = false;
       subscription.unsubscribe();
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, []);
 
