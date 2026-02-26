@@ -68,9 +68,23 @@ export const generateInvoicePDF = async (data: InvoicePDFData): Promise<void> =>
     const pdf = new jsPDF('p', 'mm', 'a4');
     const imgData = canvas.toDataURL('image/png');
     const imgWidth = 210; // A4 width in mm
+    const pageHeight = 297; // A4 height in mm
     const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-    pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+    if (imgHeight <= pageHeight) {
+      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+    } else {
+      let heightLeft = imgHeight;
+      let position = 0;
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+      while (heightLeft > 0) {
+        position -= pageHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+    }
     
     // Download the PDF
     const invoiceNumber = invoice?.invoice_number || formData?.invoice_number || 'new';
@@ -118,8 +132,23 @@ export const generateInvoicePDFBase64 = async (data: InvoicePDFData): Promise<st
     const pdf = new jsPDF('p', 'mm', 'a4');
     const imgData = canvas.toDataURL('image/png');
     const imgWidth = 210;
+    const pageHeight = 297;
     const imgHeight = (canvas.height * imgWidth) / canvas.width;
-    pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+
+    if (imgHeight <= pageHeight) {
+      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+    } else {
+      let heightLeft = imgHeight;
+      let position = 0;
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+      while (heightLeft > 0) {
+        position -= pageHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+    }
 
     return pdf.output('datauristring');
   } finally {
