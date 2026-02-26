@@ -198,14 +198,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Refresh session when tab becomes visible after being in background
     const handleVisibilityChange = async () => {
       if (document.visibilityState === 'visible' && mounted) {
-        console.log('Tab became visible, refreshing session...');
         try {
           const { data: { session } } = await supabase.auth.getSession();
           if (session?.user && mounted) {
-            const authUser = await convertToAuthUser(session.user);
-            if (mounted) setUser(authUser);
+            setUser(prev => {
+              if (prev?.id === session.user.id) return prev;
+              convertToAuthUser(session.user).then(authUser => {
+                if (mounted) setUser(authUser);
+              });
+              return prev;
+            });
           } else if (!session && mounted) {
-            setUser(null);
+            setUser(prev => prev === null ? prev : null);
           }
         } catch (error) {
           console.error('Error refreshing session on visibility change:', error);
