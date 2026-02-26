@@ -73,7 +73,7 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-        <TooltipProvider delayDuration={300} skipDelayDuration={0}>
+        <TooltipProvider>
           <AuthProvider>
             <Router>
               <NavigationProgress />
