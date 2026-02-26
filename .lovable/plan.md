@@ -1,57 +1,68 @@
 
 
-## Restructure Invoice Layout: Move Company Details to Header, Replace with Client Info
+## Fix: UI Becomes Unclickable After Tab Switching
 
-### Current layout (top to bottom)
-```text
-┌─────────────────────────────────────────────┐
-│ [Logo] AB MEDIA TEAM          RE NR: 784/25 │
-│         Weseler Str.73...                   │
-│         kontakt.abmedia@gmail.com           │
-├─────────────────────────────────────────────┤
-│ AB MEDIA TEAM                  Date: ...    │
-│ Ansprechpartner: Andreas Berger Due: ...    │
-│ Firmenreg.: 15748871       Balance Due: ... │
-│ UID: DE123418679                            │
-│ Weseler Str.73 47169 Duisburg               │
-│ kontakt.abmedia@gmail.com                   │
-├─────────────────────────────────────────────┤
-│ Rechnung an:                                │
-│ Client Name / email / address               │
-└─────────────────────────────────────────────┘
-```
+### Root Cause
+The Radix UI `TooltipProvider` in `App.tsx` (line 76) uses default settings. Radix tooltips use an internal "grace area" pointer mechanism that can get stuck when the browser fires blur/focus events during tab switches, leaving an invisible overlay that blocks all pointer events.
 
-### New layout (what you want)
-```text
-┌─────────────────────────────────────────────┐
-│ [Logo] AB MEDIA TEAM          RE NR: 784/25 │
-│   Ansprechpartner: Andreas Berger           │
-│   Firmenreg.: 15748871                      │
-│   UID: DE123418679                          │
-│   Weseler Str.73 47169 Duisburg             │
-│   kontakt.abmedia@gmail.com                 │
-├─────────────────────────────────────────────┤
-│ Rechnung an:               Date: ...        │
-│ Client Name                Due: ...         │
-│ client@email.com           Balance Due: ... │
-│ Client Address                              │
-│ City, Country                               │
-└─────────────────────────────────────────────┘
-```
+The memory notes mention this fix was planned (synthetic pointer events + `skipDelayDuration={0}`) but it was never actually implemented in the code.
 
 ### Changes
 
-**1. `src/components/invoices/InvoicePreview.tsx`**
+**1. `src/App.tsx`** — Configure TooltipProvider with `skipDelayDuration={0}` and `delayDuration={0}` to prevent the tooltip grace-area from getting stuck:
 
-- **Header section (lines 533-542)**: Replace the short address/email snippet with the full company details block (contact person, registration number, UID, address, email) using translated labels.
-- **Company Details section (lines 555-584)**: Remove the left-side company info block. Replace it with the "Bill To" client info (currently at lines 586-607), keeping the right-side date/due/balance column as-is.
-- **Bill To section (lines 586-607)**: Remove this entire standalone section since it's now merged into the section above.
+```tsx
+<TooltipProvider skipDelayDuration={0} delayDuration={300}>
+```
 
-**2. `src/utils/invoicePdfGenerator.ts`**
+**2. `src/App.tsx`** — Add a `useEffect` inside the `App` component that listens for `visibilitychange`, `focus`, and `blur` events and dispatches synthetic pointer events to force Radix to release any stuck internal state:
 
-- **Header section (lines 692-701)**: Same change -- replace address/email with full company details (contact person, registration, UID, address, email).
-- **Company Details section (lines 715-741)**: Replace left column with client "Bill To" info, keep right column (dates + balance).
-- **Bill To section (lines 743-760)**: Remove entirely.
+```tsx
+useEffect(() => {
+  const resetPointerState = () => {
+    document.body.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+    document.body.dispatchEvent(new PointerEvent('pointerup', { bubbles: true }));
+  };
+  
+  const handleVisibilityChange = () => {
+    if (document.visibilityState === 'visible') {
+      resetPointerState();
+    }
+  };
+  
+  document.addEventListener('visibilitychange', handleVisibilityChange);
+  window.addEventListener('focus', resetPointerState);
+  
+  return () => {
+    document.removeEventListener('visibilitychange', handleVisibilityChange);
+    window.removeEventListener('focus', resetPointerState);
+  };
+}, []);
+```
 
-This also saves vertical space in the PDF, helping everything fit on one page.
+**3. `src/components/ui/dialog.tsx`** — Add `onInteractOutside` handler to `DialogOverlay` and ensure the overlay's pointer-events reset properly. Also add a global `visibilitychange` cleanup that programmatically closes any stuck dialogs by dispatching an Escape keydown event:
+
+The `useEffect` in App.tsx will also dispatch Escape on visibility change to dismiss any stuck dialog/sheet overlays:
+
+```tsx
+const handleVisibilityChange = () => {
+  if (document.visibilityState === 'visible') {
+    resetPointerState();
+    // Dismiss any stuck overlays
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+  }
+};
+```
+
+Wait — dismissing with Escape would close legitimate open dialogs too. Better approach: only reset pointer state, don't force-close dialogs.
+
+### Final plan (2 files)
+
+**`src/App.tsx`**:
+1. Add `useEffect` with `visibilitychange` + `focus` listeners that dispatch synthetic `pointerdown`/`pointerup` on `document.body`
+2. Set `<TooltipProvider skipDelayDuration={0} delayDuration={300}>`
+
+**`src/components/ui/tooltip.tsx`** — No changes needed (provider config is in App.tsx).
+
+This is a minimal, targeted fix for the known Radix tooltip grace-area bug that causes the frozen UI after tab switching.
 
