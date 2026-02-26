@@ -1,41 +1,43 @@
 
 
-## Stop Full App Re-render on Tab Switch
+## Stop the Tab-Switch Refresh (For Real This Time)
 
 ### Root Cause
-The `refetchOnWindowFocus: false` fix only stopped React Query. But three other `visibilitychange` listeners are still triggering data refreshes:
 
-1. **`src/context/AuthContext.tsx` (line 199-213)** — Calls `setUser()` on every tab return, even when nothing changed. This triggers a full re-render cascade, causing DashboardCards and OrderTable `useEffect` hooks to re-fetch all 690 orders.
-2. **`src/components/dashboard/Sidebar.tsx` (lines 93, 127)** — Re-fetches support counts and ticket badges on every tab return.
+The `visibilitychange` handler (line 199) calls `supabase.auth.getSession()` every time you return to the tab. This triggers `onAuthStateChange` (line 166) with a `SIGNED_IN` event, which **unconditionally** calls `setUser()` at line 178 — no ID comparison. That `setUser` causes the entire app to re-render, re-fetching all 690 orders.
 
-### Changes
+The ID check we added at line 205 is irrelevant because the damage is done through the `onAuthStateChange` listener, not the visibility handler itself.
 
-**1. `src/context/AuthContext.tsx` (lines 199-213)** — Only call `setUser()` if the user ID actually changed. Compare the refreshed session user ID against the current user state before updating:
+### Fix
+
+**`src/context/AuthContext.tsx`**:
+
+1. **Remove the `visibilitychange` listener entirely** (lines 198-219). Supabase's JS client already handles token refresh automatically — there's no need to manually call `getSession()` on tab focus.
+
+2. **Add an ID check to `onAuthStateChange`** (line 171-188) so it doesn't call `setUser` when the same user is already loaded:
 
 ```tsx
-const handleVisibilityChange = async () => {
-  if (document.visibilityState === 'visible' && mounted) {
+if (session?.user) {
+  setTimeout(async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user && mounted) {
-        // Only update state if user actually changed (avoid re-render cascade)
+      const authUser = await convertToAuthUser(session.user);
+      if (mounted) {
         setUser(prev => {
-          if (prev?.id === session.user.id) return prev;
-          // User changed — convert and update
-          convertToAuthUser(session.user).then(authUser => {
-            if (mounted) setUser(authUser);
-          });
-          return prev;
+          if (prev && prev.id === authUser.id && prev.role === authUser.role) return prev;
+          return authUser;
         });
-      } else if (!session && mounted) {
-        setUser(prev => prev === null ? prev : null);
+        setIsLoading(false);
       }
     } catch (error) {
-      console.error('Error refreshing session on visibility change:', error);
+      console.error('Error converting user in auth state change:', error);
+      if (mounted) {
+        setUser(null);
+        setIsLoading(false);
+      }
     }
-  }
-};
+  }, 0);
+}
 ```
 
-**2. `src/components/dashboard/Sidebar.tsx`** — Remove the two `visibilitychange` listeners (lines 93-95 and 127-129). The support counts and ticket badges will update via their existing realtime subscriptions and don't need to re-fetch on every tab switch.
+This eliminates both the unnecessary `getSession()` call and the unconditional `setUser()` that was causing the full re-render cascade.
 
