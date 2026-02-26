@@ -64,7 +64,7 @@ import ClientLogin from "./pages/client/ClientLogin";
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      refetchOnWindowFocus: true,
+      refetchOnWindowFocus: false,
       staleTime: 1000 * 60 * 5, // 5 minutes
     },
   },
