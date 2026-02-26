@@ -94,7 +94,11 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
 
   return (
     <Dialog open={open} onOpenChange={handleModalClose}>
-      <DialogContent className="max-w-6xl h-[90vh] flex flex-col p-0">
+      <DialogContent 
+        className="max-w-6xl h-[90vh] flex flex-col p-0"
+        onFocusOutside={(e) => e.preventDefault()}
+        onPointerDownOutside={(e) => e.preventDefault()}
+      >
         <div className="flex items-center justify-between p-6 border-b shrink-0">
           <div className="flex-1">
             <div className="flex items-center gap-4 mb-2">
