@@ -674,9 +674,9 @@ const generateInvoiceHTML = (data: InvoicePDFData): string => {
   };
 
   return `
-    <div style="background: white; min-height: 800px; padding: 32px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 14px; line-height: 1.4; color: #333;">
+    <div style="background: white; padding: 20px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 13px; line-height: 1.3; color: #333;">
       <!-- Header -->
-      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px; border-bottom: 2px solid #e5e7eb; padding-bottom: 20px;">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; border-bottom: 2px solid #e5e7eb; padding-bottom: 12px;">
         <div style="display: flex; align-items: center; gap: 20px;">
           ${logoUrl ? `
             <img 
@@ -690,10 +690,10 @@ const generateInvoiceHTML = (data: InvoicePDFData): string => {
             />
           ` : ''}
           <div>
-            <h1 style="font-size: 24px; font-weight: bold; color: #1f2937; margin: 0; margin-bottom: 8px;">
+            <h1 style="font-size: 22px; font-weight: bold; color: #1f2937; margin: 0; margin-bottom: 4px;">
               ${companyInfo.name}
             </h1>
-            <div style="font-size: 12px; color: #6b7280;">
+            <div style="font-size: 11px; color: #6b7280;">
               ${companyInfo.street}<br>
               ${companyInfo.postal} ${companyInfo.city}<br>
               ${companyInfo.email}
@@ -702,20 +702,20 @@ const generateInvoiceHTML = (data: InvoicePDFData): string => {
         </div>
         
         <div style="text-align: right;">
-          <h2 style="font-size: 36px; font-weight: bold; color: #374151; margin: 0; margin-bottom: 8px;">
+          <h2 style="font-size: 28px; font-weight: bold; color: #374151; margin: 0; margin-bottom: 4px;">
             ${templateSettings.invoiceNumberPrefix || 'RE NR:'}${currentInvoiceData.invoice_number}
           </h2>
-          <p style="font-size: 14px; color: #6b7280; margin: 0;">
+          <p style="font-size: 12px; color: #6b7280; margin: 0;">
             # ${templateSettings.invoiceNumberPrefix || 'RE NR:'}${currentInvoiceData.invoice_number}
           </p>
         </div>
       </div>
 
       <!-- Company Details and Invoice Info -->
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-bottom: 40px;">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
         <div>
-          <div style="font-size: 14px; color: #374151; line-height: 1.6;">
-            <div style="font-weight: bold; margin-bottom: 8px;">${companyInfo.name}</div>
+          <div style="font-size: 13px; color: #374151; line-height: 1.5;">
+            <div style="font-weight: bold; margin-bottom: 4px;">${companyInfo.name}</div>
             ${companyInfo.contactPerson ? `<div>${getTranslatedText('contactPerson')} ${companyInfo.contactPerson}</div>` : ''}
             <div>${getTranslatedText('companyRegistrationNumber')} ${companyInfo.registrationNumber}</div>
             <div>${getTranslatedText('uidNumber')} ${companyInfo.vatId}</div>
@@ -725,15 +725,15 @@ const generateInvoiceHTML = (data: InvoicePDFData): string => {
         </div>
         
         <div style="text-align: right;">
-          <div style="margin-bottom: 12px; display: flex; justify-content: space-between;">
+          <div style="margin-bottom: 8px; display: flex; justify-content: space-between;">
             <span style="font-weight: 600;">${getTranslatedText('date')}</span>
             <span>${formatDate(currentInvoiceData.issue_date)}</span>
           </div>
-          <div style="margin-bottom: 12px; display: flex; justify-content: space-between;">
+          <div style="margin-bottom: 8px; display: flex; justify-content: space-between;">
             <span style="font-weight: 600;">${getTranslatedText('dueDate')}</span>
             <span>${formatDate(currentInvoiceData.due_date)}</span>
           </div>
-          <div style="font-weight: bold; font-size: 20px; display: flex; justify-content: space-between; border-top: 1px solid #e5e7eb; padding-top: 12px;">
+          <div style="font-weight: bold; font-size: 16px; display: flex; justify-content: space-between; border-top: 1px solid #e5e7eb; padding-top: 8px;">
             <span>${getTranslatedText('balanceDue')}</span>
             <span>${formatCurrency(total || 750, currentCurrency)}</span>
           </div>
@@ -741,11 +741,11 @@ const generateInvoiceHTML = (data: InvoicePDFData): string => {
       </div>
 
       <!-- Bill To -->
-      <div style="margin-bottom: 40px;">
-        <div style="font-weight: bold; color: #374151; margin-bottom: 12px; font-size: 16px;">${getTranslatedText('billTo')}</div>
-        <div style="font-size: 14px; color: #374151; line-height: 1.6; background: #f9fafb; padding: 16px; border-radius: 8px;">
+      <div style="margin-bottom: 16px;">
+        <div style="font-weight: bold; color: #374151; margin-bottom: 8px; font-size: 14px;">${getTranslatedText('billTo')}</div>
+        <div style="font-size: 13px; color: #374151; line-height: 1.5; background: #f9fafb; padding: 10px; border-radius: 8px;">
           ${client ? `
-            <div style="font-weight: bold; margin-bottom: 4px;">${client.name}</div>
+            <div style="font-weight: bold; margin-bottom: 2px;">${client.name}</div>
             <div>${client.email}</div>
             ${client.address ? `<div>${client.address}</div>` : ''}
             ${client.city ? `<div>${client.zip_code} ${client.city}</div>` : ''}
@@ -760,30 +760,30 @@ const generateInvoiceHTML = (data: InvoicePDFData): string => {
       </div>
 
       <!-- Invoice Items Table -->
-      <div style="margin: 40px 0;">
+      <div style="margin: 16px 0;">
         <table style="width: 100%; border-collapse: collapse; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
           <thead>
             <tr style="background: #374151; color: white;">
-              <th style="text-align: left; padding: 16px; font-weight: 600; border-right: 1px solid #4b5563;">${getTranslatedText('item')}</th>
-              <th style="text-align: center; padding: 16px; font-weight: 600; border-right: 1px solid #4b5563;">${getTranslatedText('quantity')}</th>
-              <th style="text-align: right; padding: 16px; font-weight: 600; border-right: 1px solid #4b5563;">${getTranslatedText('rate')}</th>
-              <th style="text-align: right; padding: 16px; font-weight: 600;">${getTranslatedText('amount')}</th>
+              <th style="text-align: left; padding: 8px; font-weight: 600; border-right: 1px solid #4b5563;">${getTranslatedText('item')}</th>
+              <th style="text-align: center; padding: 8px; font-weight: 600; border-right: 1px solid #4b5563;">${getTranslatedText('quantity')}</th>
+              <th style="text-align: right; padding: 8px; font-weight: 600; border-right: 1px solid #4b5563;">${getTranslatedText('rate')}</th>
+              <th style="text-align: right; padding: 8px; font-weight: 600;">${getTranslatedText('amount')}</th>
             </tr>
           </thead>
           <tbody>
             ${lineItems.length > 0 ? lineItems.map((item, index) => `
               <tr style="border-bottom: 1px solid #e5e7eb; ${index % 2 === 0 ? 'background: #f9fafb;' : 'background: white;'}">
-                <td style="padding: 16px; border-right: 1px solid #e5e7eb;">${translateLineItemDescription(item.item_description, templateSettings.language)}</td>
-                <td style="text-align: center; padding: 16px; border-right: 1px solid #e5e7eb;">${item.quantity}</td>
-                <td style="text-align: right; padding: 16px; border-right: 1px solid #e5e7eb;">${formatCurrency(item.unit_price, currentCurrency)}</td>
-                <td style="text-align: right; padding: 16px; font-weight: 600;">${formatCurrency(item.quantity * item.unit_price * (1 - item.discount_rate), currentCurrency)}</td>
+                <td style="padding: 8px; border-right: 1px solid #e5e7eb;">${translateLineItemDescription(item.item_description, templateSettings.language)}</td>
+                <td style="text-align: center; padding: 8px; border-right: 1px solid #e5e7eb;">${item.quantity}</td>
+                <td style="text-align: right; padding: 8px; border-right: 1px solid #e5e7eb;">${formatCurrency(item.unit_price, currentCurrency)}</td>
+                <td style="text-align: right; padding: 8px; font-weight: 600;">${formatCurrency(item.quantity * item.unit_price * (1 - item.discount_rate), currentCurrency)}</td>
               </tr>
             `).join('') : `
               <tr style="border-bottom: 1px solid #e5e7eb; background: #f9fafb;">
-                <td style="padding: 16px; border-right: 1px solid #e5e7eb;">${translateLineItemDescription('Sample Service', templateSettings.language)}</td>
-                <td style="text-align: center; padding: 16px; border-right: 1px solid #e5e7eb;">1</td>
-                <td style="text-align: right; padding: 16px; border-right: 1px solid #e5e7eb;">${formatCurrency(750, currentCurrency)}</td>
-                <td style="text-align: right; padding: 16px; font-weight: 600;">${formatCurrency(750, currentCurrency)}</td>
+                <td style="padding: 8px; border-right: 1px solid #e5e7eb;">${translateLineItemDescription('Sample Service', templateSettings.language)}</td>
+                <td style="text-align: center; padding: 8px; border-right: 1px solid #e5e7eb;">1</td>
+                <td style="text-align: right; padding: 8px; border-right: 1px solid #e5e7eb;">${formatCurrency(750, currentCurrency)}</td>
+                <td style="text-align: right; padding: 8px; font-weight: 600;">${formatCurrency(750, currentCurrency)}</td>
               </tr>
             `}
           </tbody>
@@ -791,19 +791,19 @@ const generateInvoiceHTML = (data: InvoicePDFData): string => {
       </div>
 
       <!-- Totals -->
-      <div style="display: flex; justify-content: flex-end; margin: 32px 0;">
-        <div style="width: 300px; background: #f9fafb; padding: 20px; border-radius: 8px;">
-          <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 14px;">
+      <div style="display: flex; justify-content: flex-end; margin: 12px 0;">
+        <div style="width: 300px; background: #f9fafb; padding: 12px; border-radius: 8px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px;">
             <span>${getTranslatedText('subtotal')}</span>
             <span style="font-weight: 600;">${formatCurrency(subtotal || 750, currentCurrency)}</span>
           </div>
           ${templateSettings.vatEnabled ? `
-            <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 14px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px;">
               <span>${getTranslatedText('tax')} (${templateSettings.vatRate || 21}%):</span>
               <span style="font-weight: 600;">${formatCurrency(vatAmount, currentCurrency)}</span>
             </div>
           ` : ''}
-          <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 18px; border-top: 2px solid #374151; padding-top: 12px; color: #374151;">
+          <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 16px; border-top: 2px solid #374151; padding-top: 8px; color: #374151;">
             <span>${getTranslatedText('total')}</span>
             <span>${formatCurrency(total || 750, currentCurrency)}</span>
           </div>
@@ -811,20 +811,20 @@ const generateInvoiceHTML = (data: InvoicePDFData): string => {
       </div>
 
       <!-- Notes and Terms -->
-      <div style="margin-top: 40px; display: grid; grid-template-columns: 1fr 1fr; gap: 32px;">
+      <div style="margin-top: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
         <div>
-          <div style="font-weight: bold; color: #374151; margin-bottom: 12px; font-size: 16px;">${getTranslatedText('notes')}</div>
-          <div style="font-size: 14px; color: #4b5563; line-height: 1.6; background: #f9fafb; padding: 16px; border-radius: 8px;">
+          <div style="font-weight: bold; color: #374151; margin-bottom: 8px; font-size: 14px;">${getTranslatedText('notes')}</div>
+          <div style="font-size: 12px; color: #4b5563; line-height: 1.5; background: #f9fafb; padding: 10px; border-radius: 8px;">
             ${templateSettings.customTerms || formData?.notes || getDefaultTerms(templateSettings.language)}
           </div>
         </div>
         
         <div>
-          <div style="font-weight: bold; color: #374151; margin-bottom: 12px; font-size: 16px;">${getTranslatedText('bankDetails')}</div>
-          <div style="font-size: 14px; color: #4b5563; line-height: 1.6; background: #f9fafb; padding: 16px; border-radius: 8px;">
+          <div style="font-weight: bold; color: #374151; margin-bottom: 8px; font-size: 14px;">${getTranslatedText('bankDetails')}</div>
+          <div style="font-size: 12px; color: #4b5563; line-height: 1.5; background: #f9fafb; padding: 10px; border-radius: 8px;">
             ${selectedAccounts.map((account, idx) => `
-              <div${idx > 0 ? ' style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #e5e7eb;"' : ''}>
-                <div style="font-weight: 600; margin-bottom: 8px;">${account.name}:</div>
+              <div${idx > 0 ? ' style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #e5e7eb;"' : ''}>
+                <div style="font-weight: 600; margin-bottom: 4px;">${account.name}:</div>
                 <div><strong>${getTranslatedText('iban')}:</strong> ${account.iban}</div>
                 <div><strong>${getTranslatedText('bic')}:</strong> ${account.bic}</div>
                 ${account.blz ? `<div><strong>${getTranslatedText('blz')}:</strong> ${account.blz} <strong>${getTranslatedText('account')}:</strong> ${account.account}</div>` : ''}
