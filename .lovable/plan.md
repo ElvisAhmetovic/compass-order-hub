@@ -1,50 +1,22 @@
 
 
-## Stop Dashboard Refreshes on Tab Switch
+## Fix: Order Modal Closing on Tab Switch
 
 ### Root Cause
 
-The `refetchOnWindowFocus: false` and the `setUser` guard are working — they prevent React Query and context-level re-renders. But Supabase's built-in `onAuthStateChange` still fires `TOKEN_REFRESHED` events when returning to the tab (Supabase auto-refreshes tokens on visibility change). Our handler still calls `convertToAuthUser()` for every event, which makes 2 DB queries and logs "Auth state changed" / "Converting user to AuthUser" each time — even though the guard ultimately prevents a state update.
+This is **not** an auth/re-render issue. It's a **Radix UI Dialog focus management** issue. When you switch away from the tab and come back, the browser fires focus events. Radix Dialog detects that focus moved outside the dialog content and interprets it as a dismiss action, calling `onOpenChange(false)` — which closes the modal.
 
-Additionally, `DashboardCards` and `OrderTable` both depend on the `user` object reference in their `useEffect` dependency arrays. If `user` reference ever changes (even briefly), both components re-fetch all 690 orders.
+### Fix
 
-### Changes
-
-**1. `src/context/AuthContext.tsx`** — Skip `TOKEN_REFRESHED` and `INITIAL_SESSION` events entirely in `onAuthStateChange`. Only process `SIGNED_IN` and `SIGNED_OUT`. This eliminates the unnecessary `convertToAuthUser` calls (and their 2 DB queries) on every tab return:
+**`src/components/dashboard/OrderModal.tsx`** — Add `onFocusOutside` and `onPointerDownOutside` handlers to the `DialogContent` to prevent the dialog from closing due to tab-switch focus changes:
 
 ```tsx
-supabase.auth.onAuthStateChange((event, session) => {
-  console.log('Auth state changed:', event, session?.user?.email);
-  if (!mounted) return;
-
-  // Only react to actual sign-in/sign-out, not token refreshes
-  if (event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') return;
-
-  if (event === 'SIGNED_OUT') {
-    setUser(null);
-    setIsLoading(false);
-    return;
-  }
-
-  if (session?.user) {
-    setTimeout(async () => {
-      // ... existing convertToAuthUser + guard logic
-    }, 0);
-  }
-});
+<DialogContent 
+  className="max-w-6xl h-[90vh] flex flex-col p-0"
+  onFocusOutside={(e) => e.preventDefault()}
+  onPointerDownOutside={(e) => e.preventDefault()}
+>
 ```
 
-**2. `src/components/dashboard/DashboardCards.tsx`** — Replace `user` with `user?.id` in the useEffect dependency array (line 164). Object identity shouldn't trigger re-fetches, only user change should:
-
-```tsx
-}, [isAdmin, user?.id, isYearlyPackages, statusFilter]);
-```
-
-**3. `src/components/dashboard/OrderTable.tsx`** — Replace `user` with `user?.id` in the `fetchOrders` useCallback dependency (line 106):
-
-```tsx
-}, [statusFilter, isYearlyPackages, toast, user?.id, isAdmin]);
-```
-
-These three changes ensure: (a) token refreshes on tab return are completely ignored, (b) dashboard components only re-fetch when the actual user changes, not when the user object reference changes.
+This prevents the dialog from auto-dismissing when focus leaves due to tab switching, while still allowing the explicit close button (X) and the `onOpenChange` overlay click to work correctly. `onPointerDownOutside` is also prevented to avoid edge cases with overlay clicks triggering an unintended close during tab transitions.
 
