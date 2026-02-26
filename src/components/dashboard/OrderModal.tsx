@@ -124,9 +124,6 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
                 <Edit className="h-4 w-4" />
               </Button>
             )}
-            <Button variant="ghost" size="icon" onClick={handleModalClose}>
-              <X className="h-4 w-4" />
-            </Button>
           </div>
         </div>
 
