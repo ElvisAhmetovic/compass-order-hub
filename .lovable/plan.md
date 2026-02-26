@@ -1,30 +1,57 @@
 
 
-## Fix: Fit Invoice PDF on a Single Page
+## Restructure Invoice Layout: Move Company Details to Header, Replace with Client Info
 
-### Problem
-The PDF renders HTML into a canvas at a fixed 794px width with generous padding and spacing. When content grows (especially with both bank accounts), it exceeds the A4 page height and splits onto two pages.
+### Current layout (top to bottom)
+```text
+┌─────────────────────────────────────────────┐
+│ [Logo] AB MEDIA TEAM          RE NR: 784/25 │
+│         Weseler Str.73...                   │
+│         kontakt.abmedia@gmail.com           │
+├─────────────────────────────────────────────┤
+│ AB MEDIA TEAM                  Date: ...    │
+│ Ansprechpartner: Andreas Berger Due: ...    │
+│ Firmenreg.: 15748871       Balance Due: ... │
+│ UID: DE123418679                            │
+│ Weseler Str.73 47169 Duisburg               │
+│ kontakt.abmedia@gmail.com                   │
+├─────────────────────────────────────────────┤
+│ Rechnung an:                                │
+│ Client Name / email / address               │
+└─────────────────────────────────────────────┘
+```
 
-### Solution
-Make the PDF HTML template more compact so everything fits on one A4 page. The multi-page fallback stays as a safety net, but the goal is to prevent overflow in the first place.
+### New layout (what you want)
+```text
+┌─────────────────────────────────────────────┐
+│ [Logo] AB MEDIA TEAM          RE NR: 784/25 │
+│   Ansprechpartner: Andreas Berger           │
+│   Firmenreg.: 15748871                      │
+│   UID: DE123418679                          │
+│   Weseler Str.73 47169 Duisburg             │
+│   kontakt.abmedia@gmail.com                 │
+├─────────────────────────────────────────────┤
+│ Rechnung an:               Date: ...        │
+│ Client Name                Due: ...         │
+│ client@email.com           Balance Due: ... │
+│ Client Address                              │
+│ City, Country                               │
+└─────────────────────────────────────────────┘
+```
 
 ### Changes
 
-**`src/utils/invoicePdfGenerator.ts` — Compact the HTML template**
+**1. `src/components/invoices/InvoicePreview.tsx`**
 
-1. **Reduce container padding** from `32px` to `20px` (line 677)
-2. **Reduce header margin-bottom** from `40px` to `16px` and padding-bottom from `20px` to `12px` (line 679)
-3. **Reduce invoice number font-size** from `36px` to `28px` (line 705)
-4. **Reduce company details + invoice info gap** from `40px` to `16px`, margin-bottom from `40px` to `16px` (line 715)
-5. **Reduce Bill To margin-bottom** from `40px` to `16px`, padding from `16px` to `10px` (lines 744-746)
-6. **Reduce table margin** from `40px 0` to `16px 0`, cell padding from `16px` to `8px` (lines 763-790)
-7. **Reduce totals margin** from `32px 0` to `12px 0`, padding from `20px` to `12px` (lines 794-810)
-8. **Reduce Notes/Bank Details section margin-top** from `40px` to `16px`, gap from `32px` to `16px`, padding from `16px` to `10px` (lines 814-835)
-9. **Reduce font sizes** slightly where oversized (section headers from `16px` to `14px`, balance due from `20px` to `16px`)
+- **Header section (lines 533-542)**: Replace the short address/email snippet with the full company details block (contact person, registration number, UID, address, email) using translated labels.
+- **Company Details section (lines 555-584)**: Remove the left-side company info block. Replace it with the "Bill To" client info (currently at lines 586-607), keeping the right-side date/due/balance column as-is.
+- **Bill To section (lines 586-607)**: Remove this entire standalone section since it's now merged into the section above.
 
-These are purely spacing/size reductions in the off-screen HTML template used for PDF generation. The on-screen preview in `InvoicePreview.tsx` stays unchanged — it keeps its current spacious layout.
+**2. `src/utils/invoicePdfGenerator.ts`**
 
-### Technical detail
+- **Header section (lines 692-701)**: Same change -- replace address/email with full company details (contact person, registration, UID, address, email).
+- **Company Details section (lines 715-741)**: Replace left column with client "Bill To" info, keep right column (dates + balance).
+- **Bill To section (lines 743-760)**: Remove entirely.
 
-The container width stays at 794px (A4 at 96 DPI). The rendered canvas height will shrink by roughly 30-40%, comfortably fitting within the 1123px threshold (A4 height at 96 DPI). The multi-page logic remains as a fallback for invoices with many line items.
+This also saves vertical space in the PDF, helping everything fit on one page.
 
