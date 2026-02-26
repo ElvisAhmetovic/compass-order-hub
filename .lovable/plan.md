@@ -1,42 +1,30 @@
 
 
-## Diagnosis: PDF Content Gets Clipped to One Page
+## Fix: Fit Invoice PDF on a Single Page
 
-After reviewing the code, the logic for selecting "both" accounts is identical in `InvoicePreview.tsx` (line 114) and `invoicePdfGenerator.ts` (line 378) — both correctly check `templateSettings.selectedPaymentAccount === "both"` and render both account blocks.
+### Problem
+The PDF renders HTML into a canvas at a fixed 794px width with generous padding and spacing. When content grows (especially with both bank accounts), it exceeds the A4 page height and splits onto two pages.
 
-The issue is that **the PDF generator only creates a single A4 page** (lines 68-73 of `invoicePdfGenerator.ts`). When you select "both" accounts, the bank details section at the bottom of the invoice grows taller. Since the content is rendered as one image onto a single 297mm-tall page, anything that extends beyond that height gets clipped — and the bank details section is at the very bottom, so the second account block (and possibly even part of the first) gets cut off.
-
-The same function (`generateInvoicePDFBase64`, lines 114-124) used for "Send to Client" has the same single-page limitation.
+### Solution
+Make the PDF HTML template more compact so everything fits on one A4 page. The multi-page fallback stays as a safety net, but the goal is to prevent overflow in the first place.
 
 ### Changes
 
-**`src/utils/invoicePdfGenerator.ts`** — Add multi-page support to both `generateInvoicePDF` (download) and `generateInvoicePDFBase64` (send to client):
+**`src/utils/invoicePdfGenerator.ts` — Compact the HTML template**
 
-Replace the single `addImage` call with a loop that:
-1. Calculates total content height vs A4 page height (297mm)
-2. If content fits on one page, renders as before
-3. If content overflows, slices the canvas into page-sized chunks and calls `pdf.addPage()` for each additional page
+1. **Reduce container padding** from `32px` to `20px` (line 677)
+2. **Reduce header margin-bottom** from `40px` to `16px` and padding-bottom from `20px` to `12px` (line 679)
+3. **Reduce invoice number font-size** from `36px` to `28px` (line 705)
+4. **Reduce company details + invoice info gap** from `40px` to `16px`, margin-bottom from `40px` to `16px` (line 715)
+5. **Reduce Bill To margin-bottom** from `40px` to `16px`, padding from `16px` to `10px` (lines 744-746)
+6. **Reduce table margin** from `40px 0` to `16px 0`, cell padding from `16px` to `8px` (lines 763-790)
+7. **Reduce totals margin** from `32px 0` to `12px 0`, padding from `20px` to `12px` (lines 794-810)
+8. **Reduce Notes/Bank Details section margin-top** from `40px` to `16px`, gap from `32px` to `16px`, padding from `16px` to `10px` (lines 814-835)
+9. **Reduce font sizes** slightly where oversized (section headers from `16px` to `14px`, balance due from `20px` to `16px`)
 
-```typescript
-const pageHeight = 297; // A4 height in mm
-const imgWidth = 210;
-const imgHeight = (canvas.height * imgWidth) / canvas.width;
+These are purely spacing/size reductions in the off-screen HTML template used for PDF generation. The on-screen preview in `InvoicePreview.tsx` stays unchanged — it keeps its current spacious layout.
 
-if (imgHeight <= pageHeight) {
-  pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
-} else {
-  let heightLeft = imgHeight;
-  let position = 0;
-  pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-  heightLeft -= pageHeight;
-  while (heightLeft > 0) {
-    position -= pageHeight;
-    pdf.addPage();
-    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-    heightLeft -= pageHeight;
-  }
-}
-```
+### Technical detail
 
-This fix applies to both the download and send-to-client flows, ensuring invoices with "both" accounts (or many line items) render completely across multiple pages.
+The container width stays at 794px (A4 at 96 DPI). The rendered canvas height will shrink by roughly 30-40%, comfortably fitting within the 1123px threshold (A4 height at 96 DPI). The multi-page logic remains as a fallback for invoices with many line items.
 
