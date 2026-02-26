@@ -1,57 +1,51 @@
 
 
-## Restructure Invoice Layout: Move Company Details to Header, Replace with Client Info
+## Fix: Page Becomes Unresponsive After Switching Tabs
 
-### Current layout (top to bottom)
-```text
-┌─────────────────────────────────────────────┐
-│ [Logo] AB MEDIA TEAM          RE NR: 784/25 │
-│         Weseler Str.73...                   │
-│         kontakt.abmedia@gmail.com           │
-├─────────────────────────────────────────────┤
-│ AB MEDIA TEAM                  Date: ...    │
-│ Ansprechpartner: Andreas Berger Due: ...    │
-│ Firmenreg.: 15748871       Balance Due: ... │
-│ UID: DE123418679                            │
-│ Weseler Str.73 47169 Duisburg               │
-│ kontakt.abmedia@gmail.com                   │
-├─────────────────────────────────────────────┤
-│ Rechnung an:                                │
-│ Client Name / email / address               │
-└─────────────────────────────────────────────┘
+### Root Cause
+
+This is a known Radix UI `TooltipProvider` bug ([radix-ui/primitives#3299](https://github.com/radix-ui/primitives/issues/3299)). When a tooltip is open (or the provider is tracking pointer movement between triggers) and you switch tabs, the `pointerLeave` event never fires. The provider's internal `isPointerInTransitRef` gets stuck in a "transit" state, creating an invisible polygon overlay that intercepts all pointer events across the entire page.
+
+The clicks still register at the DOM level (which is why you see the "User interaction detected" logs), but the Radix transit area swallows them before they reach React components.
+
+### Fix
+
+**`src/App.tsx`** — Add `delayDuration` and `skipDelayDuration={0}` to `TooltipProvider` to reduce the stuck-state window:
+```tsx
+<TooltipProvider delayDuration={300} skipDelayDuration={0}>
 ```
 
-### New layout (what you want)
-```text
-┌─────────────────────────────────────────────┐
-│ [Logo] AB MEDIA TEAM          RE NR: 784/25 │
-│   Ansprechpartner: Andreas Berger           │
-│   Firmenreg.: 15748871                      │
-│   UID: DE123418679                          │
-│   Weseler Str.73 47169 Duisburg             │
-│   kontakt.abmedia@gmail.com                 │
-├─────────────────────────────────────────────┤
-│ Rechnung an:               Date: ...        │
-│ Client Name                Due: ...         │
-│ client@email.com           Balance Due: ... │
-│ Client Address                              │
-│ City, Country                               │
-└─────────────────────────────────────────────┘
+**`src/components/layout/GlobalNotifications.tsx`** — Add a `visibilitychange` + `blur` handler that dispatches a synthetic `pointerdown` on the document body when the user returns to the tab, forcing Radix to clear its stuck transit state:
+```tsx
+useEffect(() => {
+  const resetRadixState = () => {
+    document.body.dispatchEvent(
+      new PointerEvent('pointerdown', { bubbles: true })
+    );
+    document.body.dispatchEvent(
+      new PointerEvent('pointerup', { bubbles: true })
+    );
+  };
+
+  const handleVisibility = () => {
+    if (document.visibilityState === 'visible') {
+      resetRadixState();
+    }
+  };
+
+  const handleBlur = () => resetRadixState();
+
+  document.addEventListener('visibilitychange', handleVisibility);
+  window.addEventListener('blur', handleBlur);
+  window.addEventListener('focus', resetRadixState);
+
+  return () => {
+    document.removeEventListener('visibilitychange', handleVisibility);
+    window.removeEventListener('blur', handleBlur);
+    window.removeEventListener('focus', resetRadixState);
+  };
+}, []);
 ```
 
-### Changes
-
-**1. `src/components/invoices/InvoicePreview.tsx`**
-
-- **Header section (lines 533-542)**: Replace the short address/email snippet with the full company details block (contact person, registration number, UID, address, email) using translated labels.
-- **Company Details section (lines 555-584)**: Remove the left-side company info block. Replace it with the "Bill To" client info (currently at lines 586-607), keeping the right-side date/due/balance column as-is.
-- **Bill To section (lines 586-607)**: Remove this entire standalone section since it's now merged into the section above.
-
-**2. `src/utils/invoicePdfGenerator.ts`**
-
-- **Header section (lines 692-701)**: Same change -- replace address/email with full company details (contact person, registration, UID, address, email).
-- **Company Details section (lines 715-741)**: Replace left column with client "Bill To" info, keep right column (dates + balance).
-- **Bill To section (lines 743-760)**: Remove entirely.
-
-This also saves vertical space in the PDF, helping everything fit on one page.
+These two changes together ensure that any stuck Radix internal pointer-tracking state gets cleared when the user switches away and returns.
 
