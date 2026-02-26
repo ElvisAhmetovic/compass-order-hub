@@ -1,4 +1,5 @@
 
+import { useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "./context/AuthContext";
@@ -70,10 +71,31 @@ const queryClient = new QueryClient({
 });
 
 function App() {
+  useEffect(() => {
+    const resetPointerState = () => {
+      document.body.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+      document.body.dispatchEvent(new PointerEvent('pointerup', { bubbles: true }));
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        resetPointerState();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', resetPointerState);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', resetPointerState);
+    };
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-        <TooltipProvider>
+        <TooltipProvider skipDelayDuration={0} delayDuration={300}>
           <AuthProvider>
             <Router>
               <NavigationProgress />
