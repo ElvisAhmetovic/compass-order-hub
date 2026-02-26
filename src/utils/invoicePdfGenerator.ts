@@ -693,9 +693,11 @@ const generateInvoiceHTML = (data: InvoicePDFData): string => {
             <h1 style="font-size: 22px; font-weight: bold; color: #1f2937; margin: 0; margin-bottom: 4px;">
               ${companyInfo.name}
             </h1>
-            <div style="font-size: 11px; color: #6b7280;">
-              ${companyInfo.street}<br>
-              ${companyInfo.postal} ${companyInfo.city}<br>
+            <div style="font-size: 11px; color: #6b7280; line-height: 1.5;">
+              ${companyInfo.contactPerson ? `${getTranslatedText('contactPerson')} ${companyInfo.contactPerson}<br>` : ''}
+              ${getTranslatedText('companyRegistrationNumber')} ${companyInfo.registrationNumber}<br>
+              ${getTranslatedText('uidNumber')} ${companyInfo.vatId}<br>
+              ${companyInfo.street} ${companyInfo.postal} ${companyInfo.city}<br>
               ${companyInfo.email}
             </div>
           </div>
@@ -711,16 +713,23 @@ const generateInvoiceHTML = (data: InvoicePDFData): string => {
         </div>
       </div>
 
-      <!-- Company Details and Invoice Info -->
+      <!-- Client Info and Invoice Info -->
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
         <div>
-          <div style="font-size: 13px; color: #374151; line-height: 1.5;">
-            <div style="font-weight: bold; margin-bottom: 4px;">${companyInfo.name}</div>
-            ${companyInfo.contactPerson ? `<div>${getTranslatedText('contactPerson')} ${companyInfo.contactPerson}</div>` : ''}
-            <div>${getTranslatedText('companyRegistrationNumber')} ${companyInfo.registrationNumber}</div>
-            <div>${getTranslatedText('uidNumber')} ${companyInfo.vatId}</div>
-            <div>${companyInfo.street} ${companyInfo.postal} ${companyInfo.city}</div>
-            <div>${companyInfo.email}</div>
+          <div style="font-weight: bold; color: #374151; margin-bottom: 8px; font-size: 14px;">${getTranslatedText('billTo')}</div>
+          <div style="font-size: 13px; color: #374151; line-height: 1.5; background: #f9fafb; padding: 10px; border-radius: 8px;">
+            ${client ? `
+              <div style="font-weight: bold; margin-bottom: 2px;">${client.name}</div>
+              <div>${client.email}</div>
+              ${client.address ? `<div>${client.address}</div>` : ''}
+              ${client.city ? `<div>${client.zip_code} ${client.city}</div>` : ''}
+              ${client.country ? `<div>${client.country}</div>` : ''}
+            ` : `
+              <div style="font-weight: bold;">Client Name</div>
+              <div>client@email.com</div>
+              <div>Client Address</div>
+              <div>City, Country</div>
+            `}
           </div>
         </div>
         
@@ -737,25 +746,6 @@ const generateInvoiceHTML = (data: InvoicePDFData): string => {
             <span>${getTranslatedText('balanceDue')}</span>
             <span>${formatCurrency(total || 750, currentCurrency)}</span>
           </div>
-        </div>
-      </div>
-
-      <!-- Bill To -->
-      <div style="margin-bottom: 16px;">
-        <div style="font-weight: bold; color: #374151; margin-bottom: 8px; font-size: 14px;">${getTranslatedText('billTo')}</div>
-        <div style="font-size: 13px; color: #374151; line-height: 1.5; background: #f9fafb; padding: 10px; border-radius: 8px;">
-          ${client ? `
-            <div style="font-weight: bold; margin-bottom: 2px;">${client.name}</div>
-            <div>${client.email}</div>
-            ${client.address ? `<div>${client.address}</div>` : ''}
-            ${client.city ? `<div>${client.zip_code} ${client.city}</div>` : ''}
-            ${client.country ? `<div>${client.country}</div>` : ''}
-          ` : `
-            <div style="font-weight: bold;">Client Name</div>
-            <div>client@email.com</div>
-            <div>Client Address</div>
-            <div>City, Country</div>
-          `}
         </div>
       </div>
 

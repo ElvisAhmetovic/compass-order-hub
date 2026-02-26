@@ -535,8 +535,12 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
                   {companyInfo.name}
                 </h1>
                 <div className="text-xs text-gray-500 leading-relaxed">
-                  <div>{companyInfo.street}</div>
-                  <div>{companyInfo.postal} {companyInfo.city}</div>
+                  {companyInfo.contactPerson && (
+                    <div>{getTranslatedText('contactPerson')} {companyInfo.contactPerson}</div>
+                  )}
+                  <div>{getTranslatedText('companyRegistrationNumber')} {companyInfo.registrationNumber}</div>
+                  <div>{getTranslatedText('uidNumber')} {companyInfo.vatId}</div>
+                  <div>{companyInfo.street} {companyInfo.postal} {companyInfo.city}</div>
                   <div>{companyInfo.email}</div>
                 </div>
               </div>
@@ -552,18 +556,27 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
             </div>
           </div>
 
-          {/* Company Details and Invoice Info */}
+          {/* Client Info and Invoice Info */}
           <div className="grid grid-cols-2 gap-10">
             <div>
-              <div className="text-sm text-gray-700 space-y-1 leading-relaxed">
-                <div className="font-bold mb-2">{companyInfo.name}</div>
-                {companyInfo.contactPerson && (
-                  <div>{getTranslatedText('contactPerson')} {companyInfo.contactPerson}</div>
+              <div className="font-bold text-gray-700 mb-3 text-lg">{getTranslatedText('billTo')}</div>
+              <div className="text-sm text-gray-700 bg-gray-50 p-4 rounded-lg leading-relaxed">
+                {client ? (
+                  <>
+                    <div className="font-bold mb-1">{client.name}</div>
+                    <div>{client.email}</div>
+                    {client.address && <div>{client.address}</div>}
+                    {client.city && <div>{client.zip_code} {client.city}</div>}
+                    {client.country && <div>{client.country}</div>}
+                  </>
+                ) : (
+                  <>
+                    <div className="font-bold">Client Name</div>
+                    <div>client@email.com</div>
+                    <div>Client Address</div>
+                    <div>City, Country</div>
+                  </>
                 )}
-                <div>{getTranslatedText('companyRegistrationNumber')} {companyInfo.registrationNumber}</div>
-                <div>{getTranslatedText('uidNumber')} {companyInfo.vatId}</div>
-                <div>{companyInfo.street} {companyInfo.postal} {companyInfo.city}</div>
-                <div>{companyInfo.email}</div>
               </div>
             </div>
             
@@ -580,29 +593,6 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
                 <span>{getTranslatedText('balanceDue')}</span>
                 <span>{formatCurrency(total, currentCurrency)}</span>
               </div>
-            </div>
-          </div>
-
-          {/* Bill To */}
-          <div>
-            <div className="font-bold text-gray-700 mb-3 text-lg">{getTranslatedText('billTo')}</div>
-            <div className="text-sm text-gray-700 bg-gray-50 p-4 rounded-lg leading-relaxed">
-              {client ? (
-                <>
-                  <div className="font-bold mb-1">{client.name}</div>
-                  <div>{client.email}</div>
-                  {client.address && <div>{client.address}</div>}
-                  {client.city && <div>{client.zip_code} {client.city}</div>}
-                  {client.country && <div>{client.country}</div>}
-                </>
-              ) : (
-                <>
-                  <div className="font-bold">Client Name</div>
-                  <div>client@email.com</div>
-                  <div>Client Address</div>
-                  <div>City, Country</div>
-                </>
-              )}
             </div>
           </div>
 
