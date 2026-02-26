@@ -1,38 +1,42 @@
 
 
-## Rename "Terms/Bedingungen" to "Bank Details/Bankverbindung" + Option to Show One or Both Payment Accounts
+## Diagnosis: PDF Content Gets Clipped to One Page
 
-### What's changing
+After reviewing the code, the logic for selecting "both" accounts is identical in `InvoicePreview.tsx` (line 114) and `invoicePdfGenerator.ts` (line 378) — both correctly check `templateSettings.selectedPaymentAccount === "both"` and render both account blocks.
 
-Two things:
+The issue is that **the PDF generator only creates a single A4 page** (lines 68-73 of `invoicePdfGenerator.ts`). When you select "both" accounts, the bank details section at the bottom of the invoice grows taller. Since the content is rendered as one image onto a single 297mm-tall page, anything that extends beyond that height gets clipped — and the bank details section is at the very bottom, so the second account block (and possibly even part of the first) gets cut off.
 
-1. **Rename the label** — The section in the invoice PDF/preview that currently says "Terms:" / "Bedingungen:" / "Voorwaarden:" etc. actually shows bank account details, not terms. It should say "Bank Details:" / "Bankverbindung:" / "Bankgegevens:" etc. in each language.
-
-2. **Show one or both payment accounts** — Currently you can only pick Belgium OR Germany. A new option will let you choose "Both" so both accounts appear together in the PDF.
+The same function (`generateInvoicePDFBase64`, lines 114-124) used for "Send to Client" has the same single-page limitation.
 
 ### Changes
 
-**1. `src/components/invoices/InvoicePreview.tsx`**
-- Rename the `terms` key in all 10 language translation blocks to use "Bank Details" / "Bankverbindung" / "Bankgegevens" / "Coordonnées bancaires" / "Datos bancarios" / "Bankoplysninger" / "Bankdetaljer" / "Bankovní údaje" / "Dane bankowe" / "Bankuppgifter"
-- Update the payment account rendering logic (lines 664-673) to support `selectedPaymentAccount === "both"` — when "both", render both Belgium and Germany accounts stacked
-- Update the `selectedAccount` logic (lines 94-109) to handle the "both" case by returning an array or rendering both inline
+**`src/utils/invoicePdfGenerator.ts`** — Add multi-page support to both `generateInvoicePDF` (download) and `generateInvoicePDFBase64` (send to client):
 
-**2. `src/utils/invoicePdfGenerator.ts`**
-- Same `terms` label rename in all 10 language blocks (lines 383-570)
-- Same "both accounts" rendering logic in the HTML template (lines 784-791)
-- Update `selectedAccount` logic (lines 358-373) to handle "both"
+Replace the single `addImage` call with a loop that:
+1. Calculates total content height vs A4 page height (297mm)
+2. If content fits on one page, renders as before
+3. If content overflows, slices the canvas into page-sized chunks and calls `pdf.addPage()` for each additional page
 
-**3. `src/components/invoices/constants.ts`**
-- Add a third entry to `PAYMENT_ACCOUNTS` array or add a synthetic "both" option, OR handle "both" purely in the UI selector
+```typescript
+const pageHeight = 297; // A4 height in mm
+const imgWidth = 210;
+const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-**4. `src/components/invoices/components/PaymentInformation.tsx`**
-- Add a "Both Accounts" option in the payment account dropdown (alongside Belgium and Germany)
-- When "both" is selected, show both accounts' details in the preview panel
+if (imgHeight <= pageHeight) {
+  pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+} else {
+  let heightLeft = imgHeight;
+  let position = 0;
+  pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+  heightLeft -= pageHeight;
+  while (heightLeft > 0) {
+    position -= pageHeight;
+    pdf.addPage();
+    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+    heightLeft -= pageHeight;
+  }
+}
+```
 
-**5. `src/components/invoices/hooks/useInvoiceSettings.ts`**
-- No structural changes needed; `selectedPaymentAccount` already accepts any string, so "both" works out of the box
-
-### Technical detail
-
-The "both" option will be rendered as a synthetic entry in the `<Select>` dropdown. In the preview and PDF, when `selectedPaymentAccount === "both"`, both account blocks (Belgium IBAN + Germany IBAN) will be rendered vertically stacked under the "Bankverbindung" heading, each with its own translated account name as a sub-header.
+This fix applies to both the download and send-to-client flows, ensuring invoices with "both" accounts (or many line items) render completely across multiple pages.
 
