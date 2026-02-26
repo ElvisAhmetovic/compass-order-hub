@@ -1,62 +1,38 @@
 
 
-## Fix: App Becomes Unresponsive After ~20 Minutes Idle in Background Tab
+## Rename "Terms/Bedingungen" to "Bank Details/Bankverbindung" + Option to Show One or Both Payment Accounts
 
-### What's happening
+### What's changing
 
-When a browser tab is in the background for an extended period, two things break:
+Two things:
 
-1. **Supabase Realtime channels disconnect** — The WebSocket connections used for real-time notifications, support badges, and ticket counts silently drop. When the user returns, clicks that depend on fresh data or realtime subscriptions fail.
-2. **React Query stale data** — The QueryClient has no `refetchOnWindowFocus` configuration, so cached data stays stale and queries don't re-run when the tab regains focus.
-3. **Auth token may expire silently** — While `autoRefreshToken` is enabled, the refresh timer can be suspended in background tabs, causing the next Supabase request to fail with an expired token.
+1. **Rename the label** — The section in the invoice PDF/preview that currently says "Terms:" / "Bedingungen:" / "Voorwaarden:" etc. actually shows bank account details, not terms. It should say "Bank Details:" / "Bankverbindung:" / "Bankgegevens:" etc. in each language.
+
+2. **Show one or both payment accounts** — Currently you can only pick Belgium OR Germany. A new option will let you choose "Both" so both accounts appear together in the PDF.
 
 ### Changes
 
-**1. `src/App.tsx`** — Configure the QueryClient with sensible defaults:
-- `refetchOnWindowFocus: true` (actually already the default, but we should set `staleTime` to something reasonable)
-- Keep queries fresh so they refetch when the user returns to the tab
+**1. `src/components/invoices/InvoicePreview.tsx`**
+- Rename the `terms` key in all 10 language translation blocks to use "Bank Details" / "Bankverbindung" / "Bankgegevens" / "Coordonnées bancaires" / "Datos bancarios" / "Bankoplysninger" / "Bankdetaljer" / "Bankovní údaje" / "Dane bankowe" / "Bankuppgifter"
+- Update the payment account rendering logic (lines 664-673) to support `selectedPaymentAccount === "both"` — when "both", render both Belgium and Germany accounts stacked
+- Update the `selectedAccount` logic (lines 94-109) to handle the "both" case by returning an array or rendering both inline
 
-**2. `src/context/AuthContext.tsx`** — Add a `visibilitychange` event listener:
-- When the tab becomes visible again, call `supabase.auth.getSession()` to force a token refresh
-- If the session is still valid, the app continues seamlessly; if not, the user gets redirected to login
-- This ensures the auth token is always fresh when the user returns
+**2. `src/utils/invoicePdfGenerator.ts`**
+- Same `terms` label rename in all 10 language blocks (lines 383-570)
+- Same "both accounts" rendering logic in the HTML template (lines 784-791)
+- Update `selectedAccount` logic (lines 358-373) to handle "both"
 
-**3. `src/components/layout/RealtimeRefresh.tsx`** (new component) — Add a global component that:
-- Listens for the `visibilitychange` event
-- When the document becomes visible after being hidden, removes and re-subscribes all Supabase realtime channels
-- This is a lightweight approach — it just triggers a global event that individual components can listen to for reconnection
+**3. `src/components/invoices/constants.ts`**
+- Add a third entry to `PAYMENT_ACCOUNTS` array or add a synthetic "both" option, OR handle "both" purely in the UI selector
 
-Actually, a simpler and more robust approach: just add a single visibility handler in `AuthContext` that refreshes the session, and configure QueryClient to refetch on window focus. The realtime channels in the Sidebar already re-subscribe on mount, so triggering a small state update will handle that.
+**4. `src/components/invoices/components/PaymentInformation.tsx`**
+- Add a "Both Accounts" option in the payment account dropdown (alongside Belgium and Germany)
+- When "both" is selected, show both accounts' details in the preview panel
 
-### Final plan (3 changes):
+**5. `src/components/invoices/hooks/useInvoiceSettings.ts`**
+- No structural changes needed; `selectedPaymentAccount` already accepts any string, so "both" works out of the box
 
-**1. `src/App.tsx`** (line 63) — Update QueryClient config:
-```typescript
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      refetchOnWindowFocus: true,
-      staleTime: 1000 * 60 * 5, // 5 minutes
-    },
-  },
-});
-```
+### Technical detail
 
-**2. `src/context/AuthContext.tsx`** — Add a `visibilitychange` listener inside the existing `useEffect` (around line 120) that refreshes the Supabase session when the tab regains focus after being hidden. This forces a token refresh and ensures all subsequent API calls work:
-```typescript
-const handleVisibilityChange = async () => {
-  if (document.visibilityState === 'visible') {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session?.user) {
-      const authUser = await convertToAuthUser(session.user);
-      setUser(authUser);
-    }
-  }
-};
-document.addEventListener('visibilitychange', handleVisibilityChange);
-```
-
-**3. `src/components/dashboard/Sidebar.tsx`** — Add a `visibilitychange` listener that re-fetches the unread support count and open ticket count when the tab becomes visible again, ensuring badges are up to date.
-
-These three changes together ensure that when your boss comes back to the tab after 20+ minutes, the auth token is refreshed, queries re-fetch, and sidebar badges update — no manual refresh needed.
+The "both" option will be rendered as a synthetic entry in the `<Select>` dropdown. In the preview and PDF, when `selectedPaymentAccount === "both"`, both account blocks (Belgium IBAN + Germany IBAN) will be rendered vertically stacked under the "Bankverbindung" heading, each with its own translated account name as a sub-header.
 
