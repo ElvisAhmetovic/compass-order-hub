@@ -17,20 +17,23 @@ export const PaymentInformation: React.FC<PaymentInformationProps> = ({
   language,
   onPaymentAccountChange
 }) => {
-  const selectedAccount = PAYMENT_ACCOUNTS.find(acc => acc.id === selectedPaymentAccount);
+  const allAccounts = PAYMENT_ACCOUNTS;
+  const selectedAccounts = selectedPaymentAccount === "both"
+    ? allAccounts
+    : allAccounts.filter(acc => acc.id === selectedPaymentAccount);
 
   const getPaymentTranslations = (language: string) => {
     const translations = {
-      en: { paymentAccount: "Payment Account", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Account", bank: "Bank" },
-      nl: { paymentAccount: "Betaalrekening", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Rekening", bank: "Bank" },
-      de: { paymentAccount: "Zahlungskonto", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Konto", bank: "Bank" },
-      fr: { paymentAccount: "Compte de paiement", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Compte", bank: "Banque" },
-      es: { paymentAccount: "Cuenta de pago", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Cuenta", bank: "Banco" },
-      da: { paymentAccount: "Betalingskonto", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Konto", bank: "Bank" },
-      no: { paymentAccount: "Betalingskonto", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Konto", bank: "Bank" },
-      cs: { paymentAccount: "Platební účet", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Účet", bank: "Banka" },
-      pl: { paymentAccount: "Konto płatnicze", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Konto", bank: "Bank" },
-      sv: { paymentAccount: "Betalningskonto", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Konto", bank: "Bank" }
+      en: { paymentAccount: "Payment Account", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Account", bank: "Bank", bothAccounts: "Both Accounts" },
+      nl: { paymentAccount: "Betaalrekening", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Rekening", bank: "Bank", bothAccounts: "Beide rekeningen" },
+      de: { paymentAccount: "Zahlungskonto", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Konto", bank: "Bank", bothAccounts: "Beide Konten" },
+      fr: { paymentAccount: "Compte de paiement", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Compte", bank: "Banque", bothAccounts: "Les deux comptes" },
+      es: { paymentAccount: "Cuenta de pago", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Cuenta", bank: "Banco", bothAccounts: "Ambas cuentas" },
+      da: { paymentAccount: "Betalingskonto", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Konto", bank: "Bank", bothAccounts: "Begge konti" },
+      no: { paymentAccount: "Betalingskonto", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Konto", bank: "Bank", bothAccounts: "Begge kontoer" },
+      cs: { paymentAccount: "Platební účet", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Účet", bank: "Banka", bothAccounts: "Oba účty" },
+      pl: { paymentAccount: "Konto płatnicze", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Konto", bank: "Bank", bothAccounts: "Oba konta" },
+      sv: { paymentAccount: "Betalningskonto", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Konto", bank: "Bank", bothAccounts: "Båda kontona" }
     };
     
     return translations[language] || translations.en;
@@ -59,35 +62,46 @@ export const PaymentInformation: React.FC<PaymentInformationProps> = ({
                   </div>
                 </SelectItem>
               ))}
+              <SelectItem value="both">
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline">🌍</Badge>
+                  {paymentLabels.bothAccounts}
+                </div>
+              </SelectItem>
             </SelectContent>
           </Select>
         </div>
 
-        {selectedAccount && (
-          <div className="p-4 bg-gray-50 rounded-lg space-y-2">
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <strong>{paymentLabels.iban}:</strong> {selectedAccount.iban}
+        {selectedAccounts.length > 0 && (
+          <div className="p-4 bg-muted rounded-lg space-y-2">
+            {selectedAccounts.map((account, idx) => (
+              <div key={account.id} className={idx > 0 ? "pt-3 mt-3 border-t border-border" : ""}>
+                <div className="font-semibold text-sm mb-2">{account.name}</div>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <strong>{paymentLabels.iban}:</strong> {account.iban}
+                  </div>
+                  <div>
+                    <strong>{paymentLabels.bic}:</strong> {account.bic}
+                  </div>
+                  {account.blz && (
+                    <div>
+                      <strong>{paymentLabels.blz}:</strong> {account.blz}
+                    </div>
+                  )}
+                  {account.account && (
+                    <div>
+                      <strong>{paymentLabels.account}:</strong> {account.account}
+                    </div>
+                  )}
+                  {account.bank && (
+                    <div className="col-span-2">
+                      <strong>{paymentLabels.bank}:</strong> {account.bank}
+                    </div>
+                  )}
+                </div>
               </div>
-              <div>
-                <strong>{paymentLabels.bic}:</strong> {selectedAccount.bic}
-              </div>
-              {selectedAccount.blz && (
-                <div>
-                  <strong>{paymentLabels.blz}:</strong> {selectedAccount.blz}
-                </div>
-              )}
-              {selectedAccount.account && (
-                <div>
-                  <strong>{paymentLabels.account}:</strong> {selectedAccount.account}
-                </div>
-              )}
-              {selectedAccount.bank && (
-                <div className="col-span-2">
-                  <strong>{paymentLabels.bank}:</strong> {selectedAccount.bank}
-                </div>
-              )}
-            </div>
+            ))}
           </div>
         )}
       </CardContent>

@@ -91,22 +91,31 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
     return translations[lang]?.[accountId] || translations.en[accountId];
   };
 
-  const selectedAccount = templateSettings.selectedPaymentAccount === "belgium" 
-    ? {
-        id: "belgium",
-        name: getAccountTranslations(templateSettings.language, "belgium"),
-        iban: "BE79967023897833",
-        bic: "TRWIBEB1XXX",
-        blz: "967",
-        account: "967023897833"
-      }
-    : {
-        id: "germany",
-        name: getAccountTranslations(templateSettings.language, "germany"),
-        iban: "DE91240703680071572200",
-        bic: "DEUTDE2HP22",
-        bank: "Postbank/DSL Ndl of Deutsche Bank"
-      };
+  const belgiumAccount = {
+    id: "belgium" as const,
+    name: getAccountTranslations(templateSettings.language, "belgium"),
+    iban: "BE79967023897833",
+    bic: "TRWIBEB1XXX",
+    blz: "967",
+    account: "967023897833",
+    bank: undefined as string | undefined
+  };
+
+  const germanyAccount = {
+    id: "germany" as const,
+    name: getAccountTranslations(templateSettings.language, "germany"),
+    iban: "DE91240703680071572200",
+    bic: "DEUTDE2HP22",
+    bank: "Postbank/DSL Ndl of Deutsche Bank",
+    blz: undefined as string | undefined,
+    account: undefined as string | undefined
+  };
+
+  const selectedAccounts = templateSettings.selectedPaymentAccount === "both"
+    ? [belgiumAccount, germanyAccount]
+    : templateSettings.selectedPaymentAccount === "belgium"
+      ? [belgiumAccount]
+      : [germanyAccount];
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-GB', {
@@ -268,7 +277,7 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
         tax: "Tax",
         total: "Total:",
         notes: "Notes:",
-        terms: "Terms:",
+        bankDetails: "Bank Details:",
         iban: "IBAN",
         bic: "BIC",
         blz: "BLZ",
@@ -291,7 +300,7 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
         tax: "BTW",
         total: "Totaal:",
         notes: "Opmerkingen:",
-        terms: "Voorwaarden:",
+        bankDetails: "Bankgegevens:",
         iban: "IBAN",
         bic: "BIC",
         blz: "BLZ",
@@ -314,7 +323,7 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
         tax: "MwSt",
         total: "Gesamt:",
         notes: "Notizen:",
-        terms: "Bedingungen:",
+        bankDetails: "Bankverbindung:",
         iban: "IBAN",
         bic: "BIC",
         blz: "BLZ",
@@ -337,7 +346,7 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
         tax: "TVA",
         total: "Total:",
         notes: "Notes:",
-        terms: "Conditions:",
+        bankDetails: "Coordonnées bancaires:",
         iban: "IBAN",
         bic: "BIC",
         blz: "BLZ",
@@ -360,7 +369,7 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
         tax: "IVA",
         total: "Total:",
         notes: "Notas:",
-        terms: "Términos:",
+        bankDetails: "Datos bancarios:",
         iban: "IBAN",
         bic: "BIC",
         blz: "BLZ",
@@ -383,7 +392,7 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
         tax: "Moms",
         total: "Total:",
         notes: "Noter:",
-        terms: "Vilkår:",
+        bankDetails: "Bankoplysninger:",
         iban: "IBAN",
         bic: "BIC",
         blz: "BLZ",
@@ -406,7 +415,7 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
         tax: "MVA",
         total: "Total:",
         notes: "Notater:",
-        terms: "Vilkår:",
+        bankDetails: "Bankdetaljer:",
         iban: "IBAN",
         bic: "BIC",
         blz: "BLZ",
@@ -429,7 +438,7 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
         tax: "DPH",
         total: "Celkem:",
         notes: "Poznámky:",
-        terms: "Podmínky:",
+        bankDetails: "Bankovní údaje:",
         iban: "IBAN",
         bic: "BIC",
         blz: "BLZ",
@@ -452,7 +461,7 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
         tax: "VAT",
         total: "Razem:",
         notes: "Uwagi:",
-        terms: "Warunki:",
+        bankDetails: "Dane bankowe:",
         iban: "IBAN",
         bic: "BIC",
         blz: "BLZ",
@@ -475,7 +484,7 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
         tax: "Moms",
         total: "Totalt:",
         notes: "Anteckningar:",
-        terms: "Villkor:",
+        bankDetails: "Bankuppgifter:",
         iban: "IBAN",
         bic: "BIC",
         blz: "BLZ",
@@ -662,13 +671,17 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
             </div>
             
             <div>
-              <div className="font-bold text-gray-700 mb-3 text-lg">{getTranslatedText('terms')}</div>
+              <div className="font-bold text-gray-700 mb-3 text-lg">{getTranslatedText('bankDetails')}</div>
               <div className="text-sm text-gray-600 bg-gray-50 p-4 rounded-lg leading-relaxed">
-                <div className="font-semibold mb-2">{selectedAccount.name}:</div>
-                <div><strong>{getTranslatedText('iban')}:</strong> {selectedAccount.iban}</div>
-                <div><strong>{getTranslatedText('bic')}:</strong> {selectedAccount.bic}</div>
-                {selectedAccount.blz && <div><strong>{getTranslatedText('blz')}:</strong> {selectedAccount.blz} <strong>{getTranslatedText('account')}:</strong> {selectedAccount.account}</div>}
-                {selectedAccount.bank && <div><strong>{getTranslatedText('bank')}:</strong> {selectedAccount.bank}</div>}
+                {selectedAccounts.map((account, idx) => (
+                  <div key={account.id} className={idx > 0 ? "mt-3 pt-3 border-t border-gray-200" : ""}>
+                    <div className="font-semibold mb-2">{account.name}:</div>
+                    <div><strong>{getTranslatedText('iban')}:</strong> {account.iban}</div>
+                    <div><strong>{getTranslatedText('bic')}:</strong> {account.bic}</div>
+                    {account.blz && <div><strong>{getTranslatedText('blz')}:</strong> {account.blz} <strong>{getTranslatedText('account')}:</strong> {account.account}</div>}
+                    {account.bank && <div><strong>{getTranslatedText('bank')}:</strong> {account.bank}</div>}
+                  </div>
+                ))}
               </div>
             </div>
           </div>
