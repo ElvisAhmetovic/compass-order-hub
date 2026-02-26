@@ -161,7 +161,7 @@ export const DashboardCards = ({ isYearlyPackages = false, statusFilter }: Dashb
     return () => {
       window.removeEventListener('orderStatusChanged', handleOrderStatusChange);
     };
-  }, [isAdmin, user, isYearlyPackages, statusFilter]);
+  }, [isAdmin, user?.id, isYearlyPackages, statusFilter]);
 
   const getIcon = (status: OrderStatus) => {
     const iconProps = { className: "h-6 w-6" };

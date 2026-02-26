@@ -103,7 +103,7 @@ const OrderTable = ({
     } finally {
       setLoading(false);
     }
-  }, [statusFilter, isYearlyPackages, toast, user, isAdmin]);
+  }, [statusFilter, isYearlyPackages, toast, user?.id, isAdmin]);
 
   // Initial fetch and refresh trigger
   useEffect(() => {

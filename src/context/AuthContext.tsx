@@ -168,7 +168,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         console.log('Auth state changed:', event, session?.user?.email);
         if (!mounted) return;
         
-         if (session?.user) {
+        // Only react to actual sign-in/sign-out, not token refreshes
+        if (event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') return;
+
+        if (event === 'SIGNED_OUT') {
+          setUser(null);
+          setIsLoading(false);
+          return;
+        }
+
+        if (session?.user) {
            setTimeout(async () => {
              try {
                const authUser = await convertToAuthUser(session.user);
