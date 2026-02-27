@@ -1,59 +1,44 @@
 
 
-## Restructure "Upsell" into Categorized "Text" Library
+## Fix Modal Breaking on Tab Switch
 
-### Database Changes
+### Root Cause
 
-**New table: `upsell_categories`**
-- `id` (uuid, PK, default gen_random_uuid())
-- `name` (text, NOT NULL)
-- `created_by` (uuid, NOT NULL)
-- `created_at` (timestamptz, default now())
-- RLS: authenticated can SELECT, INSERT, DELETE
+The `resetPointerState` function in `src/App.tsx` (lines 76-78) dispatches synthetic `pointerdown` and `pointerup` events on `document.body` every time the browser tab regains focus. Even though dialogs have `onPointerDownOutside={(e) => e.preventDefault()}`, Radix Dialog's internal pointer tracking state gets corrupted by these synthetic events, making the UI unresponsive or causing modals to close/break.
 
-**Modify `upsells` table**: Add `category_id` (uuid, FK → upsell_categories.id ON DELETE CASCADE, nullable for backward compat)
+### Fix
 
-### Sidebar Change
+**`src/App.tsx`** -- Replace the synthetic pointer event approach with a CSS-based fix that addresses the same tooltip/pointer issue without interfering with Radix Dialog internals:
 
-**`src/components/dashboard/Sidebar.tsx`** — Rename label from `'Upsell'` to `'Text'` and update icon to `Type` (from lucide). Change href to `/text`.
+1. Remove the `resetPointerState` function and its `visibilitychange`/`focus` event listeners (lines 75-93)
+2. Instead, on visibility change, briefly toggle a CSS class on `document.documentElement` that sets `pointer-events: none` then immediately removes it. This forces the browser to re-evaluate pointer state without dispatching events that Radix intercepts:
 
-### Route Change
+```typescript
+useEffect(() => {
+  const handleVisibilityChange = () => {
+    if (document.visibilityState === 'visible') {
+      // Force browser to re-evaluate pointer state without
+      // synthetic events that break Radix Dialog internals
+      document.documentElement.style.pointerEvents = 'none';
+      requestAnimationFrame(() => {
+        document.documentElement.style.pointerEvents = '';
+      });
+    }
+  };
 
-**`src/App.tsx`** — Change `/upsell` route to `/text`, keep same component import (renamed file).
+  document.addEventListener('visibilitychange', handleVisibilityChange);
+  return () => {
+    document.removeEventListener('visibilitychange', handleVisibilityChange);
+  };
+}, []);
+```
 
-### Service Layer
+**`src/pages/Proposals.tsx`** -- Remove the `window.addEventListener('focus', handleFocus)` listener (line 79) that refetches all proposals on every tab switch, as it causes unnecessary re-renders. Keep only the `popstate` listener.
 
-**`src/services/upsellService.ts`** — Add:
-- `fetchCategories()` — SELECT from `upsell_categories`
-- `createCategory(name, userId)` — INSERT
-- `deleteCategory(id)` — DELETE (cascades to upsells + translations)
-- `fetchUpsellsByCategory(categoryId)` — SELECT from `upsells` WHERE `category_id = X`
-- `createUpsell` — updated to accept `categoryId` param
+### Files Changed
 
-### Page Rewrite
-
-**`src/pages/Upsell.tsx`** (rename to `src/pages/TextLibrary.tsx`):
-
-Two views controlled by state (`selectedCategoryId`):
-
-**Category List View** (when no category selected):
-- Header: "Text Library" with "+ Add Category" button (top-left)
-- Grid of category cards, each showing name + delete button (with AlertDialog confirmation)
-- Click card → sets `selectedCategoryId`
-
-**Category Detail View** (when category selected):
-- Back button → clears `selectedCategoryId`
-- Header: category name + "+ Add Text" button
-- Accordion list of upsell items (same as current: title/description, translate dropdown, copy, delete)
-- Translation caching logic preserved exactly as-is
-
-### Files to Create/Modify
-
-| File | Action |
+| File | Change |
 |------|--------|
-| Migration SQL | Create `upsell_categories`, add `category_id` to `upsells` |
-| `src/services/upsellService.ts` | Add category CRUD + update upsell CRUD |
-| `src/pages/Upsell.tsx` → `src/pages/TextLibrary.tsx` | Full rewrite with two-view layout |
-| `src/components/dashboard/Sidebar.tsx` | Rename to "Text", change href/icon |
-| `src/App.tsx` | Update route path and import |
+| `src/App.tsx` | Replace synthetic pointer events with CSS pointer-events toggle |
+| `src/pages/Proposals.tsx` | Remove focus-based refetch |
 
