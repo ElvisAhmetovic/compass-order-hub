@@ -1,27 +1,22 @@
 
 
-## Add Company Name, Phone & Invoice to Payment Reminder Cards
+## Fix Sidebar Dark Mode
 
-The `client_email_logs` table already stores `company_name` and `invoice_number`, but is missing `contact_phone`. The component doesn't display company name explicitly.
+The sidebar (`src/components/dashboard/Sidebar.tsx`) has hardcoded white/light colors that don't adapt to dark mode.
 
-### Changes
+### Changes to `src/components/dashboard/Sidebar.tsx`
 
-**1. Database migration** — Add `contact_phone TEXT` column to `client_email_logs`
+**Line 172** — Container div:
+- `bg-white border-r border-gray-200` → `bg-card border-r border-border`
 
-**2. `supabase/functions/send-client-payment-reminder/index.ts`** — Add `contact_phone: contactPhone || null` to the insert into `client_email_logs` (line ~396-409)
+**Line 187** — Empty state text:
+- `text-gray-500` → `text-muted-foreground`
 
-**3. `src/components/orders/PaymentRemindersSentTab.tsx`** — Add to the details grid:
-- Company name row (Building icon) — already in data, just not displayed
-- Phone number row (Phone icon) — from new `contact_phone` column
-- Invoice number is already shown but will remain as-is
+**Line 207** — Menu item default state:
+- `text-gray-700 hover:bg-gray-50 hover:text-gray-900` → `text-foreground/70 hover:bg-accent hover:text-foreground`
 
-Update the interface to include `contact_phone: string | null`.
+**Line 208** — Active menu item:
+- `bg-blue-50 text-blue-700 border-r-2 border-blue-700` → `bg-primary/10 text-primary border-r-2 border-primary`
 
-### Files Changed
-
-| File | Change |
-|------|--------|
-| Migration | Add `contact_phone` column to `client_email_logs` |
-| `supabase/functions/send-client-payment-reminder/index.ts` | Log `contact_phone` field |
-| `src/components/orders/PaymentRemindersSentTab.tsx` | Display company name, phone, invoice in each card |
+These changes replace hardcoded gray/blue/white values with semantic Tailwind tokens (`bg-card`, `border-border`, `text-foreground`, `bg-accent`, `bg-primary/10`, `text-primary`) that automatically adapt to both light and dark themes.
 
