@@ -19,6 +19,7 @@ import { SelectedInventoryItem } from "./InventoryItemsSelector";
 import ScheduleReminderModal from "@/components/orders/ScheduleReminderModal";
 import { PaymentReminderService, PaymentReminder } from "@/services/paymentReminderService";
 import ClientEmailHistory from "@/components/orders/ClientEmailHistory";
+import PaymentRemindersSentTab from "@/components/orders/PaymentRemindersSentTab";
 
 interface OrderModalProps {
   order: Order | null;
@@ -136,6 +137,10 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
               <TabsTrigger value="email-history" className="flex items-center gap-1">
                 <Mail className="h-4 w-4" />
                 Email History
+              </TabsTrigger>
+              <TabsTrigger value="payment-reminders" className="flex items-center gap-1">
+                <Bell className="h-4 w-4" />
+                Payment Reminders
               </TabsTrigger>
             </TabsList>
 
@@ -259,6 +264,12 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
             <TabsContent value="email-history" className="flex-1 overflow-hidden px-6 pb-6">
               <ScrollArea className="h-full">
                 <ClientEmailHistory orderId={order.id} />
+              </ScrollArea>
+            </TabsContent>
+
+            <TabsContent value="payment-reminders" className="flex-1 overflow-hidden px-6 pb-6">
+              <ScrollArea className="h-full">
+                <PaymentRemindersSentTab orderId={order.id} />
               </ScrollArea>
             </TabsContent>
           </Tabs>

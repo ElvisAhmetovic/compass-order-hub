@@ -403,6 +403,9 @@ const handler = async (req: Request): Promise<Response> => {
           currency: orderCurrency || "EUR",
           custom_message: customMessage || null,
           team_emails_sent: teamEmailsSent,
+          email_subject: emailSubject || finalSubject,
+          template_name: templateName || null,
+          invoice_number: invoiceNumber || null,
         });
 
       if (logError) {
