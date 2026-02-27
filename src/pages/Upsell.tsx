@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
 import { Plus, Copy, Trash2, Languages, Loader2 } from 'lucide-react';
 import { fetchUpsells, createUpsell, deleteUpsell, translateUpsellText } from '@/services/upsellService';
+import Sidebar from '@/components/dashboard/Sidebar';
 
 const LANGUAGES = [
   { value: 'English', label: 'English' },
@@ -82,7 +83,10 @@ const Upsell = () => {
   };
 
   return (
-    <Layout>
+    <div className="flex min-h-screen">
+      <Sidebar />
+      <div className="flex-1">
+        <Layout>
       <div className="p-6 max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold text-foreground">Upsell Scripts</h1>
@@ -155,6 +159,8 @@ const Upsell = () => {
         )}
       </div>
     </Layout>
+      </div>
+    </div>
   );
 };
 
