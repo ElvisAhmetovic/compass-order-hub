@@ -1,44 +1,44 @@
 
 
-## Fix Modal Breaking on Tab Switch
+## Add Invoice Attachment to Client Payment Reminder
 
-### Root Cause
+### Overview
+Add a searchable invoice selector to the "Send Client Reminder" modal. When an invoice is selected, its PDF is generated and sent as an attachment alongside the payment reminder email.
 
-The `resetPointerState` function in `src/App.tsx` (lines 76-78) dispatches synthetic `pointerdown` and `pointerup` events on `document.body` every time the browser tab regains focus. Even though dialogs have `onPointerDownOutside={(e) => e.preventDefault()}`, Radix Dialog's internal pointer tracking state gets corrupted by these synthetic events, making the UI unresponsive or causing modals to close/break.
+### Changes
 
-### Fix
+**1. New component: `src/components/orders/InvoiceAttachmentSelector.tsx`**
+- Searchable dropdown that fetches invoices from the `invoices` table (with client info)
+- Sorted by `created_at` descending, displays invoice number, client name, amount, date
+- Search filters by invoice number or client name
+- Shows selected invoice with a remove button
+- Uses Popover + Command (cmdk) pattern matching existing `InventoryAutocomplete`
 
-**`src/App.tsx`** -- Replace the synthetic pointer event approach with a CSS-based fix that addresses the same tooltip/pointer issue without interfering with Radix Dialog internals:
+**2. Update `src/components/orders/SendClientReminderModal.tsx`**
+- Add state for `selectedInvoice` and `invoicePdfBase64`
+- Import and render `InvoiceAttachmentSelector` between the custom message and the info note
+- When an invoice is selected, fetch its line items and template settings, then call `generateInvoicePDFBase64()` to generate the PDF in the background
+- Show a loading indicator while PDF generates
+- Pass `invoicePdfBase64` and `invoiceNumber` in the edge function request body
 
-1. Remove the `resetPointerState` function and its `visibilitychange`/`focus` event listeners (lines 75-93)
-2. Instead, on visibility change, briefly toggle a CSS class on `document.documentElement` that sets `pointer-events: none` then immediately removes it. This forces the browser to re-evaluate pointer state without dispatching events that Radix intercepts:
+**3. Update `supabase/functions/send-client-payment-reminder/index.ts`**
+- Add `invoicePdfBase64` and `invoiceNumber` to the request interface
+- When `invoicePdfBase64` is provided, add an `attachments` array to the Resend `emails.send()` call for the client email (same pattern as `send-invoice-pdf`)
+- Team notification email mentions that an invoice was attached
 
-```typescript
-useEffect(() => {
-  const handleVisibilityChange = () => {
-    if (document.visibilityState === 'visible') {
-      // Force browser to re-evaluate pointer state without
-      // synthetic events that break Radix Dialog internals
-      document.documentElement.style.pointerEvents = 'none';
-      requestAnimationFrame(() => {
-        document.documentElement.style.pointerEvents = '';
-      });
-    }
-  };
+### Technical Details
 
-  document.addEventListener('visibilitychange', handleVisibilityChange);
-  return () => {
-    document.removeEventListener('visibilitychange', handleVisibilityChange);
-  };
-}, []);
-```
-
-**`src/pages/Proposals.tsx`** -- Remove the `window.addEventListener('focus', handleFocus)` listener (line 79) that refetches all proposals on every tab switch, as it causes unnecessary re-renders. Keep only the `popstate` listener.
+- Reuse `generateInvoicePDFBase64` from `src/utils/invoicePdfGenerator.ts` (already used by `SendInvoicePDFDialog`)
+- Need to fetch invoice template settings via `useInvoiceSettings` or direct query
+- Invoice line items fetched via `InvoiceService` or direct Supabase query
+- PDF is generated client-side as raw base64 string (no data URI prefix) — same approach as existing invoice send feature
+- Resend attachment format: `{ filename: "invoice-XXX.pdf", content: base64Data }`
 
 ### Files Changed
 
 | File | Change |
 |------|--------|
-| `src/App.tsx` | Replace synthetic pointer events with CSS pointer-events toggle |
-| `src/pages/Proposals.tsx` | Remove focus-based refetch |
+| `src/components/orders/InvoiceAttachmentSelector.tsx` | New — searchable invoice picker |
+| `src/components/orders/SendClientReminderModal.tsx` | Add invoice selector + PDF generation |
+| `supabase/functions/send-client-payment-reminder/index.ts` | Accept and attach PDF to email |
 
