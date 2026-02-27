@@ -2090,6 +2090,38 @@ export type Database = {
           },
         ]
       }
+      upsell_translations: {
+        Row: {
+          created_at: string
+          id: string
+          language: string
+          translated_text: string
+          upsell_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          language: string
+          translated_text: string
+          upsell_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          language?: string
+          translated_text?: string
+          upsell_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "upsell_translations_upsell_id_fkey"
+            columns: ["upsell_id"]
+            isOneToOne: false
+            referencedRelation: "upsells"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       upsells: {
         Row: {
           created_at: string

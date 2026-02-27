@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
 import { Plus, Copy, Trash2, Languages, Loader2 } from 'lucide-react';
-import { fetchUpsells, createUpsell, deleteUpsell, translateUpsellText } from '@/services/upsellService';
+import { fetchUpsells, createUpsell, deleteUpsell, translateUpsellText, fetchCachedTranslation, saveCachedTranslation } from '@/services/upsellService';
 import Sidebar from '@/components/dashboard/Sidebar';
 
 const LANGUAGES = [
@@ -66,10 +66,19 @@ const Upsell = () => {
   });
 
   const handleTranslate = async (id: string, originalText: string, language: string) => {
-    setTranslations(prev => ({ ...prev, [id]: { text: '', lang: language, loading: true } }));
     try {
+      // Check cache first
+      const cached = await fetchCachedTranslation(id, language);
+      if (cached) {
+        setTranslations(prev => ({ ...prev, [id]: { text: cached, lang: language, loading: false } }));
+        return;
+      }
+      // Not cached — call AI
+      setTranslations(prev => ({ ...prev, [id]: { text: '', lang: language, loading: true } }));
       const translated = await translateUpsellText(originalText, language);
       setTranslations(prev => ({ ...prev, [id]: { text: translated, lang: language, loading: false } }));
+      // Save to cache
+      await saveCachedTranslation(id, language, translated);
     } catch (err: any) {
       toast({ title: 'Translation failed', description: err.message, variant: 'destructive' });
       setTranslations(prev => ({ ...prev, [id]: { text: '', lang: language, loading: false } }));
