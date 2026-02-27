@@ -70,17 +70,10 @@ const Proposals = () => {
     loadProposals();
   }, [loadProposals]);
 
-  // Reload proposals when returning to this page
+  // Reload proposals when returning to this page via browser navigation
   useEffect(() => {
-    const handleFocus = () => {
-      loadProposals();
-    };
-    
-    window.addEventListener('focus', handleFocus);
     window.addEventListener('popstate', loadProposals);
-    
     return () => {
-      window.removeEventListener('focus', handleFocus);
       window.removeEventListener('popstate', loadProposals);
     };
   }, [loadProposals]);
