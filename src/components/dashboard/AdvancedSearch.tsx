@@ -308,12 +308,14 @@ const AdvancedSearch = ({ onFiltersChange, currentFilters }: AdvancedSearchProps
                     <CalendarComponent
                       mode="single"
                       selected={filters.dateRange?.from}
-                      onSelect={(date) => 
+                      onSelect={(date) => {
+                        const current = filters.dateRange || { from: undefined, to: undefined };
                         handleFilterChange('dateRange', {
-                          ...filters.dateRange,
-                          from: date
-                        })
-                      }
+                          from: date,
+                          to: current.to
+                        });
+                      }}
+                      className="p-3 pointer-events-auto"
                     />
                   </PopoverContent>
                 </Popover>
@@ -332,12 +334,14 @@ const AdvancedSearch = ({ onFiltersChange, currentFilters }: AdvancedSearchProps
                     <CalendarComponent
                       mode="single"
                       selected={filters.dateRange?.to}
-                      onSelect={(date) => 
+                      onSelect={(date) => {
+                        const current = filters.dateRange || { from: undefined, to: undefined };
                         handleFilterChange('dateRange', {
-                          ...filters.dateRange,
+                          from: current.from,
                           to: date
-                        })
-                      }
+                        });
+                      }}
+                      className="p-3 pointer-events-auto"
                     />
                   </PopoverContent>
                 </Popover>
