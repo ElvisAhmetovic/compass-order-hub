@@ -1,40 +1,50 @@
 
 
-## Cache Upsell Translations in Database
+## Two Changes
 
-### Overview
-Create a `upsell_translations` table to store completed translations. When a user selects a language, check the cache first — only call the AI if that upsell+language combo hasn't been translated yet. All users share the same cache.
+### 1. Move "Upsell" in sidebar to right after "Work Hours"
 
-### Changes
+**`src/components/dashboard/Sidebar.tsx`** — Move the Upsell entry (currently line 139) to line 130, right after Work Hours (line 128) and before User Management (line 129).
 
-**1. Database — New `upsell_translations` table**
+New order:
+```
+Dashboard
+Work Hours
+Upsell          ← moved here
+User Management
+Support
+...
+```
 
-Migration to create:
-- `id` (uuid, PK)
-- `upsell_id` (uuid, FK → upsells.id ON DELETE CASCADE)
-- `language` (text)
-- `translated_text` (text)
-- `created_at` (timestamptz)
-- Unique constraint on `(upsell_id, language)`
-- RLS: authenticated users can SELECT and INSERT
+### 2. Fix modal-closes-on-tab-switch across all dialogs
 
-**2. Service — `src/services/upsellService.ts`**
+Add `onFocusOutside={(e) => e.preventDefault()} onPointerDownOutside={(e) => e.preventDefault()}` to every `DialogContent` that doesn't already have it. Files to update:
 
-Add two functions:
-- `fetchCachedTranslation(upsellId, language)` — queries `upsell_translations` for existing entry
-- `saveCachedTranslation(upsellId, language, translatedText)` — upserts into `upsell_translations`
+1. `src/components/dashboard/CreateOrderModal.tsx`
+2. `src/components/dashboard/CreateYearlyPackageModal.tsx`
+3. `src/components/dashboard/StatusChangeDialog.tsx`
+4. `src/components/dashboard/PaymentRemindersListModal.tsx`
+5. `src/components/tech-support/CreateTechSupportModal.tsx`
+6. `src/components/tech-support/CreateTechSupportWithImageModal.tsx`
+7. `src/components/clients/CreateClientDialog.tsx`
+8. `src/components/clients/EditClientDialog.tsx`
+9. `src/components/companies/CreateCompanyDialog.tsx`
+10. `src/components/companies/EditCompanyDialog.tsx`
+11. `src/components/user-management/AddUserModal.tsx`
+12. `src/components/user-management/EditUserModal.tsx`
+13. `src/components/user-management/AssignOrdersModal.tsx`
+14. `src/components/invoices/SendInvoiceDialog.tsx`
+15. `src/components/invoices/SendInvoicePDFDialog.tsx`
+16. `src/components/orders/SendClientReminderModal.tsx`
+17. `src/components/orders/ScheduleReminderModal.tsx`
+18. `src/components/inventory/ImportDialog.tsx`
 
-Update `translateUpsellText` or add a wrapper that:
-1. Checks cache first
-2. If found, returns cached text (no AI call)
-3. If not found, calls edge function, saves result, returns it
-
-**3. Page — `src/pages/Upsell.tsx`**
-
-Update `handleTranslate` to use the cache-aware flow:
-1. Query `upsell_translations` for `(upsell_id, language)`
-2. If cached → display immediately, no loading spinner needed
-3. If not cached → call AI, save to DB, then display
-
-No changes to the edge function itself.
+Same one-line pattern on each `<DialogContent>`:
+```tsx
+<DialogContent
+  onFocusOutside={(e) => e.preventDefault()}
+  onPointerDownOutside={(e) => e.preventDefault()}
+  // ... existing className and other props preserved
+>
+```
 
