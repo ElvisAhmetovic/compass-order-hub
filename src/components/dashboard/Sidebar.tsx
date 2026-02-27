@@ -126,6 +126,7 @@ const Sidebar = () => {
   const menuItems = [
     { href: '/dashboard', icon: Home, label: 'Dashboard', roles: ['admin', 'agent', 'user'] },
     { href: '/work-hours', icon: ClockIcon, label: 'Work Hours', roles: ['admin', 'agent'] },
+    { href: '/upsell', icon: TrendingUp, label: 'Upsell', roles: ['admin', 'agent'] },
     { href: '/user-management', icon: Users, label: 'User Management', roles: ['admin'] },
     { href: '/support', icon: HelpCircle, label: 'Support', roles: ['admin', 'agent', 'user'], showBadge: true },
     { href: '/customer-tickets', icon: Ticket, label: 'Customer Tickets', roles: ['admin', 'agent'], showTicketBadge: true },
@@ -136,7 +137,6 @@ const Sidebar = () => {
     { href: '/invoice-paid', icon: Receipt, label: 'Invoice Paid', roles: ['admin', 'agent'] },
     { href: '/invoices', icon: Receipt, label: 'Invoices', roles: ['admin', 'agent'] },
     { href: '/proposals', icon: FileText, label: 'Proposals', roles: ['admin', 'agent'] },
-    { href: '/upsell', icon: TrendingUp, label: 'Upsell', roles: ['admin', 'agent'] },
     { href: '/yearly-packages', icon: Package, label: 'Yearly Packages', roles: ['admin', 'agent'] },
     { href: '/facebook', icon: Facebook, label: 'Facebook', roles: ['admin', 'agent'] },
     { href: '/google-deletion', icon: UserX, label: 'Google Deletion', roles: ['admin', 'agent'] },

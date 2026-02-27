@@ -159,7 +159,7 @@ const CreateTechSupportModal = ({ isOpen, onClose, onSuccess }: CreateTechSuppor
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" onFocusOutside={(e) => e.preventDefault()} onPointerDownOutside={(e) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle>Create Tech Support Ticket</DialogTitle>
         </DialogHeader>
