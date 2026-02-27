@@ -1,37 +1,40 @@
 
 
-## Add Sidebar to Upsell Page
+## Cache Upsell Translations in Database
 
-The Upsell page currently only uses `<Layout>` without the `<Sidebar />`, unlike every other page in the app. The fix is to wrap the page content with the same `flex` layout pattern used everywhere else.
+### Overview
+Create a `upsell_translations` table to store completed translations. When a user selects a language, check the cache first — only call the AI if that upsell+language combo hasn't been translated yet. All users share the same cache.
 
-### Change
+### Changes
 
-**`src/pages/Upsell.tsx`** — Wrap the return with the sidebar layout pattern:
+**1. Database — New `upsell_translations` table**
 
-```tsx
-// Current:
-return (
-  <Layout>
-    <div className="p-6 max-w-4xl mx-auto">
-      ...
-    </div>
-  </Layout>
-);
+Migration to create:
+- `id` (uuid, PK)
+- `upsell_id` (uuid, FK → upsells.id ON DELETE CASCADE)
+- `language` (text)
+- `translated_text` (text)
+- `created_at` (timestamptz)
+- Unique constraint on `(upsell_id, language)`
+- RLS: authenticated users can SELECT and INSERT
 
-// Updated:
-return (
-  <div className="flex min-h-screen">
-    <Sidebar />
-    <div className="flex-1">
-      <Layout>
-        <div className="p-6 max-w-4xl mx-auto">
-          ...
-        </div>
-      </Layout>
-    </div>
-  </div>
-);
-```
+**2. Service — `src/services/upsellService.ts`**
 
-Add `import Sidebar from '@/components/dashboard/Sidebar';` to imports.
+Add two functions:
+- `fetchCachedTranslation(upsellId, language)` — queries `upsell_translations` for existing entry
+- `saveCachedTranslation(upsellId, language, translatedText)` — upserts into `upsell_translations`
+
+Update `translateUpsellText` or add a wrapper that:
+1. Checks cache first
+2. If found, returns cached text (no AI call)
+3. If not found, calls edge function, saves result, returns it
+
+**3. Page — `src/pages/Upsell.tsx`**
+
+Update `handleTranslate` to use the cache-aware flow:
+1. Query `upsell_translations` for `(upsell_id, language)`
+2. If cached → display immediately, no loading spinner needed
+3. If not cached → call AI, save to DB, then display
+
+No changes to the edge function itself.
 
