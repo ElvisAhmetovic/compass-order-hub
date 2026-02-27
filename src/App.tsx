@@ -73,23 +73,20 @@ const queryClient = new QueryClient({
 
 function App() {
   useEffect(() => {
-    const resetPointerState = () => {
-      document.body.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
-      document.body.dispatchEvent(new PointerEvent('pointerup', { bubbles: true }));
-    };
-
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        resetPointerState();
+        // Force browser to re-evaluate pointer state without
+        // synthetic events that break Radix Dialog internals
+        document.documentElement.style.pointerEvents = 'none';
+        requestAnimationFrame(() => {
+          document.documentElement.style.pointerEvents = '';
+        });
       }
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('focus', resetPointerState);
-
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('focus', resetPointerState);
     };
   }, []);
 
