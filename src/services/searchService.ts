@@ -142,21 +142,16 @@ export class SearchService {
 
     // Apply date range filter - improved to work with agent filter
     if (filters.dateRange?.from && filters.dateRange?.to) {
-      console.log('Applying date filter:', filters.dateRange);
+      const fromDate = new Date(filters.dateRange.from);
+      const toDate = new Date(filters.dateRange.to);
+      fromDate.setHours(0, 0, 0, 0);
+      toDate.setHours(23, 59, 59, 999);
+      
       result = result.filter(order => {
-        const orderDate = new Date(order.created_at || '');
-        const fromDate = new Date(filters.dateRange!.from);
-        const toDate = new Date(filters.dateRange!.to);
-        
-        // Set time to start/end of day for better comparison
-        fromDate.setHours(0, 0, 0, 0);
-        toDate.setHours(23, 59, 59, 999);
-        
-        const isInRange = orderDate >= fromDate && orderDate <= toDate;
-        console.log(`Order ${order.id}: date=${orderDate.toISOString()}, in range=${isInRange}`);
-        return isInRange;
+        if (!order.created_at) return false;
+        const orderDate = new Date(order.created_at);
+        return orderDate >= fromDate && orderDate <= toDate;
       });
-      console.log(`After date filter: ${result.length} orders`);
     }
 
     // Apply price range filter
