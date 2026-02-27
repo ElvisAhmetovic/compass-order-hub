@@ -43,7 +43,7 @@ import TechSupportDetail from "./pages/TechSupportDetail";
 import CustomerTickets from "./pages/CustomerTickets";
 import CustomerTicketDetail from "./pages/CustomerTicketDetail";
 import NotFound from "./pages/NotFound";
-import Upsell from "./pages/Upsell";
+import TextLibrary from "./pages/TextLibrary";
 import WorkHours from "./pages/WorkHours";
 import TicketSubmitted from "./pages/TicketSubmitted";
 import TicketLoading from "./pages/TicketLoading";
@@ -296,9 +296,9 @@ function App() {
                       <WorkHours />
                     </RequireAuth>
                   } />
-                  <Route path="/upsell" element={
+                  <Route path="/text" element={
                     <RequireAuth>
-                      <Upsell />
+                      <TextLibrary />
                     </RequireAuth>
                   } />
                   <Route path="/team-collaboration" element={
