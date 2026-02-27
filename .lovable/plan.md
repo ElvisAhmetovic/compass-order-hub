@@ -1,43 +1,27 @@
 
 
-## Add "Payment Reminders Sent" Tab to Order Modal
+## Add Company Name, Phone & Invoice to Payment Reminder Cards
 
-### Overview
-Add a new tab in the order detail modal that shows all payment reminder emails sent for that order, with details about date, message content, template used, and invoice attached.
+The `client_email_logs` table already stores `company_name` and `invoice_number`, but is missing `contact_phone`. The component doesn't display company name explicitly.
 
-### Database Change
-Add columns to `client_email_logs` to capture template and invoice info that's currently not stored:
-- `email_subject TEXT` — the subject line used
-- `template_name TEXT` — which template was used
-- `invoice_number TEXT` — which invoice was attached (if any)
+### Changes
 
-### Edge Function Update: `send-client-payment-reminder/index.ts`
-Update the insert into `client_email_logs` to include the three new fields (`email_subject`, `template_name`, `invoice_number`).
+**1. Database migration** — Add `contact_phone TEXT` column to `client_email_logs`
 
-### New Component: `src/components/orders/PaymentRemindersSentTab.tsx`
-- Fetch from `client_email_logs` filtered by `order_id`, ordered by `created_at` desc
-- Real-time subscription for new inserts
-- Each entry shows:
-  - Date/time sent (formatted) + relative time
-  - Sent by (name)
-  - Sent to (email)
-  - Amount due
-  - Email subject line
-  - Template name used
-  - Invoice number attached (if any), shown with 📎 icon
-  - Custom message (expandable/collapsible if present)
-- Empty state when no reminders sent
+**2. `supabase/functions/send-client-payment-reminder/index.ts`** — Add `contact_phone: contactPhone || null` to the insert into `client_email_logs` (line ~396-409)
 
-### Update: `src/components/dashboard/OrderModal.tsx`
-- Import and add a new tab "Payment Reminders" with a `Bell` icon after "Email History"
-- Render `PaymentRemindersSentTab` with `orderId` prop
+**3. `src/components/orders/PaymentRemindersSentTab.tsx`** — Add to the details grid:
+- Company name row (Building icon) — already in data, just not displayed
+- Phone number row (Phone icon) — from new `contact_phone` column
+- Invoice number is already shown but will remain as-is
+
+Update the interface to include `contact_phone: string | null`.
 
 ### Files Changed
 
 | File | Change |
 |------|--------|
-| Migration | Add `email_subject`, `template_name`, `invoice_number` columns to `client_email_logs` |
-| `supabase/functions/send-client-payment-reminder/index.ts` | Log new fields on insert |
-| `src/components/orders/PaymentRemindersSentTab.tsx` | New component — list of sent reminders |
-| `src/components/dashboard/OrderModal.tsx` | Add "Payment Reminders" tab |
+| Migration | Add `contact_phone` column to `client_email_logs` |
+| `supabase/functions/send-client-payment-reminder/index.ts` | Log `contact_phone` field |
+| `src/components/orders/PaymentRemindersSentTab.tsx` | Display company name, phone, invoice in each card |
 
