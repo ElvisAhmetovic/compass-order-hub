@@ -197,39 +197,48 @@ export type Database = {
           created_at: string | null
           currency: string | null
           custom_message: string | null
+          email_subject: string | null
           id: string
+          invoice_number: string | null
           order_id: string
           order_price: number | null
           sent_by: string | null
           sent_by_name: string
           sent_to: string
           team_emails_sent: number | null
+          template_name: string | null
         }
         Insert: {
           company_name: string
           created_at?: string | null
           currency?: string | null
           custom_message?: string | null
+          email_subject?: string | null
           id?: string
+          invoice_number?: string | null
           order_id: string
           order_price?: number | null
           sent_by?: string | null
           sent_by_name: string
           sent_to: string
           team_emails_sent?: number | null
+          template_name?: string | null
         }
         Update: {
           company_name?: string
           created_at?: string | null
           currency?: string | null
           custom_message?: string | null
+          email_subject?: string | null
           id?: string
+          invoice_number?: string | null
           order_id?: string
           order_price?: number | null
           sent_by?: string | null
           sent_by_name?: string
           sent_to?: string
           team_emails_sent?: number | null
+          template_name?: string | null
         }
         Relationships: [
           {
