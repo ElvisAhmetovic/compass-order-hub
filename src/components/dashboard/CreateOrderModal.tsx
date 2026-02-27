@@ -435,7 +435,7 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto" onFocusOutside={(e) => e.preventDefault()} onPointerDownOutside={(e) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold">Create New Order</DialogTitle>
         </DialogHeader>

@@ -120,7 +120,7 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[425px]" onFocusOutside={(e) => e.preventDefault()} onPointerDownOutside={(e) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle>Add New User</DialogTitle>
           <DialogDescription>

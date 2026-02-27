@@ -144,7 +144,7 @@ export function AssignOrdersModal({ user, open, onClose }: AssignOrdersModalProp
   
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md md:max-w-lg max-h-[90vh]">
+      <DialogContent className="sm:max-w-md md:max-w-lg max-h-[90vh]" onFocusOutside={(e) => e.preventDefault()} onPointerDownOutside={(e) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle>
             {isClientUser ? "Link Orders to Client" : "Assign Orders to"} {user.full_name || user.email}

@@ -269,7 +269,7 @@ export const EditUserModal: React.FC<EditUserModalProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[425px]" onFocusOutside={(e) => e.preventDefault()} onPointerDownOutside={(e) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle>Edit User</DialogTitle>
           <DialogDescription>
