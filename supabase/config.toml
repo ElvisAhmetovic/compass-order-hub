@@ -83,3 +83,6 @@ verify_jwt = false
 
 [functions.send-invoice-pdf]
 verify_jwt = false
+
+[functions.translate-upsell]
+verify_jwt = false
