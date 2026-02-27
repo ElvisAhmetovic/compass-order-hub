@@ -169,7 +169,7 @@ const Sidebar = () => {
   });
 
   return (
-    <div className="w-64 bg-white border-r border-gray-200 min-h-screen">
+    <div className="w-64 bg-card border-r border-border min-h-screen">
       <div className="p-6">
         <h2 className="text-xl font-semibold text-foreground">EmpriaTech CRM System</h2>
         <div className="mt-2 text-muted-foreground">
@@ -184,7 +184,7 @@ const Sidebar = () => {
       </div>
       <nav className="mt-6">
         {visibleItems.length === 0 ? (
-          <div className="px-6 py-3 text-gray-500 text-sm">
+          <div className="px-6 py-3 text-muted-foreground text-sm">
             No menu items available
             <br />
             Role: {user?.role || 'No role'}
@@ -204,8 +204,8 @@ const Sidebar = () => {
                 key={`${item.href}-${item.label}`}
                 to={item.href}
                 className={cn(
-                  "flex items-center justify-between px-6 py-3 text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors",
-                  isActive && "bg-blue-50 text-blue-700 border-r-2 border-blue-700"
+                  "flex items-center justify-between px-6 py-3 text-foreground/70 hover:bg-accent hover:text-foreground transition-colors",
+                  isActive && "bg-primary/10 text-primary border-r-2 border-primary"
                 )}
               >
                 <div className="flex items-center">
