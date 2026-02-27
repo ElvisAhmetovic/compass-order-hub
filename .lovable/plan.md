@@ -1,62 +1,59 @@
 
 
-## Fix: Date Range Filter in Advanced Search
+## Restructure "Upsell" into Categorized "Text" Library
 
-### Problem Analysis
-The date range filter in the Advanced Search dialog has two issues:
+### Database Changes
 
-1. **The `dateRange` object type allows `undefined` values for `from`/`to`**, but the Calendar's `onSelect` can pass `undefined`. When spreading `...filters.dateRange` (which starts as `undefined`), partial updates may not accumulate correctly if React batches state updates.
+**New table: `upsell_categories`**
+- `id` (uuid, PK, default gen_random_uuid())
+- `name` (text, NOT NULL)
+- `created_by` (uuid, NOT NULL)
+- `created_at` (timestamptz, default now())
+- RLS: authenticated can SELECT, INSERT, DELETE
 
-2. **Timezone mismatch**: `order.created_at` is a UTC timestamp from Supabase, but the Calendar returns local midnight dates. `setHours(0,0,0,0)` adjusts in local time, which can exclude orders near midnight boundaries.
+**Modify `upsells` table**: Add `category_id` (uuid, FK → upsell_categories.id ON DELETE CASCADE, nullable for backward compat)
 
-### Changes
+### Sidebar Change
 
-**`src/services/searchService.ts`** — Make the date comparison more robust:
-- Parse `from` and `to` safely with fallback (handle case where they're strings after state serialization)
-- Normalize both order date and filter dates to date-only comparison (strip time entirely)
+**`src/components/dashboard/Sidebar.tsx`** — Rename label from `'Upsell'` to `'Text'` and update icon to `Type` (from lucide). Change href to `/text`.
 
-**`src/components/dashboard/AdvancedSearch.tsx`** — Fix the date selection to ensure both `from` and `to` are preserved:
-- Initialize `dateRange` properly when first date is selected
-- Ensure `from` and `to` don't get lost during partial updates
-- Add a "clear dates" button for better UX
+### Route Change
 
-### Specific Code Fixes
+**`src/App.tsx`** — Change `/upsell` route to `/text`, keep same component import (renamed file).
 
-**searchService.ts** (date filter, ~line 144):
-```typescript
-if (filters.dateRange?.from && filters.dateRange?.to) {
-  const fromDate = new Date(filters.dateRange.from);
-  const toDate = new Date(filters.dateRange.to);
-  fromDate.setHours(0, 0, 0, 0);
-  toDate.setHours(23, 59, 59, 999);
-  
-  result = result.filter(order => {
-    if (!order.created_at) return false;
-    const orderDate = new Date(order.created_at);
-    return orderDate >= fromDate && orderDate <= toDate;
-  });
-}
-```
+### Service Layer
 
-**AdvancedSearch.tsx** (date selection handlers, ~lines 213-244):
-- Change from individual `from`/`to` updates to preserve existing values:
-```typescript
-onSelect={(date) => {
-  const current = filters.dateRange || {};
-  handleFilterChange('dateRange', {
-    from: date,
-    to: current.to
-  });
-}}
-// and for "to":
-onSelect={(date) => {
-  const current = filters.dateRange || {};
-  handleFilterChange('dateRange', {
-    from: current.from,
-    to: date
-  });
-}}
-```
+**`src/services/upsellService.ts`** — Add:
+- `fetchCategories()` — SELECT from `upsell_categories`
+- `createCategory(name, userId)` — INSERT
+- `deleteCategory(id)` — DELETE (cascades to upsells + translations)
+- `fetchUpsellsByCategory(categoryId)` — SELECT from `upsells` WHERE `category_id = X`
+- `createUpsell` — updated to accept `categoryId` param
 
-These are small, targeted fixes — no new files or components needed.
+### Page Rewrite
+
+**`src/pages/Upsell.tsx`** (rename to `src/pages/TextLibrary.tsx`):
+
+Two views controlled by state (`selectedCategoryId`):
+
+**Category List View** (when no category selected):
+- Header: "Text Library" with "+ Add Category" button (top-left)
+- Grid of category cards, each showing name + delete button (with AlertDialog confirmation)
+- Click card → sets `selectedCategoryId`
+
+**Category Detail View** (when category selected):
+- Back button → clears `selectedCategoryId`
+- Header: category name + "+ Add Text" button
+- Accordion list of upsell items (same as current: title/description, translate dropdown, copy, delete)
+- Translation caching logic preserved exactly as-is
+
+### Files to Create/Modify
+
+| File | Action |
+|------|--------|
+| Migration SQL | Create `upsell_categories`, add `category_id` to `upsells` |
+| `src/services/upsellService.ts` | Add category CRUD + update upsell CRUD |
+| `src/pages/Upsell.tsx` → `src/pages/TextLibrary.tsx` | Full rewrite with two-view layout |
+| `src/components/dashboard/Sidebar.tsx` | Rename to "Text", change href/icon |
+| `src/App.tsx` | Update route path and import |
 
