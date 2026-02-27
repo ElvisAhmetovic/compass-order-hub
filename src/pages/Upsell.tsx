@@ -90,7 +90,7 @@ const Upsell = () => {
             <DialogTrigger asChild>
               <Button><Plus className="h-4 w-4 mr-2" /> Add Upsell</Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent onFocusOutside={(e) => e.preventDefault()} onPointerDownOutside={(e) => e.preventDefault()}>
               <DialogHeader>
                 <DialogTitle>Add New Upsell</DialogTitle>
               </DialogHeader>
