@@ -9,7 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Order } from "@/types";
 import { formatCurrency } from "@/utils/currencyUtils";
 import { formatDate } from "@/lib/utils";
-import { Send, AlertCircle, Mail, Phone, Calendar, Building2, Eye, Globe } from "lucide-react";
+import { Send, AlertCircle, Mail, Phone, Calendar, Building2, Eye, Globe, Loader2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
@@ -18,6 +18,8 @@ import TemplateSelector from "@/components/email-templates/TemplateSelector";
 import { EmailTemplate, emailTemplateService } from "@/services/emailTemplateService";
 import { emailTranslationService, SupportedLanguage, SUPPORTED_LANGUAGES } from "@/services/emailTranslationService";
 import { sanitizeHtml } from "@/utils/sanitize";
+import InvoiceAttachmentSelector, { SelectedInvoice } from "./InvoiceAttachmentSelector";
+import { generateInvoicePDFBase64 } from "@/utils/invoicePdfGenerator";
 
 interface SendClientReminderModalProps {
   open: boolean;
@@ -36,6 +38,9 @@ const SendClientReminderModal = ({ open, onOpenChange, order, onEmailSent }: Sen
   const [previewMode, setPreviewMode] = useState<"info" | "preview">("info");
   const [isSending, setIsSending] = useState(false);
   const [currentUser, setCurrentUser] = useState<{ id: string; name: string } | null>(null);
+  const [selectedInvoice, setSelectedInvoice] = useState<SelectedInvoice | null>(null);
+  const [invoicePdfBase64, setInvoicePdfBase64] = useState<string | null>(null);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const { toast } = useToast();
 
   const hasClientEmail = !!order.contact_email && order.contact_email.trim() !== "";
@@ -44,6 +49,8 @@ const SendClientReminderModal = ({ open, onOpenChange, order, onEmailSent }: Sen
   useEffect(() => {
     if (open) {
       setEmailDescription(order.description || "");
+      setSelectedInvoice(null);
+      setInvoicePdfBase64(null);
     }
   }, [open, order.description]);
 
@@ -124,6 +131,64 @@ const SendClientReminderModal = ({ open, onOpenChange, order, onEmailSent }: Sen
     return emailTemplateService.replaceVariables(emailBody, getTemplateVariables());
   };
 
+  // Handle invoice selection and PDF generation
+  const handleInvoiceSelect = async (invoice: SelectedInvoice | null) => {
+    setSelectedInvoice(invoice);
+    setInvoicePdfBase64(null);
+
+    if (!invoice) return;
+
+    setIsGeneratingPdf(true);
+    try {
+      // Fetch invoice line items
+      const { data: lineItems, error: liError } = await supabase
+        .from("invoice_line_items")
+        .select("*")
+        .eq("invoice_id", invoice.id);
+
+      if (liError) throw liError;
+
+      // Fetch full invoice with client
+      const { data: fullInvoice, error: invError } = await supabase
+        .from("invoices")
+        .select("*, clients(*)")
+        .eq("id", invoice.id)
+        .single();
+
+      if (invError) throw invError;
+
+      // Load template settings from localStorage
+      const savedSettings = localStorage.getItem("invoiceTemplateSettings");
+      const templateSettings = savedSettings ? JSON.parse(savedSettings) : {
+        logo: "",
+        language: "en",
+        selectedPaymentAccount: "belgium",
+        vatEnabled: true,
+        vatRate: 19,
+        currency: invoice.currency || "EUR",
+      };
+
+      const pdfBase64 = await generateInvoicePDFBase64({
+        invoice: fullInvoice,
+        lineItems: lineItems || [],
+        client: fullInvoice.clients || undefined,
+        templateSettings: { ...templateSettings, currency: invoice.currency || "EUR" },
+      });
+
+      setInvoicePdfBase64(pdfBase64);
+    } catch (err) {
+      console.error("Error generating invoice PDF:", err);
+      toast({
+        title: "PDF Generation Failed",
+        description: "Could not generate the invoice PDF. The reminder can still be sent without it.",
+        variant: "destructive",
+      });
+      setSelectedInvoice(null);
+    } finally {
+      setIsGeneratingPdf(false);
+    }
+  };
+
   const handleSendReminder = async () => {
     if (!hasClientEmail) {
       toast({
@@ -169,6 +234,11 @@ const SendClientReminderModal = ({ open, onOpenChange, order, onEmailSent }: Sen
           templateId: selectedTemplate.id,
           templateName: selectedTemplate.name,
           language: selectedLanguage,
+          // Invoice attachment
+          ...(invoicePdfBase64 && selectedInvoice ? {
+            invoicePdfBase64,
+            invoiceNumber: selectedInvoice.invoice_number,
+          } : {}),
         },
       });
 
@@ -394,6 +464,19 @@ const SendClientReminderModal = ({ open, onOpenChange, order, onEmailSent }: Sen
             </p>
           </div>
 
+          {/* Invoice Attachment */}
+          <InvoiceAttachmentSelector
+            selectedInvoice={selectedInvoice}
+            onSelect={handleInvoiceSelect}
+            disabled={isSending}
+          />
+          {isGeneratingPdf && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Generating invoice PDF...
+            </div>
+          )}
+
           {/* Info */}
           <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-3 text-sm">
             <p className="text-blue-700 dark:text-blue-300">
@@ -406,7 +489,7 @@ const SendClientReminderModal = ({ open, onOpenChange, order, onEmailSent }: Sen
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSending}>
             Cancel
           </Button>
-          <Button onClick={handleSendReminder} disabled={isSending || !hasClientEmail || !selectedTemplate}>
+          <Button onClick={handleSendReminder} disabled={isSending || isGeneratingPdf || !hasClientEmail || !selectedTemplate}>
             {isSending ? (
               <>Sending...</>
             ) : (

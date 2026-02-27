@@ -43,6 +43,9 @@ interface ClientReminderRequest {
   emailBodyHtml?: string;
   templateId?: string;
   templateName?: string;
+  // Invoice attachment fields
+  invoicePdfBase64?: string;
+  invoiceNumber?: string;
 }
 
 const formatPrice = (price: number | null, currency: string): string => {
@@ -215,6 +218,8 @@ const handler = async (req: Request): Promise<Response> => {
       emailBodyHtml,
       templateId,
       templateName,
+      invoicePdfBase64,
+      invoiceNumber,
     }: ClientReminderRequest = await req.json();
 
     console.log(`Sending client payment reminder to ${clientEmail} for order ${orderId} by ${sentByName}`);
@@ -250,6 +255,17 @@ const handler = async (req: Request): Promise<Response> => {
       console.log("Using default email template");
     }
 
+    // Build attachments array if invoice PDF is provided
+    const attachments = [];
+    if (invoicePdfBase64 && invoiceNumber) {
+      const base64Data = invoicePdfBase64.includes(',') ? invoicePdfBase64.split(',')[1] : invoicePdfBase64;
+      attachments.push({
+        filename: `invoice-${invoiceNumber}.pdf`,
+        content: base64Data,
+      });
+      console.log(`Attaching invoice PDF: invoice-${invoiceNumber}.pdf`);
+    }
+
     // Send email to client
     console.log(`Sending payment reminder email to client: ${clientEmail}`);
     const clientEmailResponse = await resend.emails.send({
@@ -257,6 +273,7 @@ const handler = async (req: Request): Promise<Response> => {
       to: [clientEmail],
       subject: finalSubject,
       html: finalEmailHtml,
+      ...(attachments.length > 0 ? { attachments } : {}),
     });
 
     if (clientEmailResponse.error) {
@@ -322,6 +339,12 @@ const handler = async (req: Request): Promise<Response> => {
               <tr>
                 <td style="padding: 5px 0; color: #666;">Template Used:</td>
                 <td style="padding: 5px 0;">${templateName}</td>
+              </tr>
+              ` : ''}
+              ${invoiceNumber ? `
+              <tr>
+                <td style="padding: 5px 0; color: #666;">Invoice Attached:</td>
+                <td style="padding: 5px 0;">📎 ${invoiceNumber}</td>
               </tr>
               ` : ''}
               ${customMessage ? `
