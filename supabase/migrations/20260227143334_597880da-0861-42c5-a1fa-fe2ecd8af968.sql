@@ -1,0 +1,1 @@
+ALTER TABLE public.client_email_logs ADD COLUMN contact_phone TEXT;

@@ -406,6 +406,7 @@ const handler = async (req: Request): Promise<Response> => {
           email_subject: emailSubject || finalSubject,
           template_name: templateName || null,
           invoice_number: invoiceNumber || null,
+          contact_phone: contactPhone || null,
         });
 
       if (logError) {

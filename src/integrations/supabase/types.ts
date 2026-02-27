@@ -194,6 +194,7 @@ export type Database = {
       client_email_logs: {
         Row: {
           company_name: string
+          contact_phone: string | null
           created_at: string | null
           currency: string | null
           custom_message: string | null
@@ -210,6 +211,7 @@ export type Database = {
         }
         Insert: {
           company_name: string
+          contact_phone?: string | null
           created_at?: string | null
           currency?: string | null
           custom_message?: string | null
@@ -226,6 +228,7 @@ export type Database = {
         }
         Update: {
           company_name?: string
+          contact_phone?: string | null
           created_at?: string | null
           currency?: string | null
           custom_message?: string | null
