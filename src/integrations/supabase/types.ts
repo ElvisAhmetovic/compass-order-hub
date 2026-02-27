@@ -2090,6 +2090,27 @@ export type Database = {
           },
         ]
       }
+      upsell_categories: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       upsell_translations: {
         Row: {
           created_at: string
@@ -2124,6 +2145,7 @@ export type Database = {
       }
       upsells: {
         Row: {
+          category_id: string | null
           created_at: string
           created_by: string
           description: string
@@ -2132,6 +2154,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          category_id?: string | null
           created_at?: string
           created_by: string
           description: string
@@ -2140,6 +2163,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          category_id?: string | null
           created_at?: string
           created_by?: string
           description?: string
@@ -2147,7 +2171,15 @@ export type Database = {
           title?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "upsells_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "upsell_categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_achievements: {
         Row: {
