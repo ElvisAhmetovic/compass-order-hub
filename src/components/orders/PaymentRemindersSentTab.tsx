@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDate } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
-import { Bell, Mail, User, DollarSign, FileText, Paperclip, ChevronDown, ChevronUp, Inbox } from "lucide-react";
+import { Bell, Mail, User, DollarSign, FileText, Paperclip, ChevronDown, ChevronUp, Inbox, Building, Phone } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -23,6 +23,7 @@ interface PaymentReminderLog {
   email_subject: string | null;
   template_name: string | null;
   invoice_number: string | null;
+  contact_phone: string | null;
 }
 
 interface PaymentRemindersSentTabProps {
@@ -136,6 +137,11 @@ const PaymentRemindersSentTab = ({ orderId }: PaymentRemindersSentTabProps) => {
             {/* Details grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5 text-sm mt-2">
               <div className="flex items-center gap-2">
+                <Building className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                <span className="text-muted-foreground">Company:</span>
+                <span className="font-medium truncate">{log.company_name}</span>
+              </div>
+              <div className="flex items-center gap-2">
                 <User className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                 <span className="text-muted-foreground">Sent by:</span>
                 <span className="font-medium truncate">{log.sent_by_name}</span>
@@ -145,6 +151,13 @@ const PaymentRemindersSentTab = ({ orderId }: PaymentRemindersSentTabProps) => {
                 <span className="text-muted-foreground">To:</span>
                 <span className="font-medium truncate">{log.sent_to}</span>
               </div>
+              {log.contact_phone && (
+                <div className="flex items-center gap-2">
+                  <Phone className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                  <span className="text-muted-foreground">Phone:</span>
+                  <span className="font-medium truncate">{log.contact_phone}</span>
+                </div>
+              )}
               <div className="flex items-center gap-2">
                 <DollarSign className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                 <span className="text-muted-foreground">Amount:</span>
