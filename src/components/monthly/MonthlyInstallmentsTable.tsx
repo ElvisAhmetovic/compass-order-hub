@@ -363,6 +363,7 @@ const MonthlyInstallmentsTable: React.FC<Props> = ({ contracts, installments, on
           detectedLanguage={sendDialogData.language}
           invoice={sendDialogData.invoice}
           client={sendDialogData.client}
+          onRefresh={onRefresh}
         />
       )}
     </div>

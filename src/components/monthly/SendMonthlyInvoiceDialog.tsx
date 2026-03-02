@@ -37,10 +37,11 @@ interface SendMonthlyInvoiceDialogProps {
   detectedLanguage: string;
   invoice: Invoice | null;
   client: Client | null;
+  onRefresh?: () => void;
 }
 
 const SendMonthlyInvoiceDialog: React.FC<SendMonthlyInvoiceDialogProps> = ({
-  open, onOpenChange, contract, installment, detectedLanguage, invoice, client,
+  open, onOpenChange, contract, installment, detectedLanguage, invoice, client, onRefresh,
 }) => {
   const { toast } = useToast();
   const [sending, setSending] = useState(false);
@@ -189,11 +190,22 @@ const SendMonthlyInvoiceDialog: React.FC<SendMonthlyInvoiceDialogProps> = ({
 
       if (error) throw error;
 
+      // Update installment status in database
+      await supabase
+        .from('monthly_installments')
+        .update({
+          email_sent: true,
+          email_sent_at: new Date().toISOString(),
+          invoice_id: currentInvoice.id,
+        })
+        .eq('id', installment.id);
+
       toast({
         title: "Invoice sent",
         description: `Invoice sent to ${clientEmail} + team notified`,
       });
       onOpenChange(false);
+      onRefresh?.();
     } catch (error) {
       console.error("Error sending invoice:", error);
       toast({ title: "Error", description: "Failed to send invoice.", variant: "destructive" });
