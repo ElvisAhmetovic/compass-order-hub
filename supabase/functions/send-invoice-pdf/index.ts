@@ -91,9 +91,9 @@ serve(async (req) => {
       </div>
     `;
 
-    for (const email of NOTIFICATION_EMAIL_LIST) {
-      try {
-        const teamRes = await fetch('https://api.resend.com/emails', {
+    await Promise.allSettled(
+      NOTIFICATION_EMAIL_LIST.map(email =>
+        fetch('https://api.resend.com/emails', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -105,19 +105,16 @@ serve(async (req) => {
             subject: `[Team] Invoice ${invoice_number} sent to ${client_email}`,
             html: teamHtml,
           }),
-        });
-        if (!teamRes.ok) {
-          const errText = await teamRes.text();
-          console.error(`Failed to notify ${email}:`, errText);
-        } else {
-          await teamRes.json();
-        }
-        // 500ms delay between sends to avoid rate limiting
-        await new Promise(resolve => setTimeout(resolve, 500));
-      } catch (e) {
-        console.error(`Error notifying ${email}:`, e);
-      }
-    }
+        })
+          .then(async (res) => {
+            if (!res.ok) {
+              const errText = await res.text();
+              console.error(`Failed to notify ${email}:`, errText);
+            }
+          })
+          .catch(e => console.error(`Error notifying ${email}:`, e))
+      )
+    );
 
     return new Response(
       JSON.stringify({ success: true, message: `Invoice sent to ${client_email}` }),
