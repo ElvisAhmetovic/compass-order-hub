@@ -15,6 +15,14 @@ export interface MonthlyContract {
   created_by: string | null;
   created_at: string;
   updated_at: string;
+  company_address: string | null;
+  contact_phone: string | null;
+  company_link: string | null;
+  priority: string | null;
+  assigned_to: string | null;
+  assigned_to_name: string | null;
+  internal_notes: string | null;
+  inventory_items: string | null;
 }
 
 export interface MonthlyInstallment {
@@ -71,6 +79,14 @@ export const monthlyContractService = {
         status: contract.status || "active",
         description: contract.description,
         created_by: userId,
+        company_address: contract.company_address,
+        contact_phone: contract.contact_phone,
+        company_link: contract.company_link,
+        priority: contract.priority || "medium",
+        assigned_to: contract.assigned_to,
+        assigned_to_name: contract.assigned_to_name,
+        internal_notes: contract.internal_notes,
+        inventory_items: contract.inventory_items,
       } as any)
       .select()
       .single();
