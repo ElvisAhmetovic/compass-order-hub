@@ -15,7 +15,7 @@ import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { MigrationService } from "@/services/migrationService";
 import { toast } from "@/hooks/use-toast";
-import TeamEncouragement from "@/components/dashboard/TeamEncouragement";
+
 import TemporaryNotificationBanner from "@/components/notifications/TemporaryNotificationBanner";
 import { supabase } from "@/integrations/supabase/client";
 import PaymentReminderActivityPanel from "@/components/dashboard/PaymentReminderActivityPanel";
@@ -273,10 +273,6 @@ const Dashboard = () => {
               )}
             </div>
             
-            {/* Team Encouragement Messages - Only on dashboard home, hidden from clients */}
-            {isDashboardHome && userRole !== 'client' && (
-              <TeamEncouragement />
-            )}
             
             {/* Migration button for admins if localStorage data exists */}
             {isAdmin && showMigrationButton && (
