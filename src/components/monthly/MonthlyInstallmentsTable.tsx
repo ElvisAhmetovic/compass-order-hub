@@ -71,10 +71,17 @@ const MonthlyInstallmentsTable: React.FC<Props> = ({ contracts, installments, on
     try {
       // Load clients and match
       const clients = await InvoiceService.getClients();
-      const matched = clients.find(c => c.email.toLowerCase() === contract.client_email.toLowerCase());
+      let matched = clients.find(c => c.email.toLowerCase() === contract.client_email.toLowerCase());
       if (!matched) {
-        toast({ title: "Client not found", description: "No matching client found in the invoice system. Please create the client first.", variant: "destructive" });
-        return;
+        // Auto-create client from contract data
+        matched = await InvoiceService.createClient({
+          name: contract.client_name,
+          email: contract.client_email,
+          contact_person: contract.client_name,
+          address: (contract as any).company_address || "",
+          phone: (contract as any).contact_phone || "",
+        });
+        toast({ title: "Client auto-created", description: `Client "${contract.client_name}" was added to the invoice system.` });
       }
 
       // VAT-inclusive: amount IS the total, so net = amount / 1.19
@@ -127,6 +134,16 @@ const MonthlyInstallmentsTable: React.FC<Props> = ({ contracts, installments, on
       try {
         const clients = await InvoiceService.getClients();
         client = clients.find(c => c.email.toLowerCase() === contract.client_email.toLowerCase()) || null;
+        if (!client) {
+          client = await InvoiceService.createClient({
+            name: contract.client_name,
+            email: contract.client_email,
+            contact_person: contract.client_name,
+            address: (contract as any).company_address || "",
+            phone: (contract as any).contact_phone || "",
+          });
+          toast({ title: "Client auto-created", description: `Client "${contract.client_name}" was added to the invoice system.` });
+        }
       } catch {}
     }
 
