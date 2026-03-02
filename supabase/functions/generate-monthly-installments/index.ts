@@ -398,30 +398,40 @@ async function sendTeamNotifications(
       <p style="color: #666; font-size: 14px;">Dies ist eine automatische Benachrichtigung des Monatspakete-Systems.</p>
     </div>`;
 
-  const results = await Promise.allSettled(
-    TEAM_EMAILS.map((email) =>
-      fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${RESEND_API_KEY}` },
-        body: JSON.stringify({
-          from: "Thomas Klein <noreply@abm-team.com>",
-          to: [email],
-          subject,
-          html,
-        }),
-      })
-        .then(async (res) => {
-          if (!res.ok) console.error(`Failed to notify ${email}:`, await res.text());
-          return res.ok;
+  // Send in batches of 2 with 1s delay to respect Resend's 2 req/sec rate limit
+  let successCount = 0;
+  for (let i = 0; i < TEAM_EMAILS.length; i += 2) {
+    const batch = TEAM_EMAILS.slice(i, i + 2);
+    const results = await Promise.allSettled(
+      batch.map((email) =>
+        fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${RESEND_API_KEY}` },
+          body: JSON.stringify({
+            from: "Thomas Klein <noreply@abm-team.com>",
+            to: [email],
+            subject,
+            html,
+          }),
         })
-        .catch((e) => {
-          console.error(`Error notifying ${email}:`, e);
-          return false;
-        })
-    )
-  );
+          .then(async (res) => {
+            if (!res.ok) console.error(`Failed to notify ${email}:`, await res.text());
+            return res.ok;
+          })
+          .catch((e) => {
+            console.error(`Error notifying ${email}:`, e);
+            return false;
+          })
+      )
+    );
+    successCount += results.filter((r) => r.status === "fulfilled" && r.value === true).length;
+    // Wait 1 second between batches to avoid rate limiting
+    if (i + 2 < TEAM_EMAILS.length) {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    }
+  }
 
-  return results.filter((r) => r.status === "fulfilled" && r.value === true).length;
+  return successCount;
 }
 
 // ── Create in-app notifications ────────────────────────────────────
