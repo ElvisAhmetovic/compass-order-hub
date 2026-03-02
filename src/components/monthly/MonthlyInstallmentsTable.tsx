@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
@@ -6,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
-import { Trash2, ChevronDown, ChevronRight, ExternalLink } from "lucide-react";
+import { Trash2, ChevronDown, ChevronRight, ExternalLink, FileText } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import {
   monthlyContractService, MonthlyContract, MonthlyInstallment,
@@ -16,6 +17,27 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
+const detectLanguageFromAddress = (address: string | null | undefined): string => {
+  if (!address) return "en";
+  const lower = address.toLowerCase();
+  const map: [RegExp, string][] = [
+    [/deutschland|germany/i, "de"],
+    [/nederland|netherlands|holland/i, "nl"],
+    [/france|frankreich|français/i, "fr"],
+    [/españa|spain|spanien/i, "es"],
+    [/danmark|denmark|dänemark/i, "da"],
+    [/norge|norway|norwegen/i, "no"],
+    [/česko|czech|tschech/i, "cs"],
+    [/polska|poland|polen/i, "pl"],
+    [/sverige|sweden|schweden/i, "sv"],
+  ];
+  for (const [regex, lang] of map) {
+    if (regex.test(lower)) return lang;
+  }
+  return "en";
+};
 
 interface Props {
   contracts: MonthlyContract[];
@@ -25,8 +47,40 @@ interface Props {
 }
 
 const MonthlyInstallmentsTable: React.FC<Props> = ({ contracts, installments, onRefresh, isAdmin }) => {
+  const navigate = useNavigate();
   const [expandedContracts, setExpandedContracts] = useState<Set<string>>(new Set());
   const [togglingIds, setTogglingIds] = useState<Set<string>>(new Set());
+
+  const handleCreateInvoice = (contract: MonthlyContract, inst: MonthlyInstallment) => {
+    const language = detectLanguageFromAddress(contract.company_address);
+    const description = contract.description
+      ? `${contract.description} - ${inst.month_label}`
+      : `Monthly Service - ${inst.month_label}`;
+
+    navigate("/invoices/new", {
+      state: {
+        fromMonthlyPackage: true,
+        prefill: {
+          clientEmail: contract.client_email,
+          clientName: contract.client_name,
+          currency: contract.currency,
+          issueDate: new Date().toISOString().split("T")[0],
+          dueDate: inst.due_date,
+          notes: `Monthly package: ${inst.month_label}`,
+          lineItem: {
+            item_description: description,
+            quantity: 1,
+            unit: "pcs",
+            unit_price: inst.amount,
+            vat_rate: 0.19,
+            discount_rate: 0,
+          },
+          language,
+          selectedPaymentAccount: "both",
+        },
+      },
+    });
+  };
 
   const toggleExpand = (contractId: string) => {
     setExpandedContracts((prev) => {
@@ -162,6 +216,7 @@ const MonthlyInstallmentsTable: React.FC<Props> = ({ contracts, installments, on
                       <TableHead>Amount</TableHead>
                       <TableHead>Email</TableHead>
                       <TableHead>Status</TableHead>
+                      <TableHead>Invoice</TableHead>
                       <TableHead className="text-right">Paid</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -178,6 +233,18 @@ const MonthlyInstallmentsTable: React.FC<Props> = ({ contracts, installments, on
                           </TableCell>
                           <TableCell>
                             <Badge variant={isPaid ? "default" : "destructive"}>{isPaid ? "Paid" : "Unpaid"}</Badge>
+                          </TableCell>
+                          <TableCell>
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleCreateInvoice(contract, inst)}>
+                                    <FileText className="w-4 h-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Create Invoice for {inst.month_label}</TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
                           </TableCell>
                           <TableCell className="text-right">
                             <Switch checked={isPaid} disabled={togglingIds.has(inst.id)} onCheckedChange={() => handleToggleStatus(inst)} />
