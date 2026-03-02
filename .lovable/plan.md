@@ -1,40 +1,19 @@
 
 
-## Fix: Update installment `email_sent` status after manual invoice send
+## Add "Invoice Sent" Toggle to Monthly Installment Rows
 
-### Problem
-
-After manually sending an invoice via the Send Invoice dialog in Monthly Packages, the `email_sent` column on the `monthly_installments` row is never updated. The table reads `inst.email_sent` (line 303) to show "Sent" vs "Pending", so it stays "Pending" forever.
-
-Additionally, the dialog doesn't call `onRefresh` after success, so even if we update the DB, the UI wouldn't reflect it without a manual page reload.
+The `monthly_installments` table already has an `email_sent` (boolean) and `email_sent_at` (timestamp) column. Currently, this is displayed as a read-only badge. The plan is to make it a toggleable switch, just like the "Paid" toggle.
 
 ### Changes
 
-**File: `src/components/monthly/SendMonthlyInvoiceDialog.tsx`**
-
-1. After the successful `send-invoice-pdf` call (line 191), update the installment record in Supabase:
-   ```ts
-   await supabase
-     .from('monthly_installments')
-     .update({
-       email_sent: true,
-       email_sent_at: new Date().toISOString(),
-       invoice_id: currentInvoice.id,
-     })
-     .eq('id', installment.id);
-   ```
-
-2. Add an `onRefresh` callback prop to the dialog so the parent table re-fetches data after sending
+**File: `src/services/monthlyContractService.ts`**
+- Add a `toggleEmailSent(installmentId, newStatus)` method that updates `email_sent` and `email_sent_at` on `monthly_installments`
 
 **File: `src/components/monthly/MonthlyInstallmentsTable.tsx`**
+1. Replace the read-only Email badge (line 302-303) with a `Switch` toggle
+2. Add state tracking for toggling email sent IDs (like `togglingIds` for payment)
+3. Add a `handleToggleEmailSent` handler that calls the new service method
+4. Update the table header from "Email" to "Invoice Sent"
 
-1. Pass `onRefresh` to the `SendMonthlyInvoiceDialog` component
-
-### Summary
-
-| What | Before | After |
-|------|--------|-------|
-| `email_sent` field | Never updated on manual send | Set to `true` after successful send |
-| `invoice_id` field | Never linked on manual send | Linked to created invoice |
-| UI refresh | Stays stale after send | Auto-refreshes via `onRefresh` |
+No database changes needed — the `email_sent` and `email_sent_at` columns already exist with proper RLS policies.
 
