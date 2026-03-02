@@ -82,39 +82,56 @@ serve(async (req) => {
 
     await clientRes.json();
 
-    // Notify team (without attachment, just a notification)
+    // Notify team (with same PDF attachment, batched to avoid rate limits)
     const teamHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <h2 style="color: #333;">Invoice Sent: ${invoice_number}</h2>
         <p>Invoice <strong>${invoice_number}</strong> has been sent to <strong>${client_email}</strong>.</p>
         ${message ? `<p><strong>Message included:</strong></p><div style="background: #f5f5f5; padding: 12px; border-radius: 4px; white-space: pre-wrap;">${message}</div>` : ''}
+        <p style="color: #666; margin-top: 20px;">The invoice PDF is attached to this email.</p>
       </div>
     `;
 
-    await Promise.allSettled(
-      NOTIFICATION_EMAIL_LIST.map(email =>
-        fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${RESEND_API_KEY}`,
-          },
-          body: JSON.stringify({
-            from: 'AB Media Team <noreply@abm-team.com>',
-            to: [email],
-            subject: `[Team] Invoice ${invoice_number} sent to ${client_email}`,
-            html: teamHtml,
-          }),
-        })
-          .then(async (res) => {
-            if (!res.ok) {
-              const errText = await res.text();
-              console.error(`Failed to notify ${email}:`, errText);
-            }
+    const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+    const BATCH_SIZE = 2;
+
+    for (let i = 0; i < NOTIFICATION_EMAIL_LIST.length; i += BATCH_SIZE) {
+      const batch = NOTIFICATION_EMAIL_LIST.slice(i, i + BATCH_SIZE);
+      await Promise.allSettled(
+        batch.map(email =>
+          fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${RESEND_API_KEY}`,
+            },
+            body: JSON.stringify({
+              from: 'AB Media Team <noreply@abm-team.com>',
+              to: [email],
+              subject: `[Team] Invoice ${invoice_number} sent to ${client_email}`,
+              html: teamHtml,
+              attachments: [
+                {
+                  filename: `invoice-${invoice_number}.pdf`,
+                  content: base64Data,
+                },
+              ],
+            }),
           })
-          .catch(e => console.error(`Error notifying ${email}:`, e))
-      )
-    );
+            .then(async (res) => {
+              if (!res.ok) {
+                const errText = await res.text();
+                console.error(`Failed to notify ${email}:`, errText);
+              }
+            })
+            .catch(e => console.error(`Error notifying ${email}:`, e))
+        )
+      );
+      // Delay between batches to avoid rate limiting
+      if (i + BATCH_SIZE < NOTIFICATION_EMAIL_LIST.length) {
+        await delay(1000);
+      }
+    }
 
     return new Response(
       JSON.stringify({ success: true, message: `Invoice sent to ${client_email}` }),
