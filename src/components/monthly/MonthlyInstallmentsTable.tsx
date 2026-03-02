@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
@@ -7,17 +6,20 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
-import { Trash2, ChevronDown, ChevronRight, ExternalLink, FileText } from "lucide-react";
+import { Trash2, ChevronDown, ChevronRight, ExternalLink, FileText, Mail, Loader2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import {
   monthlyContractService, MonthlyContract, MonthlyInstallment,
 } from "@/services/monthlyContractService";
+import { InvoiceService } from "@/services/invoiceService";
+import { Invoice, Client } from "@/types/invoice";
 import { cn } from "@/lib/utils";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import SendMonthlyInvoiceDialog from "./SendMonthlyInvoiceDialog";
 
 const detectLanguageFromAddress = (address: string | null | undefined): string => {
   if (!address) return "en";
@@ -47,39 +49,89 @@ interface Props {
 }
 
 const MonthlyInstallmentsTable: React.FC<Props> = ({ contracts, installments, onRefresh, isAdmin }) => {
-  const navigate = useNavigate();
   const [expandedContracts, setExpandedContracts] = useState<Set<string>>(new Set());
   const [togglingIds, setTogglingIds] = useState<Set<string>>(new Set());
+  const [creatingInvoiceIds, setCreatingInvoiceIds] = useState<Set<string>>(new Set());
+  // Track created invoices: installment id -> Invoice
+  const [createdInvoices, setCreatedInvoices] = useState<Record<string, Invoice>>({}); 
+  const [matchedClients, setMatchedClients] = useState<Record<string, Client>>({});
 
-  const handleCreateInvoice = (contract: MonthlyContract, inst: MonthlyInstallment) => {
+  // Send dialog state
+  const [sendDialogOpen, setSendDialogOpen] = useState(false);
+  const [sendDialogData, setSendDialogData] = useState<{
+    contract: MonthlyContract;
+    installment: MonthlyInstallment;
+    invoice: Invoice | null;
+    client: Client | null;
+    language: string;
+  } | null>(null);
+
+  const handleCreateInvoice = async (contract: MonthlyContract, inst: MonthlyInstallment) => {
+    setCreatingInvoiceIds(prev => new Set(prev).add(inst.id));
+    try {
+      // Load clients and match
+      const clients = await InvoiceService.getClients();
+      const matched = clients.find(c => c.email.toLowerCase() === contract.client_email.toLowerCase());
+      if (!matched) {
+        toast({ title: "Client not found", description: "No matching client found in the invoice system. Please create the client first.", variant: "destructive" });
+        return;
+      }
+
+      // VAT-inclusive: amount IS the total, so net = amount / 1.19
+      const netPrice = Number((inst.amount / 1.19).toFixed(2));
+      const description = contract.description
+        ? `${contract.description} - ${inst.month_label}`
+        : `Monthly Service - ${inst.month_label}`;
+
+      const invoice = await InvoiceService.createInvoice({
+        client_id: matched.id,
+        issue_date: new Date().toISOString().split("T")[0],
+        due_date: inst.due_date,
+        currency: contract.currency || "EUR",
+        payment_terms: "Net 3",
+        notes: `Monthly package: ${inst.month_label}`,
+        internal_notes: "",
+        line_items: [{
+          item_description: description,
+          quantity: 1,
+          unit: "pcs",
+          unit_price: netPrice,
+          vat_rate: 0.19,
+          discount_rate: 0,
+        }],
+      });
+
+      // Store for the send button
+      setCreatedInvoices(prev => ({ ...prev, [inst.id]: invoice }));
+      setMatchedClients(prev => ({ ...prev, [inst.id]: matched }));
+
+      toast({
+        title: "Invoice created",
+        description: `Invoice ${invoice.invoice_number} created for ${contract.client_name} — ${inst.month_label}`,
+      });
+    } catch (err: any) {
+      console.error("Invoice creation failed:", err);
+      toast({ title: "Error", description: err.message || "Failed to create invoice", variant: "destructive" });
+    } finally {
+      setCreatingInvoiceIds(prev => { const n = new Set(prev); n.delete(inst.id); return n; });
+    }
+  };
+
+  const handleOpenSendDialog = async (contract: MonthlyContract, inst: MonthlyInstallment) => {
     const language = detectLanguageFromAddress(contract.company_address);
-    const description = contract.description
-      ? `${contract.description} - ${inst.month_label}`
-      : `Monthly Service - ${inst.month_label}`;
+    let invoice = createdInvoices[inst.id] || null;
+    let client = matchedClients[inst.id] || null;
 
-    navigate("/invoices/new", {
-      state: {
-        fromMonthlyPackage: true,
-        prefill: {
-          clientEmail: contract.client_email,
-          clientName: contract.client_name,
-          currency: contract.currency,
-          issueDate: new Date().toISOString().split("T")[0],
-          dueDate: inst.due_date,
-          notes: `Monthly package: ${inst.month_label}`,
-          lineItem: {
-            item_description: description,
-            quantity: 1,
-            unit: "pcs",
-            unit_price: inst.amount,
-            vat_rate: 0.19,
-            discount_rate: 0,
-          },
-          language,
-          selectedPaymentAccount: "both",
-        },
-      },
-    });
+    // If no invoice created yet, try to find matching client at least
+    if (!client) {
+      try {
+        const clients = await InvoiceService.getClients();
+        client = clients.find(c => c.email.toLowerCase() === contract.client_email.toLowerCase()) || null;
+      } catch {}
+    }
+
+    setSendDialogData({ contract, installment: inst, invoice, client, language });
+    setSendDialogOpen(true);
   };
 
   const toggleExpand = (contractId: string) => {
@@ -216,13 +268,15 @@ const MonthlyInstallmentsTable: React.FC<Props> = ({ contracts, installments, on
                       <TableHead>Amount</TableHead>
                       <TableHead>Email</TableHead>
                       <TableHead>Status</TableHead>
-                      <TableHead>Invoice</TableHead>
+                      <TableHead>Actions</TableHead>
                       <TableHead className="text-right">Paid</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {contractInstallments.map((inst) => {
                       const isPaid = inst.payment_status === "paid";
+                      const isCreating = creatingInvoiceIds.has(inst.id);
+                      const hasInvoice = !!createdInvoices[inst.id];
                       return (
                         <TableRow key={inst.id} className={cn(isPaid ? "bg-green-500/5 hover:bg-green-500/10" : "bg-red-500/5 hover:bg-red-500/10")}>
                           <TableCell className="font-medium">{inst.month_label}</TableCell>
@@ -235,16 +289,39 @@ const MonthlyInstallmentsTable: React.FC<Props> = ({ contracts, installments, on
                             <Badge variant={isPaid ? "default" : "destructive"}>{isPaid ? "Paid" : "Unpaid"}</Badge>
                           </TableCell>
                           <TableCell>
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleCreateInvoice(contract, inst)}>
-                                    <FileText className="w-4 h-4" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>Create Invoice for {inst.month_label}</TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
+                            <div className="flex items-center gap-1">
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8"
+                                      disabled={isCreating}
+                                      onClick={() => handleCreateInvoice(contract, inst)}
+                                    >
+                                      {isCreating ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>{hasInvoice ? `Invoice ${createdInvoices[inst.id].invoice_number} created` : `Create Invoice for ${inst.month_label}`}</TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8"
+                                      onClick={() => handleOpenSendDialog(contract, inst)}
+                                    >
+                                      <Mail className="w-4 h-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>Send Invoice for {inst.month_label}</TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            </div>
                           </TableCell>
                           <TableCell className="text-right">
                             <Switch checked={isPaid} disabled={togglingIds.has(inst.id)} onCheckedChange={() => handleToggleStatus(inst)} />
@@ -259,6 +336,18 @@ const MonthlyInstallmentsTable: React.FC<Props> = ({ contracts, installments, on
           </div>
         );
       })}
+
+      {sendDialogData && (
+        <SendMonthlyInvoiceDialog
+          open={sendDialogOpen}
+          onOpenChange={setSendDialogOpen}
+          contract={sendDialogData.contract}
+          installment={sendDialogData.installment}
+          detectedLanguage={sendDialogData.language}
+          invoice={sendDialogData.invoice}
+          client={sendDialogData.client}
+        />
+      )}
     </div>
   );
 };

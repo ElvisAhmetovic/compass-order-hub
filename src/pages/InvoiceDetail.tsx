@@ -90,53 +90,7 @@ const InvoiceDetail = () => {
       const clientsData = await InvoiceService.getClients();
       setClients(clientsData);
 
-      // Handle pre-fill from monthly packages
-      const state = location.state as any;
-      if (isNewInvoice && state?.fromMonthlyPackage && state?.prefill) {
-        const p = state.prefill;
-        // Try to match client by email
-        const matchedClient = clientsData.find(
-          (c) => c.email.toLowerCase() === (p.clientEmail || "").toLowerCase()
-        );
-
-        const lineItem = {
-          id: `temp-${Date.now()}`,
-          invoice_id: "",
-          item_description: p.lineItem?.item_description || "",
-          quantity: p.lineItem?.quantity || 1,
-          unit: p.lineItem?.unit || "pcs",
-          unit_price: p.lineItem?.unit_price || 0,
-          vat_rate: p.lineItem?.vat_rate ?? 0.19,
-          discount_rate: p.lineItem?.discount_rate || 0,
-          line_total: 0,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        };
-        // Calculate line total
-        const subtotal = lineItem.quantity * lineItem.unit_price;
-        const withDiscount = subtotal * (1 - lineItem.discount_rate);
-        lineItem.line_total = Math.round(withDiscount * (1 + lineItem.vat_rate) * 100) / 100;
-
-        setLineItems([lineItem]);
-        setFormData({
-          client_id: matchedClient?.id || "",
-          issue_date: p.issueDate || new Date().toISOString().split("T")[0],
-          due_date: p.dueDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
-          currency: p.currency || "EUR",
-          payment_terms: "Net 3",
-          notes: p.notes || "",
-          internal_notes: "",
-          line_items: [],
-        });
-        setTemplateSettings((prev) => ({
-          ...prev,
-          currency: p.currency || "EUR",
-          language: p.language || "en",
-          selectedPaymentAccount: p.selectedPaymentAccount || "both",
-        }));
-        // Clear navigation state so refresh doesn't re-apply
-        window.history.replaceState({}, document.title);
-      } else if (!isNewInvoice && id) {
+      if (!isNewInvoice && id) {
         // Load existing invoice
         const invoiceData = await InvoiceService.getInvoice(id);
         if (invoiceData) {
