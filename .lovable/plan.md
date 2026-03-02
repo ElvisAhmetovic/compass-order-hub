@@ -1,37 +1,22 @@
 
 
-## Auto-Create Client When Missing in Invoice System
+## Fix: Send Invoice Should Auto-Create Invoice If Missing
 
-The issue: when clicking "Create Invoice" on a monthly installment, it fails because the client email from the contract doesn't exist in the `clients` table (invoice system). Currently it just shows an error.
+The "Send Invoice" button currently requires you to first click "Create Invoice" — the send button is disabled and shows an error if no invoice exists. This should be seamless: clicking Send Invoice should auto-create the invoice in the background if one hasn't been created yet.
 
-### Fix
+### Changes to `src/components/monthly/SendMonthlyInvoiceDialog.tsx`
 
-In `handleCreateInvoice` inside `MonthlyInstallmentsTable.tsx`, instead of showing an error when no matching client is found, **auto-create the client** using `InvoiceService.createClient()` with data from the contract:
+1. **Remove the `!invoice` guard** — Instead of blocking with "Please create an invoice first", auto-create the invoice on send
+2. **Add auto-creation logic in `handleSend`** — If `invoice` is null, create one using `InvoiceService.createInvoice()` with the same VAT-inclusive logic from `MonthlyInstallmentsTable`
+3. **Enable the Send button** — Remove `!invoice` from the disabled condition so users can always click Send
+4. **Import `InvoiceService`** (already imported) and use the `client` prop to get `client_id`
+5. If `client` is also null, auto-create the client first (same pattern as the table)
 
-```ts
-let matched = clients.find(c => c.email.toLowerCase() === contract.client_email.toLowerCase());
-if (!matched) {
-  // Auto-create client from contract data
-  matched = await InvoiceService.createClient({
-    name: contract.client_name,
-    email: contract.client_email,
-    contact_person: contract.client_name,
-    company: contract.client_name,
-    address: contract.company_address || "",
-    phone: contract.contact_phone || "",
-    vat_number: "",
-    notes: "Auto-created from Monthly Packages",
-    user_id: "", // will be set by createClient
-  });
-  toast({ title: "Client auto-created", description: `Client "${contract.client_name}" was added to the invoice system.` });
-}
-```
+The flow becomes: click Send → auto-create invoice if needed → generate PDF → send email → done.
 
-Then proceed with invoice creation as normal. Same fix in `handleOpenSendDialog` if it also looks up clients.
-
-### Files to Modify
+### File to Modify
 
 | File | Change |
 |------|--------|
-| `src/components/monthly/MonthlyInstallmentsTable.tsx` | Replace the "client not found" error with auto-create logic in both `handleCreateInvoice` and `handleOpenSendDialog` |
+| `src/components/monthly/SendMonthlyInvoiceDialog.tsx` | Remove invoice null guard, add auto-create invoice logic in handleSend, enable send button always |
 
