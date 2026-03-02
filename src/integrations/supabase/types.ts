@@ -914,15 +914,23 @@ export type Database = {
       }
       monthly_contracts: {
         Row: {
+          assigned_to: string | null
+          assigned_to_name: string | null
           client_email: string
           client_name: string
+          company_address: string | null
+          company_link: string | null
+          contact_phone: string | null
           created_at: string
           created_by: string | null
           currency: string
           description: string | null
           duration_months: number
           id: string
+          internal_notes: string | null
+          inventory_items: string | null
           monthly_amount: number
+          priority: string | null
           start_date: string
           status: string
           total_value: number
@@ -930,15 +938,23 @@ export type Database = {
           website: string | null
         }
         Insert: {
+          assigned_to?: string | null
+          assigned_to_name?: string | null
           client_email: string
           client_name: string
+          company_address?: string | null
+          company_link?: string | null
+          contact_phone?: string | null
           created_at?: string
           created_by?: string | null
           currency?: string
           description?: string | null
           duration_months?: number
           id?: string
+          internal_notes?: string | null
+          inventory_items?: string | null
           monthly_amount: number
+          priority?: string | null
           start_date: string
           status?: string
           total_value: number
@@ -946,15 +962,23 @@ export type Database = {
           website?: string | null
         }
         Update: {
+          assigned_to?: string | null
+          assigned_to_name?: string | null
           client_email?: string
           client_name?: string
+          company_address?: string | null
+          company_link?: string | null
+          contact_phone?: string | null
           created_at?: string
           created_by?: string | null
           currency?: string
           description?: string | null
           duration_months?: number
           id?: string
+          internal_notes?: string | null
+          inventory_items?: string | null
           monthly_amount?: number
+          priority?: string | null
           start_date?: string
           status?: string
           total_value?: number

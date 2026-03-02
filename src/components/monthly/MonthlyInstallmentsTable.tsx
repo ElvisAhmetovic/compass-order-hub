@@ -99,6 +99,7 @@ const MonthlyInstallmentsTable: React.FC<Props> = ({ contracts, installments, on
                   <div className="font-semibold text-foreground">{contract.client_name}</div>
                   <div className="text-sm text-muted-foreground">
                     {contract.client_email}
+                    {(contract as any).contact_phone && ` · ${(contract as any).contact_phone}`}
                     {contract.website && (
                       <>
                         {" · "}
@@ -108,6 +109,9 @@ const MonthlyInstallmentsTable: React.FC<Props> = ({ contracts, installments, on
                       </>
                     )}
                   </div>
+                  {(contract as any).company_address && (
+                    <div className="text-xs text-muted-foreground">{(contract as any).company_address}</div>
+                  )}
                 </div>
               </div>
 
