@@ -138,6 +138,7 @@ const Sidebar = () => {
     { href: '/invoices', icon: Receipt, label: 'Invoices', roles: ['admin', 'agent'] },
     { href: '/proposals', icon: FileText, label: 'Proposals', roles: ['admin', 'agent'] },
     { href: '/yearly-packages', icon: Package, label: 'Yearly Packages', roles: ['admin', 'agent'] },
+    { href: '/monthly-packages', icon: ClockIcon, label: 'Monthly Packages', roles: ['admin', 'agent'] },
     { href: '/facebook', icon: Facebook, label: 'Facebook', roles: ['admin', 'agent'] },
     { href: '/google-deletion', icon: UserX, label: 'Google Deletion', roles: ['admin', 'agent'] },
     { href: '/complaints', icon: AlertTriangle, label: 'Complaints', roles: ['admin', 'agent'] },
