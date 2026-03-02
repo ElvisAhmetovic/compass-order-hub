@@ -1,21 +1,35 @@
 
 
-## Fix: Remove Duplicate Team Notification Loop from SendMonthlyInvoiceDialog
+## Fix: Speed Up Team Notifications in send-invoice-pdf Edge Function
 
-The `send-invoice-pdf` edge function already sends team notifications after delivering the client email. But `SendMonthlyInvoiceDialog.tsx` also loops through all 12 team emails client-side, sending the full PDF to each one sequentially with 500ms delays. This causes:
-1. ~12 extra edge function calls (each ~15s with the full PDF payload)
-2. The dialog stays stuck on "Sending..." for minutes
-3. Duplicate notifications to the team
+The `send-invoice-pdf` edge function sends 12 team notification emails **sequentially** with 500ms delays between each (total ~6+ seconds). The frontend waits for all of them to complete before showing the success toast.
 
 ### Fix
 
-In `SendMonthlyInvoiceDialog.tsx`, remove the entire `for` loop (lines ~193-208) that iterates over `NOTIFICATION_EMAIL_LIST` and sends `[Team Copy]` emails. The edge function already handles this.
+In `supabase/functions/send-invoice-pdf/index.ts`, replace the sequential `for` loop with `Promise.allSettled()` to send all team notifications **in parallel**. Resend's API can handle batch requests without the artificial 500ms delays for simple text-only notification emails (no attachments).
 
-Also remove the `NOTIFICATION_EMAIL_LIST` import since it's no longer needed.
+**Before** (sequential, ~6s):
+```ts
+for (const email of NOTIFICATION_EMAIL_LIST) {
+  await fetch(...);
+  await new Promise(resolve => setTimeout(resolve, 500));
+}
+```
+
+**After** (parallel, ~1s):
+```ts
+await Promise.allSettled(
+  NOTIFICATION_EMAIL_LIST.map(email =>
+    fetch('https://api.resend.com/emails', { ... })
+      .then(res => { if (!res.ok) console.error(...); })
+      .catch(e => console.error(...))
+  )
+);
+```
 
 ### File to Modify
 
 | File | Change |
 |------|--------|
-| `src/components/monthly/SendMonthlyInvoiceDialog.tsx` | Remove the team notification loop and the `NOTIFICATION_EMAIL_LIST` import |
+| `supabase/functions/send-invoice-pdf/index.ts` | Replace sequential team email loop with `Promise.allSettled` for parallel sending |
 
