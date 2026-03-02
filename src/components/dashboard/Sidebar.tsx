@@ -138,7 +138,6 @@ const Sidebar = () => {
     { href: '/invoice-paid', icon: Receipt, label: 'Invoice Paid', roles: ['admin', 'agent'] },
     { href: '/invoices', icon: Receipt, label: 'Invoices', roles: ['admin', 'agent'] },
     { href: '/proposals', icon: FileText, label: 'Proposals', roles: ['admin', 'agent'] },
-    { href: '/yearly-packages', icon: Package, label: 'Yearly Packages', roles: ['admin', 'agent'] },
     { href: '/facebook', icon: Facebook, label: 'Facebook', roles: ['admin', 'agent'] },
     { href: '/google-deletion', icon: UserX, label: 'Google Deletion', roles: ['admin', 'agent'] },
     { href: '/complaints', icon: AlertTriangle, label: 'Complaints', roles: ['admin', 'agent'] },
@@ -153,6 +152,7 @@ const Sidebar = () => {
     { href: '/user-statistics', icon: BarChart2, label: 'User Statistics', roles: ['admin', 'agent'] },
     { href: '/settings', icon: Settings, label: 'Settings', roles: ['admin'] },
     { href: '/deleted', icon: Trash2, label: 'Deleted', roles: ['admin'] },
+    { href: '/yearly-packages', icon: Package, label: 'Yearly Packages', roles: ['admin', 'agent'] },
     {
       href: "/team-collaboration",
       icon: MessageSquare,
