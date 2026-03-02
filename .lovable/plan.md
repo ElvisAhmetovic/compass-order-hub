@@ -1,59 +1,43 @@
 
 
-## Enhance Monthly Packages: Autofill, Full Form Fields & Automated Notifications
+## Add "Create Invoice" Button to Monthly Installments
 
-The user wants two things:
-1. The "Create Contract" modal should match the Dashboard's "Create Order" modal — with the OrderSearchDropdown autofill, company address, phone, company link, inventory items, description, internal notes, priority, and assign-to fields.
-2. The cron edge function should also email the hardcoded team list when it sends a client invoice, notifying the team that a payment reminder was sent.
+Each installment row gets an invoice button that navigates to `/invoices/new` with pre-filled data from the contract and installment.
 
-### Changes
+### How It Works
 
-#### 1. Update `CreateMonthlyContractModal.tsx` — Match Dashboard Create Order
+1. **Button on each installment row** — A "Create Invoice" icon button in the table
+2. **Auto-fill logic** — When clicked, navigate to `/invoices/new` passing state via React Router with:
+   - **Client**: First try to match an existing invoice client by email (`client_email`), otherwise the user picks manually
+   - **Line item**: description from `contract.description` (or "Monthly Service - [month_label]"), quantity 1, unit_price = installment amount, 19% VAT
+   - **Currency**: from the contract
+   - **Dates**: issue_date = today, due_date = installment due_date
+   - **Language**: auto-detect from contract's `company_address` or country keyword (e.g. "Deutschland"/"Germany" → `de`, "Nederland" → `nl`, "France" → `fr`, etc.)
+   - **Payment account**: set to `"both"` (Belgium + Germany)
+   - **Notes**: include the month label reference
 
-Rebuild the modal to include:
-- **OrderSearchDropdown** for autofilling company info from existing orders
-- All fields from CreateOrderModal: Company Name, Contact Email, Company Address, Contact Phone, Company Link, Price (total value), Currency, Duration, Start Date, Priority, Assign To, Inventory Items (via `InventoryItemsSelector`), Client Description, Internal Notes
-- Auto-calculate monthly installment display
-- Use `react-hook-form` + `zod` validation like the dashboard modal
-- Load users list for "Assign To" dropdown
-- Keep the monthly installment preview card
+3. **InvoiceDetail.tsx picks up the state** — On mount, if `location.state` has monthly package data, pre-populate `formData`, `lineItems`, and `templateSettings` (language, payment account = "both")
 
-The autofill will copy company info (name, email, address, phone, link, currency) from a selected order, same as the dashboard.
+### Country → Language Mapping
 
-#### 2. Update DB schema — Add new columns to `monthly_contracts`
+A utility function that scans the company address for country keywords:
+- Deutschland/Germany → `de`
+- Nederland/Netherlands → `nl`  
+- France/Frankreich → `fr`
+- España/Spain → `es`
+- Danmark/Denmark → `da`
+- Norge/Norway → `no`
+- Česko/Czech → `cs`
+- Polska/Poland → `pl`
+- Sverige/Sweden → `sv`
+- Default → `en`
 
-Add columns to support the extra fields:
-- `company_address text`
-- `contact_phone text`
-- `company_link text`
-- `priority text DEFAULT 'medium'`
-- `assigned_to uuid`
-- `assigned_to_name text`
-- `internal_notes text`
-- `inventory_items text`
+### Files to Modify
 
-#### 3. Update `monthlyContractService.ts`
-
-Update the `MonthlyContract` interface and `createContract` method to include the new fields.
-
-#### 4. Update `generate-monthly-installments` edge function — Add team notification
-
-After sending the client invoice email, also:
-- Send an email to all hardcoded team emails (from `NOTIFICATION_EMAIL_LIST`) notifying them: "Monthly payment reminder sent to [Company Name] for [Month] — [Amount]"
-- Use the same 500ms delay pattern between sends to avoid rate limiting
-- Create in-app notifications for all team members (same pattern as `send-order-payment-reminders`)
-
-#### 5. Update `MonthlyInstallmentsTable.tsx`
-
-Show additional info in the contract header row (address, phone, link) when available.
-
-### Files to Create/Modify
-
-| File | Action |
+| File | Change |
 |------|--------|
-| Migration SQL | Add new columns to `monthly_contracts` |
-| `src/components/monthly/CreateMonthlyContractModal.tsx` | Rebuild with full form + autofill |
-| `src/services/monthlyContractService.ts` | Update interface + service |
-| `supabase/functions/generate-monthly-installments/index.ts` | Add team email notifications |
-| `src/components/monthly/MonthlyInstallmentsTable.tsx` | Show extra fields |
+| `src/components/monthly/MonthlyInstallmentsTable.tsx` | Add invoice button per row, add `useNavigate`, build pre-fill state, country detection function |
+| `src/pages/InvoiceDetail.tsx` | Read `location.state` on mount, pre-fill formData + lineItems + templateSettings when coming from monthly packages |
+
+No database changes needed — this uses the existing invoice system.
 
