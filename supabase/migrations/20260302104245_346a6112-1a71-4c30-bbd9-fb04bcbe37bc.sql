@@ -1,0 +1,1 @@
+UPDATE public.monthly_installments SET email_sent = false, invoice_id = null, email_sent_at = null WHERE id = '3efe1fd2-df86-46d4-80c9-4b94fd44886d';
