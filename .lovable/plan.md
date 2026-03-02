@@ -1,66 +1,59 @@
 
 
-## Fix Monthly Packages: Add Sidebar + Translate to English
+## Enhance Monthly Packages: Autofill, Full Form Fields & Automated Notifications
 
-Two issues: the page is missing the sidebar layout wrapper used by all other pages, and all text is in German.
+The user wants two things:
+1. The "Create Contract" modal should match the Dashboard's "Create Order" modal — with the OrderSearchDropdown autofill, company address, phone, company link, inventory items, description, internal notes, priority, and assign-to fields.
+2. The cron edge function should also email the hardcoded team list when it sends a client invoice, notifying the team that a payment reminder was sent.
 
-### 1. Add Sidebar to `src/pages/MonthlyPackages.tsx`
+### Changes
 
-Wrap the page content with `Sidebar` + `Layout` the same way `Dashboard.tsx` does:
+#### 1. Update `CreateMonthlyContractModal.tsx` — Match Dashboard Create Order
 
-```tsx
-<div className="flex min-h-screen">
-  <Sidebar />
-  <div className="flex-1">
-    <Layout>
-      {/* existing content */}
-    </Layout>
-  </div>
-</div>
-```
+Rebuild the modal to include:
+- **OrderSearchDropdown** for autofilling company info from existing orders
+- All fields from CreateOrderModal: Company Name, Contact Email, Company Address, Contact Phone, Company Link, Price (total value), Currency, Duration, Start Date, Priority, Assign To, Inventory Items (via `InventoryItemsSelector`), Client Description, Internal Notes
+- Auto-calculate monthly installment display
+- Use `react-hook-form` + `zod` validation like the dashboard modal
+- Load users list for "Assign To" dropdown
+- Keep the monthly installment preview card
 
-Import `Sidebar` from `@/components/dashboard/Sidebar`.
+The autofill will copy company info (name, email, address, phone, link, currency) from a selected order, same as the dashboard.
 
-### 2. Translate `MonthlyPackages.tsx` to English
+#### 2. Update DB schema — Add new columns to `monthly_contracts`
 
-| German | English |
-|--------|---------|
-| Monatspakete | Monthly Packages |
-| Jahresverträge mit monatlicher Abrechnung verwalten | Manage yearly contracts with monthly billing |
-| Neuer Vertrag | New Contract |
-| Aktive Verträge | Active Contracts |
-| Bezahlte Raten | Paid Installments |
-| Offene Raten | Open Installments |
-| Einnahmen (bezahlt) | Revenue (paid) |
-| Fehler beim Laden | Error loading data |
-| Laden... | Loading... |
+Add columns to support the extra fields:
+- `company_address text`
+- `contact_phone text`
+- `company_link text`
+- `priority text DEFAULT 'medium'`
+- `assigned_to uuid`
+- `assigned_to_name text`
+- `internal_notes text`
+- `inventory_items text`
 
-### 3. Translate `CreateMonthlyContractModal.tsx` to English
+#### 3. Update `monthlyContractService.ts`
 
-All labels, placeholders, toasts, and button text:
-- "Neuen Monatsvertrag erstellen" → "Create New Monthly Contract"
-- "Kundenname" → "Client Name", "E-Mail" → "Email"
-- "Gesamtwert" → "Total Value", "Währung" → "Currency"
-- "Laufzeit (Monate)" → "Duration (months)"
-- "Startdatum" → "Start Date", "Beschreibung" → "Description"
-- "Monatliche Rate" → "Monthly Installment"
-- "Raten" → "installments"
-- "Abbrechen" → "Cancel", "Vertrag erstellen" → "Create Contract"
-- "Erstelle..." → "Creating..."
-- Toast messages translated
+Update the `MonthlyContract` interface and `createContract` method to include the new fields.
 
-### 4. Translate `MonthlyInstallmentsTable.tsx` to English
+#### 4. Update `generate-monthly-installments` edge function — Add team notification
 
-All German strings:
-- "Als bezahlt/unbezahlt markiert" → "Marked as paid/unpaid"
-- "Vertrag gelöscht" → "Contract deleted"
-- "Noch keine Monatsverträge..." → "No monthly contracts yet..."
-- "/ Monat" → "/ month", "Gesamt:" → "Total:"
-- "bezahlt" → "paid"
-- "Aktiv/Abgeschlossen/Storniert" → "Active/Completed/Cancelled"
-- Table headers: Monat→Month, Fällig am→Due Date, Betrag→Amount, Status, Bezahlt→Paid
-- "Gesendet/Ausstehend" → "Sent/Pending"
-- "Bezahlt/Unbezahlt" → "Paid/Unpaid"
-- Delete dialog text translated
-- "Fehler" → "Error"
+After sending the client invoice email, also:
+- Send an email to all hardcoded team emails (from `NOTIFICATION_EMAIL_LIST`) notifying them: "Monthly payment reminder sent to [Company Name] for [Month] — [Amount]"
+- Use the same 500ms delay pattern between sends to avoid rate limiting
+- Create in-app notifications for all team members (same pattern as `send-order-payment-reminders`)
+
+#### 5. Update `MonthlyInstallmentsTable.tsx`
+
+Show additional info in the contract header row (address, phone, link) when available.
+
+### Files to Create/Modify
+
+| File | Action |
+|------|--------|
+| Migration SQL | Add new columns to `monthly_contracts` |
+| `src/components/monthly/CreateMonthlyContractModal.tsx` | Rebuild with full form + autofill |
+| `src/services/monthlyContractService.ts` | Update interface + service |
+| `supabase/functions/generate-monthly-installments/index.ts` | Add team email notifications |
+| `src/components/monthly/MonthlyInstallmentsTable.tsx` | Show extra fields |
 
