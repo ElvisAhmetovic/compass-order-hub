@@ -12,7 +12,7 @@ import { generateInvoicePDFBase64 } from "@/utils/invoicePdfGenerator";
 import { supabase } from "@/integrations/supabase/client";
 import { InvoiceService } from "@/services/invoiceService";
 import { Invoice, InvoiceLineItem, Client } from "@/types/invoice";
-import { NOTIFICATION_EMAIL_LIST } from "@/constants/notificationEmails";
+
 import { Mail, Send } from "lucide-react";
 import { MonthlyContract, MonthlyInstallment } from "@/services/monthlyContractService";
 
@@ -188,22 +188,6 @@ const SendMonthlyInvoiceDialog: React.FC<SendMonthlyInvoiceDialogProps> = ({
       });
 
       if (error) throw error;
-
-      // Notify team (send to each with delay to avoid rate limiting)
-      for (let i = 0; i < NOTIFICATION_EMAIL_LIST.length; i++) {
-        const teamEmail = NOTIFICATION_EMAIL_LIST[i];
-        if (teamEmail === clientEmail) continue;
-        if (i > 0) await new Promise(r => setTimeout(r, 500));
-        await supabase.functions.invoke("send-invoice-pdf", {
-          body: {
-            client_email: teamEmail,
-            subject: `[Team Copy] ${subject}`,
-            message: `Invoice sent to ${contract.client_name} (${clientEmail}) for ${installment.month_label}.\n\n${message}`,
-            pdf_base64: pdfBase64,
-            invoice_number: currentInvoice.invoice_number,
-          },
-        }).catch(err => console.warn(`Failed to notify ${teamEmail}:`, err));
-      }
 
       toast({
         title: "Invoice sent",
