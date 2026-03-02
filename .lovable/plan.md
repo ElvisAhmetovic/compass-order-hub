@@ -1,35 +1,50 @@
 
 
-## Fix: Speed Up Team Notifications in send-invoice-pdf Edge Function
+## Auto-Generate Invoices + PDF in Monthly Cron Job
 
-The `send-invoice-pdf` edge function sends 12 team notification emails **sequentially** with 500ms delays between each (total ~6+ seconds). The frontend waits for all of them to complete before showing the success toast.
+Currently the `generate-monthly-installments` cron job (runs 1st of each month) only sends a plain-text "Monatliche Rechnung" email. You want it to also automatically create the invoice record in the database and send the professional PDF invoice — eliminating all manual work.
 
-### Fix
+### Challenge
 
-In `supabase/functions/send-invoice-pdf/index.ts`, replace the sequential `for` loop with `Promise.allSettled()` to send all team notifications **in parallel**. Resend's API can handle batch requests without the artificial 500ms delays for simple text-only notification emails (no attachments).
+The current PDF generator (`invoicePdfGenerator.ts`) uses `html2canvas` + DOM manipulation, which only works in browsers. The cron job runs server-side in Deno. So we need to generate the PDF directly using jsPDF's text/drawing API in the edge function.
 
-**Before** (sequential, ~6s):
-```ts
-for (const email of NOTIFICATION_EMAIL_LIST) {
-  await fetch(...);
-  await new Promise(resolve => setTimeout(resolve, 500));
-}
-```
+### Plan
 
-**After** (parallel, ~1s):
-```ts
-await Promise.allSettled(
-  NOTIFICATION_EMAIL_LIST.map(email =>
-    fetch('https://api.resend.com/emails', { ... })
-      .then(res => { if (!res.ok) console.error(...); })
-      .catch(e => console.error(...))
-  )
-);
-```
+**Modify `supabase/functions/generate-monthly-installments/index.ts`** to add these steps for each installment:
 
-### File to Modify
+1. **Find or create client** — Query `clients` table by email; if not found, insert a new client using contract data (name, email, address, phone)
+2. **Create invoice record** — Call `generate_invoice_number` RPC, insert into `invoices` table with the correct VAT-inclusive math (`amount / 1.19` for net price, 19% VAT)
+3. **Create line item** — Insert into `invoice_line_items` with the contract description + month label
+4. **Generate PDF server-side** — Use jsPDF via `esm.sh` to create a clean invoice PDF with:
+   - Company header (AB Media branding)
+   - Client billing info
+   - Invoice number, dates
+   - Line items table with net, VAT, total
+   - Bank details (Belgium + Germany accounts, same as the frontend template)
+5. **Send PDF via Resend** — Attach the PDF to the client email (replacing the current plain-text email)
+6. **Team notifications** — Send in parallel using `Promise.allSettled` (already optimized pattern)
+
+### What Changes
+
+| Area | Before | After |
+|------|--------|-------|
+| Client email | Plain text "Monatliche Rechnung" | Professional PDF invoice attached |
+| Invoice record | Must be created manually | Auto-created in DB |
+| Client record | Must exist or be created manually | Auto-created if missing |
+| Manual work | Create invoice → Send invoice → done | Fully automatic, zero manual steps |
+
+### Technical Details
+
+- **PDF generation**: Uses `jsPDF` imported via `https://esm.sh/jspdf@2.5.1` in Deno — no DOM needed, uses `doc.text()`, `doc.line()`, `doc.rect()` for layout
+- **Bank details hardcoded**: Belgium (BE79967023897833, TRWIBEB1XXX) and Germany (DE91240703680071572200, DEUTDE2HP22) — same as frontend template
+- **Invoice language**: Defaults to German (most clients), matching the existing "Monatliche Rechnung" pattern
+- **Idempotency**: If an installment already has an invoice (re-run safety), it skips invoice creation but still sends the email if `email_sent` is false
+- **New column**: Add `invoice_id` to `monthly_installments` table to link installments to their auto-generated invoices
+
+### Files to Modify
 
 | File | Change |
 |------|--------|
-| `supabase/functions/send-invoice-pdf/index.ts` | Replace sequential team email loop with `Promise.allSettled` for parallel sending |
+| `supabase/functions/generate-monthly-installments/index.ts` | Add client/invoice auto-creation, server-side PDF generation, attach PDF to email |
+| DB migration | Add `invoice_id` column to `monthly_installments` table |
 
