@@ -999,6 +999,7 @@ export type Database = {
           email_sent: boolean
           email_sent_at: string | null
           id: string
+          invoice_id: string | null
           month_label: string
           month_number: number
           paid_at: string | null
@@ -1017,6 +1018,7 @@ export type Database = {
           email_sent?: boolean
           email_sent_at?: string | null
           id?: string
+          invoice_id?: string | null
           month_label: string
           month_number: number
           paid_at?: string | null
@@ -1035,6 +1037,7 @@ export type Database = {
           email_sent?: boolean
           email_sent_at?: string | null
           id?: string
+          invoice_id?: string | null
           month_label?: string
           month_number?: number
           paid_at?: string | null
@@ -1048,6 +1051,13 @@ export type Database = {
             columns: ["contract_id"]
             isOneToOne: false
             referencedRelation: "monthly_contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monthly_installments_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
             referencedColumns: ["id"]
           },
         ]
