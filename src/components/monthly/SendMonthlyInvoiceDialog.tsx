@@ -64,13 +64,68 @@ const SendMonthlyInvoiceDialog: React.FC<SendMonthlyInvoiceDialogProps> = ({
       return;
     }
 
-    if (!invoice) {
-      toast({ title: "Error", description: "Please create an invoice first before sending.", variant: "destructive" });
-      return;
-    }
-
     setSending(true);
     try {
+      // Auto-create client if missing
+      let currentClient = client;
+      if (!currentClient) {
+        try {
+          const clients = await InvoiceService.getClients();
+          currentClient = clients.find(c => c.email.toLowerCase() === contract.client_email.toLowerCase()) || null;
+          if (!currentClient) {
+            currentClient = await InvoiceService.createClient({
+              name: contract.client_name,
+              email: contract.client_email,
+              contact_person: contract.client_name,
+              address: (contract as any).company_address || "",
+              phone: (contract as any).contact_phone || "",
+            });
+            toast({ title: "Client auto-created", description: `Client "${contract.client_name}" was added to the invoice system.` });
+          }
+        } catch (err) {
+          console.error("Failed to auto-create client:", err);
+          toast({ title: "Error", description: "Failed to create client record.", variant: "destructive" });
+          setSending(false);
+          return;
+        }
+      }
+
+      // Auto-create invoice if missing
+      let currentInvoice = invoice;
+      if (!currentInvoice) {
+        try {
+          const netPrice = Number((installment.amount / 1.19).toFixed(2));
+          const vatAmount = Number((installment.amount - netPrice).toFixed(2));
+          const description = contract.description
+            ? `${contract.description} - ${installment.month_label}`
+            : `Monthly Service - ${installment.month_label}`;
+
+          currentInvoice = await InvoiceService.createInvoice({
+            client_id: currentClient.id,
+            issue_date: new Date().toISOString().split("T")[0],
+            due_date: installment.due_date,
+            currency: contract.currency || "EUR",
+            payment_terms: "",
+            notes: "",
+            internal_notes: "",
+            line_items: [{
+              item_description: description,
+              quantity: 1,
+              unit: "pcs",
+              unit_price: netPrice,
+              vat_rate: 0.19,
+              discount_rate: 0,
+            }],
+          });
+          toast({ title: "Invoice auto-created", description: `Invoice ${currentInvoice.invoice_number} was generated.` });
+        } catch (err) {
+          console.error("Failed to auto-create invoice:", err);
+          toast({ title: "Error", description: "Failed to create invoice.", variant: "destructive" });
+          setSending(false);
+          return;
+        }
+      }
+
       // Build line items for PDF
       const netPrice = Number((installment.amount / 1.19).toFixed(2));
       const description = contract.description
@@ -79,7 +134,7 @@ const SendMonthlyInvoiceDialog: React.FC<SendMonthlyInvoiceDialogProps> = ({
 
       const lineItems: InvoiceLineItem[] = [{
         id: "pdf-line",
-        invoice_id: invoice.id,
+        invoice_id: currentInvoice.id,
         item_description: description,
         quantity: 1,
         unit: "pcs",
@@ -114,9 +169,9 @@ const SendMonthlyInvoiceDialog: React.FC<SendMonthlyInvoiceDialogProps> = ({
       };
 
       const pdfBase64 = await generateInvoicePDFBase64({
-        invoice,
+        invoice: currentInvoice,
         lineItems,
-        client: client || undefined,
+        client: currentClient || undefined,
         templateSettings,
         formData,
       });
@@ -128,7 +183,7 @@ const SendMonthlyInvoiceDialog: React.FC<SendMonthlyInvoiceDialogProps> = ({
           subject,
           message,
           pdf_base64: pdfBase64,
-          invoice_number: invoice.invoice_number,
+          invoice_number: currentInvoice.invoice_number,
         },
       });
 
@@ -145,7 +200,7 @@ const SendMonthlyInvoiceDialog: React.FC<SendMonthlyInvoiceDialogProps> = ({
             subject: `[Team Copy] ${subject}`,
             message: `Invoice sent to ${contract.client_name} (${clientEmail}) for ${installment.month_label}.\n\n${message}`,
             pdf_base64: pdfBase64,
-            invoice_number: invoice.invoice_number,
+            invoice_number: currentInvoice.invoice_number,
           },
         }).catch(err => console.warn(`Failed to notify ${teamEmail}:`, err));
       }
@@ -231,7 +286,7 @@ const SendMonthlyInvoiceDialog: React.FC<SendMonthlyInvoiceDialogProps> = ({
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={sending}>
             Cancel
           </Button>
-          <Button onClick={handleSend} disabled={sending || !invoice}>
+          <Button onClick={handleSend} disabled={sending}>
             <Send className="h-4 w-4 mr-2" />
             {sending ? "Sending..." : "Send Invoice"}
           </Button>
