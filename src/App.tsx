@@ -45,6 +45,7 @@ import CustomerTicketDetail from "./pages/CustomerTicketDetail";
 import NotFound from "./pages/NotFound";
 import TextLibrary from "./pages/TextLibrary";
 import WorkHours from "./pages/WorkHours";
+import MonthlyPackages from "./pages/MonthlyPackages";
 import TicketSubmitted from "./pages/TicketSubmitted";
 import TicketLoading from "./pages/TicketLoading";
 import { RequireAuth } from "./components/auth/RequireAuth";
@@ -291,6 +292,11 @@ function App() {
                   <Route path="/work-hours" element={
                     <RequireAuth>
                       <WorkHours />
+                    </RequireAuth>
+                  } />
+                  <Route path="/monthly-packages" element={
+                    <RequireAuth>
+                      <MonthlyPackages />
                     </RequireAuth>
                   } />
                   <Route path="/text" element={

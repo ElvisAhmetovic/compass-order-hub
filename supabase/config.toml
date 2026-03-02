@@ -86,3 +86,6 @@ verify_jwt = false
 
 [functions.translate-upsell]
 verify_jwt = false
+
+[functions.generate-monthly-installments]
+verify_jwt = false

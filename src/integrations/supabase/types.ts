@@ -912,6 +912,122 @@ export type Database = {
           },
         ]
       }
+      monthly_contracts: {
+        Row: {
+          client_email: string
+          client_name: string
+          created_at: string
+          created_by: string | null
+          currency: string
+          description: string | null
+          duration_months: number
+          id: string
+          monthly_amount: number
+          start_date: string
+          status: string
+          total_value: number
+          updated_at: string
+          website: string | null
+        }
+        Insert: {
+          client_email: string
+          client_name: string
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          description?: string | null
+          duration_months?: number
+          id?: string
+          monthly_amount: number
+          start_date: string
+          status?: string
+          total_value: number
+          updated_at?: string
+          website?: string | null
+        }
+        Update: {
+          client_email?: string
+          client_name?: string
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          description?: string | null
+          duration_months?: number
+          id?: string
+          monthly_amount?: number
+          start_date?: string
+          status?: string
+          total_value?: number
+          updated_at?: string
+          website?: string | null
+        }
+        Relationships: []
+      }
+      monthly_installments: {
+        Row: {
+          amount: number
+          client_email: string | null
+          client_name: string | null
+          contract_id: string
+          created_at: string
+          currency: string
+          due_date: string
+          email_sent: boolean
+          email_sent_at: string | null
+          id: string
+          month_label: string
+          month_number: number
+          paid_at: string | null
+          payment_status: string
+          updated_at: string
+          website: string | null
+        }
+        Insert: {
+          amount: number
+          client_email?: string | null
+          client_name?: string | null
+          contract_id: string
+          created_at?: string
+          currency?: string
+          due_date: string
+          email_sent?: boolean
+          email_sent_at?: string | null
+          id?: string
+          month_label: string
+          month_number: number
+          paid_at?: string | null
+          payment_status?: string
+          updated_at?: string
+          website?: string | null
+        }
+        Update: {
+          amount?: number
+          client_email?: string | null
+          client_name?: string | null
+          contract_id?: string
+          created_at?: string
+          currency?: string
+          due_date?: string
+          email_sent?: boolean
+          email_sent_at?: string | null
+          id?: string
+          month_label?: string
+          month_number?: number
+          paid_at?: string | null
+          payment_status?: string
+          updated_at?: string
+          website?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monthly_installments_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_contracts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notification_logs: {
         Row: {
           changed_by_id: string | null
