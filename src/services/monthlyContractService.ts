@@ -167,6 +167,20 @@ export const monthlyContractService = {
     if (error) throw error;
   },
 
+  async toggleEmailSent(installmentId: string, newStatus: boolean) {
+    const updateData: any = {
+      email_sent: newStatus,
+      email_sent_at: newStatus ? new Date().toISOString() : null,
+    };
+
+    const { error } = await supabase
+      .from("monthly_installments")
+      .update(updateData)
+      .eq("id", installmentId);
+
+    if (error) throw error;
+  },
+
   async deleteContract(contractId: string) {
     const { error } = await supabase
       .from("monthly_contracts")

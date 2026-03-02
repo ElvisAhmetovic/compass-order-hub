@@ -51,6 +51,7 @@ interface Props {
 const MonthlyInstallmentsTable: React.FC<Props> = ({ contracts, installments, onRefresh, isAdmin }) => {
   const [expandedContracts, setExpandedContracts] = useState<Set<string>>(new Set());
   const [togglingIds, setTogglingIds] = useState<Set<string>>(new Set());
+  const [togglingEmailIds, setTogglingEmailIds] = useState<Set<string>>(new Set());
   const [creatingInvoiceIds, setCreatingInvoiceIds] = useState<Set<string>>(new Set());
   // Track created invoices: installment id -> Invoice
   const [createdInvoices, setCreatedInvoices] = useState<Record<string, Invoice>>({}); 
@@ -174,6 +175,20 @@ const MonthlyInstallmentsTable: React.FC<Props> = ({ contracts, installments, on
     }
   };
 
+  const handleToggleEmailSent = async (installment: MonthlyInstallment) => {
+    const newStatus = !installment.email_sent;
+    setTogglingEmailIds((prev) => new Set(prev).add(installment.id));
+    try {
+      await monthlyContractService.toggleEmailSent(installment.id, newStatus);
+      toast({ title: newStatus ? "Marked as sent" : "Marked as not sent" });
+      onRefresh();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setTogglingEmailIds((prev) => { const next = new Set(prev); next.delete(installment.id); return next; });
+    }
+  };
+
   const handleDeleteContract = async (contractId: string) => {
     try {
       await monthlyContractService.deleteContract(contractId);
@@ -283,7 +298,7 @@ const MonthlyInstallmentsTable: React.FC<Props> = ({ contracts, installments, on
                       <TableHead>Month</TableHead>
                       <TableHead>Due Date</TableHead>
                       <TableHead>Amount</TableHead>
-                      <TableHead>Email</TableHead>
+                      <TableHead>Invoice Sent</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Actions</TableHead>
                       <TableHead className="text-right">Paid</TableHead>
@@ -300,7 +315,10 @@ const MonthlyInstallmentsTable: React.FC<Props> = ({ contracts, installments, on
                           <TableCell>{new Date(inst.due_date).toLocaleDateString("en-US")}</TableCell>
                           <TableCell className="font-semibold">{formatPrice(inst.amount, inst.currency)}</TableCell>
                           <TableCell>
-                            {inst.email_sent ? <Badge variant="secondary" className="text-xs">Sent</Badge> : <Badge variant="outline" className="text-xs">Pending</Badge>}
+                            <div className="flex items-center gap-2">
+                              <Switch checked={inst.email_sent} disabled={togglingEmailIds.has(inst.id)} onCheckedChange={() => handleToggleEmailSent(inst)} />
+                              <span className="text-xs text-muted-foreground">{inst.email_sent ? "Sent" : "Pending"}</span>
+                            </div>
                           </TableCell>
                           <TableCell>
                             <Badge variant={isPaid ? "default" : "destructive"}>{isPaid ? "Paid" : "Unpaid"}</Badge>
