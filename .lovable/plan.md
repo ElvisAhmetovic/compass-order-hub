@@ -1,18 +1,40 @@
 
 
-## Fix: Include PDF + Rate-Limit Team Notifications in `send-invoice-pdf`
+## Fix: Update installment `email_sent` status after manual invoice send
 
-The `send-invoice-pdf` edge function currently sends team members a plain notification **without** the PDF attachment and fires all 12 emails in parallel, hitting Resend's rate limit.
+### Problem
+
+After manually sending an invoice via the Send Invoice dialog in Monthly Packages, the `email_sent` column on the `monthly_installments` row is never updated. The table reads `inst.email_sent` (line 303) to show "Sent" vs "Pending", so it stays "Pending" forever.
+
+Additionally, the dialog doesn't call `onRefresh` after success, so even if we update the DB, the UI wouldn't reflect it without a manual page reload.
 
 ### Changes
 
-**File: `supabase/functions/send-invoice-pdf/index.ts`**
+**File: `src/components/monthly/SendMonthlyInvoiceDialog.tsx`**
 
-1. **Attach the PDF to team emails** — Include the same `attachments` array (with the base64 PDF) in team notification emails, plus the original message content
-2. **Batch team emails** — Send in batches of 2 with 1-second delays between batches (same pattern as the cron job fix)
+1. After the successful `send-invoice-pdf` call (line 191), update the installment record in Supabase:
+   ```ts
+   await supabase
+     .from('monthly_installments')
+     .update({
+       email_sent: true,
+       email_sent_at: new Date().toISOString(),
+       invoice_id: currentInvoice.id,
+     })
+     .eq('id', installment.id);
+   ```
 
-| Before | After |
-|--------|-------|
-| Team gets plain "Invoice Sent" notification, no PDF | Team gets the same email content + PDF attachment |
-| All 12 team emails fired in parallel (rate limited) | Batched 2 at a time with 1s delay |
+2. Add an `onRefresh` callback prop to the dialog so the parent table re-fetches data after sending
+
+**File: `src/components/monthly/MonthlyInstallmentsTable.tsx`**
+
+1. Pass `onRefresh` to the `SendMonthlyInvoiceDialog` component
+
+### Summary
+
+| What | Before | After |
+|------|--------|-------|
+| `email_sent` field | Never updated on manual send | Set to `true` after successful send |
+| `invoice_id` field | Never linked on manual send | Linked to created invoice |
+| UI refresh | Stays stale after send | Auto-refreshes via `onRefresh` |
 
