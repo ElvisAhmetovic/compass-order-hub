@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import Layout from "@/components/layout/Layout";
+import Sidebar from "@/components/dashboard/Sidebar";
 import { Button } from "@/components/ui/button";
 import { Plus, CalendarRange } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
@@ -31,7 +32,7 @@ const MonthlyPackages: React.FC = () => {
       setContracts(c);
       setInstallments(i);
     } catch (err: any) {
-      toast({ title: "Fehler beim Laden", description: err.message, variant: "destructive" });
+      toast({ title: "Error loading data", description: err.message, variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -41,7 +42,6 @@ const MonthlyPackages: React.FC = () => {
     fetchData();
   }, [fetchData]);
 
-  // Summary stats
   const totalContracts = contracts.filter((c) => c.status === "active").length;
   const totalPaid = installments.filter((i) => i.payment_status === "paid").length;
   const totalUnpaid = installments.filter((i) => i.payment_status === "unpaid").length;
@@ -50,70 +50,72 @@ const MonthlyPackages: React.FC = () => {
     .reduce((sum, i) => sum + Number(i.amount), 0);
 
   return (
-    <Layout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <CalendarRange className="w-8 h-8 text-primary" />
-            <div>
-              <h1 className="text-2xl font-bold text-foreground">Monatspakete</h1>
-              <p className="text-sm text-muted-foreground">
-                Jahresverträge mit monatlicher Abrechnung verwalten
-              </p>
-            </div>
-          </div>
-          {isAdminOrAgent && (
-            <Button onClick={() => setShowCreate(true)}>
-              <Plus className="w-4 h-4 mr-2" />
-              Neuer Vertrag
-            </Button>
-          )}
-        </div>
-
-        {/* Stats cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="bg-card border rounded-lg p-4">
-            <p className="text-sm text-muted-foreground">Aktive Verträge</p>
-            <p className="text-2xl font-bold text-foreground">{totalContracts}</p>
-          </div>
-          <div className="bg-card border rounded-lg p-4">
-            <p className="text-sm text-muted-foreground">Bezahlte Raten</p>
-            <p className="text-2xl font-bold text-green-600">{totalPaid}</p>
-          </div>
-          <div className="bg-card border rounded-lg p-4">
-            <p className="text-sm text-muted-foreground">Offene Raten</p>
-            <p className="text-2xl font-bold text-red-600">{totalUnpaid}</p>
-          </div>
-          <div className="bg-card border rounded-lg p-4">
-            <p className="text-sm text-muted-foreground">Einnahmen (bezahlt)</p>
-            <p className="text-2xl font-bold text-primary">
-              {new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(
-                totalRevenue
+    <div className="flex min-h-screen">
+      <Sidebar />
+      <div className="flex-1">
+        <Layout>
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <CalendarRange className="w-8 h-8 text-primary" />
+                <div>
+                  <h1 className="text-2xl font-bold text-foreground">Monthly Packages</h1>
+                  <p className="text-sm text-muted-foreground">
+                    Manage yearly contracts with monthly billing
+                  </p>
+                </div>
+              </div>
+              {isAdminOrAgent && (
+                <Button onClick={() => setShowCreate(true)}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  New Contract
+                </Button>
               )}
-            </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="bg-card border rounded-lg p-4">
+                <p className="text-sm text-muted-foreground">Active Contracts</p>
+                <p className="text-2xl font-bold text-foreground">{totalContracts}</p>
+              </div>
+              <div className="bg-card border rounded-lg p-4">
+                <p className="text-sm text-muted-foreground">Paid Installments</p>
+                <p className="text-2xl font-bold text-green-600">{totalPaid}</p>
+              </div>
+              <div className="bg-card border rounded-lg p-4">
+                <p className="text-sm text-muted-foreground">Open Installments</p>
+                <p className="text-2xl font-bold text-red-600">{totalUnpaid}</p>
+              </div>
+              <div className="bg-card border rounded-lg p-4">
+                <p className="text-sm text-muted-foreground">Revenue (paid)</p>
+                <p className="text-2xl font-bold text-primary">
+                  {new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(
+                    totalRevenue
+                  )}
+                </p>
+              </div>
+            </div>
+
+            {loading ? (
+              <div className="text-center py-12 text-muted-foreground">Loading...</div>
+            ) : (
+              <MonthlyInstallmentsTable
+                contracts={contracts}
+                installments={installments}
+                onRefresh={fetchData}
+                isAdmin={isAdmin}
+              />
+            )}
+
+            <CreateMonthlyContractModal
+              open={showCreate}
+              onOpenChange={setShowCreate}
+              onCreated={fetchData}
+            />
           </div>
-        </div>
-
-        {/* Table */}
-        {loading ? (
-          <div className="text-center py-12 text-muted-foreground">Laden...</div>
-        ) : (
-          <MonthlyInstallmentsTable
-            contracts={contracts}
-            installments={installments}
-            onRefresh={fetchData}
-            isAdmin={isAdmin}
-          />
-        )}
-
-        <CreateMonthlyContractModal
-          open={showCreate}
-          onOpenChange={setShowCreate}
-          onCreated={fetchData}
-        />
+        </Layout>
       </div>
-    </Layout>
+    </div>
   );
 };
 

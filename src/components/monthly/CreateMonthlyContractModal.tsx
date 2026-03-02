@@ -47,7 +47,7 @@ const CreateMonthlyContractModal: React.FC<Props> = ({ open, onOpenChange, onCre
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.client_name || !form.client_email || !form.total_value || !form.start_date) {
-      toast({ title: "Pflichtfelder ausfüllen", variant: "destructive" });
+      toast({ title: "Please fill in all required fields", variant: "destructive" });
       return;
     }
 
@@ -69,7 +69,7 @@ const CreateMonthlyContractModal: React.FC<Props> = ({ open, onOpenChange, onCre
         user?.id || ""
       );
 
-      toast({ title: "Vertrag erstellt", description: `${durationMonths} Raten wurden generiert.` });
+      toast({ title: "Contract created", description: `${durationMonths} installments have been generated.` });
       onCreated();
       onOpenChange(false);
       setForm({
@@ -83,7 +83,7 @@ const CreateMonthlyContractModal: React.FC<Props> = ({ open, onOpenChange, onCre
         description: "",
       });
     } catch (err: any) {
-      toast({ title: "Fehler", description: err.message, variant: "destructive" });
+      toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -96,26 +96,26 @@ const CreateMonthlyContractModal: React.FC<Props> = ({ open, onOpenChange, onCre
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>Neuen Monatsvertrag erstellen</DialogTitle>
+          <DialogTitle>Create New Monthly Contract</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Kundenname *</Label>
+              <Label>Client Name *</Label>
               <Input
                 value={form.client_name}
                 onChange={(e) => setForm({ ...form, client_name: e.target.value })}
-                placeholder="Firmenname"
+                placeholder="Company name"
                 required
               />
             </div>
             <div className="space-y-2">
-              <Label>E-Mail *</Label>
+              <Label>Email *</Label>
               <Input
                 type="email"
                 value={form.client_email}
                 onChange={(e) => setForm({ ...form, client_email: e.target.value })}
-                placeholder="kunde@example.com"
+                placeholder="client@example.com"
                 required
               />
             </div>
@@ -132,7 +132,7 @@ const CreateMonthlyContractModal: React.FC<Props> = ({ open, onOpenChange, onCre
 
           <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label>Gesamtwert *</Label>
+              <Label>Total Value *</Label>
               <Input
                 type="number"
                 step="0.01"
@@ -144,7 +144,7 @@ const CreateMonthlyContractModal: React.FC<Props> = ({ open, onOpenChange, onCre
               />
             </div>
             <div className="space-y-2">
-              <Label>Währung</Label>
+              <Label>Currency</Label>
               <Select value={form.currency} onValueChange={(v) => setForm({ ...form, currency: v })}>
                 <SelectTrigger>
                   <SelectValue />
@@ -159,7 +159,7 @@ const CreateMonthlyContractModal: React.FC<Props> = ({ open, onOpenChange, onCre
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Laufzeit (Monate)</Label>
+              <Label>Duration (months)</Label>
               <Input
                 type="number"
                 min="1"
@@ -171,7 +171,7 @@ const CreateMonthlyContractModal: React.FC<Props> = ({ open, onOpenChange, onCre
           </div>
 
           <div className="space-y-2">
-            <Label>Startdatum *</Label>
+            <Label>Start Date *</Label>
             <Input
               type="date"
               value={form.start_date}
@@ -181,31 +181,31 @@ const CreateMonthlyContractModal: React.FC<Props> = ({ open, onOpenChange, onCre
           </div>
 
           <div className="space-y-2">
-            <Label>Beschreibung</Label>
+            <Label>Description</Label>
             <Textarea
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
-              placeholder="Optionale Vertragsbeschreibung..."
+              placeholder="Optional contract description..."
               rows={2}
             />
           </div>
 
           {totalValue > 0 && (
             <div className="rounded-lg bg-primary/10 p-4 text-center">
-              <p className="text-sm text-muted-foreground">Monatliche Rate</p>
+              <p className="text-sm text-muted-foreground">Monthly Installment</p>
               <p className="text-2xl font-bold text-primary">{formatPrice(monthlyAmount)}</p>
               <p className="text-xs text-muted-foreground">
-                {durationMonths} Raten × {formatPrice(monthlyAmount)} = {formatPrice(totalValue)}
+                {durationMonths} installments × {formatPrice(monthlyAmount)} = {formatPrice(totalValue)}
               </p>
             </div>
           )}
 
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Abbrechen
+              Cancel
             </Button>
             <Button type="submit" disabled={loading}>
-              {loading ? "Erstelle..." : "Vertrag erstellen"}
+              {loading ? "Creating..." : "Create Contract"}
             </Button>
           </div>
         </form>
