@@ -1,43 +1,76 @@
 
 
-## Add "Create Invoice" Button to Monthly Installments
+## Auto-Create Invoice + Send Invoice Modal from Monthly Packages
 
-Each installment row gets an invoice button that navigates to `/invoices/new` with pre-filled data from the contract and installment.
+Three changes requested:
 
-### How It Works
+### 1. Fix VAT: Price is VAT-inclusive
+Currently the installment amount (e.g. €100) gets 19% VAT added on top → €119. The user wants €100 to BE the total. So the line item should use:
+- `unit_price = amount / 1.19` (net price)
+- `vat_rate = 0.19`
+- Result: net + VAT = original amount
 
-1. **Button on each installment row** — A "Create Invoice" icon button in the table
-2. **Auto-fill logic** — When clicked, navigate to `/invoices/new` passing state via React Router with:
-   - **Client**: First try to match an existing invoice client by email (`client_email`), otherwise the user picks manually
-   - **Line item**: description from `contract.description` (or "Monthly Service - [month_label]"), quantity 1, unit_price = installment amount, 19% VAT
-   - **Currency**: from the contract
-   - **Dates**: issue_date = today, due_date = installment due_date
-   - **Language**: auto-detect from contract's `company_address` or country keyword (e.g. "Deutschland"/"Germany" → `de`, "Nederland" → `nl`, "France" → `fr`, etc.)
-   - **Payment account**: set to `"both"` (Belgium + Germany)
-   - **Notes**: include the month label reference
+### 2. Auto-create invoice in background (no navigation)
+Replace the current `navigate("/invoices/new")` approach. Instead, when clicking the "Create Invoice" button:
+1. Load clients from DB, match by email
+2. Load saved invoice template settings from localStorage (for logo, company info, payment accounts)
+3. Build the invoice via `InvoiceService.createInvoice()` with the correct line item
+4. Set language and payment account = "both" on the template settings
+5. Show toast: "Invoice INV-2026-XXX created for [Client Name] — [Month]"
+6. Store the created invoice ID on the installment (optional) or just confirm
 
-3. **InvoiceDetail.tsx picks up the state** — On mount, if `location.state` has monthly package data, pre-populate `formData`, `lineItems`, and `templateSettings` (language, payment account = "both")
+The logo issue: the template settings are loaded from localStorage (via `useInvoiceSettings`). The auto-create flow will read `localStorage.getItem('invoiceTemplateSettings')` to get the saved logo/company info so the PDF generation later uses the correct logo.
 
-### Country → Language Mapping
-
-A utility function that scans the company address for country keywords:
-- Deutschland/Germany → `de`
-- Nederland/Netherlands → `nl`  
-- France/Frankreich → `fr`
-- España/Spain → `es`
-- Danmark/Denmark → `da`
-- Norge/Norway → `no`
-- Česko/Czech → `cs`
-- Polska/Poland → `pl`
-- Sverige/Sweden → `sv`
-- Default → `en`
+### 3. Add "Send Invoice" button next to "Create Invoice"
+A new button (Mail icon) on each installment row that opens a `SendMonthlyInvoiceDialog` modal with:
+- **Client email** (pre-filled from contract)
+- **Client name** (shown, read-only)
+- **Subject** (editable input, default: "Invoice [number] — [month]")
+- **Language dropdown** (en, de, nl, fr, es, da, no, cs, pl, sv) — auto-detected from address
+- **Message textarea**
+- **Send button** — generates PDF with correct template settings (logo, language, payment=both, VAT-inclusive pricing), sends via `send-invoice-pdf` edge function, also notifies team emails
+- Toast: "Invoice sent to [email]"
 
 ### Files to Modify
 
 | File | Change |
 |------|--------|
-| `src/components/monthly/MonthlyInstallmentsTable.tsx` | Add invoice button per row, add `useNavigate`, build pre-fill state, country detection function |
-| `src/pages/InvoiceDetail.tsx` | Read `location.state` on mount, pre-fill formData + lineItems + templateSettings when coming from monthly packages |
+| `src/components/monthly/MonthlyInstallmentsTable.tsx` | Replace navigate with auto-create logic; fix VAT calc; add Send Invoice button + dialog state |
+| `src/components/monthly/SendMonthlyInvoiceDialog.tsx` | **New file** — modal with email, name, subject, language dropdown, message, send button; generates PDF + sends via edge function + team notification |
 
-No database changes needed — this uses the existing invoice system.
+### Technical Details
+
+**VAT-inclusive calculation:**
+```ts
+const netPrice = Number((inst.amount / 1.19).toFixed(2));
+// line item: unit_price = netPrice, vat_rate = 0.19
+// Result: netPrice * 1.19 ≈ inst.amount
+```
+
+**Auto-create flow in MonthlyInstallmentsTable:**
+```ts
+const handleCreateInvoice = async (contract, inst) => {
+  const clients = await InvoiceService.getClients();
+  const matched = clients.find(c => c.email === contract.client_email);
+  if (!matched) { toast error "Client not found in invoice system"; return; }
+  
+  const netPrice = Number((inst.amount / 1.19).toFixed(2));
+  const description = contract.description ? `${contract.description} - ${inst.month_label}` : `Monthly Service - ${inst.month_label}`;
+  
+  const invoice = await InvoiceService.createInvoice({
+    client_id: matched.id,
+    issue_date: new Date().toISOString().split("T")[0],
+    due_date: inst.due_date,
+    currency: contract.currency,
+    payment_terms: "Net 3",
+    notes: `Monthly package: ${inst.month_label}`,
+    internal_notes: "",
+    line_items: [{ item_description: description, quantity: 1, unit: "pcs", unit_price: netPrice, vat_rate: 0.19, discount_rate: 0 }],
+  });
+  
+  toast({ title: "Invoice created", description: `Invoice ${invoice.invoice_number} created for ${contract.client_name} — ${inst.month_label}` });
+};
+```
+
+**SendMonthlyInvoiceDialog:** Reuses `generateInvoicePDFBase64` and `supabase.functions.invoke("send-invoice-pdf")` pattern from the existing `SendInvoicePDFDialog`. Loads template settings from localStorage, overrides language from dropdown and payment account to "both". Fetches the latest invoice for the client to get the invoice number, or allows creating one on the fly if none exists.
 
