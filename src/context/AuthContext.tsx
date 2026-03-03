@@ -245,7 +245,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         .from('profiles')
         .update({
           first_name: profileData.first_name || user.first_name,
-          last_name: profileData.last_name || user.last_name
+          last_name: profileData.last_name || user.last_name,
+          role: profileData.role || user.role
         })
         .eq('id', user.id);
 

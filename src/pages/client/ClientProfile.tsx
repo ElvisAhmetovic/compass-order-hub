@@ -51,20 +51,11 @@ const ClientProfile = () => {
       return;
     }
     
-    if (newPassword.length < 8) {
+    if (newPassword.length < 6) {
       toast({
         variant: "destructive",
         title: "Password too short",
-        description: "Password must be at least 8 characters with uppercase, lowercase, and a number."
-      });
-      return;
-    }
-    
-    if (!/[A-Z]/.test(newPassword) || !/[a-z]/.test(newPassword) || !/[0-9]/.test(newPassword)) {
-      toast({
-        variant: "destructive",
-        title: "Password too weak",
-        description: "Password must contain at least one uppercase letter, one lowercase letter, and one number."
+        description: "Password must be at least 6 characters."
       });
       return;
     }

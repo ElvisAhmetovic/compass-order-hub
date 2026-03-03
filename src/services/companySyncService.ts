@@ -59,7 +59,7 @@ export class CompanySyncService {
     }
   }
 
-  // Sync clients from Supabase — logs unlinked clients instead of creating dummy orders
+  // Sync clients from Supabase to Supabase orders
   static async syncClientsToCompanies(): Promise<void> {
     try {
       console.log('🔄 Starting clients to companies sync...');
@@ -67,8 +67,7 @@ export class CompanySyncService {
       const clients = await InvoiceService.getClients();
       const orders = await OrderService.getOrders();
       
-      // Log clients that don't have corresponding companies (no longer creates fake orders)
-      let unlinkedCount = 0;
+      // Create orders for clients that don't have corresponding companies
       for (const client of clients) {
         const hasCompany = orders.some((order) => 
           order.company_name.toLowerCase() === client.name.toLowerCase() ||
@@ -76,12 +75,25 @@ export class CompanySyncService {
         );
         
         if (!hasCompany) {
-          unlinkedCount++;
+          try {
+            await OrderService.createOrder({
+              company_name: client.name,
+              contact_name: client.contact_person || "Contact",
+              contact_email: client.email,
+              contact_phone: client.phone || "",
+              company_address: client.address || "",
+              company_link: "",
+              description: "Auto-created from client",
+              price: 0,
+              status: "Created",
+              priority: "low",
+              currency: "EUR"
+            });
+            console.log(`✅ Created company order for client: ${client.name}`);
+          } catch (error) {
+            console.error(`❌ Failed to create order for client ${client.name}:`, error);
+          }
         }
-      }
-      
-      if (unlinkedCount > 0) {
-        console.log(`ℹ️ ${unlinkedCount} client(s) have no matching company/order.`);
       }
       
       console.log('✅ Clients to companies sync completed');

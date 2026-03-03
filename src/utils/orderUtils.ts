@@ -4,12 +4,17 @@ export const notifyOrdersUpdated = () => {
   window.dispatchEvent(new CustomEvent('ordersUpdated'));
 };
 
-/**
- * @deprecated This function is dead code from the pre-Supabase era.
- * Orders are now persisted in Supabase. Do not use.
- */
-export const updateOrderInStorage = (_updatedOrder: any) => {
-  console.warn('updateOrderInStorage is deprecated. Orders are managed via Supabase.');
-  notifyOrdersUpdated();
-  return true;
+export const updateOrderInStorage = (updatedOrder: any) => {
+  try {
+    const ordersInStorage = JSON.parse(localStorage.getItem("orders") || "[]");
+    const updatedOrders = ordersInStorage.map((o: any) => 
+      o.id === updatedOrder.id ? updatedOrder : o
+    );
+    localStorage.setItem("orders", JSON.stringify(updatedOrders));
+    notifyOrdersUpdated();
+    return true;
+  } catch (error) {
+    console.error("Error updating order in storage:", error);
+    return false;
+  }
 };
