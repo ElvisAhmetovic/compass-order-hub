@@ -54,8 +54,8 @@ const SendMonthlyInvoiceDialog: React.FC<SendMonthlyInvoiceDialogProps> = ({
   React.useEffect(() => {
     if (open) {
       setClientEmail(contract.client_email);
-      setSubject(`Invoice ${invoice?.invoice_number || ""} — ${installment.month_label}`);
-      setMessage("");
+      setSubject(SUBJECT_TEMPLATES[detectedLanguage] || `Invoice ${invoice?.invoice_number || ""} — ${installment.month_label}`);
+      setMessage(MESSAGE_TEMPLATES[detectedLanguage] || "");
       setLanguage(detectedLanguage);
     }
   }, [open, contract, installment, invoice, detectedLanguage]);
@@ -269,7 +269,11 @@ const SendMonthlyInvoiceDialog: React.FC<SendMonthlyInvoiceDialogProps> = ({
 
           <div>
             <Label>Invoice Language</Label>
-            <Select value={language} onValueChange={setLanguage}>
+            <Select value={language} onValueChange={(lang) => {
+              setLanguage(lang);
+              setSubject(SUBJECT_TEMPLATES[lang] || "");
+              setMessage(MESSAGE_TEMPLATES[lang] || "");
+            }}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
