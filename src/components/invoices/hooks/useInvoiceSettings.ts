@@ -43,10 +43,10 @@ export const useInvoiceSettings = (initialSettings?: any) => {
       logo: DEFAULT_COMPANY_LOGO,
       logoSize: "large",
       language: "en",
-      selectedPaymentAccount: "belgium",
+      selectedPaymentAccount: "both",
       customTerms: "",
       vatEnabled: true,
-      vatRate: 19,
+      vatRate: 0,
       currency: "EUR",
       invoiceNumberPrefix: "RE NR:",
     };
