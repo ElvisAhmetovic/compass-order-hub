@@ -59,6 +59,10 @@ const InvoiceDetail = () => {
     }
   });
 
+  const [billToOverride, setBillToOverride] = useState({
+    name: '', email: '', address: '', city: '', zip_code: '', country: ''
+  });
+
   const [formData, setFormData] = useState<InvoiceFormData>({
     client_id: '',
     issue_date: new Date().toISOString().split('T')[0],
@@ -81,6 +85,21 @@ const InvoiceDetail = () => {
       currency: formData.currency
     }));
   }, [formData.currency]);
+
+  // Auto-fill billToOverride when client changes
+  useEffect(() => {
+    const client = clients.find(c => c.id === formData.client_id);
+    if (client) {
+      setBillToOverride({
+        name: client.name || '',
+        email: client.email || '',
+        address: client.address || '',
+        city: client.city || '',
+        zip_code: client.zip_code || '',
+        country: client.country || '',
+      });
+    }
+  }, [formData.client_id, clients]);
 
   const loadData = async () => {
     try {
@@ -342,7 +361,7 @@ const InvoiceDetail = () => {
       await generateInvoicePDF({
         invoice,
         lineItems,
-        client: selectedClient,
+        client: billToClient,
         templateSettings: {
           ...templateSettings,
           currency: formData.currency // Ensure the current form currency is used
@@ -365,6 +384,7 @@ const InvoiceDetail = () => {
   };
 
   const selectedClient = clients.find(c => c.id === formData.client_id);
+  const billToClient = selectedClient ? { ...selectedClient, ...billToOverride } : undefined;
   const { netAmount, vatAmount, totalAmount } = calculateTotals();
 
   if (loading) {
@@ -434,6 +454,38 @@ const InvoiceDetail = () => {
                             </Select>
                           </div>
                           
+                          {formData.client_id && (
+                            <div className="md:col-span-2 border rounded-md p-3 space-y-3 bg-muted/30">
+                              <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Bill To (PDF Override)</Label>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <div>
+                                  <Label className="text-xs">Name</Label>
+                                  <Input value={billToOverride.name} onChange={(e) => setBillToOverride(prev => ({ ...prev, name: e.target.value }))} />
+                                </div>
+                                <div>
+                                  <Label className="text-xs">Email</Label>
+                                  <Input value={billToOverride.email} onChange={(e) => setBillToOverride(prev => ({ ...prev, email: e.target.value }))} />
+                                </div>
+                                <div>
+                                  <Label className="text-xs">Address</Label>
+                                  <Input value={billToOverride.address} onChange={(e) => setBillToOverride(prev => ({ ...prev, address: e.target.value }))} />
+                                </div>
+                                <div>
+                                  <Label className="text-xs">City</Label>
+                                  <Input value={billToOverride.city} onChange={(e) => setBillToOverride(prev => ({ ...prev, city: e.target.value }))} />
+                                </div>
+                                <div>
+                                  <Label className="text-xs">Zip Code</Label>
+                                  <Input value={billToOverride.zip_code} onChange={(e) => setBillToOverride(prev => ({ ...prev, zip_code: e.target.value }))} />
+                                </div>
+                                <div>
+                                  <Label className="text-xs">Country</Label>
+                                  <Input value={billToOverride.country} onChange={(e) => setBillToOverride(prev => ({ ...prev, country: e.target.value }))} />
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
                           <div>
                             <Label htmlFor="currency">Currency</Label>
                             <CurrencySelector
@@ -633,7 +685,7 @@ const InvoiceDetail = () => {
                   <InvoicePreview
                     invoice={invoice}
                     lineItems={lineItems}
-                    client={selectedClient}
+                    client={billToClient}
                     templateSettings={{
                       ...templateSettings,
                       currency: formData.currency
@@ -656,7 +708,7 @@ const InvoiceDetail = () => {
               onOpenChange={setSendPDFDialogOpen}
               invoice={invoice}
               lineItems={lineItems}
-              client={selectedClient}
+              client={billToClient}
               templateSettings={{ ...templateSettings, currency: formData.currency }}
               formData={formData}
             />
