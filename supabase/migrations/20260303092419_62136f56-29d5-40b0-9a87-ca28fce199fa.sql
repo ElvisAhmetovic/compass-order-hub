@@ -1,0 +1,1 @@
+ALTER TABLE invoice_line_items ALTER COLUMN vat_rate SET DEFAULT 0;

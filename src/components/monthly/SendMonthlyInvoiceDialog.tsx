@@ -95,8 +95,8 @@ const SendMonthlyInvoiceDialog: React.FC<SendMonthlyInvoiceDialogProps> = ({
       let currentInvoice = invoice;
       if (!currentInvoice) {
         try {
-          const netPrice = Number((installment.amount / 1.19).toFixed(2));
-          const vatAmount = Number((installment.amount - netPrice).toFixed(2));
+          const netPrice = installment.amount;
+          const vatAmount = 0;
           const description = contract.description
             ? `${contract.description} - ${installment.month_label}`
             : `Monthly Service - ${installment.month_label}`;
@@ -114,7 +114,7 @@ const SendMonthlyInvoiceDialog: React.FC<SendMonthlyInvoiceDialogProps> = ({
               quantity: 1,
               unit: "pcs",
               unit_price: netPrice,
-              vat_rate: 0.19,
+              vat_rate: 0,
               discount_rate: 0,
             }],
           });
@@ -128,7 +128,7 @@ const SendMonthlyInvoiceDialog: React.FC<SendMonthlyInvoiceDialogProps> = ({
       }
 
       // Build line items for PDF
-      const netPrice = Number((installment.amount / 1.19).toFixed(2));
+      const netPrice = installment.amount;
       const description = contract.description
         ? `${contract.description} - ${installment.month_label}`
         : `Monthly Service - ${installment.month_label}`;
@@ -140,9 +140,9 @@ const SendMonthlyInvoiceDialog: React.FC<SendMonthlyInvoiceDialogProps> = ({
         quantity: 1,
         unit: "pcs",
         unit_price: netPrice,
-        vat_rate: 0.19,
+        vat_rate: 0,
         discount_rate: 0,
-        line_total: Number((netPrice * 1.19).toFixed(2)),
+        line_total: netPrice,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       }];
