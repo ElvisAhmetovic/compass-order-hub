@@ -74,20 +74,28 @@ const queryClient = new QueryClient({
 
 function App() {
   useEffect(() => {
+    const resetPointerEvents = () => {
+      document.documentElement.style.pointerEvents = 'none';
+      setTimeout(() => {
+        document.documentElement.style.pointerEvents = '';
+      }, 100);
+    };
+
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        // Force browser to re-evaluate pointer state without
-        // synthetic events that break Radix Dialog internals
-        document.documentElement.style.pointerEvents = 'none';
-        requestAnimationFrame(() => {
-          document.documentElement.style.pointerEvents = '';
-        });
+        resetPointerEvents();
       }
     };
 
+    const handleWindowFocus = () => {
+      resetPointerEvents();
+    };
+
     document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleWindowFocus);
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleWindowFocus);
     };
   }, []);
 
