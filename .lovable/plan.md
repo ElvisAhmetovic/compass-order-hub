@@ -1,48 +1,32 @@
 
 
-## Fix: Site becomes unclickable after tab-switching with modal open
+## Send Team Notification on Monthly Installment "Paid" / "Invoice Sent" Toggle
 
-### Root cause
-The current fix in `App.tsx` toggles `pointer-events: none` for a single animation frame when returning to the tab. This is too brief -- Radix Dialog's internal "dismissal layer" re-evaluates pointer state after the toggle completes, and the overlay ends up in a broken state where it intercepts all clicks but doesn't respond.
+### What it does
+When a team member toggles the "Paid" switch or the "Invoice Sent" switch on a monthly installment row, a notification email is sent to the standard team recipient list (12 people) informing them of the change, including client name, month, amount, and who made the change.
 
-### Solution
-Two changes:
+### Approach
+Create a new edge function `send-monthly-toggle-notification` that accepts the toggle details and sends a branded email to the team list. Then call it from the existing toggle handlers in `MonthlyInstallmentsTable.tsx`.
 
-**1. `src/App.tsx`** -- Extend the pointer-events reset to use a longer delay (100ms via `setTimeout` instead of a single `requestAnimationFrame`), and also handle the `focus` event on `window` (some browsers fire focus but not visibilitychange on tab return):
+### Changes
 
-```ts
-const handleVisibilityChange = () => {
-  if (document.visibilityState === 'visible') {
-    document.documentElement.style.pointerEvents = 'none';
-    setTimeout(() => {
-      document.documentElement.style.pointerEvents = '';
-    }, 100);
-  }
-};
+**1. New edge function: `supabase/functions/send-monthly-toggle-notification/index.ts`**
+- Accepts: `{ clientName, clientEmail, monthLabel, amount, currency, toggleType: "paid"|"invoice_sent", newValue: boolean, changedBy: string }`
+- Sends a branded HTML email to the hardcoded NOTIFICATION_EMAIL_LIST (same 12 recipients)
+- Uses `RESEND_API_KEY_ABMEDIA` with sender `AB Media Team <noreply@abm-team.com>` (consistent with other monthly package emails)
+- Batches 2 emails at a time with 1s delay (existing pattern)
+- Subject: e.g. `[Monthly] Payment marked as Paid — ClientName — März 2026`
 
-const handleWindowFocus = () => {
-  document.documentElement.style.pointerEvents = 'none';
-  setTimeout(() => {
-    document.documentElement.style.pointerEvents = '';
-  }, 100);
-};
-```
+**2. `supabase/config.toml`** — Add `[functions.send-monthly-toggle-notification]` with `verify_jwt = false`
 
-Listen to both `visibilitychange` and `window focus`.
+**3. `src/components/monthly/MonthlyInstallmentsTable.tsx`** — Update `handleToggleStatus` and `handleToggleEmailSent`
+- After the successful toggle, fire-and-forget call `supabase.functions.invoke('send-monthly-toggle-notification', { body: { ... } })`
+- Include the current user's name from AuthContext (need to accept `user` prop or use `useAuth`)
+- Non-blocking: don't await or block the UI on email delivery
 
-**2. `src/components/ui/dialog.tsx`** -- Add `onInteractOutside={(e) => e.preventDefault()}` directly in the `DialogContent` component so every dialog in the app is protected, rather than relying on each usage to add it:
-
-```tsx
-<DialogPrimitive.Content
-  onInteractOutside={(e) => e.preventDefault()}
-  onFocusOutside={(e) => e.preventDefault()}
-  onPointerDownOutside={(e) => e.preventDefault()}
-  ...
-```
-
-This makes the fix global -- no individual dialog needs to remember to add these handlers. The existing per-component handlers (like on OrderModal) become redundant but harmless.
-
-### Files to modify
-- `src/App.tsx` (lines 76-92) -- longer delay + window focus listener
-- `src/components/ui/dialog.tsx` (lines 36-42) -- add interact/focus/pointer outside prevention globally
+### Files
+- **Create**: `supabase/functions/send-monthly-toggle-notification/index.ts`
+- **Modify**: `supabase/config.toml` (add function config)
+- **Modify**: `src/components/monthly/MonthlyInstallmentsTable.tsx` (add notification calls)
+- **Modify**: `src/pages/MonthlyPackages.tsx` (pass `user` to the table component)
 
