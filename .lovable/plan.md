@@ -1,36 +1,15 @@
 
 
-## Add Subject & Message Template Dropdowns with Translations
+## Auto-sync Invoice Language dropdown with Subject & Message templates
 
 ### What this does
-Adds two dropdown selectors in the Send Invoice dialog (Monthly Packages) — one for subject templates and one for message templates — each pre-filled with translations across all supported European languages. Selecting a template auto-fills the corresponding field.
+When the user selects a language from the "Invoice Language" dropdown, the Subject and Message fields automatically populate with the matching language template — so the user doesn't have to separately pick the same language from the Subject Template and Message Template dropdowns.
 
-### Templates
+### Changes to `src/components/monthly/SendMonthlyInvoiceDialog.tsx`
 
-**Subject templates** (one per language):
-- EN: "Invoice & Quick Payment Option AB MEDIA TEAM"
-- DE: "Rechnung & Schnelle Zahlungsoption AB MEDIA TEAM"
-- NL: "Factuur & Snelle Betaaloptie AB MEDIA TEAM"
-- FR: "Facture & Option de Paiement Rapide AB MEDIA TEAM"
-- ES: "Factura & Opción de Pago Rápido AB MEDIA TEAM"
-- DA: "Faktura & Hurtig Betalingsmulighed AB MEDIA TEAM"
-- NO: "Faktura & Rask Betalingsalternativ AB MEDIA TEAM"
-- CS: "Faktura & Rychlá Platební Možnost AB MEDIA TEAM"
-- PL: "Faktura & Szybka Opcja Płatności AB MEDIA TEAM"
-- SV: "Faktura & Snabb Betalningsalternativ AB MEDIA TEAM"
+1. **Modify the Invoice Language `onValueChange` handler** to also call `setSubject(SUBJECT_TEMPLATES[lang])` and `setMessage(MESSAGE_TEMPLATES[lang])` alongside `setLanguage(lang)`.
 
-**Message templates** (one per language, same structure):
-The provided English message translated to each language, maintaining the signature block (Annalena Klein, AB MEDIA, phone, address).
+2. **Also auto-fill on dialog open** — the existing `useEffect` that runs on `open` already sets `language`. Add `setSubject(SUBJECT_TEMPLATES[detectedLanguage])` and `setMessage(MESSAGE_TEMPLATES[detectedLanguage])` there too, so the initial language pre-fills all three fields.
 
-### UI changes in `SendMonthlyInvoiceDialog.tsx`
-
-1. Add a constant map of subject templates keyed by language code
-2. Add a constant map of message templates keyed by language code
-3. Above the Subject input, add a "Subject Template" dropdown listing all languages — selecting one fills the subject field
-4. Above the Message textarea, add a "Message Template" dropdown — selecting one fills the message field
-5. Both dropdowns show the language name as the label (e.g., "English", "Deutsch")
-6. The fields remain editable after auto-fill so users can still customize
-
-### File to modify
-- `src/components/monthly/SendMonthlyInvoiceDialog.tsx`
+One file, ~5 lines changed.
 
