@@ -89,3 +89,6 @@ verify_jwt = false
 
 [functions.generate-monthly-installments]
 verify_jwt = false
+
+[functions.send-monthly-toggle-notification]
+verify_jwt = false

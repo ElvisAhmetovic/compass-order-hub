@@ -104,6 +104,7 @@ const MonthlyPackages: React.FC = () => {
                 installments={installments}
                 onRefresh={fetchData}
                 isAdmin={isAdmin}
+                currentUserName={user?.full_name || user?.email || "Unknown"}
               />
             )}
 
