@@ -167,11 +167,19 @@ const Invoices = () => {
     }
   };
 
-  const filteredInvoices = invoices.filter(invoice => 
-    invoice.invoice_number.toLowerCase().includes(filterText.toLowerCase()) ||
-    invoice.client?.name.toLowerCase().includes(filterText.toLowerCase()) ||
-    invoice.client?.email.toLowerCase().includes(filterText.toLowerCase())
-  );
+  const filteredInvoices = invoices.filter(invoice => {
+    const search = filterText.toLowerCase();
+    return (
+      invoice.invoice_number.toLowerCase().includes(search) ||
+      invoice.client?.name?.toLowerCase().includes(search) ||
+      invoice.client?.email?.toLowerCase().includes(search) ||
+      invoice.client?.contact_person?.toLowerCase().includes(search) ||
+      invoice.status.toLowerCase().includes(search) ||
+      invoice.currency?.toLowerCase().includes(search) ||
+      invoice.total_amount?.toString().includes(search) ||
+      invoice.notes?.toLowerCase().includes(search)
+    );
+  });
 
   const totalOutstanding = invoices
     .filter(inv => inv.status === 'sent' || inv.status === 'partially_paid' || inv.status === 'overdue')
@@ -261,7 +269,7 @@ const Invoices = () => {
                       <CardTitle>Manage Invoices</CardTitle>
                       <div className="w-72">
                         <Input
-                          placeholder="Search invoices..."
+                          placeholder="Search by invoice #, client, status, amount..."
                           value={filterText}
                           onChange={(e) => setFilterText(e.target.value)}
                           className="max-w-sm"

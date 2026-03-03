@@ -139,7 +139,7 @@ const AdvancedSearch = ({ onFiltersChange, currentFilters }: AdvancedSearchProps
       <div className="relative flex-1 min-w-[200px] max-w-md">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
         <Input
-          placeholder="Search orders, companies, clients..."
+          placeholder="Search orders, invoices, companies, clients..."
           value={filters.globalSearch || ''}
           onChange={(e) => handleGlobalSearchChange(e.target.value)}
           className="pl-10"

@@ -1,6 +1,7 @@
 import { Order, Company } from '@/types';
 import { OrderService } from './orderService';
 import { supabase } from '@/integrations/supabase/client';
+import { InvoiceSearchService } from './invoiceSearchService';
 
 export interface SearchFilters {
   globalSearch?: string;
@@ -35,6 +36,7 @@ export class SearchService {
     orders: Order[];
     companies: Company[];
     clients: any[];
+    invoices: any[];
   }> {
     try {
       const searchTerm = `%${query.toLowerCase()}%`;
@@ -68,14 +70,28 @@ export class SearchService {
         console.error('Error searching clients:', clientsError);
       }
 
+      // Search invoices
+      const invoiceResults = await InvoiceSearchService.searchInvoices(query);
+
+      // Cross-reference: if invoice matches found, also include orders whose contact_email matches the invoice's client
+      const invoiceClientEmails = invoiceResults.map(r => r.clientEmail.toLowerCase()).filter(Boolean);
+      if (invoiceClientEmails.length > 0) {
+        const additionalOrders = orders.filter(order =>
+          order.contact_email && invoiceClientEmails.includes(order.contact_email.toLowerCase()) &&
+          !filteredOrders.some(fo => fo.id === order.id)
+        );
+        filteredOrders.push(...additionalOrders);
+      }
+
       return {
         orders: filteredOrders,
         companies: companies || [],
-        clients: clients || []
+        clients: clients || [],
+        invoices: invoiceResults
       };
     } catch (error) {
       console.error('Error in global search:', error);
-      return { orders: [], companies: [], clients: [] };
+      return { orders: [], companies: [], clients: [], invoices: [] };
     }
   }
 
