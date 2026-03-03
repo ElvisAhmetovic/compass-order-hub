@@ -1,54 +1,48 @@
 
 
-## Add Invoice Number Search Across Dashboard, Invoices, and Other Pages
+## Fix: Site becomes unclickable after tab-switching with modal open
 
-### Problem
-Currently, the global search on the dashboard searches orders by company name, email, description, address, and assigned agent — but not by invoice number. The invoices page only searches by invoice number and client name/email locally. There is no cross-referencing between invoices and orders/companies/clients in search results.
+### Root cause
+The current fix in `App.tsx` toggles `pointer-events: none` for a single animation frame when returning to the tab. This is too brief -- Radix Dialog's internal "dismissal layer" re-evaluates pointer state after the toggle completes, and the overlay ends up in a broken state where it intercepts all clicks but doesn't respond.
 
 ### Solution
-Extend the existing search infrastructure to include invoice number/client name lookups, and when a match is found, surface the related order/company/client information.
+Two changes:
 
-### Changes
+**1. `src/App.tsx`** -- Extend the pointer-events reset to use a longer delay (100ms via `setTimeout` instead of a single `requestAnimationFrame`), and also handle the `focus` event on `window` (some browsers fire focus but not visibilitychange on tab return):
 
-**1. `src/services/searchService.ts`** — Extend `globalSearch` and `applyFiltersToOrders`
-- In `globalSearch()`, also query the `invoices` table (with joined `clients` data) by invoice number and client name
-- Return invoice results alongside orders/companies/clients
-- In `applyFiltersToOrders()`, when the `globalSearch` term matches an invoice number, also include orders whose `company_name` or `contact_email` matches the invoice's client
+```ts
+const handleVisibilityChange = () => {
+  if (document.visibilityState === 'visible') {
+    document.documentElement.style.pointerEvents = 'none';
+    setTimeout(() => {
+      document.documentElement.style.pointerEvents = '';
+    }, 100);
+  }
+};
 
-**2. `src/services/searchService.ts`** — Add `SearchFilters.invoiceNumber` field
-- Add optional `invoiceNumber?: string` to the `SearchFilters` interface
-- Handle it in `applyFiltersToOrders` by cross-referencing with invoices table
+const handleWindowFocus = () => {
+  document.documentElement.style.pointerEvents = 'none';
+  setTimeout(() => {
+    document.documentElement.style.pointerEvents = '';
+  }, 100);
+};
+```
 
-**3. `src/components/dashboard/AdvancedSearch.tsx`** — Update search placeholder and logic
-- Change placeholder to: `"Search orders, invoices, companies, clients..."`
-- The global search input already feeds into `SearchFilters.globalSearch`, which will now also match invoice numbers
+Listen to both `visibilitychange` and `window focus`.
 
-**4. `src/components/dashboard/OrderTable.tsx`** — Enhance filtering
-- When search filters are applied, also fetch invoices matching the search term
-- Cross-reference invoice client IDs with order company names to show related orders
-- Display a small invoice badge on order rows that have matching invoices
+**2. `src/components/ui/dialog.tsx`** -- Add `onInteractOutside={(e) => e.preventDefault()}` directly in the `DialogContent` component so every dialog in the app is protected, rather than relying on each usage to add it:
 
-**5. `src/pages/Invoices.tsx`** — Enhance the existing search
-- Extend `filteredInvoices` filter to also search by `invoice.status`, amounts, and show the linked client/company info more prominently
-- Already searches by invoice_number and client name — this is mostly fine
+```tsx
+<DialogPrimitive.Content
+  onInteractOutside={(e) => e.preventDefault()}
+  onFocusOutside={(e) => e.preventDefault()}
+  onPointerDownOutside={(e) => e.preventDefault()}
+  ...
+```
 
-**6. New: `src/services/invoiceSearchService.ts`** — Lightweight cross-reference helper
-- `searchByInvoiceNumber(query)` — returns invoices with their client data
-- `getInvoicesForClient(clientId)` — returns all invoices for a client
-- Used by both Dashboard and Invoices pages
+This makes the fix global -- no individual dialog needs to remember to add these handlers. The existing per-component handlers (like on OrderModal) become redundant but harmless.
 
-### How it works end-to-end
-1. User types an invoice number (e.g., "INV-2026-001") in the dashboard search bar
-2. The search service queries the `invoices` table for matching `invoice_number`
-3. From matching invoices, it gets the `client_id` and looks up the client
-4. It then finds orders whose `contact_email` or `company_name` matches the client
-5. Those orders appear in the dashboard results, with an invoice badge showing the matched invoice number
-6. Same logic works on the Invoices page — searching by company name shows related invoices
-
-### Files to create/modify
-- **Create**: `src/services/invoiceSearchService.ts`
-- **Modify**: `src/services/searchService.ts` (add invoice search to globalSearch and applyFiltersToOrders)
-- **Modify**: `src/components/dashboard/AdvancedSearch.tsx` (update placeholder)
-- **Modify**: `src/components/dashboard/OrderTable.tsx` (integrate invoice cross-reference in filtering)
-- **Modify**: `src/pages/Invoices.tsx` (enhance search to also match by company/order data)
+### Files to modify
+- `src/App.tsx` (lines 76-92) -- longer delay + window focus listener
+- `src/components/ui/dialog.tsx` (lines 36-42) -- add interact/focus/pointer outside prevention globally
 
