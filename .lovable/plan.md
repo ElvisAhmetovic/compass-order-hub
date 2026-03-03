@@ -1,21 +1,10 @@
 
 
-## Change Default Monthly Invoice Description
+## Fix Remaining Payment Account & VAT Defaults
 
-The fallback description `"Monthly Service - {month}"` appears in 3 places when a contract has no custom description. Change it to `"Google Monthly Service - {month}"`.
+Three files still have the old defaults hardcoded:
 
-### Files to modify
-
-1. **`src/components/monthly/SendMonthlyInvoiceDialog.tsx`** (lines 102 and 134) — change fallback from `Monthly Service -` to `Google Monthly Service -`
-2. **`src/components/monthly/MonthlyInstallmentsTable.tsx`** (line 92) — same change
-
-All three instances use the same pattern:
-```ts
-// Before
-: `Monthly Service - ${installment.month_label}`;
-// After
-: `Google Monthly Service - ${installment.month_label}`;
-```
-
-If the contract already has a custom description set, that will still be used instead (the existing `contract.description ? ...` logic is preserved).
+1. **`src/pages/InvoiceDetail.tsx`** (line 48-50) — change `vatRate: 19` → `0` and `selectedPaymentAccount: 'belgium'` → `'both'`
+2. **`src/components/orders/SendClientReminderModal.tsx`** (line 165-167) — change `selectedPaymentAccount: "belgium"` → `"both"` and `vatRate: 19` → `0`
+3. **`src/components/monthly/SendMonthlyInvoiceDialog.tsx`** (line 163) — change `vatRate: 19` → `0` (payment account already says "both" here)
 
