@@ -160,7 +160,7 @@ const SendMonthlyInvoiceDialog: React.FC<SendMonthlyInvoiceDialogProps> = ({
         language,
         selectedPaymentAccount: "both",
         vatEnabled: true,
-        vatRate: 19,
+        vatRate: 0,
       };
 
       const formData = {
