@@ -15,6 +15,7 @@ import { Invoice, InvoiceLineItem, Client } from "@/types/invoice";
 
 import { Mail, Send } from "lucide-react";
 import { MonthlyContract, MonthlyInstallment } from "@/services/monthlyContractService";
+import { SUBJECT_TEMPLATES, MESSAGE_TEMPLATES, TEMPLATE_LANGUAGES } from "./monthlyInvoiceTemplates";
 
 const LANGUAGES = [
   { value: "en", label: "English" },
@@ -244,6 +245,20 @@ const SendMonthlyInvoiceDialog: React.FC<SendMonthlyInvoiceDialogProps> = ({
           </div>
 
           <div>
+            <Label>Subject Template</Label>
+            <Select onValueChange={(val) => setSubject(SUBJECT_TEMPLATES[val] || "")}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select language template..." />
+              </SelectTrigger>
+              <SelectContent>
+                {TEMPLATE_LANGUAGES.map(l => (
+                  <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
             <Label htmlFor="monthly-send-subject">Subject</Label>
             <Input
               id="monthly-send-subject"
@@ -260,6 +275,20 @@ const SendMonthlyInvoiceDialog: React.FC<SendMonthlyInvoiceDialogProps> = ({
               </SelectTrigger>
               <SelectContent>
                 {LANGUAGES.map(l => (
+                  <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label>Message Template</Label>
+            <Select onValueChange={(val) => setMessage(MESSAGE_TEMPLATES[val] || "")}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select language template..." />
+              </SelectTrigger>
+              <SelectContent>
+                {TEMPLATE_LANGUAGES.map(l => (
                   <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>
                 ))}
               </SelectContent>
