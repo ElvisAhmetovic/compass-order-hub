@@ -17,6 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
 import { OrderService } from "@/services/orderService";
 import { SearchService, SearchFilters } from "@/services/searchService";
+import { InvoiceSearchService } from "@/services/invoiceSearchService";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 
 interface OrderTableProps {
@@ -113,44 +114,64 @@ const OrderTable = ({
 
   // Apply filters and sorting whenever orders or filter criteria change
   useEffect(() => {
-    console.log('OrderTable: Applying filters and sorting to orders...');
-    let result = [...orders];
-    
-    // Apply status filter using the same logic as dashboard
-    if (statusFilter && statusFilter !== "All") {
-      // Use the new status system
-      result = result.filter(order => {
-        const activeStatuses = OrderService.getActiveStatuses(order);
-        return activeStatuses.includes(statusFilter as OrderStatus);
-      });
-    } else if (statusFilter === "All") {
-      // For "All", show orders that don't have resolved, cancelled, or deleted status
-      result = result.filter(order => 
-        !order.status_resolved && !order.status_cancelled && !order.status_deleted
-      );
-    }
-    
-    // Apply advanced search filters using the same method as dashboard
-    if (Object.keys(searchFilters).length > 0) {
-      result = SearchService.applyFiltersToOrders(result, searchFilters);
-    }
-    
-    // Apply sorting - same as dashboard
-    result.sort((a, b) => {
-      const dateA = new Date(a[sortField] || '').getTime();
-      const dateB = new Date(b[sortField] || '').getTime();
+    const applyFiltersAsync = async () => {
+      console.log('OrderTable: Applying filters and sorting to orders...');
+      let result = [...orders];
       
-      if (sortDirection === 'asc') {
-        return dateA - dateB;
-      } else {
-        return dateB - dateA;
+      // Apply status filter using the same logic as dashboard
+      if (statusFilter && statusFilter !== "All") {
+        result = result.filter(order => {
+          const activeStatuses = OrderService.getActiveStatuses(order);
+          return activeStatuses.includes(statusFilter as OrderStatus);
+        });
+      } else if (statusFilter === "All") {
+        result = result.filter(order => 
+          !order.status_resolved && !order.status_cancelled && !order.status_deleted
+        );
       }
-    });
-    
-    console.log(`OrderTable: Filtered orders: ${result.length} out of ${orders.length}`);
-    setFilteredOrders(result);
-    // Reset to first page when filters change
-    setCurrentPage(1);
+      
+      // Apply advanced search filters
+      if (Object.keys(searchFilters).length > 0) {
+        result = SearchService.applyFiltersToOrders(result, searchFilters);
+        
+        // Cross-reference with invoices: if globalSearch looks like an invoice number,
+        // also include orders whose contact_email matches invoices
+        const query = searchFilters.globalSearch?.trim();
+        if (query && query.length >= 3) {
+          try {
+            const matchingEmails = await InvoiceSearchService.getMatchingClientEmails(query);
+            if (matchingEmails.length > 0) {
+              const invoiceMatchedOrders = orders.filter(order =>
+                order.contact_email && 
+                matchingEmails.includes(order.contact_email.toLowerCase()) &&
+                !result.some(r => r.id === order.id)
+              );
+              result.push(...invoiceMatchedOrders);
+            }
+          } catch (error) {
+            console.error('Error cross-referencing invoices:', error);
+          }
+        }
+      }
+      
+      // Apply sorting
+      result.sort((a, b) => {
+        const dateA = new Date(a[sortField] || '').getTime();
+        const dateB = new Date(b[sortField] || '').getTime();
+        
+        if (sortDirection === 'asc') {
+          return dateA - dateB;
+        } else {
+          return dateB - dateA;
+        }
+      });
+      
+      console.log(`OrderTable: Filtered orders: ${result.length} out of ${orders.length}`);
+      setFilteredOrders(result);
+      setCurrentPage(1);
+    };
+
+    applyFiltersAsync();
   }, [orders, statusFilter, searchFilters, sortField, sortDirection]);
 
   const handlePageChange = (pageNumber: number) => {
