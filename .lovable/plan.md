@@ -1,11 +1,21 @@
 
 
-## Fix Invoice Settings Defaults
+## Change Default Monthly Invoice Description
 
-Two changes needed in `src/components/invoices/hooks/useInvoiceSettings.ts`, lines 42-51 (the `baseSettings` object):
+The fallback description `"Monthly Service - {month}"` appears in 3 places when a contract has no custom description. Change it to `"Google Monthly Service - {month}"`.
 
-1. **VAT Rate**: Change `vatRate: 19` → `vatRate: 0`
-2. **Payment Account**: Change `selectedPaymentAccount: "belgium"` → `selectedPaymentAccount: "both"`
+### Files to modify
 
-Note: Users with existing saved settings in localStorage will retain their old values. This only affects new/fresh defaults.
+1. **`src/components/monthly/SendMonthlyInvoiceDialog.tsx`** (lines 102 and 134) — change fallback from `Monthly Service -` to `Google Monthly Service -`
+2. **`src/components/monthly/MonthlyInstallmentsTable.tsx`** (line 92) — same change
+
+All three instances use the same pattern:
+```ts
+// Before
+: `Monthly Service - ${installment.month_label}`;
+// After
+: `Google Monthly Service - ${installment.month_label}`;
+```
+
+If the contract already has a custom description set, that will still be used instead (the existing `contract.description ? ...` logic is preserved).
 
