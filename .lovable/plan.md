@@ -1,53 +1,64 @@
 
 
-## Add Editable "Bill To" Override Section in Invoice Edit Form
+## Auto-Save Invoice on Navigation
 
-### What this does
-Adds a section below the Client dropdown in the invoice edit form that lets you override the billing details (name, email, address, city, zip, country) that appear in the "Bill To" section of the PDF. When a client is selected, the fields auto-fill with the client's data, but you can freely edit them before generating the PDF.
+### Current behavior
+- The Save button exists and calls `handleSave()` which works for both new and existing invoices.
+- When navigating away (clicking "Back to Invoices" or using browser navigation), unsaved changes are lost.
 
-### How it works
+### Changes to `src/pages/InvoiceDetail.tsx`
 
-1. **New state in `InvoiceDetail.tsx`**: Add a `billToOverride` state object with fields: `name`, `email`, `address`, `city`, `zip_code`, `country`. When a client is selected, auto-populate these fields from the client data. The user can then edit any field.
+1. **Auto-save on "Back to Invoices" click**: Modify the back button's `onClick` to call `handleSave()` first (for existing invoices with changes), then navigate. For new invoices, prompt or just navigate since they need explicit creation.
 
-2. **New UI section in the edit form** (below the Client dropdown): A collapsible or always-visible card titled "Bill To (PDF)" with input fields for name, email, address, city/zip, and country. These fields are pre-filled from the selected client but are independently editable.
+2. **Auto-save on route change / component unmount**: Add a `useEffect` cleanup that triggers save for existing invoices when the component unmounts (user navigates elsewhere). Use a ref to track the latest form data and line items so the cleanup has access to current values.
 
-3. **Pass overrides to PDF generator**: When generating/previewing the PDF, instead of passing `selectedClient` directly, pass a merged client object that uses the override values. This way the PDF reflects whatever the user typed.
+3. **Prevent accidental browser tab close**: Add a `beforeunload` event listener that warns about unsaved changes.
 
-### Files to modify
+4. **Track dirty state**: Add a `isDirty` ref that gets set to `true` whenever `formData`, `lineItems`, or `billToOverride` change after initial load, so we only auto-save when there are actual changes.
 
-1. **`src/pages/InvoiceDetail.tsx`**
-   - Add `billToOverride` state with client fields
-   - Add `useEffect` that populates `billToOverride` when `formData.client_id` changes (finding the client from the `clients` array)
-   - Add editable "Bill To" fields UI below the client dropdown (inside the Invoice Details card)
-   - Create a `billToClient` object that merges override values, and pass it instead of `selectedClient` to `InvoicePreview`, `generateInvoicePDF`, and `SendInvoicePDFDialog`
-
-2. **No changes needed to `invoicePdfGenerator.ts`** — it already renders from the `client` object passed to it; we just pass the overridden version.
-
-### Technical detail
+### Technical approach
 
 ```ts
-// New state
-const [billToOverride, setBillToOverride] = useState({
-  name: '', email: '', address: '', city: '', zip_code: '', country: ''
-});
+const isDirty = useRef(false);
+const formDataRef = useRef(formData);
+const lineItemsRef = useRef(lineItems);
 
-// Auto-fill when client changes
+// Keep refs in sync
+useEffect(() => { formDataRef.current = formData; }, [formData]);
+useEffect(() => { lineItemsRef.current = lineItems; }, [lineItems]);
+
+// Mark dirty on changes (skip initial load)
+useEffect(() => { if (!loading) isDirty.current = true; }, [formData, lineItems]);
+
+// Auto-save on unmount for existing invoices
 useEffect(() => {
-  if (selectedClient) {
-    setBillToOverride({
-      name: selectedClient.name || '',
-      email: selectedClient.email || '',
-      address: selectedClient.address || '',
-      city: selectedClient.city || '',
-      zip_code: selectedClient.zip_code || '',
-      country: selectedClient.country || '',
-    });
-  }
-}, [formData.client_id, clients]);
+  return () => {
+    if (!isNewInvoice && id && isDirty.current) {
+      // Fire-and-forget save using refs
+      const data = formDataRef.current;
+      InvoiceService.updateInvoice(id, { ... });
+      // Save line items too
+    }
+  };
+}, [id, isNewInvoice]);
 
-// Merged client for PDF
-const billToClient = selectedClient ? { ...selectedClient, ...billToOverride } : undefined;
+// Warn on browser close
+useEffect(() => {
+  const handler = (e) => { if (isDirty.current) { e.preventDefault(); } };
+  window.addEventListener('beforeunload', handler);
+  return () => window.removeEventListener('beforeunload', handler);
+}, []);
 ```
 
-The UI will be a simple grid of inputs (Name, Email, Address, City, Zip Code, Country) placed right after the client selector, labeled "Bill To Details (editable for PDF)".
+The "Back to Invoices" button will be changed to save first then navigate:
+```ts
+onClick={async () => {
+  if (!isNewInvoice && isDirty.current) {
+    await handleSave();
+  }
+  navigate('/invoices');
+}}
+```
+
+After a successful save, `isDirty` resets to `false` so the unmount cleanup won't double-save.
 
