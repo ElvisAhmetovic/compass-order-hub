@@ -89,7 +89,7 @@ const MonthlyInstallmentsTable: React.FC<Props> = ({ contracts, installments, on
       const netPrice = inst.amount;
       const description = contract.description
         ? `${contract.description} - ${inst.month_label}`
-        : `Monthly Service - ${inst.month_label}`;
+        : `Google Monthly Service - ${inst.month_label}`;
 
       const invoice = await InvoiceService.createInvoice({
         client_id: matched.id,
