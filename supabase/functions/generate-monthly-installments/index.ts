@@ -99,8 +99,8 @@ async function createInvoice(
   if (rpcErr) throw new Error(`Failed to generate invoice number: ${rpcErr.message}`);
 
   const totalAmount = contract.monthly_amount;
-  const netAmount = Math.round((totalAmount / 1.19) * 100) / 100;
-  const vatAmount = Math.round((totalAmount - netAmount) * 100) / 100;
+  const netAmount = totalAmount;
+  const vatAmount = 0;
   const issueDate = new Date().toISOString().split("T")[0];
 
   // We need a user_id for the invoice — use created_by from contract, or fallback
@@ -138,7 +138,7 @@ async function createInvoice(
     quantity: 1,
     unit: "Monat",
     unit_price: netAmount,
-    vat_rate: 0.19,
+    vat_rate: 0,
     discount_rate: 0,
     line_total: totalAmount,
   });
@@ -260,7 +260,7 @@ function generateInvoicePDF(
   doc.text("Nettobetrag:", totalsX, y);
   doc.text(fp(netAmount), pageWidth - marginRight, y, { align: "right" });
   y += 6;
-  doc.text("MwSt. (19%):", totalsX, y);
+  doc.text("MwSt.:", totalsX, y);
   doc.text(fp(vatAmount), pageWidth - marginRight, y, { align: "right" });
   y += 6;
   doc.setFont("helvetica", "bold");

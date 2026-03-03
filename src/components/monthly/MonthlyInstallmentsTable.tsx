@@ -85,8 +85,8 @@ const MonthlyInstallmentsTable: React.FC<Props> = ({ contracts, installments, on
         toast({ title: "Client auto-created", description: `Client "${contract.client_name}" was added to the invoice system.` });
       }
 
-      // VAT-inclusive: amount IS the total, so net = amount / 1.19
-      const netPrice = Number((inst.amount / 1.19).toFixed(2));
+      // Amount is the total price — no VAT by default
+      const netPrice = inst.amount;
       const description = contract.description
         ? `${contract.description} - ${inst.month_label}`
         : `Monthly Service - ${inst.month_label}`;
@@ -104,7 +104,7 @@ const MonthlyInstallmentsTable: React.FC<Props> = ({ contracts, installments, on
           quantity: 1,
           unit: "pcs",
           unit_price: netPrice,
-          vat_rate: 0.19,
+          vat_rate: 0,
           discount_rate: 0,
         }],
       });

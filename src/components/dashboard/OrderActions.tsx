@@ -123,7 +123,7 @@ const OrderActions = ({ order, onOrderView, onRefresh }: OrderActionsProps) => {
               quantity: item.quantity,
               unit_price: item.unitPrice,
               unit: item.unit,
-              vat_rate: 0.19,
+              vat_rate: 0,
               discount_rate: 0
             }));
           }
@@ -140,7 +140,7 @@ const OrderActions = ({ order, onOrderView, onRefresh }: OrderActionsProps) => {
             quantity: 1,
             unit_price: orderData.price || 0,
             unit: 'pcs',
-            vat_rate: 0.19,
+            vat_rate: 0,
             discount_rate: 0
           }
         ];

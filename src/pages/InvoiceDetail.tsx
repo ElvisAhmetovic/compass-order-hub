@@ -150,7 +150,7 @@ const InvoiceDetail = () => {
       quantity: 1,
       unit: 'pcs',
       unit_price: 0,
-      vat_rate: 0.19,
+      vat_rate: 0,
       discount_rate: 0,
       line_total: 0,
       created_at: new Date().toISOString(),

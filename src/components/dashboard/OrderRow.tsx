@@ -174,7 +174,7 @@ const OrderRow = ({
             quantity: 1,
             unit_price: orderData.price || 0,
             unit: 'pcs',
-            vat_rate: 0.19,
+            vat_rate: 0,
             discount_rate: 0
           }
         ]
