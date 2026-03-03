@@ -99,7 +99,7 @@ const SendMonthlyInvoiceDialog: React.FC<SendMonthlyInvoiceDialogProps> = ({
           const vatAmount = 0;
           const description = contract.description
             ? `${contract.description} - ${installment.month_label}`
-            : `Monthly Service - ${installment.month_label}`;
+            : `Google Monthly Service - ${installment.month_label}`;
 
           currentInvoice = await InvoiceService.createInvoice({
             client_id: currentClient.id,
@@ -131,7 +131,7 @@ const SendMonthlyInvoiceDialog: React.FC<SendMonthlyInvoiceDialogProps> = ({
       const netPrice = installment.amount;
       const description = contract.description
         ? `${contract.description} - ${installment.month_label}`
-        : `Monthly Service - ${installment.month_label}`;
+        : `Google Monthly Service - ${installment.month_label}`;
 
       const lineItems: InvoiceLineItem[] = [{
         id: "pdf-line",
