@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import Sidebar from "@/components/dashboard/Sidebar";
@@ -74,6 +74,25 @@ const InvoiceDetail = () => {
     line_items: []
   });
 
+  // Refs for auto-save
+  const isDirty = useRef(false);
+  const initialLoadDone = useRef(false);
+  const formDataRef = useRef(formData);
+  const lineItemsRef = useRef(lineItems);
+  const billToOverrideRef = useRef(billToOverride);
+
+  // Keep refs in sync
+  useEffect(() => { formDataRef.current = formData; }, [formData]);
+  useEffect(() => { lineItemsRef.current = lineItems; }, [lineItems]);
+  useEffect(() => { billToOverrideRef.current = billToOverride; }, [billToOverride]);
+
+  // Mark dirty on changes (skip initial load)
+  useEffect(() => {
+    if (initialLoadDone.current) {
+      isDirty.current = true;
+    }
+  }, [formData, lineItems, billToOverride]);
+
   useEffect(() => {
     loadData();
   }, [id]);
@@ -85,6 +104,33 @@ const InvoiceDetail = () => {
       currency: formData.currency
     }));
   }, [formData.currency]);
+
+  // Auto-save on unmount for existing invoices
+  useEffect(() => {
+    return () => {
+      if (!isNewInvoice && id && isDirty.current) {
+        const data = formDataRef.current;
+        InvoiceService.updateInvoice(id, {
+          client_id: data.client_id,
+          issue_date: data.issue_date,
+          due_date: data.due_date,
+          currency: data.currency,
+          payment_terms: data.payment_terms,
+          notes: data.notes,
+          internal_notes: data.internal_notes
+        }).catch(err => console.error('Auto-save failed:', err));
+      }
+    };
+  }, [id, isNewInvoice]);
+
+  // Warn on browser tab close
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (isDirty.current) { e.preventDefault(); }
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, []);
 
   // Auto-fill billToOverride when client changes
   useEffect(() => {
@@ -149,6 +195,8 @@ const InvoiceDetail = () => {
       });
     } finally {
       setLoading(false);
+      // Mark initial load as done after a tick so the dirty tracking skips the initial state sets
+      setTimeout(() => { initialLoadDone.current = true; }, 100);
     }
   };
 
@@ -280,6 +328,7 @@ const InvoiceDetail = () => {
 
         const newInvoice = await InvoiceService.createInvoice(updatedFormData);
         console.log('Created invoice:', newInvoice);
+        isDirty.current = false;
         toast({
           title: "Invoice created",
           description: `Invoice ${newInvoice.invoice_number} has been created successfully.`,
@@ -330,6 +379,7 @@ const InvoiceDetail = () => {
           }
         }
 
+        isDirty.current = false;
         toast({
           title: "Invoice updated",
           description: "Invoice has been updated successfully.",
@@ -409,7 +459,12 @@ const InvoiceDetail = () => {
         <Layout userRole={user?.role || "user"}>
           <div className="container mx-auto py-8">
             <div className="flex items-center gap-4 mb-6">
-              <Button variant="ghost" onClick={() => navigate('/invoices')}>
+              <Button variant="ghost" onClick={async () => {
+                if (!isNewInvoice && id && isDirty.current) {
+                  await handleSave();
+                }
+                navigate('/invoices');
+              }}>
                 <ArrowLeft size={16} className="mr-2" />
                 Back to Invoices
               </Button>
