@@ -211,11 +211,11 @@ const PaymentReminders = () => {
                   <div key={invoice.id} className="border rounded-lg">
                     {/* Main Row */}
                     <div className="p-4">
-                      <div className="grid grid-cols-7 gap-4 items-center">
-                        <div className="font-medium">{invoice.invoice_number}</div>
-                        <div>
-                          <div className="font-medium">{invoice.client?.name}</div>
-                          <div className="text-sm text-gray-500">{invoice.client?.email}</div>
+                      <div className="grid grid-cols-[120px_1fr_100px_80px_100px_70px_auto] gap-4 items-center">
+                        <div className="font-medium min-w-0 truncate">{invoice.invoice_number}</div>
+                        <div className="min-w-0">
+                          <div className="font-medium truncate">{invoice.client?.name}</div>
+                          <div className="text-sm text-muted-foreground truncate">{invoice.client?.email}</div>
                         </div>
                         <div>{formatDate(invoice.due_date)}</div>
                         <div>
