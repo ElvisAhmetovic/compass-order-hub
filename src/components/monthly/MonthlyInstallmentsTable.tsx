@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import SendMonthlyInvoiceDialog from "./SendMonthlyInvoiceDialog";
+import { supabase } from "@/integrations/supabase/client";
 
 const detectLanguageFromAddress = (address: string | null | undefined): string => {
   if (!address) return "en";
@@ -46,9 +47,10 @@ interface Props {
   installments: MonthlyInstallment[];
   onRefresh: () => void;
   isAdmin: boolean;
+  currentUserName?: string;
 }
 
-const MonthlyInstallmentsTable: React.FC<Props> = ({ contracts, installments, onRefresh, isAdmin }) => {
+const MonthlyInstallmentsTable: React.FC<Props> = ({ contracts, installments, onRefresh, isAdmin, currentUserName }) => {
   const [expandedContracts, setExpandedContracts] = useState<Set<string>>(new Set());
   const [togglingIds, setTogglingIds] = useState<Set<string>>(new Set());
   const [togglingEmailIds, setTogglingEmailIds] = useState<Set<string>>(new Set());
@@ -161,12 +163,30 @@ const MonthlyInstallmentsTable: React.FC<Props> = ({ contracts, installments, on
     });
   };
 
+  const sendToggleNotification = (installment: MonthlyInstallment, toggleType: "paid" | "invoice_sent", newValue: boolean) => {
+    const contract = contracts.find(c => c.id === installment.contract_id);
+    if (!contract) return;
+    supabase.functions.invoke('send-monthly-toggle-notification', {
+      body: {
+        clientName: contract.client_name,
+        clientEmail: contract.client_email,
+        monthLabel: installment.month_label,
+        amount: installment.amount,
+        currency: installment.currency || contract.currency || "EUR",
+        toggleType,
+        newValue,
+        changedBy: currentUserName || "Unknown",
+      },
+    }).catch(err => console.error("Toggle notification failed:", err));
+  };
+
   const handleToggleStatus = async (installment: MonthlyInstallment) => {
     const newStatus = installment.payment_status === "paid" ? "unpaid" : "paid";
     setTogglingIds((prev) => new Set(prev).add(installment.id));
     try {
       await monthlyContractService.togglePaymentStatus(installment.id, newStatus);
       toast({ title: newStatus === "paid" ? "Marked as paid" : "Marked as unpaid" });
+      sendToggleNotification(installment, "paid", newStatus === "paid");
       onRefresh();
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
@@ -181,6 +201,7 @@ const MonthlyInstallmentsTable: React.FC<Props> = ({ contracts, installments, on
     try {
       await monthlyContractService.toggleEmailSent(installment.id, newStatus);
       toast({ title: newStatus ? "Marked as sent" : "Marked as not sent" });
+      sendToggleNotification(installment, "invoice_sent", newStatus);
       onRefresh();
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
