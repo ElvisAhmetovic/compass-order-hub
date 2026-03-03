@@ -1,64 +1,36 @@
 
 
-## Auto-Save Invoice on Navigation
+## Add Subject & Message Template Dropdowns with Translations
 
-### Current behavior
-- The Save button exists and calls `handleSave()` which works for both new and existing invoices.
-- When navigating away (clicking "Back to Invoices" or using browser navigation), unsaved changes are lost.
+### What this does
+Adds two dropdown selectors in the Send Invoice dialog (Monthly Packages) — one for subject templates and one for message templates — each pre-filled with translations across all supported European languages. Selecting a template auto-fills the corresponding field.
 
-### Changes to `src/pages/InvoiceDetail.tsx`
+### Templates
 
-1. **Auto-save on "Back to Invoices" click**: Modify the back button's `onClick` to call `handleSave()` first (for existing invoices with changes), then navigate. For new invoices, prompt or just navigate since they need explicit creation.
+**Subject templates** (one per language):
+- EN: "Invoice & Quick Payment Option AB MEDIA TEAM"
+- DE: "Rechnung & Schnelle Zahlungsoption AB MEDIA TEAM"
+- NL: "Factuur & Snelle Betaaloptie AB MEDIA TEAM"
+- FR: "Facture & Option de Paiement Rapide AB MEDIA TEAM"
+- ES: "Factura & Opción de Pago Rápido AB MEDIA TEAM"
+- DA: "Faktura & Hurtig Betalingsmulighed AB MEDIA TEAM"
+- NO: "Faktura & Rask Betalingsalternativ AB MEDIA TEAM"
+- CS: "Faktura & Rychlá Platební Možnost AB MEDIA TEAM"
+- PL: "Faktura & Szybka Opcja Płatności AB MEDIA TEAM"
+- SV: "Faktura & Snabb Betalningsalternativ AB MEDIA TEAM"
 
-2. **Auto-save on route change / component unmount**: Add a `useEffect` cleanup that triggers save for existing invoices when the component unmounts (user navigates elsewhere). Use a ref to track the latest form data and line items so the cleanup has access to current values.
+**Message templates** (one per language, same structure):
+The provided English message translated to each language, maintaining the signature block (Annalena Klein, AB MEDIA, phone, address).
 
-3. **Prevent accidental browser tab close**: Add a `beforeunload` event listener that warns about unsaved changes.
+### UI changes in `SendMonthlyInvoiceDialog.tsx`
 
-4. **Track dirty state**: Add a `isDirty` ref that gets set to `true` whenever `formData`, `lineItems`, or `billToOverride` change after initial load, so we only auto-save when there are actual changes.
+1. Add a constant map of subject templates keyed by language code
+2. Add a constant map of message templates keyed by language code
+3. Above the Subject input, add a "Subject Template" dropdown listing all languages — selecting one fills the subject field
+4. Above the Message textarea, add a "Message Template" dropdown — selecting one fills the message field
+5. Both dropdowns show the language name as the label (e.g., "English", "Deutsch")
+6. The fields remain editable after auto-fill so users can still customize
 
-### Technical approach
-
-```ts
-const isDirty = useRef(false);
-const formDataRef = useRef(formData);
-const lineItemsRef = useRef(lineItems);
-
-// Keep refs in sync
-useEffect(() => { formDataRef.current = formData; }, [formData]);
-useEffect(() => { lineItemsRef.current = lineItems; }, [lineItems]);
-
-// Mark dirty on changes (skip initial load)
-useEffect(() => { if (!loading) isDirty.current = true; }, [formData, lineItems]);
-
-// Auto-save on unmount for existing invoices
-useEffect(() => {
-  return () => {
-    if (!isNewInvoice && id && isDirty.current) {
-      // Fire-and-forget save using refs
-      const data = formDataRef.current;
-      InvoiceService.updateInvoice(id, { ... });
-      // Save line items too
-    }
-  };
-}, [id, isNewInvoice]);
-
-// Warn on browser close
-useEffect(() => {
-  const handler = (e) => { if (isDirty.current) { e.preventDefault(); } };
-  window.addEventListener('beforeunload', handler);
-  return () => window.removeEventListener('beforeunload', handler);
-}, []);
-```
-
-The "Back to Invoices" button will be changed to save first then navigate:
-```ts
-onClick={async () => {
-  if (!isNewInvoice && isDirty.current) {
-    await handleSave();
-  }
-  navigate('/invoices');
-}}
-```
-
-After a successful save, `isDirty` resets to `false` so the unmount cleanup won't double-save.
+### File to modify
+- `src/components/monthly/SendMonthlyInvoiceDialog.tsx`
 
