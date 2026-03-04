@@ -1,27 +1,13 @@
 
 
-## Remove Auto-Creation of Blank Orders from Sync
+## Remove Facebook from Sidebar
 
-### Problem
-`CompanySyncService.syncClientsToCompanies()` creates €0 placeholder orders for every invoice client without a matching dashboard order, polluting the dashboard.
+Remove the Facebook menu item from the sidebar navigation in `src/components/dashboard/Sidebar.tsx`. The route and page component will remain in the codebase but won't be accessible from the sidebar (consistent with the existing pattern for Instagram/Trustpilot).
 
-### Changes
-
-**1. `src/services/companySyncService.ts`**
-- Remove the `syncClientsToCompanies()` method entirely
-- Update `performFullSync()` to only call `syncCompaniesToClients()` (one-direction sync)
-- Update the toast description to reflect the one-way sync
-
-**2. `src/pages/Clients.tsx`**
-- Remove the `syncClientsToCompanies()` calls in `handleClientCreated` (line 105) and `handleClientUpdated` (line 115)
-- In `loadClients`, keep the `performFullSync()` call — it will now only do companies→clients
-- The "Sync with Companies" button (line 142) stays, now only syncs one direction
-
-**3. `src/pages/Companies.tsx`** — Update the confirmation dialog text
-- Remove bullet point #3 about creating placeholder orders, since that no longer happens
-
-### Files
-- **Modify**: `src/services/companySyncService.ts`
-- **Modify**: `src/pages/Clients.tsx`
-- **Modify**: `src/pages/Companies.tsx`
+### Change
+**`src/components/dashboard/Sidebar.tsx`** — Delete the Facebook entry from the `menuItems` array:
+```
+{ href: '/facebook', icon: Facebook, label: 'Facebook', roles: ['admin', 'agent'] }
+```
+Also remove the unused `Facebook` icon import from lucide-react.
 
