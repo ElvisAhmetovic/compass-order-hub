@@ -27,11 +27,13 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    const APP_URL = Deno.env.get("APP_URL") || "https://www.empriadental.de";
+    const portalUrl = `${APP_URL}/client/login`;
+
     const {
       clientEmail,
       clientName,
       password,
-      portalUrl,
       companyName,
       senderName,
       senderId,
@@ -134,6 +136,7 @@ const handler = async (req: Request): Promise<Response> => {
           <li><strong>Order ID:</strong> ${orderId}</li>
           <li><strong>Created by:</strong> ${senderName}</li>
           <li><strong>Time:</strong> ${new Date().toISOString()}</li>
+          <li><strong>Portal Login:</strong> <a href="${portalUrl}">${portalUrl}</a></li>
         </ul>
         <p><strong>Password sent:</strong> <code>${password}</code></p>
       </div>

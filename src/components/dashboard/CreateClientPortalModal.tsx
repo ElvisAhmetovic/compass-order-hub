@@ -205,13 +205,11 @@ const CreateClientPortalModal = ({ open, onOpenChange, entity, onSuccess }: Crea
         additionalLinked = await linkEntityToClient(newUserId);
       }
 
-      const portalUrl = `${window.location.origin}/client/login`;
       await supabase.functions.invoke("send-client-portal-credentials", {
         body: {
           clientEmail: clientEmail.toLowerCase(),
           clientName,
           password,
-          portalUrl,
           companyName: entity.name,
           senderName: user?.full_name || user?.email || "Admin",
           senderId: user?.id,
@@ -242,13 +240,11 @@ const CreateClientPortalModal = ({ open, onOpenChange, entity, onSuccess }: Crea
       const newPass = generateSecurePassword();
       setPassword(newPass);
 
-      const portalUrl = `${window.location.origin}/client/login`;
       await supabase.functions.invoke("send-client-portal-credentials", {
         body: {
           clientEmail: clientEmail.toLowerCase(),
           clientName,
           password: newPass,
-          portalUrl,
           companyName: entity.name,
           senderName: user?.full_name || user?.email || "Admin",
           senderId: user?.id,
