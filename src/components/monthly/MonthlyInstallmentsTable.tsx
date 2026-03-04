@@ -22,6 +22,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import SendMonthlyInvoiceDialog from "./SendMonthlyInvoiceDialog";
 import CreateClientPortalModal from "@/components/dashboard/CreateClientPortalModal";
 import { supabase } from "@/integrations/supabase/client";
+import { enqueueNotification } from "@/utils/notificationQueue";
 
 const detectLanguageFromAddress = (address: string | null | undefined): string => {
   if (!address) return "en";
@@ -191,18 +192,16 @@ const MonthlyInstallmentsTable: React.FC<Props> = ({ contracts, installments, on
   const sendToggleNotification = (installment: MonthlyInstallment, toggleType: "paid" | "invoice_sent", newValue: boolean) => {
     const contract = contracts.find(c => c.id === installment.contract_id);
     if (!contract) return;
-    supabase.functions.invoke('send-monthly-toggle-notification', {
-      body: {
-        clientName: contract.client_name,
-        clientEmail: contract.client_email,
-        monthLabel: installment.month_label,
-        amount: installment.amount,
-        currency: installment.currency || contract.currency || "EUR",
-        toggleType,
-        newValue,
-        changedBy: currentUserName || "Unknown",
-      },
-    }).catch(err => console.error("Toggle notification failed:", err));
+    enqueueNotification('send-monthly-toggle-notification', {
+      clientName: contract.client_name,
+      clientEmail: contract.client_email,
+      monthLabel: installment.month_label,
+      amount: installment.amount,
+      currency: installment.currency || contract.currency || "EUR",
+      toggleType,
+      newValue,
+      changedBy: currentUserName || "Unknown",
+    });
   };
 
   const handleToggleStatus = async (installment: MonthlyInstallment) => {
