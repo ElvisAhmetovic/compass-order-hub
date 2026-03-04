@@ -1,20 +1,29 @@
 
 
-## Add "Unpaid Orders" Filter to Advanced Search
+## Differentiate Emojis for Invoice Sent vs Invoice Paid in Monthly Emails
 
-### What it does
-Adds a toggle in the Advanced Search dialog to filter orders where an invoice has been sent but not yet paid (`status_invoice_sent = true` AND `status_invoice_paid = false`).
+### Problem
+Both "Invoice Sent" and "Payment Paid" use the same ✅ emoji, making it hard to distinguish at a glance in email notifications.
 
-### Changes
+### Change
 
-**`src/services/searchService.ts`**
-- Add `unpaidOnly?: boolean` to the `SearchFilters` interface
-- In `applyFiltersToOrders`, add logic: if `unpaidOnly` is true, filter to orders where `status_invoice_sent === true && status_invoice_paid !== true`
+**`supabase/functions/send-monthly-toggle-notification/index.ts`** (lines 58-59)
 
-**`src/components/dashboard/AdvancedSearch.tsx`**
-- Add a checkbox for "Unpaid Orders Only" in the filter dialog (between Status and Priority sections)
-- Include `unpaidOnly` in the active filter count
-- Wire it to `handleFilterChange('unpaidOnly', checked)`
+Use distinct emojis:
+- **Payment Paid**: ✅ (keep as-is) / Unpaid: ❌ (keep)
+- **Invoice Sent**: 📨 / Not Sent: ❌ (keep)
 
-Three files, minimal changes each.
+```typescript
+// Before
+toggleType === "paid"
+  ? newValue ? "Payment marked as Paid ✅" : "Payment marked as Unpaid ❌"
+  : newValue ? "Invoice marked as Sent ✅" : "Invoice marked as Not Sent ❌";
+
+// After
+toggleType === "paid"
+  ? newValue ? "Payment marked as Paid ✅" : "Payment marked as Unpaid ❌"
+  : newValue ? "Invoice marked as Sent 📨" : "Invoice marked as Not Sent ❌";
+```
+
+Single line change, deploy edge function.
 
