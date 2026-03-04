@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
-import { MoreHorizontal, FileText, Send, Receipt, ArrowLeft, X, Bell, Mail, AlertCircle } from "lucide-react";
+import { MoreHorizontal, FileText, Send, Receipt, ArrowLeft, X, Bell, Mail, AlertCircle, KeyRound, UserCheck, UserX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 import { TableRow, TableCell } from "@/components/ui/table";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Order, OrderStatus } from "@/types";
 import { formatDate } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
@@ -21,6 +22,7 @@ import MultiStatusBadges from "./MultiStatusBadges";
 import { formatCurrency } from "@/utils/currencyUtils";
 import ScheduleReminderModal from "@/components/orders/ScheduleReminderModal";
 import SendClientReminderModal from "@/components/orders/SendClientReminderModal";
+import CreateClientPortalModal from "./CreateClientPortalModal";
 
 interface OrderRowProps {
   order: Order;
@@ -48,6 +50,7 @@ const OrderRow = ({
   const [isRemovingReview, setIsRemovingReview] = useState(false);
   const [showReminderModal, setShowReminderModal] = useState(false);
   const [showClientReminderModal, setShowClientReminderModal] = useState(false);
+  const [showPortalModal, setShowPortalModal] = useState(false);
   const [activeReminder, setActiveReminder] = useState<PaymentReminder | null>(null);
   const { user } = useAuth();
   const { toast } = useToast();
@@ -510,6 +513,22 @@ const OrderRow = ({
           <div className="font-medium break-words leading-tight min-w-0 flex-1">
             {order.company_name}
           </div>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="flex-shrink-0 mt-0.5">
+                  {order.client_id ? (
+                    <UserCheck className="h-4 w-4 text-green-500" />
+                  ) : (
+                    <UserX className="h-4 w-4 text-muted-foreground/50" />
+                  )}
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>
+                {order.client_id ? "Client portal active" : "No client portal"}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
       </TableCell>
       <TableCell>
@@ -654,6 +673,20 @@ const OrderRow = ({
             <Receipt className="h-4 w-4 mr-1" />
             {isCreatingInvoice ? "Creating..." : "Invoice"}
           </Button>
+
+          {/* Client Portal button */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowPortalModal(true);
+            }}
+            className={`h-8 px-2 w-full ${order.client_id ? "border-green-500 text-green-600 hover:bg-green-50 dark:hover:bg-green-950" : ""}`}
+          >
+            <KeyRound className="h-4 w-4 mr-1" />
+            Portal
+          </Button>
           
           {!hideActions && isAdmin ? (
             <DropdownMenu>
@@ -721,6 +754,17 @@ const OrderRow = ({
         open={showClientReminderModal}
         onOpenChange={setShowClientReminderModal}
         order={order}
+      />
+
+      {/* Client Portal Modal */}
+      <CreateClientPortalModal
+        open={showPortalModal}
+        onOpenChange={setShowPortalModal}
+        order={order}
+        onSuccess={() => {
+          onRefresh();
+          window.dispatchEvent(new CustomEvent('orderStatusChanged'));
+        }}
       />
     </TableRow>
   );
