@@ -124,6 +124,7 @@ const AdvancedSearch = ({ onFiltersChange, currentFilters }: AdvancedSearchProps
     if (filters.dateRange?.from && filters.dateRange?.to) count++;
     if (filters.priceRange && (filters.priceRange.min > 0 || filters.priceRange.max > 0)) count++;
     if (filters.currency?.length) count++;
+    if (filters.unpaidOnly) count++;
     return count;
   };
 
@@ -234,6 +235,21 @@ const AdvancedSearch = ({ onFiltersChange, currentFilters }: AdvancedSearchProps
                   </div>
                 ))}
               </div>
+            </div>
+
+            {/* Unpaid Orders Filter */}
+            <div className="flex items-center space-x-2 p-3 rounded-md border border-dashed border-muted-foreground/30 bg-muted/30">
+              <Checkbox
+                id="unpaid-only"
+                checked={filters.unpaidOnly || false}
+                onCheckedChange={(checked) => handleFilterChange('unpaidOnly', !!checked)}
+              />
+              <Label htmlFor="unpaid-only" className="text-sm cursor-pointer font-medium">
+                Unpaid Orders Only
+              </Label>
+              <span className="text-xs text-muted-foreground ml-1">
+                (Invoice sent but not yet paid)
+              </span>
             </div>
 
             {/* Priority Filter */}
