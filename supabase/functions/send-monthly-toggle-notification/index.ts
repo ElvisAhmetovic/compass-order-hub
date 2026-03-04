@@ -102,38 +102,34 @@ serve(async (req) => {
     `;
 
     const results: string[] = [];
-    const batchSize = 2;
 
-    for (let i = 0; i < NOTIFICATION_EMAIL_LIST.length; i += batchSize) {
-      const batch = NOTIFICATION_EMAIL_LIST.slice(i, i + batchSize);
-      const promises = batch.map(async (email) => {
-        try {
-          const res = await fetch("https://api.resend.com/emails", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${RESEND_API_KEY}`,
-            },
-            body: JSON.stringify({
-              from: "AB Media Team <noreply@abm-team.com>",
-              to: [email],
-              subject,
-              html,
-            }),
-          });
-          if (!res.ok) {
-            const err = await res.text();
-            results.push(`❌ ${email}: ${err}`);
-          } else {
-            results.push(`✅ ${email}`);
-          }
-        } catch (e) {
-          results.push(`❌ ${email}: ${e.message}`);
+    for (let i = 0; i < NOTIFICATION_EMAIL_LIST.length; i++) {
+      const email = NOTIFICATION_EMAIL_LIST[i];
+      try {
+        const res = await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${RESEND_API_KEY}`,
+          },
+          body: JSON.stringify({
+            from: "AB Media Team <noreply@abm-team.com>",
+            to: [email],
+            subject,
+            html,
+          }),
+        });
+        if (!res.ok) {
+          const err = await res.text();
+          results.push(`❌ ${email}: ${err}`);
+        } else {
+          results.push(`✅ ${email}`);
         }
-      });
-      await Promise.all(promises);
-      if (i + batchSize < NOTIFICATION_EMAIL_LIST.length) {
-        await sleep(1000);
+      } catch (e) {
+        results.push(`❌ ${email}: ${e.message}`);
+      }
+      if (i < NOTIFICATION_EMAIL_LIST.length - 1) {
+        await sleep(1500);
       }
     }
 
