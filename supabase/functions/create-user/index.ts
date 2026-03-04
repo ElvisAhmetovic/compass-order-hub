@@ -75,7 +75,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // Get user data from request body
-    const { email, password, firstName, lastName, role } = await req.json();
+    const { email, password, firstName, lastName, role, linkOrderId } = await req.json();
 
     // Validate required fields
     if (!email || !password) {
@@ -177,6 +177,20 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (appUserError) {
       console.error("Error inserting app user:", appUserError);
+    }
+
+    // Link order if linkOrderId is provided
+    if (linkOrderId) {
+      const { error: linkError } = await supabaseAdmin
+        .from("orders")
+        .update({ client_id: userData.user.id })
+        .eq("id", linkOrderId);
+      
+      if (linkError) {
+        console.error("Error linking order:", linkError);
+      } else {
+        console.log("Order linked successfully:", linkOrderId);
+      }
     }
 
     return new Response(

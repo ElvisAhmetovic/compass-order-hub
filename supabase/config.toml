@@ -92,3 +92,6 @@ verify_jwt = false
 
 [functions.send-monthly-toggle-notification]
 verify_jwt = false
+
+[functions.send-client-portal-credentials]
+verify_jwt = false
