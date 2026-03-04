@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
-import { Trash2, ChevronDown, ChevronRight, ExternalLink, FileText, Mail, Loader2 } from "lucide-react";
+import { Trash2, ChevronDown, ChevronRight, ExternalLink, FileText, Mail, Loader2, UserCheck, UserX, KeyRound } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import {
   monthlyContractService, MonthlyContract, MonthlyInstallment,
@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import SendMonthlyInvoiceDialog from "./SendMonthlyInvoiceDialog";
+import CreateClientPortalModal from "@/components/dashboard/CreateClientPortalModal";
 import { supabase } from "@/integrations/supabase/client";
 
 const detectLanguageFromAddress = (address: string | null | undefined): string => {
@@ -55,9 +56,12 @@ const MonthlyInstallmentsTable: React.FC<Props> = ({ contracts, installments, on
   const [togglingIds, setTogglingIds] = useState<Set<string>>(new Set());
   const [togglingEmailIds, setTogglingEmailIds] = useState<Set<string>>(new Set());
   const [creatingInvoiceIds, setCreatingInvoiceIds] = useState<Set<string>>(new Set());
-  // Track created invoices: installment id -> Invoice
-  const [createdInvoices, setCreatedInvoices] = useState<Record<string, Invoice>>({}); 
+  const [createdInvoices, setCreatedInvoices] = useState<Record<string, Invoice>>({});
   const [matchedClients, setMatchedClients] = useState<Record<string, Client>>({});
+
+  // Portal status
+  const [portalStatuses, setPortalStatuses] = useState<Record<string, boolean>>({});
+  const [portalModalContract, setPortalModalContract] = useState<MonthlyContract | null>(null);
 
   // Send dialog state
   const [sendDialogOpen, setSendDialogOpen] = useState(false);
@@ -69,14 +73,38 @@ const MonthlyInstallmentsTable: React.FC<Props> = ({ contracts, installments, on
     language: string;
   } | null>(null);
 
+  // Check portal statuses on mount/refresh
+  useEffect(() => {
+    const checkPortalStatuses = async () => {
+      const uniqueEmails = [...new Set(contracts.map(c => c.client_email.toLowerCase()))];
+      if (uniqueEmails.length === 0) return;
+
+      try {
+        const { data } = await supabase
+          .from("app_users")
+          .select("email")
+          .eq("role", "client")
+          .in("email", uniqueEmails);
+
+        const existingEmails = new Set((data || []).map(u => u.email.toLowerCase()));
+        const statuses: Record<string, boolean> = {};
+        contracts.forEach(c => {
+          statuses[c.id] = existingEmails.has(c.client_email.toLowerCase());
+        });
+        setPortalStatuses(statuses);
+      } catch {
+        // silently fail
+      }
+    };
+    checkPortalStatuses();
+  }, [contracts]);
+
   const handleCreateInvoice = async (contract: MonthlyContract, inst: MonthlyInstallment) => {
     setCreatingInvoiceIds(prev => new Set(prev).add(inst.id));
     try {
-      // Load clients and match
       const clients = await InvoiceService.getClients();
       let matched = clients.find(c => c.email.toLowerCase() === contract.client_email.toLowerCase());
       if (!matched) {
-        // Auto-create client from contract data
         matched = await InvoiceService.createClient({
           name: contract.client_name,
           email: contract.client_email,
@@ -87,7 +115,6 @@ const MonthlyInstallmentsTable: React.FC<Props> = ({ contracts, installments, on
         toast({ title: "Client auto-created", description: `Client "${contract.client_name}" was added to the invoice system.` });
       }
 
-      // Amount is the total price — no VAT by default
       const netPrice = inst.amount;
       const description = contract.description
         ? `${contract.description} - ${inst.month_label}`
@@ -111,7 +138,6 @@ const MonthlyInstallmentsTable: React.FC<Props> = ({ contracts, installments, on
         }],
       });
 
-      // Store for the send button
       setCreatedInvoices(prev => ({ ...prev, [inst.id]: invoice }));
       setMatchedClients(prev => ({ ...prev, [inst.id]: matched }));
 
@@ -132,7 +158,6 @@ const MonthlyInstallmentsTable: React.FC<Props> = ({ contracts, installments, on
     let invoice = createdInvoices[inst.id] || null;
     let client = matchedClients[inst.id] || null;
 
-    // If no invoice created yet, try to find matching client at least
     if (!client) {
       try {
         const clients = await InvoiceService.getClients();
@@ -245,6 +270,7 @@ const MonthlyInstallmentsTable: React.FC<Props> = ({ contracts, installments, on
         const totalMonths = contract.duration_months;
         const progressPercent = totalMonths > 0 ? (paidCount / totalMonths) * 100 : 0;
         const isExpanded = expandedContracts.has(contract.id);
+        const hasPortal = portalStatuses[contract.id] ?? false;
 
         return (
           <div key={contract.id} className="border rounded-lg overflow-hidden bg-card">
@@ -255,7 +281,25 @@ const MonthlyInstallmentsTable: React.FC<Props> = ({ contracts, installments, on
               <div className="flex items-center gap-3">
                 {isExpanded ? <ChevronDown className="w-5 h-5 text-muted-foreground" /> : <ChevronRight className="w-5 h-5 text-muted-foreground" />}
                 <div>
-                  <div className="font-semibold text-foreground">{contract.client_name}</div>
+                  <div className="font-semibold text-foreground flex items-center gap-2">
+                    {contract.client_name}
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span>
+                            {hasPortal ? (
+                              <UserCheck className="w-4 h-4 text-green-500" />
+                            ) : (
+                              <UserX className="w-4 h-4 text-muted-foreground/50" />
+                            )}
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          {hasPortal ? "Client portal active" : "No client portal"}
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
                   <div className="text-sm text-muted-foreground">
                     {contract.client_email}
                     {(contract as any).contact_phone && ` · ${(contract as any).contact_phone}`}
@@ -289,6 +333,18 @@ const MonthlyInstallmentsTable: React.FC<Props> = ({ contracts, installments, on
                 <Badge variant={contract.status === "active" ? "default" : contract.status === "completed" ? "secondary" : "destructive"}>
                   {contract.status === "active" ? "Active" : contract.status === "completed" ? "Completed" : "Cancelled"}
                 </Badge>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className={`h-8 px-2 ${hasPortal ? "border-green-500 text-green-600 hover:bg-green-50 dark:hover:bg-green-950" : ""}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setPortalModalContract(contract);
+                  }}
+                >
+                  <KeyRound className="w-4 h-4 mr-1" />
+                  Portal
+                </Button>
                 {isAdmin && (
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
@@ -403,6 +459,26 @@ const MonthlyInstallmentsTable: React.FC<Props> = ({ contracts, installments, on
           invoice={sendDialogData.invoice}
           client={sendDialogData.client}
           onRefresh={onRefresh}
+        />
+      )}
+
+      {portalModalContract && (
+        <CreateClientPortalModal
+          open={!!portalModalContract}
+          onOpenChange={(open) => { if (!open) setPortalModalContract(null); }}
+          entity={{
+            id: portalModalContract.id,
+            name: portalModalContract.client_name,
+            contactName: portalModalContract.client_name,
+            contactEmail: portalModalContract.client_email,
+            entityType: "contract",
+          }}
+          onSuccess={() => {
+            onRefresh();
+            // Re-check portal statuses
+            setPortalStatuses(prev => ({ ...prev, [portalModalContract.id]: true }));
+            setPortalModalContract(null);
+          }}
         />
       )}
     </div>
