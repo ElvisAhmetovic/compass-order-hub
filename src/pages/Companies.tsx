@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Layout from "@/components/layout/Layout";
 import { useAuth } from "@/context/AuthContext";
 import Sidebar from "@/components/dashboard/Sidebar";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { Company } from "@/types";
@@ -16,6 +16,17 @@ import { CompanyService } from "@/services/companyService";
 import { SupabaseCompanySyncService } from "@/services/supabaseCompanySyncService";
 import { MigrationService } from "@/services/migrationService";
 import { OrderService } from "@/services/orderService";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const Companies = () => {
   const { user } = useAuth();
@@ -319,14 +330,40 @@ const Companies = () => {
                   >
                     {isMigrating ? "🔄 Migrating..." : "📦 Migrate from localStorage"}
                   </Button>
-                  <Button 
-                    onClick={handleEnhancedSync}
-                    disabled={isSyncing}
-                    variant="outline"
-                    className="flex items-center gap-2"
-                  >
-                    {isSyncing ? "🔄 Syncing..." : "🔄 Enhanced Sync (Orders + Clients)"}
-                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button 
+                        variant="outline"
+                        className="flex items-center gap-2"
+                        disabled={isSyncing}
+                      >
+                        {isSyncing ? "🔄 Syncing..." : "🔄 Enhanced Sync (Orders + Clients)"}
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle className="flex items-center gap-2">
+                          <AlertTriangle className="h-5 w-5 text-amber-500" />
+                          Confirm Enhanced Sync
+                        </AlertDialogTitle>
+                        <AlertDialogDescription className="text-left space-y-3">
+                          <p>This sync will perform the following actions:</p>
+                          <ol className="list-decimal list-inside space-y-1 text-sm">
+                            <li>Create new companies from orders that don't have a matching company yet</li>
+                            <li>Create new companies from invoice clients that don't have a matching company yet</li>
+                            <li>May create placeholder orders (price €0, status "Created") for clients without existing orders</li>
+                          </ol>
+                          <p className="font-medium text-destructive">⚠️ This action cannot be easily undone. The placeholder orders will appear on the dashboard.</p>
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleEnhancedSync}>
+                          Yes, run Enhanced Sync
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                   <Button 
                     onClick={handleUpdateCompanies}
                     disabled={isUpdating}
