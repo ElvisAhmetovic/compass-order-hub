@@ -1,29 +1,18 @@
 
 
-## Differentiate Emojis for Invoice Sent vs Invoice Paid in Monthly Emails
+## Add "Created Only" Filter to Advanced Search
 
-### Problem
-Both "Invoice Sent" and "Payment Paid" use the same ✅ emoji, making it hard to distinguish at a glance in email notifications.
+The boss wants a second quick-filter alongside "Unpaid Orders Only" that shows orders with only the "Created" status -- orders that haven't progressed yet and also count as unpaid.
 
-### Change
+### Changes
 
-**`supabase/functions/send-monthly-toggle-notification/index.ts`** (lines 58-59)
+**`src/services/searchService.ts`**
+- Add `createdOnly?: boolean` to `SearchFilters` interface
+- Add filter logic in `applyFiltersToOrders`: if `createdOnly` is true, keep only orders where `status_created === true` and no further progress statuses are active (`status_in_progress`, `status_invoice_sent`, `status_invoice_paid`, `status_resolved`, `status_cancelled` are all falsy)
 
-Use distinct emojis:
-- **Payment Paid**: ✅ (keep as-is) / Unpaid: ❌ (keep)
-- **Invoice Sent**: 📨 / Not Sent: ❌ (keep)
+**`src/components/dashboard/AdvancedSearch.tsx`**
+- Add a second checkbox below "Unpaid Orders Only" labeled "Created Only (Not Yet Started)" with description "(Orders still at Created status — no invoice sent or paid)"
+- Include `createdOnly` in the active filter count
 
-```typescript
-// Before
-toggleType === "paid"
-  ? newValue ? "Payment marked as Paid ✅" : "Payment marked as Unpaid ❌"
-  : newValue ? "Invoice marked as Sent ✅" : "Invoice marked as Not Sent ❌";
-
-// After
-toggleType === "paid"
-  ? newValue ? "Payment marked as Paid ✅" : "Payment marked as Unpaid ❌"
-  : newValue ? "Invoice marked as Sent 📨" : "Invoice marked as Not Sent ❌";
-```
-
-Single line change, deploy edge function.
+Both filters can work independently or together.
 
