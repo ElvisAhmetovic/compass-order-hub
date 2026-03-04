@@ -59,64 +59,20 @@ export class CompanySyncService {
     }
   }
 
-  // Sync clients from Supabase to Supabase orders
-  static async syncClientsToCompanies(): Promise<void> {
-    try {
-      console.log('🔄 Starting clients to companies sync...');
-      
-      const clients = await InvoiceService.getClients();
-      const orders = await OrderService.getOrders();
-      
-      // Create orders for clients that don't have corresponding companies
-      for (const client of clients) {
-        const hasCompany = orders.some((order) => 
-          order.company_name.toLowerCase() === client.name.toLowerCase() ||
-          (order.contact_email && order.contact_email.toLowerCase() === client.email.toLowerCase())
-        );
-        
-        if (!hasCompany) {
-          try {
-            await OrderService.createOrder({
-              company_name: client.name,
-              contact_name: client.contact_person || "Contact",
-              contact_email: client.email,
-              contact_phone: client.phone || "",
-              company_address: client.address || "",
-              company_link: "",
-              description: "Auto-created from client",
-              price: 0,
-              status: "Created",
-              priority: "low",
-              currency: "EUR"
-            });
-            console.log(`✅ Created company order for client: ${client.name}`);
-          } catch (error) {
-            console.error(`❌ Failed to create order for client ${client.name}:`, error);
-          }
-        }
-      }
-      
-      console.log('✅ Clients to companies sync completed');
-    } catch (error) {
-      console.error('❌ Error syncing clients to companies:', error);
-    }
-  }
-
-  // Full bidirectional sync
+  // Full sync (companies → clients only)
   static async performFullSync(): Promise<void> {
     try {
       await this.syncCompaniesToClients();
-      await this.syncClientsToCompanies();
       
       toast({
         title: "Sync completed",
-        description: "Companies and clients have been synchronized successfully.",
+        description: "Companies have been synced to clients successfully.",
       });
     } catch (error) {
       console.error('❌ Full sync failed:', error);
       toast({
         title: "Sync failed",
-        description: "There was an error synchronizing companies and clients.",
+        description: "There was an error synchronizing companies to clients.",
         variant: "destructive",
       });
     }

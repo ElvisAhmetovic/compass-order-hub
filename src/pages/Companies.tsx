@@ -351,9 +351,8 @@ const Companies = () => {
                           <ol className="list-decimal list-inside space-y-1 text-sm">
                             <li>Create new companies from orders that don't have a matching company yet</li>
                             <li>Create new companies from invoice clients that don't have a matching company yet</li>
-                            <li>May create placeholder orders (price €0, status "Created") for clients without existing orders</li>
                           </ol>
-                          <p className="font-medium text-destructive">⚠️ This action cannot be easily undone. The placeholder orders will appear on the dashboard.</p>
+                          <p className="text-sm text-muted-foreground">No placeholder orders will be created.</p>
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>

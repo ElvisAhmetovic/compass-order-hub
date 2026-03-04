@@ -100,9 +100,6 @@ const Clients = () => {
   const handleClientCreated = async (newClient: Client) => {
     setClients([...clients, newClient]);
     setShowCreateDialog(false);
-    
-    // Sync the new client to companies
-    await CompanySyncService.syncClientsToCompanies();
   };
 
   const handleClientUpdated = async (updatedClient: Client) => {
@@ -110,9 +107,6 @@ const Clients = () => {
       client.id === updatedClient.id ? updatedClient : client
     ));
     setEditingClient(null);
-    
-    // Sync the updated client to companies
-    await CompanySyncService.syncClientsToCompanies();
   };
 
   const filteredClients = clients.filter(client => 
