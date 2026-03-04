@@ -19,6 +19,7 @@ export interface SearchFilters {
     max: number;
   };
   currency?: string[];
+  unpaidOnly?: boolean;
 }
 
 export interface SavedFilter {
@@ -178,6 +179,13 @@ export class SearchService {
         const maxPrice = filters.priceRange!.max || Infinity;
         return price >= minPrice && price <= maxPrice;
       });
+    }
+
+    // Apply unpaid only filter
+    if (filters.unpaidOnly) {
+      result = result.filter(order =>
+        order.status_invoice_sent === true && order.status_invoice_paid !== true
+      );
     }
 
     // Apply currency filter
