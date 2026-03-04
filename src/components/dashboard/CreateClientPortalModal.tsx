@@ -120,14 +120,27 @@ const CreateClientPortalModal = ({ open, onOpenChange, entity, onSuccess }: Crea
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const linkEntityToClient = async (userId: string) => {
+  const linkEntityToClient = async (userId: string): Promise<number> => {
     if (entity.entityType === "order") {
       await supabase.from("orders").update({ client_id: userId }).eq("id", entity.id);
       if (entity.companyId) {
         await supabase.from("companies").update({ client_user_id: userId }).eq("id", entity.companyId);
       }
     }
-    // For contracts, no client_id column to update — just log
+
+    // Bulk-link all orders with matching contact_email that aren't already linked
+    let additionalLinked = 0;
+    if (clientEmail) {
+      const { data: linkedOrders } = await supabase
+        .from("orders")
+        .update({ client_id: userId })
+        .ilike("contact_email", clientEmail)
+        .is("client_id", null)
+        .select("id");
+      additionalLinked = linkedOrders?.length || 0;
+    }
+
+    return additionalLinked;
   };
 
   const logAction = async (action: string, details: string) => {
@@ -146,9 +159,10 @@ const CreateClientPortalModal = ({ open, onOpenChange, entity, onSuccess }: Crea
     if (!existingUserId) return;
     setLoading(true);
     try {
-      await linkEntityToClient(existingUserId);
-      await logAction("client_portal_linked", `Linked existing client portal (${clientEmail}) to ${entity.name}`);
-      toast({ title: "Linked", description: `Linked to existing client portal for ${clientEmail}.` });
+      const additionalLinked = await linkEntityToClient(existingUserId);
+      await logAction("client_portal_linked", `Linked existing client portal (${clientEmail}) to ${entity.name}${additionalLinked > 0 ? ` and ${additionalLinked} additional order(s)` : ""}`);
+      const extraMsg = additionalLinked > 0 ? ` Also linked ${additionalLinked} additional order(s).` : "";
+      toast({ title: "Linked", description: `Linked to existing client portal for ${clientEmail}.${extraMsg}` });
       onSuccess();
       onOpenChange(false);
     } catch (err: any) {
@@ -186,8 +200,9 @@ const CreateClientPortalModal = ({ open, onOpenChange, entity, onSuccess }: Crea
       if (createData?.error) throw new Error(createData.error);
 
       const newUserId = createData?.user_id;
+      let additionalLinked = 0;
       if (newUserId) {
-        await linkEntityToClient(newUserId);
+        additionalLinked = await linkEntityToClient(newUserId);
       }
 
       const portalUrl = `${window.location.origin}/client/login`;
@@ -204,11 +219,12 @@ const CreateClientPortalModal = ({ open, onOpenChange, entity, onSuccess }: Crea
         },
       });
 
-      await logAction("client_portal_created", `Created client portal for ${clientEmail} and sent credentials`);
+      const extraMsg = additionalLinked > 0 ? ` Also linked ${additionalLinked} additional order(s).` : "";
+      await logAction("client_portal_created", `Created client portal for ${clientEmail} and sent credentials${additionalLinked > 0 ? ` (${additionalLinked} additional orders auto-linked)` : ""}`);
 
       toast({
         title: "Client portal created",
-        description: `Account created and credentials sent to ${clientEmail}.`,
+        description: `Account created and credentials sent to ${clientEmail}.${extraMsg}`,
       });
       onSuccess();
       onOpenChange(false);
