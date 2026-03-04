@@ -56,7 +56,7 @@ serve(async (req) => {
     const toggleLabel =
       toggleType === "paid"
         ? newValue ? "Payment marked as Paid ✅" : "Payment marked as Unpaid ❌"
-        : newValue ? "Invoice marked as Sent ✅" : "Invoice marked as Not Sent ❌";
+        : newValue ? "Invoice marked as Sent 📨" : "Invoice marked as Not Sent ❌";
 
     const subject = `[Monthly] ${toggleLabel} — ${clientName} — ${monthLabel}`;
 
