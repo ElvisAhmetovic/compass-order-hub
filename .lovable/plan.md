@@ -1,32 +1,23 @@
 
 
-## Send Team Notification on Monthly Installment "Paid" / "Invoice Sent" Toggle
+## Add Confirmation Dialog to Enhanced Sync Button
 
-### What it does
-When a team member toggles the "Paid" switch or the "Invoice Sent" switch on a monthly installment row, a notification email is sent to the standard team recipient list (12 people) informing them of the change, including client name, month, amount, and who made the change.
-
-### Approach
-Create a new edge function `send-monthly-toggle-notification` that accepts the toggle details and sends a branded email to the team list. Then call it from the existing toggle handlers in `MonthlyInstallmentsTable.tsx`.
+### What
+Add an AlertDialog that pops up when "Enhanced Sync" is clicked, explaining exactly what the sync will do before the user confirms.
 
 ### Changes
 
-**1. New edge function: `supabase/functions/send-monthly-toggle-notification/index.ts`**
-- Accepts: `{ clientName, clientEmail, monthLabel, amount, currency, toggleType: "paid"|"invoice_sent", newValue: boolean, changedBy: string }`
-- Sends a branded HTML email to the hardcoded NOTIFICATION_EMAIL_LIST (same 12 recipients)
-- Uses `RESEND_API_KEY_ABMEDIA` with sender `AB Media Team <noreply@abm-team.com>` (consistent with other monthly package emails)
-- Batches 2 emails at a time with 1s delay (existing pattern)
-- Subject: e.g. `[Monthly] Payment marked as Paid — ClientName — März 2026`
+**`src/pages/Companies.tsx`**
+- Import `AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger` from `@/components/ui/alert-dialog`
+- Wrap the Enhanced Sync `<Button>` with `<AlertDialog>` + `<AlertDialogTrigger asChild>`
+- Add `<AlertDialogContent>` with:
+  - **Title**: "Confirm Enhanced Sync"
+  - **Description**: Clear explanation of the 3 things it does:
+    1. Creates new companies from orders that don't have a matching company yet
+    2. Creates new companies from invoice clients that don't have a matching company yet
+    3. May create placeholder orders (price €0, status "Created") for clients without existing orders
+  - Warning that this cannot be easily undone
+- Confirm button calls the existing `handleEnhancedSync()`, cancel dismisses
 
-**2. `supabase/config.toml`** — Add `[functions.send-monthly-toggle-notification]` with `verify_jwt = false`
-
-**3. `src/components/monthly/MonthlyInstallmentsTable.tsx`** — Update `handleToggleStatus` and `handleToggleEmailSent`
-- After the successful toggle, fire-and-forget call `supabase.functions.invoke('send-monthly-toggle-notification', { body: { ... } })`
-- Include the current user's name from AuthContext (need to accept `user` prop or use `useAuth`)
-- Non-blocking: don't await or block the UI on email delivery
-
-### Files
-- **Create**: `supabase/functions/send-monthly-toggle-notification/index.ts`
-- **Modify**: `supabase/config.toml` (add function config)
-- **Modify**: `src/components/monthly/MonthlyInstallmentsTable.tsx` (add notification calls)
-- **Modify**: `src/pages/MonthlyPackages.tsx` (pass `user` to the table component)
+No new files needed — just one file modified.
 
