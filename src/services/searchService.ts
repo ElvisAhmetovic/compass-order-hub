@@ -20,6 +20,7 @@ export interface SearchFilters {
   };
   currency?: string[];
   unpaidOnly?: boolean;
+  createdOnly?: boolean;
 }
 
 export interface SavedFilter {
@@ -185,6 +186,18 @@ export class SearchService {
     if (filters.unpaidOnly) {
       result = result.filter(order =>
         order.status_invoice_sent === true && order.status_invoice_paid !== true
+      );
+    }
+
+    // Apply created only filter
+    if (filters.createdOnly) {
+      result = result.filter(order =>
+        order.status_created === true &&
+        !order.status_in_progress &&
+        !order.status_invoice_sent &&
+        !order.status_invoice_paid &&
+        !order.status_resolved &&
+        !order.status_cancelled
       );
     }
 
