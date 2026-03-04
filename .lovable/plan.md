@@ -1,23 +1,27 @@
 
 
-## Add Confirmation Dialog to Enhanced Sync Button
+## Remove Auto-Creation of Blank Orders from Sync
 
-### What
-Add an AlertDialog that pops up when "Enhanced Sync" is clicked, explaining exactly what the sync will do before the user confirms.
+### Problem
+`CompanySyncService.syncClientsToCompanies()` creates €0 placeholder orders for every invoice client without a matching dashboard order, polluting the dashboard.
 
 ### Changes
 
-**`src/pages/Companies.tsx`**
-- Import `AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger` from `@/components/ui/alert-dialog`
-- Wrap the Enhanced Sync `<Button>` with `<AlertDialog>` + `<AlertDialogTrigger asChild>`
-- Add `<AlertDialogContent>` with:
-  - **Title**: "Confirm Enhanced Sync"
-  - **Description**: Clear explanation of the 3 things it does:
-    1. Creates new companies from orders that don't have a matching company yet
-    2. Creates new companies from invoice clients that don't have a matching company yet
-    3. May create placeholder orders (price €0, status "Created") for clients without existing orders
-  - Warning that this cannot be easily undone
-- Confirm button calls the existing `handleEnhancedSync()`, cancel dismisses
+**1. `src/services/companySyncService.ts`**
+- Remove the `syncClientsToCompanies()` method entirely
+- Update `performFullSync()` to only call `syncCompaniesToClients()` (one-direction sync)
+- Update the toast description to reflect the one-way sync
 
-No new files needed — just one file modified.
+**2. `src/pages/Clients.tsx`**
+- Remove the `syncClientsToCompanies()` calls in `handleClientCreated` (line 105) and `handleClientUpdated` (line 115)
+- In `loadClients`, keep the `performFullSync()` call — it will now only do companies→clients
+- The "Sync with Companies" button (line 142) stays, now only syncs one direction
+
+**3. `src/pages/Companies.tsx`** — Update the confirmation dialog text
+- Remove bullet point #3 about creating placeholder orders, since that no longer happens
+
+### Files
+- **Modify**: `src/services/companySyncService.ts`
+- **Modify**: `src/pages/Clients.tsx`
+- **Modify**: `src/pages/Companies.tsx`
 
