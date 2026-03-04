@@ -760,7 +760,15 @@ const OrderRow = ({
       <CreateClientPortalModal
         open={showPortalModal}
         onOpenChange={setShowPortalModal}
-        order={order}
+        entity={{
+          id: order.id,
+          name: order.company_name,
+          contactName: order.contact_name || order.company_name || "",
+          contactEmail: order.contact_email || "",
+          clientId: order.client_id,
+          companyId: order.company_id,
+          entityType: "order",
+        }}
         onSuccess={() => {
           onRefresh();
           window.dispatchEvent(new CustomEvent('orderStatusChanged'));

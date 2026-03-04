@@ -11,7 +11,6 @@ import { Copy, Check, UserCheck, AlertCircle, Loader2, KeyRound, Link2, RefreshC
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { Order } from "@/types";
 
 function generateSecurePassword(length = 14): string {
   const upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -20,7 +19,6 @@ function generateSecurePassword(length = 14): string {
   const symbols = "!@#$%&*";
   const all = upper + lower + numbers + symbols;
 
-  // Ensure at least one of each category
   let password = [
     upper[Math.floor(Math.random() * upper.length)],
     lower[Math.floor(Math.random() * lower.length)],
@@ -32,7 +30,6 @@ function generateSecurePassword(length = 14): string {
     password.push(all[Math.floor(Math.random() * all.length)]);
   }
 
-  // Shuffle
   for (let i = password.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [password[i], password[j]] = [password[j], password[i]];
@@ -41,14 +38,24 @@ function generateSecurePassword(length = 14): string {
   return password.join("");
 }
 
+export interface PortalEntity {
+  id: string;
+  name: string;
+  contactName: string;
+  contactEmail: string;
+  clientId?: string | null;
+  companyId?: string | null;
+  entityType: "order" | "contract";
+}
+
 interface CreateClientPortalModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  order: Order;
+  entity: PortalEntity;
   onSuccess: () => void;
 }
 
-const CreateClientPortalModal = ({ open, onOpenChange, order, onSuccess }: CreateClientPortalModalProps) => {
+const CreateClientPortalModal = ({ open, onOpenChange, entity, onSuccess }: CreateClientPortalModalProps) => {
   const [clientName, setClientName] = useState("");
   const [clientEmail, setClientEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -61,19 +68,17 @@ const CreateClientPortalModal = ({ open, onOpenChange, order, onSuccess }: Creat
   const { toast } = useToast();
   const { user } = useAuth();
 
-  // Initialize fields when modal opens
   useEffect(() => {
     if (open) {
-      setClientName(order.contact_name || order.company_name || "");
-      setClientEmail(order.contact_email || "");
+      setClientName(entity.contactName || entity.name || "");
+      setClientEmail(entity.contactEmail || "");
       setPassword(generateSecurePassword());
       setCopied(false);
       setExistingUserId(null);
       setAlreadyLinked(false);
     }
-  }, [open, order]);
+  }, [open, entity]);
 
-  // Check for existing account when email changes
   const checkExistingAccount = useCallback(async (email: string) => {
     if (!email || email.length < 3) {
       setExistingUserId(null);
@@ -89,13 +94,18 @@ const CreateClientPortalModal = ({ open, onOpenChange, order, onSuccess }: Creat
         .maybeSingle();
 
       setExistingUserId(data?.id || null);
-      setAlreadyLinked(data?.id ? order.client_id === data.id : false);
+      if (entity.entityType === "order") {
+        setAlreadyLinked(data?.id ? entity.clientId === data.id : false);
+      } else {
+        // For contracts, "linked" means the account exists
+        setAlreadyLinked(!!data?.id);
+      }
     } catch {
       setExistingUserId(null);
     } finally {
       setChecking(false);
     }
-  }, [order.client_id]);
+  }, [entity.clientId, entity.entityType]);
 
   useEffect(() => {
     if (open && clientEmail) {
@@ -110,21 +120,25 @@ const CreateClientPortalModal = ({ open, onOpenChange, order, onSuccess }: Creat
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const linkOrderToClient = async (userId: string) => {
-    await supabase.from("orders").update({ client_id: userId }).eq("id", order.id);
-    // Also link via company if applicable
-    if (order.company_id) {
-      await supabase.from("companies").update({ client_user_id: userId }).eq("id", order.company_id);
+  const linkEntityToClient = async (userId: string) => {
+    if (entity.entityType === "order") {
+      await supabase.from("orders").update({ client_id: userId }).eq("id", entity.id);
+      if (entity.companyId) {
+        await supabase.from("companies").update({ client_user_id: userId }).eq("id", entity.companyId);
+      }
     }
+    // For contracts, no client_id column to update — just log
   };
 
   const logAction = async (action: string, details: string) => {
     if (!user) return;
     await supabase.from("order_audit_logs").insert({
-      order_id: order.id,
+      order_id: entity.entityType === "order" ? entity.id : null,
       actor_id: user.id,
       action,
-      details,
+      details: entity.entityType === "contract"
+        ? `[Contract: ${entity.name}] ${details}`
+        : details,
     });
   };
 
@@ -132,9 +146,9 @@ const CreateClientPortalModal = ({ open, onOpenChange, order, onSuccess }: Creat
     if (!existingUserId) return;
     setLoading(true);
     try {
-      await linkOrderToClient(existingUserId);
-      await logAction("client_portal_linked", `Linked existing client portal (${clientEmail}) to order ${order.company_name}`);
-      toast({ title: "Order linked", description: `Order linked to existing client portal for ${clientEmail}.` });
+      await linkEntityToClient(existingUserId);
+      await logAction("client_portal_linked", `Linked existing client portal (${clientEmail}) to ${entity.name}`);
+      toast({ title: "Linked", description: `Linked to existing client portal for ${clientEmail}.` });
       onSuccess();
       onOpenChange(false);
     } catch (err: any) {
@@ -151,12 +165,12 @@ const CreateClientPortalModal = ({ open, onOpenChange, order, onSuccess }: Creat
     }
     setLoading(true);
     try {
-      // Split name into first/last
       const nameParts = clientName.trim().split(" ");
       const firstName = nameParts[0] || "";
       const lastName = nameParts.slice(1).join(" ") || "";
 
-      // Create user via edge function
+      const linkOrderId = entity.entityType === "order" ? entity.id : undefined;
+
       const { data: createData, error: createError } = await supabase.functions.invoke("create-user", {
         body: {
           email: clientEmail.toLowerCase(),
@@ -164,7 +178,7 @@ const CreateClientPortalModal = ({ open, onOpenChange, order, onSuccess }: Creat
           firstName,
           lastName,
           role: "client",
-          linkOrderId: order.id,
+          linkOrderId,
         },
       });
 
@@ -173,10 +187,9 @@ const CreateClientPortalModal = ({ open, onOpenChange, order, onSuccess }: Creat
 
       const newUserId = createData?.user_id;
       if (newUserId) {
-        await linkOrderToClient(newUserId);
+        await linkEntityToClient(newUserId);
       }
 
-      // Send credentials email
       const portalUrl = `${window.location.origin}/client/login`;
       await supabase.functions.invoke("send-client-portal-credentials", {
         body: {
@@ -184,10 +197,10 @@ const CreateClientPortalModal = ({ open, onOpenChange, order, onSuccess }: Creat
           clientName,
           password,
           portalUrl,
-          companyName: order.company_name,
+          companyName: entity.name,
           senderName: user?.full_name || user?.email || "Admin",
           senderId: user?.id,
-          orderId: order.id,
+          orderId: entity.entityType === "order" ? entity.id : null,
         },
       });
 
@@ -220,10 +233,10 @@ const CreateClientPortalModal = ({ open, onOpenChange, order, onSuccess }: Creat
           clientName,
           password: newPass,
           portalUrl,
-          companyName: order.company_name,
+          companyName: entity.name,
           senderName: user?.full_name || user?.email || "Admin",
           senderId: user?.id,
-          orderId: order.id,
+          orderId: entity.entityType === "order" ? entity.id : null,
           isResend: true,
         },
       });
@@ -237,6 +250,8 @@ const CreateClientPortalModal = ({ open, onOpenChange, order, onSuccess }: Creat
     }
   };
 
+  const showLinkButton = entity.entityType === "order" && existingUserId && !alreadyLinked;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md" onClick={(e) => e.stopPropagation()}>
@@ -246,12 +261,13 @@ const CreateClientPortalModal = ({ open, onOpenChange, order, onSuccess }: Creat
             Client Portal
           </DialogTitle>
           <DialogDescription>
-            Create or link a client portal account for this order.
+            {entity.entityType === "contract"
+              ? "Create or manage a client portal account for this contract."
+              : "Create or link a client portal account for this order."}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Duplicate detection banner */}
           {checking && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" /> Checking for existing account...
@@ -263,13 +279,14 @@ const CreateClientPortalModal = ({ open, onOpenChange, order, onSuccess }: Creat
               <UserCheck className="h-4 w-4" />
               <AlertDescription>
                 {alreadyLinked
-                  ? "Client portal already exists and is linked to this order."
+                  ? entity.entityType === "contract"
+                    ? "Client portal already exists for this email."
+                    : "Client portal already exists and is linked to this order."
                   : "A client portal already exists for this email."}
               </AlertDescription>
             </Alert>
           )}
 
-          {/* Name */}
           <div className="space-y-2">
             <Label htmlFor="portal-name">Full Name</Label>
             <Input
@@ -280,7 +297,6 @@ const CreateClientPortalModal = ({ open, onOpenChange, order, onSuccess }: Creat
             />
           </div>
 
-          {/* Email */}
           <div className="space-y-2">
             <Label htmlFor="portal-email">Email</Label>
             <Input
@@ -292,7 +308,6 @@ const CreateClientPortalModal = ({ open, onOpenChange, order, onSuccess }: Creat
             />
           </div>
 
-          {/* Password - only show for new accounts */}
           {!existingUserId && !checking && (
             <div className="space-y-2">
               <Label htmlFor="portal-password">Generated Password</Label>
@@ -311,7 +326,6 @@ const CreateClientPortalModal = ({ open, onOpenChange, order, onSuccess }: Creat
             </div>
           )}
 
-          {/* Role badge */}
           <div className="flex items-center gap-2">
             <Label>Role</Label>
             <Badge variant="secondary">Client</Badge>
@@ -328,7 +342,7 @@ const CreateClientPortalModal = ({ open, onOpenChange, order, onSuccess }: Creat
         <DialogFooter className="flex flex-col sm:flex-row gap-2">
           {existingUserId ? (
             <>
-              {!alreadyLinked && (
+              {showLinkButton && (
                 <Button onClick={handleLinkExisting} disabled={loading} className="w-full sm:w-auto">
                   {loading ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Link2 className="h-4 w-4 mr-1" />}
                   Link to This Order
