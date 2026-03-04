@@ -18,7 +18,7 @@ import {
   XCircle,
   Clock,
   Eye,
-  Facebook,
+  
   Instagram,
   UserX,
   Wrench,
@@ -138,7 +138,7 @@ const Sidebar = () => {
     { href: '/invoice-paid', icon: Receipt, label: 'Invoice Paid', roles: ['admin', 'agent'] },
     { href: '/invoices', icon: Receipt, label: 'Invoices', roles: ['admin', 'agent'] },
     { href: '/proposals', icon: FileText, label: 'Proposals', roles: ['admin', 'agent'] },
-    { href: '/facebook', icon: Facebook, label: 'Facebook', roles: ['admin', 'agent'] },
+    
     { href: '/google-deletion', icon: UserX, label: 'Google Deletion', roles: ['admin', 'agent'] },
     { href: '/complaints', icon: AlertTriangle, label: 'Complaints', roles: ['admin', 'agent'] },
     { href: '/completed', icon: CheckCircle, label: 'Completed', roles: ['admin', 'agent'] },
