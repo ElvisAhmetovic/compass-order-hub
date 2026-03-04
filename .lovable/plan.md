@@ -1,42 +1,46 @@
 
 
-## Add Portal Status + Create Button to Monthly Packages
+## Fix Rate Limiting for Rapid Toggle Notifications
 
 ### Problem
-The CreateClientPortalModal currently only works with `Order` objects. Monthly contracts have different fields and no `client_id` column for linking.
+When a user clicks both "Invoice Sent" and "Paid" toggles in quick succession, two separate `send-monthly-toggle-notification` edge function calls fire nearly simultaneously. Each sends to 12 team recipients (batched 2 at a time with 1s delays). Two concurrent invocations = 24 emails firing within overlapping windows, hitting Resend's rate limits and causing partial delivery failures.
 
-### Approach
-1. **Refactor `CreateClientPortalModal`** to accept a generic data shape instead of requiring the `Order` type. Add a new prop interface that accepts `entityType: "order" | "contract"` so linking logic adapts accordingly.
-
-2. **Add portal status + button to `MonthlyInstallmentsTable`** at the contract header level (next to the status badge), showing green/gray icon based on whether a client portal exists for that contract's `client_email`, plus a "Portal" button to open the modal.
+### Solution
+Create a client-side notification queue that serializes edge function calls. When multiple toggles are clicked rapidly, notifications are queued and sent one after another with a delay between them, instead of concurrently.
 
 ### Changes
 
-**`src/components/dashboard/CreateClientPortalModal.tsx`**
-- Replace `order: Order` prop with a generic `entity` prop:
-  ```ts
-  interface PortalEntity {
-    id: string;
-    name: string;        // display name (company_name or client_name)
-    contactName: string;  // pre-fill name
-    contactEmail: string; // pre-fill email
-    clientId?: string;    // existing client link (null for contracts)
-    companyId?: string;   // optional company link
-    entityType: "order" | "contract";
+**1. New file: `src/utils/notificationQueue.ts`**
+A simple singleton queue that:
+- Accepts notification payloads (edge function name + body)
+- Processes them sequentially with a configurable delay (e.g. 8 seconds) between calls
+- This ensures the first edge function's 12 emails finish sending before the next one starts
+- Exposes `enqueueNotification(functionName, body)` function
+
+```typescript
+// Simplified concept:
+const queue: Array<{fn: string, body: any}> = [];
+let processing = false;
+
+async function processQueue() {
+  if (processing) return;
+  processing = true;
+  while (queue.length > 0) {
+    const item = queue.shift();
+    await supabase.functions.invoke(item.fn, { body: item.body });
+    if (queue.length > 0) await delay(8000); // wait for previous batch to finish
   }
-  ```
-- In `linkOrderToClient`: branch on `entityType` — for orders update `orders.client_id`, for contracts skip (no column to update, just log the action)
-- In `logAction`: use `order_id` only when `entityType === "order"`, otherwise set `order_id` to null and put contract info in `details`
+  processing = false;
+}
+```
 
-**`src/components/monthly/MonthlyInstallmentsTable.tsx`**
-- Add state: `portalStatuses` map (contractId -> boolean) and `portalModalContract` (selected contract for modal)
-- On mount/refresh: batch-check `app_users` for all unique contract emails to populate portal status
-- In contract header row (between Badge and delete button): show `UserCheck` (green) or `UserX` (gray) icon + "Portal" button
-- Render `CreateClientPortalModal` with entity mapped from the selected contract
-- Import `UserCheck, UserX, KeyRound` from lucide-react
+**2. Modify: `src/components/monthly/MonthlyInstallmentsTable.tsx`**
+- Replace direct `supabase.functions.invoke('send-monthly-toggle-notification', ...)` call in `sendToggleNotification` with `enqueueNotification('send-monthly-toggle-notification', body)`
+- Import the queue utility
 
-### Files
-- **Modify**: `src/components/dashboard/CreateClientPortalModal.tsx`
-- **Modify**: `src/components/monthly/MonthlyInstallmentsTable.tsx`
-- **Modify**: `src/components/dashboard/OrderRow.tsx` (update to use new `PortalEntity` interface)
+**3. Modify: `supabase/functions/send-monthly-toggle-notification/index.ts`**
+- Increase batch delay from 1000ms to 1500ms for extra safety margin
+- Reduce batch size from 2 to 1 email per batch for maximum rate limit protection
+
+This approach is non-invasive — the toggle UI remains instant (optimistic), only the background email delivery is serialized.
 
