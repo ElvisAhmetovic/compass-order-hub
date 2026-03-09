@@ -1,24 +1,18 @@
 
 
-## Add Search to Client Dropdown in Invoice Creation
+## Add "Created Only" Filter to Advanced Search
 
-### Problem
-The client selector on the "Create New Invoice" page (`/invoices/new`) is a plain `<Select>` dropdown with no search/filter capability. With many clients, finding the right one is tedious.
-
-### Fix
-Replace the Radix `<Select>` with a searchable combobox using the existing `cmdk` (`Command`) component pattern — similar to how `OrderSearchDropdown` works. This gives a search input inside the dropdown that filters clients by name or email as you type.
+The boss wants a second quick-filter alongside "Unpaid Orders Only" that shows orders with only the "Created" status -- orders that haven't progressed yet and also count as unpaid.
 
 ### Changes
 
-**`src/pages/InvoiceDetail.tsx`** (lines 509-523):
+**`src/services/searchService.ts`**
+- Add `createdOnly?: boolean` to `SearchFilters` interface
+- Add filter logic in `applyFiltersToOrders`: if `createdOnly` is true, keep only orders where `status_created === true` and no further progress statuses are active (`status_in_progress`, `status_invoice_sent`, `status_invoice_paid`, `status_resolved`, `status_cancelled` are all falsy)
 
-1. Add a `clientSearch` state variable for the filter text
-2. Replace the `<Select>` + `<SelectContent>` + `<SelectItem>` block with a `<Popover>` + `<Command>` combo:
-   - A `<PopoverTrigger>` button showing the selected client name or "Select a client" placeholder
-   - Inside `<PopoverContent>`: a `<CommandInput>` for searching, `<CommandList>` with `<CommandEmpty>` ("No clients found"), and `<CommandGroup>` mapping filtered clients to `<CommandItem>` entries
-   - Each item shows `client.name - client.email`
-   - On select, call `handleFormDataChange('client_id', value)` and close the popover
-3. Filter logic: match `client.name` or `client.email` against the search term (case-insensitive)
+**`src/components/dashboard/AdvancedSearch.tsx`**
+- Add a second checkbox below "Unpaid Orders Only" labeled "Created Only (Not Yet Started)" with description "(Orders still at Created status — no invoice sent or paid)"
+- Include `createdOnly` in the active filter count
 
-Uses existing imports: `Popover`/`PopoverContent`/`PopoverTrigger` from `@/components/ui/popover` and `Command`/`CommandInput`/`CommandList`/`CommandEmpty`/`CommandGroup`/`CommandItem` from `@/components/ui/command`.
+Both filters can work independently or together.
 
