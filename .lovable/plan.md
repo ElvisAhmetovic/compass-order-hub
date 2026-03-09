@@ -1,18 +1,32 @@
 
 
-## Add "Created Only" Filter to Advanced Search
+## Two Fixes: Default Line Item + Intuitive VAT Input
 
-The boss wants a second quick-filter alongside "Unpaid Orders Only" that shows orders with only the "Created" status -- orders that haven't progressed yet and also count as unpaid.
+### 1. Always start with one line item
+For new invoices, after loading completes and `lineItems` is empty, automatically add one blank line item so the user doesn't have to click "Add Item" every time.
 
-### Changes
+**File: `src/pages/InvoiceDetail.tsx`** — In `loadData`, after the new-invoice branch (when `isNewInvoice` is true and no line items exist), call `addLineItem()` or directly set a default item in state.
 
-**`src/services/searchService.ts`**
-- Add `createdOnly?: boolean` to `SearchFilters` interface
-- Add filter logic in `applyFiltersToOrders`: if `createdOnly` is true, keep only orders where `status_created === true` and no further progress statuses are active (`status_in_progress`, `status_invoice_sent`, `status_invoice_paid`, `status_resolved`, `status_cancelled` are all falsy)
+### 2. Fix VAT % input to be intuitive
+Currently the VAT field stores a decimal (e.g. `0.19`) but the input displays `(vat_rate * 100).toFixed(2)` which shows "19.00". The `.toFixed(2)` reformats on every keystroke, making it nearly impossible to type a value like "19".
 
-**`src/components/dashboard/AdvancedSearch.tsx`**
-- Add a second checkbox below "Unpaid Orders Only" labeled "Created Only (Not Yet Started)" with description "(Orders still at Created status — no invoice sent or paid)"
-- Include `createdOnly` in the active filter count
+**Fix in `src/components/invoices/LineItemRow.tsx`**:
+- Remove the `* 100` / `/ 100` conversion — instead, store and display VAT as a whole-number percentage (e.g. `19` means 19%)
+- Use a simple `value={item.vat_rate}` display with no `.toFixed()` formatting while editing
+- Move the decimal conversion to calculation time only (where `line_total` is computed)
 
-Both filters can work independently or together.
+**Wait** — the `vat_rate` is stored as decimal in the DB and used in calculations elsewhere. Changing storage would be risky. Better approach:
+
+- Use a **local display value** pattern: show the input as a plain text field that the user types whole numbers into (like "19"), and only convert to decimal on blur or on change
+- Remove `.toFixed(2)` from the `value` — instead use `String(item.vat_rate * 100)` which gives "19" not "19.00", so typing is natural
+- Same fix for `discount_rate`
+
+**File: `src/components/invoices/LineItemRow.tsx`** (lines 121-137):
+- Change VAT `value` from `(item.vat_rate * 100).toFixed(2)` → `item.vat_rate * 100` (number input handles display)
+- Change discount `value` similarly
+- Change `step` from `"0.01"` to `"1"` for whole-percentage steps
+
+### Files to modify
+- `src/pages/InvoiceDetail.tsx` — add default line item for new invoices
+- `src/components/invoices/LineItemRow.tsx` — fix VAT/discount input display
 
