@@ -514,18 +514,39 @@ const InvoiceDetail = () => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
                             <Label htmlFor="client">Client *</Label>
-                            <Select value={formData.client_id} onValueChange={(value) => handleFormDataChange('client_id', value)}>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select a client" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {clients.map((client) => (
-                                  <SelectItem key={client.id} value={client.id}>
-                                    {client.name} - {client.email}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                            <Popover open={clientPopoverOpen} onOpenChange={setClientPopoverOpen}>
+                              <PopoverTrigger asChild>
+                                <Button variant="outline" role="combobox" aria-expanded={clientPopoverOpen} className="w-full justify-between font-normal">
+                                  {formData.client_id
+                                    ? (() => { const c = clients.find(c => c.id === formData.client_id); return c ? `${c.name} - ${c.email}` : "Select a client"; })()
+                                    : "Select a client"}
+                                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-[400px] p-0" align="start">
+                                <Command>
+                                  <CommandInput placeholder="Search by name or email..." />
+                                  <CommandList>
+                                    <CommandEmpty>No clients found.</CommandEmpty>
+                                    <CommandGroup>
+                                      {clients.map((client) => (
+                                        <CommandItem
+                                          key={client.id}
+                                          value={`${client.name} ${client.email}`}
+                                          onSelect={() => {
+                                            handleFormDataChange('client_id', client.id);
+                                            setClientPopoverOpen(false);
+                                          }}
+                                        >
+                                          <Check className={cn("mr-2 h-4 w-4", formData.client_id === client.id ? "opacity-100" : "opacity-0")} />
+                                          {client.name} - {client.email}
+                                        </CommandItem>
+                                      ))}
+                                    </CommandGroup>
+                                  </CommandList>
+                                </Command>
+                              </PopoverContent>
+                            </Popover>
                           </div>
                           
                           {formData.client_id && (
