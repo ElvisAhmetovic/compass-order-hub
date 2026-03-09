@@ -1,18 +1,25 @@
 
 
-## Add "Created Only" Filter to Advanced Search
+## Fire-and-Forget Email Sending
 
-The boss wants a second quick-filter alongside "Unpaid Orders Only" that shows orders with only the "Created" status -- orders that haven't progressed yet and also count as unpaid.
+### Problem
+When sending invoices, the modal stays in a loading/disabled state while the edge function processes emails (including team notifications with rate-limit delays). The user is blocked from continuing to use the site.
+
+### Solution
+In both `SendInvoicePDFDialog` and `SendMonthlyInvoiceDialog`, after generating the PDF locally, fire off the edge function call without awaiting it. Immediately show the success toast, close the modal, and let the email delivery happen in the background.
 
 ### Changes
 
-**`src/services/searchService.ts`**
-- Add `createdOnly?: boolean` to `SearchFilters` interface
-- Add filter logic in `applyFiltersToOrders`: if `createdOnly` is true, keep only orders where `status_created === true` and no further progress statuses are active (`status_in_progress`, `status_invoice_sent`, `status_invoice_paid`, `status_resolved`, `status_cancelled` are all falsy)
+**`src/components/invoices/SendInvoicePDFDialog.tsx`** — In `handleSend`:
+- Keep the `setSending(true)` and PDF generation (those are fast, local operations)
+- After `generateInvoicePDFBase64` completes, call `supabase.functions.invoke(...)` **without awaiting it** — just fire and forget with a `.catch()` for error logging
+- Immediately show success toast, close dialog, and `setSending(false)`
 
-**`src/components/dashboard/AdvancedSearch.tsx`**
-- Add a second checkbox below "Unpaid Orders Only" labeled "Created Only (Not Yet Started)" with description "(Orders still at Created status — no invoice sent or paid)"
-- Include `createdOnly` in the active filter count
+**`src/components/monthly/SendMonthlyInvoiceDialog.tsx`** — Same pattern in `handleSend`:
+- Keep all the sync operations (auto-create client, auto-create invoice, generate PDF, update installment status) as awaited
+- Only the final `supabase.functions.invoke("send-invoice-pdf", ...)` becomes fire-and-forget
+- Immediately show success toast and close
 
-Both filters can work independently or together.
+**`src/components/invoices/SendInvoiceDialog.tsx`** — Same pattern in `handleSendEmail`:
+- Fire off `EmailService.sendInvoiceEmail(...)` without awaiting, show success immediately
 
