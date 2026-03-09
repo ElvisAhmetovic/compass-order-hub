@@ -121,8 +121,8 @@ const LineItemRow: React.FC<LineItemRowProps> = ({
       <TableCell className="py-3 align-top">
         <Input
           type="number"
-          step="0.01"
-          value={(item.vat_rate * 100).toFixed(2)}
+          step="1"
+          value={item.vat_rate * 100}
           onChange={(e) => onUpdate(index, 'vat_rate', (parseFloat(e.target.value) || 0) / 100)}
           className="w-20 h-14"
         />
@@ -130,8 +130,8 @@ const LineItemRow: React.FC<LineItemRowProps> = ({
       <TableCell className="py-3 align-top">
         <Input
           type="number"
-          step="0.01"
-          value={(item.discount_rate * 100).toFixed(2)}
+          step="1"
+          value={item.discount_rate * 100}
           onChange={(e) => onUpdate(index, 'discount_rate', (parseFloat(e.target.value) || 0) / 100)}
           className="w-20 h-14"
         />

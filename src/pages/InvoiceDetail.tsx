@@ -212,6 +212,13 @@ const InvoiceDetail = () => {
     }
   };
 
+  // Always ensure at least one line item exists
+  useEffect(() => {
+    if (!loading && lineItems.length === 0) {
+      addLineItem();
+    }
+  }, [loading]);
+
   const handleFormDataChange = (field: string, value: any) => {
     console.log(`Updating form field: ${field} to:`, value);
     setFormData(prev => {
