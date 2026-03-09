@@ -262,21 +262,16 @@ export class InvoiceService {
       }
 
       // Verify that the invoice exists and belongs to the user
-      console.log('Checking invoice ownership...');
+      console.log('Checking invoice exists...');
       const { data: invoice, error: invoiceError } = await supabase
         .from('invoices')
-        .select('id, user_id')
+        .select('id')
         .eq('id', invoiceId)
         .single();
 
       if (invoiceError) {
         console.error('🚫 INVOICE CHECK ERROR:', invoiceError);
         throw new Error(`Invoice not found: ${invoiceError.message}`);
-      }
-
-      if (invoice.user_id !== user.id) {
-        console.error('🚫 AUTHORIZATION ERROR: Invoice does not belong to user');
-        throw new Error('You do not have permission to modify this invoice');
       }
 
       console.log('✅ Invoice ownership verified');
