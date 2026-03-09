@@ -218,7 +218,6 @@ const InvoiceDetail = () => {
       addLineItem();
     }
   }, [loading]);
-  };
 
   const handleFormDataChange = (field: string, value: any) => {
     console.log(`Updating form field: ${field} to:`, value);
