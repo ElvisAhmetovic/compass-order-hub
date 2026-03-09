@@ -63,7 +63,7 @@ const sendBackgroundNotifications = async (
         </div>
       </div>
       <div style="background: #f5f5f5; padding: 15px; border-radius: 0 0 10px 10px; text-align: center; font-size: 12px; color: #666;">
-        <p style="margin: 0;">This is an automated notification from Empria.</p>
+        <p style="margin: 0;">This is an automated notification from AB Media Team.</p>
       </div>
     </body>
     </html>

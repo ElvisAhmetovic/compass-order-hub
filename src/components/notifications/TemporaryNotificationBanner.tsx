@@ -34,9 +34,9 @@ const TemporaryNotificationBanner = () => {
             Privremeni tehnički problem
           </AlertTitle>
           <AlertDescription className="text-sm leading-relaxed">
-            Želim vas obavijestiti o privremenom prekidu u radu kritične funkcije na Empriji.
+            Želim vas obavijestiti o privremenom prekidu u radu kritične funkcije na AB Media Team platformi.
             <br /><br />
-            Zbog tehničkog problema s funkcijom "resend" (ponovno slanje) na našoj web stranici EmpriaDental, 
+            Zbog tehničkog problema s funkcijom "resend" (ponovno slanje) na našoj web stranici AB Media Team, 
             sve automatizirane obavijesti i mailovi koji se šalju s naše domene (potvrde, podsjetnici, 
             obavijesti korisnicima, itd.) bit će obustavljeni do daljnjeg.
           </AlertDescription>
