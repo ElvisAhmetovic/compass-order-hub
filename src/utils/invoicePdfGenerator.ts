@@ -705,10 +705,10 @@ const generateInvoiceHTML = (data: InvoicePDFData): string => {
         
         <div style="text-align: right;">
           <h2 style="font-size: 28px; font-weight: bold; color: #374151; margin: 0; margin-bottom: 4px;">
-            ${templateSettings.invoiceNumberPrefix || 'RE NR:'}${currentInvoiceData.invoice_number}
+            ${templateSettings.invoiceNumberPrefix ?? ''}${currentInvoiceData.invoice_number}
           </h2>
           <p style="font-size: 12px; color: #6b7280; margin: 0;">
-            # ${templateSettings.invoiceNumberPrefix || 'RE NR:'}${currentInvoiceData.invoice_number}
+            # ${templateSettings.invoiceNumberPrefix ?? ''}${currentInvoiceData.invoice_number}
           </p>
         </div>
       </div>
