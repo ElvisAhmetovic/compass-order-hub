@@ -1,25 +1,18 @@
 
 
-## Redesign SendInvoicePDFDialog to Match Monthly Invoice Dialog
+## Add "Created Only" Filter to Advanced Search
 
-### What
-Replace the current template-selector + translation-service approach in `SendInvoicePDFDialog` with the same simple, proven UI pattern used in `SendMonthlyInvoiceDialog` — language-based subject templates, message templates, and an invoice language dropdown, all powered by the `monthlyInvoiceTemplates.ts` constants.
+The boss wants a second quick-filter alongside "Unpaid Orders Only" that shows orders with only the "Created" status -- orders that haven't progressed yet and also count as unpaid.
 
 ### Changes
 
-**`src/components/invoices/SendInvoicePDFDialog.tsx`** — Rewrite the form body to match the monthly dialog layout:
+**`src/services/searchService.ts`**
+- Add `createdOnly?: boolean` to `SearchFilters` interface
+- Add filter logic in `applyFiltersToOrders`: if `createdOnly` is true, keep only orders where `status_created === true` and no further progress statuses are active (`status_in_progress`, `status_invoice_sent`, `status_invoice_paid`, `status_resolved`, `status_cancelled` are all falsy)
 
-1. Remove `TemplateSelector`, `emailTranslationService`, `SUPPORTED_LANGUAGES`, `sanitizeHtml` imports and the Compose/Preview tabs
-2. Import `SUBJECT_TEMPLATES`, `MESSAGE_TEMPLATES`, `TEMPLATE_LANGUAGES` from `../monthly/monthlyInvoiceTemplates`
-3. Add a `language` state (initialized from `templateSettings.language || "en"`)
-4. Replace the template/language grid with these fields (same order as monthly dialog):
-   - **Client Name** (read-only input)
-   - **Client Email** (editable)
-   - **Subject Template** dropdown (Select from `TEMPLATE_LANGUAGES`, sets subject from `SUBJECT_TEMPLATES`)
-   - **Subject** (editable input, pre-filled from template)
-   - **Invoice Language** dropdown (Select from `LANGUAGES` list of 10 langs, on change syncs subject + message)
-   - **Message Template** dropdown (Select from `TEMPLATE_LANGUAGES`, sets message from `MESSAGE_TEMPLATES`)
-   - **Message** (editable textarea, pre-filled from template)
-5. Keep the existing PDF generation and send logic unchanged
-6. Keep the info note about PDF attachment
+**`src/components/dashboard/AdvancedSearch.tsx`**
+- Add a second checkbox below "Unpaid Orders Only" labeled "Created Only (Not Yet Started)" with description "(Orders still at Created status — no invoice sent or paid)"
+- Include `createdOnly` in the active filter count
+
+Both filters can work independently or together.
 
