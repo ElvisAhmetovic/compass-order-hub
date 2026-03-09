@@ -1,18 +1,15 @@
 
 
-## Add "Created Only" Filter to Advanced Search
+## Fix Invoice Permission Error
 
-The boss wants a second quick-filter alongside "Unpaid Orders Only" that shows orders with only the "Created" status -- orders that haven't progressed yet and also count as unpaid.
+### Problem
+The `addLineItems` method in `invoiceService.ts` (line 277) has a strict ownership check: `invoice.user_id !== user.id`. This blocks anyone who didn't originally create the invoice from editing it — including admins and other team members. The error shown is "You do not have permission to modify this invoice".
 
-### Changes
+RLS on the database already handles access control properly. This client-side ownership check is redundant and overly restrictive.
 
-**`src/services/searchService.ts`**
-- Add `createdOnly?: boolean` to `SearchFilters` interface
-- Add filter logic in `applyFiltersToOrders`: if `createdOnly` is true, keep only orders where `status_created === true` and no further progress statuses are active (`status_in_progress`, `status_invoice_sent`, `status_invoice_paid`, `status_resolved`, `status_cancelled` are all falsy)
+### Fix
 
-**`src/components/dashboard/AdvancedSearch.tsx`**
-- Add a second checkbox below "Unpaid Orders Only" labeled "Created Only (Not Yet Started)" with description "(Orders still at Created status — no invoice sent or paid)"
-- Include `createdOnly` in the active filter count
+**`src/services/invoiceService.ts`** — In the `addLineItems` method (lines 258-281), remove the strict `user_id` ownership check. The method already verifies the user is authenticated. RLS policies on the `invoices` and `invoice_line_items` tables handle the actual authorization. Simply keep the authentication check and the invoice existence check, but remove the `user_id !== user.id` comparison that blocks team members.
 
-Both filters can work independently or together.
+Specifically, remove lines 277-280 (the `if (invoice.user_id !== user.id)` block), and simplify the invoice existence query to just check `select('id')` instead of `select('id, user_id')`.
 
