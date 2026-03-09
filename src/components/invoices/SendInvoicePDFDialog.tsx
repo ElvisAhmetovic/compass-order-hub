@@ -69,7 +69,8 @@ const SendInvoicePDFDialog: React.FC<SendInvoicePDFDialogProps> = ({
         invoice, lineItems, client, templateSettings, formData,
       });
 
-      const { error } = await supabase.functions.invoke("send-invoice-pdf", {
+      // Fire-and-forget: send email in background
+      supabase.functions.invoke("send-invoice-pdf", {
         body: {
           client_email: clientEmail,
           subject,
@@ -77,15 +78,13 @@ const SendInvoicePDFDialog: React.FC<SendInvoicePDFDialogProps> = ({
           pdf_base64: pdfBase64,
           invoice_number: invoice?.invoice_number || "new",
         },
-      });
-
-      if (error) throw error;
+      }).catch(err => console.error("Background invoice email error:", err));
 
       toast({ title: "Invoice sent", description: `Invoice has been sent to ${clientEmail}` });
       onOpenChange(false);
     } catch (error) {
-      console.error("Error sending invoice PDF:", error);
-      toast({ title: "Error", description: "Failed to send invoice. Please try again.", variant: "destructive" });
+      console.error("Error generating invoice PDF:", error);
+      toast({ title: "Error", description: "Failed to prepare invoice. Please try again.", variant: "destructive" });
     } finally {
       setSending(false);
     }
