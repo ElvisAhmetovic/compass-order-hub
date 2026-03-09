@@ -108,30 +108,19 @@ AB Media Team`);
       return;
     }
 
-    setSending(true);
-    try {
-      await EmailService.sendInvoiceEmail(
-        invoice.id,
-        invoice.client.email,
-        customMessage
-      );
+    // Fire-and-forget: send email in background
+    EmailService.sendInvoiceEmail(
+      invoice.id,
+      invoice.client.email,
+      customMessage
+    ).catch(err => console.error("Background invoice email error:", err));
 
-      toast({
-        title: "Invoice sent",
-        description: `Invoice has been sent to ${invoice.client.email}`,
-      });
+    toast({
+      title: "Invoice sent",
+      description: `Invoice has been sent to ${invoice.client.email}`,
+    });
 
-      onOpenChange(false);
-    } catch (error) {
-      console.error("Error sending invoice:", error);
-      toast({
-        title: "Error",
-        description: "Failed to send invoice. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setSending(false);
-    }
+    onOpenChange(false);
   };
 
   const handleCreatePaymentLink = async (method: string = 'stripe') => {

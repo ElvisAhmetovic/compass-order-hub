@@ -178,19 +178,6 @@ const SendMonthlyInvoiceDialog: React.FC<SendMonthlyInvoiceDialogProps> = ({
         formData,
       });
 
-      // Send to client
-      const { error } = await supabase.functions.invoke("send-invoice-pdf", {
-        body: {
-          client_email: clientEmail,
-          subject,
-          message,
-          pdf_base64: pdfBase64,
-          invoice_number: currentInvoice.invoice_number,
-        },
-      });
-
-      if (error) throw error;
-
       // Update installment status in database
       await supabase
         .from('monthly_installments')
@@ -201,6 +188,17 @@ const SendMonthlyInvoiceDialog: React.FC<SendMonthlyInvoiceDialogProps> = ({
         })
         .eq('id', installment.id);
 
+      // Fire-and-forget: send email in background
+      supabase.functions.invoke("send-invoice-pdf", {
+        body: {
+          client_email: clientEmail,
+          subject,
+          message,
+          pdf_base64: pdfBase64,
+          invoice_number: currentInvoice.invoice_number,
+        },
+      }).catch(err => console.error("Background monthly invoice email error:", err));
+
       toast({
         title: "Invoice sent",
         description: `Invoice sent to ${clientEmail} + team notified`,
@@ -208,8 +206,8 @@ const SendMonthlyInvoiceDialog: React.FC<SendMonthlyInvoiceDialogProps> = ({
       onOpenChange(false);
       onRefresh?.();
     } catch (error) {
-      console.error("Error sending invoice:", error);
-      toast({ title: "Error", description: "Failed to send invoice.", variant: "destructive" });
+      console.error("Error preparing invoice:", error);
+      toast({ title: "Error", description: "Failed to prepare invoice.", variant: "destructive" });
     } finally {
       setSending(false);
     }
