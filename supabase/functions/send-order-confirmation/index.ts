@@ -153,7 +153,7 @@ const handler = async (req: Request): Promise<Response> => {
       <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; padding: 20px; background-color: #f8f9fa;">
         <!-- Header -->
         <div style="background-color: ${isUpdate ? '#059669' : '#2563eb'}; color: white; padding: 30px; border-radius: 8px; margin-bottom: 30px; text-align: center;">
-          <h1 style="margin: 0 0 10px 0; font-size: 28px; font-weight: bold;">Empria Dental</h1>
+          <h1 style="margin: 0 0 10px 0; font-size: 28px; font-weight: bold;">AB Media Team</h1>
           <h2 style="margin: 0; font-size: 22px; font-weight: normal;">${isUpdate ? '📝 Order Update' : 'New Order Received'}</h2>
         </div>
 
