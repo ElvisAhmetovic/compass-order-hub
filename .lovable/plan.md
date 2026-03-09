@@ -1,18 +1,33 @@
 
 
-## Add "Created Only" Filter to Advanced Search
+## Fix Invoice Saving and Default Prefix
 
-The boss wants a second quick-filter alongside "Unpaid Orders Only" that shows orders with only the "Created" status -- orders that haven't progressed yet and also count as unpaid.
+### Problems Identified
+
+1. **Invoice number prefix defaults to "RE NR:"** causing display like `RE NR:INV-2026-023`. Should default to empty string so it just shows `INV-2026-023`.
+
+2. **Template settings don't persist properly** -- the parent `InvoiceDetail` initializes `templateSettings` with hardcoded defaults (ignoring localStorage), and the `useInvoiceSettings` hook overwrites with its own defaults. The two systems fight each other.
+
+3. **Preview/PDF fallback to "RE NR:"** when prefix is empty/falsy -- the `||` operator treats empty string as falsy, so clearing the prefix still shows "RE NR:".
 
 ### Changes
 
-**`src/services/searchService.ts`**
-- Add `createdOnly?: boolean` to `SearchFilters` interface
-- Add filter logic in `applyFiltersToOrders`: if `createdOnly` is true, keep only orders where `status_created === true` and no further progress statuses are active (`status_in_progress`, `status_invoice_sent`, `status_invoice_paid`, `status_resolved`, `status_cancelled` are all falsy)
+**`src/components/invoices/hooks/useInvoiceSettings.ts`** (line 51)
+- Change default `invoiceNumberPrefix` from `"RE NR:"` to `""`
 
-**`src/components/dashboard/AdvancedSearch.tsx`**
-- Add a second checkbox below "Unpaid Orders Only" labeled "Created Only (Not Yet Started)" with description "(Orders still at Created status — no invoice sent or paid)"
-- Include `createdOnly` in the active filter count
+**`src/components/invoices/InvoicePreview.tsx`** (lines 551, 554)
+- Change fallback from `|| "RE NR:"` to remove the fallback (use `?? ""` or just use the value directly), so an empty prefix stays empty
 
-Both filters can work independently or together.
+**`src/utils/invoicePdfGenerator.ts`** (lines 708, 711)
+- Same fix: change `|| 'RE NR:'` to `?? ''` so empty prefix is respected
+
+**`src/components/invoices/components/InvoiceSettings.tsx`** (line 84)
+- Change placeholder from `"RE NR:"` to `"e.g. INV-"` (cosmetic, just so it doesn't suggest RE NR)
+
+**`src/pages/InvoiceDetail.tsx`**
+- Initialize `templateSettings` state by reading from localStorage (same source as `useInvoiceSettings`) so the parent doesn't start with stale defaults
+- In `handleSave`, also persist the current `templateSettings` to localStorage so edits in Template Settings tab are saved when the user hits Save
+
+**`supabase/functions/generate-monthly-installments/index.ts`** (line 98)
+- Change `prefix_param: "RE NR"` to `prefix_param: "INV"` to match the standard format
 
