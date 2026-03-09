@@ -180,7 +180,7 @@ const handler = async (req: Request): Promise<Response> => {
                 </center>
               </div>
               <div class="footer">
-                <p>This is an automated payment reminder from EMPRIA Dental CRM</p>
+                <p>This is an automated payment reminder from AB Media Team</p>
               </div>
             </div>
           </body>
