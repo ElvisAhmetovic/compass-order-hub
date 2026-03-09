@@ -318,6 +318,13 @@ const InvoiceDetail = () => {
 
       console.log('Saving invoice with data:', formData);
 
+      // Persist template settings to localStorage
+      try {
+        localStorage.setItem('invoiceTemplateSettings', JSON.stringify(templateSettings));
+      } catch (e) {
+        console.warn('Error saving template settings:', e);
+      }
+
       if (isNewInvoice) {
         const lineItemsForCreation = lineItems.map(item => ({
           item_description: item.item_description,
