@@ -548,10 +548,10 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
             
             <div className="text-right">
               <h2 className="text-4xl font-bold text-gray-700 mb-2">
-                {templateSettings.invoiceNumberPrefix || "RE NR:"}{invoice?.invoice_number || "784/25"}
+                {templateSettings.invoiceNumberPrefix ?? ""}{invoice?.invoice_number || "784/25"}
               </h2>
               <p className="text-sm text-gray-500">
-                # {templateSettings.invoiceNumberPrefix || "RE NR:"}{invoice?.invoice_number || "784/25"}
+                # {templateSettings.invoiceNumberPrefix ?? ""}{invoice?.invoice_number || "784/25"}
               </p>
             </div>
           </div>

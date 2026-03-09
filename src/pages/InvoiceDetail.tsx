@@ -42,21 +42,28 @@ const InvoiceDetail = () => {
   const [sendDialogOpen, setSendDialogOpen] = useState(false);
   const [sendPDFDialogOpen, setSendPDFDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("edit");
-  const [templateSettings, setTemplateSettings] = useState({
-    currency: 'EUR', // Default currency
-    vatEnabled: true,
-    vatRate: 0,
-    language: 'en',
-    selectedPaymentAccount: 'both',
-    companyInfo: {
-      name: "Company Name",
-      registrationNumber: "123456789",
-      vatId: "VAT123456789",
-      street: "Street Address",
-      postal: "12345",
-      city: "City",
-      email: "info@company.com"
-    }
+  const [templateSettings, setTemplateSettings] = useState(() => {
+    try {
+      const saved = localStorage.getItem('invoiceTemplateSettings');
+      if (saved) return JSON.parse(saved);
+    } catch (e) { /* ignore */ }
+    return {
+      currency: 'EUR',
+      vatEnabled: true,
+      vatRate: 0,
+      language: 'en',
+      selectedPaymentAccount: 'both',
+      invoiceNumberPrefix: '',
+      companyInfo: {
+        name: "Company Name",
+        registrationNumber: "123456789",
+        vatId: "VAT123456789",
+        street: "Street Address",
+        postal: "12345",
+        city: "City",
+        email: "info@company.com"
+      }
+    };
   });
 
   const [billToOverride, setBillToOverride] = useState({

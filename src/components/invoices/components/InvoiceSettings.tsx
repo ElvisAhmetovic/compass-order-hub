@@ -81,7 +81,7 @@ export const InvoiceSettings: React.FC<InvoiceSettingsProps> = ({
             <Input
               value={invoiceNumberPrefix}
               onChange={(e) => onInvoiceNumberPrefixChange(e.target.value)}
-              placeholder="RE NR:"
+              placeholder="e.g. INV-"
             />
           </div>
 

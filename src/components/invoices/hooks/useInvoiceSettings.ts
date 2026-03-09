@@ -48,7 +48,7 @@ export const useInvoiceSettings = (initialSettings?: any) => {
       vatEnabled: true,
       vatRate: 0,
       currency: "EUR",
-      invoiceNumberPrefix: "RE NR:",
+      invoiceNumberPrefix: "",
     };
 
     const mergedCompanyInfo = {

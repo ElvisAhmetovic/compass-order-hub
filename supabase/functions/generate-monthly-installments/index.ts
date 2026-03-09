@@ -95,7 +95,7 @@ async function createInvoice(
   dueDate: string,
 ): Promise<{ invoiceId: string; invoiceNumber: string; issueDate: string }> {
   // Generate invoice number
-  const { data: invoiceNumber, error: rpcErr } = await supabase.rpc("generate_invoice_number", { prefix_param: "RE NR" });
+  const { data: invoiceNumber, error: rpcErr } = await supabase.rpc("generate_invoice_number", { prefix_param: "INV" });
   if (rpcErr) throw new Error(`Failed to generate invoice number: ${rpcErr.message}`);
 
   const totalAmount = contract.monthly_amount;
