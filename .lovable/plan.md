@@ -1,21 +1,18 @@
 
 
-## Fix RLS on `invoice_line_items` to Allow Team Access
+## Add "Created Only" Filter to Advanced Search
 
-### Problem
-The current RLS policies on `invoice_line_items` restrict all operations (INSERT, UPDATE, DELETE, SELECT) to only the user who created the parent invoice (`invoices.user_id = auth.uid()`). Any other authenticated team member — including admins and agents — gets "new row violates row-level security policy".
-
-### Fix
-Replace the two existing policies with ones that also allow admins and agents:
-
-**SQL Migration:**
-1. Drop the two existing policies on `invoice_line_items`
-2. Create new policies that check: user owns the invoice **OR** user has role `admin` **OR** user has role `agent` (using the existing `has_role()` security definer function)
-
-Same pattern should also be checked on the `invoices` table to ensure consistency — if invoices RLS is similarly restrictive, fix that too.
+The boss wants a second quick-filter alongside "Unpaid Orders Only" that shows orders with only the "Created" status -- orders that haven't progressed yet and also count as unpaid.
 
 ### Changes
-- **Database migration only** — no code file changes needed
-- Drop & recreate 2 RLS policies on `invoice_line_items`
-- Verify and fix `invoices` table policies if needed
+
+**`src/services/searchService.ts`**
+- Add `createdOnly?: boolean` to `SearchFilters` interface
+- Add filter logic in `applyFiltersToOrders`: if `createdOnly` is true, keep only orders where `status_created === true` and no further progress statuses are active (`status_in_progress`, `status_invoice_sent`, `status_invoice_paid`, `status_resolved`, `status_cancelled` are all falsy)
+
+**`src/components/dashboard/AdvancedSearch.tsx`**
+- Add a second checkbox below "Unpaid Orders Only" labeled "Created Only (Not Yet Started)" with description "(Orders still at Created status — no invoice sent or paid)"
+- Include `createdOnly` in the active filter count
+
+Both filters can work independently or together.
 
