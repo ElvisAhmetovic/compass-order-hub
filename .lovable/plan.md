@@ -1,18 +1,19 @@
 
 
-## Add "Created Only" Filter to Advanced Search
+## Add Search Bar to Monthly Packages
 
-The boss wants a second quick-filter alongside "Unpaid Orders Only" that shows orders with only the "Created" status -- orders that haven't progressed yet and also count as unpaid.
+### What
+Add a search input at the top of the Monthly Packages page (between the stats cards and the table) that filters contracts and their installments by client name, email, or website in real-time.
 
-### Changes
+### How
 
-**`src/services/searchService.ts`**
-- Add `createdOnly?: boolean` to `SearchFilters` interface
-- Add filter logic in `applyFiltersToOrders`: if `createdOnly` is true, keep only orders where `status_created === true` and no further progress statuses are active (`status_in_progress`, `status_invoice_sent`, `status_invoice_paid`, `status_resolved`, `status_cancelled` are all falsy)
+**`src/pages/MonthlyPackages.tsx`**
+1. Add `searchTerm` state
+2. Add a search `Input` with a `Search` icon between the stats grid and the table
+3. Filter `contracts` and `installments` by `searchTerm` before passing to `MonthlyInstallmentsTable`:
+   - Match contracts where `client_name`, `client_email`, or `website` includes the search term (case-insensitive)
+   - Filter installments to only those whose `contract_id` matches a filtered contract
+4. Also update the stats cards to reflect filtered data
 
-**`src/components/dashboard/AdvancedSearch.tsx`**
-- Add a second checkbox below "Unpaid Orders Only" labeled "Created Only (Not Yet Started)" with description "(Orders still at Created status — no invoice sent or paid)"
-- Include `createdOnly` in the active filter count
-
-Both filters can work independently or together.
+No changes needed to `MonthlyInstallmentsTable` — the filtering happens at the page level before data is passed down.
 
