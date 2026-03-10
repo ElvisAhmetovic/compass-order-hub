@@ -59,7 +59,7 @@ const InvoiceDetail = () => {
       vatRate: 0,
       language: 'en',
       selectedPaymentAccount: 'both',
-      invoiceNumberPrefix: '',
+      invoiceNumberPrefix: 'INV-',
       companyInfo: {
         name: "Company Name",
         registrationNumber: "123456789",
