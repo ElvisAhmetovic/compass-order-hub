@@ -373,7 +373,9 @@ const InvoiceDetail = () => {
           line_items: lineItemsForCreation
         };
 
-        const newInvoice = await InvoiceService.createInvoice(updatedFormData);
+        const yearNum = invoiceYear ? parseInt(invoiceYear, 10) : undefined;
+        const seqNum = invoiceSeqNumber ? parseInt(invoiceSeqNumber, 10) : undefined;
+        const newInvoice = await InvoiceService.createInvoice(updatedFormData, yearNum, seqNum);
         console.log('Created invoice:', newInvoice);
         isDirty.current = false;
         toast({
