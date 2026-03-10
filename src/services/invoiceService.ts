@@ -575,6 +575,19 @@ export class InvoiceService {
     return data;
   }
 
+  // Get the next sequence number without incrementing
+  static async getNextSequenceNumber(year: number): Promise<number> {
+    const { data, error } = await supabase
+      .from('invoice_sequences')
+      .select('last_sequence')
+      .eq('year', year)
+      .eq('prefix', 'INV')
+      .single();
+
+    if (error || !data) return 1;
+    return data.last_sequence + 1;
+  }
+
   // Update invoice sequence table for custom numbering
   static async updateInvoiceSequence(year: number, sequence: number): Promise<void> {
     const { error } = await supabase
