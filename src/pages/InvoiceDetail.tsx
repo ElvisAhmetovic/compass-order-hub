@@ -717,7 +717,7 @@ const InvoiceDetail = () => {
                       )}
                     </div>
 
-                    <VatCalculator />
+                    
                   </div>
                 </div>
 
