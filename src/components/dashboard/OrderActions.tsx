@@ -171,16 +171,9 @@ const OrderActions = ({ order, onOrderView, onRefresh }: OrderActionsProps) => {
     try {
       console.log(`Creating invoice for order ${order.id}`);
       
-      // Create invoice from order with draft status
       await createInvoiceFromOrder(order.id, order, "Invoice Sent");
       
       console.log('Invoice created successfully');
-      
-      // Show success message
-      toast({
-        title: "Invoice Created",
-        description: `Invoice has been created for order from ${order.company_name}.`
-      });
       
       // Trigger refresh
       onRefresh();
