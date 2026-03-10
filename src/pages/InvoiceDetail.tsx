@@ -29,6 +29,7 @@ import InvoiceTemplateSettings from "@/components/invoices/InvoiceTemplateSettin
 import InvoicePreview from "@/components/invoices/InvoicePreview";
 import { generateInvoicePDF } from "@/utils/invoicePdfGenerator";
 import SendInvoicePDFDialog from "@/components/invoices/SendInvoicePDFDialog";
+import VatCalculator from "@/components/invoices/VatCalculator";
 
 const InvoiceDetail = () => {
   const { id } = useParams();
@@ -723,6 +724,8 @@ const InvoiceDetail = () => {
                         </div>
                       </CardContent>
                     </Card>
+
+                    <VatCalculator />
 
                     <div className="space-y-3">
                       <Button onClick={handleSave} disabled={saving} className="w-full">
