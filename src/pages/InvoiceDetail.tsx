@@ -707,6 +707,54 @@ const InvoiceDetail = () => {
                     <VatCalculator />
                   </div>
                 </div>
+
+                {/* Line Items - Full Width */}
+                <Card className="mt-6">
+                  <CardHeader>
+                    <div className="flex justify-between items-center">
+                      <CardTitle>Line Items</CardTitle>
+                      <Button onClick={addLineItem} variant="outline" size="sm">
+                        <Plus size={16} className="mr-2" />
+                        Add Item
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="min-w-[200px] text-left font-semibold">Description</TableHead>
+                          <TableHead className="text-center font-semibold">Qty</TableHead>
+                          <TableHead className="text-center font-semibold">Unit</TableHead>
+                          <TableHead className="text-right font-semibold">Price</TableHead>
+                          <TableHead className="text-center font-semibold">VAT %</TableHead>
+                          <TableHead className="text-center font-semibold">Discount %</TableHead>
+                          <TableHead className="text-right font-semibold">Total</TableHead>
+                          <TableHead className="text-center font-semibold">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {lineItems.map((item, index) => (
+                          <LineItemRow
+                            key={item.id}
+                            item={item}
+                            index={index}
+                            currency={formData.currency}
+                            onUpdate={updateLineItem}
+                            onRemove={removeLineItem}
+                          />
+                        ))}
+                        {lineItems.length === 0 && (
+                          <TableRow>
+                            <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                              No items added yet. Click "Add Item" to get started.
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
               </TabsContent>
 
               <TabsContent value="template">
