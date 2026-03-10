@@ -573,5 +573,18 @@ export class InvoiceService {
     }]);
 
     return data;
+  // Update invoice sequence table for custom numbering
+  static async updateInvoiceSequence(year: number, sequence: number): Promise<void> {
+    const { error } = await supabase
+      .from('invoice_sequences')
+      .upsert(
+        { year, prefix: 'INV', last_sequence: sequence, updated_at: new Date().toISOString() },
+        { onConflict: 'year,prefix' }
+      );
+    
+    if (error) {
+      console.error('Failed to update invoice sequence:', error);
+      // Non-critical, don't throw
+    }
   }
 }
