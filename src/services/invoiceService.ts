@@ -107,7 +107,7 @@ export class InvoiceService {
     return data;
   }
 
-  static async createInvoice(invoiceData: InvoiceFormData): Promise<Invoice> {
+  static async createInvoice(invoiceData: InvoiceFormData, customYear?: number, customSequence?: number): Promise<Invoice> {
     console.log('🚀 INVOICE CREATION REQUEST STARTED');
     console.log('Request timestamp:', new Date().toISOString());
     console.log('Invoice data received:', invoiceData);
@@ -124,10 +124,14 @@ export class InvoiceService {
 
       console.log('✅ User authenticated successfully');
 
-      // Generate invoice number
+      // Generate invoice number with optional custom year/sequence
       console.log('Step 2: Generating invoice number...');
+      const rpcParams: any = { prefix_param: 'INV' };
+      if (customYear) rpcParams.year_param = customYear;
+      if (customSequence) rpcParams.sequence_param = customSequence;
+      
       const { data: invoiceNumber, error: numberError } = await supabase
-        .rpc('generate_invoice_number');
+        .rpc('generate_invoice_number', rpcParams);
 
       if (numberError) {
         console.error('🚫 INVOICE NUMBER GENERATION FAILED:', numberError);
@@ -569,5 +573,19 @@ export class InvoiceService {
     }]);
 
     return data;
+  }
+
+  // Update invoice sequence table for custom numbering
+  static async updateInvoiceSequence(year: number, sequence: number): Promise<void> {
+    const { error } = await supabase
+      .from('invoice_sequences')
+      .upsert(
+        { year, prefix: 'INV', last_sequence: sequence, updated_at: new Date().toISOString() },
+        { onConflict: 'year,prefix' }
+      );
+    
+    if (error) {
+      console.error('Failed to update invoice sequence:', error);
+    }
   }
 }

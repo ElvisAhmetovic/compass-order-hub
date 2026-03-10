@@ -2684,10 +2684,16 @@ export type Database = {
         }
         Returns: number
       }
-      generate_invoice_number: {
-        Args: { prefix_param?: string }
-        Returns: string
-      }
+      generate_invoice_number:
+        | { Args: { prefix_param?: string }; Returns: string }
+        | {
+            Args: {
+              prefix_param?: string
+              sequence_param?: number
+              year_param?: number
+            }
+            Returns: string
+          }
       get_auth_user_role: { Args: never; Returns: string }
       get_order_status_history: {
         Args: { order_id_param: string }

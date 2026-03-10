@@ -48,6 +48,8 @@ const InvoiceDetail = () => {
   const [sendPDFDialogOpen, setSendPDFDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("edit");
   const [clientPopoverOpen, setClientPopoverOpen] = useState(false);
+  const [invoiceYear, setInvoiceYear] = useState<string>(new Date().getFullYear().toString());
+  const [invoiceSeqNumber, setInvoiceSeqNumber] = useState<string>('');
   const [templateSettings, setTemplateSettings] = useState(() => {
     try {
       const saved = localStorage.getItem('invoiceTemplateSettings');
@@ -59,7 +61,7 @@ const InvoiceDetail = () => {
       vatRate: 0,
       language: 'en',
       selectedPaymentAccount: 'both',
-      invoiceNumberPrefix: '',
+      invoiceNumberPrefix: 'INV-',
       companyInfo: {
         name: "Company Name",
         registrationNumber: "123456789",
@@ -173,6 +175,13 @@ const InvoiceDetail = () => {
         const invoiceData = await InvoiceService.getInvoice(id);
         if (invoiceData) {
           setInvoice(invoiceData);
+          
+          // Parse year and sequence from invoice_number (format: INV-YYYY-NNN)
+          const parts = invoiceData.invoice_number.split('-');
+          if (parts.length >= 3) {
+            setInvoiceYear(parts[1]);
+            setInvoiceSeqNumber(parseInt(parts[2], 10).toString());
+          }
           
           // Load line items first
           const lineItemsData = await InvoiceService.getLineItems(id);
@@ -366,7 +375,9 @@ const InvoiceDetail = () => {
           line_items: lineItemsForCreation
         };
 
-        const newInvoice = await InvoiceService.createInvoice(updatedFormData);
+        const yearNum = invoiceYear ? parseInt(invoiceYear, 10) : undefined;
+        const seqNum = invoiceSeqNumber ? parseInt(invoiceSeqNumber, 10) : undefined;
+        const newInvoice = await InvoiceService.createInvoice(updatedFormData, yearNum, seqNum);
         console.log('Created invoice:', newInvoice);
         isDirty.current = false;
         toast({
@@ -375,17 +386,31 @@ const InvoiceDetail = () => {
         });
         navigate('/invoices');
       } else if (id) {
-        const invoiceUpdateData = {
+        // Build custom invoice number if year/seq provided
+        const yearNum = invoiceYear ? parseInt(invoiceYear, 10) : undefined;
+        const seqNum = invoiceSeqNumber ? parseInt(invoiceSeqNumber, 10) : undefined;
+        let customInvoiceNumber: string | undefined;
+        if (yearNum && seqNum) {
+          customInvoiceNumber = `INV-${yearNum}-${String(seqNum).padStart(3, '0')}`;
+        }
+
+        const invoiceUpdateData: any = {
           client_id: formData.client_id,
           issue_date: formData.issue_date,
           due_date: formData.due_date,
           currency: formData.currency,
           payment_terms: formData.payment_terms,
           notes: formData.notes,
-          internal_notes: formData.internal_notes
+          internal_notes: formData.internal_notes,
+          ...(customInvoiceNumber ? { invoice_number: customInvoiceNumber } : {})
         };
 
         await InvoiceService.updateInvoice(id, invoiceUpdateData);
+        
+        // Update the sequence table if custom number was set
+        if (yearNum && seqNum) {
+          await InvoiceService.updateInvoiceSequence(yearNum, seqNum);
+        }
         
         const existingLineItems = await InvoiceService.getLineItems(id);
         const existingIds = existingLineItems.map(item => item.id);
@@ -448,8 +473,15 @@ const InvoiceDetail = () => {
       console.log('Generating PDF with currency:', formData.currency);
       console.log('Template settings currency:', templateSettings.currency);
       
+      const pdfInvoice = invoice ? {
+        ...invoice,
+        invoice_number: invoiceYear && invoiceSeqNumber
+          ? `INV-${invoiceYear}-${invoiceSeqNumber.padStart(3, '0')}`
+          : invoice.invoice_number
+      } : invoice;
+      
       await generateInvoicePDF({
-        invoice,
+        invoice: pdfInvoice,
         lineItems,
         client: billToClient,
         templateSettings: {
@@ -532,6 +564,35 @@ const InvoiceDetail = () => {
                         <CardTitle>Invoice Details</CardTitle>
                       </CardHeader>
                       <CardContent className="space-y-4">
+                        {/* Invoice Year & Number */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="invoice_year">Invoice Year</Label>
+                            <Input
+                              id="invoice_year"
+                              type="number"
+                              value={invoiceYear}
+                              onChange={(e) => setInvoiceYear(e.target.value)}
+                              placeholder={new Date().getFullYear().toString()}
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="invoice_seq">Invoice Number</Label>
+                            <Input
+                              id="invoice_seq"
+                              type="number"
+                              value={invoiceSeqNumber}
+                              onChange={(e) => setInvoiceSeqNumber(e.target.value)}
+                              placeholder="Auto"
+                            />
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {invoiceYear && invoiceSeqNumber
+                                ? `INV-${invoiceYear}-${invoiceSeqNumber.padStart(3, '0')}`
+                                : 'Leave empty for auto-increment'}
+                            </p>
+                          </div>
+                        </div>
+
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
                             <Label htmlFor="client">Client *</Label>
@@ -790,7 +851,12 @@ const InvoiceDetail = () => {
                     </Button>
                   </div>
                   <InvoicePreview
-                    invoice={invoice}
+                    invoice={invoice ? {
+                      ...invoice,
+                      invoice_number: invoiceYear && invoiceSeqNumber
+                        ? `INV-${invoiceYear}-${invoiceSeqNumber.padStart(3, '0')}`
+                        : invoice.invoice_number
+                    } : null}
                     lineItems={lineItems}
                     client={billToClient}
                     templateSettings={{
