@@ -24,7 +24,7 @@ import CurrencySelector from "@/components/invoices/CurrencySelector";
 import { formatCurrency } from "@/utils/currencyUtils";
 import LineItemRow from "@/components/invoices/LineItemRow";
 import SendInvoiceDialog from "@/components/invoices/SendInvoiceDialog";
-import PaymentTracker from "@/components/invoices/PaymentTracker";
+
 import InvoiceTemplateSettings from "@/components/invoices/InvoiceTemplateSettings";
 import InvoicePreview from "@/components/invoices/InvoicePreview";
 import { generateInvoicePDF } from "@/utils/invoicePdfGenerator";
@@ -725,7 +725,6 @@ const InvoiceDetail = () => {
                       </CardContent>
                     </Card>
 
-                    <VatCalculator />
 
                     <div className="space-y-3">
                       <Button onClick={handleSave} disabled={saving} className="w-full">
@@ -756,14 +755,7 @@ const InvoiceDetail = () => {
                       )}
                     </div>
 
-                    {!isNewInvoice && id && (
-                      <PaymentTracker
-                        invoiceId={id}
-                        currency={formData.currency}
-                        amount={totalAmount}
-                        onPaymentStatusChange={handlePaymentStatusChange}
-                      />
-                    )}
+                    <VatCalculator />
                   </div>
                 </div>
               </TabsContent>

@@ -1,15 +1,18 @@
 
 
-## Remove Payment Tracking, Reposition VAT Calculator
+## Add "Created Only" Filter to Advanced Search
 
-Remove the PaymentTracker component from the invoice detail sidebar and move the VatCalculator into its place (after the action buttons, at the bottom of the sidebar).
+The boss wants a second quick-filter alongside "Unpaid Orders Only" that shows orders with only the "Created" status -- orders that haven't progressed yet and also count as unpaid.
 
 ### Changes
 
-**`src/pages/InvoiceDetail.tsx`**:
-1. Remove the `import PaymentTracker` line (line 27)
-2. Remove the PaymentTracker block (lines 759-766)
-3. Move `<VatCalculator />` from line 728 (between Summary and buttons) to after the buttons block (after line 757, where PaymentTracker was)
+**`src/services/searchService.ts`**
+- Add `createdOnly?: boolean` to `SearchFilters` interface
+- Add filter logic in `applyFiltersToOrders`: if `createdOnly` is true, keep only orders where `status_created === true` and no further progress statuses are active (`status_in_progress`, `status_invoice_sent`, `status_invoice_paid`, `status_resolved`, `status_cancelled` are all falsy)
 
-Result: Summary → Action Buttons → VatCalculator (no more Payment Tracking section).
+**`src/components/dashboard/AdvancedSearch.tsx`**
+- Add a second checkbox below "Unpaid Orders Only" labeled "Created Only (Not Yet Started)" with description "(Orders still at Created status — no invoice sent or paid)"
+- Include `createdOnly` in the active filter count
+
+Both filters can work independently or together.
 
