@@ -38,13 +38,13 @@ const VatCalculator = () => {
         {/* Net amount input */}
         <div>
           <label className="text-sm font-medium text-muted-foreground mb-1.5 block">
-            Nettobetrag (€)
+            Bruttobetrag (€)
           </label>
           <Input
             type="number"
             placeholder="0.00"
-            value={netAmount}
-            onChange={(e) => setNetAmount(e.target.value)}
+            value={grossAmount}
+            onChange={(e) => setGrossAmount(e.target.value)}
             step="0.01"
           />
         </div>
