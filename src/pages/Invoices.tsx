@@ -182,6 +182,39 @@ const Invoices = () => {
     );
   });
 
+  const sortedInvoices = useMemo(() => {
+    let result = [...filteredInvoices];
+
+    // Status filters
+    if (['sent', 'draft', 'paid'].includes(sortOption)) {
+      result = result.filter(inv => inv.status === sortOption);
+    }
+
+    result.sort((a, b) => {
+      switch (sortOption) {
+        case 'newest':
+        case 'sent':
+        case 'draft':
+        case 'paid':
+          return new Date(b.issue_date).getTime() - new Date(a.issue_date).getTime();
+        case 'oldest':
+          return new Date(a.issue_date).getTime() - new Date(b.issue_date).getTime();
+        case 'inv-low':
+          return a.invoice_number.localeCompare(b.invoice_number, undefined, { numeric: true });
+        case 'inv-high':
+          return b.invoice_number.localeCompare(a.invoice_number, undefined, { numeric: true });
+        case 'a-z':
+          return (a.client?.name || '').localeCompare(b.client?.name || '');
+        case 'z-a':
+          return (b.client?.name || '').localeCompare(a.client?.name || '');
+        default:
+          return 0;
+      }
+    });
+
+    return result;
+  }, [filteredInvoices, sortOption]);
+
   const totalOutstanding = invoices
     .filter(inv => inv.status === 'sent' || inv.status === 'partially_paid' || inv.status === 'overdue')
     .reduce((sum, inv) => sum + inv.total_amount, 0);
