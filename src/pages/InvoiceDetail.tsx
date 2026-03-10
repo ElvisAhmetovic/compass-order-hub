@@ -557,6 +557,35 @@ const InvoiceDetail = () => {
                         <CardTitle>Invoice Details</CardTitle>
                       </CardHeader>
                       <CardContent className="space-y-4">
+                        {/* Invoice Year & Number */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="invoice_year">Invoice Year</Label>
+                            <Input
+                              id="invoice_year"
+                              type="number"
+                              value={invoiceYear}
+                              onChange={(e) => setInvoiceYear(e.target.value)}
+                              placeholder={new Date().getFullYear().toString()}
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="invoice_seq">Invoice Number</Label>
+                            <Input
+                              id="invoice_seq"
+                              type="number"
+                              value={invoiceSeqNumber}
+                              onChange={(e) => setInvoiceSeqNumber(e.target.value)}
+                              placeholder="Auto"
+                            />
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {invoiceYear && invoiceSeqNumber
+                                ? `INV-${invoiceYear}-${invoiceSeqNumber.padStart(3, '0')}`
+                                : 'Leave empty for auto-increment'}
+                            </p>
+                          </div>
+                        </div>
+
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
                             <Label htmlFor="client">Client *</Label>
