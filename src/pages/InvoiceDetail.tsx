@@ -266,15 +266,28 @@ const InvoiceDetail = () => {
       
       console.log('Previous item:', currentItem);
       
-      // Update the specific field
-      currentItem[field] = value;
-      console.log('Updated field', field, 'to:', value);
-      
-      // Recalculate line total
-      const subtotal = currentItem.quantity * currentItem.unit_price;
-      const withDiscount = subtotal * (1 - currentItem.discount_rate);
-      const withVat = withDiscount * (1 + currentItem.vat_rate);
-      currentItem.line_total = Math.round(withVat * 100) / 100;
+      if (field === 'line_total') {
+        // Reverse-calculate unit_price from brutto total
+        const brutto = value as number;
+        currentItem.line_total = brutto;
+        const quantity = currentItem.quantity || 1;
+        const discountMultiplier = 1 - currentItem.discount_rate;
+        const vatMultiplier = 1 + currentItem.vat_rate;
+        currentItem.unit_price = quantity > 0 && discountMultiplier > 0 && vatMultiplier > 0
+          ? Math.round((brutto / quantity / discountMultiplier / vatMultiplier) * 100) / 100
+          : 0;
+        console.log('Reverse-calculated unit_price:', currentItem.unit_price);
+      } else {
+        // Update the specific field
+        currentItem[field] = value;
+        console.log('Updated field', field, 'to:', value);
+        
+        // Forward-calculate line total
+        const subtotal = currentItem.quantity * currentItem.unit_price;
+        const withDiscount = subtotal * (1 - currentItem.discount_rate);
+        const withVat = withDiscount * (1 + currentItem.vat_rate);
+        currentItem.line_total = Math.round(withVat * 100) / 100;
+      }
       
       console.log('Calculated line total:', currentItem.line_total);
       console.log('Final updated item:', currentItem);

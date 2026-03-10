@@ -135,9 +135,13 @@ const LineItemRow: React.FC<LineItemRowProps> = ({
         />
       </TableCell>
       <TableCell className="py-2 align-top">
-        <div className="font-medium text-right whitespace-nowrap">
-          {formatCurrency(item.line_total, currency)}
-        </div>
+        <Input
+          type="number"
+          step="0.01"
+          value={item.line_total}
+          onChange={(e) => onUpdate(index, 'line_total', parseFloat(e.target.value) || 0)}
+          className="w-24 h-10"
+        />
       </TableCell>
       <TableCell className="py-2 align-top">
         <Button
