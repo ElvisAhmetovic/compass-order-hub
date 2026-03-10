@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import Layout from "@/components/layout/Layout";
 import Sidebar from "@/components/dashboard/Sidebar";
 import { Button } from "@/components/ui/button";
-import { Plus, CalendarRange } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Plus, CalendarRange, Search } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import CreateMonthlyContractModal from "@/components/monthly/CreateMonthlyContractModal";
 import MonthlyInstallmentsTable from "@/components/monthly/MonthlyInstallmentsTable";
