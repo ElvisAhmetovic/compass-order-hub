@@ -1,48 +1,18 @@
 
 
-## Make Sidebar Configuration Global (Admin-Controlled, Applies to All Users)
+## Add "Created Only" Filter to Advanced Search
 
-Currently the sidebar hidden items are stored per-user in localStorage. The user wants admin changes to apply site-wide for all users.
-
-### Approach
-
-Create a Supabase table `sidebar_config` with a single row storing the hidden items array. Admins can update it; all users read from it. Replace the localStorage-based hook with Supabase queries and a realtime subscription so changes propagate instantly.
+The boss wants a second quick-filter alongside "Unpaid Orders Only" that shows orders with only the "Created" status -- orders that haven't progressed yet and also count as unpaid.
 
 ### Changes
 
-**1. New Supabase table: `sidebar_config`**
-```sql
-CREATE TABLE public.sidebar_config (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  hidden_items text[] NOT NULL DEFAULT '{}',
-  updated_at timestamptz DEFAULT now(),
-  updated_by uuid REFERENCES auth.users(id)
-);
+**`src/services/searchService.ts`**
+- Add `createdOnly?: boolean` to `SearchFilters` interface
+- Add filter logic in `applyFiltersToOrders`: if `createdOnly` is true, keep only orders where `status_created === true` and no further progress statuses are active (`status_in_progress`, `status_invoice_sent`, `status_invoice_paid`, `status_resolved`, `status_cancelled` are all falsy)
 
-ALTER TABLE public.sidebar_config ENABLE ROW LEVEL SECURITY;
+**`src/components/dashboard/AdvancedSearch.tsx`**
+- Add a second checkbox below "Unpaid Orders Only" labeled "Created Only (Not Yet Started)" with description "(Orders still at Created status — no invoice sent or paid)"
+- Include `createdOnly` in the active filter count
 
--- Everyone can read
-CREATE POLICY "Anyone can read sidebar config"
-  ON public.sidebar_config FOR SELECT TO authenticated
-  USING (true);
-
--- Only admins can update
-CREATE POLICY "Admins can update sidebar config"
-  ON public.sidebar_config FOR UPDATE TO authenticated
-  USING (public.is_admin())
-  WITH CHECK (public.is_admin());
-
--- Insert initial row
-INSERT INTO public.sidebar_config (hidden_items) VALUES ('{}');
-```
-
-**2. Rewrite `src/hooks/useSidebarConfig.ts`**
-- Fetch hidden items from `sidebar_config` table instead of localStorage
-- Subscribe to realtime changes on the table so all users see updates instantly
-- `toggleItem` performs an UPDATE on the single row (admin only)
-- Remove all localStorage logic
-
-**3. Update `src/pages/Settings.tsx`**
-- Only show the "Sidebar Navigation" card to admins (since only they can change it)
-- Add a note like "These settings apply to all users"
+Both filters can work independently or together.
 

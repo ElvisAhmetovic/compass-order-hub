@@ -1,45 +1,56 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '@/context/AuthContext';
-
-const SIDEBAR_CONFIG_EVENT = 'sidebar-config-changed';
-
-function getStorageKey(userId: string) {
-  return `sidebar-hidden-items-${userId}`;
-}
+import { supabase } from '@/integrations/supabase/client';
 
 export function useSidebarConfig() {
-  const { user } = useAuth();
   const [hiddenItems, setHiddenItems] = useState<string[]>([]);
-
-  const loadHiddenItems = useCallback(() => {
-    if (!user?.id) return;
-    try {
-      const stored = localStorage.getItem(getStorageKey(user.id));
-      setHiddenItems(stored ? JSON.parse(stored) : []);
-    } catch {
-      setHiddenItems([]);
-    }
-  }, [user?.id]);
+  const [configId, setConfigId] = useState<string | null>(null);
 
   useEffect(() => {
-    loadHiddenItems();
+    const fetchConfig = async () => {
+      const { data, error } = await supabase
+        .from('sidebar_config')
+        .select('id, hidden_items')
+        .limit(1)
+        .single();
 
-    const handler = () => loadHiddenItems();
-    window.addEventListener(SIDEBAR_CONFIG_EVENT, handler);
-    return () => window.removeEventListener(SIDEBAR_CONFIG_EVENT, handler);
-  }, [loadHiddenItems]);
+      if (!error && data) {
+        setConfigId(data.id);
+        setHiddenItems((data.hidden_items as string[]) ?? []);
+      }
+    };
 
-  const toggleItem = useCallback((label: string) => {
-    if (!user?.id) return;
-    setHiddenItems(prev => {
-      const next = prev.includes(label)
-        ? prev.filter(i => i !== label)
-        : [...prev, label];
-      localStorage.setItem(getStorageKey(user.id), JSON.stringify(next));
-      window.dispatchEvent(new Event(SIDEBAR_CONFIG_EVENT));
-      return next;
-    });
-  }, [user?.id]);
+    fetchConfig();
+
+    const channel = supabase
+      .channel('sidebar-config-realtime')
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'sidebar_config',
+      }, (payload) => {
+        const newItems = (payload.new as any).hidden_items as string[];
+        setHiddenItems(newItems ?? []);
+      })
+      .subscribe();
+
+    return () => {
+      channel.unsubscribe();
+    };
+  }, []);
+
+  const toggleItem = useCallback(async (label: string) => {
+    if (!configId) return;
+    const next = hiddenItems.includes(label)
+      ? hiddenItems.filter(i => i !== label)
+      : [...hiddenItems, label];
+
+    setHiddenItems(next);
+
+    await supabase
+      .from('sidebar_config')
+      .update({ hidden_items: next, updated_at: new Date().toISOString() })
+      .eq('id', configId);
+  }, [configId, hiddenItems]);
 
   const isHidden = useCallback((label: string) => hiddenItems.includes(label), [hiddenItems]);
 
