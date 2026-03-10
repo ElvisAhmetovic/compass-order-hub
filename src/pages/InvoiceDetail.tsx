@@ -756,14 +756,7 @@ const InvoiceDetail = () => {
                       )}
                     </div>
 
-                    {!isNewInvoice && id && (
-                      <PaymentTracker
-                        invoiceId={id}
-                        currency={formData.currency}
-                        amount={totalAmount}
-                        onPaymentStatusChange={handlePaymentStatusChange}
-                      />
-                    )}
+                    <VatCalculator />
                   </div>
                 </div>
               </TabsContent>
