@@ -164,13 +164,65 @@ const Sidebar = () => {
     }
   ];
 
+  const { isHidden } = useSidebarConfig();
+
   // Filter sidebar items based on user role
-  const visibleItems = menuItems.filter(item => {
-    if (!user || !user.role) {
-      return false;
-    }
+  const roleFilteredItems = menuItems.filter(item => {
+    if (!user || !user.role) return false;
     return item.roles.includes(user.role);
   });
+
+  // Split into main and "more" items
+  const mainItems = roleFilteredItems.filter(item => !isHidden(item.label));
+  const moreItems = roleFilteredItems.filter(item => isHidden(item.label));
+
+  // Auto-expand "More..." if active route is inside it
+  const [moreOpen, setMoreOpen] = useState(false);
+  const activeInMore = moreItems.some(item => 
+    location.pathname === item.href || 
+    (item.href !== '/dashboard' && item.href !== '/active-orders' && location.pathname.startsWith(item.href)) ||
+    (item.href === '/active-orders' && location.pathname.startsWith('/active-orders'))
+  );
+
+  useEffect(() => {
+    if (activeInMore) setMoreOpen(true);
+  }, [activeInMore]);
+
+  const renderItem = (item: typeof menuItems[0]) => {
+    const Icon = item.icon;
+    const isActive = location.pathname === item.href || 
+      (item.href !== '/dashboard' && item.href !== '/active-orders' && location.pathname.startsWith(item.href)) ||
+      (item.href === '/active-orders' && location.pathname.startsWith('/active-orders'));
+    
+    const showSupportBadge = item.showBadge && isAdminOrAgent && unreadSupportCount > 0;
+    const showTicketBadge = (item as any).showTicketBadge && isAdminOrAgent && openTicketCount > 0;
+    
+    return (
+      <Link
+        key={`${item.href}-${item.label}`}
+        to={item.href}
+        className={cn(
+          "flex items-center justify-between px-6 py-3 text-foreground/70 hover:bg-accent hover:text-foreground transition-colors",
+          isActive && "bg-primary/10 text-primary border-r-2 border-primary"
+        )}
+      >
+        <div className="flex items-center">
+          <Icon className="w-5 h-5 mr-3" />
+          {item.label}
+        </div>
+        {showSupportBadge && (
+          <Badge variant="destructive" className="h-5 min-w-[20px] px-1.5 flex items-center justify-center text-xs">
+            {unreadSupportCount > 99 ? '99+' : unreadSupportCount}
+          </Badge>
+        )}
+        {showTicketBadge && (
+          <Badge variant="destructive" className="h-5 min-w-[20px] px-1.5 flex items-center justify-center text-xs">
+            {openTicketCount > 99 ? '99+' : openTicketCount}
+          </Badge>
+        )}
+      </Link>
+    );
+  };
 
   return (
     <div className="w-64 bg-card border-r border-border min-h-screen">
@@ -187,48 +239,36 @@ const Sidebar = () => {
         </div>
       </div>
       <nav className="mt-6">
-        {visibleItems.length === 0 ? (
+        {roleFilteredItems.length === 0 ? (
           <div className="px-6 py-3 text-muted-foreground text-sm">
             No menu items available
             <br />
             Role: {user?.role || 'No role'}
           </div>
         ) : (
-          visibleItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = location.pathname === item.href || 
-              (item.href !== '/dashboard' && item.href !== '/active-orders' && location.pathname.startsWith(item.href)) ||
-              (item.href === '/active-orders' && location.pathname.startsWith('/active-orders'));
+          <>
+            {mainItems.map(renderItem)}
             
-            const showSupportBadge = item.showBadge && isAdminOrAgent && unreadSupportCount > 0;
-            const showTicketBadge = (item as any).showTicketBadge && isAdminOrAgent && openTicketCount > 0;
-            
-            return (
-              <Link
-                key={`${item.href}-${item.label}`}
-                to={item.href}
-                className={cn(
-                  "flex items-center justify-between px-6 py-3 text-foreground/70 hover:bg-accent hover:text-foreground transition-colors",
-                  isActive && "bg-primary/10 text-primary border-r-2 border-primary"
+            {moreItems.length > 0 && (
+              <div className="border-t border-border mt-2">
+                <button
+                  onClick={() => setMoreOpen(!moreOpen)}
+                  className="flex items-center justify-between w-full px-6 py-3 text-foreground/70 hover:bg-accent hover:text-foreground transition-colors"
+                >
+                  <div className="flex items-center">
+                    <MoreHorizontal className="w-5 h-5 mr-3" />
+                    More...
+                  </div>
+                  <ChevronDown className={cn("w-4 h-4 transition-transform", moreOpen && "rotate-180")} />
+                </button>
+                {moreOpen && (
+                  <div className="bg-muted/30">
+                    {moreItems.map(renderItem)}
+                  </div>
                 )}
-              >
-                <div className="flex items-center">
-                  <Icon className="w-5 h-5 mr-3" />
-                  {item.label}
-                </div>
-                {showSupportBadge && (
-                  <Badge variant="destructive" className="h-5 min-w-[20px] px-1.5 flex items-center justify-center text-xs">
-                    {unreadSupportCount > 99 ? '99+' : unreadSupportCount}
-                  </Badge>
-                )}
-                {showTicketBadge && (
-                  <Badge variant="destructive" className="h-5 min-w-[20px] px-1.5 flex items-center justify-center text-xs">
-                    {openTicketCount > 99 ? '99+' : openTicketCount}
-                  </Badge>
-                )}
-              </Link>
-            );
-          })
+              </div>
+            )}
+          </>
         )}
       </nav>
     </div>
