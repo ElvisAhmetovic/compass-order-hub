@@ -348,12 +348,12 @@ const Invoices = () => {
                           <TableRow>
                             <TableCell colSpan={7} className="text-center py-8">Loading invoices...</TableCell>
                           </TableRow>
-                        ) : filteredInvoices.length === 0 ? (
+                        ) : sortedInvoices.length === 0 ? (
                           <TableRow>
                             <TableCell colSpan={7} className="text-center py-8">No invoices found</TableCell>
                           </TableRow>
                         ) : (
-                          filteredInvoices.map((invoice) => (
+                          sortedInvoices.map((invoice) => (
                             <TableRow key={invoice.id}>
                               <TableCell>
                                 <div className="flex items-center gap-2">
