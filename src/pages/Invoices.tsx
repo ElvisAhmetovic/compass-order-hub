@@ -299,15 +299,34 @@ const Invoices = () => {
 
                 <Card>
                   <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
+                     <div className="flex items-center justify-between">
                       <CardTitle>Manage Invoices</CardTitle>
-                      <div className="w-72">
-                        <Input
-                          placeholder="Search by invoice #, client, status, amount..."
-                          value={filterText}
-                          onChange={(e) => setFilterText(e.target.value)}
-                          className="max-w-sm"
-                        />
+                      <div className="flex items-center gap-3">
+                        <Select value={sortOption} onValueChange={setSortOption}>
+                          <SelectTrigger className="w-[180px]">
+                            <ArrowUpDown className="h-4 w-4 mr-2 opacity-50" />
+                            <SelectValue placeholder="Sort by..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="newest">Newest</SelectItem>
+                            <SelectItem value="oldest">Oldest</SelectItem>
+                            <SelectItem value="sent">Sent</SelectItem>
+                            <SelectItem value="draft">Draft</SelectItem>
+                            <SelectItem value="paid">Paid</SelectItem>
+                            <SelectItem value="inv-low">Lowest INV #</SelectItem>
+                            <SelectItem value="inv-high">Highest INV #</SelectItem>
+                            <SelectItem value="a-z">A → Z</SelectItem>
+                            <SelectItem value="z-a">Z → A</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <div className="w-72">
+                          <Input
+                            placeholder="Search by invoice #, client, status, amount..."
+                            value={filterText}
+                            onChange={(e) => setFilterText(e.target.value)}
+                            className="max-w-sm"
+                          />
+                        </div>
                       </div>
                     </div>
                   </CardHeader>
