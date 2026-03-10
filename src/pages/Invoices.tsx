@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Layout from "@/components/layout/Layout";
 import Sidebar from "@/components/dashboard/Sidebar";
 import { useAuth } from "@/context/AuthContext";
@@ -9,7 +9,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { PlusCircle, FileEdit, Trash2, Download, File, CheckCircle2, XCircle, Send, Eye, Receipt } from "lucide-react";
+import { PlusCircle, FileEdit, Trash2, Download, File, CheckCircle2, XCircle, Send, Eye, Receipt, ArrowUpDown } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { useNotificationSound } from "@/hooks/useNotificationSound";
@@ -40,7 +41,7 @@ const Invoices = () => {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterText, setFilterText] = useState("");
-  
+  const [sortOption, setSortOption] = useState<string>("newest");
   // Calculate overdue invoices
   const overdueInvoices = invoices.filter(invoice => {
     const dueDate = new Date(invoice.due_date);
@@ -181,6 +182,39 @@ const Invoices = () => {
     );
   });
 
+  const sortedInvoices = useMemo(() => {
+    let result = [...filteredInvoices];
+
+    // Status filters
+    if (['sent', 'draft', 'paid'].includes(sortOption)) {
+      result = result.filter(inv => inv.status === sortOption);
+    }
+
+    result.sort((a, b) => {
+      switch (sortOption) {
+        case 'newest':
+        case 'sent':
+        case 'draft':
+        case 'paid':
+          return new Date(b.issue_date).getTime() - new Date(a.issue_date).getTime();
+        case 'oldest':
+          return new Date(a.issue_date).getTime() - new Date(b.issue_date).getTime();
+        case 'inv-low':
+          return a.invoice_number.localeCompare(b.invoice_number, undefined, { numeric: true });
+        case 'inv-high':
+          return b.invoice_number.localeCompare(a.invoice_number, undefined, { numeric: true });
+        case 'a-z':
+          return (a.client?.name || '').localeCompare(b.client?.name || '');
+        case 'z-a':
+          return (b.client?.name || '').localeCompare(a.client?.name || '');
+        default:
+          return 0;
+      }
+    });
+
+    return result;
+  }, [filteredInvoices, sortOption]);
+
   const totalOutstanding = invoices
     .filter(inv => inv.status === 'sent' || inv.status === 'partially_paid' || inv.status === 'overdue')
     .reduce((sum, inv) => sum + inv.total_amount, 0);
@@ -265,15 +299,34 @@ const Invoices = () => {
 
                 <Card>
                   <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
+                     <div className="flex items-center justify-between">
                       <CardTitle>Manage Invoices</CardTitle>
-                      <div className="w-72">
-                        <Input
-                          placeholder="Search by invoice #, client, status, amount..."
-                          value={filterText}
-                          onChange={(e) => setFilterText(e.target.value)}
-                          className="max-w-sm"
-                        />
+                      <div className="flex items-center gap-3">
+                        <Select value={sortOption} onValueChange={setSortOption}>
+                          <SelectTrigger className="w-[180px]">
+                            <ArrowUpDown className="h-4 w-4 mr-2 opacity-50" />
+                            <SelectValue placeholder="Sort by..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="newest">Newest</SelectItem>
+                            <SelectItem value="oldest">Oldest</SelectItem>
+                            <SelectItem value="sent">Sent</SelectItem>
+                            <SelectItem value="draft">Draft</SelectItem>
+                            <SelectItem value="paid">Paid</SelectItem>
+                            <SelectItem value="inv-low">Lowest INV #</SelectItem>
+                            <SelectItem value="inv-high">Highest INV #</SelectItem>
+                            <SelectItem value="a-z">A → Z</SelectItem>
+                            <SelectItem value="z-a">Z → A</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <div className="w-72">
+                          <Input
+                            placeholder="Search by invoice #, client, status, amount..."
+                            value={filterText}
+                            onChange={(e) => setFilterText(e.target.value)}
+                            className="max-w-sm"
+                          />
+                        </div>
                       </div>
                     </div>
                   </CardHeader>
@@ -295,12 +348,12 @@ const Invoices = () => {
                           <TableRow>
                             <TableCell colSpan={7} className="text-center py-8">Loading invoices...</TableCell>
                           </TableRow>
-                        ) : filteredInvoices.length === 0 ? (
+                        ) : sortedInvoices.length === 0 ? (
                           <TableRow>
                             <TableCell colSpan={7} className="text-center py-8">No invoices found</TableCell>
                           </TableRow>
                         ) : (
-                          filteredInvoices.map((invoice) => (
+                          sortedInvoices.map((invoice) => (
                             <TableRow key={invoice.id}>
                               <TableCell>
                                 <div className="flex items-center gap-2">
