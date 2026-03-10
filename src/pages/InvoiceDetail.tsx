@@ -844,7 +844,12 @@ const InvoiceDetail = () => {
                     </Button>
                   </div>
                   <InvoicePreview
-                    invoice={invoice}
+                    invoice={invoice ? {
+                      ...invoice,
+                      invoice_number: invoiceYear && invoiceSeqNumber
+                        ? `INV-${invoiceYear}-${invoiceSeqNumber.padStart(3, '0')}`
+                        : invoice.invoice_number
+                    } : null}
                     lineItems={lineItems}
                     client={billToClient}
                     templateSettings={{
