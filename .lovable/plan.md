@@ -1,18 +1,29 @@
 
 
-## Add "Created Only" Filter to Advanced Search
+## Netto/MwSt/Brutto Calculator Widget
 
-The boss wants a second quick-filter alongside "Unpaid Orders Only" that shows orders with only the "Created" status -- orders that haven't progressed yet and also count as unpaid.
+Add a VAT calculator card to the right sidebar of the invoice edit tab (alongside the existing Summary and action buttons), inspired by the uploaded reference image.
 
-### Changes
+### What it does
+- User enters a **Netto (net)** amount
+- Picks a VAT rate via quick-select buttons: **7%**, **19%**, or **Individuell** (custom input)
+- Displays calculated **MwSt (VAT)** and **Brutto (gross)** amounts in real-time
+- A "Berechnen" (Calculate) button is optional since we can calculate live, but we'll include it for parity with the reference
+- Results section shows Netto, MwSt, Brutto with copy-to-clipboard buttons
 
-**`src/services/searchService.ts`**
-- Add `createdOnly?: boolean` to `SearchFilters` interface
-- Add filter logic in `applyFiltersToOrders`: if `createdOnly` is true, keep only orders where `status_created === true` and no further progress statuses are active (`status_in_progress`, `status_invoice_sent`, `status_invoice_paid`, `status_resolved`, `status_cancelled` are all falsy)
+### Layout placement
+In `src/pages/InvoiceDetail.tsx`, the edit tab uses a `grid grid-cols-1 lg:grid-cols-3` layout. The right column (lines 706-764) has Summary, action buttons, and PaymentTracker. The new calculator card will be inserted into this right column, between the Summary card and the action buttons.
 
-**`src/components/dashboard/AdvancedSearch.tsx`**
-- Add a second checkbox below "Unpaid Orders Only" labeled "Created Only (Not Yet Started)" with description "(Orders still at Created status — no invoice sent or paid)"
-- Include `createdOnly` in the active filter count
+### Implementation
 
-Both filters can work independently or together.
+**New file: `src/components/invoices/VatCalculator.tsx`**
+- Self-contained component with local state: `netAmount`, `vatPercent`, `customVat`, `mode` (7/19/custom)
+- Quick-select buttons for 7% and 19%, plus "Individuell" that shows a custom input
+- Computed `vatAmount = net * rate`, `grossAmount = net + vatAmount`
+- Results section with copy buttons (using `navigator.clipboard`)
+- Styled to match the reference: card layout, button group for rates, result display
+
+**Modified file: `src/pages/InvoiceDetail.tsx`**
+- Import `VatCalculator`
+- Add `<VatCalculator />` in the right sidebar column (around line 726, after the Summary card)
 
