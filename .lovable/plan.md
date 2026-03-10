@@ -1,18 +1,22 @@
 
 
-## Add "Created Only" Filter to Advanced Search
+## Fix Line Items Table to Show All Columns Without Scrolling
 
-The boss wants a second quick-filter alongside "Unpaid Orders Only" that shows orders with only the "Created" status -- orders that haven't progressed yet and also count as unpaid.
+The line items table is inside a `lg:col-span-2` column of a 3-column grid, which constrains its width. The description column has `w-1/2 min-w-[400px]` and the wrapper has `min-w-[1000px]`, forcing horizontal scroll.
 
 ### Changes
 
-**`src/services/searchService.ts`**
-- Add `createdOnly?: boolean` to `SearchFilters` interface
-- Add filter logic in `applyFiltersToOrders`: if `createdOnly` is true, keep only orders where `status_created === true` and no further progress statuses are active (`status_in_progress`, `status_invoice_sent`, `status_invoice_paid`, `status_resolved`, `status_cancelled` are all falsy)
+**`src/pages/InvoiceDetail.tsx`**
+- Move the Line Items card **outside** the 3-column grid so it spans full width, or change the grid so the line items section gets `lg:col-span-3` (full width)
+- The simplest approach: close the `lg:col-span-2` div before the Line Items card, render Line Items at `lg:col-span-3` full width, then continue with the Summary card in its own column
 
-**`src/components/dashboard/AdvancedSearch.tsx`**
-- Add a second checkbox below "Unpaid Orders Only" labeled "Created Only (Not Yet Started)" with description "(Orders still at Created status — no invoice sent or paid)"
-- Include `createdOnly` in the active filter count
+**`src/components/invoices/LineItemRow.tsx`**
+- Reduce description column from `w-1/2 min-w-[400px]` to `min-w-[250px]` so columns fit naturally
+- Shrink oversized input heights from `h-14` to `h-10` for a cleaner look
 
-Both filters can work independently or together.
+**`src/pages/InvoiceDetail.tsx` (table headers)**
+- Reduce description header `min-w-[350px]` to `min-w-[200px]`
+- Remove `w-1/2` constraint
+
+This way the table uses the full page width and all columns are visible without scrolling.
 
