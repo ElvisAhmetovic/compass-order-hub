@@ -20,6 +20,7 @@ const MonthlyPackages: React.FC = () => {
   const [installments, setInstallments] = useState<MonthlyInstallment[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const isAdmin = user?.role === "admin";
   const isAdminOrAgent = user?.role === "admin" || user?.role === "agent";
@@ -43,10 +44,26 @@ const MonthlyPackages: React.FC = () => {
     fetchData();
   }, [fetchData]);
 
-  const totalContracts = contracts.filter((c) => c.status === "active").length;
-  const totalPaid = installments.filter((i) => i.payment_status === "paid").length;
-  const totalUnpaid = installments.filter((i) => i.payment_status === "unpaid").length;
-  const totalRevenue = installments
+  const filteredContracts = useMemo(() => {
+    if (!searchTerm.trim()) return contracts;
+    const term = searchTerm.toLowerCase();
+    return contracts.filter(c =>
+      [c.client_name, c.client_email, c.website].some(field =>
+        field?.toLowerCase().includes(term)
+      )
+    );
+  }, [contracts, searchTerm]);
+
+  const filteredInstallments = useMemo(() => {
+    if (!searchTerm.trim()) return installments;
+    const contractIds = new Set(filteredContracts.map(c => c.id));
+    return installments.filter(i => contractIds.has(i.contract_id));
+  }, [installments, filteredContracts, searchTerm]);
+
+  const totalContracts = filteredContracts.filter((c) => c.status === "active").length;
+  const totalPaid = filteredInstallments.filter((i) => i.payment_status === "paid").length;
+  const totalUnpaid = filteredInstallments.filter((i) => i.payment_status === "unpaid").length;
+  const totalRevenue = filteredInstallments
     .filter((i) => i.payment_status === "paid")
     .reduce((sum, i) => sum + Number(i.amount), 0);
 
