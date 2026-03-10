@@ -1,18 +1,26 @@
 
 
-## Add "Created Only" Filter to Advanced Search
+## Make Line Item Total (Brutto) Editable — Reverse-Calculate Netto Price
 
-The boss wants a second quick-filter alongside "Unpaid Orders Only" that shows orders with only the "Created" status -- orders that haven't progressed yet and also count as unpaid.
+### What changes
 
-### Changes
+The "Total" column in line items becomes an editable input instead of read-only text. When the user types a brutto (gross) amount there, the system back-calculates the `unit_price` (netto) based on the current VAT %, discount %, and quantity.
 
-**`src/services/searchService.ts`**
-- Add `createdOnly?: boolean` to `SearchFilters` interface
-- Add filter logic in `applyFiltersToOrders`: if `createdOnly` is true, keep only orders where `status_created === true` and no further progress statuses are active (`status_in_progress`, `status_invoice_sent`, `status_invoice_paid`, `status_resolved`, `status_cancelled` are all falsy)
+**Formula:** `unit_price = brutto / quantity / (1 - discount_rate) / (1 + vat_rate)`
 
-**`src/components/dashboard/AdvancedSearch.tsx`**
-- Add a second checkbox below "Unpaid Orders Only" labeled "Created Only (Not Yet Started)" with description "(Orders still at Created status — no invoice sent or paid)"
-- Include `createdOnly` in the active filter count
+When VAT or discount changes, `line_total` is recalculated from `unit_price` as it already does (forward calculation). But when `line_total` is edited directly, we reverse-calculate `unit_price`.
 
-Both filters can work independently or together.
+### Files
+
+**`src/components/invoices/LineItemRow.tsx`**
+- Replace the read-only `formatCurrency(item.line_total)` div with an editable `<Input type="number">` 
+- On change, call `onUpdate(index, 'line_total', value)` — the parent handles the reverse math
+
+**`src/pages/InvoiceDetail.tsx`** (the `updateLineItem` function, ~line 263)
+- Add a special case: when `field === 'line_total'`, reverse-calculate `unit_price`:
+  ```
+  unit_price = line_total / quantity / (1 - discount_rate) / (1 + vat_rate)
+  ```
+  Handle edge cases (quantity=0 → set unit_price to 0, etc.)
+- For all other fields, keep the existing forward calculation as-is
 
