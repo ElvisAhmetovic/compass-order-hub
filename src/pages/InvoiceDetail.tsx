@@ -48,6 +48,8 @@ const InvoiceDetail = () => {
   const [sendPDFDialogOpen, setSendPDFDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("edit");
   const [clientPopoverOpen, setClientPopoverOpen] = useState(false);
+  const [invoiceYear, setInvoiceYear] = useState<string>(new Date().getFullYear().toString());
+  const [invoiceSeqNumber, setInvoiceSeqNumber] = useState<string>('');
   const [templateSettings, setTemplateSettings] = useState(() => {
     try {
       const saved = localStorage.getItem('invoiceTemplateSettings');
