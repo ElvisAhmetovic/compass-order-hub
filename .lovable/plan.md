@@ -1,21 +1,18 @@
 
 
-## Auto-Fill Next Invoice Number for New Invoices
+## Add "Created Only" Filter to Advanced Search
 
-### Problem
-New invoices show `###` as placeholder instead of the actual next number (e.g., 431 if last was 430).
+The boss wants a second quick-filter alongside "Unpaid Orders Only" that shows orders with only the "Created" status -- orders that haven't progressed yet and also count as unpaid.
 
 ### Changes
 
-**`src/services/invoiceService.ts`** — Add a static method `getNextSequenceNumber(year)`:
-- Query `invoice_sequences` table for the given year/prefix `INV`
-- Return `last_sequence + 1` (or 1 if no record exists)
+**`src/services/searchService.ts`**
+- Add `createdOnly?: boolean` to `SearchFilters` interface
+- Add filter logic in `applyFiltersToOrders`: if `createdOnly` is true, keep only orders where `status_created === true` and no further progress statuses are active (`status_in_progress`, `status_invoice_sent`, `status_invoice_paid`, `status_resolved`, `status_cancelled` are all falsy)
 
-**`src/pages/InvoiceDetail.tsx`** — In `loadData()`, when `isNewInvoice`:
-- Call `InvoiceService.getNextSequenceNumber(currentYear)`
-- Set `invoiceSeqNumber` to the returned value
-- This makes the preview, PDF, and send-to-client all show the correct next number (e.g., `INV-2026-431`)
-- The user can still override it manually
+**`src/components/dashboard/AdvancedSearch.tsx`**
+- Add a second checkbox below "Unpaid Orders Only" labeled "Created Only (Not Yet Started)" with description "(Orders still at Created status — no invoice sent or paid)"
+- Include `createdOnly` in the active filter count
 
-**Preview/PDF/Send** — Already use `invoiceYear` and `invoiceSeqNumber` to compose the number, so once these are pre-filled, everything works: preview shows `INV-2026-431`, PDF generates with it, and send-to-client uses it. The dashboard "create invoice" button, client button, and monthly packages all navigate to `/invoices/new` which hits the same `InvoiceDetail` page — so all entry points are covered.
+Both filters can work independently or together.
 

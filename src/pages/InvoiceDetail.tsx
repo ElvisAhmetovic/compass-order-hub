@@ -170,7 +170,13 @@ const InvoiceDetail = () => {
       const clientsData = await InvoiceService.getClients();
       setClients(clientsData);
 
-      if (!isNewInvoice && id) {
+      if (isNewInvoice) {
+        // Pre-fill next invoice number
+        const currentYear = new Date().getFullYear();
+        const nextSeq = await InvoiceService.getNextSequenceNumber(currentYear);
+        setInvoiceYear(currentYear.toString());
+        setInvoiceSeqNumber(nextSeq.toString());
+      } else if (!isNewInvoice && id) {
         // Load existing invoice
         const invoiceData = await InvoiceService.getInvoice(id);
         if (invoiceData) {
