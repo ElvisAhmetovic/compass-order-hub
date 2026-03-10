@@ -57,129 +57,103 @@ const OrderActions = ({ order, onOrderView, onRefresh }: OrderActionsProps) => {
   }
 
   const createInvoiceFromOrder = async (orderId: string, orderData: Order, status: OrderStatus) => {
-    try {
-      // Check if user is authenticated
-      if (!user) {
-        toast({
-          title: "Authentication Required",
-          description: "You must be logged in to create invoices.",
-          variant: "destructive"
-        });
-        return;
-      }
+    // Check if user is authenticated
+    if (!user) {
+      throw new Error("You must be logged in to create invoices.");
+    }
 
-      // Check if invoice already exists for this order
-      const existingInvoices = await InvoiceService.getInvoices();
-      const existingInvoice = existingInvoices.find(inv => 
-        inv.notes && inv.notes.includes(`Order ID: ${orderId}`)
-      );
+    // Check if invoice already exists for this order
+    const existingInvoices = await InvoiceService.getInvoices();
+    const existingInvoice = existingInvoices.find(inv => 
+      inv.notes && inv.notes.includes(`Order ID: ${orderId}`)
+    );
 
-      if (existingInvoice) {
-        // Update existing invoice status
-        const invoiceStatus = status === "Invoice Sent" ? "sent" : "paid";
-        await InvoiceService.updateInvoice(existingInvoice.id, { status: invoiceStatus });
-        
-        toast({
-          title: "Invoice updated",
-          description: `Existing invoice ${existingInvoice.invoice_number} status updated to ${invoiceStatus}.`,
-        });
-        return;
-      }
-
-      // First, create or find the client
-      const clients = await InvoiceService.getClients();
-      let clientId = clients.find(c => c.name === orderData.company_name)?.id;
+    if (existingInvoice) {
+      // Update existing invoice status
+      const invoiceStatus = status === "Invoice Sent" ? "sent" : "paid";
+      await InvoiceService.updateInvoice(existingInvoice.id, { status: invoiceStatus });
       
-      if (!clientId) {
-        try {
-          // Create new client
-          const newClient = await InvoiceService.createClient({
-            name: orderData.company_name,
-            email: orderData.contact_email || `${orderData.company_name.toLowerCase().replace(/\s+/g, '')}@company.com`,
-            address: orderData.company_address || '',
-            phone: orderData.contact_phone || '',
-          });
-          clientId = newClient.id;
-        } catch (clientError) {
-          console.error("Error creating client:", clientError);
-          toast({
-            title: "Error",
-            description: "Failed to create client. Please check your authentication and try again.",
-            variant: "destructive"
-          });
-          return;
-        }
-      }
+      toast({
+        title: "Invoice updated",
+        description: `Existing invoice ${existingInvoice.invoice_number} status updated to ${invoiceStatus}.`,
+      });
+      return;
+    }
 
-      // Parse inventory items from order if they exist and create line items from them
-      let lineItems = [];
-      
-      if (orderData.inventory_items) {
-        try {
-          const inventoryItems: SelectedInventoryItem[] = JSON.parse(orderData.inventory_items);
-          if (inventoryItems.length > 0) {
-            lineItems = inventoryItems.map(item => ({
-              item_description: item.name, // Use the inventory item name
-              quantity: item.quantity,
-              unit_price: item.unitPrice,
-              unit: item.unit,
-              vat_rate: 0,
-              discount_rate: 0
-            }));
-          }
-        } catch (error) {
-          console.error("Error parsing inventory items:", error);
-        }
-      }
+    // First, create or find the client
+    const clients = await InvoiceService.getClients();
+    let clientId = clients.find(c => c.name === orderData.company_name)?.id;
+    
+    if (!clientId) {
+      const newClient = await InvoiceService.createClient({
+        name: orderData.company_name,
+        email: orderData.contact_email || `${orderData.company_name.toLowerCase().replace(/\s+/g, '')}@company.com`,
+        address: orderData.company_address || '',
+        phone: orderData.contact_phone || '',
+      });
+      clientId = newClient.id;
+    }
 
-      // If no inventory items exist, create a generic service line item
-      if (lineItems.length === 0) {
-        lineItems = [
-          {
-            item_description: 'Service provided',
-            quantity: 1,
-            unit_price: orderData.price || 0,
-            unit: 'pcs',
+    // Parse inventory items from order if they exist and create line items from them
+    let lineItems = [];
+    
+    if (orderData.inventory_items) {
+      try {
+        const inventoryItems: SelectedInventoryItem[] = JSON.parse(orderData.inventory_items);
+        if (inventoryItems.length > 0) {
+          lineItems = inventoryItems.map(item => ({
+            item_description: item.name,
+            quantity: item.quantity,
+            unit_price: item.unitPrice,
+            unit: item.unit,
             vat_rate: 0,
             discount_rate: 0
-          }
-        ];
+          }));
+        }
+      } catch (error) {
+        console.error("Error parsing inventory items:", error);
       }
-
-      // Create a new invoice from the order
-      const invoiceData = {
-        client_id: clientId,
-        issue_date: new Date().toISOString().split('T')[0],
-        due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days from now
-        currency: orderData.currency || 'EUR',
-        payment_terms: 'Net 30',
-        notes: `Invoice created from order. Order ID: ${orderId}`,
-        internal_notes: `Automatically generated from order ${orderId}`,
-        line_items: lineItems
-      };
-
-      const newInvoice = await InvoiceService.createInvoice(invoiceData);
-      
-      // Update the invoice status to match the order status
-      const invoiceStatus = status === "Invoice Sent" ? "sent" : "paid";
-      await InvoiceService.updateInvoice(newInvoice.id, { status: invoiceStatus });
-      
-      // Trigger workflow automation
-      await WorkflowService.handleInvoiceCreated(orderId);
-      
-      toast({
-        title: "Invoice created",
-        description: `Invoice ${newInvoice.invoice_number} has been created and status set to ${invoiceStatus}.`,
-      });
-
-    } catch (error) {
-      console.error("Error creating invoice from order:", error);
-      toast({
-        title: "Error",
-        description: "Failed to create invoice from order. Please check your authentication and try again.",
-        variant: "destructive"
-      });
     }
+
+    // If no inventory items exist, create a generic service line item
+    if (lineItems.length === 0) {
+      lineItems = [
+        {
+          item_description: 'Service provided',
+          quantity: 1,
+          unit_price: orderData.price || 0,
+          unit: 'pcs',
+          vat_rate: 0,
+          discount_rate: 0
+        }
+      ];
+    }
+
+    // Create a new invoice from the order
+    const invoiceData = {
+      client_id: clientId,
+      issue_date: new Date().toISOString().split('T')[0],
+      due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      currency: orderData.currency || 'EUR',
+      payment_terms: 'Net 30',
+      notes: `Invoice created from order. Order ID: ${orderId}`,
+      internal_notes: `Automatically generated from order ${orderId}`,
+      line_items: lineItems
+    };
+
+    const newInvoice = await InvoiceService.createInvoice(invoiceData);
+    
+    // Update the invoice status to match the order status
+    const invoiceStatus = status === "Invoice Sent" ? "sent" : "paid";
+    await InvoiceService.updateInvoice(newInvoice.id, { status: invoiceStatus });
+    
+    // Trigger workflow automation
+    await WorkflowService.handleInvoiceCreated(orderId);
+    
+    toast({
+      title: "Invoice created",
+      description: `Invoice ${newInvoice.invoice_number} has been created and status set to ${invoiceStatus}.`,
+    });
   };
 
   const handleCreateInvoice = async () => {
