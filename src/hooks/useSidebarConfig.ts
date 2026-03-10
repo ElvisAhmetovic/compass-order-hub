@@ -1,3 +1,4 @@
+// Global sidebar configuration hook - reads from Supabase sidebar_config table
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
