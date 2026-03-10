@@ -41,7 +41,7 @@ const Invoices = () => {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterText, setFilterText] = useState("");
-  
+  const [sortOption, setSortOption] = useState<string>("newest");
   // Calculate overdue invoices
   const overdueInvoices = invoices.filter(invoice => {
     const dueDate = new Date(invoice.due_date);
