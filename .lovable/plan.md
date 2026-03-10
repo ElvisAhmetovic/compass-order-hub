@@ -1,18 +1,17 @@
 
 
-## Add "Created Only" Filter to Advanced Search
+## Reverse the VAT Calculator: Brutto → Netto
 
-The boss wants a second quick-filter alongside "Unpaid Orders Only" that shows orders with only the "Created" status -- orders that haven't progressed yet and also count as unpaid.
+Change the calculator so the user inputs a **Brutto (gross)** amount and it calculates Netto and MwSt from that.
 
-### Changes
+### Math
+- `netto = brutto / (1 + vatPercent/100)`
+- `mwst = brutto - netto`
 
-**`src/services/searchService.ts`**
-- Add `createdOnly?: boolean` to `SearchFilters` interface
-- Add filter logic in `applyFiltersToOrders`: if `createdOnly` is true, keep only orders where `status_created === true` and no further progress statuses are active (`status_in_progress`, `status_invoice_sent`, `status_invoice_paid`, `status_resolved`, `status_cancelled` are all falsy)
-
-**`src/components/dashboard/AdvancedSearch.tsx`**
-- Add a second checkbox below "Unpaid Orders Only" labeled "Created Only (Not Yet Started)" with description "(Orders still at Created status — no invoice sent or paid)"
-- Include `createdOnly` in the active filter count
-
-Both filters can work independently or together.
+### Changes in `src/components/invoices/VatCalculator.tsx`
+1. Rename state `netAmount` → `grossAmount` (the input field)
+2. Change input label from "Nettobetrag (€)" to "Bruttobetrag (€)"
+3. Reverse the calculation: from gross, derive net and VAT
+4. In results, show Netto first (as the computed value), then MwSt, then Brutto (bold, echoing input)
+5. Keep everything else (VAT rate buttons, copy buttons, custom rate) the same
 
