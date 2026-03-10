@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import Layout from "@/components/layout/Layout";
 import Sidebar from "@/components/dashboard/Sidebar";
 import { Button } from "@/components/ui/button";
-import { Plus, CalendarRange } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Plus, CalendarRange, Search } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import CreateMonthlyContractModal from "@/components/monthly/CreateMonthlyContractModal";
 import MonthlyInstallmentsTable from "@/components/monthly/MonthlyInstallmentsTable";
@@ -19,6 +20,7 @@ const MonthlyPackages: React.FC = () => {
   const [installments, setInstallments] = useState<MonthlyInstallment[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const isAdmin = user?.role === "admin";
   const isAdminOrAgent = user?.role === "admin" || user?.role === "agent";
@@ -42,10 +44,26 @@ const MonthlyPackages: React.FC = () => {
     fetchData();
   }, [fetchData]);
 
-  const totalContracts = contracts.filter((c) => c.status === "active").length;
-  const totalPaid = installments.filter((i) => i.payment_status === "paid").length;
-  const totalUnpaid = installments.filter((i) => i.payment_status === "unpaid").length;
-  const totalRevenue = installments
+  const filteredContracts = useMemo(() => {
+    if (!searchTerm.trim()) return contracts;
+    const term = searchTerm.toLowerCase();
+    return contracts.filter(c =>
+      [c.client_name, c.client_email, c.website].some(field =>
+        field?.toLowerCase().includes(term)
+      )
+    );
+  }, [contracts, searchTerm]);
+
+  const filteredInstallments = useMemo(() => {
+    if (!searchTerm.trim()) return installments;
+    const contractIds = new Set(filteredContracts.map(c => c.id));
+    return installments.filter(i => contractIds.has(i.contract_id));
+  }, [installments, filteredContracts, searchTerm]);
+
+  const totalContracts = filteredContracts.filter((c) => c.status === "active").length;
+  const totalPaid = filteredInstallments.filter((i) => i.payment_status === "paid").length;
+  const totalUnpaid = filteredInstallments.filter((i) => i.payment_status === "unpaid").length;
+  const totalRevenue = filteredInstallments
     .filter((i) => i.payment_status === "paid")
     .reduce((sum, i) => sum + Number(i.amount), 0);
 
@@ -96,12 +114,22 @@ const MonthlyPackages: React.FC = () => {
               </div>
             </div>
 
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by client name, email or website..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 max-w-md"
+              />
+            </div>
+
             {loading ? (
               <div className="text-center py-12 text-muted-foreground">Loading...</div>
             ) : (
               <MonthlyInstallmentsTable
-                contracts={contracts}
-                installments={installments}
+                contracts={filteredContracts}
+                installments={filteredInstallments}
                 onRefresh={fetchData}
                 isAdmin={isAdmin}
                 currentUserName={user?.full_name || user?.email || "Unknown"}
