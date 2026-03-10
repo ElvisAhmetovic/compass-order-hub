@@ -96,7 +96,7 @@ const VatCalculator = () => {
         </div>
 
         {/* Results */}
-        {net > 0 && (
+        {gross > 0 && (
           <div className="rounded-md border bg-muted/50 p-3 space-y-2">
             <ResultRow
               label="Netto"
@@ -115,7 +115,7 @@ const VatCalculator = () => {
             <div className="border-t pt-2">
               <ResultRow
                 label="Brutto"
-                value={grossAmount}
+                value={gross}
                 field="brutto"
                 copiedField={copiedField}
                 onCopy={copyToClipboard}
