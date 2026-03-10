@@ -29,7 +29,7 @@ import InvoiceTemplateSettings from "@/components/invoices/InvoiceTemplateSettin
 import InvoicePreview from "@/components/invoices/InvoicePreview";
 import { generateInvoicePDF } from "@/utils/invoicePdfGenerator";
 import SendInvoicePDFDialog from "@/components/invoices/SendInvoicePDFDialog";
-import VatCalculator from "@/components/invoices/VatCalculator";
+
 
 const InvoiceDetail = () => {
   const { id } = useParams();
