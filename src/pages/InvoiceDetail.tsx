@@ -174,6 +174,13 @@ const InvoiceDetail = () => {
         if (invoiceData) {
           setInvoice(invoiceData);
           
+          // Parse year and sequence from invoice_number (format: INV-YYYY-NNN)
+          const parts = invoiceData.invoice_number.split('-');
+          if (parts.length >= 3) {
+            setInvoiceYear(parts[1]);
+            setInvoiceSeqNumber(parseInt(parts[2], 10).toString());
+          }
+          
           // Load line items first
           const lineItemsData = await InvoiceService.getLineItems(id);
           console.log('Loaded line items:', lineItemsData);
