@@ -473,8 +473,15 @@ const InvoiceDetail = () => {
       console.log('Generating PDF with currency:', formData.currency);
       console.log('Template settings currency:', templateSettings.currency);
       
+      const pdfInvoice = invoice ? {
+        ...invoice,
+        invoice_number: invoiceYear && invoiceSeqNumber
+          ? `INV-${invoiceYear}-${invoiceSeqNumber.padStart(3, '0')}`
+          : invoice.invoice_number
+      } : invoice;
+      
       await generateInvoicePDF({
-        invoice,
+        invoice: pdfInvoice,
         lineItems,
         client: billToClient,
         templateSettings: {
