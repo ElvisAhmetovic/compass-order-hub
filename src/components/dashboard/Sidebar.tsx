@@ -27,12 +27,15 @@ import {
   Settings,
   Ticket,
   Clock as ClockIcon,
-  Type
+  Type,
+  ChevronDown,
+  MoreHorizontal
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
+import { useSidebarConfig } from '@/hooks/useSidebarConfig';
 
 const Sidebar = () => {
   const location = useLocation();
