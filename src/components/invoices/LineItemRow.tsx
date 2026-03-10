@@ -81,72 +81,70 @@ const LineItemRow: React.FC<LineItemRowProps> = ({
   };
 
   return (
-    <TableRow className="h-24 border-b">
-      <TableCell className="w-1/2 min-w-[400px] py-3 align-top">
-        <div className="min-h-[56px]">
-          <InventoryAutocomplete
-            value={item.item_description}
-            onChange={handleDescriptionChange}
-            onSelect={handleInventorySelect}
-            inventoryItems={inventoryData}
-            placeholder="Type to search products/services..."
-          />
-        </div>
+    <TableRow className="border-b">
+      <TableCell className="min-w-[200px] py-2 align-top">
+        <InventoryAutocomplete
+          value={item.item_description}
+          onChange={handleDescriptionChange}
+          onSelect={handleInventorySelect}
+          inventoryItems={inventoryData}
+          placeholder="Type to search products/services..."
+        />
       </TableCell>
-      <TableCell className="py-3 align-top">
+      <TableCell className="py-2 align-top">
         <Input
           type="number"
           step="0.001"
           value={item.quantity}
           onChange={(e) => onUpdate(index, 'quantity', parseFloat(e.target.value) || 0)}
-          className="w-20 h-14"
+          className="w-20 h-10"
         />
       </TableCell>
-      <TableCell className="py-3 align-top">
+      <TableCell className="py-2 align-top">
         <Input
           value={item.unit}
           onChange={(e) => onUpdate(index, 'unit', e.target.value)}
-          className="w-16 h-14"
+          className="w-16 h-10"
         />
       </TableCell>
-      <TableCell className="py-3 align-top">
+      <TableCell className="py-2 align-top">
         <Input
           type="number"
           step="0.01"
           value={item.unit_price}
           onChange={(e) => onUpdate(index, 'unit_price', parseFloat(e.target.value) || 0)}
-          className="w-28 h-14"
+          className="w-24 h-10"
         />
       </TableCell>
-      <TableCell className="py-3 align-top">
+      <TableCell className="py-2 align-top">
         <Input
           type="number"
           step="1"
           value={item.vat_rate * 100}
           onChange={(e) => onUpdate(index, 'vat_rate', (parseFloat(e.target.value) || 0) / 100)}
-          className="w-20 h-14"
+          className="w-20 h-10"
         />
       </TableCell>
-      <TableCell className="py-3 align-top">
+      <TableCell className="py-2 align-top">
         <Input
           type="number"
           step="1"
           value={item.discount_rate * 100}
           onChange={(e) => onUpdate(index, 'discount_rate', (parseFloat(e.target.value) || 0) / 100)}
-          className="w-20 h-14"
+          className="w-20 h-10"
         />
       </TableCell>
-      <TableCell className="py-3 align-top">
-        <div className="font-medium text-right">
+      <TableCell className="py-2 align-top">
+        <div className="font-medium text-right whitespace-nowrap">
           {formatCurrency(item.line_total, currency)}
         </div>
       </TableCell>
-      <TableCell className="py-3 align-top">
+      <TableCell className="py-2 align-top">
         <Button
           variant="ghost"
           size="icon"
           onClick={() => onRemove(index)}
-          className="h-14 w-14"
+          className="h-10 w-10"
         >
           <Trash2 size={16} />
         </Button>
