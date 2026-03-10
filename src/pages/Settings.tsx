@@ -90,11 +90,11 @@ export default function SettingsPage() {
                   </Card>
                 )}
 
-                <Card>
+                {user?.role === 'admin' && <Card>
                   <CardHeader>
                     <CardTitle>Sidebar Navigation</CardTitle>
                     <CardDescription>
-                      Choose which items appear in the main sidebar. Unchecked items will be moved to the "More..." section.
+                      Choose which items appear in the main sidebar. These settings apply to all users. Unchecked items will be moved to the "More..." section.
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
