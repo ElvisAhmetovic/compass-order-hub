@@ -1,0 +1,1 @@
+ALTER TABLE work_hours ADD COLUMN absent boolean NOT NULL DEFAULT false;

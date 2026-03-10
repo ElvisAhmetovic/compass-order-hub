@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFoo
 import { fetchWorkHours, upsertWorkHour, bulkUpsertWorkHours, WorkHourEntry } from '@/services/workHoursService';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { Wand2 } from 'lucide-react';
+import { Wand2, UserCheck, UserX } from 'lucide-react';
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -56,10 +56,10 @@ const WorkHoursTable = ({ userId, month, year }: WorkHoursTableProps) => {
   useEffect(() => { load(); }, [load]);
 
   const getEntry = (iso: string): WorkHourEntry => rows[iso] || {
-    user_id: userId, date: iso, start_time: null, break_time: null, working_hours: null, end_time: null, note: null,
+    user_id: userId, date: iso, start_time: null, break_time: null, working_hours: null, end_time: null, note: null, absent: false,
   };
 
-  const save = async (iso: string, field: keyof WorkHourEntry, value: string | number | null) => {
+  const save = async (iso: string, field: keyof WorkHourEntry, value: string | number | boolean | null) => {
     const entry = { ...getEntry(iso), [field]: value };
     entry.user_id = userId;
     try {
@@ -68,6 +68,12 @@ const WorkHoursTable = ({ userId, month, year }: WorkHoursTableProps) => {
     } catch (e: any) {
       toast({ title: 'Save error', description: e.message, variant: 'destructive' });
     }
+  };
+
+  const toggleAbsent = async (iso: string) => {
+    const entry = getEntry(iso);
+    const newAbsent = !entry.absent;
+    await save(iso, 'absent', newAbsent);
   };
 
   const handleAutoFill = async () => {
@@ -84,6 +90,7 @@ const WorkHoursTable = ({ userId, month, year }: WorkHoursTableProps) => {
           working_hours: 6.5,
           end_time: '17:00',
           note: null,
+          absent: false,
         }));
 
       if (entriesToFill.length === 0) {
@@ -121,6 +128,7 @@ const WorkHoursTable = ({ userId, month, year }: WorkHoursTableProps) => {
         <TableHeader>
           <TableRow>
             <TableHead className="w-[50px]">#</TableHead>
+            <TableHead className="w-[44px]"></TableHead>
             <TableHead className="w-[200px]">Date</TableHead>
             <TableHead className="w-[100px]">Start</TableHead>
             <TableHead className="w-[140px]">Break</TableHead>
@@ -133,11 +141,30 @@ const WorkHoursTable = ({ userId, month, year }: WorkHoursTableProps) => {
           {weekdays.map((day, idx) => {
             const iso = toIso(day);
             const entry = getEntry(iso);
-            const isVacation = entry.note?.toUpperCase().includes('GODISNJI') || entry.note?.toUpperCase().includes('GODIŠNJI');
+            const isAbsent = entry.absent;
+            const isVacation = !isAbsent && (entry.note?.toUpperCase().includes('GODISNJI') || entry.note?.toUpperCase().includes('GODIŠNJI'));
 
             return (
-              <TableRow key={iso} className={cn(isVacation && 'bg-green-50 dark:bg-green-950/30')}>
+              <TableRow key={iso} className={cn(
+                isAbsent && 'bg-red-50 dark:bg-red-950/30',
+                isVacation && !isAbsent && 'bg-green-50 dark:bg-green-950/30',
+              )}>
                 <TableCell className="text-muted-foreground text-sm">{idx + 1}</TableCell>
+                <TableCell className="px-1">
+                  <button
+                    type="button"
+                    onClick={() => toggleAbsent(iso)}
+                    className={cn(
+                      'rounded-md p-1 transition-colors',
+                      isAbsent
+                        ? 'text-destructive hover:bg-destructive/10'
+                        : 'text-green-600 hover:bg-green-100 dark:text-green-400 dark:hover:bg-green-900/30'
+                    )}
+                    title={isAbsent ? 'Mark as present' : 'Mark as absent'}
+                  >
+                    {isAbsent ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}
+                  </button>
+                </TableCell>
                 <TableCell className="text-sm font-medium">{formatDate(day)}</TableCell>
                 <TableCell>
                   <Input
@@ -187,7 +214,7 @@ const WorkHoursTable = ({ userId, month, year }: WorkHoursTableProps) => {
         </TableBody>
         <TableFooter>
           <TableRow>
-            <TableCell colSpan={4} className="text-right font-semibold">Total Hours:</TableCell>
+            <TableCell colSpan={5} className="text-right font-semibold">Total Hours:</TableCell>
             <TableCell className="font-bold text-lg">{totalHours}</TableCell>
             <TableCell colSpan={2} />
           </TableRow>
