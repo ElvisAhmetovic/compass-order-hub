@@ -114,12 +114,22 @@ const MonthlyPackages: React.FC = () => {
               </div>
             </div>
 
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by client name, email or website..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 max-w-md"
+              />
+            </div>
+
             {loading ? (
               <div className="text-center py-12 text-muted-foreground">Loading...</div>
             ) : (
               <MonthlyInstallmentsTable
-                contracts={contracts}
-                installments={installments}
+                contracts={filteredContracts}
+                installments={filteredInstallments}
                 onRefresh={fetchData}
                 isAdmin={isAdmin}
                 currentUserName={user?.full_name || user?.email || "Unknown"}
