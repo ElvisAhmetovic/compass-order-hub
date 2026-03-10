@@ -8,16 +8,16 @@ import { toast } from "sonner";
 type VatMode = "7" | "19" | "custom";
 
 const VatCalculator = () => {
-  const [netAmount, setNetAmount] = useState<string>("");
+  const [grossAmount, setGrossAmount] = useState<string>("");
   const [vatMode, setVatMode] = useState<VatMode>("19");
   const [customVat, setCustomVat] = useState<string>("");
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
   const vatPercent =
     vatMode === "7" ? 7 : vatMode === "19" ? 19 : parseFloat(customVat) || 0;
-  const net = parseFloat(netAmount) || 0;
-  const vatAmount = net * (vatPercent / 100);
-  const grossAmount = net + vatAmount;
+  const gross = parseFloat(grossAmount) || 0;
+  const net = gross / (1 + vatPercent / 100);
+  const vatAmount = gross - net;
 
   const copyToClipboard = (value: number, field: string) => {
     navigator.clipboard.writeText(value.toFixed(2));
