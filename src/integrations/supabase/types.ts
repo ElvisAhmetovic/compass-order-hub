@@ -1857,6 +1857,27 @@ export type Database = {
         }
         Relationships: []
       }
+      sidebar_config: {
+        Row: {
+          hidden_items: string[]
+          id: string
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          hidden_items?: string[]
+          id?: string
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          hidden_items?: string[]
+          id?: string
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       support_inquiries: {
         Row: {
           created_at: string | null
