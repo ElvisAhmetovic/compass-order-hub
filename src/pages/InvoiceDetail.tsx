@@ -384,17 +384,31 @@ const InvoiceDetail = () => {
         });
         navigate('/invoices');
       } else if (id) {
-        const invoiceUpdateData = {
+        // Build custom invoice number if year/seq provided
+        const yearNum = invoiceYear ? parseInt(invoiceYear, 10) : undefined;
+        const seqNum = invoiceSeqNumber ? parseInt(invoiceSeqNumber, 10) : undefined;
+        let customInvoiceNumber: string | undefined;
+        if (yearNum && seqNum) {
+          customInvoiceNumber = `INV-${yearNum}-${String(seqNum).padStart(3, '0')}`;
+        }
+
+        const invoiceUpdateData: any = {
           client_id: formData.client_id,
           issue_date: formData.issue_date,
           due_date: formData.due_date,
           currency: formData.currency,
           payment_terms: formData.payment_terms,
           notes: formData.notes,
-          internal_notes: formData.internal_notes
+          internal_notes: formData.internal_notes,
+          ...(customInvoiceNumber ? { invoice_number: customInvoiceNumber } : {})
         };
 
         await InvoiceService.updateInvoice(id, invoiceUpdateData);
+        
+        // Update the sequence table if custom number was set
+        if (yearNum && seqNum) {
+          await InvoiceService.updateInvoiceSequence(yearNum, seqNum);
+        }
         
         const existingLineItems = await InvoiceService.getLineItems(id);
         const existingIds = existingLineItems.map(item => item.id);
