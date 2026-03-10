@@ -478,7 +478,14 @@ const InvoiceDetail = () => {
         invoice_number: invoiceYear && invoiceSeqNumber
           ? `INV-${invoiceYear}-${invoiceSeqNumber.padStart(3, '0')}`
           : invoice.invoice_number
-      } : invoice;
+      } : {
+        invoice_number: invoiceYear && invoiceSeqNumber
+          ? `INV-${invoiceYear}-${invoiceSeqNumber.padStart(3, '0')}`
+          : `INV-${new Date().getFullYear()}-###`,
+        issue_date: formData.issue_date || new Date().toISOString(),
+        due_date: formData.due_date || new Date(Date.now() + 4*24*60*60*1000).toISOString(),
+        status: 'draft'
+      } as any;
       
       await generateInvoicePDF({
         invoice: pdfInvoice,
@@ -856,7 +863,14 @@ const InvoiceDetail = () => {
                       invoice_number: invoiceYear && invoiceSeqNumber
                         ? `INV-${invoiceYear}-${invoiceSeqNumber.padStart(3, '0')}`
                         : invoice.invoice_number
-                    } : null}
+                    } : {
+                      invoice_number: invoiceYear && invoiceSeqNumber
+                        ? `INV-${invoiceYear}-${invoiceSeqNumber.padStart(3, '0')}`
+                        : `INV-${new Date().getFullYear()}-###`,
+                      issue_date: formData.issue_date || new Date().toISOString(),
+                      due_date: formData.due_date || new Date(Date.now() + 4*24*60*60*1000).toISOString(),
+                      status: 'draft'
+                    } as any}
                     lineItems={lineItems}
                     client={billToClient}
                     templateSettings={{
