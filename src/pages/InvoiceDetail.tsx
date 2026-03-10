@@ -724,6 +724,8 @@ const InvoiceDetail = () => {
                       </CardContent>
                     </Card>
 
+                    <VatCalculator />
+
                     <div className="space-y-3">
                       <Button onClick={handleSave} disabled={saving} className="w-full">
                         <Save size={16} className="mr-2" />
