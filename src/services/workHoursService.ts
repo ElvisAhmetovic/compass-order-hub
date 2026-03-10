@@ -9,6 +9,7 @@ export interface WorkHourEntry {
   working_hours: number | null;
   end_time: string | null;
   note: string | null;
+  absent: boolean;
 }
 
 export const fetchWorkHours = async (userId: string, year: number, month: number) => {
@@ -40,6 +41,7 @@ export const upsertWorkHour = async (entry: WorkHourEntry) => {
         working_hours: entry.working_hours,
         end_time: entry.end_time,
         note: entry.note,
+        absent: entry.absent,
       },
       { onConflict: 'user_id,date' }
     )
@@ -63,6 +65,7 @@ export const bulkUpsertWorkHours = async (entries: WorkHourEntry[]) => {
         working_hours: e.working_hours,
         end_time: e.end_time,
         note: e.note,
+        absent: e.absent ?? false,
       })),
       { onConflict: 'user_id,date' }
     )

@@ -2605,6 +2605,7 @@ export type Database = {
       }
       work_hours: {
         Row: {
+          absent: boolean
           break_time: string | null
           created_at: string
           date: string
@@ -2617,6 +2618,7 @@ export type Database = {
           working_hours: number | null
         }
         Insert: {
+          absent?: boolean
           break_time?: string | null
           created_at?: string
           date: string
@@ -2629,6 +2631,7 @@ export type Database = {
           working_hours?: number | null
         }
         Update: {
+          absent?: boolean
           break_time?: string | null
           created_at?: string
           date?: string
