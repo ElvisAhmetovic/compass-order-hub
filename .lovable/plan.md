@@ -1,29 +1,18 @@
 
 
-## Fix: Invoice Creation from Dashboard Not Working
+## Add "Created Only" Filter to Advanced Search
 
-### Root Cause
-In `src/components/dashboard/OrderActions.tsx`, there's a broken error propagation pattern:
+The boss wants a second quick-filter alongside "Unpaid Orders Only" that shows orders with only the "Created" status -- orders that haven't progressed yet and also count as unpaid.
 
-1. `createInvoiceFromOrder` (line 59) has its own try/catch that catches errors, shows an error toast, and **returns without re-throwing**
-2. `handleCreateInvoice` (line 185) awaits `createInvoiceFromOrder` but then **always** shows a success toast (line 206), even when the inner function silently failed
-3. This means errors during client creation or invoice insertion are swallowed — the user sees "Invoice Created" but nothing was actually saved
+### Changes
 
-### Fix
+**`src/services/searchService.ts`**
+- Add `createdOnly?: boolean` to `SearchFilters` interface
+- Add filter logic in `applyFiltersToOrders`: if `createdOnly` is true, keep only orders where `status_created === true` and no further progress statuses are active (`status_in_progress`, `status_invoice_sent`, `status_invoice_paid`, `status_resolved`, `status_cancelled` are all falsy)
 
-**`src/components/dashboard/OrderActions.tsx`**
+**`src/components/dashboard/AdvancedSearch.tsx`**
+- Add a second checkbox below "Unpaid Orders Only" labeled "Created Only (Not Yet Started)" with description "(Orders still at Created status — no invoice sent or paid)"
+- Include `createdOnly` in the active filter count
 
-1. Make `createInvoiceFromOrder` properly propagate errors:
-   - Remove the inner try/catch entirely — let errors bubble up to `handleCreateInvoice`
-   - On the early `return` paths (e.g., client creation failure on line 103-111), throw an error instead of returning silently
-   - On the "existing invoice found" path (line 77-87), return a truthy value or throw to distinguish from failure
-
-2. In `handleCreateInvoice`, the existing outer try/catch (line 215) already handles errors with an error toast — so removing the inner catch is safe
-
-3. Remove the duplicate success toast in `handleCreateInvoice` (lines 206-209) since `createInvoiceFromOrder` already shows its own success toast (line 170-173) — currently the user would see two success toasts on actual success
-
-### Summary of changes
-- Remove inner try/catch in `createInvoiceFromOrder`, let errors propagate
-- Remove redundant success toast in `handleCreateInvoice` (keep the one in `createInvoiceFromOrder`)
-- Ensure early-return error paths throw instead of silently returning
+Both filters can work independently or together.
 
