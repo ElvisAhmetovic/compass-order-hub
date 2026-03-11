@@ -140,6 +140,10 @@ serve(async (req) => {
       throw new Error('Missing required fields: clientEmail, clientName, companyName');
     }
 
+    const confirmUrl = offerId 
+      ? `https://empriatech.com/confirm-offer/${offerId}`
+      : 'https://empriatech.com';
+
     const html = buildOfferEmailHtml({
       clientName,
       clientEmail,
@@ -150,6 +154,7 @@ serve(async (req) => {
       price: price || 0,
       currency: currency || 'EUR',
       senderName: senderName || 'AB Media Team',
+      confirmUrl,
     });
 
     const res = await fetch('https://api.resend.com/emails', {
