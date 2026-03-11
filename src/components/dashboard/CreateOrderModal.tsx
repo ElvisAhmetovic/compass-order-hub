@@ -72,6 +72,7 @@ import { NOTIFICATION_EMAIL_LIST } from '@/constants/notificationEmails';
 const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSendingOffer, setIsSendingOffer] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [selectedInventoryItems, setSelectedInventoryItems] = useState<SelectedInventoryItem[]>([]);
