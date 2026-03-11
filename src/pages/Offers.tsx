@@ -29,7 +29,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Eye, Send, Trash2 } from "lucide-react";
+import { Eye, Send, Trash2, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 
 interface Offer {
@@ -42,7 +42,9 @@ interface Offer {
   description: string | null;
   price: number;
   currency: string;
+  sent_by: string | null;
   sent_by_name: string;
+  order_data: any;
   status: string;
   created_at: string;
 }
@@ -52,6 +54,7 @@ const Offers = () => {
   const [loading, setLoading] = useState(true);
   const [selectedOffer, setSelectedOffer] = useState<Offer | null>(null);
   const [deleteOffer, setDeleteOffer] = useState<Offer | null>(null);
+  const [resendingOffer, setResendingOffer] = useState<string | null>(null);
 
   useEffect(() => {
     fetchOffers();
@@ -87,6 +90,63 @@ const Offers = () => {
       fetchOffers();
     }
     setDeleteOffer(null);
+  };
+
+  const handleResend = async (offer: Offer) => {
+    setResendingOffer(offer.id);
+    try {
+      // 1. Create new offer with same data
+      const { data: newOffer, error: insertError } = await supabase
+        .from("offers")
+        .insert({
+          client_name: offer.client_name,
+          client_email: offer.client_email,
+          client_phone: offer.client_phone,
+          client_address: offer.client_address,
+          company_name: offer.company_name,
+          description: offer.description,
+          price: offer.price,
+          currency: offer.currency,
+          sent_by: offer.sent_by,
+          sent_by_name: offer.sent_by_name,
+          order_data: offer.order_data || {},
+          status: "sent",
+        })
+        .select()
+        .single();
+
+      if (insertError || !newOffer) throw insertError || new Error("Failed to create new offer");
+
+      // 2. Send email with new offer ID
+      const { error: emailError } = await supabase.functions.invoke("send-offer-email", {
+        body: {
+          clientEmail: offer.client_email,
+          clientName: offer.client_name,
+          clientPhone: offer.client_phone || "",
+          clientAddress: offer.client_address || "",
+          companyName: offer.company_name,
+          description: offer.description || "",
+          price: offer.price,
+          currency: offer.currency,
+          senderName: offer.sent_by_name,
+          offerId: newOffer.id,
+        },
+      });
+
+      if (emailError) throw emailError;
+
+      // 3. Delete old offer
+      await supabase.from("offers").delete().eq("id", offer.id);
+
+      toast({ title: "Offer resent successfully" });
+      setSelectedOffer(null);
+      fetchOffers();
+    } catch (err: any) {
+      console.error("Resend error:", err);
+      toast({ variant: "destructive", title: "Failed to resend offer", description: err.message });
+    } finally {
+      setResendingOffer(null);
+    }
   };
 
   const currencySymbol = (c: string) =>
@@ -210,7 +270,21 @@ const Offers = () => {
                       <p className="text-sm whitespace-pre-wrap bg-muted p-3 rounded-md">{selectedOffer.description}</p>
                     </div>
                   )}
-                  <Badge>{selectedOffer.status}</Badge>
+                  <div className="flex items-center justify-between">
+                    <Badge>{selectedOffer.status}</Badge>
+                    <Button
+                      size="sm"
+                      onClick={() => handleResend(selectedOffer)}
+                      disabled={resendingOffer === selectedOffer.id}
+                    >
+                      {resendingOffer === selectedOffer.id ? (
+                        <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                      ) : (
+                        <Send className="h-4 w-4 mr-1" />
+                      )}
+                      Send Again
+                    </Button>
+                  </div>
                 </div>
               )}
             </DialogContent>

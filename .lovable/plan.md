@@ -1,30 +1,18 @@
 
 
-## Resend Offer: Add "Send Again" Button to Offer View Dialog
+## Add "Created Only" Filter to Advanced Search
 
-### What
-Add a "Send Again" button in the View Offer dialog. When clicked, it:
-1. Creates a **new** offer record in the DB (with fresh `id` and `created_at`)
-2. Sends the offer email with the new offer's confirmation link
-3. Deletes the **old** offer record
-4. Refreshes the list and shows success toast
-
-This gives the client a fresh email with a new valid confirmation link, replacing the old (possibly spam-filtered) one.
+The boss wants a second quick-filter alongside "Unpaid Orders Only" that shows orders with only the "Created" status -- orders that haven't progressed yet and also count as unpaid.
 
 ### Changes
 
-**`src/pages/Offers.tsx`**
-- Add `resendingOffer` state (string | null) to track which offer is being resent
-- Add `handleResend(offer)` function that:
-  1. Inserts a new offer row with same data (client_name, client_email, client_phone, client_address, company_name, description, price, currency, sent_by, sent_by_name, order_data, status='sent')
-  2. Calls `send-offer-email` edge function with the **new** offer's `id`
-  3. Deletes the old offer by its `id`
-  4. Calls `fetchOffers()` to refresh
-- Add a "Send Again" button (with `Send` icon) in the View Offer dialog footer, next to the status badge
-- Show loading state while resending
-- Include `sent_by` and `order_data` in the Offer interface
+**`src/services/searchService.ts`**
+- Add `createdOnly?: boolean` to `SearchFilters` interface
+- Add filter logic in `applyFiltersToOrders`: if `createdOnly` is true, keep only orders where `status_created === true` and no further progress statuses are active (`status_in_progress`, `status_invoice_sent`, `status_invoice_paid`, `status_resolved`, `status_cancelled` are all falsy)
 
-### Technical Detail
-- The offer interface needs `sent_by` (uuid) and `order_data` (any/object) fields added
-- The resend creates a brand new DB row so the confirmation link (`/confirm-offer/:newOfferId`) is fresh and the old expired one no longer works
+**`src/components/dashboard/AdvancedSearch.tsx`**
+- Add a second checkbox below "Unpaid Orders Only" labeled "Created Only (Not Yet Started)" with description "(Orders still at Created status — no invoice sent or paid)"
+- Include `createdOnly` in the active filter count
+
+Both filters can work independently or together.
 
