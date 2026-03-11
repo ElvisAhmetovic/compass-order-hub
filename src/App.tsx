@@ -313,6 +313,11 @@ function App() {
                       <TextLibrary />
                     </RequireAuth>
                   } />
+                  <Route path="/offers" element={
+                    <RequireAuth>
+                      <Offers />
+                    </RequireAuth>
+                  } />
                   <Route path="/team-collaboration" element={
                     <RequireAuth>
                       <TeamCollaboration />
