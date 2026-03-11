@@ -847,9 +847,80 @@ Additional internal comments...`}
 
             <div className="flex justify-end gap-2 pt-4">
               <DialogClose asChild>
-                <Button type="button" variant="outline" disabled={isSubmitting}>Cancel</Button>
+                <Button type="button" variant="outline" disabled={isSubmitting || isSendingOffer}>Cancel</Button>
               </DialogClose>
-              <Button type="submit" disabled={isSubmitting}>
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={isSubmitting || isSendingOffer}
+                onClick={async () => {
+                  const valid = await form.trigger();
+                  if (!valid) {
+                    toast({ variant: "destructive", title: "Please fill all required fields" });
+                    return;
+                  }
+                  if (!user) {
+                    toast({ variant: "destructive", title: "You must be logged in" });
+                    return;
+                  }
+                  const values = form.getValues();
+                  setIsSendingOffer(true);
+                  try {
+                    // Send the offer email (fire-and-forget pattern not needed here — we want confirmation)
+                    const { error: emailErr } = await supabase.functions.invoke('send-offer-email', {
+                      body: {
+                        clientEmail: values.contactEmail.trim(),
+                        clientName: values.companyName.trim(),
+                        clientPhone: values.contactPhone?.trim() || '',
+                        clientAddress: values.companyAddress?.trim() || '',
+                        companyName: values.companyName.trim(),
+                        description: values.description?.trim() || '',
+                        price: values.price,
+                        currency: values.currency,
+                        senderName: user.full_name || 'AB Media Team',
+                      },
+                    });
+                    if (emailErr) throw emailErr;
+
+                    // Log the offer in the database
+                    const { error: dbErr } = await supabase.from('offers').insert({
+                      client_name: values.companyName.trim(),
+                      client_email: values.contactEmail.trim(),
+                      client_phone: values.contactPhone?.trim() || null,
+                      client_address: values.companyAddress?.trim() || null,
+                      company_name: values.companyName.trim(),
+                      description: values.description?.trim() || null,
+                      price: values.price,
+                      currency: values.currency,
+                      sent_by: user.id,
+                      sent_by_name: user.full_name || 'Unknown',
+                      order_data: {
+                        companyLink: values.companyLink,
+                        priority: values.priority,
+                        internalNotes: values.internalNotes,
+                      },
+                    } as any);
+                    if (dbErr) {
+                      console.error('Error saving offer:', dbErr);
+                    }
+
+                    toast({ title: "✅ Offer Sent", description: `Offer sent to ${values.contactEmail}` });
+                    form.reset();
+                    setSelectedInventoryItems([]);
+                    setNotificationEmails(['']);
+                    onClose();
+                  } catch (err: any) {
+                    console.error('Error sending offer:', err);
+                    toast({ variant: "destructive", title: "Failed to send offer", description: err.message });
+                  } finally {
+                    setIsSendingOffer(false);
+                  }
+                }}
+              >
+                <Send className="h-4 w-4 mr-2" />
+                {isSendingOffer ? "Sending..." : "Send Offer"}
+              </Button>
+              <Button type="submit" disabled={isSubmitting || isSendingOffer}>
                 {isSubmitting ? "Creating..." : "Create Order"}
               </Button>
             </div>
