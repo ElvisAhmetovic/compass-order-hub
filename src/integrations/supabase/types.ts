@@ -1237,6 +1237,7 @@ export type Database = {
           client_name: string
           client_phone: string | null
           company_name: string
+          confirmed_at: string | null
           created_at: string
           currency: string
           description: string | null
@@ -1253,6 +1254,7 @@ export type Database = {
           client_name: string
           client_phone?: string | null
           company_name: string
+          confirmed_at?: string | null
           created_at?: string
           currency?: string
           description?: string | null
@@ -1269,6 +1271,7 @@ export type Database = {
           client_name?: string
           client_phone?: string | null
           company_name?: string
+          confirmed_at?: string | null
           created_at?: string
           currency?: string
           description?: string | null
