@@ -42,7 +42,9 @@ interface Offer {
   description: string | null;
   price: number;
   currency: string;
+  sent_by: string | null;
   sent_by_name: string;
+  order_data: any;
   status: string;
   created_at: string;
 }
