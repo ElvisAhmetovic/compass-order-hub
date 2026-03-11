@@ -1230,6 +1230,57 @@ export type Database = {
         }
         Relationships: []
       }
+      offers: {
+        Row: {
+          client_address: string | null
+          client_email: string
+          client_name: string
+          client_phone: string | null
+          company_name: string
+          created_at: string
+          currency: string
+          description: string | null
+          id: string
+          order_data: Json
+          price: number
+          sent_by: string | null
+          sent_by_name: string
+          status: string
+        }
+        Insert: {
+          client_address?: string | null
+          client_email: string
+          client_name: string
+          client_phone?: string | null
+          company_name: string
+          created_at?: string
+          currency?: string
+          description?: string | null
+          id?: string
+          order_data?: Json
+          price?: number
+          sent_by?: string | null
+          sent_by_name: string
+          status?: string
+        }
+        Update: {
+          client_address?: string | null
+          client_email?: string
+          client_name?: string
+          client_phone?: string | null
+          company_name?: string
+          created_at?: string
+          currency?: string
+          description?: string | null
+          id?: string
+          order_data?: Json
+          price?: number
+          sent_by?: string | null
+          sent_by_name?: string
+          status?: string
+        }
+        Relationships: []
+      }
       order_audit_logs: {
         Row: {
           action: string

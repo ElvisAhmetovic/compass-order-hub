@@ -98,3 +98,6 @@ verify_jwt = false
 
 [functions.check-daily-attendance]
 verify_jwt = false
+
+[functions.send-offer-email]
+verify_jwt = false
