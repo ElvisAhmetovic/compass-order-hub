@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Info } from "lucide-react";
+import { Info, Send } from "lucide-react";
 import { 
   Dialog,
   DialogContent,
