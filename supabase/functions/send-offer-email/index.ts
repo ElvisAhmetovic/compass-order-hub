@@ -21,6 +21,7 @@ const buildOfferEmailHtml = (data: {
   price: number;
   currency: string;
   senderName: string;
+  confirmUrl: string;
 }) => {
   const formattedPrice = formatPrice(data.price, data.currency);
   const initial = (data.clientName || 'C').charAt(0).toUpperCase();
