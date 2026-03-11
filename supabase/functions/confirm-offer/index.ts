@@ -84,6 +84,51 @@ serve(async (req) => {
       throw new Error('Failed to create order');
     }
 
+    // Fire-and-forget: send team notification emails
+    const teamEmails = [
+      'angelina@abmedia-team.com',
+      'service@team-abmedia.com',
+      'thomas.thomasklein@gmail.com',
+      'kleinabmedia@gmail.com',
+      'jungabmedia@gmail.com',
+      'wolfabmedia@gmail.com',
+      'marcusabmedia@gmail.com',
+      'paulkatz.abmedia@gmail.com',
+      'ajosesales36@gmail.com',
+      'georgabmediateam@gmail.com',
+      'jannes@scoolfinanceedu.com',
+      'johan@team-abmedia.com'
+    ];
+
+    const notificationOrderData = {
+      company_name: offer.company_name,
+      contact_email: offer.client_email,
+      contact_phone: offer.client_phone || null,
+      company_address: offer.client_address || null,
+      company_link: orderData.companyLink || null,
+      description: offer.description || '',
+      internal_notes: orderData.internalNotes || null,
+      price: offer.price,
+      currency: offer.currency,
+      status: 'Created',
+      priority: orderData.priority || 'medium',
+      created_at: new Date().toISOString(),
+    };
+
+    fetch(`${supabaseUrl}/functions/v1/send-order-confirmation`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}`,
+      },
+      body: JSON.stringify({
+        orderData: notificationOrderData,
+        emails: teamEmails,
+        assignedToName: offer.sent_by_name,
+        selectedInventoryItems: orderData.inventoryItems || [],
+      }),
+    }).catch(err => console.error('Failed to send team notification:', err));
+
     // Update offer status
     const { error: updateError } = await supabase
       .from('offers')
