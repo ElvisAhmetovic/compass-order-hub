@@ -1,18 +1,21 @@
 
 
-## Add "Created Only" Filter to Advanced Search
+## Fix: Invoices Not Visible Due to RLS Policy Configuration
 
-The boss wants a second quick-filter alongside "Unpaid Orders Only" that shows orders with only the "Created" status -- orders that haven't progressed yet and also count as unpaid.
+### Root Cause
+The `invoices` table has two RLS policies, both marked as **RESTRICTIVE** (`AS RESTRICTIVE`). PostgreSQL requires at least one **PERMISSIVE** policy to grant base access — restrictive policies only narrow it down. With zero permissive policies, the SELECT returns no rows, which is why the Invoices page shows nothing even though the data exists.
 
-### Changes
+The same issue applies to `invoice_line_items` — both policies there are also restrictive.
 
-**`src/services/searchService.ts`**
-- Add `createdOnly?: boolean` to `SearchFilters` interface
-- Add filter logic in `applyFiltersToOrders`: if `createdOnly` is true, keep only orders where `status_created === true` and no further progress statuses are active (`status_in_progress`, `status_invoice_sent`, `status_invoice_paid`, `status_resolved`, `status_cancelled` are all falsy)
+### Fix
+Drop the existing restrictive policies and recreate them as **PERMISSIVE** (the default). Same conditions, just permissive instead of restrictive.
 
-**`src/components/dashboard/AdvancedSearch.tsx`**
-- Add a second checkbox below "Unpaid Orders Only" labeled "Created Only (Not Yet Started)" with description "(Orders still at Created status — no invoice sent or paid)"
-- Include `createdOnly` in the active filter count
+**Migration SQL:**
+1. Drop `"Team can manage invoices"` and `"Team can view invoices"` on `invoices`
+2. Recreate as permissive with same USING/WITH CHECK conditions
+3. Drop `"Team can manage invoice line items"` and `"Team can view invoice line items"` on `invoice_line_items`
+4. Recreate as permissive with same conditions
 
-Both filters can work independently or together.
+### Files
+- **Migration only** — no code changes needed
 
