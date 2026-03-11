@@ -1,23 +1,18 @@
 
 
-## Fix Offers Page: Add Sidebar + Delete Capability
+## Add "Created Only" Filter to Advanced Search
 
-### Problem
-The Offers page wraps content in `<Layout>` but doesn't include `<Sidebar />` like Dashboard and other pages do. Also, the `offers` table has no DELETE RLS policy.
+The boss wants a second quick-filter alongside "Unpaid Orders Only" that shows orders with only the "Created" status -- orders that haven't progressed yet and also count as unpaid.
 
 ### Changes
 
-**1. `src/pages/Offers.tsx`**
-- Wrap with `<Sidebar />` + `<Layout>` pattern matching Dashboard (i.e. `<div className="flex min-h-screen"><Sidebar /><div className="flex-1 flex"><Layout>...</Layout></div></div>`)
-- Add a delete button (Trash icon) in each row's Actions column
-- Add a confirmation dialog before deletion
-- Call `supabase.from('offers').delete().eq('id', offerId)` and refresh list
+**`src/services/searchService.ts`**
+- Add `createdOnly?: boolean` to `SearchFilters` interface
+- Add filter logic in `applyFiltersToOrders`: if `createdOnly` is true, keep only orders where `status_created === true` and no further progress statuses are active (`status_in_progress`, `status_invoice_sent`, `status_invoice_paid`, `status_resolved`, `status_cancelled` are all falsy)
 
-**2. Database migration**
-- Add DELETE RLS policy on `offers` table for non-client authenticated users:
-```sql
-CREATE POLICY "Non-client authenticated users can delete offers"
-ON public.offers FOR DELETE TO authenticated
-USING (NOT is_client());
-```
+**`src/components/dashboard/AdvancedSearch.tsx`**
+- Add a second checkbox below "Unpaid Orders Only" labeled "Created Only (Not Yet Started)" with description "(Orders still at Created status — no invoice sent or paid)"
+- Include `createdOnly` in the active filter count
+
+Both filters can work independently or together.
 
