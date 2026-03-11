@@ -201,6 +201,7 @@ const OrderRow = ({
         description: "Failed to create invoice from order. Please check your authentication and try again.",
         variant: "destructive"
       });
+      throw error;
     }
   };
 
