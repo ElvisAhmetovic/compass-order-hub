@@ -270,7 +270,21 @@ const Offers = () => {
                       <p className="text-sm whitespace-pre-wrap bg-muted p-3 rounded-md">{selectedOffer.description}</p>
                     </div>
                   )}
-                  <Badge>{selectedOffer.status}</Badge>
+                  <div className="flex items-center justify-between">
+                    <Badge>{selectedOffer.status}</Badge>
+                    <Button
+                      size="sm"
+                      onClick={() => handleResend(selectedOffer)}
+                      disabled={resendingOffer === selectedOffer.id}
+                    >
+                      {resendingOffer === selectedOffer.id ? (
+                        <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                      ) : (
+                        <Send className="h-4 w-4 mr-1" />
+                      )}
+                      Send Again
+                    </Button>
+                  </div>
                 </div>
               )}
             </DialogContent>
