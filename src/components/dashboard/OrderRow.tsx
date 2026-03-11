@@ -225,12 +225,6 @@ const OrderRow = ({
       
       console.log('Invoice created successfully');
       
-      // Show success message
-      toast({
-        title: "Invoice Created",
-        description: `Invoice has been created for order from ${order.company_name}.`
-      });
-      
       // Trigger refresh
       onRefresh();
       window.dispatchEvent(new CustomEvent('orderStatusChanged'));

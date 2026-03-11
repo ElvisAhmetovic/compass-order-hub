@@ -110,8 +110,9 @@ const OrderActions = ({ order, onOrderView, onRefresh }: OrderActionsProps) => {
             discount_rate: 0
           }));
         }
-      } catch (error) {
+    } catch (error) {
         console.error("Error parsing inventory items:", error);
+        throw error;
       }
     }
 
