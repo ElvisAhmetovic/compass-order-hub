@@ -201,6 +201,7 @@ const OrderRow = ({
         description: "Failed to create invoice from order. Please check your authentication and try again.",
         variant: "destructive"
       });
+      throw error;
     }
   };
 
@@ -223,12 +224,6 @@ const OrderRow = ({
       await createInvoiceFromOrder(order.id, order, "Invoice Sent");
       
       console.log('Invoice created successfully');
-      
-      // Show success message
-      toast({
-        title: "Invoice Created",
-        description: `Invoice has been created for order from ${order.company_name}.`
-      });
       
       // Trigger refresh
       onRefresh();
