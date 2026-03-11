@@ -92,6 +92,63 @@ const Offers = () => {
     setDeleteOffer(null);
   };
 
+  const handleResend = async (offer: Offer) => {
+    setResendingOffer(offer.id);
+    try {
+      // 1. Create new offer with same data
+      const { data: newOffer, error: insertError } = await supabase
+        .from("offers")
+        .insert({
+          client_name: offer.client_name,
+          client_email: offer.client_email,
+          client_phone: offer.client_phone,
+          client_address: offer.client_address,
+          company_name: offer.company_name,
+          description: offer.description,
+          price: offer.price,
+          currency: offer.currency,
+          sent_by: offer.sent_by,
+          sent_by_name: offer.sent_by_name,
+          order_data: offer.order_data || {},
+          status: "sent",
+        })
+        .select()
+        .single();
+
+      if (insertError || !newOffer) throw insertError || new Error("Failed to create new offer");
+
+      // 2. Send email with new offer ID
+      const { error: emailError } = await supabase.functions.invoke("send-offer-email", {
+        body: {
+          clientEmail: offer.client_email,
+          clientName: offer.client_name,
+          clientPhone: offer.client_phone || "",
+          clientAddress: offer.client_address || "",
+          companyName: offer.company_name,
+          description: offer.description || "",
+          price: offer.price,
+          currency: offer.currency,
+          senderName: offer.sent_by_name,
+          offerId: newOffer.id,
+        },
+      });
+
+      if (emailError) throw emailError;
+
+      // 3. Delete old offer
+      await supabase.from("offers").delete().eq("id", offer.id);
+
+      toast({ title: "Offer resent successfully" });
+      setSelectedOffer(null);
+      fetchOffers();
+    } catch (err: any) {
+      console.error("Resend error:", err);
+      toast({ variant: "destructive", title: "Failed to resend offer", description: err.message });
+    } finally {
+      setResendingOffer(null);
+    }
+  };
+
   const currencySymbol = (c: string) =>
     ({ EUR: "€", USD: "$", GBP: "£" }[c] || c);
 
