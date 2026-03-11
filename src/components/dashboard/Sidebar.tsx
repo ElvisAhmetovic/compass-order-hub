@@ -8,6 +8,7 @@ import {
   Trash2, 
   Star, 
   HelpCircle,
+  Send,
   FileText,
   Receipt,
   UserCheck,
