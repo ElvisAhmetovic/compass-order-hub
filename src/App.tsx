@@ -113,6 +113,7 @@ function App() {
                   <Route path="/" element={<Index />} />
                   <Route path="/ticket-loading" element={<TicketLoading />} />
                   <Route path="/ticket-submitted" element={<TicketSubmitted />} />
+                  <Route path="/confirm-offer/:offerId" element={<ConfirmOffer />} />
                   <Route path="/login" element={<Login />} />
                   <Route path="/register" element={<Register />} />
                   <Route path="/dashboard" element={

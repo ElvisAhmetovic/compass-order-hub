@@ -866,24 +866,8 @@ Additional internal comments...`}
                   const values = form.getValues();
                   setIsSendingOffer(true);
                   try {
-                    // Send the offer email (fire-and-forget pattern not needed here — we want confirmation)
-                    const { error: emailErr } = await supabase.functions.invoke('send-offer-email', {
-                      body: {
-                        clientEmail: values.contactEmail.trim(),
-                        clientName: values.companyName.trim(),
-                        clientPhone: values.contactPhone?.trim() || '',
-                        clientAddress: values.companyAddress?.trim() || '',
-                        companyName: values.companyName.trim(),
-                        description: values.description?.trim() || '',
-                        price: values.price,
-                        currency: values.currency,
-                        senderName: user.full_name || 'AB Media Team',
-                      },
-                    });
-                    if (emailErr) throw emailErr;
-
-                    // Log the offer in the database
-                    const { error: dbErr } = await supabase.from('offers').insert({
+                    // First insert the offer into the database to get the offerId
+                    const { data: offerData, error: dbErr } = await supabase.from('offers').insert({
                       client_name: values.companyName.trim(),
                       client_email: values.contactEmail.trim(),
                       client_phone: values.contactPhone?.trim() || null,
@@ -899,10 +883,28 @@ Additional internal comments...`}
                         priority: values.priority,
                         internalNotes: values.internalNotes,
                       },
-                    } as any);
+                    } as any).select().single();
                     if (dbErr) {
                       console.error('Error saving offer:', dbErr);
+                      throw dbErr;
                     }
+
+                    // Now send the offer email with the offerId for the confirmation link
+                    const { error: emailErr } = await supabase.functions.invoke('send-offer-email', {
+                      body: {
+                        clientEmail: values.contactEmail.trim(),
+                        clientName: values.companyName.trim(),
+                        clientPhone: values.contactPhone?.trim() || '',
+                        clientAddress: values.companyAddress?.trim() || '',
+                        companyName: values.companyName.trim(),
+                        description: values.description?.trim() || '',
+                        price: values.price,
+                        currency: values.currency,
+                        senderName: user.full_name || 'AB Media Team',
+                        offerId: offerData.id,
+                      },
+                    });
+                    if (emailErr) throw emailErr;
 
                     toast({ title: "✅ Offer Sent", description: `Offer sent to ${values.contactEmail}` });
                     form.reset();
