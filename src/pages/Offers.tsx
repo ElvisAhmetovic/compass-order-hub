@@ -54,6 +54,7 @@ const Offers = () => {
   const [loading, setLoading] = useState(true);
   const [selectedOffer, setSelectedOffer] = useState<Offer | null>(null);
   const [deleteOffer, setDeleteOffer] = useState<Offer | null>(null);
+  const [resendingOffer, setResendingOffer] = useState<string | null>(null);
 
   useEffect(() => {
     fetchOffers();
