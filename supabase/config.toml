@@ -101,3 +101,6 @@ verify_jwt = false
 
 [functions.send-offer-email]
 verify_jwt = false
+
+[functions.confirm-offer]
+verify_jwt = false

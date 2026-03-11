@@ -49,6 +49,7 @@ import MonthlyPackages from "./pages/MonthlyPackages";
 import Offers from "./pages/Offers";
 import TicketSubmitted from "./pages/TicketSubmitted";
 import TicketLoading from "./pages/TicketLoading";
+import ConfirmOffer from "./pages/ConfirmOffer";
 import { RequireAuth } from "./components/auth/RequireAuth";
 import AdminGuard from "./components/auth/AdminGuard";
 import ClientGuard from "./components/client-portal/ClientGuard";
@@ -112,6 +113,7 @@ function App() {
                   <Route path="/" element={<Index />} />
                   <Route path="/ticket-loading" element={<TicketLoading />} />
                   <Route path="/ticket-submitted" element={<TicketSubmitted />} />
+                  <Route path="/confirm-offer/:offerId" element={<ConfirmOffer />} />
                   <Route path="/login" element={<Login />} />
                   <Route path="/register" element={<Register />} />
                   <Route path="/dashboard" element={

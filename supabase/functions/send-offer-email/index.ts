@@ -21,6 +21,7 @@ const buildOfferEmailHtml = (data: {
   price: number;
   currency: string;
   senderName: string;
+  confirmUrl: string;
 }) => {
   const formattedPrice = formatPrice(data.price, data.currency);
   const initial = (data.clientName || 'C').charAt(0).toUpperCase();
@@ -76,7 +77,7 @@ const buildOfferEmailHtml = (data: {
 
         <!-- Confirm button -->
         <tr><td style="text-align:center; padding:16px 32px 32px;">
-          <a href="https://compass-order-hub.lovable.app" style="display:inline-block; height:48px; padding:0 28px; border-radius:8px; background:#1a73e8; color:#ffffff; font-family:Roboto,Arial,sans-serif; font-size:16px; font-weight:700; line-height:48px; text-decoration:none; white-space:nowrap; box-shadow:0 1px 2px rgba(60,64,67,.15),0 2px 6px rgba(60,64,67,.10);">Confirm Your Order</a>
+          <a href="${(data as any).confirmUrl || 'https://empriatech.com'}" style="display:inline-block; height:48px; padding:0 28px; border-radius:8px; background:#1a73e8; color:#ffffff; font-family:Roboto,Arial,sans-serif; font-size:16px; font-weight:700; line-height:48px; text-decoration:none; white-space:nowrap; box-shadow:0 1px 2px rgba(60,64,67,.15),0 2px 6px rgba(60,64,67,.10);">Confirm Your Order</a>
         </td></tr>
 
         <!-- Greeting -->
@@ -133,11 +134,15 @@ serve(async (req) => {
     }
 
     const body = await req.json();
-    const { clientEmail, clientName, clientPhone, clientAddress, companyName, description, price, currency, senderName } = body;
+    const { clientEmail, clientName, clientPhone, clientAddress, companyName, description, price, currency, senderName, offerId } = body;
 
     if (!clientEmail || !clientName || !companyName) {
       throw new Error('Missing required fields: clientEmail, clientName, companyName');
     }
+
+    const confirmUrl = offerId 
+      ? `https://empriatech.com/confirm-offer/${offerId}`
+      : 'https://empriatech.com';
 
     const html = buildOfferEmailHtml({
       clientName,
@@ -149,6 +154,7 @@ serve(async (req) => {
       price: price || 0,
       currency: currency || 'EUR',
       senderName: senderName || 'AB Media Team',
+      confirmUrl,
     });
 
     const res = await fetch('https://api.resend.com/emails', {
