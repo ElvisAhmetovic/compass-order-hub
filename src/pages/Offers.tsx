@@ -29,7 +29,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Eye, Send, Trash2, Loader2 } from "lucide-react";
+import { Eye, Send, Trash2, Loader2, CheckCircle2 } from "lucide-react";
 import { format } from "date-fns";
 
 interface Offer {
