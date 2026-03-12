@@ -667,14 +667,15 @@ export class OrderService {
       // Don't block status update if email fails
     }
 
-    // Send notification to linked client if order has a client_id or contact_email
+    // Send notification to linked client only if explicitly opted in
     console.log('📧 Client notification check:', { 
       enabled, 
+      sendToClient,
       client_id: currentOrder.client_id, 
       contact_email: currentOrder.contact_email,
-      willSend: enabled && (currentOrder.client_id || currentOrder.contact_email)
+      willSend: sendToClient && enabled && (currentOrder.client_id || currentOrder.contact_email)
     });
-    if (enabled && (currentOrder.client_id || currentOrder.contact_email)) {
+    if (sendToClient && enabled && (currentOrder.client_id || currentOrder.contact_email)) {
       try {
         const { ClientNotificationService } = await import('./clientNotificationService');
         
