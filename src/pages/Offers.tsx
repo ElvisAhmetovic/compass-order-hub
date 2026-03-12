@@ -233,6 +233,11 @@ const Offers = () => {
                             <Button variant="ghost" size="sm" onClick={() => setSelectedOffer(offer)}>
                               <Eye className="h-4 w-4 mr-1" /> View
                             </Button>
+                            {offer.status !== "confirmed" && (
+                              <Button variant="ghost" size="sm" className="text-green-600 hover:text-green-700" onClick={() => setConfirmOffer(offer)}>
+                                <CheckCircle2 className="h-4 w-4 mr-1" /> Confirm
+                              </Button>
+                            )}
                             <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => setDeleteOffer(offer)}>
                               <Trash2 className="h-4 w-4" />
                             </Button>
