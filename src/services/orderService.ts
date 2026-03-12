@@ -703,8 +703,8 @@ export class OrderService {
       }
     }
 
-    // Send "Service Delivered" formal email when Resolved is enabled
-    if (enabled && status === 'Resolved' && currentOrder.contact_email) {
+    // Send "Service Delivered" formal email when Resolved is enabled (only if client notification opted in)
+    if (sendToClient && enabled && status === 'Resolved' && currentOrder.contact_email) {
       try {
         await supabase.functions.invoke('send-service-delivered-notification', {
           body: {

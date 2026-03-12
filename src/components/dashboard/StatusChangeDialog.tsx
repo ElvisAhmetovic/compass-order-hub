@@ -10,6 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { OrderStatus } from "@/types";
 
 interface StatusChangeDialogProps {
@@ -17,7 +18,7 @@ interface StatusChangeDialogProps {
   onOpenChange: (open: boolean) => void;
   status: OrderStatus | null;
   enabling: boolean;
-  onConfirm: (customMessage?: string) => void;
+  onConfirm: (customMessage?: string, sendToClient?: boolean) => void;
 }
 
 const StatusChangeDialog = ({
@@ -28,15 +29,23 @@ const StatusChangeDialog = ({
   onConfirm,
 }: StatusChangeDialogProps) => {
   const [message, setMessage] = useState("");
+  const [sendToClient, setSendToClient] = useState(false);
 
   const handleConfirm = (withMessage: boolean) => {
-    onConfirm(withMessage && message.trim() ? message.trim() : undefined);
+    onConfirm(
+      withMessage && message.trim() ? message.trim() : undefined,
+      sendToClient
+    );
     setMessage("");
+    setSendToClient(false);
     onOpenChange(false);
   };
 
   const handleOpenChange = (newOpen: boolean) => {
-    if (!newOpen) setMessage("");
+    if (!newOpen) {
+      setMessage("");
+      setSendToClient(false);
+    }
     onOpenChange(newOpen);
   };
 
@@ -51,28 +60,48 @@ const StatusChangeDialog = ({
           </DialogTitle>
           <DialogDescription>
             {enabling
-              ? `This will add "${status}" to the order. The client will be notified.`
+              ? `This will add "${status}" to the order.`
               : `This will remove "${status}" from the order.`}
           </DialogDescription>
         </DialogHeader>
 
         {enabling && (
-          <div className="space-y-2">
-            <Label htmlFor="custom-message">
-              Message for the client (optional)
-            </Label>
-            <Textarea
-              id="custom-message"
-              placeholder="e.g. Your complaint has been resolved and the review has been removed."
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              rows={3}
-            />
+          <div className="space-y-4">
+            <div className="flex items-center justify-between rounded-lg border p-3">
+              <div className="space-y-0.5">
+                <Label htmlFor="send-to-client" className="text-sm font-medium">
+                  Send notification to client
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  The client will receive an email about this status change
+                </p>
+              </div>
+              <Switch
+                id="send-to-client"
+                checked={sendToClient}
+                onCheckedChange={setSendToClient}
+              />
+            </div>
+
+            {sendToClient && (
+              <div className="space-y-2">
+                <Label htmlFor="custom-message">
+                  Message for the client (optional)
+                </Label>
+                <Textarea
+                  id="custom-message"
+                  placeholder="e.g. Your complaint has been resolved and the review has been removed."
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  rows={3}
+                />
+              </div>
+            )}
           </div>
         )}
 
         <DialogFooter className="flex gap-2 sm:gap-0">
-          {enabling && message.trim() ? (
+          {enabling && sendToClient && message.trim() ? (
             <>
               <Button variant="outline" onClick={() => handleConfirm(false)}>
                 Skip Message
