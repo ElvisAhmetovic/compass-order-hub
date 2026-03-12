@@ -59,6 +59,7 @@ const Offers = () => {
   const [resendingOffer, setResendingOffer] = useState<string | null>(null);
   const [confirmOffer, setConfirmOffer] = useState<Offer | null>(null);
   const [confirmingOffer, setConfirmingOffer] = useState<string | null>(null);
+  const [sendToClientOnConfirm, setSendToClientOnConfirm] = useState(false);
 
   useEffect(() => {
     fetchOffers();
