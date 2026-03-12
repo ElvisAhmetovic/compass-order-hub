@@ -421,11 +421,11 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
           await supabase.functions.invoke('send-order-created-notification', {
             body: {
               clientEmail: values.contactEmail,
-              clientName: values.contactName || values.companyName,
+              clientName: values.companyName,
               clientPhone: values.contactPhone || '',
               companyName: values.companyName,
               description: values.description || '',
-              price: parseFloat(values.price) || 0,
+              price: values.price || 0,
               currency: values.currency || 'EUR',
               orderId: orderResult.id,
             },
