@@ -151,6 +151,30 @@ const Offers = () => {
     }
   };
 
+  const handleConfirmForClient = async () => {
+    if (!confirmOffer) return;
+    setConfirmingOffer(confirmOffer.id);
+    try {
+      const { data, error } = await supabase.functions.invoke("confirm-offer", {
+        body: { offerId: confirmOffer.id },
+      });
+      if (error) throw error;
+      if (data?.alreadyConfirmed) {
+        toast({ title: "This offer was already confirmed" });
+      } else {
+        toast({ title: "Offer confirmed & order created" });
+      }
+      setSelectedOffer(null);
+      fetchOffers();
+    } catch (err: any) {
+      console.error("Confirm error:", err);
+      toast({ variant: "destructive", title: "Failed to confirm offer", description: err.message });
+    } finally {
+      setConfirmingOffer(null);
+      setConfirmOffer(null);
+    }
+  };
+
   const currencySymbol = (c: string) =>
     ({ EUR: "€", USD: "$", GBP: "£" }[c] || c);
 
