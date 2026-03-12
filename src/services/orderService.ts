@@ -569,7 +569,7 @@ export class OrderService {
   }
 
   // New method to toggle a specific status on an order
-  static async toggleOrderStatus(orderId: string, status: OrderStatus, enabled: boolean, customMessage?: string): Promise<void> {
+  static async toggleOrderStatus(orderId: string, status: OrderStatus, enabled: boolean, customMessage?: string, sendToClient?: boolean): Promise<void> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
 
@@ -667,14 +667,15 @@ export class OrderService {
       // Don't block status update if email fails
     }
 
-    // Send notification to linked client if order has a client_id or contact_email
+    // Send notification to linked client only if explicitly opted in
     console.log('📧 Client notification check:', { 
       enabled, 
+      sendToClient,
       client_id: currentOrder.client_id, 
       contact_email: currentOrder.contact_email,
-      willSend: enabled && (currentOrder.client_id || currentOrder.contact_email)
+      willSend: sendToClient && enabled && (currentOrder.client_id || currentOrder.contact_email)
     });
-    if (enabled && (currentOrder.client_id || currentOrder.contact_email)) {
+    if (sendToClient && enabled && (currentOrder.client_id || currentOrder.contact_email)) {
       try {
         const { ClientNotificationService } = await import('./clientNotificationService');
         
@@ -702,8 +703,8 @@ export class OrderService {
       }
     }
 
-    // Send "Service Delivered" formal email when Resolved is enabled
-    if (enabled && status === 'Resolved' && currentOrder.contact_email) {
+    // Send "Service Delivered" formal email when Resolved is enabled (only if client notification opted in)
+    if (sendToClient && enabled && status === 'Resolved' && currentOrder.contact_email) {
       try {
         await supabase.functions.invoke('send-service-delivered-notification', {
           body: {

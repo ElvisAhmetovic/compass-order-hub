@@ -3,6 +3,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Info, Send } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { 
   Dialog,
   DialogContent,
@@ -77,6 +78,7 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [selectedInventoryItems, setSelectedInventoryItems] = useState<SelectedInventoryItem[]>([]);
   const [notificationEmails, setNotificationEmails] = useState<string[]>([...NOTIFICATION_EMAIL_LIST]);
+  const [sendToClient, setSendToClient] = useState(false);
   
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -412,10 +414,30 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
           description: `Order was created successfully but confirmation emails could not be sent. Error: ${errorMessage}`,
         });
       }
+
+      // Send client notification if opted in
+      if (sendToClient && values.contactEmail) {
+        try {
+          const { ClientNotificationService } = await import('@/services/clientNotificationService');
+          await ClientNotificationService.notifyClientStatusChange({
+            orderId: orderResult.id,
+            oldStatus: null,
+            newStatus: 'Created',
+            changedBy: {
+              id: user.id,
+              name: user.full_name || user.email || 'Unknown',
+            },
+          });
+          console.log('Client notification sent for new order');
+        } catch (clientError) {
+          console.error('Error sending client notification:', clientError);
+        }
+      }
       
       form.reset();
       setSelectedInventoryItems([]);
       setNotificationEmails(['']);
+      setSendToClient(false);
       onClose();
       
       // Trigger a refresh of the orders list
@@ -925,6 +947,22 @@ Additional internal comments...`}
               <Button type="submit" disabled={isSubmitting || isSendingOffer}>
                 {isSubmitting ? "Creating..." : "Create Order"}
               </Button>
+            </div>
+
+            <div className="flex items-center justify-between rounded-lg border p-3">
+              <div className="space-y-0.5">
+                <label htmlFor="send-to-client-create" className="text-sm font-medium">
+                  Send notification to client
+                </label>
+                <p className="text-xs text-muted-foreground">
+                  The client will receive an email about this new order
+                </p>
+              </div>
+              <Switch
+                id="send-to-client-create"
+                checked={sendToClient}
+                onCheckedChange={setSendToClient}
+              />
             </div>
           </form>
         </Form>

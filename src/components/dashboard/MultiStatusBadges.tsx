@@ -71,11 +71,11 @@ const MultiStatusBadges = ({ order, onRefresh, compact = false }: MultiStatusBad
     setDialogOpen(true);
   };
 
-  const handleConfirm = async (customMessage?: string) => {
+  const handleConfirm = async (customMessage?: string, sendToClient?: boolean) => {
     if (!pendingStatus) return;
 
     try {
-      await OrderService.toggleOrderStatus(order.id, pendingStatus, pendingEnabled, customMessage);
+      await OrderService.toggleOrderStatus(order.id, pendingStatus, pendingEnabled, customMessage, sendToClient);
       
       toast({
         title: pendingEnabled ? "Status Added" : "Status Removed",
