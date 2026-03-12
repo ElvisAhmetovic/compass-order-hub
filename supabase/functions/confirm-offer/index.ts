@@ -129,8 +129,8 @@ serve(async (req) => {
       }),
     }).catch(err => console.error('Failed to send team notification:', err));
 
-    // Fire-and-forget: send branded order created notification to client
-    if (createdOrder?.id) {
+    // Fire-and-forget: send branded order created notification to client (only if opted in)
+    if (sendToClient && createdOrder?.id) {
       fetch(`${supabaseUrl}/functions/v1/send-order-created-notification`, {
         method: 'POST',
         headers: {
