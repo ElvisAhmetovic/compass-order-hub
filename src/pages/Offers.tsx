@@ -356,6 +356,24 @@ const Offers = () => {
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
+
+          {/* Confirm for Client */}
+          <AlertDialog open={!!confirmOffer} onOpenChange={() => setConfirmOffer(null)}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Confirm Offer for Client</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will confirm the offer for <strong>{confirmOffer?.client_name}</strong> and automatically create an order in the system. The team will be notified.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleConfirmForClient} className="bg-green-600 text-white hover:bg-green-700">
+                  Confirm & Create Order
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </Layout>
       </div>
     </div>
