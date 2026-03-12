@@ -303,18 +303,36 @@ const Offers = () => {
                   )}
                   <div className="flex items-center justify-between">
                     <Badge>{selectedOffer.status}</Badge>
-                    <Button
-                      size="sm"
-                      onClick={() => handleResend(selectedOffer)}
-                      disabled={resendingOffer === selectedOffer.id}
-                    >
-                      {resendingOffer === selectedOffer.id ? (
-                        <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                      ) : (
-                        <Send className="h-4 w-4 mr-1" />
+                    <div className="flex gap-2">
+                      {selectedOffer.status !== "confirmed" && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="border-green-600 text-green-600 hover:bg-green-50"
+                          onClick={() => { setConfirmOffer(selectedOffer); }}
+                          disabled={confirmingOffer === selectedOffer.id}
+                        >
+                          {confirmingOffer === selectedOffer.id ? (
+                            <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                          ) : (
+                            <CheckCircle2 className="h-4 w-4 mr-1" />
+                          )}
+                          Confirm for Client
+                        </Button>
                       )}
-                      Send Again
-                    </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => handleResend(selectedOffer)}
+                        disabled={resendingOffer === selectedOffer.id}
+                      >
+                        {resendingOffer === selectedOffer.id ? (
+                          <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                        ) : (
+                          <Send className="h-4 w-4 mr-1" />
+                        )}
+                        Send Again
+                      </Button>
+                    </div>
                   </div>
                 </div>
               )}
