@@ -125,6 +125,28 @@ export class OrderService {
         // Don't fail the order creation if company sync fails
       }
 
+      // Auto-link to existing client portal account by matching contact_email
+      try {
+        if (data.contact_email) {
+          const { data: matchingOrder } = await supabase
+            .from('orders')
+            .select('client_id')
+            .ilike('contact_email', data.contact_email.trim())
+            .not('client_id', 'is', null)
+            .neq('id', data.id)
+            .limit(1)
+            .maybeSingle();
+
+          if (matchingOrder?.client_id) {
+            await supabase.from('orders').update({ client_id: matchingOrder.client_id }).eq('id', data.id);
+            data.client_id = matchingOrder.client_id;
+            console.log('Auto-linked order to existing client portal:', matchingOrder.client_id);
+          }
+        }
+      } catch (e) {
+        console.error('Failed to auto-link client portal:', e);
+      }
+
       // Log order creation activity
       await this.logOrderActivity(data.id, 'Order Created', `Order created for ${data.company_name}`);
 
@@ -194,6 +216,28 @@ export class OrderService {
       } catch (syncError) {
         console.error('Failed to auto-sync company from yearly package:', syncError);
         // Don't fail the order creation if company sync fails
+      }
+
+      // Auto-link to existing client portal account by matching contact_email
+      try {
+        if (data.contact_email) {
+          const { data: matchingOrder } = await supabase
+            .from('orders')
+            .select('client_id')
+            .ilike('contact_email', data.contact_email.trim())
+            .not('client_id', 'is', null)
+            .neq('id', data.id)
+            .limit(1)
+            .maybeSingle();
+
+          if (matchingOrder?.client_id) {
+            await supabase.from('orders').update({ client_id: matchingOrder.client_id }).eq('id', data.id);
+            data.client_id = matchingOrder.client_id;
+            console.log('Auto-linked yearly package to existing client portal:', matchingOrder.client_id);
+          }
+        }
+      } catch (e) {
+        console.error('Failed to auto-link client portal:', e);
       }
 
       // Log yearly package creation activity

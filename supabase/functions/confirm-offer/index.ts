@@ -84,6 +84,27 @@ serve(async (req) => {
       throw new Error('Failed to create order');
     }
 
+    // Auto-link to existing client portal account by matching contact_email
+    if (createdOrder?.id && offer.client_email) {
+      try {
+        const { data: matchingOrder } = await supabase
+          .from('orders')
+          .select('client_id')
+          .ilike('contact_email', offer.client_email.trim())
+          .not('client_id', 'is', null)
+          .neq('id', createdOrder.id)
+          .limit(1)
+          .maybeSingle();
+
+        if (matchingOrder?.client_id) {
+          await supabase.from('orders').update({ client_id: matchingOrder.client_id }).eq('id', createdOrder.id);
+          console.log('Auto-linked offer order to existing client portal:', matchingOrder.client_id);
+        }
+      } catch (e) {
+        console.error('Failed to auto-link client portal from offer:', e);
+      }
+    }
+
     // Fire-and-forget: send team notification emails
     const teamEmails = [
       'angelina@abmedia-team.com',
