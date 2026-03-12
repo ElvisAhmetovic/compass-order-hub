@@ -175,6 +175,7 @@ const Offers = () => {
     } finally {
       setConfirmingOffer(null);
       setConfirmOffer(null);
+      setSendToClientOnConfirm(false);
     }
   };
 
