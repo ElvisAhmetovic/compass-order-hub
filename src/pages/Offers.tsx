@@ -30,6 +30,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Eye, Send, Trash2, Loader2, CheckCircle2 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { format } from "date-fns";
 
 interface Offer {
@@ -57,6 +59,7 @@ const Offers = () => {
   const [resendingOffer, setResendingOffer] = useState<string | null>(null);
   const [confirmOffer, setConfirmOffer] = useState<Offer | null>(null);
   const [confirmingOffer, setConfirmingOffer] = useState<string | null>(null);
+  const [sendToClientOnConfirm, setSendToClientOnConfirm] = useState(false);
 
   useEffect(() => {
     fetchOffers();
@@ -156,7 +159,7 @@ const Offers = () => {
     setConfirmingOffer(confirmOffer.id);
     try {
       const { data, error } = await supabase.functions.invoke("confirm-offer", {
-        body: { offerId: confirmOffer.id },
+        body: { offerId: confirmOffer.id, sendToClient: sendToClientOnConfirm },
       });
       if (error) throw error;
       if (data?.alreadyConfirmed) {
@@ -172,6 +175,7 @@ const Offers = () => {
     } finally {
       setConfirmingOffer(null);
       setConfirmOffer(null);
+      setSendToClientOnConfirm(false);
     }
   };
 
@@ -358,22 +362,41 @@ const Offers = () => {
           </AlertDialog>
 
           {/* Confirm for Client */}
-          <AlertDialog open={!!confirmOffer} onOpenChange={() => setConfirmOffer(null)}>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Confirm Offer for Client</AlertDialogTitle>
-                <AlertDialogDescription>
+          <Dialog open={!!confirmOffer} onOpenChange={(open) => { if (!open) { setConfirmOffer(null); setSendToClientOnConfirm(false); } }}>
+            <DialogContent className="sm:max-w-[440px]">
+              <DialogHeader>
+                <DialogTitle>Confirm Offer for Client</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <p className="text-sm text-muted-foreground">
                   This will confirm the offer for <strong>{confirmOffer?.client_name}</strong> and automatically create an order in the system. The team will be notified.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={handleConfirmForClient} className="bg-green-600 text-white hover:bg-green-700">
-                  Confirm & Create Order
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+                </p>
+                <div className="flex items-center justify-between rounded-lg border p-3">
+                  <Label htmlFor="send-to-client-toggle" className="text-sm font-medium cursor-pointer">
+                    Send notification to client
+                  </Label>
+                  <Switch
+                    id="send-to-client-toggle"
+                    checked={sendToClientOnConfirm}
+                    onCheckedChange={setSendToClientOnConfirm}
+                  />
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button variant="outline" onClick={() => { setConfirmOffer(null); setSendToClientOnConfirm(false); }}>
+                    Cancel
+                  </Button>
+                  <Button
+                    className="bg-green-600 text-white hover:bg-green-700"
+                    onClick={handleConfirmForClient}
+                    disabled={confirmingOffer === confirmOffer?.id}
+                  >
+                    {confirmingOffer === confirmOffer?.id && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+                    Confirm & Create Order
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
         </Layout>
       </div>
     </div>

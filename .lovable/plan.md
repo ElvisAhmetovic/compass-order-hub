@@ -1,32 +1,18 @@
 
 
-## Add "Send to Client" Toggle to Offer Confirmation
+## Add "Created Only" Filter to Advanced Search
 
-### Problem
-Currently, when an admin clicks "Confirm for Client" on the Offers page, the `confirm-offer` edge function **always** sends the branded order notification to the client. This should be opt-in, consistent with how the CreateOrderModal works.
+The boss wants a second quick-filter alongside "Unpaid Orders Only" that shows orders with only the "Created" status -- orders that haven't progressed yet and also count as unpaid.
 
 ### Changes
 
-#### 1. `src/pages/Offers.tsx`
-- Add `sendToClientOnConfirm` state (boolean, default: false)
-- Replace the `AlertDialog` for confirm with a `Dialog` containing:
-  - The existing confirmation text
-  - A Switch/toggle: "Send notification to client" (default off)
-  - Confirm & Cancel buttons
-- Pass `sendToClient` boolean to the edge function call: `body: { offerId, sendToClient }`
-- Reset `sendToClientOnConfirm` when dialog closes
+**`src/services/searchService.ts`**
+- Add `createdOnly?: boolean` to `SearchFilters` interface
+- Add filter logic in `applyFiltersToOrders`: if `createdOnly` is true, keep only orders where `status_created === true` and no further progress statuses are active (`status_in_progress`, `status_invoice_sent`, `status_invoice_paid`, `status_resolved`, `status_cancelled` are all falsy)
 
-#### 2. `supabase/functions/confirm-offer/index.ts`
-- Read `sendToClient` from the request body (default: `true` to preserve behavior when client confirms via public link)
-- Wrap the `send-order-created-notification` fire-and-forget block (lines 132-151) in `if (sendToClient)`
-- When called from the public confirmation page (no `sendToClient` param), it defaults to `true` (client clicked confirm themselves, so they should get the email)
-- When called from admin "Confirm for Client", the frontend passes the toggle value
+**`src/components/dashboard/AdvancedSearch.tsx`**
+- Add a second checkbox below "Unpaid Orders Only" labeled "Created Only (Not Yet Started)" with description "(Orders still at Created status — no invoice sent or paid)"
+- Include `createdOnly` in the active filter count
 
-### Logic
-```text
-Public confirm page → sendToClient defaults to true (client confirmed themselves)
-Admin "Confirm for Client" → sendToClient comes from toggle (default off)
-```
-
-Team notifications always fire regardless.
+Both filters can work independently or together.
 
