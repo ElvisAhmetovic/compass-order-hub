@@ -77,7 +77,7 @@ serve(async (req) => {
       assigned_to: offer.sent_by,
       assigned_to_name: offer.sent_by_name,
       status_created: true,
-    });
+    }).select('id').single();
 
     if (orderError) {
       console.error('Error creating order from offer:', orderError);
