@@ -414,10 +414,30 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
           description: `Order was created successfully but confirmation emails could not be sent. Error: ${errorMessage}`,
         });
       }
+
+      // Send client notification if opted in
+      if (sendToClient && values.contactEmail) {
+        try {
+          const { ClientNotificationService } = await import('@/services/clientNotificationService');
+          await ClientNotificationService.notifyClientStatusChange({
+            orderId: orderResult.id,
+            oldStatus: null,
+            newStatus: 'Created',
+            changedBy: {
+              id: user.id,
+              name: user.full_name || user.email || 'Unknown',
+            },
+          });
+          console.log('Client notification sent for new order');
+        } catch (clientError) {
+          console.error('Error sending client notification:', clientError);
+        }
+      }
       
       form.reset();
       setSelectedInventoryItems([]);
       setNotificationEmails(['']);
+      setSendToClient(false);
       onClose();
       
       // Trigger a refresh of the orders list
