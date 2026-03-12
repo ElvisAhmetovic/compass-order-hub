@@ -104,3 +104,9 @@ verify_jwt = false
 
 [functions.confirm-offer]
 verify_jwt = false
+
+[functions.send-order-created-notification]
+verify_jwt = false
+
+[functions.request-client-credentials]
+verify_jwt = false

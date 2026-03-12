@@ -60,7 +60,7 @@ serve(async (req) => {
     const orderData = (offer.order_data || {}) as Record<string, any>;
 
     // Create the order from offer data
-    const { error: orderError } = await supabase.from('orders').insert({
+    const { data: createdOrder, error: orderError } = await supabase.from('orders').insert({
       company_name: offer.company_name,
       contact_email: offer.client_email,
       contact_name: offer.client_name,
@@ -77,7 +77,7 @@ serve(async (req) => {
       assigned_to: offer.sent_by,
       assigned_to_name: offer.sent_by_name,
       status_created: true,
-    });
+    }).select('id').single();
 
     if (orderError) {
       console.error('Error creating order from offer:', orderError);
@@ -128,6 +128,27 @@ serve(async (req) => {
         selectedInventoryItems: orderData.inventoryItems || [],
       }),
     }).catch(err => console.error('Failed to send team notification:', err));
+
+    // Fire-and-forget: send branded order created notification to client
+    if (createdOrder?.id) {
+      fetch(`${supabaseUrl}/functions/v1/send-order-created-notification`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}`,
+        },
+        body: JSON.stringify({
+          clientEmail: offer.client_email,
+          clientName: offer.client_name,
+          clientPhone: offer.client_phone || '',
+          companyName: offer.company_name,
+          description: offer.description || '',
+          price: offer.price,
+          currency: offer.currency,
+          orderId: createdOrder.id,
+        }),
+      }).catch(err => console.error('Failed to send order created notification:', err));
+    }
 
     // Update offer status
     const { error: updateError } = await supabase

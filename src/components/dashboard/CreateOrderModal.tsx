@@ -415,22 +415,24 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
         });
       }
 
-      // Send client notification if opted in
+      // Send branded order created notification to client if opted in
       if (sendToClient && values.contactEmail) {
         try {
-          const { ClientNotificationService } = await import('@/services/clientNotificationService');
-          await ClientNotificationService.notifyClientStatusChange({
-            orderId: orderResult.id,
-            oldStatus: null,
-            newStatus: 'Created',
-            changedBy: {
-              id: user.id,
-              name: user.full_name || user.email || 'Unknown',
+          await supabase.functions.invoke('send-order-created-notification', {
+            body: {
+              clientEmail: values.contactEmail,
+              clientName: values.companyName,
+              clientPhone: values.contactPhone || '',
+              companyName: values.companyName,
+              description: values.description || '',
+              price: values.price || 0,
+              currency: values.currency || 'EUR',
+              orderId: orderResult.id,
             },
           });
-          console.log('Client notification sent for new order');
+          console.log('Branded order created notification sent to client');
         } catch (clientError) {
-          console.error('Error sending client notification:', clientError);
+          console.error('Error sending order created notification:', clientError);
         }
       }
       
