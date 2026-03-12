@@ -159,7 +159,7 @@ const Offers = () => {
     setConfirmingOffer(confirmOffer.id);
     try {
       const { data, error } = await supabase.functions.invoke("confirm-offer", {
-        body: { offerId: confirmOffer.id },
+        body: { offerId: confirmOffer.id, sendToClient: sendToClientOnConfirm },
       });
       if (error) throw error;
       if (data?.alreadyConfirmed) {
