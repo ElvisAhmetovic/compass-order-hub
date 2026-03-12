@@ -60,7 +60,7 @@ serve(async (req) => {
     const orderData = (offer.order_data || {}) as Record<string, any>;
 
     // Create the order from offer data
-    const { error: orderError } = await supabase.from('orders').insert({
+    const { data: createdOrder, error: orderError } = await supabase.from('orders').insert({
       company_name: offer.company_name,
       contact_email: offer.client_email,
       contact_name: offer.client_name,
