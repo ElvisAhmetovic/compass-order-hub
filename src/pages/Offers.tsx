@@ -29,7 +29,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Eye, Send, Trash2, Loader2 } from "lucide-react";
+import { Eye, Send, Trash2, Loader2, CheckCircle2 } from "lucide-react";
 import { format } from "date-fns";
 
 interface Offer {
@@ -55,6 +55,8 @@ const Offers = () => {
   const [selectedOffer, setSelectedOffer] = useState<Offer | null>(null);
   const [deleteOffer, setDeleteOffer] = useState<Offer | null>(null);
   const [resendingOffer, setResendingOffer] = useState<string | null>(null);
+  const [confirmOffer, setConfirmOffer] = useState<Offer | null>(null);
+  const [confirmingOffer, setConfirmingOffer] = useState<string | null>(null);
 
   useEffect(() => {
     fetchOffers();
@@ -149,6 +151,30 @@ const Offers = () => {
     }
   };
 
+  const handleConfirmForClient = async () => {
+    if (!confirmOffer) return;
+    setConfirmingOffer(confirmOffer.id);
+    try {
+      const { data, error } = await supabase.functions.invoke("confirm-offer", {
+        body: { offerId: confirmOffer.id },
+      });
+      if (error) throw error;
+      if (data?.alreadyConfirmed) {
+        toast({ title: "This offer was already confirmed" });
+      } else {
+        toast({ title: "Offer confirmed & order created" });
+      }
+      setSelectedOffer(null);
+      fetchOffers();
+    } catch (err: any) {
+      console.error("Confirm error:", err);
+      toast({ variant: "destructive", title: "Failed to confirm offer", description: err.message });
+    } finally {
+      setConfirmingOffer(null);
+      setConfirmOffer(null);
+    }
+  };
+
   const currencySymbol = (c: string) =>
     ({ EUR: "€", USD: "$", GBP: "£" }[c] || c);
 
@@ -207,6 +233,11 @@ const Offers = () => {
                             <Button variant="ghost" size="sm" onClick={() => setSelectedOffer(offer)}>
                               <Eye className="h-4 w-4 mr-1" /> View
                             </Button>
+                            {offer.status !== "confirmed" && (
+                              <Button variant="ghost" size="sm" className="text-green-600 hover:text-green-700" onClick={() => setConfirmOffer(offer)}>
+                                <CheckCircle2 className="h-4 w-4 mr-1" /> Confirm
+                              </Button>
+                            )}
                             <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => setDeleteOffer(offer)}>
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -272,18 +303,36 @@ const Offers = () => {
                   )}
                   <div className="flex items-center justify-between">
                     <Badge>{selectedOffer.status}</Badge>
-                    <Button
-                      size="sm"
-                      onClick={() => handleResend(selectedOffer)}
-                      disabled={resendingOffer === selectedOffer.id}
-                    >
-                      {resendingOffer === selectedOffer.id ? (
-                        <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                      ) : (
-                        <Send className="h-4 w-4 mr-1" />
+                    <div className="flex gap-2">
+                      {selectedOffer.status !== "confirmed" && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="border-green-600 text-green-600 hover:bg-green-50"
+                          onClick={() => { setConfirmOffer(selectedOffer); }}
+                          disabled={confirmingOffer === selectedOffer.id}
+                        >
+                          {confirmingOffer === selectedOffer.id ? (
+                            <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                          ) : (
+                            <CheckCircle2 className="h-4 w-4 mr-1" />
+                          )}
+                          Confirm for Client
+                        </Button>
                       )}
-                      Send Again
-                    </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => handleResend(selectedOffer)}
+                        disabled={resendingOffer === selectedOffer.id}
+                      >
+                        {resendingOffer === selectedOffer.id ? (
+                          <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                        ) : (
+                          <Send className="h-4 w-4 mr-1" />
+                        )}
+                        Send Again
+                      </Button>
+                    </div>
                   </div>
                 </div>
               )}
@@ -303,6 +352,24 @@ const Offers = () => {
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                 <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
                   Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
+          {/* Confirm for Client */}
+          <AlertDialog open={!!confirmOffer} onOpenChange={() => setConfirmOffer(null)}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Confirm Offer for Client</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will confirm the offer for <strong>{confirmOffer?.client_name}</strong> and automatically create an order in the system. The team will be notified.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleConfirmForClient} className="bg-green-600 text-white hover:bg-green-700">
+                  Confirm & Create Order
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
