@@ -928,6 +928,22 @@ Additional internal comments...`}
                 {isSubmitting ? "Creating..." : "Create Order"}
               </Button>
             </div>
+
+            <div className="flex items-center justify-between rounded-lg border p-3">
+              <div className="space-y-0.5">
+                <label htmlFor="send-to-client-create" className="text-sm font-medium">
+                  Send notification to client
+                </label>
+                <p className="text-xs text-muted-foreground">
+                  The client will receive an email about this new order
+                </p>
+              </div>
+              <Switch
+                id="send-to-client-create"
+                checked={sendToClient}
+                onCheckedChange={setSendToClient}
+              />
+            </div>
           </form>
         </Form>
       </DialogContent>
