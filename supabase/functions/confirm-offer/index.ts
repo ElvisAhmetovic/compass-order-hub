@@ -129,6 +129,27 @@ serve(async (req) => {
       }),
     }).catch(err => console.error('Failed to send team notification:', err));
 
+    // Fire-and-forget: send branded order created notification to client
+    if (createdOrder?.id) {
+      fetch(`${supabaseUrl}/functions/v1/send-order-created-notification`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}`,
+        },
+        body: JSON.stringify({
+          clientEmail: offer.client_email,
+          clientName: offer.client_name,
+          clientPhone: offer.client_phone || '',
+          companyName: offer.company_name,
+          description: offer.description || '',
+          price: offer.price,
+          currency: offer.currency,
+          orderId: createdOrder.id,
+        }),
+      }).catch(err => console.error('Failed to send order created notification:', err));
+    }
+
     // Update offer status
     const { error: updateError } = await supabase
       .from('offers')
