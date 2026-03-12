@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { offerId, action } = await req.json();
+    const { offerId, action, sendToClient = true } = await req.json();
 
     if (!offerId) {
       throw new Error('offerId is required');
