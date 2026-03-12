@@ -78,6 +78,7 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [selectedInventoryItems, setSelectedInventoryItems] = useState<SelectedInventoryItem[]>([]);
   const [notificationEmails, setNotificationEmails] = useState<string[]>([...NOTIFICATION_EMAIL_LIST]);
+  const [sendToClient, setSendToClient] = useState(false);
   
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
