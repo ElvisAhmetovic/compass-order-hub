@@ -30,13 +30,6 @@ import InvoicePreview from "@/components/invoices/InvoicePreview";
 import { generateInvoicePDF } from "@/utils/invoicePdfGenerator";
 import SendInvoicePDFDialog from "@/components/invoices/SendInvoicePDFDialog";
 
-  // Reverse sync: update formData when currency changes in template settings
-  useEffect(() => {
-    if (templateSettings.currency && templateSettings.currency !== formData.currency) {
-      setFormData(prev => ({ ...prev, currency: templateSettings.currency }));
-    }
-  }, [templateSettings.currency]);
-
 
 const InvoiceDetail = () => {
   const { id } = useParams();
