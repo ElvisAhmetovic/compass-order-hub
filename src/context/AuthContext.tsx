@@ -12,6 +12,7 @@ interface AuthUser {
   full_name: string;
   first_name?: string;
   last_name?: string;
+  avatar_url?: string;
   created_at?: string;
   last_sign_in?: string;
 }
@@ -42,12 +43,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     let fullName = supabaseUser.user_metadata?.full_name || supabaseUser.email?.split('@')[0] || 'User';
     let firstName = supabaseUser.user_metadata?.first_name || '';
     let lastName = supabaseUser.user_metadata?.last_name || '';
+    let avatarUrl: string | undefined = undefined;
     
     try {
       // Fetch profile for name info
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('first_name, last_name')
+        .select('first_name, last_name, avatar_url')
         .eq('id', supabaseUser.id)
         .maybeSingle();
       
@@ -59,6 +61,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           lastName = profile.last_name || '';
           fullName = `${firstName} ${lastName}`.trim();
         }
+        avatarUrl = profile.avatar_url || undefined;
       }
 
       // Fetch role from user_roles table (security best practice)
@@ -109,6 +112,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       full_name: fullName,
       first_name: firstName,
       last_name: lastName,
+      avatar_url: avatarUrl,
       created_at: supabaseUser.created_at,
       last_sign_in: supabaseUser.last_sign_in_at
     };

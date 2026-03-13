@@ -62,7 +62,7 @@ import ClientOrderDetail from "./pages/client/ClientOrderDetail";
 import ClientInvoices from "./pages/client/ClientInvoices";
 import ClientSupport from "./pages/client/ClientSupport";
 import ClientSupportDetail from "./pages/client/ClientSupportDetail";
-import ClientProfile from "./pages/client/ClientProfile";
+import ClientSettings from "./pages/client/ClientSettings";
 import ClientLogin from "./pages/client/ClientLogin";
 
 const queryClient = new QueryClient({
@@ -365,9 +365,9 @@ function App() {
                       <ClientSupportDetail />
                     </ClientGuard>
                   } />
-                  <Route path="/client/profile" element={
+                  <Route path="/client/settings" element={
                     <ClientGuard>
-                      <ClientProfile />
+                      <ClientSettings />
                     </ClientGuard>
                   } />
                   <Route path="/client" element={<ClientLogin />} />

@@ -12,7 +12,7 @@ import {
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { LayoutDashboard, Package, FileText, HelpCircle, User } from "lucide-react";
+import { LayoutDashboard, Package, FileText, HelpCircle, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
@@ -23,7 +23,7 @@ const navigationItems = [
   { title: "Orders", url: "/client/orders", icon: Package },
   { title: "Invoices", url: "/client/invoices", icon: FileText },
   { title: "Support", url: "/client/support", icon: HelpCircle },
-  { title: "Profile", url: "/client/profile", icon: User },
+  { title: "Settings", url: "/client/settings", icon: Settings },
 ];
 
 const ClientSidebar = () => {
