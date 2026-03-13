@@ -41,17 +41,6 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
   const channelSubscriptionRef = useRef<any>(null);
   const messageSubscriptionRef = useRef<any>(null);
 
-  // Block client accounts from accessing internal messaging
-  if (user?.role === 'client') {
-    return (
-      <Card>
-        <CardContent className="flex items-center justify-center h-64">
-          <p className="text-muted-foreground">Access denied. Internal messaging is not available for client accounts.</p>
-        </CardContent>
-      </Card>
-    );
-  }
-
   // Test notification sound function
   const testNotificationSound = () => {
     console.log('🧪 MANUAL SOUND TEST: Testing notification sound');
