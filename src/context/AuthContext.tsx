@@ -12,6 +12,7 @@ interface AuthUser {
   full_name: string;
   first_name?: string;
   last_name?: string;
+  avatar_url?: string;
   created_at?: string;
   last_sign_in?: string;
 }
