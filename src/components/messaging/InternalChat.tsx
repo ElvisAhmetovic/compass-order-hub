@@ -159,7 +159,8 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
       const { data: allUsers, error } = await supabase
         .from('profiles')
         .select('id')
-        .neq('id', user.id);
+        .neq('id', user.id)
+        .neq('role', 'client');
 
       if (error) {
         console.error('❌ Error fetching users for notifications:', error);

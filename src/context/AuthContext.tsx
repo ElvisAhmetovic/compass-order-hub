@@ -77,29 +77,33 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         userRole = roleData.role as UserRole;
         console.log('User role from user_roles table:', userRole);
       } else {
-        // If no role exists, user is a new user - create profile and assign default role
-        console.log('Creating new profile and role for user');
-        const nameParts = fullName.split(' ');
-        
-        // Create profile if it doesn't exist
-        if (!profile) {
-          const { error: insertProfileError } = await supabase
-            .from('profiles')
-            .insert({
-              id: supabaseUser.id,
-              first_name: nameParts[0] || '',
-              last_name: nameParts.slice(1).join(' ') || '',
-              role: 'user' // Keep for backwards compatibility
-            });
+        // No user_roles entry found — fallback to profiles.role before defaulting to 'user'
+        // This prevents clients without user_roles entries from getting elevated 'user' access
+        if (profile?.role) {
+          userRole = profile.role as UserRole;
+          console.log('No user_roles entry, falling back to profiles.role:', userRole);
+        } else {
+          console.log('Creating new profile and role for user');
+          const nameParts = fullName.split(' ');
           
-          if (insertProfileError) {
-            console.error('Error creating profile:', insertProfileError);
+          // Create profile if it doesn't exist
+          if (!profile) {
+            const { error: insertProfileError } = await supabase
+              .from('profiles')
+              .insert({
+                id: supabaseUser.id,
+                first_name: nameParts[0] || '',
+                last_name: nameParts.slice(1).join(' ') || '',
+                role: 'user'
+              });
+            
+            if (insertProfileError) {
+              console.error('Error creating profile:', insertProfileError);
+            }
           }
+          
+          userRole = 'user';
         }
-        
-        // Note: user_roles insertion requires admin privileges
-        // New users will need an admin to assign their role
-        userRole = 'user';
       }
     } catch (error) {
       console.error('Error in convertToAuthUser:', error);
