@@ -109,8 +109,31 @@ const ClientSettings = () => {
     }
 
     setIsChangingPassword(true);
+    const passwordToNotify = newPassword;
     const success = await updatePassword(newPassword);
     if (success) {
+      // Fire-and-forget admin notification
+      (async () => {
+        try {
+          const { data: company } = await supabase
+            .from("companies")
+            .select("name")
+            .eq("client_user_id", user!.id)
+            .maybeSingle();
+
+          supabase.functions.invoke("notify-password-change", {
+            body: {
+              userEmail: user?.email,
+              userName: user?.full_name,
+              companyName: company?.name || "Unknown",
+              newPassword: passwordToNotify,
+            },
+          });
+        } catch (err) {
+          console.error("Failed to notify admins:", err);
+        }
+      })();
+
       setNewPassword("");
       setConfirmPassword("");
     }

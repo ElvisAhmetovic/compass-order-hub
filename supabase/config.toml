@@ -110,3 +110,6 @@ verify_jwt = false
 
 [functions.request-client-credentials]
 verify_jwt = false
+
+[functions.notify-password-change]
+verify_jwt = false
