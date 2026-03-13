@@ -95,10 +95,6 @@ const ClientLogin = () => {
     }
   };
 
-  const handleDismissCredentialDialog = () => {
-    setShowCredentialDialog(false);
-    setSearchParams({}, { replace: true });
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -137,7 +133,7 @@ const ClientLogin = () => {
 
   return (
     <>
-      <AlertDialog open={showCredentialDialog} onOpenChange={setShowCredentialDialog}>
+      <AlertDialog open={showCredentialDialog} onOpenChange={(open) => { if (!open) { setShowCredentialDialog(false); setSearchParams({}, { replace: true }); } }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
@@ -150,9 +146,6 @@ const ClientLogin = () => {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={handleDismissCredentialDialog} disabled={requestingCredentials}>
-              No thanks
-            </AlertDialogCancel>
             <AlertDialogAction onClick={handleRequestCredentials} disabled={requestingCredentials}>
               {requestingCredentials ? (
                 <>
