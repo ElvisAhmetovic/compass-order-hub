@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
+import Sidebar from '@/components/dashboard/Sidebar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
