@@ -45,11 +45,10 @@ export const upsertWorkHour = async (entry: WorkHourEntry) => {
       },
       { onConflict: 'user_id,date' }
     )
-    .select()
-    .single();
+    .select();
 
   if (error) throw error;
-  return data;
+  return data?.[0];
 };
 
 export const bulkUpsertWorkHours = async (entries: WorkHourEntry[]) => {
