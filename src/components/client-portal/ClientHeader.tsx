@@ -2,7 +2,7 @@ import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { LogOut, Building2 } from "lucide-react";
 import { DarkModeToggle } from "@/components/theme/DarkModeToggle";
-import NotificationCenter from "@/components/notifications/NotificationCenter";
+import ClientNotificationCenter from "@/components/client-portal/ClientNotificationCenter";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";

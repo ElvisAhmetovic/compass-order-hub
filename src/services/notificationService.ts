@@ -55,6 +55,24 @@ export class NotificationService {
     }
   }
 
+  static async getClientNotifications(userId: string) {
+    try {
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('user_id', userId)
+        .like('action_url', '/client/%')
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching client notifications:', error);
+      return [];
+    }
+  }
+
   static async markAsRead(notificationId: string) {
     try {
       const { error } = await supabase
