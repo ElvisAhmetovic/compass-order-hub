@@ -1,14 +1,26 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import ClientLayout from "@/components/client-portal/ClientLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/context/AuthContext";
-import { Loader2, Camera, Lock, UserCog } from "lucide-react";
+import { Loader2, Lock, UserCog, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
+
+const AVATAR_ICONS = [
+  { name: "Beaver", path: "/avatars/beaver.png" },
+  { name: "Elephant", path: "/avatars/elephant.png" },
+  { name: "Penguin", path: "/avatars/penguin.png" },
+  { name: "Chicken", path: "/avatars/chicken.png" },
+  { name: "Bullfinch", path: "/avatars/bullfinch.png" },
+  { name: "Parrot", path: "/avatars/parrot.png" },
+  { name: "Cat", path: "/avatars/cat.png" },
+  { name: "Lion", path: "/avatars/lion.png" },
+  { name: "Sheep", path: "/avatars/sheep.png" },
+  { name: "Mouse", path: "/avatars/mouse.png" },
+];
 
 const ClientSettings = () => {
   const { user, updateUserProfile, updatePassword, isLoading, refreshUser } = useAuth();
@@ -20,56 +32,26 @@ const ClientSettings = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
-  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isSavingIcon, setIsSavingIcon] = useState(false);
 
-  const initials = `${(user?.first_name || "")[0] || ""}${(user?.last_name || "")[0] || ""}`.toUpperCase() || "?";
-
-  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !user) return;
-
-    if (!file.type.startsWith("image/")) {
-      toast({ variant: "destructive", title: "Invalid file", description: "Please select an image file." });
-      return;
-    }
-    if (file.size > 2 * 1024 * 1024) {
-      toast({ variant: "destructive", title: "File too large", description: "Maximum file size is 2MB." });
-      return;
-    }
-
-    setIsUploadingAvatar(true);
+  const handleIconSelect = async (iconPath: string) => {
+    if (!user || isSavingIcon) return;
+    setIsSavingIcon(true);
     try {
-      const ext = file.name.split(".").pop();
-      const filePath = `avatars/${user.id}/avatar.${ext}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from("team-files")
-        .upload(filePath, file, { upsert: true });
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from("team-files")
-        .getPublicUrl(filePath);
-
-      const avatarUrl = `${publicUrl}?t=${Date.now()}`;
-
-      const { error: updateError } = await supabase
+      const { error } = await supabase
         .from("profiles")
-        .update({ avatar_url: avatarUrl })
+        .update({ avatar_url: iconPath })
         .eq("id", user.id);
 
-      if (updateError) throw updateError;
+      if (error) throw error;
 
       await refreshUser();
-      toast({ title: "Avatar updated", description: "Your profile photo has been updated." });
+      toast({ title: "Icon updated", description: "Your profile icon has been updated." });
     } catch (error) {
-      console.error("Avatar upload error:", error);
-      toast({ variant: "destructive", title: "Upload failed", description: "Could not upload your photo. Please try again." });
+      console.error("Icon select error:", error);
+      toast({ variant: "destructive", title: "Update failed", description: "Could not update your icon. Please try again." });
     } finally {
-      setIsUploadingAvatar(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
+      setIsSavingIcon(false);
     }
   };
 
@@ -158,51 +140,41 @@ const ClientSettings = () => {
           <p className="text-muted-foreground mt-1">Manage your account settings</p>
         </div>
 
-        {/* Avatar Section */}
+        {/* Icon Picker Section */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Profile Photo</CardTitle>
-            <CardDescription>Upload a photo to personalize your account</CardDescription>
+            <CardTitle className="text-lg">Profile Icon</CardTitle>
+            <CardDescription>Choose an icon to represent your account</CardDescription>
           </CardHeader>
-          <CardContent className="flex items-center gap-6">
-            <div className="relative group">
-              <Avatar className="h-20 w-20 border-2 border-border">
-                <AvatarImage src={user?.avatar_url || undefined} alt="Profile" />
-                <AvatarFallback className="text-xl font-semibold bg-primary/10 text-primary">
-                  {initials}
-                </AvatarFallback>
-              </Avatar>
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isUploadingAvatar}
-                className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-              >
-                {isUploadingAvatar ? (
-                  <Loader2 className="h-5 w-5 animate-spin text-white" />
-                ) : (
-                  <Camera className="h-5 w-5 text-white" />
-                )}
-              </button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleAvatarUpload}
-                className="hidden"
-              />
-            </div>
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-foreground">{user?.full_name || "Your Name"}</p>
-              <p className="text-xs text-muted-foreground">{user?.email}</p>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isUploadingAvatar}
-                className="mt-2"
-              >
-                {isUploadingAvatar ? "Uploading..." : "Upload Photo"}
-              </Button>
+          <CardContent>
+            <div className="grid grid-cols-5 gap-4">
+              {AVATAR_ICONS.map((icon) => {
+                const isSelected = user?.avatar_url === icon.path;
+                return (
+                  <button
+                    key={icon.name}
+                    onClick={() => handleIconSelect(icon.path)}
+                    disabled={isSavingIcon}
+                    className={`relative flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all cursor-pointer ${
+                      isSelected
+                        ? "border-primary bg-primary/10 ring-2 ring-primary/30"
+                        : "border-border hover:border-primary/50 hover:bg-accent"
+                    }`}
+                  >
+                    {isSelected && (
+                      <div className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-primary flex items-center justify-center">
+                        <Check className="h-3 w-3 text-primary-foreground" />
+                      </div>
+                    )}
+                    <img
+                      src={icon.path}
+                      alt={icon.name}
+                      className="h-12 w-12 object-contain"
+                    />
+                    <span className="text-xs text-muted-foreground font-medium">{icon.name}</span>
+                  </button>
+                );
+              })}
             </div>
           </CardContent>
         </Card>

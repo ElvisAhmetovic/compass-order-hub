@@ -1,24 +1,18 @@
 
 
-## Replace Avatar Upload with Predefined Icon Picker
+## Add "Created Only" Filter to Advanced Search
 
-Instead of letting clients upload their own photos, provide a grid of the 10 animal icons they can choose from.
+The boss wants a second quick-filter alongside "Unpaid Orders Only" that shows orders with only the "Created" status -- orders that haven't progressed yet and also count as unpaid.
 
 ### Changes
 
-#### 1. Copy uploaded icons to project
-Copy all 10 animal images to `public/avatars/` directory: beaver, elephant, penguin, chicken, bullfinch, parrot, cat, lion, sheep, mouse.
+**`src/services/searchService.ts`**
+- Add `createdOnly?: boolean` to `SearchFilters` interface
+- Add filter logic in `applyFiltersToOrders`: if `createdOnly` is true, keep only orders where `status_created === true` and no further progress statuses are active (`status_in_progress`, `status_invoice_sent`, `status_invoice_paid`, `status_resolved`, `status_cancelled` are all falsy)
 
-#### 2. Update `ClientSettings.tsx`
-- Remove the file upload logic (`handleAvatarUpload`, `fileInputRef`, `isUploadingAvatar`, file input element)
-- Replace the avatar section with a grid of 10 clickable animal icons
-- When clicked, save the selected icon path (e.g. `/avatars/cat.png`) to `profiles.avatar_url` and call `refreshUser()`
-- Highlight the currently selected icon with a ring/border
+**`src/components/dashboard/AdvancedSearch.tsx`**
+- Add a second checkbox below "Unpaid Orders Only" labeled "Created Only (Not Yet Started)" with description "(Orders still at Created status — no invoice sent or paid)"
+- Include `createdOnly` in the active filter count
 
-#### 3. Update `ClientHeader.tsx`
-No changes needed -- it already reads `user.avatar_url` and shows the Avatar with fallback initials, so the selected animal icon will display automatically.
-
-### Files
-- Copy 10 images to `public/avatars/`
-- Modify `src/pages/client/ClientSettings.tsx` -- replace upload section with icon picker grid
+Both filters can work independently or together.
 
