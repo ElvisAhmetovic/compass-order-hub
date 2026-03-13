@@ -146,9 +146,6 @@ const ClientLogin = () => {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={handleDismissCredentialDialog} disabled={requestingCredentials}>
-              No thanks
-            </AlertDialogCancel>
             <AlertDialogAction onClick={handleRequestCredentials} disabled={requestingCredentials}>
               {requestingCredentials ? (
                 <>
