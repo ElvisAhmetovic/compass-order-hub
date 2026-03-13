@@ -35,7 +35,7 @@ const ClientHeader = () => {
       </div>
 
       <div className="flex items-center gap-2 md:gap-4">
-        <NotificationCenter />
+        <ClientNotificationCenter />
         <DarkModeToggle />
         <Button
           variant="ghost"
