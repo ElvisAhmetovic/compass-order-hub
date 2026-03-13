@@ -1,12 +1,18 @@
 
 
-## Fix Offer Details Dialog Overflow
+## Add "Created Only" Filter to Advanced Search
 
-The description text in the View Offer dialog can grow unbounded, pushing the dialog beyond the viewport with no scroll.
+The boss wants a second quick-filter alongside "Unpaid Orders Only" that shows orders with only the "Created" status -- orders that haven't progressed yet and also count as unpaid.
 
-### Fix
-In `src/pages/Offers.tsx`, add `max-h-[80vh] overflow-y-auto` to the `DialogContent` so long descriptions become scrollable instead of overflowing off-screen. Also cap the description block itself with `max-h-[200px] overflow-y-auto`.
+### Changes
 
-### File
-- `src/pages/Offers.tsx` — line 260: add scroll constraints to DialogContent and description area
+**`src/services/searchService.ts`**
+- Add `createdOnly?: boolean` to `SearchFilters` interface
+- Add filter logic in `applyFiltersToOrders`: if `createdOnly` is true, keep only orders where `status_created === true` and no further progress statuses are active (`status_in_progress`, `status_invoice_sent`, `status_invoice_paid`, `status_resolved`, `status_cancelled` are all falsy)
+
+**`src/components/dashboard/AdvancedSearch.tsx`**
+- Add a second checkbox below "Unpaid Orders Only" labeled "Created Only (Not Yet Started)" with description "(Orders still at Created status — no invoice sent or paid)"
+- Include `createdOnly` in the active filter count
+
+Both filters can work independently or together.
 

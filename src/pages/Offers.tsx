@@ -257,7 +257,7 @@ const Offers = () => {
 
           {/* View Offer Dialog */}
           <Dialog open={!!selectedOffer} onOpenChange={() => setSelectedOffer(null)}>
-            <DialogContent className="sm:max-w-[500px]">
+            <DialogContent className="sm:max-w-[500px] max-h-[80vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Offer Details</DialogTitle>
               </DialogHeader>
@@ -302,7 +302,7 @@ const Offers = () => {
                   {selectedOffer.description && (
                     <div>
                       <p className="text-muted-foreground text-sm mb-1">Description</p>
-                      <p className="text-sm whitespace-pre-wrap bg-muted p-3 rounded-md">{selectedOffer.description}</p>
+                      <p className="text-sm whitespace-pre-wrap bg-muted p-3 rounded-md max-h-[200px] overflow-y-auto">{selectedOffer.description}</p>
                     </div>
                   )}
                   <div className="flex items-center justify-between">
