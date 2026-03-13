@@ -568,6 +568,17 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
 
   const activeChannelData = channels.find(ch => ch.id === activeChannel);
 
+  // Block client accounts from accessing internal messaging
+  if (user?.role === 'client') {
+    return (
+      <Card className="h-[500px] flex flex-col">
+        <CardContent className="flex items-center justify-center h-full">
+          <p className="text-muted-foreground">Access denied. Internal messaging is not available for client accounts.</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card className="h-[500px] flex flex-col">
       <CardHeader className="pb-3">
