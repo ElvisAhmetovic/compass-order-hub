@@ -1,18 +1,35 @@
 
 
-## Add "Created Only" Filter to Advanced Search
+## Filter Client Portal Notifications
 
-The boss wants a second quick-filter alongside "Unpaid Orders Only" that shows orders with only the "Created" status -- orders that haven't progressed yet and also count as unpaid.
+### Problem
+The `NotificationCenter` component is shared between admin and client portals. It fetches **all** notifications for the user without filtering by relevance. Clients can see internal team notifications (chat messages, workflow alerts, etc.) that should only be visible to staff.
+
+### Solution
+Create a dedicated `ClientNotificationCenter` component for the client portal that only shows notifications with `action_url` starting with `/client/`. This keeps the existing `NotificationCenter` unchanged for staff while giving clients a scoped view.
 
 ### Changes
 
-**`src/services/searchService.ts`**
-- Add `createdOnly?: boolean` to `SearchFilters` interface
-- Add filter logic in `applyFiltersToOrders`: if `createdOnly` is true, keep only orders where `status_created === true` and no further progress statuses are active (`status_in_progress`, `status_invoice_sent`, `status_invoice_paid`, `status_resolved`, `status_cancelled` are all falsy)
+**1. `src/services/notificationService.ts`** — Add a `getClientNotifications` method that filters to only client-relevant notifications:
+```ts
+static async getClientNotifications(userId: string) {
+  const { data, error } = await supabase
+    .from('notifications')
+    .select('*')
+    .eq('user_id', userId)
+    .like('action_url', '/client/%')
+    .order('created_at', { ascending: false })
+    .limit(50);
+  return data || [];
+}
+```
 
-**`src/components/dashboard/AdvancedSearch.tsx`**
-- Add a second checkbox below "Unpaid Orders Only" labeled "Created Only (Not Yet Started)" with description "(Orders still at Created status — no invoice sent or paid)"
-- Include `createdOnly` in the active filter count
+**2. `src/components/client-portal/ClientNotificationCenter.tsx`** — New component, a trimmed copy of `NotificationCenter` that uses `getClientNotifications` instead of `getNotifications`. Same UI, just scoped data.
 
-Both filters can work independently or together.
+**3. `src/components/client-portal/ClientHeader.tsx`** — Replace `NotificationCenter` import with `ClientNotificationCenter`.
+
+### Files
+- `src/services/notificationService.ts` — add filtered query method
+- `src/components/client-portal/ClientNotificationCenter.tsx` — new component
+- `src/components/client-portal/ClientHeader.tsx` — swap component
 
