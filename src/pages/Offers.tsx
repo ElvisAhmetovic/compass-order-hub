@@ -257,7 +257,7 @@ const Offers = () => {
 
           {/* View Offer Dialog */}
           <Dialog open={!!selectedOffer} onOpenChange={() => setSelectedOffer(null)}>
-            <DialogContent className="sm:max-w-[500px]">
+            <DialogContent className="sm:max-w-[500px] max-h-[80vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Offer Details</DialogTitle>
               </DialogHeader>
