@@ -95,10 +95,6 @@ const ClientLogin = () => {
     }
   };
 
-  const handleDismissCredentialDialog = () => {
-    setShowCredentialDialog(false);
-    setSearchParams({}, { replace: true });
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
