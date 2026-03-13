@@ -204,8 +204,10 @@ const CustomerTickets = () => {
             )}
           </CardContent>
         </Card>
+          </div>
+        </Layout>
       </div>
-    </Layout>
+    </div>
   );
 };
 
