@@ -284,7 +284,9 @@ const CustomerTicketDetail = () => {
           </div>
         )}
       </div>
-    </Layout>
+        </Layout>
+      </div>
+    </div>
   );
 };
 
