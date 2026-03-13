@@ -618,10 +618,12 @@ const InvoiceDetail = () => {
                             <Label htmlFor="client">Client *</Label>
                             <Popover open={clientPopoverOpen} onOpenChange={setClientPopoverOpen}>
                               <PopoverTrigger asChild>
-                                <Button variant="outline" role="combobox" aria-expanded={clientPopoverOpen} className="w-full justify-between font-normal">
-                                  {formData.client_id
-                                    ? (() => { const c = clients.find(c => c.id === formData.client_id); return c ? `${c.name} - ${c.email}` : "Select a client"; })()
-                                    : "Select a client"}
+                                <Button variant="outline" role="combobox" aria-expanded={clientPopoverOpen} className="w-full justify-between font-normal overflow-hidden">
+                                  <span className="truncate">
+                                    {formData.client_id
+                                      ? (() => { const c = clients.find(c => c.id === formData.client_id); return c ? `${c.name} - ${c.email}` : "Select a client"; })()
+                                      : "Select a client"}
+                                  </span>
                                   <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                 </Button>
                               </PopoverTrigger>
