@@ -43,6 +43,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     let fullName = supabaseUser.user_metadata?.full_name || supabaseUser.email?.split('@')[0] || 'User';
     let firstName = supabaseUser.user_metadata?.first_name || '';
     let lastName = supabaseUser.user_metadata?.last_name || '';
+    let avatarUrl: string | undefined = undefined;
     
     try {
       // Fetch profile for name info
