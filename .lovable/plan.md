@@ -1,18 +1,11 @@
 
 
-## Add "Created Only" Filter to Advanced Search
+## Remove "No thanks" Button from Client Credential Dialog
 
-The boss wants a second quick-filter alongside "Unpaid Orders Only" that shows orders with only the "Created" status -- orders that haven't progressed yet and also count as unpaid.
+Remove the `AlertDialogCancel` ("No thanks") button from the credential request dialog in `ClientLogin.tsx`. The dialog will only have the "Send My Login Info" action button. Clicking outside or pressing Escape will still dismiss it naturally.
 
-### Changes
-
-**`src/services/searchService.ts`**
-- Add `createdOnly?: boolean` to `SearchFilters` interface
-- Add filter logic in `applyFiltersToOrders`: if `createdOnly` is true, keep only orders where `status_created === true` and no further progress statuses are active (`status_in_progress`, `status_invoice_sent`, `status_invoice_paid`, `status_resolved`, `status_cancelled` are all falsy)
-
-**`src/components/dashboard/AdvancedSearch.tsx`**
-- Add a second checkbox below "Unpaid Orders Only" labeled "Created Only (Not Yet Started)" with description "(Orders still at Created status — no invoice sent or paid)"
-- Include `createdOnly` in the active filter count
-
-Both filters can work independently or together.
+### File: `src/pages/client/ClientLogin.tsx`
+- Remove the `AlertDialogCancel` button from the `AlertDialogFooter`
+- Remove the `handleDismissCredentialDialog` function (no longer needed as a click handler)
+- Keep the `onOpenChange` on `AlertDialog` to handle dismiss via overlay/escape, clearing the query param
 
