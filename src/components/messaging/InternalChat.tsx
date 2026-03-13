@@ -22,6 +22,18 @@ interface InternalChatProps {
 }
 
 const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
+  const { user } = useAuth();
+
+  // Block client accounts from accessing internal messaging
+  if (user?.role === 'client') {
+    return (
+      <Card>
+        <CardContent className="flex items-center justify-center h-64">
+          <p className="text-muted-foreground">Access denied. Internal messaging is not available for client accounts.</p>
+        </CardContent>
+      </Card>
+    );
+  }
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [channels, setChannels] = useState<Channel[]>([]);
