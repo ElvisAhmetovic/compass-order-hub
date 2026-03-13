@@ -49,7 +49,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // Fetch profile for name info
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('first_name, last_name, avatar_url')
+        .select('first_name, last_name, avatar_url, role')
         .eq('id', supabaseUser.id)
         .maybeSingle();
       
