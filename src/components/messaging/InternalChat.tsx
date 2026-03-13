@@ -57,7 +57,8 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
       console.log('📋 Fetching team members...');
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, first_name, last_name, role');
+        .select('id, first_name, last_name, role')
+        .neq('role', 'client');
       
       if (error) {
         console.error('❌ Error fetching team members:', error);
