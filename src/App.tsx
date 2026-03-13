@@ -365,9 +365,9 @@ function App() {
                       <ClientSupportDetail />
                     </ClientGuard>
                   } />
-                  <Route path="/client/profile" element={
+                  <Route path="/client/settings" element={
                     <ClientGuard>
-                      <ClientProfile />
+                      <ClientSettings />
                     </ClientGuard>
                   } />
                   <Route path="/client" element={<ClientLogin />} />

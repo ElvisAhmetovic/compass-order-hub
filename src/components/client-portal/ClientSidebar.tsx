@@ -23,7 +23,7 @@ const navigationItems = [
   { title: "Orders", url: "/client/orders", icon: Package },
   { title: "Invoices", url: "/client/invoices", icon: FileText },
   { title: "Support", url: "/client/support", icon: HelpCircle },
-  { title: "Profile", url: "/client/profile", icon: User },
+  { title: "Settings", url: "/client/settings", icon: Settings },
 ];
 
 const ClientSidebar = () => {

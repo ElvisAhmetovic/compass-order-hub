@@ -110,6 +110,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       full_name: fullName,
       first_name: firstName,
       last_name: lastName,
+      avatar_url: profile?.avatar_url || undefined,
       created_at: supabaseUser.created_at,
       last_sign_in: supabaseUser.last_sign_in_at
     };
