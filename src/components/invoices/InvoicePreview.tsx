@@ -666,10 +666,10 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
                 {selectedAccounts.map((account, idx) => (
                   <div key={account.id} className={idx > 0 ? "mt-3 pt-3 border-t border-gray-200" : ""}>
                     <div className="font-semibold mb-2">{account.name}:</div>
-                    <div><strong>{getTranslatedText('iban')}:</strong> {account.iban}</div>
-                    <div><strong>{getTranslatedText('bic')}:</strong> {account.bic}</div>
-                    {account.blz && <div><strong>{getTranslatedText('blz')}:</strong> {account.blz} <strong>{getTranslatedText('account')}:</strong> {account.account}</div>}
-                    {account.bank && <div><strong>{getTranslatedText('bank')}:</strong> {account.bank}</div>}
+                    <div><strong>{getTranslatedText('iban')}:</strong> <span className="text-black font-bold text-base">{account.iban}</span></div>
+                    <div><strong>{getTranslatedText('bic')}:</strong> <span className="text-black font-bold text-base">{account.bic}</span></div>
+                    {account.blz && <div><strong>{getTranslatedText('blz')}:</strong> <span className="text-black font-bold text-base">{account.blz}</span> <strong>{getTranslatedText('account')}:</strong> <span className="text-black font-bold text-base">{account.account}</span></div>}
+                    {account.bank && <div><strong>{getTranslatedText('bank')}:</strong> <span className="text-black font-bold text-base">{account.bank}</span></div>}
                   </div>
                 ))}
               </div>
