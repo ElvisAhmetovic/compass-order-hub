@@ -1,26 +1,18 @@
 
 
-## Fix: Currency change in Invoice Settings not applying to invoice
+## Add "Created Only" Filter to Advanced Search
 
-### Problem
-When the user changes the currency in the "Invoice Settings" tab, it updates `templateSettings.currency` but **not** `formData.currency`. The preview and PDF generation both override `templateSettings.currency` with `formData.currency` (lines 884 and 905), so the change is effectively ignored.
+The boss wants a second quick-filter alongside "Unpaid Orders Only" that shows orders with only the "Created" status -- orders that haven't progressed yet and also count as unpaid.
 
-### Root Cause
-There's a one-way sync: `formData.currency → templateSettings.currency` (line 116-121), but no reverse sync when the user changes currency via the template settings UI.
+### Changes
 
-### Fix
-In `src/pages/InvoiceDetail.tsx`, add a `useEffect` that syncs `templateSettings.currency` back to `formData.currency` whenever template settings change:
+**`src/services/searchService.ts`**
+- Add `createdOnly?: boolean` to `SearchFilters` interface
+- Add filter logic in `applyFiltersToOrders`: if `createdOnly` is true, keep only orders where `status_created === true` and no further progress statuses are active (`status_in_progress`, `status_invoice_sent`, `status_invoice_paid`, `status_resolved`, `status_cancelled` are all falsy)
 
-```typescript
-useEffect(() => {
-  if (templateSettings.currency && templateSettings.currency !== formData.currency) {
-    setFormData(prev => ({ ...prev, currency: templateSettings.currency }));
-  }
-}, [templateSettings.currency]);
-```
+**`src/components/dashboard/AdvancedSearch.tsx`**
+- Add a second checkbox below "Unpaid Orders Only" labeled "Created Only (Not Yet Started)" with description "(Orders still at Created status — no invoice sent or paid)"
+- Include `createdOnly` in the active filter count
 
-This ensures the currency dropdown in Invoice Settings actually propagates to the invoice record and preview.
-
-### File
-- `src/pages/InvoiceDetail.tsx` — add reverse sync effect (~line 122)
+Both filters can work independently or together.
 
