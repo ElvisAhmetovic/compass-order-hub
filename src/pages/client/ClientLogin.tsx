@@ -133,7 +133,7 @@ const ClientLogin = () => {
 
   return (
     <>
-      <AlertDialog open={showCredentialDialog} onOpenChange={setShowCredentialDialog}>
+      <AlertDialog open={showCredentialDialog} onOpenChange={(open) => { if (!open) { setShowCredentialDialog(false); setSearchParams({}, { replace: true }); } }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
