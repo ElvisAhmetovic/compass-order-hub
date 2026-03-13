@@ -1,29 +1,18 @@
 
 
-## Fix Work Hours: Absent Toggle Errors and Total Hours Calculation
+## Add "Created Only" Filter to Advanced Search
 
-Two issues to fix:
+The boss wants a second quick-filter alongside "Unpaid Orders Only" that shows orders with only the "Created" status -- orders that haven't progressed yet and also count as unpaid.
 
-### 1. "Failed to fetch" on absent toggle
-The `upsertWorkHour` function uses `.select().single()` which can fail if the upsert doesn't return exactly one row (e.g., due to RLS filtering the response or edge cases with conflict resolution). The fix is to make the upsert more resilient — use `.select()` without `.single()` and take the first result, or simply not require a return value for the toggle operation since we already know the data we're saving.
+### Changes
 
-**File: `src/services/workHoursService.ts`** (line 33-53)
-- Change `.select().single()` to `.select()` and return `data?.[0]` — this prevents the "No rows returned" error from `.single()` while still getting the data back.
+**`src/services/searchService.ts`**
+- Add `createdOnly?: boolean` to `SearchFilters` interface
+- Add filter logic in `applyFiltersToOrders`: if `createdOnly` is true, keep only orders where `status_created === true` and no further progress statuses are active (`status_in_progress`, `status_invoice_sent`, `status_invoice_paid`, `status_resolved`, `status_cancelled` are all falsy)
 
-### 2. Total hours should exclude absent days
-Currently line 114 sums `working_hours` for ALL entries including absent ones. Fix: filter out absent entries.
+**`src/components/dashboard/AdvancedSearch.tsx`**
+- Add a second checkbox below "Unpaid Orders Only" labeled "Created Only (Not Yet Started)" with description "(Orders still at Created status — no invoice sent or paid)"
+- Include `createdOnly` in the active filter count
 
-**File: `src/components/work-hours/WorkHoursTable.tsx`** (line 114)
-- Change from:
-  ```ts
-  const totalHours = Object.values(rows).reduce((sum, r) => sum + (r.working_hours || 0), 0);
-  ```
-- To:
-  ```ts
-  const totalHours = Object.values(rows).reduce((sum, r) => sum + (r.absent ? 0 : (r.working_hours || 0)), 0);
-  ```
-
-### Files to modify
-- `src/services/workHoursService.ts` — make upsert more resilient
-- `src/components/work-hours/WorkHoursTable.tsx` — exclude absent days from total
+Both filters can work independently or together.
 

@@ -111,7 +111,7 @@ const WorkHoursTable = ({ userId, month, year }: WorkHoursTableProps) => {
     }
   };
 
-  const totalHours = Object.values(rows).reduce((sum, r) => sum + (r.working_hours || 0), 0);
+  const totalHours = Object.values(rows).reduce((sum, r) => sum + (r.absent ? 0 : (r.working_hours || 0)), 0);
 
   if (loading) return <div className="py-8 text-center text-muted-foreground">Loading...</div>;
 
