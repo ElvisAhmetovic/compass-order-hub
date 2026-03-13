@@ -120,6 +120,13 @@ const InvoiceDetail = () => {
     }));
   }, [formData.currency]);
 
+  // Reverse sync: update formData when currency changes in template settings
+  useEffect(() => {
+    if (templateSettings.currency && templateSettings.currency !== formData.currency) {
+      setFormData(prev => ({ ...prev, currency: templateSettings.currency }));
+    }
+  }, [templateSettings.currency]);
+
   // Auto-save on unmount for existing invoices
   useEffect(() => {
     return () => {
