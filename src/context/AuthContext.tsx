@@ -61,6 +61,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           lastName = profile.last_name || '';
           fullName = `${firstName} ${lastName}`.trim();
         }
+        avatarUrl = profile.avatar_url || undefined;
       }
 
       // Fetch role from user_roles table (security best practice)
