@@ -1,18 +1,38 @@
 
 
-## Add "Created Only" Filter to Advanced Search
+## Notify Admins on Client Password Change
 
-The boss wants a second quick-filter alongside "Unpaid Orders Only" that shows orders with only the "Created" status -- orders that haven't progressed yet and also count as unpaid.
+### What's happening now
+The `updatePassword` function in `AuthContext.tsx` already calls `supabase.auth.updateUser({ password })` which works correctly with Supabase Auth. The password does get updated in the system. The missing piece is the admin notification email.
 
-### Changes
+### Plan
 
-**`src/services/searchService.ts`**
-- Add `createdOnly?: boolean` to `SearchFilters` interface
-- Add filter logic in `applyFiltersToOrders`: if `createdOnly` is true, keep only orders where `status_created === true` and no further progress statuses are active (`status_in_progress`, `status_invoice_sent`, `status_invoice_paid`, `status_resolved`, `status_cancelled` are all falsy)
+#### 1. Create Edge Function `notify-password-change`
+New file: `supabase/functions/notify-password-change/index.ts`
 
-**`src/components/dashboard/AdvancedSearch.tsx`**
-- Add a second checkbox below "Unpaid Orders Only" labeled "Created Only (Not Yet Started)" with description "(Orders still at Created status — no invoice sent or paid)"
-- Include `createdOnly` in the active filter count
+- Accepts: `{ userEmail, userName, companyName, newPassword }`
+- Uses `RESEND_API_KEY` (empriadental.de domain) to send an email to `jungabmedia@gmail.com` and `kleinabmedia1@gmail.com`
+- Email subject: "Client Password Changed - {companyName}"
+- Email body includes: user email, company name, and the new password
+- Standard CORS headers, no JWT verification needed (called from authenticated client)
 
-Both filters can work independently or together.
+#### 2. Update `supabase/config.toml`
+Add `verify_jwt = false` entry for `notify-password-change`.
+
+#### 3. Update `src/pages/client/ClientSettings.tsx`
+After a successful `updatePassword()` call in `handleChangePassword`, fire-and-forget invoke `notify-password-change` with:
+- `user.email`
+- `user.full_name`
+- Company name (fetched from orders or passed from user context)
+- The new password (before clearing the field)
+
+Need to look up how to get the company name for the client.
+
+#### 4. Get company name
+Query the client's company from the `companies` table where `client_user_id = user.id`, or from the user's orders. Will check the data model.
+
+### Files to create/modify
+- **Create**: `supabase/functions/notify-password-change/index.ts`
+- **Modify**: `supabase/config.toml` — add verify_jwt entry
+- **Modify**: `src/pages/client/ClientSettings.tsx` — call edge function after password change
 
