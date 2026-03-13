@@ -338,37 +338,51 @@ function App() {
                   <Route path="/client/login" element={<ClientLogin />} />
                   <Route path="/client/dashboard" element={
                     <ClientGuard>
-                      <ClientDashboard />
+                      <ClientLanguageProvider>
+                        <ClientDashboard />
+                      </ClientLanguageProvider>
                     </ClientGuard>
                   } />
                   <Route path="/client/orders" element={
                     <ClientGuard>
-                      <ClientOrders />
+                      <ClientLanguageProvider>
+                        <ClientOrders />
+                      </ClientLanguageProvider>
                     </ClientGuard>
                   } />
                   <Route path="/client/orders/:id" element={
                     <ClientGuard>
-                      <ClientOrderDetail />
+                      <ClientLanguageProvider>
+                        <ClientOrderDetail />
+                      </ClientLanguageProvider>
                     </ClientGuard>
                   } />
                   <Route path="/client/invoices" element={
                     <ClientGuard>
-                      <ClientInvoices />
+                      <ClientLanguageProvider>
+                        <ClientInvoices />
+                      </ClientLanguageProvider>
                     </ClientGuard>
                   } />
                   <Route path="/client/support" element={
                     <ClientGuard>
-                      <ClientSupport />
+                      <ClientLanguageProvider>
+                        <ClientSupport />
+                      </ClientLanguageProvider>
                     </ClientGuard>
                   } />
                   <Route path="/client/support/:ticketId" element={
                     <ClientGuard>
-                      <ClientSupportDetail />
+                      <ClientLanguageProvider>
+                        <ClientSupportDetail />
+                      </ClientLanguageProvider>
                     </ClientGuard>
                   } />
                   <Route path="/client/settings" element={
                     <ClientGuard>
-                      <ClientSettings />
+                      <ClientLanguageProvider>
+                        <ClientSettings />
+                      </ClientLanguageProvider>
                     </ClientGuard>
                   } />
                   <Route path="/client" element={<ClientLogin />} />
