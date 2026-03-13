@@ -17,13 +17,14 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { Badge } from "@/components/ui/badge";
+import { useLanguage } from "@/context/ClientLanguageContext";
 
 const navigationItems = [
-  { title: "Dashboard", url: "/client/dashboard", icon: LayoutDashboard },
-  { title: "Orders", url: "/client/orders", icon: Package },
-  { title: "Invoices", url: "/client/invoices", icon: FileText },
-  { title: "Support", url: "/client/support", icon: HelpCircle },
-  { title: "Settings", url: "/client/settings", icon: Settings },
+  { titleKey: "nav.dashboard", url: "/client/dashboard", icon: LayoutDashboard },
+  { titleKey: "nav.orders", url: "/client/orders", icon: Package },
+  { titleKey: "nav.invoices", url: "/client/invoices", icon: FileText },
+  { titleKey: "nav.support", url: "/client/support", icon: HelpCircle },
+  { titleKey: "nav.settings", url: "/client/settings", icon: Settings },
 ];
 
 const ClientSidebar = () => {
@@ -31,11 +32,11 @@ const ClientSidebar = () => {
   const collapsed = state === "collapsed";
   const location = useLocation();
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [unreadSupportCount, setUnreadSupportCount] = useState(0);
 
   const isActive = (path: string) => location.pathname === path;
 
-  // Fetch unread support notifications count for client
   useEffect(() => {
     if (!user?.id) return;
 
@@ -57,11 +58,9 @@ const ClientSidebar = () => {
 
     fetchUnreadSupportCount();
 
-    // Fallback: listen for manual "notifications changed" events
     const handleNotificationsChanged = () => fetchUnreadSupportCount();
     window.addEventListener("notifications:changed", handleNotificationsChanged);
 
-    // Real-time subscription for notifications changes
     const channel = supabase
       .channel(`client-support-notifications-sidebar-${user.id}`)
       .on('postgres_changes', {
@@ -90,7 +89,7 @@ const ClientSidebar = () => {
     >
       <div className="flex items-center justify-between p-4 border-b border-border">
         {!collapsed && (
-          <span className="font-semibold text-lg text-foreground">Client Portal</span>
+          <span className="font-semibold text-lg text-foreground">{t('nav.clientPortal')}</span>
         )}
         <SidebarTrigger className="ml-auto" />
       </div>
@@ -98,19 +97,20 @@ const ClientSidebar = () => {
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel className={cn(collapsed && "sr-only")}>
-            Navigation
+            {t('nav.navigation')}
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {navigationItems.map((item) => {
+                const title = t(item.titleKey);
                 const showSupportBadge = item.url === "/client/support" && unreadSupportCount > 0;
                 
                 return (
-                  <SidebarMenuItem key={item.title}>
+                  <SidebarMenuItem key={item.titleKey}>
                     <SidebarMenuButton
                       asChild
                       isActive={isActive(item.url)}
-                      tooltip={collapsed ? item.title : undefined}
+                      tooltip={collapsed ? title : undefined}
                     >
                       <NavLink
                         to={item.url}
@@ -123,7 +123,7 @@ const ClientSidebar = () => {
                       >
                         <div className="flex items-center gap-3">
                           <item.icon className="h-5 w-5 shrink-0" />
-                          {!collapsed && <span>{item.title}</span>}
+                          {!collapsed && <span>{title}</span>}
                         </div>
                         {showSupportBadge && !collapsed && (
                           <Badge variant="destructive" className="h-5 min-w-[20px] px-1.5 flex items-center justify-center text-xs">

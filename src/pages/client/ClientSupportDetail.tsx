@@ -16,6 +16,7 @@ import {
 import { getLastReadAt, markInquiryAsRead, markSupportNotificationsAsRead } from "@/services/supportReadService";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
+import { useLanguage } from "@/context/ClientLanguageContext";
 
 interface ReplyWithUnread extends ClientSupportReply {
   isUnread?: boolean;
@@ -25,6 +26,7 @@ const ClientSupportDetail = () => {
   const { ticketId } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   const [inquiry, setInquiry] = useState<ClientSupportInquiry | null>(null);
   const [replies, setReplies] = useState<ReplyWithUnread[]>([]);
@@ -41,7 +43,6 @@ const ClientSupportDetail = () => {
     }
   }, [ticketId]);
 
-  // Mark as read after a short delay
   useEffect(() => {
     if (!ticketId || !inquiry || hasMarkedRead.current) return;
     
@@ -60,7 +61,6 @@ const ClientSupportDetail = () => {
     setLastReadAt(readAt);
   };
 
-  // Real-time subscription for replies on this ticket
   useEffect(() => {
     if (!ticketId) return;
 
@@ -88,11 +88,9 @@ const ClientSupportDetail = () => {
     const result = await fetchClientInquiryById(ticketId);
     setInquiry(result.inquiry);
     
-    // Get current user to determine which replies are unread
     const { data: userData } = await supabase.auth.getUser();
     const currentUserId = userData.user?.id;
     
-    // Mark replies as unread if created after lastReadAt and not by current user
     const repliesWithUnread = result.replies.map(reply => ({
       ...reply,
       isUnread: lastReadAt 
@@ -112,15 +110,15 @@ const ClientSupportDetail = () => {
 
     if (result.success) {
       toast({
-        title: "Reply Sent",
-        description: "Your message has been sent to our support team.",
+        title: t('supportDetail.replySent'),
+        description: t('supportDetail.replySentDesc'),
       });
       setReplyMessage("");
       loadInquiry();
     } else {
       toast({
-        title: "Error",
-        description: result.error || "Failed to send reply",
+        title: t('common.error'),
+        description: result.error || t('supportDetail.replyError'),
         variant: "destructive",
       });
     }
@@ -130,11 +128,11 @@ const ClientSupportDetail = () => {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "open":
-        return <Badge className="bg-blue-500 hover:bg-blue-600">Open</Badge>;
+        return <Badge className="bg-blue-500 hover:bg-blue-600">{t('support.statusOpen')}</Badge>;
       case "in_progress":
-        return <Badge className="bg-amber-500 hover:bg-amber-600">In Progress</Badge>;
+        return <Badge className="bg-amber-500 hover:bg-amber-600">{t('support.statusInProgress')}</Badge>;
       case "closed":
-        return <Badge variant="secondary">Closed</Badge>;
+        return <Badge variant="secondary">{t('support.statusClosed')}</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -156,11 +154,11 @@ const ClientSupportDetail = () => {
         <div className="space-y-6">
           <Button variant="ghost" onClick={() => navigate("/client/support")}>
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Support
+            {t('supportDetail.backToSupport')}
           </Button>
           <Card>
             <CardContent className="py-12 text-center">
-              <p className="text-muted-foreground">Ticket not found</p>
+              <p className="text-muted-foreground">{t('supportDetail.ticketNotFound')}</p>
             </CardContent>
           </Card>
         </div>
@@ -171,37 +169,34 @@ const ClientSupportDetail = () => {
   return (
     <ClientLayout>
       <div className="space-y-6">
-        {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
           <Button variant="ghost" size="sm" onClick={() => navigate("/client/support")} className="w-fit">
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
+            {t('supportDetail.back')}
           </Button>
           <div className="flex-1 min-w-0">
             <h1 className="text-xl sm:text-2xl font-bold text-foreground truncate">{inquiry.subject}</h1>
             <div className="flex flex-wrap items-center gap-2 mt-1">
               {getStatusBadge(inquiry.status)}
               <span className="text-xs sm:text-sm text-muted-foreground">
-                Created {format(new Date(inquiry.created_at), "MMM d, yyyy")}
+                {t('orders.created')} {format(new Date(inquiry.created_at), "MMM d, yyyy")}
               </span>
             </div>
           </div>
         </div>
 
-        {/* Linked Order */}
         {inquiry.order_company_name && (
           <Card className="border-primary/20 bg-primary/5">
             <CardContent className="py-3">
               <div className="flex items-center gap-2 text-sm">
                 <Package className="h-4 w-4 text-primary" />
-                <span className="text-muted-foreground">Linked Order:</span>
+                <span className="text-muted-foreground">{t('supportDetail.linkedOrder')}</span>
                 <span className="font-medium">{inquiry.order_company_name}</span>
               </div>
             </CardContent>
           </Card>
         )}
 
-        {/* Original Message */}
         <Card>
           <CardHeader className="pb-3">
             <div className="flex items-center gap-3">
@@ -221,10 +216,9 @@ const ClientSupportDetail = () => {
           </CardContent>
         </Card>
 
-        {/* Replies Thread */}
         {replies.length > 0 && (
           <div className="space-y-4">
-            <h3 className="text-sm font-medium text-muted-foreground">Conversation</h3>
+            <h3 className="text-sm font-medium text-muted-foreground">{t('supportDetail.conversation')}</h3>
             {replies.map((reply) => {
               const isSupport = reply.user_role !== "client";
               return (
@@ -236,15 +230,11 @@ const ClientSupportDetail = () => {
                     <div className="flex items-center gap-3">
                       <div
                         className={`h-10 w-10 rounded-full flex items-center justify-center ${
-                          isSupport
-                            ? "bg-green-500/10"
-                            : "bg-primary/10"
+                          isSupport ? "bg-green-500/10" : "bg-primary/10"
                         }`}
                       >
                         <User
-                          className={`h-5 w-5 ${
-                            isSupport ? "text-green-600" : "text-primary"
-                          }`}
+                          className={`h-5 w-5 ${isSupport ? "text-green-600" : "text-primary"}`}
                         />
                       </div>
                       <div>
@@ -252,7 +242,7 @@ const ClientSupportDetail = () => {
                           <CardTitle className="text-base">{reply.user_name}</CardTitle>
                           {isSupport && (
                             <Badge variant="outline" className="text-xs">
-                              Support Team
+                              {t('supportDetail.supportTeam')}
                             </Badge>
                           )}
                           {reply.isUnread && (
@@ -276,15 +266,14 @@ const ClientSupportDetail = () => {
           </div>
         )}
 
-        {/* Reply Form */}
         {inquiry.status !== "closed" && (
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Add a Reply</CardTitle>
+              <CardTitle className="text-base">{t('supportDetail.addReply')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <Textarea
-                placeholder="Type your message here..."
+                placeholder={t('supportDetail.replyPlaceholder')}
                 value={replyMessage}
                 onChange={(e) => setReplyMessage(e.target.value)}
                 rows={4}
@@ -299,21 +288,19 @@ const ClientSupportDetail = () => {
                   ) : (
                     <Send className="h-4 w-4 mr-2" />
                   )}
-                  Send Reply
+                  {t('supportDetail.sendReply')}
                 </Button>
               </div>
             </CardContent>
           </Card>
         )}
 
-        {/* Closed Notice */}
         {inquiry.status === "closed" && (
           <Card className="border-muted bg-muted/20">
             <CardContent className="py-6 text-center">
               <Clock className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
               <p className="text-muted-foreground">
-                This ticket has been closed. If you need further assistance, please create
-                a new inquiry.
+                {t('supportDetail.ticketClosed')}
               </p>
             </CardContent>
           </Card>

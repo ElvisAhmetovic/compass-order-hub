@@ -7,6 +7,7 @@ import { Paperclip, Calendar, ArrowRight, Megaphone, ExternalLink } from "lucide
 import { format } from "date-fns";
 import { ClientOrder } from "@/services/clientOrderService";
 import { getClientStatusFromOrder, getActionButtonConfig } from "@/utils/clientStatusTranslator";
+import { useLanguage } from "@/context/ClientLanguageContext";
 
 interface ClientOrderCardProps {
   order: ClientOrder;
@@ -17,7 +18,7 @@ const ClientOrderCard = ({ order, attachmentCount = 0 }: ClientOrderCardProps) =
   const statusConfig = getClientStatusFromOrder(order);
   const actionConfig = getActionButtonConfig(order);
   const isCancelled = order.status_cancelled;
-  const isCompleted = order.status_resolved;
+  const { t } = useLanguage();
 
   return (
     <Link to={`/client/orders/${order.id}`}>
@@ -25,7 +26,6 @@ const ClientOrderCard = ({ order, attachmentCount = 0 }: ClientOrderCardProps) =
         <CardContent className="p-4">
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1 min-w-0 space-y-3">
-              {/* Project Name & Status */}
               <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="font-semibold text-foreground truncate">
                   {order.company_name}
@@ -38,13 +38,11 @@ const ClientOrderCard = ({ order, attachmentCount = 0 }: ClientOrderCardProps) =
                 </Badge>
               </div>
 
-              {/* Date Created */}
               <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
                 <Calendar className="h-3.5 w-3.5" />
                 <span>{format(new Date(order.created_at), "MMM d, yyyy")}</span>
               </div>
 
-              {/* Action Button OR Progress Bar */}
               {actionConfig.showButton && actionConfig.url ? (
                 <div className="pt-1">
                   <Button
@@ -68,7 +66,7 @@ const ClientOrderCard = ({ order, attachmentCount = 0 }: ClientOrderCardProps) =
               ) : !isCancelled && (
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-muted-foreground">Progress</span>
+                    <span className="text-muted-foreground">{t('orderCard.progress')}</span>
                     <span className="font-medium text-foreground">{statusConfig.progress}%</span>
                   </div>
                   <Progress 
@@ -78,15 +76,13 @@ const ClientOrderCard = ({ order, attachmentCount = 0 }: ClientOrderCardProps) =
                 </div>
               )}
 
-              {/* Attachments Count */}
               {attachmentCount > 0 && (
                 <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
                   <Paperclip className="h-3.5 w-3.5" />
-                  <span>{attachmentCount} file{attachmentCount !== 1 ? 's' : ''}</span>
+                  <span>{attachmentCount} {attachmentCount !== 1 ? t('orderCard.files') : t('orderCard.file')}</span>
                 </div>
               )}
 
-              {/* Client Update Indicator */}
               {order.client_visible_update && (
                 <div className="flex items-center gap-1.5 text-sm text-primary">
                   <Megaphone className="h-3.5 w-3.5 flex-shrink-0" />
@@ -99,7 +95,6 @@ const ClientOrderCard = ({ order, attachmentCount = 0 }: ClientOrderCardProps) =
               )}
             </div>
 
-            {/* Arrow indicator */}
             <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0 mt-1" />
           </div>
         </CardContent>

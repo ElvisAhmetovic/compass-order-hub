@@ -41,6 +41,7 @@ import {
 import { getUnreadCountsForInquiries } from "@/services/supportReadService";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
+import { useLanguage } from "@/context/ClientLanguageContext";
 
 interface InquiryWithUnread extends ClientSupportInquiry {
   unread_count: number;
@@ -50,13 +51,13 @@ const ClientSupport = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [inquiries, setInquiries] = useState<InquiryWithUnread[]>([]);
   const [orders, setOrders] = useState<{ id: string; company_name: string }[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  // Form state
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
   const [selectedOrderId, setSelectedOrderId] = useState<string>("");
@@ -65,13 +66,11 @@ const ClientSupport = () => {
     loadData();
   }, []);
 
-  // Auto-open complaint dialog from email link
   useEffect(() => {
     const isComplaint = searchParams.get("complaint") === "true";
     const complaintOrderId = searchParams.get("orderId");
 
     if (isComplaint && orders.length > 0) {
-      // Find the matching order to get company name
       const matchedOrder = orders.find(o => o.id === complaintOrderId);
       if (matchedOrder) {
         setSubject(`Einwand / Complaint - ${matchedOrder.company_name}`);
@@ -81,12 +80,10 @@ const ClientSupport = () => {
         if (complaintOrderId) setSelectedOrderId(complaintOrderId);
       }
       setDialogOpen(true);
-      // Clear query params so it doesn't re-trigger
       setSearchParams({}, { replace: true });
     }
   }, [orders, searchParams]);
 
-  // Real-time subscription for support updates
   useEffect(() => {
     const channel = supabase
       .channel('client-support-realtime')
@@ -118,7 +115,6 @@ const ClientSupport = () => {
       fetchClientOrders(),
     ]);
     
-    // Get unread counts
     const inquiryIds = inquiriesData.map(i => i.id);
     const unreadCounts = await getUnreadCountsForInquiries(inquiryIds);
     
@@ -135,8 +131,8 @@ const ClientSupport = () => {
   const handleCreateInquiry = async () => {
     if (!subject.trim() || !message.trim()) {
       toast({
-        title: "Missing Information",
-        description: "Please provide both a subject and message.",
+        title: t('support.missingInfo'),
+        description: t('support.missingInfoDesc'),
         variant: "destructive",
       });
       return;
@@ -151,8 +147,8 @@ const ClientSupport = () => {
 
     if (result.success) {
       toast({
-        title: "Inquiry Created",
-        description: "Your support inquiry has been submitted.",
+        title: t('support.inquiryCreated'),
+        description: t('support.inquiryCreatedDesc'),
       });
       setSubject("");
       setMessage("");
@@ -161,8 +157,8 @@ const ClientSupport = () => {
       loadData();
     } else {
       toast({
-        title: "Error",
-        description: result.error || "Failed to create inquiry",
+        title: t('support.error'),
+        description: result.error || t('support.createError'),
         variant: "destructive",
       });
     }
@@ -172,11 +168,11 @@ const ClientSupport = () => {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "open":
-        return <Badge className="bg-blue-500 hover:bg-blue-600">Open</Badge>;
+        return <Badge className="bg-blue-500 hover:bg-blue-600">{t('support.statusOpen')}</Badge>;
       case "in_progress":
-        return <Badge className="bg-amber-500 hover:bg-amber-600">In Progress</Badge>;
+        return <Badge className="bg-amber-500 hover:bg-amber-600">{t('support.statusInProgress')}</Badge>;
       case "closed":
-        return <Badge variant="secondary">Closed</Badge>;
+        return <Badge variant="secondary">{t('support.statusClosed')}</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -187,9 +183,9 @@ const ClientSupport = () => {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Support</h1>
+            <h1 className="text-3xl font-bold text-foreground">{t('support.title')}</h1>
             <p className="text-muted-foreground mt-1">
-              Get help with your orders
+              {t('support.subtitle')}
             </p>
           </div>
 
@@ -197,38 +193,37 @@ const ClientSupport = () => {
             <DialogTrigger asChild>
               <Button>
                 <Plus className="h-4 w-4 mr-2" />
-                New Inquiry
+                {t('support.newInquiry')}
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[500px]">
               <DialogHeader>
-                <DialogTitle>Create Support Inquiry</DialogTitle>
+                <DialogTitle>{t('support.createInquiry')}</DialogTitle>
                 <DialogDescription>
-                  Submit a new support request. Our team will respond as soon as
-                  possible.
+                  {t('support.createDesc')}
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
-                  <Label htmlFor="subject">Subject</Label>
+                  <Label htmlFor="subject">{t('support.subject')}</Label>
                   <Input
                     id="subject"
-                    placeholder="Brief description of your issue"
+                    placeholder={t('support.subjectPlaceholder')}
                     value={subject}
                     onChange={(e) => setSubject(e.target.value)}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="order">Related Order (Optional)</Label>
+                  <Label htmlFor="order">{t('support.relatedOrder')}</Label>
                   <Select
                     value={selectedOrderId}
                     onValueChange={(value) => setSelectedOrderId(value === "none" ? "" : value)}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select an order..." />
+                      <SelectValue placeholder={t('support.selectOrder')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">No specific order</SelectItem>
+                      <SelectItem value="none">{t('support.noSpecificOrder')}</SelectItem>
                       {orders.map((order) => (
                         <SelectItem key={order.id} value={order.id}>
                           {order.company_name}
@@ -238,10 +233,10 @@ const ClientSupport = () => {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="message">Message</Label>
+                  <Label htmlFor="message">{t('support.message')}</Label>
                   <Textarea
                     id="message"
-                    placeholder="Describe your issue in detail..."
+                    placeholder={t('support.messagePlaceholder')}
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                     rows={5}
@@ -254,13 +249,13 @@ const ClientSupport = () => {
                   onClick={() => setDialogOpen(false)}
                   disabled={isCreating}
                 >
-                  Cancel
+                  {t('support.cancel')}
                 </Button>
                 <Button onClick={handleCreateInquiry} disabled={isCreating}>
                   {isCreating ? (
                     <Loader2 className="h-4 w-4 animate-spin mr-2" />
                   ) : null}
-                  Submit Inquiry
+                  {t('support.submit')}
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -275,9 +270,9 @@ const ClientSupport = () => {
           <Card className="border-dashed">
             <CardContent className="py-12 text-center">
               <HelpCircle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">No support inquiries yet</p>
+              <p className="text-muted-foreground">{t('support.noInquiries')}</p>
               <p className="text-sm text-muted-foreground mt-1">
-                Click "New Inquiry" to create your first support request.
+                {t('support.noInquiriesDesc')}
               </p>
             </CardContent>
           </Card>
@@ -318,12 +313,12 @@ const ClientSupport = () => {
                   <div className="flex items-center justify-between mt-3">
                     <div className="flex items-center gap-1 text-xs text-primary">
                       <MessageSquare className="h-3.5 w-3.5" />
-                      View conversation
+                      {t('support.viewConversation')}
                     </div>
                     {inquiry.unread_count > 0 && (
                       <div className="flex items-center gap-1.5">
                         <span className="text-xs text-red-500 font-medium">
-                          {inquiry.unread_count} new
+                          {inquiry.unread_count} {t('support.new')}
                         </span>
                         <span className="relative flex h-2.5 w-2.5">
                           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />

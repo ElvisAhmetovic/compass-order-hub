@@ -5,9 +5,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/context/AuthContext";
-import { Loader2, Lock, UserCog, Check } from "lucide-react";
+import { Loader2, Lock, UserCog, Check, Globe } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useLanguage } from "@/context/ClientLanguageContext";
+import { LANGUAGE_OPTIONS, ClientLanguage } from "@/i18n/clientTranslations";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const AVATAR_ICONS = [
   { name: "Beaver", path: "/avatars/beaver.png" },
@@ -25,6 +34,7 @@ const AVATAR_ICONS = [
 const ClientSettings = () => {
   const { user, updateUserProfile, updatePassword, isLoading, refreshUser } = useAuth();
   const { toast } = useToast();
+  const { t, language, setLanguage } = useLanguage();
 
   const [firstName, setFirstName] = useState(user?.first_name || "");
   const [lastName, setLastName] = useState(user?.last_name || "");
@@ -46,13 +56,18 @@ const ClientSettings = () => {
       if (error) throw error;
 
       await refreshUser();
-      toast({ title: "Icon updated", description: "Your profile icon has been updated." });
+      toast({ title: t('settings.iconUpdated'), description: t('settings.iconUpdatedDesc') });
     } catch (error) {
       console.error("Icon select error:", error);
-      toast({ variant: "destructive", title: "Update failed", description: "Could not update your icon. Please try again." });
+      toast({ variant: "destructive", title: t('settings.iconUpdateFailed'), description: t('settings.iconUpdateFailedDesc') });
     } finally {
       setIsSavingIcon(false);
     }
+  };
+
+  const handleLanguageChange = async (newLang: string) => {
+    await setLanguage(newLang as ClientLanguage);
+    toast({ title: t('settings.languageUpdated'), description: t('settings.languageUpdatedDesc') });
   };
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
@@ -64,7 +79,7 @@ const ClientSettings = () => {
       full_name: `${firstName} ${lastName}`.trim(),
     });
     if (success) {
-      toast({ title: "Profile updated", description: "Your profile has been updated successfully." });
+      toast({ title: t('common.profileUpdated'), description: t('common.profileUpdatedDesc') });
     }
     setIsSaving(false);
   };
@@ -73,7 +88,7 @@ const ClientSettings = () => {
     e.preventDefault();
 
     if (newPassword !== confirmPassword) {
-      toast({ variant: "destructive", title: "Passwords don't match", description: "Please make sure both passwords match." });
+      toast({ variant: "destructive", title: t('settings.passwordsDontMatch'), description: t('settings.passwordsDontMatchDesc') });
       return;
     }
 
@@ -84,8 +99,8 @@ const ClientSettings = () => {
     if (newPassword.length < 8 || !hasUppercase || !hasLowercase || !hasNumber) {
       toast({
         variant: "destructive",
-        title: "Password too weak",
-        description: "Password must be at least 8 characters with uppercase, lowercase, and a number.",
+        title: t('settings.passwordTooWeak'),
+        description: t('settings.passwordTooWeakDesc'),
       });
       return;
     }
@@ -94,7 +109,6 @@ const ClientSettings = () => {
     const passwordToNotify = newPassword;
     const success = await updatePassword(newPassword);
     if (success) {
-      // Fire-and-forget admin notification
       (async () => {
         try {
           const { data: company } = await supabase
@@ -136,15 +150,47 @@ const ClientSettings = () => {
     <ClientLayout>
       <div className="space-y-6 max-w-2xl">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Settings</h1>
-          <p className="text-muted-foreground mt-1">Manage your account settings</p>
+          <h1 className="text-3xl font-bold text-foreground">{t('settings.title')}</h1>
+          <p className="text-muted-foreground mt-1">{t('settings.subtitle')}</p>
         </div>
 
-        {/* Icon Picker Section */}
+        {/* Language & Region */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Profile Icon</CardTitle>
-            <CardDescription>Choose an icon to represent your account</CardDescription>
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-full bg-primary/10">
+                <Globe className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <CardTitle className="text-lg">{t('settings.languageRegion')}</CardTitle>
+                <CardDescription>{t('settings.languageRegionDesc')}</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <Label>{t('settings.language')}</Label>
+              <Select value={language} onValueChange={handleLanguageChange}>
+                <SelectTrigger className="w-full sm:w-64">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {LANGUAGE_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.code} value={opt.code}>
+                      {opt.flag} {opt.nativeName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Icon Picker */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">{t('settings.profileIcon')}</CardTitle>
+            <CardDescription>{t('settings.profileIconDesc')}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-5 gap-4">
@@ -187,8 +233,8 @@ const ClientSettings = () => {
                 <UserCog className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <CardTitle className="text-lg">Personal Information</CardTitle>
-                <CardDescription>Update your name and details</CardDescription>
+                <CardTitle className="text-lg">{t('settings.personalInfo')}</CardTitle>
+                <CardDescription>{t('settings.personalInfoDesc')}</CardDescription>
               </div>
             </div>
           </CardHeader>
@@ -196,27 +242,27 @@ const ClientSettings = () => {
             <form onSubmit={handleUpdateProfile} className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="firstName">First Name</Label>
+                  <Label htmlFor="firstName">{t('settings.firstName')}</Label>
                   <Input id="firstName" value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="John" />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="lastName">Last Name</Label>
+                  <Label htmlFor="lastName">{t('settings.lastName')}</Label>
                   <Input id="lastName" value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Doe" />
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">{t('settings.email')}</Label>
                 <Input id="email" value={user?.email || ""} disabled className="bg-muted" />
-                <p className="text-xs text-muted-foreground">Contact support to change your email address</p>
+                <p className="text-xs text-muted-foreground">{t('settings.emailNote')}</p>
               </div>
               <Button type="submit" disabled={isSaving}>
                 {isSaving ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Saving...
+                    {t('settings.saving')}
                   </>
                 ) : (
-                  "Save Changes"
+                  t('settings.saveChanges')
                 )}
               </Button>
             </form>
@@ -231,32 +277,32 @@ const ClientSettings = () => {
                 <Lock className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <CardTitle className="text-lg">Change Password</CardTitle>
-                <CardDescription>Update your account password</CardDescription>
+                <CardTitle className="text-lg">{t('settings.changePassword')}</CardTitle>
+                <CardDescription>{t('settings.changePasswordDesc')}</CardDescription>
               </div>
             </div>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleChangePassword} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="newPassword">New Password</Label>
+                <Label htmlFor="newPassword">{t('settings.newPassword')}</Label>
                 <Input id="newPassword" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="••••••••" />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirm Password</Label>
+                <Label htmlFor="confirmPassword">{t('settings.confirmPassword')}</Label>
                 <Input id="confirmPassword" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="••••••••" />
               </div>
               <p className="text-xs text-muted-foreground">
-                Must be at least 8 characters with uppercase, lowercase, and a number.
+                {t('settings.passwordRequirements')}
               </p>
               <Button type="submit" variant="secondary" disabled={isChangingPassword}>
                 {isChangingPassword ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Changing...
+                    {t('settings.changing')}
                   </>
                 ) : (
-                  "Change Password"
+                  t('settings.changePassword')
                 )}
               </Button>
             </form>

@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { getClientStatusFromOrder, getClientStatusStep, getActionButtonConfig } from "@/utils/clientStatusTranslator";
 import { useClientOrdersRealtime } from "@/hooks/useClientOrdersRealtime";
+import { useLanguage } from "@/context/ClientLanguageContext";
 
 const ClientOrderDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -18,6 +19,7 @@ const ClientOrderDetail = () => {
   const [attachments, setAttachments] = useState<OrderAttachment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   const loadOrder = useCallback(async () => {
     if (!id) return;
@@ -33,19 +35,17 @@ const ClientOrderDetail = () => {
       console.error("Error loading order:", error);
       toast({
         variant: "destructive",
-        title: "Error",
-        description: "Failed to load order details"
+        title: t('common.error'),
+        description: t('common.errorLoadingOrder')
       });
     } finally {
       setIsLoading(false);
     }
-  }, [id, toast]);
+  }, [id, toast, t]);
 
-  // Set up realtime subscription for this specific order
   const { isConnected } = useClientOrdersRealtime({
     orderId: id,
     onOrderUpdate: () => {
-      console.log("[ClientOrderDetail] Realtime update received, refreshing order...");
       loadOrder();
     },
     showToast: true,
@@ -72,12 +72,12 @@ const ClientOrderDetail = () => {
           <Button asChild variant="ghost">
             <Link to="/client/orders">
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Orders
+              {t('orderDetail.backToOrders')}
             </Link>
           </Button>
           <Card className="border-dashed">
             <CardContent className="py-12 text-center text-muted-foreground">
-              Order not found or you don't have access to view it.
+              {t('orderDetail.notFound')}
             </CardContent>
           </Card>
         </div>
@@ -89,7 +89,6 @@ const ClientOrderDetail = () => {
   const actionConfig = getActionButtonConfig(order);
   const isCancelled = order.status_cancelled;
 
-  // Build status steps with client-friendly labels
   const statusSteps = [
     { ...getClientStatusStep("created", !!order.status_created), icon: Clock },
     { ...getClientStatusStep("in_progress", !!order.status_in_progress), icon: Clock },
@@ -105,26 +104,25 @@ const ClientOrderDetail = () => {
           <Button asChild variant="ghost" size="sm">
             <Link to="/client/orders">
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
+              {t('orderDetail.back')}
             </Link>
           </Button>
-          <h1 className="text-2xl font-bold text-foreground">Order Details</h1>
+          <h1 className="text-2xl font-bold text-foreground">{t('orderDetail.title')}</h1>
         </div>
 
         <div className="grid gap-6 lg:grid-cols-3">
           <div className="lg:col-span-2 space-y-6">
-            {/* Action Required Card - Most prominent placement */}
             {actionConfig.showButton && actionConfig.url && (
               <Card className="border-destructive/50 bg-destructive/10">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-lg flex items-center gap-2 text-destructive">
                     <AlertTriangle className="h-5 w-5" />
-                    Action Required
+                    {t('orderDetail.actionRequired')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <p className="text-foreground">
-                    Your feedback is needed to proceed with this order. Please review and provide your input.
+                    {t('orderDetail.actionDesc')}
                   </p>
                   <Button
                     asChild
@@ -143,19 +141,18 @@ const ClientOrderDetail = () => {
                     </a>
                   </Button>
                   <p className="text-xs text-muted-foreground">
-                    Opens: {actionConfig.url}
+                    {t('orderDetail.opens')}: {actionConfig.url}
                   </p>
                 </CardContent>
               </Card>
             )}
             
-            {/* Client Visible Update Card - Prominent placement */}
             {order.client_visible_update && (
               <Card className="border-primary/30 bg-primary/5">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-lg flex items-center gap-2 text-primary">
                     <Megaphone className="h-5 w-5" />
-                    Latest Update
+                    {t('orderDetail.latestUpdate')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -164,13 +161,13 @@ const ClientOrderDetail = () => {
                   </p>
                   {order.updated_at && (
                     <p className="text-xs text-muted-foreground mt-3">
-                      Last updated: {format(new Date(order.updated_at), "PPP 'at' p")}
+                      {t('orderDetail.lastUpdated')}: {format(new Date(order.updated_at), "PPP 'at' p")}
                     </p>
                   )}
                 </CardContent>
               </Card>
             )}
-            {/* Order Info Card */}
+
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between">
@@ -186,25 +183,25 @@ const ClientOrderDetail = () => {
               <CardContent className="space-y-4">
                 {order.description && (
                   <div>
-                    <h3 className="font-medium text-sm text-muted-foreground mb-1">Description</h3>
+                    <h3 className="font-medium text-sm text-muted-foreground mb-1">{t('orderDetail.description')}</h3>
                     <p className="text-foreground">{order.description}</p>
                   </div>
                 )}
                 
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
-                    <h3 className="font-medium text-sm text-muted-foreground mb-1">Created</h3>
+                    <h3 className="font-medium text-sm text-muted-foreground mb-1">{t('orderDetail.created')}</h3>
                     <p>{format(new Date(order.created_at), "PPP")}</p>
                   </div>
                   {order.updated_at && (
                     <div>
-                      <h3 className="font-medium text-sm text-muted-foreground mb-1">Last Updated</h3>
+                      <h3 className="font-medium text-sm text-muted-foreground mb-1">{t('orderDetail.lastUpdatedLabel')}</h3>
                       <p>{format(new Date(order.updated_at), "PPP")}</p>
                     </div>
                   )}
                   {order.price && (
                     <div>
-                      <h3 className="font-medium text-sm text-muted-foreground mb-1">Price</h3>
+                      <h3 className="font-medium text-sm text-muted-foreground mb-1">{t('orderDetail.price')}</h3>
                       <p className="text-lg font-semibold">
                         {order.currency || "EUR"} {order.price.toFixed(2)}
                       </p>
@@ -212,7 +209,7 @@ const ClientOrderDetail = () => {
                   )}
                   {order.priority && (
                     <div>
-                      <h3 className="font-medium text-sm text-muted-foreground mb-1">Priority</h3>
+                      <h3 className="font-medium text-sm text-muted-foreground mb-1">{t('orderDetail.priority')}</h3>
                       <Badge variant="outline">{order.priority}</Badge>
                     </div>
                   )}
@@ -220,27 +217,24 @@ const ClientOrderDetail = () => {
               </CardContent>
             </Card>
 
-            {/* Progress Card */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Order Progress</CardTitle>
+                <CardTitle className="text-lg">{t('orderDetail.orderProgress')}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* Progress Bar */}
                 {!isCancelled && (
                   <div className="space-y-2">
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Overall Progress</span>
+                      <span className="text-muted-foreground">{t('orderDetail.overallProgress')}</span>
                       <span className="font-medium text-foreground">{statusConfig.progress}%</span>
                     </div>
                     <Progress value={statusConfig.progress} className="h-3" />
                     <p className="text-sm text-muted-foreground">
-                      Current status: <span className="font-medium text-foreground">{statusConfig.emoji} {statusConfig.label}</span>
+                      {t('orderDetail.currentStatus')}: <span className="font-medium text-foreground">{statusConfig.emoji} {statusConfig.label}</span>
                     </p>
                   </div>
                 )}
 
-                {/* Status Steps */}
                 <div className="flex flex-wrap gap-3 pt-2">
                   {statusSteps.map((step) => (
                     <div
@@ -259,19 +253,18 @@ const ClientOrderDetail = () => {
                   {order.status_cancelled && (
                     <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-destructive bg-destructive/10 text-destructive">
                       <XCircle className="h-4 w-4" />
-                      <span className="text-sm font-medium">Cancelled</span>
+                      <span className="text-sm font-medium">{t('orderDetail.cancelled')}</span>
                     </div>
                   )}
                 </div>
               </CardContent>
             </Card>
 
-            {/* Attachments Card */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <Paperclip className="h-5 w-5" />
-                  Attachments
+                  {t('orderDetail.attachments')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -293,22 +286,12 @@ const ClientOrderDetail = () => {
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Button
-                            asChild
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                          >
+                          <Button asChild variant="ghost" size="icon" className="h-8 w-8">
                             <a href={attachment.file_url} target="_blank" rel="noopener noreferrer">
                               <ExternalLink className="h-4 w-4" />
                             </a>
                           </Button>
-                          <Button
-                            asChild
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                          >
+                          <Button asChild variant="ghost" size="icon" className="h-8 w-8">
                             <a href={attachment.file_url} download={attachment.file_name}>
                               <Download className="h-4 w-4" />
                             </a>
@@ -320,40 +303,39 @@ const ClientOrderDetail = () => {
                 ) : (
                   <div className="py-8 text-center text-muted-foreground">
                     <Paperclip className="h-10 w-10 mx-auto mb-2 opacity-50" />
-                    <p className="text-sm">No attachments for this order</p>
+                    <p className="text-sm">{t('orderDetail.noAttachments')}</p>
                   </div>
                 )}
               </CardContent>
             </Card>
           </div>
 
-          {/* Sidebar */}
           <div className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Contact Information</CardTitle>
+                <CardTitle className="text-lg">{t('orderDetail.contactInfo')}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3 text-sm">
                 {order.contact_email && (
                   <div>
-                    <span className="text-muted-foreground">Email:</span>
+                    <span className="text-muted-foreground">{t('orderDetail.emailLabel')}</span>
                     <p className="font-medium">{order.contact_email}</p>
                   </div>
                 )}
                 {order.contact_phone && (
                   <div>
-                    <span className="text-muted-foreground">Phone:</span>
+                    <span className="text-muted-foreground">{t('orderDetail.phoneLabel')}</span>
                     <p className="font-medium">{order.contact_phone}</p>
                   </div>
                 )}
                 {order.company_email && (
                   <div>
-                    <span className="text-muted-foreground">Company Email:</span>
+                    <span className="text-muted-foreground">{t('orderDetail.companyEmail')}</span>
                     <p className="font-medium">{order.company_email}</p>
                   </div>
                 )}
                 {!order.contact_email && !order.contact_phone && !order.company_email && (
-                  <p className="text-muted-foreground">No contact information available</p>
+                  <p className="text-muted-foreground">{t('orderDetail.noContact')}</p>
                 )}
               </CardContent>
             </Card>

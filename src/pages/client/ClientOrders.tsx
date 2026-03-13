@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { getClientStatusFromOrder } from "@/utils/clientStatusTranslator";
 import { useClientOrdersRealtime } from "@/hooks/useClientOrdersRealtime";
+import { useLanguage } from "@/context/ClientLanguageContext";
 
 const getStatusBadge = (order: ClientOrder) => {
   const config = getClientStatusFromOrder(order);
@@ -28,6 +29,7 @@ const ClientOrders = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [updatedOrderId, setUpdatedOrderId] = useState<string | null>(null);
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   const loadOrders = useCallback(async () => {
     try {
@@ -37,21 +39,18 @@ const ClientOrders = () => {
       console.error("Error loading orders:", error);
       toast({
         variant: "destructive",
-        title: "Error",
-        description: "Failed to load orders"
+        title: t('common.error'),
+        description: t('common.errorLoadingOrders')
       });
     } finally {
       setIsLoading(false);
     }
-  }, [toast]);
+  }, [toast, t]);
 
-  // Set up realtime subscription
   const { isConnected } = useClientOrdersRealtime({
     onOrderUpdate: (orderId) => {
-      console.log("[ClientOrders] Realtime update received for order:", orderId);
       setUpdatedOrderId(orderId);
       loadOrders();
-      // Clear the highlight after animation
       setTimeout(() => setUpdatedOrderId(null), 2000);
     },
     showToast: true,
@@ -76,21 +75,21 @@ const ClientOrders = () => {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Your Orders</h1>
+            <h1 className="text-3xl font-bold text-foreground">{t('orders.title')}</h1>
             <p className="text-muted-foreground mt-1">
-              View and track your order history
+              {t('orders.subtitle')}
             </p>
           </div>
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             {isConnected ? (
               <>
                 <Wifi className="h-3 w-3 text-primary" />
-                <span className="hidden sm:inline">Live updates</span>
+                <span className="hidden sm:inline">{t('orders.liveUpdates')}</span>
               </>
             ) : (
               <>
                 <WifiOff className="h-3 w-3 text-muted-foreground" />
-                <span className="hidden sm:inline">Connecting...</span>
+                <span className="hidden sm:inline">{t('orders.connecting')}</span>
               </>
             )}
           </div>
@@ -100,9 +99,9 @@ const ClientOrders = () => {
           <Card className="border-dashed">
             <CardContent className="py-12 text-center">
               <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">No orders found</p>
+              <p className="text-muted-foreground">{t('orders.noOrders')}</p>
               <p className="text-sm text-muted-foreground mt-1">
-                Your orders will appear here once they are created.
+                {t('orders.noOrdersDesc')}
               </p>
             </CardContent>
           </Card>
@@ -129,7 +128,7 @@ const ClientOrders = () => {
                       {order.description && (
                         <p className="line-clamp-2">{order.description}</p>
                       )}
-                      <p>Created: {format(new Date(order.created_at), "PPP")}</p>
+                      <p>{t('orders.created')}: {format(new Date(order.created_at), "PPP")}</p>
                       {order.price && (
                         <p className="font-medium text-foreground">
                           {order.currency || "EUR"} {order.price.toFixed(2)}
@@ -139,7 +138,7 @@ const ClientOrders = () => {
                     <Button asChild variant="outline" size="sm">
                       <Link to={`/client/orders/${order.id}`}>
                         <Eye className="h-4 w-4 mr-2" />
-                        View Details
+                        {t('orders.viewDetails')}
                       </Link>
                     </Button>
                   </div>

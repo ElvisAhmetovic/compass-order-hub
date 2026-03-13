@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
 import ClientOrderCard from "@/components/client-portal/ClientOrderCard";
 import { useClientOrdersRealtime } from "@/hooks/useClientOrdersRealtime";
+import { useLanguage } from "@/context/ClientLanguageContext";
 
 interface OrderStats {
   total: number;
@@ -34,6 +35,7 @@ const ClientDashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   const { user } = useAuth();
+  const { t } = useLanguage();
 
   const loadData = useCallback(async () => {
     try {
@@ -44,24 +46,21 @@ const ClientDashboard = () => {
       ]);
       setStats(orderStats);
       setCompany(companyData);
-      // Get most recent 5 orders
       setRecentOrders(orders.slice(0, 5));
     } catch (error) {
       console.error("Error loading dashboard data:", error);
       toast({
         variant: "destructive",
-        title: "Error",
-        description: "Failed to load dashboard data"
+        title: t('common.error'),
+        description: t('common.errorLoadingData')
       });
     } finally {
       setIsLoading(false);
     }
-  }, [toast]);
+  }, [toast, t]);
 
-  // Set up realtime subscription
   const { isConnected } = useClientOrdersRealtime({
     onOrderUpdate: () => {
-      console.log("[ClientDashboard] Realtime update received, refreshing data...");
       loadData();
     },
     showToast: true,
@@ -82,26 +81,24 @@ const ClientDashboard = () => {
   }
 
   const statCards = [
-    { title: "Total Orders", value: stats?.total || 0, icon: Package, color: "text-blue-500", bgColor: "bg-blue-500/10" },
-    { title: "In Progress", value: stats?.inProgress || 0, icon: Clock, color: "text-yellow-500", bgColor: "bg-yellow-500/10" },
-    { title: "Invoice Sent", value: stats?.invoiceSent || 0, icon: FileText, color: "text-orange-500", bgColor: "bg-orange-500/10" },
-    { title: "Completed", value: stats?.resolved || 0, icon: CheckCircle, color: "text-green-500", bgColor: "bg-green-500/10" },
+    { title: t('dashboard.totalOrders'), value: stats?.total || 0, icon: Package, color: "text-blue-500", bgColor: "bg-blue-500/10" },
+    { title: t('dashboard.inProgress'), value: stats?.inProgress || 0, icon: Clock, color: "text-yellow-500", bgColor: "bg-yellow-500/10" },
+    { title: t('dashboard.invoiceSent'), value: stats?.invoiceSent || 0, icon: FileText, color: "text-orange-500", bgColor: "bg-orange-500/10" },
+    { title: t('dashboard.completed'), value: stats?.resolved || 0, icon: CheckCircle, color: "text-green-500", bgColor: "bg-green-500/10" },
   ];
 
   return (
     <ClientLayout>
       <div className="space-y-8">
-        {/* Welcome Header */}
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-foreground">
-            Welcome{user?.first_name ? `, ${user.first_name}` : ''}!
+            {t('dashboard.welcome', { name: user?.first_name ? `, ${user.first_name}` : '' })}
           </h1>
           <p className="text-muted-foreground mt-1 text-sm md:text-base">
-            Here's a quick overview of your orders and projects
+            {t('dashboard.subtitle')}
           </p>
         </div>
 
-        {/* Stats Grid */}
         <div className="grid gap-3 md:gap-4 grid-cols-2 lg:grid-cols-4">
           {statCards.map((stat) => (
             <Card key={stat.title} className="border-border/50">
@@ -120,15 +117,13 @@ const ClientDashboard = () => {
           ))}
         </div>
 
-        {/* Main Content Grid */}
         <div className="grid gap-6 lg:grid-cols-3">
-          {/* Recent Orders Section */}
           <div className="lg:col-span-2 space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-foreground">Recent Orders</h2>
+              <h2 className="text-xl font-semibold text-foreground">{t('dashboard.recentOrders')}</h2>
               <Button asChild variant="ghost" size="sm" className="text-primary hover:text-primary/80">
                 <Link to="/client/orders">
-                  View All
+                  {t('dashboard.viewAll')}
                   <ArrowRight className="h-4 w-4 ml-1" />
                 </Link>
               </Button>
@@ -144,26 +139,24 @@ const ClientDashboard = () => {
               <Card className="border-dashed">
                 <CardContent className="py-12 text-center text-muted-foreground">
                   <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p className="font-medium">No orders yet</p>
-                  <p className="text-sm mt-1">Your orders will appear here once created</p>
+                  <p className="font-medium">{t('dashboard.noOrders')}</p>
+                  <p className="text-sm mt-1">{t('dashboard.noOrdersDesc')}</p>
                 </CardContent>
               </Card>
             )}
           </div>
 
-          {/* Profile & Company Section */}
           <div className="space-y-4">
-            {/* Quick Profile Card */}
             <Card>
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-lg flex items-center gap-2">
                     <User className="h-5 w-5 text-primary" />
-                    Quick Profile
+                    {t('dashboard.quickProfile')}
                   </CardTitle>
                   <Button asChild variant="ghost" size="sm" className="text-primary hover:text-primary/80">
                     <Link to="/client/profile">
-                      Edit
+                      {t('dashboard.edit')}
                       <ArrowRight className="h-4 w-4 ml-1" />
                     </Link>
                   </Button>
@@ -188,34 +181,33 @@ const ClientDashboard = () => {
               </CardContent>
             </Card>
 
-            {/* Company Card */}
             {company ? (
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-lg flex items-center gap-2">
                     <Building2 className="h-5 w-5 text-primary" />
-                    Company
+                    {t('dashboard.company')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2 text-sm">
                   <div className="space-y-2">
                     <div>
-                      <span className="text-muted-foreground text-xs">Name</span>
+                      <span className="text-muted-foreground text-xs">{t('dashboard.name')}</span>
                       <p className="font-medium text-foreground">{company.name}</p>
                     </div>
                     <div>
-                      <span className="text-muted-foreground text-xs">Email</span>
+                      <span className="text-muted-foreground text-xs">{t('dashboard.email')}</span>
                       <p className="text-foreground">{company.email}</p>
                     </div>
                     {company.phone && (
                       <div>
-                        <span className="text-muted-foreground text-xs">Phone</span>
+                        <span className="text-muted-foreground text-xs">{t('dashboard.phone')}</span>
                         <p className="text-foreground">{company.phone}</p>
                       </div>
                     )}
                     {company.contact_person && (
                       <div>
-                        <span className="text-muted-foreground text-xs">Contact</span>
+                        <span className="text-muted-foreground text-xs">{t('dashboard.contact')}</span>
                         <p className="text-foreground">{company.contact_person}</p>
                       </div>
                     )}
@@ -226,8 +218,8 @@ const ClientDashboard = () => {
               <Card className="border-dashed">
                 <CardContent className="py-8 text-center text-muted-foreground">
                   <Building2 className="h-10 w-10 mx-auto mb-3 opacity-50" />
-                  <p className="font-medium">No company linked</p>
-                  <p className="text-xs mt-1">Contact support to link your company</p>
+                  <p className="font-medium">{t('dashboard.noCompany')}</p>
+                  <p className="text-xs mt-1">{t('dashboard.noCompanyDesc')}</p>
                 </CardContent>
               </Card>
             )}
