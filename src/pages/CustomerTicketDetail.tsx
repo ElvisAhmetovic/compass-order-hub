@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
+import Sidebar from '@/components/dashboard/Sidebar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -136,8 +137,11 @@ const CustomerTicketDetail = () => {
   };
 
   return (
-    <Layout>
-      <div className="space-y-6 max-w-3xl mx-auto">
+    <div className="flex min-h-screen">
+      <Sidebar />
+      <div className="flex-1">
+        <Layout>
+          <div className="space-y-6 max-w-3xl mx-auto">
         <div className="flex items-center gap-4">
           <Button variant="ghost" onClick={() => navigate('/customer-tickets')}>
             <ArrowLeft className="w-4 h-4 mr-2" /> Back
@@ -280,7 +284,9 @@ const CustomerTicketDetail = () => {
           </div>
         )}
       </div>
-    </Layout>
+        </Layout>
+      </div>
+    </div>
   );
 };
 

@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
+import Sidebar from '@/components/dashboard/Sidebar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Ticket, Mail, Building2, Calendar, RefreshCw, ArrowLeft, UserPlus } from 'lucide-react';
+import { Ticket, Mail, Building2, Calendar, RefreshCw, UserPlus } from 'lucide-react';
 import { customerTicketService, CustomerTicket } from '@/services/customerTicketService';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -69,26 +70,19 @@ const CustomerTickets = () => {
   const closedCount = tickets.filter(t => t.status === 'closed').length;
 
   return (
-    <Layout>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              onClick={() => navigate('/dashboard')}
-              className="flex items-center gap-2"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Back to Dashboard
-            </Button>
-            <div>
-              <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
-                <Ticket className="w-8 h-8" />
-                Customer Tickets
-              </h1>
-              <p className="text-muted-foreground mt-1">Support requests from clients via email</p>
-            </div>
-          </div>
+    <div className="flex min-h-screen">
+      <Sidebar />
+      <div className="flex-1">
+        <Layout>
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
+                  <Ticket className="w-8 h-8" />
+                  Customer Tickets
+                </h1>
+                <p className="text-muted-foreground mt-1">Support requests from clients via email</p>
+              </div>
           <Button variant="outline" onClick={fetchTickets} disabled={loading}>
             <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             Refresh
@@ -210,8 +204,10 @@ const CustomerTickets = () => {
             )}
           </CardContent>
         </Card>
+          </div>
+        </Layout>
       </div>
-    </Layout>
+    </div>
   );
 };
 

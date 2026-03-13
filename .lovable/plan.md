@@ -1,24 +1,18 @@
 
 
-## Add Sidebar to Customer Tickets Pages
+## Add "Created Only" Filter to Advanced Search
 
-Both `CustomerTickets.tsx` and `CustomerTicketDetail.tsx` use only `<Layout>` without the dashboard `<Sidebar />`, making them inconsistent with other admin pages.
+The boss wants a second quick-filter alongside "Unpaid Orders Only" that shows orders with only the "Created" status -- orders that haven't progressed yet and also count as unpaid.
 
-### Fix
-Wrap both pages with the same sidebar pattern used in `Support.tsx`:
+### Changes
 
-```tsx
-<div className="flex min-h-screen">
-  <Sidebar />
-  <div className="flex-1">
-    <Layout>
-      {/* existing content */}
-    </Layout>
-  </div>
-</div>
-```
+**`src/services/searchService.ts`**
+- Add `createdOnly?: boolean` to `SearchFilters` interface
+- Add filter logic in `applyFiltersToOrders`: if `createdOnly` is true, keep only orders where `status_created === true` and no further progress statuses are active (`status_in_progress`, `status_invoice_sent`, `status_invoice_paid`, `status_resolved`, `status_cancelled` are all falsy)
 
-### Files
-- `src/pages/CustomerTickets.tsx` — import `Sidebar`, wrap return with sidebar layout, remove the "Back to Dashboard" button (sidebar handles navigation)
-- `src/pages/CustomerTicketDetail.tsx` — same sidebar wrapper treatment
+**`src/components/dashboard/AdvancedSearch.tsx`**
+- Add a second checkbox below "Unpaid Orders Only" labeled "Created Only (Not Yet Started)" with description "(Orders still at Created status — no invoice sent or paid)"
+- Include `createdOnly` in the active filter count
+
+Both filters can work independently or together.
 
