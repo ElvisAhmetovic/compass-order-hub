@@ -815,10 +815,10 @@ const generateInvoiceHTML = (data: InvoicePDFData): string => {
             ${selectedAccounts.map((account, idx) => `
               <div${idx > 0 ? ' style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #e5e7eb;"' : ''}>
                 <div style="font-weight: 600; margin-bottom: 4px;">${account.name}:</div>
-                <div><strong>${getTranslatedText('iban')}:</strong> ${account.iban}</div>
-                <div><strong>${getTranslatedText('bic')}:</strong> ${account.bic}</div>
-                ${account.blz ? `<div><strong>${getTranslatedText('blz')}:</strong> ${account.blz} <strong>${getTranslatedText('account')}:</strong> ${account.account}</div>` : ''}
-                ${account.bank ? `<div><strong>${getTranslatedText('bank')}:</strong> ${account.bank}</div>` : ''}
+                <div><strong>${getTranslatedText('iban')}:</strong> <span style="font-weight: bold; color: #000; font-size: 13px;">${account.iban}</span></div>
+                <div><strong>${getTranslatedText('bic')}:</strong> <span style="font-weight: bold; color: #000; font-size: 13px;">${account.bic}</span></div>
+                ${account.blz ? `<div><strong>${getTranslatedText('blz')}:</strong> <span style="font-weight: bold; color: #000; font-size: 13px;">${account.blz}</span> <strong>${getTranslatedText('account')}:</strong> <span style="font-weight: bold; color: #000; font-size: 13px;">${account.account}</span></div>` : ''}
+                ${account.bank ? `<div><strong>${getTranslatedText('bank')}:</strong> <span style="font-weight: bold; color: #000; font-size: 13px;">${account.bank}</span></div>` : ''}
               </div>
             `).join('')}
           </div>
