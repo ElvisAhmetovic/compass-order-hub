@@ -273,8 +273,8 @@ const MonthlyInstallmentsTable: React.FC<Props> = ({ contracts, installments, on
       {contracts.map((contract) => {
         const contractInstallments = getContractInstallments(contract.id);
         const paidCount = getPaidCount(contract.id);
-        const totalMonths = contract.duration_months;
-        const progressPercent = totalMonths > 0 ? (paidCount / totalMonths) * 100 : 0;
+        const totalInstallments = Math.floor(contract.duration_months / (contract.billing_frequency || 1));
+        const progressPercent = totalInstallments > 0 ? (paidCount / totalInstallments) * 100 : 0;
         const isExpanded = expandedContracts.has(contract.id);
         const hasPortal = portalStatuses[contract.id] ?? false;
 
