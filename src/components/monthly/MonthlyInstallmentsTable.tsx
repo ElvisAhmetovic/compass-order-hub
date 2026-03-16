@@ -331,7 +331,7 @@ const MonthlyInstallmentsTable: React.FC<Props> = ({ contracts, installments, on
                 </div>
                 <div className="w-40">
                   <div className="flex items-center justify-between text-xs mb-1">
-                    <span className="text-muted-foreground">{paidCount} / {totalMonths} paid</span>
+                    <span className="text-muted-foreground">{paidCount} / {totalInstallments} paid</span>
                     <span className="font-medium">{Math.round(progressPercent)}%</span>
                   </div>
                   <Progress value={progressPercent} className="h-2" />
