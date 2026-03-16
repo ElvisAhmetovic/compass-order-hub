@@ -326,7 +326,7 @@ const MonthlyInstallmentsTable: React.FC<Props> = ({ contracts, installments, on
 
               <div className="flex items-center gap-6">
                 <div className="text-right">
-                  <div className="text-sm font-medium">{formatPrice(contract.monthly_amount, contract.currency)} / month</div>
+                  <div className="text-sm font-medium">{formatPrice(contract.monthly_amount, contract.currency)} / {getFrequencyLabel(contract.billing_frequency || 1)}</div>
                   <div className="text-xs text-muted-foreground">Total: {formatPrice(contract.total_value, contract.currency)}</div>
                 </div>
                 <div className="w-40">
