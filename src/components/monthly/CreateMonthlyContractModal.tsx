@@ -269,7 +269,7 @@ const CreateMonthlyContractModal: React.FC<Props> = ({ open, onOpenChange, onCre
               {/* Right Column */}
               <div className="space-y-4">
                 <h3 className="text-base font-medium">Contract Details</h3>
-                <div className="grid grid-cols-4 gap-4">
+                <div className="grid grid-cols-4 gap-4 items-start">
                   <FormField control={form.control} name="totalValue" render={({ field }) => (
                     <FormItem>
                       <FormLabel>Total Value *</FormLabel>
