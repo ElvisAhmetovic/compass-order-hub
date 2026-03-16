@@ -23,6 +23,7 @@ export interface MonthlyContract {
   assigned_to_name: string | null;
   internal_notes: string | null;
   inventory_items: string | null;
+  billing_frequency: number;
 }
 
 export interface MonthlyInstallment {
