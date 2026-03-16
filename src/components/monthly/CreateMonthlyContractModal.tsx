@@ -83,6 +83,7 @@ const CreateMonthlyContractModal: React.FC<Props> = ({ open, onOpenChange, onCre
       totalValue: 0,
       currency: "EUR",
       durationMonths: 12,
+      billingFrequency: 1,
       startDate: new Date().toISOString().split("T")[0],
       priority: "medium",
       assignedTo: "",
