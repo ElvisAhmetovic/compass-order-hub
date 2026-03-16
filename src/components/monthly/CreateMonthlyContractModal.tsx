@@ -382,13 +382,18 @@ const CreateMonthlyContractModal: React.FC<Props> = ({ open, onOpenChange, onCre
               />
             </div>
 
-            {/* Monthly Preview */}
-            {totalValue > 0 && (
+            {/* Installment Preview */}
+            {totalValue > 0 && numberOfInstallments > 0 && (
               <div className="rounded-lg bg-primary/10 p-4 text-center">
-                <p className="text-sm text-muted-foreground">Monthly Installment</p>
-                <p className="text-2xl font-bold text-primary">{formatPrice(monthlyAmount)}</p>
+                <p className="text-sm text-muted-foreground">
+                  {billingFrequency === 1 ? "Monthly Installment" : `Installment (every ${billingFrequency} months)`}
+                </p>
+                <p className="text-2xl font-bold text-primary">{formatPrice(installmentAmount)}</p>
                 <p className="text-xs text-muted-foreground">
-                  {durationMonths} installments × {formatPrice(monthlyAmount)} = {formatPrice(totalValue)}
+                  {numberOfInstallments} installments × {formatPrice(installmentAmount)} = {formatPrice(totalValue)}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Contract duration: {durationMonths} months
                 </p>
               </div>
             )}
