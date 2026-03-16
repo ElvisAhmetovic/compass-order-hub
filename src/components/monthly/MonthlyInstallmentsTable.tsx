@@ -24,6 +24,13 @@ import CreateClientPortalModal from "@/components/dashboard/CreateClientPortalMo
 import { supabase } from "@/integrations/supabase/client";
 import { enqueueNotification } from "@/utils/notificationQueue";
 
+const getFrequencyLabel = (freq: number): string => {
+  if (freq === 1) return "month";
+  if (freq === 3) return "quarterly";
+  if (freq === 6) return "every 6 months";
+  return `every ${freq} months`;
+};
+
 const detectLanguageFromAddress = (address: string | null | undefined): string => {
   if (!address) return "en";
   const lower = address.toLowerCase();
