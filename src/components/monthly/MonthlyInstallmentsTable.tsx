@@ -24,6 +24,13 @@ import CreateClientPortalModal from "@/components/dashboard/CreateClientPortalMo
 import { supabase } from "@/integrations/supabase/client";
 import { enqueueNotification } from "@/utils/notificationQueue";
 
+const getFrequencyLabel = (freq: number): string => {
+  if (freq === 1) return "month";
+  if (freq === 3) return "quarterly";
+  if (freq === 6) return "every 6 months";
+  return `every ${freq} months`;
+};
+
 const detectLanguageFromAddress = (address: string | null | undefined): string => {
   if (!address) return "en";
   const lower = address.toLowerCase();
@@ -266,8 +273,8 @@ const MonthlyInstallmentsTable: React.FC<Props> = ({ contracts, installments, on
       {contracts.map((contract) => {
         const contractInstallments = getContractInstallments(contract.id);
         const paidCount = getPaidCount(contract.id);
-        const totalMonths = contract.duration_months;
-        const progressPercent = totalMonths > 0 ? (paidCount / totalMonths) * 100 : 0;
+        const totalInstallments = Math.floor(contract.duration_months / (contract.billing_frequency || 1));
+        const progressPercent = totalInstallments > 0 ? (paidCount / totalInstallments) * 100 : 0;
         const isExpanded = expandedContracts.has(contract.id);
         const hasPortal = portalStatuses[contract.id] ?? false;
 
@@ -319,12 +326,12 @@ const MonthlyInstallmentsTable: React.FC<Props> = ({ contracts, installments, on
 
               <div className="flex items-center gap-6">
                 <div className="text-right">
-                  <div className="text-sm font-medium">{formatPrice(contract.monthly_amount, contract.currency)} / month</div>
+                  <div className="text-sm font-medium">{formatPrice(contract.monthly_amount, contract.currency)} / {getFrequencyLabel(contract.billing_frequency || 1)}</div>
                   <div className="text-xs text-muted-foreground">Total: {formatPrice(contract.total_value, contract.currency)}</div>
                 </div>
                 <div className="w-40">
                   <div className="flex items-center justify-between text-xs mb-1">
-                    <span className="text-muted-foreground">{paidCount} / {totalMonths} paid</span>
+                    <span className="text-muted-foreground">{paidCount} / {totalInstallments} paid</span>
                     <span className="font-medium">{Math.round(progressPercent)}%</span>
                   </div>
                   <Progress value={progressPercent} className="h-2" />
