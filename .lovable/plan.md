@@ -1,18 +1,24 @@
 
 
-## Add "Created Only" Filter to Advanced Search
+## Allow Any Billing Frequency Number
 
-The boss wants a second quick-filter alongside "Unpaid Orders Only" that shows orders with only the "Created" status -- orders that haven't progressed yet and also count as unpaid.
+### Current State
+The billing frequency dropdown only offers 4 fixed options: 1, 2, 3, 6 months.
 
-### Changes
+### Change
+Replace the `<Select>` dropdown with a numeric `<Input>` field (min=1, max=duration), so the user can type any number of months (e.g., every 4 months, every 5 months, etc.).
 
-**`src/services/searchService.ts`**
-- Add `createdOnly?: boolean` to `SearchFilters` interface
-- Add filter logic in `applyFiltersToOrders`: if `createdOnly` is true, keep only orders where `status_created === true` and no further progress statuses are active (`status_in_progress`, `status_invoice_sent`, `status_invoice_paid`, `status_resolved`, `status_cancelled` are all falsy)
+### Files to Modify
 
-**`src/components/dashboard/AdvancedSearch.tsx`**
-- Add a second checkbox below "Unpaid Orders Only" labeled "Created Only (Not Yet Started)" with description "(Orders still at Created status — no invoice sent or paid)"
-- Include `createdOnly` in the active filter count
+**1. `src/components/monthly/CreateMonthlyContractModal.tsx`** (lines 304-320)
+- Replace the `<Select>` with `<Input type="number" min="1" max="12">` 
+- Keep the existing validation warning when duration is not divisible by frequency
+- The form schema already accepts `z.coerce.number().min(1).max(12)` — no change needed there
 
-Both filters can work independently or together.
+**2. `src/components/monthly/MonthlyInstallmentsTable.tsx`** — already handles arbitrary numbers via the fallback `` `every ${freq} months` `` on line 31. No change needed.
+
+**3. Service logic** — already works with any integer. No change needed.
+
+### Single change
+Replace the Select dropdown (lines 304-320) with a number input field labeled "Billing Frequency (months)" with a helper text like "Pay every X months".
 
