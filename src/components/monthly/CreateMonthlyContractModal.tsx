@@ -272,14 +272,14 @@ const CreateMonthlyContractModal: React.FC<Props> = ({ open, onOpenChange, onCre
                 <div className="grid grid-cols-4 gap-4 items-start">
                   <FormField control={form.control} name="totalValue" render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Total Value *</FormLabel>
+                      <div className="min-h-[2.5rem] flex items-end"><FormLabel>Total Value *</FormLabel></div>
                       <FormControl><Input type="number" step="0.01" min="0" placeholder="1200" {...field} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )} />
                   <FormField control={form.control} name="currency" render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Currency</FormLabel>
+                      <div className="min-h-[2.5rem] flex items-end"><FormLabel>Currency</FormLabel></div>
                       <Select value={field.value} onValueChange={field.onChange}>
                         <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                         <SelectContent>
@@ -295,14 +295,14 @@ const CreateMonthlyContractModal: React.FC<Props> = ({ open, onOpenChange, onCre
                   )} />
                   <FormField control={form.control} name="durationMonths" render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Duration (months)</FormLabel>
+                      <div className="min-h-[2.5rem] flex items-end"><FormLabel>Duration (months)</FormLabel></div>
                       <FormControl><Input type="number" min="1" max="60" {...field} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )} />
                   <FormField control={form.control} name="billingFrequency" render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Billing Freq.</FormLabel>
+                      <div className="min-h-[2.5rem] flex items-end"><FormLabel>Billing Freq.</FormLabel></div>
                       <FormControl><Input type="number" min="1" max="12" placeholder="1" {...field} /></FormControl>
                       <p className="text-xs text-muted-foreground">Every {billingFrequency} mo.</p>
                       {durationMonths % billingFrequency !== 0 && (
