@@ -272,7 +272,7 @@ const CreateMonthlyContractModal: React.FC<Props> = ({ open, onOpenChange, onCre
                 <div className="grid grid-cols-4 gap-4 items-start">
                   <FormField control={form.control} name="totalValue" render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Total Value *</FormLabel>
+                      <div className="min-h-[2.5rem] flex items-end"><FormLabel>Total Value *</FormLabel></div>
                       <FormControl><Input type="number" step="0.01" min="0" placeholder="1200" {...field} /></FormControl>
                       <FormMessage />
                     </FormItem>
