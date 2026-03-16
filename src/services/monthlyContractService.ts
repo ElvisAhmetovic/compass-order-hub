@@ -64,7 +64,9 @@ export const monthlyContractService = {
     contract: Omit<MonthlyContract, "id" | "created_at" | "updated_at" | "monthly_amount">,
     userId: string
   ): Promise<MonthlyContract> {
-    const monthlyAmount = contract.total_value / contract.duration_months;
+    const billingFrequency = contract.billing_frequency || 1;
+    const numberOfInstallments = Math.floor(contract.duration_months / billingFrequency);
+    const installmentAmount = contract.total_value / numberOfInstallments;
 
     const { data, error } = await supabase
       .from("monthly_contracts")
@@ -73,10 +75,11 @@ export const monthlyContractService = {
         client_email: contract.client_email,
         website: contract.website,
         total_value: contract.total_value,
-        monthly_amount: Math.round(monthlyAmount * 100) / 100,
+        monthly_amount: Math.round(installmentAmount * 100) / 100,
         currency: contract.currency,
         start_date: contract.start_date,
         duration_months: contract.duration_months,
+        billing_frequency: billingFrequency,
         status: contract.status || "active",
         description: contract.description,
         created_by: userId,
@@ -95,13 +98,13 @@ export const monthlyContractService = {
     if (error) throw error;
     const newContract = data as unknown as MonthlyContract;
 
-    // Pre-generate all installment rows
+    // Pre-generate installment rows spaced by billing frequency
     const startDate = new Date(contract.start_date);
     const installments = [];
 
-    for (let i = 0; i < contract.duration_months; i++) {
+    for (let i = 0; i < numberOfInstallments; i++) {
       const installmentDate = new Date(startDate);
-      installmentDate.setMonth(startDate.getMonth() + i);
+      installmentDate.setMonth(startDate.getMonth() + i * billingFrequency);
 
       const monthIndex = installmentDate.getMonth();
       const year = installmentDate.getFullYear();

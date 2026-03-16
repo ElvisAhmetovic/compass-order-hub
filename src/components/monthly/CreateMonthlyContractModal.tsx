@@ -44,6 +44,7 @@ const formSchema = z.object({
   totalValue: z.coerce.number().min(0.01, "Total value must be greater than 0"),
   currency: z.string().default("EUR"),
   durationMonths: z.coerce.number().min(1).max(60).default(12),
+  billingFrequency: z.coerce.number().min(1).max(12).default(1),
   startDate: z.string().min(1, "Start date is required"),
   priority: z.string().default("medium"),
   assignedTo: z.string().optional(),
