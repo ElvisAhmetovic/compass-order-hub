@@ -94,8 +94,10 @@ const CreateMonthlyContractModal: React.FC<Props> = ({ open, onOpenChange, onCre
 
   const totalValue = form.watch("totalValue") || 0;
   const durationMonths = form.watch("durationMonths") || 12;
+  const billingFrequency = form.watch("billingFrequency") || 1;
   const currency = form.watch("currency") || "EUR";
-  const monthlyAmount = durationMonths > 0 ? totalValue / durationMonths : 0;
+  const numberOfInstallments = durationMonths > 0 && billingFrequency > 0 ? Math.floor(durationMonths / billingFrequency) : 0;
+  const installmentAmount = numberOfInstallments > 0 ? totalValue / numberOfInstallments : 0;
 
   const formatPrice = (value: number) =>
     new Intl.NumberFormat("de-DE", { style: "currency", currency }).format(value);
