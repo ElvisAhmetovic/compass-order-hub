@@ -1,0 +1,1 @@
+ALTER TABLE monthly_contracts ADD COLUMN billing_frequency integer NOT NULL DEFAULT 1;
