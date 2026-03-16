@@ -44,6 +44,7 @@ const formSchema = z.object({
   totalValue: z.coerce.number().min(0.01, "Total value must be greater than 0"),
   currency: z.string().default("EUR"),
   durationMonths: z.coerce.number().min(1).max(60).default(12),
+  billingFrequency: z.coerce.number().min(1).max(12).default(1),
   startDate: z.string().min(1, "Start date is required"),
   priority: z.string().default("medium"),
   assignedTo: z.string().optional(),
@@ -82,6 +83,7 @@ const CreateMonthlyContractModal: React.FC<Props> = ({ open, onOpenChange, onCre
       totalValue: 0,
       currency: "EUR",
       durationMonths: 12,
+      billingFrequency: 1,
       startDate: new Date().toISOString().split("T")[0],
       priority: "medium",
       assignedTo: "",
@@ -92,8 +94,10 @@ const CreateMonthlyContractModal: React.FC<Props> = ({ open, onOpenChange, onCre
 
   const totalValue = form.watch("totalValue") || 0;
   const durationMonths = form.watch("durationMonths") || 12;
+  const billingFrequency = form.watch("billingFrequency") || 1;
   const currency = form.watch("currency") || "EUR";
-  const monthlyAmount = durationMonths > 0 ? totalValue / durationMonths : 0;
+  const numberOfInstallments = durationMonths > 0 && billingFrequency > 0 ? Math.floor(durationMonths / billingFrequency) : 0;
+  const installmentAmount = numberOfInstallments > 0 ? totalValue / numberOfInstallments : 0;
 
   const formatPrice = (value: number) =>
     new Intl.NumberFormat("de-DE", { style: "currency", currency }).format(value);
@@ -172,6 +176,7 @@ const CreateMonthlyContractModal: React.FC<Props> = ({ open, onOpenChange, onCre
           assigned_to_name: assignedToName || null,
           internal_notes: values.internalNotes || null,
           inventory_items: selectedInventoryItems.length > 0 ? JSON.stringify(selectedInventoryItems) : null,
+          billing_frequency: values.billingFrequency,
         },
         user.id
       );
@@ -296,6 +301,24 @@ const CreateMonthlyContractModal: React.FC<Props> = ({ open, onOpenChange, onCre
                     </FormItem>
                   )} />
                 </div>
+                <FormField control={form.control} name="billingFrequency" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Billing Frequency</FormLabel>
+                    <Select value={String(field.value)} onValueChange={(v) => field.onChange(Number(v))}>
+                      <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                      <SelectContent>
+                        <SelectItem value="1">Every month</SelectItem>
+                        <SelectItem value="2">Every 2 months</SelectItem>
+                        <SelectItem value="3">Every 3 months</SelectItem>
+                        <SelectItem value="6">Every 6 months</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {durationMonths % billingFrequency !== 0 && (
+                      <p className="text-xs text-destructive">Duration must be divisible by billing frequency</p>
+                    )}
+                    <FormMessage />
+                  </FormItem>
+                )} />
                 <FormField control={form.control} name="startDate" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Start Date *</FormLabel>
@@ -359,13 +382,18 @@ const CreateMonthlyContractModal: React.FC<Props> = ({ open, onOpenChange, onCre
               />
             </div>
 
-            {/* Monthly Preview */}
-            {totalValue > 0 && (
+            {/* Installment Preview */}
+            {totalValue > 0 && numberOfInstallments > 0 && (
               <div className="rounded-lg bg-primary/10 p-4 text-center">
-                <p className="text-sm text-muted-foreground">Monthly Installment</p>
-                <p className="text-2xl font-bold text-primary">{formatPrice(monthlyAmount)}</p>
+                <p className="text-sm text-muted-foreground">
+                  {billingFrequency === 1 ? "Monthly Installment" : `Installment (every ${billingFrequency} months)`}
+                </p>
+                <p className="text-2xl font-bold text-primary">{formatPrice(installmentAmount)}</p>
                 <p className="text-xs text-muted-foreground">
-                  {durationMonths} installments × {formatPrice(monthlyAmount)} = {formatPrice(totalValue)}
+                  {numberOfInstallments} installments × {formatPrice(installmentAmount)} = {formatPrice(totalValue)}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Contract duration: {durationMonths} months
                 </p>
               </div>
             )}

@@ -916,6 +916,7 @@ export type Database = {
         Row: {
           assigned_to: string | null
           assigned_to_name: string | null
+          billing_frequency: number
           client_email: string
           client_name: string
           company_address: string | null
@@ -940,6 +941,7 @@ export type Database = {
         Insert: {
           assigned_to?: string | null
           assigned_to_name?: string | null
+          billing_frequency?: number
           client_email: string
           client_name: string
           company_address?: string | null
@@ -964,6 +966,7 @@ export type Database = {
         Update: {
           assigned_to?: string | null
           assigned_to_name?: string | null
+          billing_frequency?: number
           client_email?: string
           client_name?: string
           company_address?: string | null
