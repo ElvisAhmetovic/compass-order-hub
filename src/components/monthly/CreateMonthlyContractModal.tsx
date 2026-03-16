@@ -302,7 +302,7 @@ const CreateMonthlyContractModal: React.FC<Props> = ({ open, onOpenChange, onCre
                   )} />
                   <FormField control={form.control} name="billingFrequency" render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Billing Freq.</FormLabel>
+                      <div className="min-h-[2.5rem] flex items-end"><FormLabel>Billing Freq.</FormLabel></div>
                       <FormControl><Input type="number" min="1" max="12" placeholder="1" {...field} /></FormControl>
                       <p className="text-xs text-muted-foreground">Every {billingFrequency} mo.</p>
                       {durationMonths % billingFrequency !== 0 && (
