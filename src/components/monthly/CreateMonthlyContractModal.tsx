@@ -303,16 +303,9 @@ const CreateMonthlyContractModal: React.FC<Props> = ({ open, onOpenChange, onCre
                 </div>
                 <FormField control={form.control} name="billingFrequency" render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Billing Frequency</FormLabel>
-                    <Select value={String(field.value)} onValueChange={(v) => field.onChange(Number(v))}>
-                      <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                      <SelectContent>
-                        <SelectItem value="1">Every month</SelectItem>
-                        <SelectItem value="2">Every 2 months</SelectItem>
-                        <SelectItem value="3">Every 3 months</SelectItem>
-                        <SelectItem value="6">Every 6 months</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <FormLabel>Billing Frequency (months)</FormLabel>
+                    <FormControl><Input type="number" min="1" max="12" placeholder="1" {...field} /></FormControl>
+                    <p className="text-xs text-muted-foreground">Pay every {billingFrequency} month{billingFrequency > 1 ? "s" : ""}</p>
                     {durationMonths % billingFrequency !== 0 && (
                       <p className="text-xs text-destructive">Duration must be divisible by billing frequency</p>
                     )}
