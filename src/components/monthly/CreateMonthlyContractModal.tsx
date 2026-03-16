@@ -279,7 +279,7 @@ const CreateMonthlyContractModal: React.FC<Props> = ({ open, onOpenChange, onCre
                   )} />
                   <FormField control={form.control} name="currency" render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Currency</FormLabel>
+                      <div className="min-h-[2.5rem] flex items-end"><FormLabel>Currency</FormLabel></div>
                       <Select value={field.value} onValueChange={field.onChange}>
                         <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                         <SelectContent>
