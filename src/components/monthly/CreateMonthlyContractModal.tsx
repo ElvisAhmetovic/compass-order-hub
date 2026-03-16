@@ -269,7 +269,7 @@ const CreateMonthlyContractModal: React.FC<Props> = ({ open, onOpenChange, onCre
               {/* Right Column */}
               <div className="space-y-4">
                 <h3 className="text-base font-medium">Contract Details</h3>
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-4 gap-4">
                   <FormField control={form.control} name="totalValue" render={({ field }) => (
                     <FormItem>
                       <FormLabel>Total Value *</FormLabel>
@@ -300,18 +300,18 @@ const CreateMonthlyContractModal: React.FC<Props> = ({ open, onOpenChange, onCre
                       <FormMessage />
                     </FormItem>
                   )} />
+                  <FormField control={form.control} name="billingFrequency" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Billing Freq.</FormLabel>
+                      <FormControl><Input type="number" min="1" max="12" placeholder="1" {...field} /></FormControl>
+                      <p className="text-xs text-muted-foreground">Every {billingFrequency} mo.</p>
+                      {durationMonths % billingFrequency !== 0 && (
+                        <p className="text-xs text-destructive">Must divide duration</p>
+                      )}
+                      <FormMessage />
+                    </FormItem>
+                  )} />
                 </div>
-                <FormField control={form.control} name="billingFrequency" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Billing Frequency (months)</FormLabel>
-                    <FormControl><Input type="number" min="1" max="12" placeholder="1" {...field} /></FormControl>
-                    <p className="text-xs text-muted-foreground">Pay every {billingFrequency} month{billingFrequency > 1 ? "s" : ""}</p>
-                    {durationMonths % billingFrequency !== 0 && (
-                      <p className="text-xs text-destructive">Duration must be divisible by billing frequency</p>
-                    )}
-                    <FormMessage />
-                  </FormItem>
-                )} />
                 <FormField control={form.control} name="startDate" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Start Date *</FormLabel>
