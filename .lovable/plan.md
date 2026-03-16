@@ -1,18 +1,23 @@
 
 
-## Add "Created Only" Filter to Advanced Search
+## Add Billing Frequency Display to Monthly Packages Table
 
-The boss wants a second quick-filter alongside "Unpaid Orders Only" that shows orders with only the "Created" status -- orders that haven't progressed yet and also count as unpaid.
+### Change
+In `src/components/monthly/MonthlyInstallmentsTable.tsx`, update the contract header row (line ~322) to show the billing period instead of always saying "/ month".
 
-### Changes
+**Current:** `200,00 € / month`
+**New (frequency=2):** `200,00 € / every 2 months`
+**New (frequency=1):** `200,00 € / month` (unchanged for monthly)
 
-**`src/services/searchService.ts`**
-- Add `createdOnly?: boolean` to `SearchFilters` interface
-- Add filter logic in `applyFiltersToOrders`: if `createdOnly` is true, keep only orders where `status_created === true` and no further progress statuses are active (`status_in_progress`, `status_invoice_sent`, `status_invoice_paid`, `status_resolved`, `status_cancelled` are all falsy)
+Also update the progress indicator (line ~327) to show installment count instead of month count:
+- **Current:** `6 / 12 paid`
+- **New:** `6 / 6 paid` (actual installments, not duration months)
 
-**`src/components/dashboard/AdvancedSearch.tsx`**
-- Add a second checkbox below "Unpaid Orders Only" labeled "Created Only (Not Yet Started)" with description "(Orders still at Created status — no invoice sent or paid)"
-- Include `createdOnly` in the active filter count
+### Implementation
+- Add a helper to format frequency label: `1 → "month"`, `2 → "every 2 months"`, `3 → "quarterly"`, `6 → "every 6 months"`
+- Update line 322: use `contract.billing_frequency` to pick the right label
+- Update lines 269-270: calculate `totalInstallments = duration_months / billing_frequency` for progress bar and paid count display
 
-Both filters can work independently or together.
+### File
+`src/components/monthly/MonthlyInstallmentsTable.tsx` — ~5 lines changed
 
