@@ -295,7 +295,7 @@ const CreateMonthlyContractModal: React.FC<Props> = ({ open, onOpenChange, onCre
                   )} />
                   <FormField control={form.control} name="durationMonths" render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Duration (months)</FormLabel>
+                      <div className="min-h-[2.5rem] flex items-end"><FormLabel>Duration (months)</FormLabel></div>
                       <FormControl><Input type="number" min="1" max="60" {...field} /></FormControl>
                       <FormMessage />
                     </FormItem>
