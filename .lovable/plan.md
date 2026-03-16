@@ -1,18 +1,18 @@
 
 
-## Fix Input Field Alignment
+## Add "Created Only" Filter to Advanced Search
 
-The input boxes are misaligned because the Billing Frequency field has helper text below it, causing vertical misalignment across the row.
+The boss wants a second quick-filter alongside "Unpaid Orders Only" that shows orders with only the "Created" status -- orders that haven't progressed yet and also count as unpaid.
 
-### Change
-In `src/components/monthly/CreateMonthlyContractModal.tsx` line 272, add `items-start` to the grid container:
+### Changes
 
-```tsx
-<div className="grid grid-cols-4 gap-4 items-start">
-```
+**`src/services/searchService.ts`**
+- Add `createdOnly?: boolean` to `SearchFilters` interface
+- Add filter logic in `applyFiltersToOrders`: if `createdOnly` is true, keep only orders where `status_created === true` and no further progress statuses are active (`status_in_progress`, `status_invoice_sent`, `status_invoice_paid`, `status_resolved`, `status_cancelled` are all falsy)
 
-This ensures all four fields (Total Value, Currency, Duration, Billing Freq.) align their tops consistently regardless of extra helper text below individual fields.
+**`src/components/dashboard/AdvancedSearch.tsx`**
+- Add a second checkbox below "Unpaid Orders Only" labeled "Created Only (Not Yet Started)" with description "(Orders still at Created status — no invoice sent or paid)"
+- Include `createdOnly` in the active filter count
 
-### File
-`src/components/monthly/CreateMonthlyContractModal.tsx` — 1 line changed
+Both filters can work independently or together.
 
