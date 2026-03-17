@@ -111,10 +111,21 @@ const Invoices = () => {
 
   const handleUpdateStatus = async (id: string, newStatus: string) => {
     try {
-      // Create a partial invoice update with just the status
-      const updateData = { 
+      // Create update data with status + reminder scheduling
+      const updateData: any = { 
         status: newStatus as Invoice['status']
       };
+      
+      // Auto-manage reminder scheduling based on status
+      if (newStatus === 'paid' || newStatus === 'cancelled' || newStatus === 'refunded') {
+        updateData.next_reminder_at = null; // Stop reminders
+      } else if (newStatus === 'sent' || newStatus === 'overdue') {
+        // Only set next_reminder_at if not already set
+        const currentInvoice = invoices.find(inv => inv.id === id);
+        if (!(currentInvoice as any)?.next_reminder_at) {
+          updateData.next_reminder_at = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString();
+        }
+      }
       
       await InvoiceService.updateInvoice(id, updateData);
       setInvoices(invoices.map(invoice => 
