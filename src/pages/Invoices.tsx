@@ -417,6 +417,7 @@ const Invoices = () => {
                               </TableCell>
                               <TableCell>
                                 <div className="flex space-x-1">
+                                  <InvoiceReminderHistory invoice={invoice} />
                                   <Button 
                                     variant="ghost" 
                                     size="icon" 
