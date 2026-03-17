@@ -725,14 +725,14 @@ export class OrderService {
             newInvoiceStatus = "sent";
           } else if (status === "Invoice Paid" && !enabled) {
             // Revert: check if Invoice Sent is still active
-            const orderAfter = await this.getOrderById(orderId);
+            const orderAfter = await this.getOrder(orderId);
             newInvoiceStatus = orderAfter?.status_invoice_sent ? "sent" : "draft";
           } else {
             // Invoice Sent disabled: check if Invoice Paid is still active
-            const orderAfter = await this.getOrderById(orderId);
+            const orderAfter = await this.getOrder(orderId);
             newInvoiceStatus = orderAfter?.status_invoice_paid ? "paid" : "draft";
           }
-          await InvoiceService.updateInvoice(linkedInvoice.id, { status: newInvoiceStatus });
+          await InvoiceService.updateInvoice(linkedInvoice.id, { status: newInvoiceStatus as 'paid' | 'sent' | 'draft' });
           console.log(`📄 Synced invoice ${linkedInvoice.invoice_number} status to "${newInvoiceStatus}"`);
         }
       } catch (invoiceSyncError) {
