@@ -711,6 +711,35 @@ export class OrderService {
       // Don't block status update if email fails
     }
 
+    // Sync linked invoice status when Invoice Paid/Sent changes
+    if (status === "Invoice Paid" || status === "Invoice Sent") {
+      try {
+        const { InvoiceService } = await import('./invoiceService');
+        const invoices = await InvoiceService.getInvoices();
+        const linkedInvoice = invoices.find(inv => inv.notes?.includes(`Order ID: ${orderId}`));
+        if (linkedInvoice) {
+          let newInvoiceStatus: string;
+          if (status === "Invoice Paid" && enabled) {
+            newInvoiceStatus = "paid";
+          } else if (status === "Invoice Sent" && enabled) {
+            newInvoiceStatus = "sent";
+          } else if (status === "Invoice Paid" && !enabled) {
+            // Revert: check if Invoice Sent is still active
+            const orderAfter = await this.getOrder(orderId);
+            newInvoiceStatus = orderAfter?.status_invoice_sent ? "sent" : "draft";
+          } else {
+            // Invoice Sent disabled: check if Invoice Paid is still active
+            const orderAfter = await this.getOrder(orderId);
+            newInvoiceStatus = orderAfter?.status_invoice_paid ? "paid" : "draft";
+          }
+          await InvoiceService.updateInvoice(linkedInvoice.id, { status: newInvoiceStatus as 'paid' | 'sent' | 'draft' });
+          console.log(`📄 Synced invoice ${linkedInvoice.invoice_number} status to "${newInvoiceStatus}"`);
+        }
+      } catch (invoiceSyncError) {
+        console.error('Error syncing invoice status:', invoiceSyncError);
+      }
+    }
+
     // Send notification to linked client only if explicitly opted in
     console.log('📧 Client notification check:', { 
       enabled, 
