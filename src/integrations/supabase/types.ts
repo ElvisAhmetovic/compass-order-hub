@@ -750,6 +750,47 @@ export type Database = {
           },
         ]
       }
+      invoice_payment_reminders: {
+        Row: {
+          created_at: string
+          id: string
+          invoice_id: string
+          order_id: string
+          reminder_number: number
+          sent_at: string
+          sent_to_client: string | null
+          sent_to_team: boolean | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          invoice_id: string
+          order_id: string
+          reminder_number?: number
+          sent_at?: string
+          sent_to_client?: string | null
+          sent_to_team?: boolean | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          invoice_id?: string
+          order_id?: string
+          reminder_number?: number
+          sent_at?: string
+          sent_to_client?: string | null
+          sent_to_team?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_payment_reminders_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invoice_sequences: {
         Row: {
           created_at: string
@@ -787,10 +828,13 @@ export type Database = {
           internal_notes: string | null
           invoice_number: string
           issue_date: string
+          last_reminder_sent_at: string | null
           net_amount: number
+          next_reminder_at: string | null
           notes: string | null
           payment_terms: string | null
           proposal_id: string | null
+          reminder_count: number
           status: string
           total_amount: number
           updated_at: string
@@ -806,10 +850,13 @@ export type Database = {
           internal_notes?: string | null
           invoice_number: string
           issue_date?: string
+          last_reminder_sent_at?: string | null
           net_amount?: number
+          next_reminder_at?: string | null
           notes?: string | null
           payment_terms?: string | null
           proposal_id?: string | null
+          reminder_count?: number
           status?: string
           total_amount?: number
           updated_at?: string
@@ -825,10 +872,13 @@ export type Database = {
           internal_notes?: string | null
           invoice_number?: string
           issue_date?: string
+          last_reminder_sent_at?: string | null
           net_amount?: number
+          next_reminder_at?: string | null
           notes?: string | null
           payment_terms?: string | null
           proposal_id?: string | null
+          reminder_count?: number
           status?: string
           total_amount?: number
           updated_at?: string
