@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { PlusCircle, FileEdit, Trash2, Download, File, CheckCircle2, XCircle, Send, Eye, Receipt, ArrowUpDown } from "lucide-react";
+import { PlusCircle, FileEdit, Trash2, Download, File, CheckCircle2, XCircle, Send, Eye, Receipt, ArrowUpDown, Bell } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
@@ -23,6 +23,7 @@ import {
 import { InvoiceService } from "@/services/invoiceService";
 import PaymentReminders from "@/components/invoices/PaymentReminders";
 import { formatCurrency } from "@/utils/currencyUtils";
+import InvoiceReminderHistory from "@/components/invoices/InvoiceReminderHistory";
 
 const INVOICE_STATUSES = [
   "draft",
@@ -110,10 +111,21 @@ const Invoices = () => {
 
   const handleUpdateStatus = async (id: string, newStatus: string) => {
     try {
-      // Create a partial invoice update with just the status
-      const updateData = { 
+      // Create update data with status + reminder scheduling
+      const updateData: any = { 
         status: newStatus as Invoice['status']
       };
+      
+      // Auto-manage reminder scheduling based on status
+      if (newStatus === 'paid' || newStatus === 'cancelled' || newStatus === 'refunded') {
+        updateData.next_reminder_at = null; // Stop reminders
+      } else if (newStatus === 'sent' || newStatus === 'overdue') {
+        // Only set next_reminder_at if not already set
+        const currentInvoice = invoices.find(inv => inv.id === id);
+        if (!(currentInvoice as any)?.next_reminder_at) {
+          updateData.next_reminder_at = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString();
+        }
+      }
       
       await InvoiceService.updateInvoice(id, updateData);
       setInvoices(invoices.map(invoice => 
@@ -405,6 +417,7 @@ const Invoices = () => {
                               </TableCell>
                               <TableCell>
                                 <div className="flex space-x-1">
+                                  <InvoiceReminderHistory invoice={invoice} />
                                   <Button 
                                     variant="ghost" 
                                     size="icon" 

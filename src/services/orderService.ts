@@ -732,8 +732,18 @@ export class OrderService {
             const orderAfter = await this.getOrder(orderId);
             newInvoiceStatus = orderAfter?.status_invoice_paid ? "paid" : "draft";
           }
-          await InvoiceService.updateInvoice(linkedInvoice.id, { status: newInvoiceStatus as 'paid' | 'sent' | 'draft' });
-          console.log(`📄 Synced invoice ${linkedInvoice.invoice_number} status to "${newInvoiceStatus}"`);
+          // Update invoice status
+          const updateData: any = { status: newInvoiceStatus as 'paid' | 'sent' | 'draft' };
+          
+          // Set or clear next_reminder_at for auto payment reminders
+          if (newInvoiceStatus === 'paid') {
+            updateData.next_reminder_at = null; // Stop reminders
+          } else if (newInvoiceStatus === 'sent') {
+            updateData.next_reminder_at = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(); // Start reminders in 2 days
+          }
+          
+          await InvoiceService.updateInvoice(linkedInvoice.id, updateData);
+          console.log(`📄 Synced invoice ${linkedInvoice.invoice_number} status to "${newInvoiceStatus}", next_reminder_at: ${updateData.next_reminder_at || 'null'}`);
         }
       } catch (invoiceSyncError) {
         console.error('Error syncing invoice status:', invoiceSyncError);
