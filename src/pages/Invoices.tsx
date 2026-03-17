@@ -23,6 +23,7 @@ import {
 import { InvoiceService } from "@/services/invoiceService";
 import PaymentReminders from "@/components/invoices/PaymentReminders";
 import { formatCurrency } from "@/utils/currencyUtils";
+import InvoiceReminderHistory from "@/components/invoices/InvoiceReminderHistory";
 
 const INVOICE_STATUSES = [
   "draft",
