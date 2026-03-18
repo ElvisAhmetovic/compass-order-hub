@@ -280,7 +280,7 @@ const handler = async (req: Request): Promise<Response> => {
         console.log(`Sent ${teamEmailsSent}/${TEAM_EMAILS.length} team emails + client=${clientEmailSent} for invoice ${invoice.invoice_number}`);
 
         // Update invoice reminder tracking
-        const nextReminderAt = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString();
+        const nextReminderAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
         await supabase.from("invoices").update({
           reminder_count: newReminderCount,
           last_reminder_sent_at: now,

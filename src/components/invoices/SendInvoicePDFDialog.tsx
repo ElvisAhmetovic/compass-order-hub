@@ -80,6 +80,25 @@ const SendInvoicePDFDialog: React.FC<SendInvoicePDFDialogProps> = ({
         },
       }).catch(err => console.error("Background invoice email error:", err));
 
+      // Schedule payment reminder and mark as sent if invoice exists in DB
+      if (invoice?.id) {
+        try {
+          const { data: currentInvoice } = await supabase.from('invoices').select('next_reminder_at, status').eq('id', invoice.id).single();
+          const updateData: any = {};
+          if (!currentInvoice?.next_reminder_at) {
+            updateData.next_reminder_at = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+          }
+          if (currentInvoice?.status === 'draft') {
+            updateData.status = 'sent';
+          }
+          if (Object.keys(updateData).length > 0) {
+            await supabase.from('invoices').update(updateData).eq('id', invoice.id);
+          }
+        } catch (err) {
+          console.error("Error scheduling reminder:", err);
+        }
+      }
+
       toast({ title: "Invoice sent", description: `Invoice has been sent to ${clientEmail}` });
       onOpenChange(false);
     } catch (error) {

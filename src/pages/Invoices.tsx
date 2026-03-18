@@ -123,7 +123,7 @@ const Invoices = () => {
         // Only set next_reminder_at if not already set
         const currentInvoice = invoices.find(inv => inv.id === id);
         if (!(currentInvoice as any)?.next_reminder_at) {
-          updateData.next_reminder_at = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString();
+          updateData.next_reminder_at = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
         }
       }
       
