@@ -1,14 +1,18 @@
 
 
-## Change: Reminder Interval from 24h to 48h
+## Add "Created Only" Filter to Advanced Search
 
-Five places need `24 * 60 * 60 * 1000` changed to `48 * 60 * 60 * 1000`:
+The boss wants a second quick-filter alongside "Unpaid Orders Only" that shows orders with only the "Created" status -- orders that haven't progressed yet and also count as unpaid.
 
-1. **`src/services/orderService.ts`** (line 742) — status toggle trigger
-2. **`src/pages/Invoices.tsx`** (line 126) — status dropdown trigger
-3. **`src/components/invoices/SendInvoiceDialog.tsx`** (line 125) — manual send trigger
-4. **`src/components/invoices/SendInvoicePDFDialog.tsx`** (line 89) — PDF send trigger
-5. **`supabase/functions/send-invoice-payment-reminders/index.ts`** (line 283) — recurring next reminder
+### Changes
 
-All straightforward find-and-replace of `24 * 60 * 60 * 1000` → `48 * 60 * 60 * 1000` in these reminder-specific lines only (not touching unrelated 24h usages like payment expiry or due dates).
+**`src/services/searchService.ts`**
+- Add `createdOnly?: boolean` to `SearchFilters` interface
+- Add filter logic in `applyFiltersToOrders`: if `createdOnly` is true, keep only orders where `status_created === true` and no further progress statuses are active (`status_in_progress`, `status_invoice_sent`, `status_invoice_paid`, `status_resolved`, `status_cancelled` are all falsy)
+
+**`src/components/dashboard/AdvancedSearch.tsx`**
+- Add a second checkbox below "Unpaid Orders Only" labeled "Created Only (Not Yet Started)" with description "(Orders still at Created status — no invoice sent or paid)"
+- Include `createdOnly` in the active filter count
+
+Both filters can work independently or together.
 

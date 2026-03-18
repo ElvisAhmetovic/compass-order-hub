@@ -86,7 +86,7 @@ const SendInvoicePDFDialog: React.FC<SendInvoicePDFDialogProps> = ({
           const { data: currentInvoice } = await supabase.from('invoices').select('next_reminder_at, status').eq('id', invoice.id).single();
           const updateData: any = {};
           if (!currentInvoice?.next_reminder_at) {
-            updateData.next_reminder_at = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+            updateData.next_reminder_at = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
           }
           if (currentInvoice?.status === 'draft') {
             updateData.status = 'sent';
