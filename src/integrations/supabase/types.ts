@@ -832,6 +832,7 @@ export type Database = {
           net_amount: number
           next_reminder_at: string | null
           notes: string | null
+          order_id: string | null
           payment_terms: string | null
           proposal_id: string | null
           reminder_count: number
@@ -854,6 +855,7 @@ export type Database = {
           net_amount?: number
           next_reminder_at?: string | null
           notes?: string | null
+          order_id?: string | null
           payment_terms?: string | null
           proposal_id?: string | null
           reminder_count?: number
@@ -876,6 +878,7 @@ export type Database = {
           net_amount?: number
           next_reminder_at?: string | null
           notes?: string | null
+          order_id?: string | null
           payment_terms?: string | null
           proposal_id?: string | null
           reminder_count?: number
@@ -891,6 +894,20 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "client_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
             referencedColumns: ["id"]
           },
           {
