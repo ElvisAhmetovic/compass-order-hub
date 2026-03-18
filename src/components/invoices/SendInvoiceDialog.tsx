@@ -115,6 +115,26 @@ AB Media Team`);
       customMessage
     ).catch(err => console.error("Background invoice email error:", err));
 
+    // Schedule payment reminder and mark as sent
+    try {
+      const { supabase } = await import("@/integrations/supabase/client");
+      const updateData: any = {};
+      // Set next_reminder_at if not already scheduled
+      const { data: currentInvoice } = await supabase.from('invoices').select('next_reminder_at, status').eq('id', invoice.id).single();
+      if (!currentInvoice?.next_reminder_at) {
+        updateData.next_reminder_at = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+      }
+      // Mark as sent if still draft
+      if (currentInvoice?.status === 'draft') {
+        updateData.status = 'sent';
+      }
+      if (Object.keys(updateData).length > 0) {
+        await supabase.from('invoices').update(updateData).eq('id', invoice.id);
+      }
+    } catch (err) {
+      console.error("Error scheduling reminder:", err);
+    }
+
     toast({
       title: "Invoice sent",
       description: `Invoice has been sent to ${invoice.client.email}`,
