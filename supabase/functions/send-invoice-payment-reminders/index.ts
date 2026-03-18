@@ -286,10 +286,6 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    console.log("Starting invoice payment reminder check...");
-
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const resendApiKey = Deno.env.get("RESEND_API_KEY_ABMEDIA");
 
     if (!resendApiKey) {
@@ -300,8 +296,52 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const resend = new Resend(resendApiKey);
+
+    // --- TEST MODE: send a demo email without touching real data ---
+    let body: any = {};
+    try { body = await req.json(); } catch { /* no body = normal cron */ }
+
+    if (body?.test_mode) {
+      const testEmail = body.test_email || "test@example.com";
+      const testLang = body.test_language || "de";
+      console.log(`TEST MODE: sending demo reminder to ${testEmail} in '${testLang}'`);
+
+      const demoHtml = buildReminderEmailHtml({
+        clientName: "Max Mustermann",
+        clientEmail: "max@muster-gmbh.de",
+        clientPhone: "+49 30 123456",
+        companyAddress: "Musterstraße 12, 10115 Berlin, Deutschland",
+        companyName: "Muster GmbH",
+        description: "Premium SEO Package – 12 Months",
+        invoiceNumber: "INV-2026-TEST",
+        amount: formatPrice(1299, "EUR"),
+        reminderNumber: 1,
+        isClientEmail: true,
+        language: testLang,
+      });
+
+      const t = getTranslations(testLang);
+      await resend.emails.send({
+        from: "AB Media Team <noreply@abm-team.com>",
+        to: [testEmail],
+        subject: `💰 ${t.urgency[0]} #1: ${t.invoiceLabel} INV-2026-TEST - ${formatPrice(1299, "EUR")}`,
+        html: demoHtml,
+      });
+
+      console.log(`TEST MODE: demo email sent to ${testEmail}`);
+      return new Response(
+        JSON.stringify({ message: "Test email sent", to: testEmail, language: testLang }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    // --- END TEST MODE ---
+
+    console.log("Starting invoice payment reminder check...");
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const now = new Date().toISOString();
 
