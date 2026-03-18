@@ -739,7 +739,7 @@ export class OrderService {
           if (newInvoiceStatus === 'paid') {
             updateData.next_reminder_at = null; // Stop reminders
           } else if (newInvoiceStatus === 'sent') {
-            updateData.next_reminder_at = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(); // Start reminders in 24 hours
+            updateData.next_reminder_at = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(); // Start reminders in 48 hours
           }
           
           await InvoiceService.updateInvoice(linkedInvoice.id, updateData);
