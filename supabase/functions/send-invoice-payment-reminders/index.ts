@@ -24,6 +24,133 @@ const TEAM_EMAILS = [
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
+// --- Language detection from address ---
+const detectLanguageFromAddress = (address: string | null | undefined): string => {
+  if (!address) return "en";
+  const lower = address.toLowerCase();
+  const map: [RegExp, string][] = [
+    [/deutschland|germany/i, "de"],
+    [/nederland|netherlands|holland/i, "nl"],
+    [/france|frankreich|français/i, "fr"],
+    [/españa|spain|spanien/i, "es"],
+    [/danmark|denmark|dänemark/i, "da"],
+    [/norge|norway|norwegen/i, "no"],
+    [/česko|czech|tschech/i, "cs"],
+    [/polska|poland|polen/i, "pl"],
+    [/sverige|sweden|schweden/i, "sv"],
+  ];
+  for (const [regex, lang] of map) {
+    if (regex.test(lower)) return lang;
+  }
+  return "en";
+};
+
+// --- Translations for client-facing emails ---
+interface ReminderTranslations {
+  subjectPrefix: string;
+  invoiceLabel: string;
+  urgency: [string, string, string]; // [normal, follow-up, urgent]
+  greeting: string; // {name} placeholder
+  amountDue: string;
+  orderDescription: string;
+  footer: string;
+}
+
+const translations: Record<string, ReminderTranslations> = {
+  en: {
+    subjectPrefix: "Payment Reminder",
+    invoiceLabel: "Invoice",
+    urgency: ["Payment Reminder", "Payment Reminder Follow-Up", "Urgent Payment Reminder"],
+    greeting: "Dear {name}, this is a friendly reminder that your invoice is still pending payment.",
+    amountDue: "Amount Due",
+    orderDescription: "Order Description",
+    footer: "This is an automated payment reminder from",
+  },
+  de: {
+    subjectPrefix: "Zahlungserinnerung",
+    invoiceLabel: "Rechnung",
+    urgency: ["Zahlungserinnerung", "Zahlungserinnerung – Folgemahnung", "Dringende Zahlungserinnerung"],
+    greeting: "Sehr geehrte/r {name}, wir möchten Sie freundlich daran erinnern, dass Ihre Rechnung noch zur Zahlung aussteht.",
+    amountDue: "Offener Betrag",
+    orderDescription: "Auftragsbeschreibung",
+    footer: "Dies ist eine automatische Zahlungserinnerung von",
+  },
+  nl: {
+    subjectPrefix: "Betalingsherinnering",
+    invoiceLabel: "Factuur",
+    urgency: ["Betalingsherinnering", "Betalingsherinnering – Opvolging", "Dringende Betalingsherinnering"],
+    greeting: "Beste {name}, dit is een vriendelijke herinnering dat uw factuur nog openstaat.",
+    amountDue: "Openstaand Bedrag",
+    orderDescription: "Bestelbeschrijving",
+    footer: "Dit is een automatische betalingsherinnering van",
+  },
+  fr: {
+    subjectPrefix: "Rappel de paiement",
+    invoiceLabel: "Facture",
+    urgency: ["Rappel de paiement", "Rappel de paiement – Suivi", "Rappel de paiement urgent"],
+    greeting: "Cher/Chère {name}, nous vous rappelons aimablement que votre facture est toujours en attente de paiement.",
+    amountDue: "Montant dû",
+    orderDescription: "Description de la commande",
+    footer: "Ceci est un rappel de paiement automatique de",
+  },
+  es: {
+    subjectPrefix: "Recordatorio de pago",
+    invoiceLabel: "Factura",
+    urgency: ["Recordatorio de pago", "Recordatorio de pago – Seguimiento", "Recordatorio de pago urgente"],
+    greeting: "Estimado/a {name}, le recordamos amablemente que su factura aún está pendiente de pago.",
+    amountDue: "Importe pendiente",
+    orderDescription: "Descripción del pedido",
+    footer: "Este es un recordatorio de pago automático de",
+  },
+  da: {
+    subjectPrefix: "Betalingspåmindelse",
+    invoiceLabel: "Faktura",
+    urgency: ["Betalingspåmindelse", "Betalingspåmindelse – Opfølgning", "Hastende betalingspåmindelse"],
+    greeting: "Kære {name}, dette er en venlig påmindelse om, at din faktura stadig afventer betaling.",
+    amountDue: "Udestående beløb",
+    orderDescription: "Bestillingsbeskrivelse",
+    footer: "Dette er en automatisk betalingspåmindelse fra",
+  },
+  no: {
+    subjectPrefix: "Betalingspåminnelse",
+    invoiceLabel: "Faktura",
+    urgency: ["Betalingspåminnelse", "Betalingspåminnelse – Oppfølging", "Haster – Betalingspåminnelse"],
+    greeting: "Kjære {name}, dette er en vennlig påminnelse om at din faktura fortsatt venter på betaling.",
+    amountDue: "Utestående beløp",
+    orderDescription: "Bestillingsbeskrivelse",
+    footer: "Dette er en automatisk betalingspåminnelse fra",
+  },
+  cs: {
+    subjectPrefix: "Upomínka k platbě",
+    invoiceLabel: "Faktura",
+    urgency: ["Upomínka k platbě", "Upomínka k platbě – připomenutí", "Naléhavá upomínka k platbě"],
+    greeting: "Vážený/á {name}, dovolujeme si Vám připomenout, že Vaše faktura stále čeká na úhradu.",
+    amountDue: "Dlužná částka",
+    orderDescription: "Popis objednávky",
+    footer: "Toto je automatická upomínka k platbě od",
+  },
+  pl: {
+    subjectPrefix: "Przypomnienie o płatności",
+    invoiceLabel: "Faktura",
+    urgency: ["Przypomnienie o płatności", "Przypomnienie o płatności – kontynuacja", "Pilne przypomnienie o płatności"],
+    greeting: "Szanowny/a {name}, uprzejmie przypominamy, że Państwa faktura wciąż oczekuje na płatność.",
+    amountDue: "Kwota do zapłaty",
+    orderDescription: "Opis zamówienia",
+    footer: "To jest automatyczne przypomnienie o płatności od",
+  },
+  sv: {
+    subjectPrefix: "Betalningspåminnelse",
+    invoiceLabel: "Faktura",
+    urgency: ["Betalningspåminnelse", "Betalningspåminnelse – Uppföljning", "Brådskande betalningspåminnelse"],
+    greeting: "Bäste {name}, detta är en vänlig påminnelse om att din faktura fortfarande väntar på betalning.",
+    amountDue: "Utestående belopp",
+    orderDescription: "Orderbeskrivning",
+    footer: "Detta är en automatisk betalningspåminnelse från",
+  },
+};
+
+const getTranslations = (lang: string): ReminderTranslations => translations[lang] || translations.en;
+
 const formatPrice = (amount: number, currency: string) => {
   const symbols: Record<string, string> = { EUR: '€', USD: '$', GBP: '£' };
   const symbol = symbols[currency] || currency;
@@ -41,13 +168,20 @@ const buildReminderEmailHtml = (data: {
   amount: string;
   reminderNumber: number;
   isClientEmail: boolean;
+  language: string;
 }) => {
+  const t = getTranslations(data.isClientEmail ? data.language : 'en');
   const initial = (data.clientName || 'C').charAt(0).toUpperCase();
   const urgencyColor = data.reminderNumber >= 3 ? '#dc2626' : data.reminderNumber >= 2 ? '#f59e0b' : '#1a73e8';
-  const urgencyLabel = data.reminderNumber >= 3 ? 'Urgent Payment Reminder' : data.reminderNumber >= 2 ? 'Payment Reminder Follow-Up' : 'Payment Reminder';
+  const urgencyIdx = data.reminderNumber >= 3 ? 2 : data.reminderNumber >= 2 ? 1 : 0;
+  const urgencyLabel = t.urgency[urgencyIdx];
+
+  const subtitleText = data.isClientEmail
+    ? t.greeting.replace('{name}', data.clientName)
+    : `Payment reminder #${data.reminderNumber} for invoice ${data.invoiceNumber} — follow up required.`;
 
   return `<!DOCTYPE html>
-<html lang="en">
+<html lang="${data.isClientEmail ? data.language : 'en'}">
 <head><meta charset="UTF-8"><title>${urgencyLabel} - AB Media Team</title></head>
 <body style="margin:0; padding:0; background-color:#ffffff; font-family:Arial,Helvetica,sans-serif;">
   <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color:#ffffff; padding:40px 0;">
@@ -77,10 +211,7 @@ const buildReminderEmailHtml = (data: {
             💰 ${urgencyLabel}
           </h1>
           <p style="font-family:Roboto,Arial,sans-serif; font-size:14px; color:#5f6368; margin:8px 0 0;">
-            ${data.isClientEmail 
-              ? `Dear ${data.clientName}, this is a friendly reminder that your invoice is still pending payment.`
-              : `Payment reminder #${data.reminderNumber} for invoice ${data.invoiceNumber} — follow up required.`
-            }
+            ${subtitleText}
           </p>
         </td></tr>
 
@@ -90,9 +221,9 @@ const buildReminderEmailHtml = (data: {
             <tr><td style="padding:20px 24px;">
               <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
                 <tr><td colspan="2" style="padding-bottom:12px; border-bottom:1px solid #e8eaed;">
-                  <span style="font-family:Roboto,Arial,sans-serif; font-size:16px; font-weight:700; color:#202124;">Invoice ${data.invoiceNumber}</span>
+                  <span style="font-family:Roboto,Arial,sans-serif; font-size:16px; font-weight:700; color:#202124;">${t.invoiceLabel} ${data.invoiceNumber}</span>
                 </td></tr>
-                <tr><td style="padding-top:12px; font-family:Roboto,Arial,sans-serif; font-size:13px; color:#5f6368;">Amount Due</td>
+                <tr><td style="padding-top:12px; font-family:Roboto,Arial,sans-serif; font-size:13px; color:#5f6368;">${t.amountDue}</td>
                     <td style="padding-top:12px; font-family:Roboto,Arial,sans-serif; font-size:16px; font-weight:700; color:${urgencyColor}; text-align:right;">${data.amount}</td></tr>
               </table>
             </td></tr>
@@ -126,7 +257,7 @@ const buildReminderEmailHtml = (data: {
         <tr><td style="padding:0 32px 16px;">
           <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color:#e8f0fe; border-radius:12px; border:1px solid #d2e3fc;">
             <tr><td style="padding:16px 24px;">
-              <div style="font-family:Roboto,Arial,sans-serif; font-size:12px; color:#1a73e8; font-weight:700; text-transform:uppercase; margin-bottom:6px;">Order Description</div>
+              <div style="font-family:Roboto,Arial,sans-serif; font-size:12px; color:#1a73e8; font-weight:700; text-transform:uppercase; margin-bottom:6px;">${t.orderDescription}</div>
               <div style="font-family:Roboto,Arial,sans-serif; font-size:14px; color:#202124;">${data.description}</div>
             </td></tr>
           </table>
@@ -137,8 +268,8 @@ const buildReminderEmailHtml = (data: {
         <tr><td style="padding:24px 32px; border-top:1px solid #e8eaed;">
           <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"><tr>
             <td style="font-family:Roboto,Arial,sans-serif; font-size:11px; color:#9aa0a6; text-align:center;">
-              This is an automated payment reminder from <strong>AB Media Team</strong><br>
-              Reminder #${data.reminderNumber} • ${new Date().toLocaleDateString('de-DE')}
+              ${t.footer} <strong>AB Media Team</strong><br>
+              ${data.isClientEmail ? `${urgencyLabel}` : `Reminder`} #${data.reminderNumber} • ${new Date().toLocaleDateString('de-DE')}
             </td>
           </tr></table>
         </td></tr>
@@ -230,6 +361,11 @@ const handler = async (req: Request): Promise<Response> => {
         const clientEmail = order.contact_email;
         const amount = formatPrice(invoice.total_amount, invoice.currency);
 
+        // Detect language from the client's address
+        const detectedLanguage = detectLanguageFromAddress(order.company_address);
+        const t = getTranslations(detectedLanguage);
+        console.log(`Invoice ${invoice.invoice_number}: detected language '${detectedLanguage}' from address '${order.company_address}'`);
+
         const emailData = {
           clientName: order.contact_name || order.company_name,
           clientEmail: order.contact_email || '',
@@ -240,27 +376,31 @@ const handler = async (req: Request): Promise<Response> => {
           invoiceNumber: invoice.invoice_number,
           amount,
           reminderNumber: newReminderCount,
+          language: detectedLanguage,
         };
 
-        // Send to client if email exists
+        // Send to client if email exists — in the detected language
         let clientEmailSent = false;
         if (clientEmail) {
           try {
+            const urgencyIdx = newReminderCount >= 3 ? 2 : newReminderCount >= 2 ? 1 : 0;
+            const clientSubject = `💰 ${t.urgency[urgencyIdx]} #${newReminderCount}: ${t.invoiceLabel} ${invoice.invoice_number} - ${amount}`;
+
             await resend.emails.send({
               from: "AB Media Team <noreply@abm-team.com>",
               to: [clientEmail],
-              subject: `💰 Payment Reminder #${newReminderCount}: Invoice ${invoice.invoice_number} - ${amount}`,
+              subject: clientSubject,
               html: buildReminderEmailHtml({ ...emailData, isClientEmail: true }),
             });
             clientEmailSent = true;
-            console.log(`Client email sent to ${clientEmail} for invoice ${invoice.invoice_number}`);
+            console.log(`Client email sent to ${clientEmail} for invoice ${invoice.invoice_number} (lang: ${detectedLanguage})`);
             await delay(500);
           } catch (emailErr) {
             console.error(`Failed to send client email to ${clientEmail}:`, emailErr);
           }
         }
 
-        // Send to team members
+        // Send to team members — always in English
         let teamEmailsSent = 0;
         for (const email of TEAM_EMAILS) {
           try {
