@@ -62,10 +62,10 @@ const OrderActions = ({ order, onOrderView, onRefresh }: OrderActionsProps) => {
       throw new Error("You must be logged in to create invoices.");
     }
 
-    // Check if invoice already exists for this order
+    // Check if invoice already exists for this order using direct order_id link
     const existingInvoices = await InvoiceService.getInvoices();
     const existingInvoice = existingInvoices.find(inv => 
-      inv.notes && inv.notes.includes(`Order ID: ${orderId}`)
+      (inv as any).order_id === orderId || (inv.notes && inv.notes.includes(`Order ID: ${orderId}`))
     );
 
     if (existingInvoice) {
@@ -143,6 +143,9 @@ const OrderActions = ({ order, onOrderView, onRefresh }: OrderActionsProps) => {
     };
 
     const newInvoice = await InvoiceService.createInvoice(invoiceData);
+
+    // Link invoice to order via order_id column
+    await InvoiceService.updateInvoice(newInvoice.id, { order_id: orderId } as any);
     
     // Update the invoice status to match the order status
     const invoiceStatus = status === "Invoice Sent" ? "sent" : "paid";

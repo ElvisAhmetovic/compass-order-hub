@@ -372,18 +372,19 @@ const handler = async (req: Request): Promise<Response> => {
 
     for (const invoice of dueInvoices) {
       try {
-        // Extract order ID from notes
-        const orderIdMatch = invoice.notes?.match(/Order ID: ([a-f0-9-]+)/);
-        if (!orderIdMatch) {
-          console.log(`Skipping invoice ${invoice.invoice_number} - no linked order ID in notes`);
-          // Still schedule next reminder
+        // Get order ID from direct column link, fall back to regex in notes
+        let orderId = invoice.order_id;
+        if (!orderId) {
+          const orderIdMatch = invoice.notes?.match(/Order ID: ([a-f0-9-]+)/);
+          orderId = orderIdMatch?.[1] || null;
+        }
+        if (!orderId) {
+          console.log(`Skipping invoice ${invoice.invoice_number} - no linked order ID`);
           await supabase.from("invoices").update({
             next_reminder_at: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
           }).eq("id", invoice.id);
           continue;
         }
-
-        const orderId = orderIdMatch[1];
 
         // Fetch order details
         const { data: order, error: orderError } = await supabase
