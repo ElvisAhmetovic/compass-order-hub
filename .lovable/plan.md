@@ -1,28 +1,18 @@
 
 
-## Fix: Offers Page Not Updating in Real-Time
+## Add "Created Only" Filter to Advanced Search
 
-### What Happened
-The FederTec offer **was confirmed successfully** -- the database shows `status: confirmed` and the order was created. The issue is that the Offers page only loads data once on mount and has **no real-time subscription**. So when the client confirmed from their side, the boss's browser still showed the old "unconfirmed" state.
+The boss wants a second quick-filter alongside "Unpaid Orders Only" that shows orders with only the "Created" status -- orders that haven't progressed yet and also count as unpaid.
 
-### Solution
-Add a Supabase real-time subscription on the `offers` table in `src/pages/Offers.tsx` so the list auto-refreshes whenever an offer is inserted, updated, or deleted. This is the same pattern used elsewhere in the app (e.g., orders real-time).
+### Changes
 
-### Change
+**`src/services/searchService.ts`**
+- Add `createdOnly?: boolean` to `SearchFilters` interface
+- Add filter logic in `applyFiltersToOrders`: if `createdOnly` is true, keep only orders where `status_created === true` and no further progress statuses are active (`status_in_progress`, `status_invoice_sent`, `status_invoice_paid`, `status_resolved`, `status_cancelled` are all falsy)
 
-**`src/pages/Offers.tsx`** -- Add a `useEffect` with a Supabase channel subscription:
-```typescript
-useEffect(() => {
-  const channel = supabase
-    .channel('offers-realtime')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'offers' }, () => {
-      fetchOffers();
-    })
-    .subscribe();
+**`src/components/dashboard/AdvancedSearch.tsx`**
+- Add a second checkbox below "Unpaid Orders Only" labeled "Created Only (Not Yet Started)" with description "(Orders still at Created status — no invoice sent or paid)"
+- Include `createdOnly` in the active filter count
 
-  return () => { supabase.removeChannel(channel); };
-}, []);
-```
-
-This ensures the table updates live when a client confirms an offer, or when any other change happens to the offers table.
+Both filters can work independently or together.
 
