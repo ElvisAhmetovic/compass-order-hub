@@ -1,18 +1,27 @@
 
 
-## Add "Created Only" Filter to Advanced Search
+## Fix: Keep Both Triggers for Invoice Payment Reminders
 
-The boss wants a second quick-filter alongside "Unpaid Orders Only" that shows orders with only the "Created" status -- orders that haven't progressed yet and also count as unpaid.
+### Current State
+The status change to "sent" (via order toggle or Invoices page dropdown) already sets `next_reminder_at` to +2 days. The user wants to **keep this** AND also add the manual send buttons as additional triggers.
+
+### What Changes
+The existing status-based scheduling stays as-is. We additionally set `next_reminder_at` when a team member manually sends an invoice via the send dialogs (in case the status wasn't changed first). We also change the interval from 2 days to 24 hours everywhere.
 
 ### Changes
 
-**`src/services/searchService.ts`**
-- Add `createdOnly?: boolean` to `SearchFilters` interface
-- Add filter logic in `applyFiltersToOrders`: if `createdOnly` is true, keep only orders where `status_created === true` and no further progress statuses are active (`status_in_progress`, `status_invoice_sent`, `status_invoice_paid`, `status_resolved`, `status_cancelled` are all falsy)
+**`src/components/invoices/SendInvoiceDialog.tsx`** (~line 111-123)
+- After firing the email, update the invoice: set `next_reminder_at` to `now + 24h` (if not already set) and status to `sent` if still `draft`
 
-**`src/components/dashboard/AdvancedSearch.tsx`**
-- Add a second checkbox below "Unpaid Orders Only" labeled "Created Only (Not Yet Started)" with description "(Orders still at Created status — no invoice sent or paid)"
-- Include `createdOnly` in the active filter count
+**`src/components/invoices/SendInvoicePDFDialog.tsx`** (~line 72-84)
+- Same: after sending, set `next_reminder_at` to `now + 24h` and status to `sent`
 
-Both filters can work independently or together.
+**`src/pages/Invoices.tsx`** (~line 122-127)
+- Change interval from 2 days to 24 hours: `Date.now() + 24 * 60 * 60 * 1000`
+
+**`src/services/orderService.ts`** (~line 742)
+- Change interval from 2 days to 24 hours: `Date.now() + 24 * 60 * 60 * 1000`
+
+**`supabase/functions/send-invoice-payment-reminders/index.ts`** (~lines 283, 260)
+- Change next reminder interval from 2 days to 24 hours
 
