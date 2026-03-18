@@ -184,6 +184,9 @@ const OrderRow = ({
       };
 
       const newInvoice = await InvoiceService.createInvoice(invoiceData);
+
+      // Link invoice to order via order_id column
+      await InvoiceService.updateInvoice(newInvoice.id, { order_id: orderId } as any);
       
       // Update the invoice status to match the order status
       const invoiceStatus = status === "Invoice Sent" ? "sent" : "paid";

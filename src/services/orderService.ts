@@ -716,7 +716,9 @@ export class OrderService {
       try {
         const { InvoiceService } = await import('./invoiceService');
         const invoices = await InvoiceService.getInvoices();
-        const linkedInvoice = invoices.find(inv => inv.notes?.includes(`Order ID: ${orderId}`));
+        const linkedInvoice = invoices.find(inv => 
+          (inv as any).order_id === orderId || inv.notes?.includes(`Order ID: ${orderId}`)
+        );
         if (linkedInvoice) {
           let newInvoiceStatus: string;
           if (status === "Invoice Paid" && enabled) {
