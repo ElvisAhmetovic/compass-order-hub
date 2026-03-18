@@ -63,6 +63,15 @@ const Offers = () => {
 
   useEffect(() => {
     fetchOffers();
+
+    const channel = supabase
+      .channel('offers-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'offers' }, () => {
+        fetchOffers();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, []);
 
   const fetchOffers = async () => {
