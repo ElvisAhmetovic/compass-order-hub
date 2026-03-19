@@ -2861,6 +2861,14 @@ export type Database = {
         }
         Relationships: []
       }
+      team_members_view: {
+        Row: {
+          email: string | null
+          full_name: string | null
+          id: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       calculate_line_total: {
