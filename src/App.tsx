@@ -311,9 +311,9 @@ function App() {
                       <MonthlyPackages />
                     </RequireAuth>
                   } />
-                  <Route path="/text" element={
+                  <Route path="/reminders" element={
                     <RequireAuth>
-                      <TextLibrary />
+                      <Reminders />
                     </RequireAuth>
                   } />
                   <Route path="/offers" element={

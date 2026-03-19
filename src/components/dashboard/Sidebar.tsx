@@ -131,7 +131,7 @@ const Sidebar = () => {
     { href: '/dashboard', icon: Home, label: 'Dashboard', roles: ['admin', 'agent', 'user'] },
     { href: '/work-hours', icon: ClockIcon, label: 'Work Hours', roles: ['admin', 'agent'] },
     { href: '/monthly-packages', icon: ClockIcon, label: 'Monthly Packages', roles: ['admin', 'agent'] },
-    { href: '/text', icon: Type, label: 'Text', roles: ['admin', 'agent'] },
+    { href: '/reminders', icon: AlarmClock, label: 'Reminders', roles: ['admin', 'agent'] },
     { href: '/user-management', icon: Users, label: 'User Management', roles: ['admin'] },
     { href: '/support', icon: HelpCircle, label: 'Support', roles: ['admin', 'agent', 'user'], showBadge: true },
     { href: '/customer-tickets', icon: Ticket, label: 'Customer Tickets', roles: ['admin', 'agent'], showTicketBadge: true },
