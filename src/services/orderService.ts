@@ -897,6 +897,7 @@ export class OrderService {
         console.error('Error sending service delivered notification:', serviceDeliveredError);
       }
     }
+    return invoiceSyncResult;
   }
 
   // Get all active statuses for an order
