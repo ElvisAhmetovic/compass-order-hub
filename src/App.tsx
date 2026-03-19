@@ -44,7 +44,7 @@ import TechSupportDetail from "./pages/TechSupportDetail";
 import CustomerTickets from "./pages/CustomerTickets";
 import CustomerTicketDetail from "./pages/CustomerTicketDetail";
 import NotFound from "./pages/NotFound";
-import TextLibrary from "./pages/TextLibrary";
+import Reminders from "./pages/Reminders";
 import WorkHours from "./pages/WorkHours";
 import MonthlyPackages from "./pages/MonthlyPackages";
 import Offers from "./pages/Offers";
@@ -311,9 +311,9 @@ function App() {
                       <MonthlyPackages />
                     </RequireAuth>
                   } />
-                  <Route path="/text" element={
+                  <Route path="/reminders" element={
                     <RequireAuth>
-                      <TextLibrary />
+                      <Reminders />
                     </RequireAuth>
                   } />
                   <Route path="/offers" element={
