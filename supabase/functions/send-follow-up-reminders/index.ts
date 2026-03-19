@@ -7,6 +7,23 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const NOTIFICATION_EMAIL_LIST = [
+  "angelina@abmedia-team.com",
+  "service@team-abmedia.com",
+  "thomas.thomasklein@gmail.com",
+  "kleinabmedia@gmail.com",
+  "jungabmedia@gmail.com",
+  "wolfabmedia@gmail.com",
+  "marcusabmedia@gmail.com",
+  "paulkatz.abmedia@gmail.com",
+  "ajosesales36@gmail.com",
+  "georgabmediateam@gmail.com",
+  "jannes@scoolfinanceedu.com",
+  "johan@team-abmedia.com",
+];
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
