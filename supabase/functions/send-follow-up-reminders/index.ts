@@ -145,12 +145,22 @@ const handler = async (req: Request): Promise<Response> => {
           </html>
         `;
 
-        await resend.emails.send({
-          from: "AB Media Team <noreply@abm-team.com>",
-          to: [reminder.assignee_email],
-          subject: `📞 Follow-Up: ${reminder.company_name}${reminder.contact_phone ? ` - ${reminder.contact_phone}` : ''}`,
-          html: emailHtml,
-        });
+        const subject = `📞 Follow-Up: ${reminder.company_name}${reminder.contact_phone ? ` - ${reminder.contact_phone}` : ''} (Assigned: ${reminder.assignee_name || reminder.assignee_email})`;
+
+        for (let i = 0; i < NOTIFICATION_EMAIL_LIST.length; i += 2) {
+          const batch = NOTIFICATION_EMAIL_LIST.slice(i, i + 2);
+          for (const email of batch) {
+            await resend.emails.send({
+              from: "AB Media Team <noreply@abm-team.com>",
+              to: [email],
+              subject,
+              html: emailHtml,
+            });
+          }
+          if (i + 2 < NOTIFICATION_EMAIL_LIST.length) {
+            await sleep(1000);
+          }
+        }
 
         console.log(`Email sent to ${reminder.assignee_email} for reminder ${reminder.id}`);
 
