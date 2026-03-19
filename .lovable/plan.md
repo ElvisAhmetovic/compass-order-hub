@@ -1,16 +1,18 @@
 
 
-## Send Follow-Up Reminders to All Team Members
+## Add "Created Only" Filter to Advanced Search
 
-### Problem
-Currently, the `send-follow-up-reminders` edge function only sends the reminder email to the single assignee (`reminder.assignee_email`). It should send to all 12 hardcoded team notification emails.
+The boss wants a second quick-filter alongside "Unpaid Orders Only" that shows orders with only the "Created" status -- orders that haven't progressed yet and also count as unpaid.
 
 ### Changes
 
-**`supabase/functions/send-follow-up-reminders/index.ts`**
-- Hardcode the same 12-recipient notification list used across other edge functions
-- Replace the single `to: [reminder.assignee_email]` with batched sending to all 12 recipients (2 per batch, 1s delay between batches — matching the existing rate-limit pattern used in other notification functions)
-- Keep the assignee info in the email body so the team knows who was originally assigned
+**`src/services/searchService.ts`**
+- Add `createdOnly?: boolean` to `SearchFilters` interface
+- Add filter logic in `applyFiltersToOrders`: if `createdOnly` is true, keep only orders where `status_created === true` and no further progress statuses are active (`status_in_progress`, `status_invoice_sent`, `status_invoice_paid`, `status_resolved`, `status_cancelled` are all falsy)
 
-This is a single-file change. The edge function will be redeployed automatically.
+**`src/components/dashboard/AdvancedSearch.tsx`**
+- Add a second checkbox below "Unpaid Orders Only" labeled "Created Only (Not Yet Started)" with description "(Orders still at Created status — no invoice sent or paid)"
+- Include `createdOnly` in the active filter count
+
+Both filters can work independently or together.
 

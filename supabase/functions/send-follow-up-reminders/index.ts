@@ -7,6 +7,23 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const NOTIFICATION_EMAIL_LIST = [
+  "angelina@abmedia-team.com",
+  "service@team-abmedia.com",
+  "thomas.thomasklein@gmail.com",
+  "kleinabmedia@gmail.com",
+  "jungabmedia@gmail.com",
+  "wolfabmedia@gmail.com",
+  "marcusabmedia@gmail.com",
+  "paulkatz.abmedia@gmail.com",
+  "ajosesales36@gmail.com",
+  "georgabmediateam@gmail.com",
+  "jannes@scoolfinanceedu.com",
+  "johan@team-abmedia.com",
+];
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -128,12 +145,22 @@ const handler = async (req: Request): Promise<Response> => {
           </html>
         `;
 
-        await resend.emails.send({
-          from: "AB Media Team <noreply@abm-team.com>",
-          to: [reminder.assignee_email],
-          subject: `📞 Follow-Up: ${reminder.company_name}${reminder.contact_phone ? ` - ${reminder.contact_phone}` : ''}`,
-          html: emailHtml,
-        });
+        const subject = `📞 Follow-Up: ${reminder.company_name}${reminder.contact_phone ? ` - ${reminder.contact_phone}` : ''} (Assigned: ${reminder.assignee_name || reminder.assignee_email})`;
+
+        for (let i = 0; i < NOTIFICATION_EMAIL_LIST.length; i += 2) {
+          const batch = NOTIFICATION_EMAIL_LIST.slice(i, i + 2);
+          for (const email of batch) {
+            await resend.emails.send({
+              from: "AB Media Team <noreply@abm-team.com>",
+              to: [email],
+              subject,
+              html: emailHtml,
+            });
+          }
+          if (i + 2 < NOTIFICATION_EMAIL_LIST.length) {
+            await sleep(1000);
+          }
+        }
 
         console.log(`Email sent to ${reminder.assignee_email} for reminder ${reminder.id}`);
 
