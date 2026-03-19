@@ -711,7 +711,7 @@ export class OrderService {
       // Don't block status update if email fails
     }
 
-    // Sync linked invoice status when Invoice Paid/Sent changes
+    // Sync linked invoice status when Invoice Paid/Sent changes, or auto-create if missing
     if (status === "Invoice Paid" || status === "Invoice Sent") {
       try {
         const { InvoiceService } = await import('./invoiceService');
@@ -746,9 +746,81 @@ export class OrderService {
           
           await InvoiceService.updateInvoice(linkedInvoice.id, updateData);
           console.log(`📄 Synced invoice ${linkedInvoice.invoice_number} status to "${newInvoiceStatus}", next_reminder_at: ${updateData.next_reminder_at || 'null'}`);
+        } else if (enabled) {
+          // No linked invoice exists — auto-create one from the order
+          console.log(`📄 No linked invoice found for order ${orderId}, auto-creating...`);
+          
+          // Find or create client
+          const clients = await InvoiceService.getClients();
+          let clientId = clients.find(c => c.name === currentOrder.company_name)?.id;
+          
+          if (!clientId) {
+            const newClient = await InvoiceService.createClient({
+              name: currentOrder.company_name,
+              email: currentOrder.contact_email || `${currentOrder.company_name.toLowerCase().replace(/\s+/g, '')}@company.com`,
+              address: currentOrder.company_address || '',
+              phone: currentOrder.contact_phone || '',
+            });
+            clientId = newClient.id;
+          }
+
+          // Parse inventory items for line items
+          let lineItems: Array<{ item_description: string; quantity: number; unit_price: number; unit: string; vat_rate: number; discount_rate: number }> = [];
+          
+          if (currentOrder.inventory_items) {
+            try {
+              const inventoryItems = JSON.parse(currentOrder.inventory_items);
+              if (Array.isArray(inventoryItems) && inventoryItems.length > 0) {
+                lineItems = inventoryItems.map((item: any) => ({
+                  item_description: item.name,
+                  quantity: item.quantity,
+                  unit_price: item.unitPrice,
+                  unit: item.unit || 'pcs',
+                  vat_rate: 0,
+                  discount_rate: 0
+                }));
+              }
+            } catch (parseError) {
+              console.error("Error parsing inventory items:", parseError);
+            }
+          }
+
+          if (lineItems.length === 0) {
+            lineItems = [{
+              item_description: currentOrder.description || 'Service provided',
+              quantity: 1,
+              unit_price: currentOrder.price || 0,
+              unit: 'pcs',
+              vat_rate: 0,
+              discount_rate: 0
+            }];
+          }
+
+          const invoiceData = {
+            client_id: clientId,
+            issue_date: new Date().toISOString().split('T')[0],
+            due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+            currency: currentOrder.currency || 'EUR',
+            payment_terms: 'Net 30',
+            notes: `Invoice created from order. Order ID: ${orderId}`,
+            internal_notes: `Automatically generated from order ${orderId}`,
+            line_items: lineItems
+          };
+
+          const newInvoice = await InvoiceService.createInvoice(invoiceData);
+          await InvoiceService.updateInvoice(newInvoice.id, { order_id: orderId } as any);
+          
+          const invoiceStatus = status === "Invoice Sent" ? "sent" : "paid";
+          const invoiceUpdateData: any = { status: invoiceStatus };
+          if (invoiceStatus === 'sent') {
+            invoiceUpdateData.next_reminder_at = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
+          }
+          await InvoiceService.updateInvoice(newInvoice.id, invoiceUpdateData);
+          
+          console.log(`📄 Auto-created invoice ${newInvoice.invoice_number} for order ${orderId}, status: ${invoiceStatus}`);
         }
       } catch (invoiceSyncError) {
-        console.error('Error syncing invoice status:', invoiceSyncError);
+        console.error('Error syncing/creating invoice:', invoiceSyncError);
       }
     }
 
