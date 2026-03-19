@@ -1,24 +1,30 @@
 
 
-## Fix: Invoice Status Not Syncing When Dashboard Status Changes
+## Add "Invoice automatically synced" Toast Notification
 
-### Root Cause
-The `Invoice` TypeScript interface is missing the `order_id` field, even though the database column exists. This forces `as any` casts throughout the sync logic, and the `updateInvoice` method uses `.single()` which can silently fail under RLS. Additionally, `getInvoices()` fetches ALL invoices just to find one by `order_id` — inefficient and error-prone.
+### Approach
+Make `toggleOrderStatus` return metadata about what happened with the invoice sync, then show a follow-up toast in all 3 calling components.
 
 ### Changes
 
-**1. `src/types/invoice.ts`** — Add `order_id` to the `Invoice` interface:
-- Add `order_id?: string | null` field
-- Add `reminder_count?: number` and `next_reminder_at?: string | null` and `last_reminder_sent_at?: string | null` fields (also present in DB but missing from type)
+**1. `src/services/orderService.ts`**
+- Change `toggleOrderStatus` return type to include invoice sync info
+- After the invoice sync block (lines 714-836), track whether an invoice was updated, created, or nothing happened
+- Return an object like `{ invoiceSynced: boolean, invoiceAction: 'updated' | 'created' | null, invoiceNumber?: string }`
 
-**2. `src/services/invoiceService.ts`** — Make `updateInvoice` resilient:
-- Replace `.single()` with `.select()` and `data?.[0]` to avoid RLS-related failures (per project convention)
+**2. `src/components/dashboard/MultiStatusBadges.tsx`** (line ~78)
+- Capture the return value from `toggleOrderStatus`
+- If `invoiceSynced` is true, show a second toast: "Invoice automatically synced" with description based on action
 
-**3. `src/services/orderService.ts`** — Replace the inefficient full-table scan with a direct query:
-- Instead of `getInvoices()` + `.find()`, query Supabase directly: `supabase.from('invoices').select('*').eq('order_id', orderId).limit(1)`
-- Fall back to notes-based search only if no direct match found
-- Remove all `as any` casts now that the type includes `order_id`
+**3. `src/components/dashboard/OrderRow.tsx`** (line ~289)
+- Same pattern — capture return, show sync toast if applicable
 
-### Result
-When you toggle "Invoice Paid" or "Invoice Sent" on the dashboard, the linked invoice in the Invoices section will reliably update its status (or get auto-created if it doesn't exist yet).
+**4. `src/components/dashboard/OrderActions.tsx`** (line ~230)
+- Same pattern — capture return, show sync toast if applicable
+
+### Example toast
+```
+title: "📄 Invoice automatically synced"
+description: "Invoice #INV-001 marked as paid"  // or "New invoice created and marked as sent"
+```
 
