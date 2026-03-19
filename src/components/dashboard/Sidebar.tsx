@@ -28,7 +28,7 @@ import {
   Settings,
   Ticket,
   Clock as ClockIcon,
-  Type,
+  AlarmClock,
   ChevronDown,
   MoreHorizontal
 } from 'lucide-react';
