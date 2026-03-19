@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { format } from 'date-fns';
 import { AlarmClock, Trash2, Loader2, Phone, Building2, User, Clock, CheckCircle, XCircle, Plus } from 'lucide-react';
 import Layout from '@/components/layout/Layout';
+import Sidebar from '@/components/dashboard/Sidebar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -218,236 +219,239 @@ const Reminders = () => {
   const pastReminders = reminders.filter(r => r.status !== 'scheduled');
 
   return (
-    <Layout>
-      <div className="p-6 max-w-5xl mx-auto space-y-8">
-        <div className="flex items-center gap-3">
-          <AlarmClock className="w-7 h-7 text-primary" />
-          <h1 className="text-2xl font-bold text-foreground">Reminders</h1>
-        </div>
+    <div className="flex min-h-screen">
+      <Sidebar />
+      <Layout>
+        <div className="p-6 max-w-5xl mx-auto space-y-8">
+          <div className="flex items-center gap-3">
+            <AlarmClock className="w-7 h-7 text-primary" />
+            <h1 className="text-2xl font-bold text-foreground">Reminders</h1>
+          </div>
 
-        {/* Create Reminder Form */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Plus className="w-5 h-5" />
-              Create Follow-Up Reminder
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Assignee */}
-              <div>
-                <label className="text-sm font-medium text-foreground mb-1.5 block">Assign to</label>
-                <Select value={assigneeEmail} onValueChange={setAssigneeEmail}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select team member" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {teamMembers.map(m => (
-                      <SelectItem key={m.id} value={m.email}>
-                        <div className="flex items-center gap-2">
-                          <User className="w-4 h-4 text-muted-foreground" />
-                          {m.full_name || m.email}
-                          {m.email === user?.email && <span className="text-xs text-muted-foreground">(me)</span>}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Company Name */}
+          {/* Create Reminder Form */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Plus className="w-5 h-5" />
+                Create Follow-Up Reminder
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                {/* Assignee */}
                 <div>
-                  <label className="text-sm font-medium text-foreground mb-1.5 block">Company / Client Name *</label>
-                  <div className="relative">
-                    <Building2 className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
+                  <label className="text-sm font-medium text-foreground mb-1.5 block">Assign to</label>
+                  <Select value={assigneeEmail} onValueChange={setAssigneeEmail}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select team member" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {teamMembers.map(m => (
+                        <SelectItem key={m.id} value={m.email}>
+                          <div className="flex items-center gap-2">
+                            <User className="w-4 h-4 text-muted-foreground" />
+                            {m.full_name || m.email}
+                            {m.email === user?.email && <span className="text-xs text-muted-foreground">(me)</span>}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Company Name */}
+                  <div>
+                    <label className="text-sm font-medium text-foreground mb-1.5 block">Company / Client Name *</label>
+                    <div className="relative">
+                      <Building2 className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        value={companyName}
+                        onChange={e => setCompanyName(e.target.value)}
+                        placeholder="e.g. Kurdo Car GmbH"
+                        className="pl-10"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  {/* Phone */}
+                  <div>
+                    <label className="text-sm font-medium text-foreground mb-1.5 block">Contact Phone</label>
+                    <div className="relative">
+                      <Phone className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        value={contactPhone}
+                        onChange={e => setContactPhone(e.target.value)}
+                        placeholder="+49 123 456789"
+                        className="pl-10"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Note */}
+                <div>
+                  <label className="text-sm font-medium text-foreground mb-1.5 block">Note / Call Summary *</label>
+                  <Textarea
+                    value={note}
+                    onChange={e => setNote(e.target.value)}
+                    placeholder="Spoke with secretary. Director is absent until today 14:00. Should call back after 14:00."
+                    rows={3}
+                    required
+                  />
+                </div>
+
+                {/* Date & Time */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-foreground mb-1.5 block">Reminder Date *</label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn("w-full justify-start text-left font-normal", !selectedDate && "text-muted-foreground")}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {selectedDate ? format(selectedDate, 'PPP') : 'Pick a date'}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={selectedDate}
+                          onSelect={setSelectedDate}
+                          disabled={date => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                          initialFocus
+                          className={cn("p-3 pointer-events-auto")}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium text-foreground mb-1.5 block">Reminder Time *</label>
                     <Input
-                      value={companyName}
-                      onChange={e => setCompanyName(e.target.value)}
-                      placeholder="e.g. Kurdo Car GmbH"
-                      className="pl-10"
+                      type="time"
+                      value={timeValue}
+                      onChange={e => setTimeValue(e.target.value)}
                       required
                     />
                   </div>
                 </div>
 
-                {/* Phone */}
+                {/* Attachments */}
                 <div>
-                  <label className="text-sm font-medium text-foreground mb-1.5 block">Contact Phone</label>
-                  <div className="relative">
-                    <Phone className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
-                    <Input
-                      value={contactPhone}
-                      onChange={e => setContactPhone(e.target.value)}
-                      placeholder="+49 123 456789"
-                      className="pl-10"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Note */}
-              <div>
-                <label className="text-sm font-medium text-foreground mb-1.5 block">Note / Call Summary *</label>
-                <Textarea
-                  value={note}
-                  onChange={e => setNote(e.target.value)}
-                  placeholder="Spoke with secretary. Director is absent until today 14:00. Should call back after 14:00."
-                  rows={3}
-                  required
-                />
-              </div>
-
-              {/* Date & Time */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-foreground mb-1.5 block">Reminder Date *</label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn("w-full justify-start text-left font-normal", !selectedDate && "text-muted-foreground")}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {selectedDate ? format(selectedDate, 'PPP') : 'Pick a date'}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={selectedDate}
-                        onSelect={setSelectedDate}
-                        disabled={date => date < new Date(new Date().setHours(0, 0, 0, 0))}
-                        initialFocus
-                        className={cn("p-3 pointer-events-auto")}
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium text-foreground mb-1.5 block">Reminder Time *</label>
-                  <Input
-                    type="time"
-                    value={timeValue}
-                    onChange={e => setTimeValue(e.target.value)}
-                    required
+                  <label className="text-sm font-medium text-foreground mb-1.5 block">Attachments (optional)</label>
+                  <AttachmentUploader
+                    files={files}
+                    onFilesChange={setFiles}
+                    maxFiles={5}
                   />
                 </div>
-              </div>
 
-              {/* Attachments */}
-              <div>
-                <label className="text-sm font-medium text-foreground mb-1.5 block">Attachments (optional)</label>
-                <AttachmentUploader
-                  files={files}
-                  onFilesChange={setFiles}
-                  maxFiles={5}
-                />
-              </div>
+                <Button type="submit" disabled={saving} className="w-full md:w-auto">
+                  {saving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Saving...</> : <><AlarmClock className="w-4 h-4 mr-2" />Create Reminder</>}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
 
-              <Button type="submit" disabled={saving} className="w-full md:w-auto">
-                {saving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Saving...</> : <><AlarmClock className="w-4 h-4 mr-2" />Create Reminder</>}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-
-        {/* Scheduled Reminders */}
-        {scheduledReminders.length > 0 && (
-          <div className="space-y-3">
-            <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
-              <Clock className="w-5 h-5 text-amber-500" />
-              Scheduled ({scheduledReminders.length})
-            </h2>
-            <div className="grid gap-3">
-              {scheduledReminders.map(r => (
-                <Card key={r.id} className="border-amber-200">
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1 min-w-0 space-y-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-semibold text-foreground">{r.company_name}</span>
-                          {statusBadge(r.status)}
+          {/* Scheduled Reminders */}
+          {scheduledReminders.length > 0 && (
+            <div className="space-y-3">
+              <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                <Clock className="w-5 h-5 text-amber-500" />
+                Scheduled ({scheduledReminders.length})
+              </h2>
+              <div className="grid gap-3">
+                {scheduledReminders.map(r => (
+                  <Card key={r.id} className="border-amber-200">
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1 min-w-0 space-y-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-semibold text-foreground">{r.company_name}</span>
+                            {statusBadge(r.status)}
+                          </div>
+                          {r.contact_phone && (
+                            <a href={`tel:${r.contact_phone.replace(/\s/g, '')}`} className="text-sm text-primary hover:underline flex items-center gap-1">
+                              <Phone className="w-3 h-3" />{r.contact_phone}
+                            </a>
+                          )}
+                          <p className="text-sm text-muted-foreground whitespace-pre-line">{r.note}</p>
+                          <div className="flex items-center gap-4 text-xs text-muted-foreground pt-1">
+                            <span>⏰ {format(new Date(r.remind_at), 'PPP HH:mm')}</span>
+                            <span>→ {r.assignee_name || r.assignee_email}</span>
+                            {r.created_by_name && <span>by {r.created_by_name}</span>}
+                          </div>
                         </div>
-                        {r.contact_phone && (
-                          <a href={`tel:${r.contact_phone.replace(/\s/g, '')}`} className="text-sm text-primary hover:underline flex items-center gap-1">
-                            <Phone className="w-3 h-3" />{r.contact_phone}
-                          </a>
-                        )}
-                        <p className="text-sm text-muted-foreground whitespace-pre-line">{r.note}</p>
-                        <div className="flex items-center gap-4 text-xs text-muted-foreground pt-1">
-                          <span>⏰ {format(new Date(r.remind_at), 'PPP HH:mm')}</span>
-                          <span>→ {r.assignee_name || r.assignee_email}</span>
-                          {r.created_by_name && <span>by {r.created_by_name}</span>}
-                        </div>
+                        <Button variant="ghost" size="sm" onClick={() => handleDelete(r.id)} className="text-destructive hover:text-destructive">
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
                       </div>
-                      <Button variant="ghost" size="sm" onClick={() => handleDelete(r.id)} className="text-destructive hover:text-destructive">
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Past Reminders */}
-        {pastReminders.length > 0 && (
-          <div className="space-y-3">
-            <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
-              <CheckCircle className="w-5 h-5 text-green-500" />
-              Past Reminders ({pastReminders.length})
-            </h2>
-            <div className="grid gap-3">
-              {pastReminders.map(r => (
-                <Card key={r.id} className="opacity-75">
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1 min-w-0 space-y-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-semibold text-foreground">{r.company_name}</span>
-                          {statusBadge(r.status)}
+          {/* Past Reminders */}
+          {pastReminders.length > 0 && (
+            <div className="space-y-3">
+              <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                <CheckCircle className="w-5 h-5 text-green-500" />
+                Past Reminders ({pastReminders.length})
+              </h2>
+              <div className="grid gap-3">
+                {pastReminders.map(r => (
+                  <Card key={r.id} className="opacity-75">
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1 min-w-0 space-y-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-semibold text-foreground">{r.company_name}</span>
+                            {statusBadge(r.status)}
+                          </div>
+                          {r.contact_phone && (
+                            <span className="text-sm text-muted-foreground flex items-center gap-1">
+                              <Phone className="w-3 h-3" />{r.contact_phone}
+                            </span>
+                          )}
+                          <p className="text-sm text-muted-foreground whitespace-pre-line">{r.note}</p>
+                          <div className="flex items-center gap-4 text-xs text-muted-foreground pt-1">
+                            <span>⏰ {format(new Date(r.remind_at), 'PPP HH:mm')}</span>
+                            <span>→ {r.assignee_name || r.assignee_email}</span>
+                            {r.sent_at && <span>Sent: {format(new Date(r.sent_at), 'PPP HH:mm')}</span>}
+                          </div>
                         </div>
-                        {r.contact_phone && (
-                          <span className="text-sm text-muted-foreground flex items-center gap-1">
-                            <Phone className="w-3 h-3" />{r.contact_phone}
-                          </span>
-                        )}
-                        <p className="text-sm text-muted-foreground whitespace-pre-line">{r.note}</p>
-                        <div className="flex items-center gap-4 text-xs text-muted-foreground pt-1">
-                          <span>⏰ {format(new Date(r.remind_at), 'PPP HH:mm')}</span>
-                          <span>→ {r.assignee_name || r.assignee_email}</span>
-                          {r.sent_at && <span>Sent: {format(new Date(r.sent_at), 'PPP HH:mm')}</span>}
-                        </div>
+                        <Button variant="ghost" size="sm" onClick={() => handleDelete(r.id)} className="text-destructive hover:text-destructive">
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
                       </div>
-                      <Button variant="ghost" size="sm" onClick={() => handleDelete(r.id)} className="text-destructive hover:text-destructive">
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {loading && (
-          <div className="flex justify-center py-8">
-            <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-          </div>
-        )}
+          {loading && (
+            <div className="flex justify-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+            </div>
+          )}
 
-        {!loading && reminders.length === 0 && (
-          <div className="text-center py-12 text-muted-foreground">
-            <AlarmClock className="w-12 h-12 mx-auto mb-3 opacity-30" />
-            <p>No reminders yet. Create your first follow-up reminder above.</p>
-          </div>
-        )}
-      </div>
-    </Layout>
+          {!loading && reminders.length === 0 && (
+            <div className="text-center py-12 text-muted-foreground">
+              <AlarmClock className="w-12 h-12 mx-auto mb-3 opacity-30" />
+              <p>No reminders yet. Create your first follow-up reminder above.</p>
+            </div>
+          )}
+        </div>
+      </Layout>
+    </div>
   );
 };
 

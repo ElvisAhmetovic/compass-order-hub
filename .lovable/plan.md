@@ -1,25 +1,18 @@
 
 
-## Fix: Add Sidebar + Verify Reminders List on Reminders Page
+## Add "Created Only" Filter to Advanced Search
 
-### Problem
-The Reminders page uses only `<Layout>` without the `<Sidebar>` component, unlike every other admin page (Dashboard, etc.) which wraps content in `<div className="flex min-h-screen"><Sidebar />...</div>`.
+The boss wants a second quick-filter alongside "Unpaid Orders Only" that shows orders with only the "Created" status -- orders that haven't progressed yet and also count as unpaid.
 
 ### Changes
 
-**`src/pages/Reminders.tsx`**
-- Import `Sidebar` from `@/components/dashboard/Sidebar`
-- Wrap the return in the standard layout pattern:
-```tsx
-return (
-  <div className="flex min-h-screen">
-    <Sidebar />
-    <Layout>
-      {/* existing page content unchanged */}
-    </Layout>
-  </div>
-);
-```
+**`src/services/searchService.ts`**
+- Add `createdOnly?: boolean` to `SearchFilters` interface
+- Add filter logic in `applyFiltersToOrders`: if `createdOnly` is true, keep only orders where `status_created === true` and no further progress statuses are active (`status_in_progress`, `status_invoice_sent`, `status_invoice_paid`, `status_resolved`, `status_cancelled` are all falsy)
 
-This matches the Dashboard pattern exactly and will restore the sidebar navigation. The reminder list (scheduled + past sections) is already coded and should display once the layout renders correctly.
+**`src/components/dashboard/AdvancedSearch.tsx`**
+- Add a second checkbox below "Unpaid Orders Only" labeled "Created Only (Not Yet Started)" with description "(Orders still at Created status — no invoice sent or paid)"
+- Include `createdOnly` in the active filter count
+
+Both filters can work independently or together.
 
