@@ -841,7 +841,7 @@ export class OrderService {
       }
     }
 
-    return invoiceSyncResult;
+    // (invoiceSyncResult will be returned at end of method)
 
     // Send notification to linked client only if explicitly opted in
     console.log('📧 Client notification check:', { 
