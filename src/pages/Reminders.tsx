@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { format } from 'date-fns';
 import { AlarmClock, Trash2, Loader2, Phone, Building2, User, Clock, CheckCircle, XCircle, Plus } from 'lucide-react';
 import Layout from '@/components/layout/Layout';
+import Sidebar from '@/components/dashboard/Sidebar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
