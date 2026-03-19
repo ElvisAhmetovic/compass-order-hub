@@ -286,8 +286,17 @@ const OrderRow = ({
     setIsUpdatingStatus(true);
     try {
       // Toggle the status instead of replacing it (invoice auto-creation is handled inside toggleOrderStatus)
-      await OrderService.toggleOrderStatus(order.id, newStatus, true);
+      const result = await OrderService.toggleOrderStatus(order.id, newStatus, true);
       
+      if (result?.invoiceSynced) {
+        toast({
+          title: "📄 Invoice automatically synced",
+          description: result.invoiceAction === 'created'
+            ? `New invoice ${result.invoiceNumber || ''} created and marked as ${newStatus.toLowerCase()}`
+            : `Invoice ${result.invoiceNumber || ''} updated to ${newStatus.toLowerCase()}`,
+        });
+      }
+
       onRefresh();
       window.dispatchEvent(new CustomEvent('orderStatusChanged'));
     } catch (error) {

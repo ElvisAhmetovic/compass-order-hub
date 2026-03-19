@@ -613,7 +613,7 @@ export class OrderService {
   }
 
   // New method to toggle a specific status on an order
-  static async toggleOrderStatus(orderId: string, status: OrderStatus, enabled: boolean, customMessage?: string, sendToClient?: boolean): Promise<void> {
+  static async toggleOrderStatus(orderId: string, status: OrderStatus, enabled: boolean, customMessage?: string, sendToClient?: boolean): Promise<{ invoiceSynced: boolean; invoiceAction: 'updated' | 'created' | null; invoiceNumber?: string }> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
 
@@ -712,6 +712,10 @@ export class OrderService {
     }
 
     // Sync linked invoice status when Invoice Paid/Sent changes, or auto-create if missing
+    let invoiceSyncResult: { invoiceSynced: boolean; invoiceAction: 'updated' | 'created' | null; invoiceNumber?: string } = {
+      invoiceSynced: false, invoiceAction: null
+    };
+
     if (status === "Invoice Paid" || status === "Invoice Sent") {
       try {
         const { InvoiceService } = await import('./invoiceService');
@@ -758,6 +762,7 @@ export class OrderService {
           
           await InvoiceService.updateInvoice(linkedInvoice.id, updateData);
           console.log(`📄 Synced invoice ${linkedInvoice.invoice_number} status to "${newInvoiceStatus}"`);
+          invoiceSyncResult = { invoiceSynced: true, invoiceAction: 'updated', invoiceNumber: linkedInvoice.invoice_number };
         } else if (enabled) {
           console.log(`📄 No linked invoice found for order ${orderId}, auto-creating...`);
           
@@ -829,11 +834,14 @@ export class OrderService {
           await InvoiceService.updateInvoice(newInvoice.id, invoiceUpdateData);
           
           console.log(`📄 Auto-created invoice ${newInvoice.invoice_number} for order ${orderId}, status: ${invoiceStatus}`);
+          invoiceSyncResult = { invoiceSynced: true, invoiceAction: 'created', invoiceNumber: newInvoice.invoice_number };
         }
       } catch (invoiceSyncError) {
         console.error('Error syncing/creating invoice:', invoiceSyncError);
       }
     }
+
+    // (invoiceSyncResult will be returned at end of method)
 
     // Send notification to linked client only if explicitly opted in
     console.log('📧 Client notification check:', { 
@@ -889,6 +897,7 @@ export class OrderService {
         console.error('Error sending service delivered notification:', serviceDeliveredError);
       }
     }
+    return invoiceSyncResult;
   }
 
   // Get all active statuses for an order

@@ -227,7 +227,7 @@ const OrderActions = ({ order, onOrderView, onRefresh }: OrderActionsProps) => {
     try {
       console.log(`Toggling order ${order.id} status ${pendingStatus} to ${pendingEnabled}`);
       
-      await OrderService.toggleOrderStatus(order.id, pendingStatus, pendingEnabled, customMessage);
+      const result = await OrderService.toggleOrderStatus(order.id, pendingStatus, pendingEnabled, customMessage);
       
       console.log('Order status toggled successfully');
       
@@ -242,6 +242,15 @@ const OrderActions = ({ order, onOrderView, onRefresh }: OrderActionsProps) => {
         title: pendingEnabled ? "Status Added" : "Status Removed",
         description: `Order ${pendingEnabled ? 'marked as' : 'unmarked as'} "${pendingStatus}".`
       });
+
+      if (result?.invoiceSynced) {
+        toast({
+          title: "📄 Invoice automatically synced",
+          description: result.invoiceAction === 'created'
+            ? `New invoice ${result.invoiceNumber || ''} created and marked as ${pendingStatus.toLowerCase()}`
+            : `Invoice ${result.invoiceNumber || ''} updated to ${pendingStatus.toLowerCase()}`,
+        });
+      }
       
       onRefresh();
       window.dispatchEvent(new CustomEvent('orderStatusChanged'));
