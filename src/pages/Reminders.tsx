@@ -198,6 +198,7 @@ const Reminders = () => {
     if (error) {
       toast({ title: 'Error deleting', description: error.message, variant: 'destructive' });
     } else {
+      setReminders(prev => prev.filter(r => r.id !== id));
       toast({ title: 'Reminder deleted' });
     }
   };
