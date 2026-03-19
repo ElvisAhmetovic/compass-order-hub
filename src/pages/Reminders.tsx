@@ -74,9 +74,8 @@ const Reminders = () => {
 
   const fetchTeamMembers = useCallback(async () => {
     const { data, error } = await supabase
-      .from('app_users')
-      .select('id, email, full_name')
-      .neq('role', 'client');
+      .from('team_members_view' as any)
+      .select('id, email, full_name');
 
     if (!error && data) {
       setTeamMembers(data as TeamMember[]);
