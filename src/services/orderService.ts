@@ -613,7 +613,7 @@ export class OrderService {
   }
 
   // New method to toggle a specific status on an order
-  static async toggleOrderStatus(orderId: string, status: OrderStatus, enabled: boolean, customMessage?: string, sendToClient?: boolean): Promise<void> {
+  static async toggleOrderStatus(orderId: string, status: OrderStatus, enabled: boolean, customMessage?: string, sendToClient?: boolean): Promise<{ invoiceSynced: boolean; invoiceAction: 'updated' | 'created' | null; invoiceNumber?: string }> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
 
