@@ -585,6 +585,7 @@ export type Database = {
           id: string
           message_id: string | null
           order_id: string | null
+          reminder_id: string | null
           task_id: string | null
           uploaded_by: string
           uploaded_by_name: string
@@ -598,6 +599,7 @@ export type Database = {
           id?: string
           message_id?: string | null
           order_id?: string | null
+          reminder_id?: string | null
           task_id?: string | null
           uploaded_by: string
           uploaded_by_name: string
@@ -611,6 +613,7 @@ export type Database = {
           id?: string
           message_id?: string | null
           order_id?: string | null
+          reminder_id?: string | null
           task_id?: string | null
           uploaded_by?: string
           uploaded_by_name?: string
@@ -638,6 +641,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "file_attachments_reminder_id_fkey"
+            columns: ["reminder_id"]
+            isOneToOne: false
+            referencedRelation: "follow_up_reminders"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "file_attachments_task_id_fkey"
             columns: ["task_id"]
             isOneToOne: false
@@ -645,6 +655,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      follow_up_reminders: {
+        Row: {
+          assignee_email: string
+          assignee_name: string | null
+          company_name: string
+          contact_phone: string | null
+          created_at: string
+          created_by: string | null
+          created_by_name: string | null
+          id: string
+          note: string
+          remind_at: string
+          sent_at: string | null
+          status: string
+        }
+        Insert: {
+          assignee_email: string
+          assignee_name?: string | null
+          company_name: string
+          contact_phone?: string | null
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          id?: string
+          note: string
+          remind_at: string
+          sent_at?: string | null
+          status?: string
+        }
+        Update: {
+          assignee_email?: string
+          assignee_name?: string | null
+          company_name?: string
+          contact_phone?: string | null
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          id?: string
+          note?: string
+          remind_at?: string
+          sent_at?: string | null
+          status?: string
+        }
+        Relationships: []
       }
       inventory_items: {
         Row: {
