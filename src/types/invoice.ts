@@ -34,6 +34,10 @@ export interface Invoice {
   updated_at: string;
   user_id: string;
   proposal_id?: string;
+  order_id?: string | null;
+  reminder_count?: number;
+  next_reminder_at?: string | null;
+  last_reminder_sent_at?: string | null;
   client?: Client;
 }
 

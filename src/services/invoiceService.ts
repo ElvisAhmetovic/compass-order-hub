@@ -220,16 +220,15 @@ export class InvoiceService {
     }
   }
 
-  static async updateInvoice(id: string, invoiceData: Partial<InvoiceFormData> | { status: Invoice['status'] }): Promise<Invoice> {
+  static async updateInvoice(id: string, invoiceData: Partial<InvoiceFormData> | Record<string, any>): Promise<Invoice> {
     const { data, error } = await supabase
       .from('invoices')
       .update(invoiceData)
       .eq('id', id)
-      .select()
-      .single();
+      .select();
 
     if (error) throw error;
-    return data;
+    return data?.[0];
   }
 
   static async deleteInvoice(id: string): Promise<void> {

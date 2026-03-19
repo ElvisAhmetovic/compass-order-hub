@@ -715,10 +715,26 @@ export class OrderService {
     if (status === "Invoice Paid" || status === "Invoice Sent") {
       try {
         const { InvoiceService } = await import('./invoiceService');
-        const invoices = await InvoiceService.getInvoices();
-        const linkedInvoice = invoices.find(inv => 
-          (inv as any).order_id === orderId || inv.notes?.includes(`Order ID: ${orderId}`)
-        );
+        
+        // Direct query by order_id instead of fetching all invoices
+        const { data: linkedInvoices } = await supabase
+          .from('invoices')
+          .select('*')
+          .eq('order_id', orderId)
+          .limit(1);
+        
+        let linkedInvoice = linkedInvoices?.[0];
+        
+        // Fallback: search by notes for legacy records without order_id
+        if (!linkedInvoice) {
+          const { data: noteMatches } = await supabase
+            .from('invoices')
+            .select('*')
+            .ilike('notes', `%Order ID: ${orderId}%`)
+            .limit(1);
+          linkedInvoice = noteMatches?.[0];
+        }
+
         if (linkedInvoice) {
           let newInvoiceStatus: string;
           if (status === "Invoice Paid" && enabled) {
@@ -726,31 +742,25 @@ export class OrderService {
           } else if (status === "Invoice Sent" && enabled) {
             newInvoiceStatus = "sent";
           } else if (status === "Invoice Paid" && !enabled) {
-            // Revert: check if Invoice Sent is still active
             const orderAfter = await this.getOrder(orderId);
             newInvoiceStatus = orderAfter?.status_invoice_sent ? "sent" : "draft";
           } else {
-            // Invoice Sent disabled: check if Invoice Paid is still active
             const orderAfter = await this.getOrder(orderId);
             newInvoiceStatus = orderAfter?.status_invoice_paid ? "paid" : "draft";
           }
-          // Update invoice status
-          const updateData: any = { status: newInvoiceStatus as 'paid' | 'sent' | 'draft' };
+          const updateData: Record<string, any> = { status: newInvoiceStatus };
           
-          // Set or clear next_reminder_at for auto payment reminders
           if (newInvoiceStatus === 'paid') {
-            updateData.next_reminder_at = null; // Stop reminders
+            updateData.next_reminder_at = null;
           } else if (newInvoiceStatus === 'sent') {
-            updateData.next_reminder_at = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(); // Start reminders in 48 hours
+            updateData.next_reminder_at = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
           }
           
           await InvoiceService.updateInvoice(linkedInvoice.id, updateData);
-          console.log(`📄 Synced invoice ${linkedInvoice.invoice_number} status to "${newInvoiceStatus}", next_reminder_at: ${updateData.next_reminder_at || 'null'}`);
+          console.log(`📄 Synced invoice ${linkedInvoice.invoice_number} status to "${newInvoiceStatus}"`);
         } else if (enabled) {
-          // No linked invoice exists — auto-create one from the order
           console.log(`📄 No linked invoice found for order ${orderId}, auto-creating...`);
           
-          // Find or create client
           const clients = await InvoiceService.getClients();
           let clientId = clients.find(c => c.name === currentOrder.company_name)?.id;
           
@@ -764,7 +774,6 @@ export class OrderService {
             clientId = newClient.id;
           }
 
-          // Parse inventory items for line items
           let lineItems: Array<{ item_description: string; quantity: number; unit_price: number; unit: string; vat_rate: number; discount_rate: number }> = [];
           
           if (currentOrder.inventory_items) {
@@ -808,10 +817,12 @@ export class OrderService {
           };
 
           const newInvoice = await InvoiceService.createInvoice(invoiceData);
-          await InvoiceService.updateInvoice(newInvoice.id, { order_id: orderId } as any);
           
           const invoiceStatus = status === "Invoice Sent" ? "sent" : "paid";
-          const invoiceUpdateData: any = { status: invoiceStatus };
+          const invoiceUpdateData: Record<string, any> = { 
+            status: invoiceStatus, 
+            order_id: orderId 
+          };
           if (invoiceStatus === 'sent') {
             invoiceUpdateData.next_reminder_at = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
           }
