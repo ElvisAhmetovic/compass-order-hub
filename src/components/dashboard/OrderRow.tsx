@@ -285,13 +285,8 @@ const OrderRow = ({
 
     setIsUpdatingStatus(true);
     try {
-      // Toggle the status instead of replacing it
+      // Toggle the status instead of replacing it (invoice auto-creation is handled inside toggleOrderStatus)
       await OrderService.toggleOrderStatus(order.id, newStatus, true);
-      
-      // Create invoice if status is invoice-related
-      if (newStatus === "Invoice Sent" || newStatus === "Invoice Paid") {
-        await createInvoiceFromOrder(order.id, order, newStatus);
-      }
       
       onRefresh();
       window.dispatchEvent(new CustomEvent('orderStatusChanged'));

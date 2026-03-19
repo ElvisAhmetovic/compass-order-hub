@@ -231,17 +231,10 @@ const OrderActions = ({ order, onOrderView, onRefresh }: OrderActionsProps) => {
       
       console.log('Order status toggled successfully');
       
-      if (pendingEnabled) {
-        switch (pendingStatus) {
-          case "Invoice Sent":
-          case "Invoice Paid":
-            await createInvoiceFromOrder(order.id, order, pendingStatus);
-            break;
-          case "Resolved":
-            if (OrderService.getActiveStatuses(order).includes("Complaint")) {
-              await WorkflowService.handleComplaintResolved(order.id);
-            }
-            break;
+      // Invoice auto-creation is now handled inside toggleOrderStatus
+      if (pendingEnabled && pendingStatus === "Resolved") {
+        if (OrderService.getActiveStatuses(order).includes("Complaint")) {
+          await WorkflowService.handleComplaintResolved(order.id);
         }
       }
       
