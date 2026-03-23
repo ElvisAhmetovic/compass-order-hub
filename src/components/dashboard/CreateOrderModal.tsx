@@ -930,6 +930,20 @@ Additional internal comments...`}
                     });
                     if (emailErr) throw emailErr;
 
+                    // Sync offer company data to companies table for autofill
+                    try {
+                      const { SupabaseCompanySyncService } = await import('@/services/supabaseCompanySyncService');
+                      await SupabaseCompanySyncService.syncOrderCompany({
+                        company_name: values.companyName.trim(),
+                        contact_email: values.contactEmail.trim(),
+                        contact_phone: values.contactPhone?.trim() || null,
+                        company_address: values.companyAddress?.trim() || null,
+                        company_link: values.companyLink || null,
+                      } as any);
+                    } catch (syncErr) {
+                      console.error('Failed to sync offer company for autofill:', syncErr);
+                    }
+
                     toast({ title: "✅ Offer Sent", description: `Offer sent to ${values.contactEmail}` });
                     form.reset();
                     setSelectedInventoryItems([]);
