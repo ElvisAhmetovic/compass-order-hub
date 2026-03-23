@@ -29,9 +29,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Eye, Send, Trash2, Loader2, CheckCircle2 } from "lucide-react";
+import { Eye, Send, Trash2, Loader2, CheckCircle2, Save } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { format } from "date-fns";
 
 interface Offer {
@@ -60,6 +62,16 @@ const Offers = () => {
   const [confirmOffer, setConfirmOffer] = useState<Offer | null>(null);
   const [confirmingOffer, setConfirmingOffer] = useState<string | null>(null);
   const [sendToClientOnConfirm, setSendToClientOnConfirm] = useState(false);
+  const [savingOffer, setSavingOffer] = useState(false);
+  const [editForm, setEditForm] = useState({
+    client_name: "",
+    company_name: "",
+    client_email: "",
+    client_phone: "",
+    client_address: "",
+    price: "",
+    description: "",
+  });
 
   useEffect(() => {
     fetchOffers();
@@ -73,6 +85,20 @@ const Offers = () => {
 
     return () => { supabase.removeChannel(channel); };
   }, []);
+
+  useEffect(() => {
+    if (selectedOffer) {
+      setEditForm({
+        client_name: selectedOffer.client_name,
+        company_name: selectedOffer.company_name,
+        client_email: selectedOffer.client_email,
+        client_phone: selectedOffer.client_phone || "",
+        client_address: selectedOffer.client_address || "",
+        price: String(selectedOffer.price),
+        description: selectedOffer.description || "",
+      });
+    }
+  }, [selectedOffer]);
 
   const fetchOffers = async () => {
     setLoading(true);
@@ -88,6 +114,40 @@ const Offers = () => {
       setOffers((data as Offer[]) || []);
     }
     setLoading(false);
+  };
+
+  const handleSaveOffer = async () => {
+    if (!selectedOffer) return;
+    setSavingOffer(true);
+    try {
+      const updatedFields = {
+        client_name: editForm.client_name.trim(),
+        company_name: editForm.company_name.trim(),
+        client_email: editForm.client_email.trim(),
+        client_phone: editForm.client_phone.trim() || null,
+        client_address: editForm.client_address.trim() || null,
+        price: parseFloat(editForm.price) || 0,
+        description: editForm.description.trim() || null,
+      };
+
+      const { error } = await supabase
+        .from("offers")
+        .update(updatedFields)
+        .eq("id", selectedOffer.id);
+
+      if (error) throw error;
+
+      // Update local state
+      const updated = { ...selectedOffer, ...updatedFields };
+      setSelectedOffer(updated);
+      setOffers(prev => prev.map(o => o.id === updated.id ? { ...o, ...updatedFields } : o));
+      toast({ title: "Offer updated successfully" });
+    } catch (err: any) {
+      console.error("Save error:", err);
+      toast({ variant: "destructive", title: "Failed to save changes", description: err.message });
+    } finally {
+      setSavingOffer(false);
+    }
   };
 
   const handleDelete = async () => {
@@ -274,49 +334,54 @@ const Offers = () => {
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-3 text-sm">
                     <div>
-                      <p className="text-muted-foreground">Client Name</p>
-                      <p className="font-medium">{selectedOffer.client_name}</p>
+                      <Label className="text-muted-foreground text-xs">Client Name</Label>
+                      <Input value={editForm.client_name} onChange={e => setEditForm(f => ({ ...f, client_name: e.target.value }))} className="mt-1 h-8" />
                     </div>
                     <div>
-                      <p className="text-muted-foreground">Company</p>
-                      <p className="font-medium">{selectedOffer.company_name}</p>
+                      <Label className="text-muted-foreground text-xs">Company</Label>
+                      <Input value={editForm.company_name} onChange={e => setEditForm(f => ({ ...f, company_name: e.target.value }))} className="mt-1 h-8" />
                     </div>
                     <div>
-                      <p className="text-muted-foreground">Email</p>
-                      <p className="font-medium">{selectedOffer.client_email}</p>
+                      <Label className="text-muted-foreground text-xs">Email</Label>
+                      <Input value={editForm.client_email} onChange={e => setEditForm(f => ({ ...f, client_email: e.target.value }))} className="mt-1 h-8" />
                     </div>
                     <div>
-                      <p className="text-muted-foreground">Phone</p>
-                      <p className="font-medium">{selectedOffer.client_phone || "—"}</p>
+                      <Label className="text-muted-foreground text-xs">Phone</Label>
+                      <Input value={editForm.client_phone} onChange={e => setEditForm(f => ({ ...f, client_phone: e.target.value }))} className="mt-1 h-8" />
                     </div>
                     <div>
-                      <p className="text-muted-foreground">Address</p>
-                      <p className="font-medium">{selectedOffer.client_address || "—"}</p>
+                      <Label className="text-muted-foreground text-xs">Address</Label>
+                      <Input value={editForm.client_address} onChange={e => setEditForm(f => ({ ...f, client_address: e.target.value }))} className="mt-1 h-8" />
                     </div>
                     <div>
-                      <p className="text-muted-foreground">Price</p>
-                      <p className="font-semibold text-primary">
-                        {currencySymbol(selectedOffer.currency)}{selectedOffer.price.toLocaleString("de-DE", { minimumFractionDigits: 2 })}
-                      </p>
+                      <Label className="text-muted-foreground text-xs">Price ({selectedOffer.currency})</Label>
+                      <Input type="number" step="0.01" value={editForm.price} onChange={e => setEditForm(f => ({ ...f, price: e.target.value }))} className="mt-1 h-8" />
                     </div>
                     <div>
-                      <p className="text-muted-foreground">Sent By</p>
-                      <p className="font-medium">{selectedOffer.sent_by_name}</p>
+                      <p className="text-muted-foreground text-xs">Sent By</p>
+                      <p className="font-medium mt-1">{selectedOffer.sent_by_name}</p>
                     </div>
                     <div>
-                      <p className="text-muted-foreground">Date</p>
-                      <p className="font-medium">{format(new Date(selectedOffer.created_at), "dd.MM.yyyy HH:mm")}</p>
+                      <p className="text-muted-foreground text-xs">Date</p>
+                      <p className="font-medium mt-1">{format(new Date(selectedOffer.created_at), "dd.MM.yyyy HH:mm")}</p>
                     </div>
                   </div>
-                  {selectedOffer.description && (
-                    <div>
-                      <p className="text-muted-foreground text-sm mb-1">Description</p>
-                      <p className="text-sm whitespace-pre-wrap bg-muted p-3 rounded-md max-h-[200px] overflow-y-auto">{selectedOffer.description}</p>
-                    </div>
-                  )}
+                  <div>
+                    <Label className="text-muted-foreground text-xs">Description</Label>
+                    <Textarea value={editForm.description} onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))} className="mt-1 min-h-[80px]" />
+                  </div>
                   <div className="flex items-center justify-between">
                     <Badge>{selectedOffer.status}</Badge>
                     <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleSaveOffer}
+                        disabled={savingOffer}
+                      >
+                        {savingOffer ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Save className="h-4 w-4 mr-1" />}
+                        Save Changes
+                      </Button>
                       {selectedOffer.status !== "confirmed" && (
                         <Button
                           size="sm"
@@ -330,7 +395,7 @@ const Offers = () => {
                           ) : (
                             <CheckCircle2 className="h-4 w-4 mr-1" />
                           )}
-                          Confirm for Client
+                          Confirm
                         </Button>
                       )}
                       <Button
