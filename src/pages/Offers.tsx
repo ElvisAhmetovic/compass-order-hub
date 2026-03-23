@@ -166,7 +166,7 @@ const Offers = () => {
     setDeleteOffer(null);
   };
 
-
+  const handleResend = async (offer: Offer) => {
     setResendingOffer(offer.id);
     try {
       // 1. Create new offer with same data
