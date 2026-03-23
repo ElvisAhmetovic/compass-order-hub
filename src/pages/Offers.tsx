@@ -334,49 +334,54 @@ const Offers = () => {
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-3 text-sm">
                     <div>
-                      <p className="text-muted-foreground">Client Name</p>
-                      <p className="font-medium">{selectedOffer.client_name}</p>
+                      <Label className="text-muted-foreground text-xs">Client Name</Label>
+                      <Input value={editForm.client_name} onChange={e => setEditForm(f => ({ ...f, client_name: e.target.value }))} className="mt-1 h-8" />
                     </div>
                     <div>
-                      <p className="text-muted-foreground">Company</p>
-                      <p className="font-medium">{selectedOffer.company_name}</p>
+                      <Label className="text-muted-foreground text-xs">Company</Label>
+                      <Input value={editForm.company_name} onChange={e => setEditForm(f => ({ ...f, company_name: e.target.value }))} className="mt-1 h-8" />
                     </div>
                     <div>
-                      <p className="text-muted-foreground">Email</p>
-                      <p className="font-medium">{selectedOffer.client_email}</p>
+                      <Label className="text-muted-foreground text-xs">Email</Label>
+                      <Input value={editForm.client_email} onChange={e => setEditForm(f => ({ ...f, client_email: e.target.value }))} className="mt-1 h-8" />
                     </div>
                     <div>
-                      <p className="text-muted-foreground">Phone</p>
-                      <p className="font-medium">{selectedOffer.client_phone || "—"}</p>
+                      <Label className="text-muted-foreground text-xs">Phone</Label>
+                      <Input value={editForm.client_phone} onChange={e => setEditForm(f => ({ ...f, client_phone: e.target.value }))} className="mt-1 h-8" />
                     </div>
                     <div>
-                      <p className="text-muted-foreground">Address</p>
-                      <p className="font-medium">{selectedOffer.client_address || "—"}</p>
+                      <Label className="text-muted-foreground text-xs">Address</Label>
+                      <Input value={editForm.client_address} onChange={e => setEditForm(f => ({ ...f, client_address: e.target.value }))} className="mt-1 h-8" />
                     </div>
                     <div>
-                      <p className="text-muted-foreground">Price</p>
-                      <p className="font-semibold text-primary">
-                        {currencySymbol(selectedOffer.currency)}{selectedOffer.price.toLocaleString("de-DE", { minimumFractionDigits: 2 })}
-                      </p>
+                      <Label className="text-muted-foreground text-xs">Price ({selectedOffer.currency})</Label>
+                      <Input type="number" step="0.01" value={editForm.price} onChange={e => setEditForm(f => ({ ...f, price: e.target.value }))} className="mt-1 h-8" />
                     </div>
                     <div>
-                      <p className="text-muted-foreground">Sent By</p>
-                      <p className="font-medium">{selectedOffer.sent_by_name}</p>
+                      <p className="text-muted-foreground text-xs">Sent By</p>
+                      <p className="font-medium mt-1">{selectedOffer.sent_by_name}</p>
                     </div>
                     <div>
-                      <p className="text-muted-foreground">Date</p>
-                      <p className="font-medium">{format(new Date(selectedOffer.created_at), "dd.MM.yyyy HH:mm")}</p>
+                      <p className="text-muted-foreground text-xs">Date</p>
+                      <p className="font-medium mt-1">{format(new Date(selectedOffer.created_at), "dd.MM.yyyy HH:mm")}</p>
                     </div>
                   </div>
-                  {selectedOffer.description && (
-                    <div>
-                      <p className="text-muted-foreground text-sm mb-1">Description</p>
-                      <p className="text-sm whitespace-pre-wrap bg-muted p-3 rounded-md max-h-[200px] overflow-y-auto">{selectedOffer.description}</p>
-                    </div>
-                  )}
+                  <div>
+                    <Label className="text-muted-foreground text-xs">Description</Label>
+                    <Textarea value={editForm.description} onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))} className="mt-1 min-h-[80px]" />
+                  </div>
                   <div className="flex items-center justify-between">
                     <Badge>{selectedOffer.status}</Badge>
                     <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleSaveOffer}
+                        disabled={savingOffer}
+                      >
+                        {savingOffer ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Save className="h-4 w-4 mr-1" />}
+                        Save Changes
+                      </Button>
                       {selectedOffer.status !== "confirmed" && (
                         <Button
                           size="sm"
@@ -390,7 +395,7 @@ const Offers = () => {
                           ) : (
                             <CheckCircle2 className="h-4 w-4 mr-1" />
                           )}
-                          Confirm for Client
+                          Confirm
                         </Button>
                       )}
                       <Button
