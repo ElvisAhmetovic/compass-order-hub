@@ -62,6 +62,16 @@ const Offers = () => {
   const [confirmOffer, setConfirmOffer] = useState<Offer | null>(null);
   const [confirmingOffer, setConfirmingOffer] = useState<string | null>(null);
   const [sendToClientOnConfirm, setSendToClientOnConfirm] = useState(false);
+  const [savingOffer, setSavingOffer] = useState(false);
+  const [editForm, setEditForm] = useState({
+    client_name: "",
+    company_name: "",
+    client_email: "",
+    client_phone: "",
+    client_address: "",
+    price: "",
+    description: "",
+  });
 
   useEffect(() => {
     fetchOffers();
