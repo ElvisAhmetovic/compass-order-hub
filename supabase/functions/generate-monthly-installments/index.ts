@@ -48,7 +48,7 @@ const COMPANY = {
 };
 
 const BANK_ACCOUNTS = [
-  { label: "Bankrekening België", iban: "BE79967023897833", bic: "TRWIBEB1XXX", blz: "967", account: "967023897833" },
+  { label: "Belgian Bank Account", iban: "BE79967023897833", bic: "TRWIBEB1XXX", blz: "967", account: "967023897833" }, iban: "BE79967023897833", bic: "TRWIBEB1XXX", blz: "967", account: "967023897833" },
   { label: "German Bank Account", iban: "DE91240703680071572200", bic: "DEUTDE2HP22", bank: "Postbank/DSL Ndl of Deutsche Bank" },
 ];
 
