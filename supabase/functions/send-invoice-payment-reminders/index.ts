@@ -264,6 +264,27 @@ const buildReminderEmailHtml = (data: {
         </td></tr>
         ` : ''}
 
+        <!-- Bank Payment Details -->
+        <tr><td style="padding:0 32px 16px;">
+          <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color:#f0f7ff; border-radius:12px; border:1px solid #d2e3fc;">
+            <tr><td style="padding:20px 24px;">
+              <div style="font-family:Roboto,Arial,sans-serif; font-size:16px; font-weight:700; color:#1a73e8; margin-bottom:15px;">🏦 Payment Information</div>
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="border-collapse:collapse;">
+                <tr><td colspan="2" style="font-weight:bold; padding:8px 0 4px; color:#202124; font-family:Roboto,Arial,sans-serif; font-size:14px;">Bankrekening België</td></tr>
+                <tr><td style="color:#5f6368; padding:3px 0; font-family:Roboto,Arial,sans-serif; font-size:13px; width:80px;">IBAN:</td><td style="color:#202124; font-family:Roboto,Arial,sans-serif; font-size:13px;">BE79967023897833</td></tr>
+                <tr><td style="color:#5f6368; padding:3px 0; font-family:Roboto,Arial,sans-serif; font-size:13px;">BIC:</td><td style="color:#202124; font-family:Roboto,Arial,sans-serif; font-size:13px;">TRWIBEB1XXX</td></tr>
+                <tr><td style="color:#5f6368; padding:3px 0; font-family:Roboto,Arial,sans-serif; font-size:13px;">BLZ:</td><td style="color:#202124; font-family:Roboto,Arial,sans-serif; font-size:13px;">967</td></tr>
+                <tr><td style="color:#5f6368; padding:3px 0; font-family:Roboto,Arial,sans-serif; font-size:13px;">Konto:</td><td style="color:#202124; font-family:Roboto,Arial,sans-serif; font-size:13px;">967023897833</td></tr>
+                <tr><td colspan="2" style="padding:10px 0 0;"><hr style="border:none; border-top:1px solid #d2e3fc;"></td></tr>
+                <tr><td colspan="2" style="font-weight:bold; padding:8px 0 4px; color:#202124; font-family:Roboto,Arial,sans-serif; font-size:14px;">German Bank Account</td></tr>
+                <tr><td style="color:#5f6368; padding:3px 0; font-family:Roboto,Arial,sans-serif; font-size:13px;">IBAN:</td><td style="color:#202124; font-family:Roboto,Arial,sans-serif; font-size:13px;">DE91240703680071572200</td></tr>
+                <tr><td style="color:#5f6368; padding:3px 0; font-family:Roboto,Arial,sans-serif; font-size:13px;">BIC:</td><td style="color:#202124; font-family:Roboto,Arial,sans-serif; font-size:13px;">DEUTDE2HP22</td></tr>
+                <tr><td style="color:#5f6368; padding:3px 0; font-family:Roboto,Arial,sans-serif; font-size:13px;">Bank:</td><td style="color:#202124; font-family:Roboto,Arial,sans-serif; font-size:13px;">Postbank/DSL Ndl of Deutsche Bank</td></tr>
+              </table>
+            </td></tr>
+          </table>
+        </td></tr>
+
         <!-- Footer -->
         <tr><td style="padding:24px 32px; border-top:1px solid #e8eaed;">
           <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"><tr>

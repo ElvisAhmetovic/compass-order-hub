@@ -199,6 +199,22 @@ const wrapTemplateInEmailWrapper = (bodyHtml: string): string => {
       
       <div style="background: #ffffff; padding: 30px; border: 1px solid #e0e0e0; border-top: none;">
         ${bodyHtml}
+        
+        <div style="background:#f0f7ff; padding:20px; border-radius:12px; border:1px solid #d2e3fc; margin:20px 0;">
+          <h3 style="margin:0 0 15px; color:#1a73e8; font-size:16px;">🏦 Payment Information</h3>
+          <table style="width:100%; border-collapse:collapse;">
+            <tr><td colspan="2" style="font-weight:bold; padding:8px 0 4px; color:#202124;">Bankrekening België</td></tr>
+            <tr><td style="color:#5f6368; padding:3px 0; width:80px;">IBAN:</td><td style="color:#202124;">BE79967023897833</td></tr>
+            <tr><td style="color:#5f6368; padding:3px 0;">BIC:</td><td style="color:#202124;">TRWIBEB1XXX</td></tr>
+            <tr><td style="color:#5f6368; padding:3px 0;">BLZ:</td><td style="color:#202124;">967</td></tr>
+            <tr><td style="color:#5f6368; padding:3px 0;">Konto:</td><td style="color:#202124;">967023897833</td></tr>
+            <tr><td colspan="2" style="padding:10px 0 0;"><hr style="border:none; border-top:1px solid #d2e3fc;"></td></tr>
+            <tr><td colspan="2" style="font-weight:bold; padding:8px 0 4px; color:#202124;">German Bank Account</td></tr>
+            <tr><td style="color:#5f6368; padding:3px 0;">IBAN:</td><td style="color:#202124;">DE91240703680071572200</td></tr>
+            <tr><td style="color:#5f6368; padding:3px 0;">BIC:</td><td style="color:#202124;">DEUTDE2HP22</td></tr>
+            <tr><td style="color:#5f6368; padding:3px 0;">Bank:</td><td style="color:#202124;">Postbank/DSL Ndl of Deutsche Bank</td></tr>
+          </table>
+        </div>
       </div>
       
       <div style="background: #f5f5f5; padding: 20px; border-radius: 0 0 10px 10px; text-align: center; font-size: 12px; color: #666;">
