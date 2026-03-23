@@ -270,7 +270,7 @@ const buildReminderEmailHtml = (data: {
             <tr><td style="padding:20px 24px;">
               <div style="font-family:Roboto,Arial,sans-serif; font-size:16px; font-weight:700; color:#1a73e8; margin-bottom:15px;">🏦 Payment Information</div>
               <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="border-collapse:collapse;">
-                <tr><td colspan="2" style="font-weight:bold; padding:8px 0 4px; color:#202124; font-family:Roboto,Arial,sans-serif; font-size:14px;">Bankrekening België</td></tr>
+                <tr><td colspan="2" style="font-weight:bold; padding:8px 0 4px; color:#202124; font-family:Roboto,Arial,sans-serif; font-size:14px;"><tr><td colspan="2" style="font-weight:bold; padding:8px 0 4px; color:#202124; font-family:Roboto,Arial,sans-serif; font-size:14px;">Belgian Bank Account</td></tr></td></tr>
                 <tr><td style="color:#5f6368; padding:3px 0; font-family:Roboto,Arial,sans-serif; font-size:13px; width:80px;">IBAN:</td><td style="color:#202124; font-family:Roboto,Arial,sans-serif; font-size:13px;">BE79967023897833</td></tr>
                 <tr><td style="color:#5f6368; padding:3px 0; font-family:Roboto,Arial,sans-serif; font-size:13px;">BIC:</td><td style="color:#202124; font-family:Roboto,Arial,sans-serif; font-size:13px;">TRWIBEB1XXX</td></tr>
                 <tr><td style="color:#5f6368; padding:3px 0; font-family:Roboto,Arial,sans-serif; font-size:13px;">BLZ:</td><td style="color:#202124; font-family:Roboto,Arial,sans-serif; font-size:13px;">967</td></tr>

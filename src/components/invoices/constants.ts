@@ -14,7 +14,7 @@ export const PAYMENT_ACCOUNTS: PaymentAccount[] = [
   {
     id: "belgium",
     country: "Belgium",
-    name: "Bankrekening België",
+    name: "Belgian Bank Account",
     iban: "BE79967023897833",
     bic: "TRWIBEB1XXX",
     blz: "967",
