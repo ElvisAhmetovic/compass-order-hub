@@ -86,6 +86,20 @@ const Offers = () => {
     return () => { supabase.removeChannel(channel); };
   }, []);
 
+  useEffect(() => {
+    if (selectedOffer) {
+      setEditForm({
+        client_name: selectedOffer.client_name,
+        company_name: selectedOffer.company_name,
+        client_email: selectedOffer.client_email,
+        client_phone: selectedOffer.client_phone || "",
+        client_address: selectedOffer.client_address || "",
+        price: String(selectedOffer.price),
+        description: selectedOffer.description || "",
+      });
+    }
+  }, [selectedOffer]);
+
   const fetchOffers = async () => {
     setLoading(true);
     const { data, error } = await supabase
@@ -102,20 +116,38 @@ const Offers = () => {
     setLoading(false);
   };
 
-  const handleDelete = async () => {
-    if (!deleteOffer) return;
-    const { error } = await supabase
-      .from("offers")
-      .delete()
-      .eq("id", deleteOffer.id);
+  const handleSaveOffer = async () => {
+    if (!selectedOffer) return;
+    setSavingOffer(true);
+    try {
+      const updatedFields = {
+        client_name: editForm.client_name.trim(),
+        company_name: editForm.company_name.trim(),
+        client_email: editForm.client_email.trim(),
+        client_phone: editForm.client_phone.trim() || null,
+        client_address: editForm.client_address.trim() || null,
+        price: parseFloat(editForm.price) || 0,
+        description: editForm.description.trim() || null,
+      };
 
-    if (error) {
-      toast({ variant: "destructive", title: "Error deleting offer" });
-    } else {
-      toast({ title: "Offer deleted" });
-      fetchOffers();
+      const { error } = await supabase
+        .from("offers")
+        .update(updatedFields)
+        .eq("id", selectedOffer.id);
+
+      if (error) throw error;
+
+      // Update local state
+      const updated = { ...selectedOffer, ...updatedFields };
+      setSelectedOffer(updated);
+      setOffers(prev => prev.map(o => o.id === updated.id ? { ...o, ...updatedFields } : o));
+      toast({ title: "Offer updated successfully" });
+    } catch (err: any) {
+      console.error("Save error:", err);
+      toast({ variant: "destructive", title: "Failed to save changes", description: err.message });
+    } finally {
+      setSavingOffer(false);
     }
-    setDeleteOffer(null);
   };
 
   const handleResend = async (offer: Offer) => {
