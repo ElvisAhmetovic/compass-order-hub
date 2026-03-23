@@ -150,7 +150,23 @@ const Offers = () => {
     }
   };
 
-  const handleResend = async (offer: Offer) => {
+  const handleDelete = async () => {
+    if (!deleteOffer) return;
+    const { error } = await supabase
+      .from("offers")
+      .delete()
+      .eq("id", deleteOffer.id);
+
+    if (error) {
+      toast({ variant: "destructive", title: "Error deleting offer" });
+    } else {
+      toast({ title: "Offer deleted" });
+      fetchOffers();
+    }
+    setDeleteOffer(null);
+  };
+
+
     setResendingOffer(offer.id);
     try {
       // 1. Create new offer with same data
