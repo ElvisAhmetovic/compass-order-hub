@@ -1,32 +1,37 @@
 
 
-## Save Offer Details to Autofill (Companies Sync)
+## Add Edit Capability to Offer Details Dialog
 
 ### Problem
-When you use "Send Offer" instead of "Create Order", the company/client details are saved to the `offers` table but never synced to the `companies` table. The autofill dropdown (`OrderSearchDropdown`) pulls from orders and companies, so offer-only clients never appear in autofill.
+The "View Offer" dialog shows offer details as read-only text. The boss wants to edit fields (price, client name, email, description, etc.) before clicking "Send Again" or "Confirm for Client".
 
 ### Solution
-After successfully inserting the offer into the `offers` table (line ~910 in `CreateOrderModal.tsx`), call `SupabaseCompanySyncService.syncOrderCompany()` with the offer data shaped as an order-like object. This reuses the existing company sync logic.
+Convert the read-only offer details dialog into an editable form. When the user opens an offer, fields are pre-filled and editable. Changes are saved to the database before resending or confirming.
 
 ### Changes
 
-**`src/components/dashboard/CreateOrderModal.tsx`** — In the "Send Offer" button's `onClick` handler (~line 910-936), after the offer is successfully saved to DB and email sent, add:
+**`src/pages/Offers.tsx`** — Single file change:
 
-```typescript
-// Sync offer company data to companies table for autofill
-try {
-  const { SupabaseCompanySyncService } = await import('@/services/supabaseCompanySyncService');
-  await SupabaseCompanySyncService.syncOrderCompany({
-    company_name: values.companyName.trim(),
-    contact_email: values.contactEmail.trim(),
-    contact_phone: values.contactPhone?.trim() || null,
-    company_address: values.companyAddress?.trim() || null,
-    company_link: values.companyLink || null,
-  } as any);
-} catch (syncErr) {
-  console.error('Failed to sync offer company for autofill:', syncErr);
-}
+1. **Add edit state**: Track edited fields with `useState` initialized from `selectedOffer` when it changes. Add an `isEditing` toggle (default true when dialog opens, or use an "Edit" button).
+
+2. **Replace static text with inputs**: In the dialog (lines 274-316), replace `<p className="font-medium">` elements with `<Input>` components for: client_name, company_name, client_email, client_phone, client_address, price, description. Currency stays as-is (or add a select).
+
+3. **Add "Save Changes" button**: When fields are modified, show a save button that updates the offer in Supabase via `UPDATE` on the `offers` table. Also update `order_data` JSON if relevant fields change.
+
+4. **Wire edited data into resend/confirm**: `handleResend` and `handleConfirmForClient` already use the `selectedOffer` or `confirmOffer` object — after saving edits, the local state reflects the updated values, so these flows automatically use the corrected data.
+
+5. **Add UPDATE RLS policy**: The `offers` table currently has no UPDATE policy. Need a migration to add one for non-client authenticated users.
+
+### Database Migration
+```sql
+CREATE POLICY "Non-client authenticated users can update offers"
+ON public.offers FOR UPDATE TO authenticated
+USING (NOT is_client())
+WITH CHECK (NOT is_client());
 ```
 
-This is a ~10-line addition. No other files need changes since the sync service and autofill dropdown already work with the `companies` table.
+### UI Flow
+- Open offer → fields are editable inline
+- Edit price/name/etc → click "Save Changes" 
+- Then click "Send Again" or "Confirm for Client" with corrected data
 
