@@ -1,38 +1,27 @@
 
 
-## Update Admin User Names in Database
+## Rename "Bankrekening België" to "Belgian Bank Account"
 
 ### Problem
-The user wants to rename two admin users in the system:
-- "Kenan Huzbasic" → "Stefan Wolf"
-- "Adis Berbic" → "Suzie Mckenna"
+The Belgian bank account label is in Dutch ("Bankrekening België") while the German one is in English ("German Bank Account"). Boss wants consistency — both in English.
 
-### Solution
-Run a database migration to update the `first_name` and `last_name` fields in the `profiles` table, and also update the `full_name` and/or `email` display name in the `app_users` table if those records exist.
+### Changes
+Replace "Bankrekening België" with "Belgian Bank Account" in all 8 files where it appears:
 
-### Database Migration
-```sql
--- Update Kenan Huzbasic → Stefan Wolf
-UPDATE public.profiles 
-SET first_name = 'Stefan', last_name = 'Wolf', updated_at = now()
-WHERE first_name = 'Kenan' AND last_name = 'Huzbasic';
+**Edge Functions (4 files — need redeployment):**
+1. `supabase/functions/send-client-payment-reminder/index.ts` — 2 occurrences (lines 154, 206)
+2. `supabase/functions/send-payment-reminder/index.ts` — 1 occurrence (line 63)
+3. `supabase/functions/send-invoice-payment-reminders/index.ts` — 1 occurrence (line 273)
+4. `supabase/functions/send-order-payment-reminders/index.ts` — 1 occurrence (line 181)
+5. `supabase/functions/generate-monthly-installments/index.ts` — 1 occurrence (line 51)
 
-UPDATE public.app_users 
-SET full_name = 'Stefan Wolf'
-WHERE full_name ILIKE '%Kenan%Huzbasic%' OR full_name ILIKE '%Kenan Huzbasic%';
+**Frontend (3 files):**
+6. `src/components/invoices/constants.ts` — 1 occurrence (line 17)
+7. `src/components/invoices/InvoicePreview.tsx` — 1 occurrence (line 53, this is the Dutch translation so it stays as the Dutch label there; but the English entry likely also says "Bankrekening België")
+8. `src/utils/invoicePdfGenerator.ts` — 1 occurrence (line 346, same — Dutch translation keeps Dutch label)
 
--- Update Adis Berbic → Suzie Mckenna
-UPDATE public.profiles 
-SET first_name = 'Suzie', last_name = 'Mckenna', updated_at = now()
-WHERE first_name = 'Adis' AND last_name = 'Berbic';
+For the invoice preview and PDF generator, the Dutch translation ("nl") can keep the Dutch name, but the English ("en") and default labels should say "Belgian Bank Account". I'll check those files to confirm the English entries too.
 
-UPDATE public.app_users 
-SET full_name = 'Suzie Mckenna'
-WHERE full_name ILIKE '%Adis%Berbic%' OR full_name ILIKE '%Adis Berbic%';
-```
-
-### What This Covers
-- Updates the `profiles` table (which drives the sidebar, header, and user management display)
-- Updates the `app_users` table (which stores display names for email lookups)
-- No code changes needed — the app reads names from these tables dynamically
+### Scope
+Simple find-and-replace of the label text. No logic changes. Edge functions will be redeployed after.
 
