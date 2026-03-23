@@ -339,7 +339,7 @@ const generateInvoiceHTML = (data: InvoicePDFData): string => {
   const getAccountTranslations = (language: string, accountId: string) => {
     const translations = {
       en: {
-        belgium: "Belgium Bank Account",
+        belgium: "Belgian Bank Account",
         germany: "German Bank Account"
       },
       nl: {
