@@ -83,7 +83,7 @@ const SendInvoicePDFDialog: React.FC<SendInvoicePDFDialogProps> = ({
       // Schedule payment reminder and mark as sent if invoice exists in DB
       if (invoice?.id) {
         try {
-          const { data: currentInvoice } = await supabase.from('invoices').select('next_reminder_at, status').eq('id', invoice.id).single();
+          const { data: currentInvoice } = await supabase.from('invoices').select('next_reminder_at, status, order_id').eq('id', invoice.id).single();
           const updateData: any = {};
           if (!currentInvoice?.next_reminder_at) {
             updateData.next_reminder_at = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
@@ -93,6 +93,14 @@ const SendInvoicePDFDialog: React.FC<SendInvoicePDFDialogProps> = ({
           }
           if (Object.keys(updateData).length > 0) {
             await supabase.from('invoices').update(updateData).eq('id', invoice.id);
+          }
+          // Sync "Invoice Sent" status to linked order
+          const orderId = currentInvoice?.order_id || invoice?.order_id;
+          if (orderId) {
+            const { OrderService } = await import("@/services/orderService");
+            await OrderService.toggleOrderStatus(orderId, "Invoice Sent", true).catch(err =>
+              console.error("Error syncing invoice sent status to order:", err)
+            );
           }
         } catch (err) {
           console.error("Error scheduling reminder:", err);
