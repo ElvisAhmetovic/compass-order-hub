@@ -1,50 +1,38 @@
 
 
-## Add UK Bank Account to Payment System
+## Sync Invoice "Sent" Status to Order Dashboard
 
-### What We're Adding
-A third bank account option — **UK Bank Account (Wise)** — alongside the existing Belgian and German accounts. It will appear in the invoice template dropdown, render on invoice PDFs, show in the invoice preview, and be included in all payment reminder emails.
+### Problem
+When an invoice is marked as "sent" (via sending an invoice email, sending a PDF, or manually changing status on the Invoices page), the linked order on the dashboard does NOT get its "Invoice Sent" status toggled on. The sync only works in the reverse direction (toggling "Invoice Sent" on the dashboard updates the invoice).
 
-**UK Account Details:**
-- Account holder: Ab Media team Ltd
-- Sort code: 23-14-70
-- Account number: 59849633
-- IBAN: GB73 TRWI 2314 7059 8496 33
-- Wise's address: 56 Shoreditch High Street, London
+### Root Cause
+Three code paths update invoice status to 'sent' without calling `OrderService.toggleOrderStatus` on the linked order:
 
-### Changes Required
+1. **`SendInvoiceDialog.tsx`** (line ~128-133) — sends invoice email, marks invoice as 'sent', but never updates the order
+2. **`SendInvoicePDFDialog.tsx`** (line ~91-96) — sends invoice PDF, marks invoice as 'sent', but never updates the order
+3. **`Invoices.tsx` `handleUpdateStatus`** (line ~112-145) — manual status change on Invoices page, never syncs to order
 
-**1. Update `PaymentAccount` interface and constants** (`src/components/invoices/constants.ts`)
-- Add `sortCode` and `accountNumber` optional fields to the `PaymentAccount` interface
-- Add the UK account entry to `PAYMENT_ACCOUNTS` array
+### Fix
+After each of these sets the invoice status to 'sent', add a check: if the invoice has a linked `order_id`, call `OrderService.toggleOrderStatus(order_id, "Invoice Sent", true)` to sync the dashboard status.
 
-**2. Update Payment Information settings UI** (`src/components/invoices/components/PaymentInformation.tsx`)
-- Add translated labels for "Sort Code" and "Account Number" to all 10 languages
-- Render sort code / account number fields when present
-- Update "Both Accounts" to "All Accounts" in translations (since there are now 3)
+Similarly, when invoice status changes to 'paid', sync `"Invoice Paid"` to the order. And when it changes away from 'sent'/'paid', toggle those off.
 
-**3. Update Invoice Preview** (`src/components/invoices/InvoicePreview.tsx`)
-- Add UK account object with translated name ("UK Bank Account" in English, localized in other languages)
-- Add "uk" translations to all 10 language blocks in `getAccountTranslations`
-- Update the `selectedAccounts` logic to include the UK account when "both" (now "all") is selected
-- Add sort code / account number rendering
+### Files to Change
 
-**4. Update Invoice PDF Generator** (`src/utils/invoicePdfGenerator.ts`)
-- Same changes as Invoice Preview: add UK account, translations, selection logic, sort code / account number rendering in PDF output
+**1. `src/components/invoices/SendInvoiceDialog.tsx`**
+- After updating invoice status to 'sent' (line ~132), look up the invoice's `order_id` and call `OrderService.toggleOrderStatus(orderId, "Invoice Sent", true)`
 
-**5. Update 5 Edge Functions** (add UK bank details to email HTML)
-- `supabase/functions/send-payment-reminder/index.ts`
-- `supabase/functions/send-client-payment-reminder/index.ts`
-- `supabase/functions/send-invoice-payment-reminders/index.ts`
-- `supabase/functions/send-order-payment-reminders/index.ts`
-- `supabase/functions/generate-monthly-installments/index.ts`
+**2. `src/components/invoices/SendInvoicePDFDialog.tsx`**
+- Same logic after marking invoice as 'sent' (line ~95)
 
-Each gets a new UK Bank Account section in the payment information HTML block, showing Sort Code, Account Number, IBAN, and the Wise address.
+**3. `src/pages/Invoices.tsx`**
+- In `handleUpdateStatus`, after updating the invoice status, check if the invoice has an `order_id` and sync the corresponding order status:
+  - 'sent' → toggle "Invoice Sent" on
+  - 'paid' → toggle "Invoice Paid" on, toggle "Invoice Sent" off
+  - 'draft'/'cancelled' → toggle both off
 
-**6. Redeploy all 5 Edge Functions** after changes.
-
-### Technical Notes
-- The "both" value for `selectedPaymentAccount` will now mean "all three accounts" — no migration needed since the dropdown and rendering logic already handles arrays
-- The UK account uses Sort Code + Account Number (UK banking standard) instead of BLZ — these are new optional fields on the interface
-- No database changes needed — this is purely frontend + edge function updates
+### Technical Detail
+- Uses existing `OrderService.toggleOrderStatus` which already handles the order update and dispatches the `orderStatusChanged` event for dashboard refresh
+- The invoice's `order_id` field links invoices to orders — already exists in the schema
+- Need to fetch `order_id` from the invoice record (it may already be available in the component's invoice object)
 
