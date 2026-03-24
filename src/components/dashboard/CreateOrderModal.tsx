@@ -79,6 +79,8 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
   const [selectedInventoryItems, setSelectedInventoryItems] = useState<SelectedInventoryItem[]>([]);
   const [notificationEmails, setNotificationEmails] = useState<string[]>([...NOTIFICATION_EMAIL_LIST]);
   const [sendToClient, setSendToClient] = useState(false);
+  const [vatEnabled, setVatEnabled] = useState(false);
+  const [vatPercentage, setVatPercentage] = useState(20);
   
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -440,6 +442,8 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
       setSelectedInventoryItems([]);
       setNotificationEmails(['']);
       setSendToClient(false);
+      setVatEnabled(false);
+      setVatPercentage(20);
       onClose();
       
       // Trigger a refresh of the orders list
@@ -648,6 +652,49 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
                         </FormItem>
                       )}
                     />
+                  </div>
+
+                  {/* VAT Toggle */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          checked={vatEnabled}
+                          onCheckedChange={setVatEnabled}
+                        />
+                        <span className="text-sm font-medium">Enable VAT</span>
+                      </div>
+                      {vatEnabled && (
+                        <div className="flex items-center gap-2">
+                          <label className="text-sm text-muted-foreground">VAT %</label>
+                          <Input
+                            type="number"
+                            min={0}
+                            max={100}
+                            step={0.5}
+                            value={vatPercentage}
+                            onChange={(e) => setVatPercentage(Number(e.target.value))}
+                            className="w-20 h-8 text-sm"
+                          />
+                        </div>
+                      )}
+                    </div>
+                    {vatEnabled && (
+                      <div className="rounded-md border border-border bg-muted/50 p-3 text-sm space-y-1">
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Net Price</span>
+                          <span>{getCurrencySymbol(form.watch('currency'))}{Number(form.watch('price') || 0).toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">VAT ({vatPercentage}%)</span>
+                          <span>{getCurrencySymbol(form.watch('currency'))}{((Number(form.watch('price') || 0) * vatPercentage) / 100).toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between font-medium border-t border-border pt-1">
+                          <span>Total</span>
+                          <span>{getCurrencySymbol(form.watch('currency'))}{(Number(form.watch('price') || 0) + (Number(form.watch('price') || 0) * vatPercentage) / 100).toFixed(2)}</span>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Priority */}
