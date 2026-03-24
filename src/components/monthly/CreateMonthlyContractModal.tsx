@@ -181,6 +181,27 @@ const CreateMonthlyContractModal: React.FC<Props> = ({ open, onOpenChange, onCre
         user.id
       );
 
+      // Fire-and-forget: notify team about new contract
+      const numInstallments = Math.floor(values.durationMonths / values.billingFrequency);
+      const instAmount = numInstallments > 0 ? values.totalValue / numInstallments : 0;
+      supabase.functions.invoke('send-monthly-contract-created', {
+        body: {
+          clientName: values.clientName,
+          clientEmail: values.clientEmail,
+          clientPhone: values.contactPhone || '',
+          totalValue: values.totalValue,
+          currency: values.currency,
+          durationMonths: values.durationMonths,
+          billingFrequency: values.billingFrequency,
+          installmentAmount: instAmount,
+          numberOfInstallments: numInstallments,
+          startDate: values.startDate,
+          assignedTo: assignedToName || '',
+          description: values.description || '',
+          priority: values.priority,
+        },
+      }).catch((err) => console.error('Failed to send contract notification:', err));
+
       toast({
         title: "Contract created",
         description: `${values.durationMonths} installments have been generated.`,
