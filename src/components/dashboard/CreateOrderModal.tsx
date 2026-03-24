@@ -39,6 +39,7 @@ import InventoryItemsSelector, { SelectedInventoryItem } from "./InventoryItemsS
 import { achievementsService } from "@/services/achievementsService";
 import { streaksService } from "@/services/streaksService";
 import { activityService } from "@/services/activityService";
+import { getCurrencySymbol } from "@/utils/currencyUtils";
 
 const formSchema = z.object({
   companyName: z.string().min(1, "Company name is required"),
