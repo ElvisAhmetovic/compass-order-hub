@@ -132,7 +132,25 @@ const Invoices = () => {
       setInvoices(invoices.map(invoice => 
         invoice.id === id ? { ...invoice, status: newStatus as Invoice['status'] } : invoice
       ));
-      
+
+      // Sync status to linked order
+      const currentInvoice = invoices.find(inv => inv.id === id);
+      const orderId = (currentInvoice as any)?.order_id;
+      if (orderId) {
+        try {
+          if (newStatus === 'sent') {
+            await OrderService.toggleOrderStatus(orderId, "Invoice Sent", true);
+          } else if (newStatus === 'paid') {
+            await OrderService.toggleOrderStatus(orderId, "Invoice Paid", true);
+          } else if (newStatus === 'draft' || newStatus === 'cancelled') {
+            await OrderService.toggleOrderStatus(orderId, "Invoice Sent", false);
+            await OrderService.toggleOrderStatus(orderId, "Invoice Paid", false);
+          }
+        } catch (err) {
+          console.error("Error syncing invoice status to order:", err);
+        }
+      }
+
       toast({
         title: "Status updated",
         description: `Invoice status changed to ${newStatus}`,
