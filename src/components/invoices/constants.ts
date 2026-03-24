@@ -4,10 +4,13 @@ export interface PaymentAccount {
   country: string;
   name: string;
   iban: string;
-  bic: string;
+  bic?: string;
   bank?: string;
   blz?: string;
   account?: string;
+  sortCode?: string;
+  accountNumber?: string;
+  address?: string;
 }
 
 export const PAYMENT_ACCOUNTS: PaymentAccount[] = [
@@ -27,6 +30,15 @@ export const PAYMENT_ACCOUNTS: PaymentAccount[] = [
     iban: "DE91240703680071572200",
     bic: "DEUTDE2HP22",
     bank: "Postbank/DSL Ndl of Deutsche Bank"
+  },
+  {
+    id: "uk",
+    country: "United Kingdom",
+    name: "UK Bank Account (Wise)",
+    iban: "GB73 TRWI 2314 7059 8496 33",
+    sortCode: "23-14-70",
+    accountNumber: "59849633",
+    address: "56 Shoreditch High Street, London"
   }
 ];
 
