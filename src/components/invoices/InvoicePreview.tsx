@@ -45,46 +45,16 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
   // Get translated account names and payment info
   const getAccountTranslations = (language: string, accountId: string) => {
     const translations = {
-      en: {
-        belgium: "Belgian Bank Account",
-        germany: "German Bank Account"
-      },
-      nl: {
-        belgium: "Bankrekening België",
-        germany: "Duitse Bankrekening"
-      },
-      de: {
-        belgium: "Belgisches Bankkonto",
-        germany: "Deutsches Bankkonto"
-      },
-      fr: {
-        belgium: "Compte bancaire belge",
-        germany: "Compte bancaire allemand"
-      },
-      es: {
-        belgium: "Cuenta bancaria belga",
-        germany: "Cuenta bancaria alemana"
-      },
-      da: {
-        belgium: "Belgisk bankkonto",
-        germany: "Tysk bankkonto"
-      },
-      no: {
-        belgium: "Belgisk bankkonto",
-        germany: "Tysk bankkonto"
-      },
-      cs: {
-        belgium: "Belgický bankovní účet",
-        germany: "Německý bankovní účet"
-      },
-      pl: {
-        belgium: "Belgijskie konto bankowe",
-        germany: "Niemieckie konto bankowe"
-      },
-      sv: {
-        belgium: "Belgiskt bankkonto",
-        germany: "Tyskt bankkonto"
-      }
+      en: { belgium: "Belgian Bank Account", germany: "German Bank Account", uk: "UK Bank Account (Wise)" },
+      nl: { belgium: "Bankrekening België", germany: "Duitse Bankrekening", uk: "Britse Bankrekening (Wise)" },
+      de: { belgium: "Belgisches Bankkonto", germany: "Deutsches Bankkonto", uk: "Britisches Bankkonto (Wise)" },
+      fr: { belgium: "Compte bancaire belge", germany: "Compte bancaire allemand", uk: "Compte bancaire britannique (Wise)" },
+      es: { belgium: "Cuenta bancaria belga", germany: "Cuenta bancaria alemana", uk: "Cuenta bancaria británica (Wise)" },
+      da: { belgium: "Belgisk bankkonto", germany: "Tysk bankkonto", uk: "Britisk bankkonto (Wise)" },
+      no: { belgium: "Belgisk bankkonto", germany: "Tysk bankkonto", uk: "Britisk bankkonto (Wise)" },
+      cs: { belgium: "Belgický bankovní účet", germany: "Německý bankovní účet", uk: "Britský bankovní účet (Wise)" },
+      pl: { belgium: "Belgijskie konto bankowe", germany: "Niemieckie konto bankowe", uk: "Brytyjskie konto bankowe (Wise)" },
+      sv: { belgium: "Belgiskt bankkonto", germany: "Tyskt bankkonto", uk: "Brittiskt bankkonto (Wise)" }
     };
     
     const lang = language || 'en';
@@ -98,7 +68,10 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
     bic: "TRWIBEB1XXX",
     blz: "967",
     account: "967023897833",
-    bank: undefined as string | undefined
+    bank: undefined as string | undefined,
+    sortCode: undefined as string | undefined,
+    accountNumber: undefined as string | undefined,
+    address: undefined as string | undefined
   };
 
   const germanyAccount = {
@@ -108,14 +81,32 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
     bic: "DEUTDE2HP22",
     bank: "Postbank/DSL Ndl of Deutsche Bank",
     blz: undefined as string | undefined,
-    account: undefined as string | undefined
+    account: undefined as string | undefined,
+    sortCode: undefined as string | undefined,
+    accountNumber: undefined as string | undefined,
+    address: undefined as string | undefined
+  };
+
+  const ukAccount = {
+    id: "uk" as const,
+    name: getAccountTranslations(templateSettings.language, "uk"),
+    iban: "GB73 TRWI 2314 7059 8496 33",
+    bic: undefined as string | undefined,
+    bank: undefined as string | undefined,
+    blz: undefined as string | undefined,
+    account: undefined as string | undefined,
+    sortCode: "23-14-70",
+    accountNumber: "59849633",
+    address: "56 Shoreditch High Street, London"
   };
 
   const selectedAccounts = templateSettings.selectedPaymentAccount === "both"
-    ? [belgiumAccount, germanyAccount]
+    ? [belgiumAccount, germanyAccount, ukAccount]
     : templateSettings.selectedPaymentAccount === "belgium"
       ? [belgiumAccount]
-      : [germanyAccount];
+      : templateSettings.selectedPaymentAccount === "uk"
+        ? [ukAccount]
+        : [germanyAccount];
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-GB', {
@@ -283,6 +274,9 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
         blz: "BLZ",
         account: "Account",
         bank: "Bank",
+        sortCode: "Sort Code",
+        accountNumber: "Account Number",
+        address: "Address",
         contactPerson: "Contact Person:",
         companyRegistrationNumber: "Company Registration Number:",
         uidNumber: "UID- Number:"
@@ -667,9 +661,12 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
                   <div key={account.id} className={idx > 0 ? "mt-3 pt-3 border-t border-gray-200" : ""}>
                     <div className="font-semibold mb-2">{account.name}:</div>
                     <div><strong>{getTranslatedText('iban')}:</strong> <span className="text-black font-bold text-base">{account.iban}</span></div>
-                    <div><strong>{getTranslatedText('bic')}:</strong> <span className="text-black font-bold text-base">{account.bic}</span></div>
+                    {account.bic && <div><strong>{getTranslatedText('bic')}:</strong> <span className="text-black font-bold text-base">{account.bic}</span></div>}
                     {account.blz && <div><strong>{getTranslatedText('blz')}:</strong> <span className="text-black font-bold text-base">{account.blz}</span> <strong>{getTranslatedText('account')}:</strong> <span className="text-black font-bold text-base">{account.account}</span></div>}
+                    {account.sortCode && <div><strong>{getTranslatedText('sortCode')}:</strong> <span className="text-black font-bold text-base">{account.sortCode}</span></div>}
+                    {account.accountNumber && <div><strong>{getTranslatedText('accountNumber')}:</strong> <span className="text-black font-bold text-base">{account.accountNumber}</span></div>}
                     {account.bank && <div><strong>{getTranslatedText('bank')}:</strong> <span className="text-black font-bold text-base">{account.bank}</span></div>}
+                    {account.address && <div><strong>{getTranslatedText('address')}:</strong> <span className="text-black font-bold text-base">{account.address}</span></div>}
                   </div>
                 ))}
               </div>

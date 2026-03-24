@@ -188,6 +188,12 @@ const handler = async (req: Request): Promise<Response> => {
                     <tr><td style="color:#5f6368; padding:3px 0;">IBAN:</td><td style="color:#202124;">DE91240703680071572200</td></tr>
                     <tr><td style="color:#5f6368; padding:3px 0;">BIC:</td><td style="color:#202124;">DEUTDE2HP22</td></tr>
                     <tr><td style="color:#5f6368; padding:3px 0;">Bank:</td><td style="color:#202124;">Postbank/DSL Ndl of Deutsche Bank</td></tr>
+                    <tr><td colspan="2" style="padding:10px 0 0;"><hr style="border:none; border-top:1px solid #d2e3fc;"></td></tr>
+                    <tr><td colspan="2" style="font-weight:bold; padding:8px 0 4px; color:#202124;">UK Bank Account (Wise)</td></tr>
+                    <tr><td style="color:#5f6368; padding:3px 0;">IBAN:</td><td style="color:#202124;">GB73 TRWI 2314 7059 8496 33</td></tr>
+                    <tr><td style="color:#5f6368; padding:3px 0;">Sort Code:</td><td style="color:#202124;">23-14-70</td></tr>
+                    <tr><td style="color:#5f6368; padding:3px 0;">Account Number:</td><td style="color:#202124;">59849633</td></tr>
+                    <tr><td style="color:#5f6368; padding:3px 0;">Address:</td><td style="color:#202124;">56 Shoreditch High Street, London</td></tr>
                   </table>
                 </div>
 

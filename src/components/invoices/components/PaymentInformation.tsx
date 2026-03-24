@@ -24,16 +24,16 @@ export const PaymentInformation: React.FC<PaymentInformationProps> = ({
 
   const getPaymentTranslations = (language: string) => {
     const translations = {
-      en: { paymentAccount: "Payment Account", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Account", bank: "Bank", bothAccounts: "Both Accounts" },
-      nl: { paymentAccount: "Betaalrekening", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Rekening", bank: "Bank", bothAccounts: "Beide rekeningen" },
-      de: { paymentAccount: "Zahlungskonto", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Konto", bank: "Bank", bothAccounts: "Beide Konten" },
-      fr: { paymentAccount: "Compte de paiement", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Compte", bank: "Banque", bothAccounts: "Les deux comptes" },
-      es: { paymentAccount: "Cuenta de pago", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Cuenta", bank: "Banco", bothAccounts: "Ambas cuentas" },
-      da: { paymentAccount: "Betalingskonto", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Konto", bank: "Bank", bothAccounts: "Begge konti" },
-      no: { paymentAccount: "Betalingskonto", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Konto", bank: "Bank", bothAccounts: "Begge kontoer" },
-      cs: { paymentAccount: "Platební účet", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Účet", bank: "Banka", bothAccounts: "Oba účty" },
-      pl: { paymentAccount: "Konto płatnicze", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Konto", bank: "Bank", bothAccounts: "Oba konta" },
-      sv: { paymentAccount: "Betalningskonto", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Konto", bank: "Bank", bothAccounts: "Båda kontona" }
+      en: { paymentAccount: "Payment Account", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Account", bank: "Bank", bothAccounts: "All Accounts", sortCode: "Sort Code", accountNumber: "Account Number", address: "Address" },
+      nl: { paymentAccount: "Betaalrekening", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Rekening", bank: "Bank", bothAccounts: "Alle rekeningen", sortCode: "Sorteercode", accountNumber: "Rekeningnummer", address: "Adres" },
+      de: { paymentAccount: "Zahlungskonto", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Konto", bank: "Bank", bothAccounts: "Alle Konten", sortCode: "Bankleitzahl", accountNumber: "Kontonummer", address: "Adresse" },
+      fr: { paymentAccount: "Compte de paiement", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Compte", bank: "Banque", bothAccounts: "Tous les comptes", sortCode: "Code guichet", accountNumber: "Numéro de compte", address: "Adresse" },
+      es: { paymentAccount: "Cuenta de pago", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Cuenta", bank: "Banco", bothAccounts: "Todas las cuentas", sortCode: "Código de clasificación", accountNumber: "Número de cuenta", address: "Dirección" },
+      da: { paymentAccount: "Betalingskonto", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Konto", bank: "Bank", bothAccounts: "Alle konti", sortCode: "Sorteringskode", accountNumber: "Kontonummer", address: "Adresse" },
+      no: { paymentAccount: "Betalingskonto", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Konto", bank: "Bank", bothAccounts: "Alle kontoer", sortCode: "Sorteringskode", accountNumber: "Kontonummer", address: "Adresse" },
+      cs: { paymentAccount: "Platební účet", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Účet", bank: "Banka", bothAccounts: "Všechny účty", sortCode: "Kód pobočky", accountNumber: "Číslo účtu", address: "Adresa" },
+      pl: { paymentAccount: "Konto płatnicze", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Konto", bank: "Bank", bothAccounts: "Wszystkie konta", sortCode: "Kod oddziału", accountNumber: "Numer konta", address: "Adres" },
+      sv: { paymentAccount: "Betalningskonto", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Konto", bank: "Bank", bothAccounts: "Alla konton", sortCode: "Clearingnummer", accountNumber: "Kontonummer", address: "Adress" }
     };
     
     return translations[language] || translations.en;
@@ -94,9 +94,24 @@ export const PaymentInformation: React.FC<PaymentInformationProps> = ({
                       <strong>{paymentLabels.account}:</strong> {account.account}
                     </div>
                   )}
+                  {account.sortCode && (
+                    <div>
+                      <strong>{paymentLabels.sortCode}:</strong> {account.sortCode}
+                    </div>
+                  )}
+                  {account.accountNumber && (
+                    <div>
+                      <strong>{paymentLabels.accountNumber}:</strong> {account.accountNumber}
+                    </div>
+                  )}
                   {account.bank && (
                     <div className="col-span-2">
                       <strong>{paymentLabels.bank}:</strong> {account.bank}
+                    </div>
+                  )}
+                  {account.address && (
+                    <div className="col-span-2">
+                      <strong>{paymentLabels.address}:</strong> {account.address}
                     </div>
                   )}
                 </div>

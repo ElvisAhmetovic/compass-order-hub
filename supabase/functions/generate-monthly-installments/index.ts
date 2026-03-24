@@ -50,6 +50,7 @@ const COMPANY = {
 const BANK_ACCOUNTS = [
   { label: "Belgian Bank Account", iban: "BE79967023897833", bic: "TRWIBEB1XXX", blz: "967", account: "967023897833" },
   { label: "German Bank Account", iban: "DE91240703680071572200", bic: "DEUTDE2HP22", bank: "Postbank/DSL Ndl of Deutsche Bank" },
+  { label: "UK Bank Account (Wise)", iban: "GB73 TRWI 2314 7059 8496 33", sortCode: "23-14-70", accountNumber: "59849633", address: "56 Shoreditch High Street, London" },
 ];
 
 function formatPrice(amount: number, currency: string): string {
@@ -298,14 +299,28 @@ function generateInvoicePDF(
     doc.setFont("helvetica", "normal");
     doc.text(`IBAN: ${acc.iban}`, marginLeft + 5, y);
     y += 5;
-    doc.text(`BIC: ${acc.bic}`, marginLeft + 5, y);
-    y += 5;
+    if (acc.bic) {
+      doc.text(`BIC: ${acc.bic}`, marginLeft + 5, y);
+      y += 5;
+    }
     if (acc.bank) {
       doc.text(`Bank: ${acc.bank}`, marginLeft + 5, y);
       y += 5;
     }
     if (acc.blz) {
       doc.text(`BLZ: ${acc.blz} | Konto: ${acc.account}`, marginLeft + 5, y);
+      y += 5;
+    }
+    if (acc.sortCode) {
+      doc.text(`Sort Code: ${acc.sortCode}`, marginLeft + 5, y);
+      y += 5;
+    }
+    if (acc.accountNumber) {
+      doc.text(`Account Number: ${acc.accountNumber}`, marginLeft + 5, y);
+      y += 5;
+    }
+    if (acc.address) {
+      doc.text(`Address: ${acc.address}`, marginLeft + 5, y);
       y += 5;
     }
     y += 3;
