@@ -416,6 +416,24 @@ export class OrderService {
         throw error;
       }
 
+      // Clear reminders on linked invoices
+      try {
+        const { data: linkedInvoices } = await supabase
+          .from('invoices')
+          .select('id')
+          .eq('order_id', id);
+        
+        if (linkedInvoices?.length) {
+          await supabase
+            .from('invoices')
+            .update({ next_reminder_at: null })
+            .eq('order_id', id);
+          console.log(`Cleared reminders for ${linkedInvoices.length} linked invoice(s) on soft delete`);
+        }
+      } catch (reminderErr) {
+        console.error('Failed to clear invoice reminders on delete:', reminderErr);
+      }
+
       // Log soft deletion activity
       if (orderToDelete) {
         await this.logOrderActivity(id, 'Order Soft Deleted', `Order for ${orderToDelete.company_name} was moved to deleted items`);
@@ -709,6 +727,26 @@ export class OrderService {
     } catch (emailError) {
       console.error('Error sending status change notification:', emailError);
       // Don't block status update if email fails
+    }
+
+    // Clear linked invoice reminders when order is cancelled
+    if (status === "Cancelled" && enabled) {
+      try {
+        const { data: linkedInvoices } = await supabase
+          .from('invoices')
+          .select('id')
+          .eq('order_id', orderId);
+        
+        if (linkedInvoices?.length) {
+          await supabase
+            .from('invoices')
+            .update({ next_reminder_at: null })
+            .eq('order_id', orderId);
+          console.log(`Cleared reminders for ${linkedInvoices.length} linked invoice(s) on cancel`);
+        }
+      } catch (reminderErr) {
+        console.error('Failed to clear invoice reminders on cancel:', reminderErr);
+      }
     }
 
     // Sync linked invoice status when Invoice Paid/Sent changes, or auto-create if missing
