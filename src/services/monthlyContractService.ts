@@ -41,6 +41,7 @@ export interface MonthlyInstallment {
   client_name: string | null;
   client_email: string | null;
   website: string | null;
+  invoice_id: string | null;
   created_at: string;
   updated_at: string;
 }

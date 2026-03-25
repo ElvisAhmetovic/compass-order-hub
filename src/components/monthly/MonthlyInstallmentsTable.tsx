@@ -66,6 +66,7 @@ const MonthlyInstallmentsTable: React.FC<Props> = ({ contracts, installments, on
   const [creatingInvoiceIds, setCreatingInvoiceIds] = useState<Set<string>>(new Set());
   const [createdInvoices, setCreatedInvoices] = useState<Record<string, Invoice>>({});
   const [matchedClients, setMatchedClients] = useState<Record<string, Client>>({});
+  const [invoiceIdMap, setInvoiceIdMap] = useState<Record<string, string>>({});
 
   // Portal status
   const [portalStatuses, setPortalStatuses] = useState<Record<string, boolean>>({});
@@ -80,6 +81,15 @@ const MonthlyInstallmentsTable: React.FC<Props> = ({ contracts, installments, on
     client: Client | null;
     language: string;
   } | null>(null);
+
+  // Load existing invoice_id links from installments
+  useEffect(() => {
+    const map: Record<string, string> = {};
+    installments.forEach(inst => {
+      if (inst.invoice_id) map[inst.id] = inst.invoice_id;
+    });
+    setInvoiceIdMap(map);
+  }, [installments]);
 
   // Check portal statuses on mount/refresh
   useEffect(() => {
@@ -216,6 +226,17 @@ const MonthlyInstallmentsTable: React.FC<Props> = ({ contracts, installments, on
     setTogglingIds((prev) => new Set(prev).add(installment.id));
     try {
       await monthlyContractService.togglePaymentStatus(installment.id, newStatus);
+
+      // Sync linked invoice status
+      const linkedInvoiceId = invoiceIdMap[installment.id] || installment.invoice_id;
+      if (linkedInvoiceId) {
+        if (newStatus === "paid") {
+          await supabase.from('invoices').update({ status: 'paid', next_reminder_at: null }).eq('id', linkedInvoiceId);
+        } else {
+          await supabase.from('invoices').update({ status: 'sent', next_reminder_at: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString() }).eq('id', linkedInvoiceId);
+        }
+      }
+
       toast({ title: newStatus === "paid" ? "Marked as paid" : "Marked as unpaid" });
       sendToggleNotification(installment, "paid", newStatus === "paid");
       onRefresh();
@@ -231,6 +252,17 @@ const MonthlyInstallmentsTable: React.FC<Props> = ({ contracts, installments, on
     setTogglingEmailIds((prev) => new Set(prev).add(installment.id));
     try {
       await monthlyContractService.toggleEmailSent(installment.id, newStatus);
+
+      // Sync linked invoice status
+      const linkedInvoiceId = invoiceIdMap[installment.id] || installment.invoice_id;
+      if (linkedInvoiceId) {
+        if (newStatus) {
+          await supabase.from('invoices').update({ status: 'sent', next_reminder_at: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString() }).eq('id', linkedInvoiceId);
+        } else {
+          await supabase.from('invoices').update({ status: 'draft', next_reminder_at: null }).eq('id', linkedInvoiceId);
+        }
+      }
+
       toast({ title: newStatus ? "Marked as sent" : "Marked as not sent" });
       sendToggleNotification(installment, "invoice_sent", newStatus);
       onRefresh();

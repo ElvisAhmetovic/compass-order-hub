@@ -188,6 +188,15 @@ const SendMonthlyInvoiceDialog: React.FC<SendMonthlyInvoiceDialogProps> = ({
         })
         .eq('id', installment.id);
 
+      // Activate invoice + payment reminder countdown
+      await supabase
+        .from('invoices')
+        .update({
+          status: 'sent',
+          next_reminder_at: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(),
+        })
+        .eq('id', currentInvoice.id);
+
       // Fire-and-forget: send email in background
       supabase.functions.invoke("send-invoice-pdf", {
         body: {
