@@ -25,6 +25,7 @@ import { OrderService } from "@/services/orderService";
 import PaymentReminders from "@/components/invoices/PaymentReminders";
 import { formatCurrency } from "@/utils/currencyUtils";
 import InvoiceReminderHistory from "@/components/invoices/InvoiceReminderHistory";
+import { supabase } from "@/integrations/supabase/client";
 
 const INVOICE_STATUSES = [
   "draft",
@@ -149,6 +150,38 @@ const Invoices = () => {
         } catch (err) {
           console.error("Error syncing invoice status to order:", err);
         }
+      }
+
+      // Sync status to linked monthly installment
+      try {
+        const { data: linkedInstallment } = await supabase
+          .from('monthly_installments')
+          .select('id')
+          .eq('invoice_id', id)
+          .maybeSingle();
+
+        if (linkedInstallment) {
+          const installmentUpdate: Record<string, any> = {};
+          if (newStatus === 'paid') {
+            installmentUpdate.payment_status = 'paid';
+            installmentUpdate.paid_at = new Date().toISOString();
+          } else if (newStatus === 'sent') {
+            installmentUpdate.payment_status = 'unpaid';
+            installmentUpdate.paid_at = null;
+            installmentUpdate.email_sent = true;
+            installmentUpdate.email_sent_at = new Date().toISOString();
+          } else if (newStatus === 'draft' || newStatus === 'cancelled') {
+            installmentUpdate.payment_status = 'unpaid';
+            installmentUpdate.paid_at = null;
+            installmentUpdate.email_sent = false;
+            installmentUpdate.email_sent_at = null;
+          }
+          if (Object.keys(installmentUpdate).length > 0) {
+            await supabase.from('monthly_installments').update(installmentUpdate).eq('id', linkedInstallment.id);
+          }
+        }
+      } catch (err) {
+        console.error("Error syncing invoice status to monthly installment:", err);
       }
 
       toast({

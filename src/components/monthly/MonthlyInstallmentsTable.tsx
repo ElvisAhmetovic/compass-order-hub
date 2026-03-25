@@ -156,8 +156,15 @@ const MonthlyInstallmentsTable: React.FC<Props> = ({ contracts, installments, on
         }],
       });
 
+      // Persist the invoice_id link to the installment row
+      await supabase
+        .from('monthly_installments')
+        .update({ invoice_id: invoice.id })
+        .eq('id', inst.id);
+
       setCreatedInvoices(prev => ({ ...prev, [inst.id]: invoice }));
       setMatchedClients(prev => ({ ...prev, [inst.id]: matched }));
+      setInvoiceIdMap(prev => ({ ...prev, [inst.id]: invoice.id }));
 
       toast({
         title: "Invoice created",
