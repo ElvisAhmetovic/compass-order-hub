@@ -754,10 +754,11 @@ export class OrderService {
           }
           const updateData: Record<string, any> = { status: newInvoiceStatus };
           
-          if (newInvoiceStatus === 'paid') {
-            updateData.next_reminder_at = null;
-          } else if (newInvoiceStatus === 'sent') {
+          if (newInvoiceStatus === 'sent') {
             updateData.next_reminder_at = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
+          } else {
+            // Clear reminders for paid, draft, cancelled, refunded — anything non-sent
+            updateData.next_reminder_at = null;
           }
           
           await InvoiceService.updateInvoice(linkedInvoice.id, updateData);
@@ -830,6 +831,8 @@ export class OrderService {
           };
           if (invoiceStatus === 'sent') {
             invoiceUpdateData.next_reminder_at = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
+          } else {
+            invoiceUpdateData.next_reminder_at = null;
           }
           await InvoiceService.updateInvoice(newInvoice.id, invoiceUpdateData);
           

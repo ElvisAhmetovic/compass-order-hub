@@ -437,6 +437,13 @@ const handler = async (req: Request): Promise<Response> => {
           continue;
         }
 
+        // Skip reminders for deleted or cancelled orders
+        if (order.status_deleted || order.status_cancelled) {
+          console.log(`Skipping invoice ${invoice.invoice_number} - order is ${order.status_deleted ? 'deleted' : 'cancelled'}`);
+          await supabase.from("invoices").update({ next_reminder_at: null }).eq("id", invoice.id);
+          continue;
+        }
+
         const newReminderCount = (invoice.reminder_count || 0) + 1;
         const clientEmail = order.contact_email;
         const amount = formatPrice(invoice.total_amount, invoice.currency);
