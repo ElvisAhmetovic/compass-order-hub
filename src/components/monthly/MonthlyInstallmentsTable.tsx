@@ -423,7 +423,7 @@ const MonthlyInstallmentsTable: React.FC<Props> = ({ contracts, installments, on
                     {contractInstallments.map((inst) => {
                       const isPaid = inst.payment_status === "paid";
                       const isCreating = creatingInvoiceIds.has(inst.id);
-                      const hasInvoice = !!createdInvoices[inst.id];
+                      const hasInvoice = !!createdInvoices[inst.id] || !!invoiceIdMap[inst.id] || !!inst.invoice_id;
                       return (
                         <TableRow key={inst.id} className={cn(isPaid ? "bg-green-500/5 hover:bg-green-500/10" : "bg-red-500/5 hover:bg-red-500/10")}>
                           <TableCell className="font-medium">{inst.month_label}</TableCell>
@@ -453,7 +453,7 @@ const MonthlyInstallmentsTable: React.FC<Props> = ({ contracts, installments, on
                                       {isCreating ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
                                     </Button>
                                   </TooltipTrigger>
-                                  <TooltipContent>{hasInvoice ? `Invoice ${createdInvoices[inst.id].invoice_number} created` : `Create Invoice for ${inst.month_label}`}</TooltipContent>
+                                  <TooltipContent>{hasInvoice ? `Invoice linked` : `Create Invoice for ${inst.month_label}`}</TooltipContent>
                                 </Tooltip>
                               </TooltipProvider>
                               <TooltipProvider>
