@@ -1,49 +1,63 @@
 
 
-## Fix: Payment Reminder Sent After Invoice Marked as Paid
+## QA Audit: Ensure `next_reminder_at` Is Cleared on All Status Change Paths
 
-### Root Cause
-The database trigger `update_invoice_status_on_payment` changes the invoice status to 'paid' when a payment is recorded, but it does **NOT** clear the `next_reminder_at` field. While the cron function filters by `status IN ('sent', 'overdue')`, there's a timing gap: if the cron picks up the invoice in the same moment the payment is being processed, or if any other code path re-sets the status without clearing `next_reminder_at`, a reminder slips through.
+### Issues Found
 
-Additionally, the DB trigger is the only path that updates invoice status without clearing `next_reminder_at` — all other paths (Invoices page, OrderService sync) properly set it to `null` on 'paid'.
+**Issue 1 — `orderService.ts` line 755: `draft` status doesn't clear `next_reminder_at`**
+When "Invoice Paid" is toggled OFF and "Invoice Sent" is also off, the invoice goes to `draft` — but `next_reminder_at` is NOT set to null. This means a previously-scheduled reminder could still fire for a draft invoice.
 
-### Fix (2 changes)
+**Issue 2 — `orderService.ts` line 826: auto-created invoice with `paid` status doesn't clear `next_reminder_at`**
+When toggling "Invoice Paid" ON and no invoice exists, a new invoice is auto-created with status `paid`, but `next_reminder_at` is only set for `sent` — not explicitly nulled for `paid`. While a new invoice won't have `next_reminder_at` set, being explicit is safer for future-proofing.
 
-**1. Database migration — Update `update_invoice_status_on_payment` trigger function**
-Add `next_reminder_at = NULL` when status becomes 'paid' or 'partially_paid' (neither should receive automated reminders):
+**Issue 3 — Edge function doesn't clear `next_reminder_at` for invoices with deleted/cancelled orders**
+If an order is soft-deleted (`status_deleted = true`) or cancelled (`status_cancelled = true`), the edge function still sends reminders for linked invoices. It should skip these.
 
-```sql
-UPDATE public.invoices
-SET 
-  status = CASE 
-    WHEN total_paid >= invoice_total THEN 'paid'
-    WHEN total_paid > 0 AND total_paid < invoice_total THEN 'partially_paid'
-    ELSE status
-  END,
-  next_reminder_at = CASE 
-    WHEN total_paid >= invoice_total THEN NULL
-    ELSE next_reminder_at
-  END,
-  updated_at = NOW()
-WHERE id = NEW.invoice_id;
+### Fixes (2 files)
+
+**1. `src/services/orderService.ts`** — 2 changes
+
+Change at line 755-761: Handle `draft` and any non-active status by clearing `next_reminder_at`:
+```typescript
+const updateData: Record<string, any> = { status: newInvoiceStatus };
+
+if (newInvoiceStatus === 'sent') {
+  updateData.next_reminder_at = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
+} else {
+  // Clear reminders for paid, draft, cancelled, refunded — anything non-sent
+  updateData.next_reminder_at = null;
+}
 ```
 
-**2. Edge function safety check — `send-invoice-payment-reminders/index.ts`**
-Add a re-fetch check before sending each reminder to confirm the invoice is still 'sent'/'overdue' (guards against race conditions):
-
+Same pattern at line 827-833 for auto-created invoices:
 ```typescript
-// Before sending, re-verify status hasn't changed
-const { data: freshInvoice } = await supabase
-  .from("invoices")
-  .select("status")
-  .eq("id", invoice.id)
-  .single();
+if (invoiceStatus === 'sent') {
+  invoiceUpdateData.next_reminder_at = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
+} else {
+  invoiceUpdateData.next_reminder_at = null;
+}
+```
 
-if (!freshInvoice || !['sent', 'overdue'].includes(freshInvoice.status)) {
-  console.log(`Skipping invoice ${invoice.invoice_number} - status changed to ${freshInvoice?.status}`);
+**2. `supabase/functions/send-invoice-payment-reminders/index.ts`** — 1 change
+
+After fetching the order (line ~435), add a check to skip deleted or cancelled orders:
+```typescript
+if (orderError || !order) {
+  console.log(`Skipping invoice ${invoice.invoice_number} - order not found`);
+  continue;
+}
+
+// Skip reminders for deleted or cancelled orders
+if (order.status_deleted || order.status_cancelled) {
+  console.log(`Skipping invoice ${invoice.invoice_number} - order is ${order.status_deleted ? 'deleted' : 'cancelled'}`);
+  // Clear the reminder so it doesn't keep getting picked up
+  await supabase.from("invoices").update({ next_reminder_at: null }).eq("id", invoice.id);
   continue;
 }
 ```
 
-This double-guard ensures no reminder is ever sent for a paid/cancelled invoice, regardless of how the status was changed.
+### Summary
+- 3 gaps found across 2 files
+- All paths now use the pattern: only `sent`/`overdue` get reminders scheduled; everything else clears `next_reminder_at` to null
+- Edge function additionally guards against deleted/cancelled orders
 
