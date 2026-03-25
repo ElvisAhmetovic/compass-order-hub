@@ -143,7 +143,7 @@ const TechSupport = () => {
       <Layout userRole={userRole}>
         <div className="flex min-h-screen">
           <Sidebar />
-          <div className="flex-1 p-6">Loading tech support tickets...</div>
+          <div className="flex-1 flex p-6">Loading tech support tickets...</div>
         </div>
       </Layout>
     );
@@ -153,7 +153,7 @@ const TechSupport = () => {
     <Layout userRole={userRole}>
       <div className="flex min-h-screen">
         <Sidebar />
-        <div className="flex-1 p-6 space-y-6">
+        <div className="flex-1 flex p-6 space-y-6">
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Tech Support</h1>

@@ -20,7 +20,7 @@ const TeamCollaboration = () => {
     return (
       <div className="flex min-h-screen">
         <Sidebar />
-        <div className="flex-1">
+        <div className="flex-1 flex">
           <Layout userRole="user">
             <div className="flex justify-center items-center h-64">
               <p className="text-muted-foreground">Please log in to access team collaboration.</p>
@@ -34,7 +34,7 @@ const TeamCollaboration = () => {
   return (
     <div className="flex min-h-screen">
       <Sidebar />
-      <div className="flex-1">
+      <div className="flex-1 flex">
         <Layout userRole={user.role}>
           <div className="space-y-6">
             <SmartAlerts />
