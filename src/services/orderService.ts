@@ -790,17 +790,41 @@ export class OrderService {
             const orderAfter = await this.getOrder(orderId);
             newInvoiceStatus = orderAfter?.status_invoice_paid ? "paid" : "draft";
           }
-          const updateData: Record<string, any> = { status: newInvoiceStatus };
+          const updateData: Record<string, any> = { 
+            status: newInvoiceStatus,
+            updated_at: new Date().toISOString()
+          };
           
           if (newInvoiceStatus === 'sent') {
             updateData.next_reminder_at = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
           } else {
-            // Clear reminders for paid, draft, cancelled, refunded — anything non-sent
             updateData.next_reminder_at = null;
           }
           
-          await InvoiceService.updateInvoice(linkedInvoice.id, updateData);
-          console.log(`📄 Synced invoice ${linkedInvoice.invoice_number} status to "${newInvoiceStatus}"`);
+          console.log(`📄 Updating invoice ${linkedInvoice.id} (${linkedInvoice.invoice_number}) to status "${newInvoiceStatus}"`, updateData);
+
+          const { data: updateResult, error: invoiceUpdateError } = await supabase
+            .from('invoices')
+            .update(updateData)
+            .eq('id', linkedInvoice.id)
+            .select('id, status, next_reminder_at');
+
+          if (invoiceUpdateError) {
+            console.error('📄 Invoice update error:', invoiceUpdateError);
+          } else if (!updateResult?.length) {
+            console.warn('📄 Invoice update returned no rows — retrying without .select()...');
+            const { error: retryError } = await supabase
+              .from('invoices')
+              .update(updateData)
+              .eq('id', linkedInvoice.id);
+            if (retryError) {
+              console.error('📄 Invoice update retry failed:', retryError);
+            } else {
+              console.log('📄 Invoice update retry succeeded');
+            }
+          } else {
+            console.log(`📄 Synced invoice ${linkedInvoice.invoice_number} to "${updateResult[0].status}"`);
+          }
           invoiceSyncResult = { invoiceSynced: true, invoiceAction: 'updated', invoiceNumber: linkedInvoice.invoice_number };
         } else if (enabled) {
           console.log(`📄 No linked invoice found for order ${orderId}, auto-creating...`);
@@ -872,9 +896,20 @@ export class OrderService {
           } else {
             invoiceUpdateData.next_reminder_at = null;
           }
-          await InvoiceService.updateInvoice(newInvoice.id, invoiceUpdateData);
+          console.log(`📄 Linking & updating new invoice ${newInvoice.id} with`, invoiceUpdateData);
+          const { data: createUpdateResult, error: createUpdateError } = await supabase
+            .from('invoices')
+            .update(invoiceUpdateData)
+            .eq('id', newInvoice.id)
+            .select('id, status');
           
-          console.log(`📄 Auto-created invoice ${newInvoice.invoice_number} for order ${orderId}, status: ${invoiceStatus}`);
+          if (createUpdateError) {
+            console.error('📄 New invoice update error:', createUpdateError);
+            // Fallback without .select()
+            await supabase.from('invoices').update(invoiceUpdateData).eq('id', newInvoice.id);
+          } else {
+            console.log(`📄 Auto-created invoice ${newInvoice.invoice_number} for order ${orderId}, status: ${createUpdateResult?.[0]?.status || invoiceStatus}`);
+          }
           invoiceSyncResult = { invoiceSynced: true, invoiceAction: 'created', invoiceNumber: newInvoice.invoice_number };
         }
       } catch (invoiceSyncError) {
