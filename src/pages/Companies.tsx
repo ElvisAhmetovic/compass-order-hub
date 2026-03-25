@@ -314,7 +314,7 @@ const Companies = () => {
   return (
     <div className="flex min-h-screen">
       <Sidebar />
-      <div className="flex-1">
+      <div className="flex-1 flex">
         <Layout userRole={user?.role || "user"}>
           <div className="space-y-6">
             <div className="flex items-center justify-between">

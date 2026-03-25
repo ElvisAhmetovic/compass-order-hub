@@ -48,7 +48,7 @@ const Facebook = () => {
     return (
       <div className="flex min-h-screen">
         <Sidebar />
-        <div className="flex-1">
+        <div className="flex-1 flex">
           <Layout userRole={userRole}>
             <div className="flex justify-center items-center h-64">
               <p className="text-muted-foreground">Please log in to access Facebook orders.</p>
@@ -62,7 +62,7 @@ const Facebook = () => {
   return (
     <div className="flex min-h-screen">
       <Sidebar />
-      <div className="flex-1">
+      <div className="flex-1 flex">
         <Layout userRole={userRole}>
           <div className="space-y-6">
             <DashboardHeader 

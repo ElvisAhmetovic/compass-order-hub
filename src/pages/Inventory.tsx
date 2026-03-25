@@ -196,7 +196,7 @@ const Inventory = () => {
     return (
       <div className="flex min-h-screen">
         <Sidebar />
-        <div className="flex-1">
+        <div className="flex-1 flex">
           <Layout userRole={"user"}>
             <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
               <div className="text-center">
@@ -214,7 +214,7 @@ const Inventory = () => {
     return (
       <div className="flex min-h-screen">
         <Sidebar />
-        <div className="flex-1">
+        <div className="flex-1 flex">
           <Layout userRole={"admin"}>
             <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
               <div className="text-center">
@@ -230,7 +230,7 @@ const Inventory = () => {
   return (
     <div className="flex min-h-screen">
       <Sidebar />
-      <div className="flex-1">
+      <div className="flex-1 flex">
         <Layout userRole={"admin"}>
           <div className="space-y-6">
             {/* Header */}

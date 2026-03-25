@@ -70,7 +70,7 @@ const MonthlyPackages: React.FC = () => {
   return (
     <div className="flex min-h-screen">
       <Sidebar />
-      <div className="flex-1">
+      <div className="flex-1 flex">
         <Layout>
           <div className="space-y-6">
             <div className="flex items-center justify-between">

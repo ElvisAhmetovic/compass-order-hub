@@ -118,7 +118,7 @@ const Clients = () => {
   return (
     <div className="flex min-h-screen">
       <Sidebar />
-      <div className="flex-1">
+      <div className="flex-1 flex">
         <Layout userRole={user?.role || "user"}>
           <div className="container mx-auto py-8">
             <div className="flex justify-between items-center mb-6">

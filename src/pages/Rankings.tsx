@@ -49,7 +49,7 @@ const Rankings = () => {
   return (
     <div className="flex min-h-screen">
       <Sidebar />
-      <div className="flex-1">
+      <div className="flex-1 flex">
         <Layout>
           <div className="container mx-auto p-6 space-y-6">
         {/* Header */}
