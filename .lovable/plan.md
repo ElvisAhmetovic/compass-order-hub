@@ -1,29 +1,20 @@
 
 
-## Add VAT Toggle & Percentage to Create Order Modal
+## Exclude UK Account from "All Accounts" Option
 
 ### What Changes
-Add a VAT enable/disable switch and a VAT percentage input field next to the price/currency row in the Create Order modal. When enabled, the calculated total (price + VAT) will be shown below.
+The "All Accounts" dropdown option currently includes all 3 bank accounts (Belgian, German, UK). Change it so "All Accounts" only includes Belgian + German. The UK account remains selectable individually.
 
-### Files to Change
+### Files to Change (4 files)
 
-**`src/components/dashboard/CreateOrderModal.tsx`**
-- Add `vatEnabled` and `vatPercentage` state variables (default: disabled, 20%)
-- Add a new row below the price/currency grid with:
-  - A Switch toggle to enable/disable VAT
-  - A number input for VAT % (only visible when enabled)
-  - A calculated display showing: net price, VAT amount, and total
-- Reset `vatEnabled`/`vatPercentage` when modal opens or form resets
-- No schema changes needed — these are local UI state, not persisted to DB (VAT is informational for the order creator)
+**1. `src/components/invoices/components/PaymentInformation.tsx`**
+- Change `selectedAccounts` logic: when `"both"`, filter to only Belgium + Germany (exclude UK)
 
-### Layout
-The price section currently has a 2-column grid (Price | Currency). Below it, a new section will appear:
+**2. `src/components/invoices/InvoicePreview.tsx`**
+- Change `selectedAccounts` for `"both"`: only include `belgiumAccount` and `germanyAccount` (remove `ukAccount`)
 
-```text
-[Price] [Currency]
-[VAT Toggle: Enable VAT] [VAT %: 20]
-Net: €100.00 | VAT (20%): €20.00 | Total: €120.00
-```
+**3. `src/utils/invoicePdfGenerator.ts`**
+- Same change: `"both"` selection only includes Belgian + German accounts in PDF output
 
-The VAT % input and calculation only show when the toggle is ON.
+**4. Edge functions** — no change needed since the email templates list all 3 accounts independently (they don't use the "both" selection logic)
 
