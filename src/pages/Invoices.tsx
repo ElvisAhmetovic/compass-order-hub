@@ -112,6 +112,36 @@ const Invoices = () => {
     navigate("/invoices/new");
   };
 
+  const handleToggleRemindersPaused = async (invoice: Invoice) => {
+    const newPaused = !invoice.reminders_paused;
+    try {
+      const { error } = await supabase
+        .from('invoices')
+        .update({ reminders_paused: newPaused })
+        .eq('id', invoice.id);
+      
+      if (error) throw error;
+      
+      setInvoices(prev => prev.map(inv => 
+        inv.id === invoice.id ? { ...inv, reminders_paused: newPaused } : inv
+      ));
+      
+      toast({
+        title: newPaused ? "Reminders paused" : "Reminders resumed",
+        description: newPaused 
+          ? `Automated reminders paused for ${invoice.invoice_number}` 
+          : `Automated reminders resumed for ${invoice.invoice_number}`,
+      });
+    } catch (error) {
+      console.error("Error toggling reminders:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update reminder settings.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleUpdateStatus = async (id: string, newStatus: string) => {
     try {
       // Create update data with status + reminder scheduling
