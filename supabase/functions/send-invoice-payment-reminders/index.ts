@@ -399,6 +399,18 @@ const handler = async (req: Request): Promise<Response> => {
 
     for (const invoice of dueInvoices) {
       try {
+        // Re-verify invoice status hasn't changed (guards against race conditions with payment processing)
+        const { data: freshInvoice } = await supabase
+          .from("invoices")
+          .select("status")
+          .eq("id", invoice.id)
+          .single();
+
+        if (!freshInvoice || !['sent', 'overdue'].includes(freshInvoice.status)) {
+          console.log(`Skipping invoice ${invoice.invoice_number} - status changed to ${freshInvoice?.status}`);
+          continue;
+        }
+
         // Get order ID from direct column link, fall back to regex in notes
         let orderId = invoice.order_id;
         if (!orderId) {
