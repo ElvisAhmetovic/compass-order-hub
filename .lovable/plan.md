@@ -1,63 +1,62 @@
 
 
-## QA Audit: Ensure `next_reminder_at` Is Cleared on All Status Change Paths
+## QA Audit Results: Cross-System Payment Reminder & Invoice Sync
 
 ### Issues Found
 
-**Issue 1 — `orderService.ts` line 755: `draft` status doesn't clear `next_reminder_at`**
-When "Invoice Paid" is toggled OFF and "Invoice Sent" is also off, the invoice goes to `draft` — but `next_reminder_at` is NOT set to null. This means a previously-scheduled reminder could still fire for a draft invoice.
+**Issue 1 — Invoices page: `draft` status does NOT clear `next_reminder_at`**
+File: `src/pages/Invoices.tsx` line 121. The `handleUpdateStatus` function only clears `next_reminder_at` for `paid`, `cancelled`, `refunded`. If a user changes an invoice back to `draft` from the Invoices page, the reminder timestamp remains set and the cron will still pick it up. The edge function's fresh-status check will catch it, but the intent should be explicit.
 
-**Issue 2 — `orderService.ts` line 826: auto-created invoice with `paid` status doesn't clear `next_reminder_at`**
-When toggling "Invoice Paid" ON and no invoice exists, a new invoice is auto-created with status `paid`, but `next_reminder_at` is only set for `sent` — not explicitly nulled for `paid`. While a new invoice won't have `next_reminder_at` set, being explicit is safer for future-proofing.
+**Issue 2 — Invoices page: `partially_paid` is not handled**
+Same location. `partially_paid` invoices keep their `next_reminder_at`. The DB trigger already clears it for `partially_paid`, but if someone manually sets the status to `partially_paid` from the dropdown (not via a payment record), the reminder stays active. Should be consistent.
 
-**Issue 3 — Edge function doesn't clear `next_reminder_at` for invoices with deleted/cancelled orders**
-If an order is soft-deleted (`status_deleted = true`) or cancelled (`status_cancelled = true`), the edge function still sends reminders for linked invoices. It should skip these.
+**Issue 3 — `soft_delete_order` DB function does NOT clear linked invoice reminders**
+The `soft_delete_order()` PL/pgSQL function only sets `status_deleted = true` and `deleted_at = now()`. It does not touch the linked invoice's `next_reminder_at`. The edge function guard we added will catch this at send time, but ideally the reminder should be cleared immediately on deletion to keep data clean.
 
-### Fixes (2 files)
+**Issue 4 — Invoices page syncs back to order, which syncs back to invoice (double-write)**
+When the Invoices page changes status to `paid` (line 144), it calls `OrderService.toggleOrderStatus(orderId, "Invoice Paid", true)`, which then finds the linked invoice and updates its status to `paid` again — a redundant write. Not a bug per se, but wasteful and could cause subtle timing issues.
 
-**1. `src/services/orderService.ts`** — 2 changes
+### Fixes
 
-Change at line 755-761: Handle `draft` and any non-active status by clearing `next_reminder_at`:
+**1. `src/pages/Invoices.tsx`** — Expand reminder clearing to cover `draft` and `partially_paid`
+
+Change line 121:
 ```typescript
-const updateData: Record<string, any> = { status: newInvoiceStatus };
-
-if (newInvoiceStatus === 'sent') {
-  updateData.next_reminder_at = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
-} else {
-  // Clear reminders for paid, draft, cancelled, refunded — anything non-sent
+if (['paid', 'cancelled', 'refunded', 'draft', 'partially_paid'].includes(newStatus)) {
   updateData.next_reminder_at = null;
 }
 ```
 
-Same pattern at line 827-833 for auto-created invoices:
+**2. `src/services/orderService.ts`** — Clear linked invoice reminders on soft delete
+
+After the `soft_delete_order` RPC call succeeds (around line 417), add:
 ```typescript
-if (invoiceStatus === 'sent') {
-  invoiceUpdateData.next_reminder_at = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
-} else {
-  invoiceUpdateData.next_reminder_at = null;
+// Clear reminders on linked invoices
+try {
+  const { data: linkedInvoices } = await supabase
+    .from('invoices')
+    .select('id')
+    .eq('order_id', id);
+  
+  if (linkedInvoices?.length) {
+    await supabase
+      .from('invoices')
+      .update({ next_reminder_at: null })
+      .eq('order_id', id);
+    console.log(`Cleared reminders for ${linkedInvoices.length} linked invoice(s)`);
+  }
+} catch (err) {
+  console.error('Failed to clear invoice reminders on delete:', err);
 }
 ```
 
-**2. `supabase/functions/send-invoice-payment-reminders/index.ts`** — 1 change
+Same pattern added to the cancel path in `toggleOrderStatus` — when `status === "Cancelled"` and `enabled === true`, clear linked invoice reminders.
 
-After fetching the order (line ~435), add a check to skip deleted or cancelled orders:
-```typescript
-if (orderError || !order) {
-  console.log(`Skipping invoice ${invoice.invoice_number} - order not found`);
-  continue;
-}
-
-// Skip reminders for deleted or cancelled orders
-if (order.status_deleted || order.status_cancelled) {
-  console.log(`Skipping invoice ${invoice.invoice_number} - order is ${order.status_deleted ? 'deleted' : 'cancelled'}`);
-  // Clear the reminder so it doesn't keep getting picked up
-  await supabase.from("invoices").update({ next_reminder_at: null }).eq("id", invoice.id);
-  continue;
-}
-```
+**3. No changes needed for the double-write issue** — it's harmless (idempotent) and adding skip logic would add complexity without real benefit. The fresh-status check in the edge function is the proper safeguard.
 
 ### Summary
-- 3 gaps found across 2 files
-- All paths now use the pattern: only `sent`/`overdue` get reminders scheduled; everything else clears `next_reminder_at` to null
-- Edge function additionally guards against deleted/cancelled orders
+- 2 code files to update
+- Invoices page now consistently clears reminders for all non-active statuses
+- Soft-deleting or cancelling an order immediately clears linked invoice reminders (rather than waiting for the edge function to catch it)
+- Edge function guards remain as the final safety net
 
