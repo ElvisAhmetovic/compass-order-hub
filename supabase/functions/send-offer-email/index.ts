@@ -180,6 +180,53 @@ serve(async (req) => {
 
     console.log('Offer email sent successfully to:', clientEmail);
 
+    // Fire-and-forget: send exact same email to team members in batches
+    const teamEmails = [
+      'angelina@abmedia-team.com',
+      'service@team-abmedia.com',
+      'thomas.thomasklein@gmail.com',
+      'kleinabmedia@gmail.com',
+      'jungabmedia@gmail.com',
+      'wolfabmedia@gmail.com',
+      'marcusabmedia@gmail.com',
+      'paulkatz.abmedia@gmail.com',
+      'ajosesales36@gmail.com',
+      'georgabmediateam@gmail.com',
+      'jannes@scoolfinanceedu.com',
+      'johan@team-abmedia.com'
+    ];
+
+    const teamSubject = `[Team Copy] Your Offer from AB Media Team – ${companyName}`;
+
+    (async () => {
+      try {
+        for (let i = 0; i < teamEmails.length; i += 2) {
+          const batch = teamEmails.slice(i, i + 2);
+          await Promise.all(batch.map(email =>
+            fetch('https://api.resend.com/emails', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${RESEND_API_KEY}`,
+              },
+              body: JSON.stringify({
+                from: 'AB Media Team <noreply@abm-team.com>',
+                to: [email],
+                subject: teamSubject,
+                html,
+              }),
+            })
+          ));
+          if (i + 2 < teamEmails.length) {
+            await new Promise(r => setTimeout(r, 1000));
+          }
+        }
+        console.log('Team copy emails sent successfully');
+      } catch (err) {
+        console.error('Error sending team copy emails:', err);
+      }
+    })();
+
     return new Response(JSON.stringify({ success: true, id: result.id }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
