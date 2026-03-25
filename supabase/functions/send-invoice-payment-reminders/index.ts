@@ -417,49 +417,54 @@ const handler = async (req: Request): Promise<Response> => {
           const orderIdMatch = invoice.notes?.match(/Order ID: ([a-f0-9-]+)/);
           orderId = orderIdMatch?.[1] || null;
         }
-        if (!orderId) {
-          console.log(`Skipping invoice ${invoice.invoice_number} - no linked order ID`);
-          await supabase.from("invoices").update({
-            next_reminder_at: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
-          }).eq("id", invoice.id);
-          continue;
-        }
 
-        // Fetch order details
-        const { data: order, error: orderError } = await supabase
-          .from("orders")
-          .select("*")
-          .eq("id", orderId)
-          .single();
+        let order: any = null;
+        let clientEmail: string | null = null;
+        let detectedLanguage = "en";
 
-        if (orderError || !order) {
-          console.log(`Skipping invoice ${invoice.invoice_number} - order not found: ${orderId}`);
-          continue;
-        }
+        if (orderId) {
+          // Fetch order details
+          const { data: orderData, error: orderError } = await supabase
+            .from("orders")
+            .select("*")
+            .eq("id", orderId)
+            .single();
 
-        // Skip reminders for deleted or cancelled orders
-        if (order.status_deleted || order.status_cancelled) {
-          console.log(`Skipping invoice ${invoice.invoice_number} - order is ${order.status_deleted ? 'deleted' : 'cancelled'}`);
-          await supabase.from("invoices").update({ next_reminder_at: null }).eq("id", invoice.id);
-          continue;
+          if (orderError || !orderData) {
+            console.log(`Skipping invoice ${invoice.invoice_number} - order not found: ${orderId}`);
+            continue;
+          }
+
+          // Skip reminders for deleted or cancelled orders
+          if (orderData.status_deleted || orderData.status_cancelled) {
+            console.log(`Skipping invoice ${invoice.invoice_number} - order is ${orderData.status_deleted ? 'deleted' : 'cancelled'}`);
+            await supabase.from("invoices").update({ next_reminder_at: null }).eq("id", invoice.id);
+            continue;
+          }
+
+          order = orderData;
+          clientEmail = order.contact_email;
+          detectedLanguage = detectLanguageFromAddress(order.company_address);
+        } else {
+          // Monthly invoice (no order_id) — get client info from the invoice's client record
+          console.log(`Invoice ${invoice.invoice_number}: no order_id, treating as monthly invoice`);
+          clientEmail = invoice.client?.email || null;
+          // Try to detect language from client address
+          detectedLanguage = detectLanguageFromAddress(invoice.client?.address || null);
         }
 
         const newReminderCount = (invoice.reminder_count || 0) + 1;
-        const clientEmail = order.contact_email;
         const amount = formatPrice(invoice.total_amount, invoice.currency);
-
-        // Detect language from the client's address
-        const detectedLanguage = detectLanguageFromAddress(order.company_address);
         const t = getTranslations(detectedLanguage);
-        console.log(`Invoice ${invoice.invoice_number}: detected language '${detectedLanguage}' from address '${order.company_address}'`);
+        console.log(`Invoice ${invoice.invoice_number}: detected language '${detectedLanguage}'`);
 
         const emailData = {
-          clientName: order.contact_name || order.company_name,
-          clientEmail: order.contact_email || '',
-          clientPhone: order.contact_phone || '',
-          companyAddress: order.company_address || '',
-          companyName: order.company_name,
-          description: order.description || '',
+          clientName: order?.contact_name || order?.company_name || invoice.client?.contact_person || invoice.client?.name || 'Client',
+          clientEmail: clientEmail || '',
+          clientPhone: order?.contact_phone || invoice.client?.phone || '',
+          companyAddress: order?.company_address || invoice.client?.address || '',
+          companyName: order?.company_name || invoice.client?.name || 'Unknown',
+          description: order?.description || invoice.notes || '',
           invoiceNumber: invoice.invoice_number,
           amount,
           reminderNumber: newReminderCount,
@@ -489,12 +494,13 @@ const handler = async (req: Request): Promise<Response> => {
 
         // Send to team members — always in English
         let teamEmailsSent = 0;
+        const companyNameForSubject = order?.company_name || invoice.client?.name || 'Unknown';
         for (const email of TEAM_EMAILS) {
           try {
             await resend.emails.send({
               from: "AB Media Team <noreply@abm-team.com>",
               to: [email],
-              subject: `💰 Payment Reminder #${newReminderCount}: ${order.company_name} - Invoice ${invoice.invoice_number} - ${amount}`,
+              subject: `💰 Payment Reminder #${newReminderCount}: ${companyNameForSubject} - Invoice ${invoice.invoice_number} - ${amount}`,
               html: buildReminderEmailHtml({ ...emailData, isClientEmail: false }),
             });
             teamEmailsSent++;
@@ -517,7 +523,7 @@ const handler = async (req: Request): Promise<Response> => {
         // Log the reminder
         await supabase.from("invoice_payment_reminders").insert({
           invoice_id: invoice.id,
-          order_id: orderId,
+          order_id: orderId || invoice.id,
           reminder_number: newReminderCount,
           sent_to_client: clientEmail || null,
           sent_to_team: true,
