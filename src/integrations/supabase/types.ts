@@ -891,6 +891,7 @@ export type Database = {
           payment_terms: string | null
           proposal_id: string | null
           reminder_count: number
+          reminders_paused: boolean
           status: string
           total_amount: number
           updated_at: string
@@ -914,6 +915,7 @@ export type Database = {
           payment_terms?: string | null
           proposal_id?: string | null
           reminder_count?: number
+          reminders_paused?: boolean
           status?: string
           total_amount?: number
           updated_at?: string
@@ -937,6 +939,7 @@ export type Database = {
           payment_terms?: string | null
           proposal_id?: string | null
           reminder_count?: number
+          reminders_paused?: boolean
           status?: string
           total_amount?: number
           updated_at?: string
