@@ -435,17 +435,27 @@ const Invoices = () => {
                           <TableHead>Due Date</TableHead>
                           <TableHead>Amount</TableHead>
                           <TableHead>Status</TableHead>
+                          <TableHead className="w-[50px]">
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span className="flex items-center justify-center"><Bell size={14} /></span>
+                                </TooltipTrigger>
+                                <TooltipContent>Auto Reminders</TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </TableHead>
                           <TableHead className="w-[120px]">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {loading ? (
                           <TableRow>
-                            <TableCell colSpan={7} className="text-center py-8">Loading invoices...</TableCell>
+                           <TableCell colSpan={8} className="text-center py-8">Loading invoices...</TableCell>
                           </TableRow>
                         ) : sortedInvoices.length === 0 ? (
                           <TableRow>
-                            <TableCell colSpan={7} className="text-center py-8">No invoices found</TableCell>
+                            <TableCell colSpan={8} className="text-center py-8">No invoices found</TableCell>
                           </TableRow>
                         ) : (
                           sortedInvoices.map((invoice) => (
