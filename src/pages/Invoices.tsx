@@ -118,7 +118,7 @@ const Invoices = () => {
       };
       
       // Auto-manage reminder scheduling based on status
-      if (newStatus === 'paid' || newStatus === 'cancelled' || newStatus === 'refunded') {
+      if (['paid', 'cancelled', 'refunded', 'draft', 'partially_paid'].includes(newStatus)) {
         updateData.next_reminder_at = null; // Stop reminders
       } else if (newStatus === 'sent' || newStatus === 'overdue') {
         // Only set next_reminder_at if not already set
