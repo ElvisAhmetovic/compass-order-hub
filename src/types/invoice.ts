@@ -39,6 +39,7 @@ export interface Invoice {
   next_reminder_at?: string | null;
   last_reminder_sent_at?: string | null;
   client?: Client;
+  reminders_paused?: boolean;
 }
 
 export interface InvoiceLineItem {

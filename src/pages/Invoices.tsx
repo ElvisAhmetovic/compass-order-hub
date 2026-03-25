@@ -9,7 +9,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { PlusCircle, FileEdit, Trash2, Download, File, CheckCircle2, XCircle, Send, Eye, Receipt, ArrowUpDown, Bell } from "lucide-react";
+import { PlusCircle, FileEdit, Trash2, Download, File, CheckCircle2, XCircle, Send, Eye, Receipt, ArrowUpDown, Bell, BellOff } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
@@ -109,6 +110,36 @@ const Invoices = () => {
 
   const handleCreateInvoice = () => {
     navigate("/invoices/new");
+  };
+
+  const handleToggleRemindersPaused = async (invoice: Invoice) => {
+    const newPaused = !invoice.reminders_paused;
+    try {
+      const { error } = await supabase
+        .from('invoices')
+        .update({ reminders_paused: newPaused })
+        .eq('id', invoice.id);
+      
+      if (error) throw error;
+      
+      setInvoices(prev => prev.map(inv => 
+        inv.id === invoice.id ? { ...inv, reminders_paused: newPaused } : inv
+      ));
+      
+      toast({
+        title: newPaused ? "Reminders paused" : "Reminders resumed",
+        description: newPaused 
+          ? `Automated reminders paused for ${invoice.invoice_number}` 
+          : `Automated reminders resumed for ${invoice.invoice_number}`,
+      });
+    } catch (error) {
+      console.error("Error toggling reminders:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update reminder settings.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleUpdateStatus = async (id: string, newStatus: string) => {
@@ -404,17 +435,27 @@ const Invoices = () => {
                           <TableHead>Due Date</TableHead>
                           <TableHead>Amount</TableHead>
                           <TableHead>Status</TableHead>
+                          <TableHead className="w-[50px]">
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span className="flex items-center justify-center"><Bell size={14} /></span>
+                                </TooltipTrigger>
+                                <TooltipContent>Auto Reminders</TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </TableHead>
                           <TableHead className="w-[120px]">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {loading ? (
                           <TableRow>
-                            <TableCell colSpan={7} className="text-center py-8">Loading invoices...</TableCell>
+                           <TableCell colSpan={8} className="text-center py-8">Loading invoices...</TableCell>
                           </TableRow>
                         ) : sortedInvoices.length === 0 ? (
                           <TableRow>
-                            <TableCell colSpan={7} className="text-center py-8">No invoices found</TableCell>
+                            <TableCell colSpan={8} className="text-center py-8">No invoices found</TableCell>
                           </TableRow>
                         ) : (
                           sortedInvoices.map((invoice) => (
@@ -466,6 +507,30 @@ const Invoices = () => {
                                     ))}
                                   </DropdownMenuContent>
                                 </DropdownMenu>
+                              </TableCell>
+                              <TableCell>
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8"
+                                        onClick={() => handleToggleRemindersPaused(invoice)}
+                                        title={invoice.reminders_paused ? "Reminders paused – click to resume" : "Reminders active – click to pause"}
+                                      >
+                                        {invoice.reminders_paused ? (
+                                          <BellOff size={16} className="text-muted-foreground" />
+                                        ) : (
+                                          <Bell size={16} className="text-primary" />
+                                        )}
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      {invoice.reminders_paused ? "Reminders paused – click to resume" : "Reminders active – click to pause"}
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
                               </TableCell>
                               <TableCell>
                                 <div className="flex space-x-1">

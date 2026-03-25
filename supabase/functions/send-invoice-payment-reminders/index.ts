@@ -399,15 +399,26 @@ const handler = async (req: Request): Promise<Response> => {
 
     for (const invoice of dueInvoices) {
       try {
+        // Skip invoices where reminders have been manually paused
+        if (invoice.reminders_paused) {
+          console.log(`Skipping invoice ${invoice.invoice_number} - reminders manually paused`);
+          continue;
+        }
+
         // Re-verify invoice status hasn't changed (guards against race conditions with payment processing)
         const { data: freshInvoice } = await supabase
           .from("invoices")
-          .select("status")
+          .select("status, reminders_paused")
           .eq("id", invoice.id)
           .single();
 
         if (!freshInvoice || !['sent', 'overdue'].includes(freshInvoice.status)) {
           console.log(`Skipping invoice ${invoice.invoice_number} - status changed to ${freshInvoice?.status}`);
+          continue;
+        }
+
+        if (freshInvoice.reminders_paused) {
+          console.log(`Skipping invoice ${invoice.invoice_number} - reminders paused (verified)`);
           continue;
         }
 
