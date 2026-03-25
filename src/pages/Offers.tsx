@@ -29,7 +29,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Eye, Send, Trash2, Loader2, CheckCircle2, Save } from "lucide-react";
+import { Eye, Send, Trash2, Loader2, CheckCircle2, Save, ExternalLink } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -305,6 +305,9 @@ const Offers = () => {
                           <div className="flex gap-1">
                             <Button variant="ghost" size="sm" onClick={() => setSelectedOffer(offer)}>
                               <Eye className="h-4 w-4 mr-1" /> View
+                            </Button>
+                            <Button variant="ghost" size="sm" onClick={() => window.open(`/confirm-offer/${offer.id}`, '_blank')}>
+                              <ExternalLink className="h-4 w-4 mr-1" /> Preview
                             </Button>
                             {offer.status !== "confirmed" && (
                               <Button variant="ghost" size="sm" className="text-green-600 hover:text-green-700" onClick={() => setConfirmOffer(offer)}>
