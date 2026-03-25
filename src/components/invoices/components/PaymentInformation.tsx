@@ -19,7 +19,7 @@ export const PaymentInformation: React.FC<PaymentInformationProps> = ({
 }) => {
   const allAccounts = PAYMENT_ACCOUNTS;
   const selectedAccounts = selectedPaymentAccount === "both"
-    ? allAccounts
+    ? allAccounts.filter(acc => acc.id !== "uk")
     : allAccounts.filter(acc => acc.id === selectedPaymentAccount);
 
   const getPaymentTranslations = (language: string) => {
