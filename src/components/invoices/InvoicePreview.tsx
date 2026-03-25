@@ -101,7 +101,7 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
   };
 
   const selectedAccounts = templateSettings.selectedPaymentAccount === "both"
-    ? [belgiumAccount, germanyAccount, ukAccount]
+    ? [belgiumAccount, germanyAccount]
     : templateSettings.selectedPaymentAccount === "belgium"
       ? [belgiumAccount]
       : templateSettings.selectedPaymentAccount === "uk"
