@@ -1,38 +1,69 @@
 
 
-## Send Exact Offer Email Copy to Team
+## Synchronize Monthly Packages with Invoice & Payment Reminder System
 
-Currently the `send-offer-email` Edge Function only sends the branded offer email to the client. The team never sees the actual email design. This change will also send the exact same HTML email to all 12 team members so everyone can see exactly what the client received.
+### Problem
+Monthly Packages operates in isolation. When an invoice is created/sent from Monthly Packages, it does not:
+1. Set the invoice status to `sent` (stays `draft`)
+2. Activate the automated payment reminder countdown (`next_reminder_at`)
+3. Sync the "Paid" toggle back to the linked invoice when marked paid in Monthly Packages
+4. Sync the "Invoice Sent" toggle to the invoice status
+5. Load existing invoices already linked to installments (only tracks in-memory `createdInvoices` state)
 
 ### Changes
 
-**`supabase/functions/send-offer-email/index.ts`** — After successfully sending to the client, fire-and-forget send the same HTML to all team members in batches (2 per batch, 1s delay) to respect Resend rate limits.
+**1. `src/components/monthly/SendMonthlyInvoiceDialog.tsx`** — When invoice is sent:
+- After creating/finding the invoice, update its status to `sent`
+- Set `next_reminder_at = now + 48h` to activate the automated payment reminder countdown
+- This makes it behave identically to invoices sent from the Invoices page or Dashboard
 
-The team copy will:
-- Use the exact same HTML template (identical to what the client sees)
-- Have a slightly modified subject: `[Team Copy] Your Offer from AB Media Team – {companyName}`
-- Be sent in batches of 2 with 1-second delays to avoid rate limits
-- Be fire-and-forget (won't block the client response)
-- Use the same `RESEND_API_KEY_ABMEDIA` and `noreply@abm-team.com` sender
+```typescript
+// After the installment update, before fire-and-forget email:
+await supabase
+  .from('invoices')
+  .update({
+    status: 'sent',
+    next_reminder_at: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(),
+  })
+  .eq('id', currentInvoice.id);
+```
 
-The team email list is hardcoded in the function (same 12 addresses used across the system).
+**2. `src/components/monthly/MonthlyInstallmentsTable.tsx`** — Paid toggle sync:
+- When `handleToggleStatus` marks an installment as `paid`, check if it has a linked `invoice_id` and update that invoice to `paid` + clear `next_reminder_at`
+- When toggling back to `unpaid`, set invoice back to `sent` + re-enable reminders
+- On component mount, load existing `invoice_id` values from installments into state so the UI knows which installments already have invoices
 
-### Also remove the Preview button
+**3. `src/services/monthlyContractService.ts`** — Add `invoice_id` to the `MonthlyInstallment` interface (it exists in DB but is missing from the TypeScript type)
 
-Since the team will now receive the actual email, the Preview button added to the Offers page is no longer needed and will be removed from `src/pages/Offers.tsx`.
+**4. `src/components/monthly/MonthlyInstallmentsTable.tsx`** — Invoice Sent toggle sync:
+- When `handleToggleEmailSent` is toggled ON, if there's a linked invoice, update its status to `sent` + set `next_reminder_at`
+- When toggled OFF, set invoice back to `draft` + clear `next_reminder_at`
 
-### Technical detail
+### Flow after changes
 
 ```text
-Client email sent
-  ↓ (success)
-Fire-and-forget background task:
-  → Batch 1: emails[0], emails[1]  → 1s delay
-  → Batch 2: emails[2], emails[3]  → 1s delay
-  → ... until all 12 sent
+Monthly Packages: "Send Invoice" button
+  → Invoice created (if needed) with status 'sent'
+  → next_reminder_at = now + 48h  ← ACTIVATES REMINDER SYSTEM
+  → Installment marked email_sent = true, invoice_id linked
+  → PDF sent to client
+
+Monthly Packages: "Paid" toggle ON
+  → Installment payment_status = 'paid'
+  → Linked invoice status → 'paid', next_reminder_at → null
+  → Reminders STOP
+
+Monthly Packages: "Paid" toggle OFF
+  → Installment payment_status = 'unpaid'
+  → Linked invoice status → 'sent', next_reminder_at → now + 48h
+  → Reminders RESTART
+
+Invoices page: status change on monthly invoice
+  → Works exactly as before (existing sync logic handles it)
 ```
 
 ### Files to modify
-1. `supabase/functions/send-offer-email/index.ts` — Add team copy sending after client send
-2. `src/pages/Offers.tsx` — Remove Preview button and `ExternalLink` import
+1. `src/services/monthlyContractService.ts` — Add `invoice_id` to interface
+2. `src/components/monthly/SendMonthlyInvoiceDialog.tsx` — Set invoice status to `sent` + activate reminders on send
+3. `src/components/monthly/MonthlyInstallmentsTable.tsx` — Sync paid/unpaid and invoice-sent toggles to linked invoice; load existing invoice links on mount
 
