@@ -1,68 +1,38 @@
 
 
-## Fix: Dashboard Invoice Status Sync Not Updating
+## Add "Pause Reminders" Toggle to Each Invoice
 
-### Root Cause
-When toggling "Invoice Paid" on the dashboard, `OrderService.toggleOrderStatus` calls `InvoiceService.updateInvoice` which goes through an abstraction layer. The DB confirms the invoice (INV-2026-501) remained at status `sent` even though the order shows `status_invoice_paid: true`. The update call is likely silently failing (returning empty data without throwing an error) or the dynamic import is causing an issue.
+### What
+A small toggle button on each invoice row in the table that lets admins manually disable/enable automated payment reminders for that specific invoice. This serves as a safety fallback when a client reports they've already paid but reminders keep coming.
 
-### Fix
-Replace the indirect `InvoiceService.updateInvoice` call with a direct `supabase.from('invoices').update()` call, and add diagnostic logging before and after.
+### How
 
-### File: `src/services/orderService.ts` (lines ~793-804)
+**1. Database: Add `reminders_paused` column to `invoices` table**
 
-Replace:
-```typescript
-const updateData: Record<string, any> = { status: newInvoiceStatus };
-if (newInvoiceStatus === 'sent') {
-  updateData.next_reminder_at = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
-} else {
-  updateData.next_reminder_at = null;
-}
-await InvoiceService.updateInvoice(linkedInvoice.id, updateData);
-console.log(`📄 Synced invoice ${linkedInvoice.invoice_number} status to "${newInvoiceStatus}"`);
+New migration adding a boolean column:
+```sql
+ALTER TABLE invoices ADD COLUMN reminders_paused boolean NOT NULL DEFAULT false;
 ```
 
-With a direct Supabase call + verification:
-```typescript
-const updateData: Record<string, any> = { 
-  status: newInvoiceStatus,
-  updated_at: new Date().toISOString()
-};
-if (newInvoiceStatus === 'sent') {
-  updateData.next_reminder_at = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
-} else {
-  updateData.next_reminder_at = null;
-}
+**2. Edge Function: `send-invoice-payment-reminders/index.ts`**
 
-console.log(`📄 Updating invoice ${linkedInvoice.id} (${linkedInvoice.invoice_number}) to status "${newInvoiceStatus}"`, updateData);
+Add a check in the reminder processing loop to skip invoices where `reminders_paused = true`. This is the actual enforcement point.
 
-const { data: updateResult, error: invoiceUpdateError } = await supabase
-  .from('invoices')
-  .update(updateData)
-  .eq('id', linkedInvoice.id)
-  .select('id, status, next_reminder_at');
+**3. UI: Add toggle in invoice table row** (`src/pages/Invoices.tsx`)
 
-if (invoiceUpdateError) {
-  console.error('📄 Invoice update error:', invoiceUpdateError);
-} else if (!updateResult?.length) {
-  console.error('📄 Invoice update returned no rows — possible RLS issue. Retrying with service-level approach...');
-  // Fallback: try updating without .select() 
-  const { error: retryError } = await supabase
-    .from('invoices')
-    .update(updateData)
-    .eq('id', linkedInvoice.id);
-  if (retryError) {
-    console.error('📄 Invoice update retry failed:', retryError);
-  } else {
-    console.log('📄 Invoice update retry succeeded (no select verification)');
-  }
-} else {
-  console.log(`📄 Synced invoice ${linkedInvoice.invoice_number} to "${updateResult[0].status}"`);
-}
-```
+- Add a new column header "Reminders" (or a bell icon) between Status and Actions
+- Each row gets a small Switch/toggle (bell icon with on/off state)
+- Clicking it updates `invoices.reminders_paused` directly via supabase
+- Shows a muted bell icon when paused, active bell when enabled
+- Toast confirmation: "Reminders paused for INV-XXX" / "Reminders resumed for INV-XXX"
 
-Also apply the same direct-update approach to the auto-create path (line ~866-875) — replace `InvoiceService.updateInvoice` there too with a direct supabase call + logging.
+**4. Update TypeScript type** (`src/types/invoice.ts`)
+
+Add `reminders_paused?: boolean` to the `Invoice` interface.
 
 ### Files to modify
-1. `src/services/orderService.ts` — Replace InvoiceService.updateInvoice calls with direct supabase updates + logging in both the "update existing" and "auto-create" invoice sync paths
+1. New migration — add `reminders_paused` column
+2. `src/types/invoice.ts` — add field to interface
+3. `src/pages/Invoices.tsx` — add toggle column in table
+4. `supabase/functions/send-invoice-payment-reminders/index.ts` — skip paused invoices
 
