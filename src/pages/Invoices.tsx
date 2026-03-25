@@ -509,6 +509,30 @@ const Invoices = () => {
                                 </DropdownMenu>
                               </TableCell>
                               <TableCell>
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8"
+                                        onClick={() => handleToggleRemindersPaused(invoice)}
+                                        title={invoice.reminders_paused ? "Reminders paused – click to resume" : "Reminders active – click to pause"}
+                                      >
+                                        {invoice.reminders_paused ? (
+                                          <BellOff size={16} className="text-muted-foreground" />
+                                        ) : (
+                                          <Bell size={16} className="text-primary" />
+                                        )}
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      {invoice.reminders_paused ? "Reminders paused – click to resume" : "Reminders active – click to pause"}
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              </TableCell>
+                              <TableCell>
                                 <div className="flex space-x-1">
                                   <InvoiceReminderHistory invoice={invoice} />
                                   <Button 
