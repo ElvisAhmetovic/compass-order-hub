@@ -2934,6 +2934,17 @@ export type Database = {
         }
         Returns: undefined
       }
+      sync_invoice_status_by_order: {
+        Args: {
+          p_next_reminder_at?: string
+          p_order_id: string
+          p_status: string
+        }
+        Returns: {
+          synced_invoice_id: string
+          synced_invoice_number: string
+        }[]
+      }
     }
     Enums: {
       app_role: "admin" | "agent" | "user" | "client"
