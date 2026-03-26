@@ -2926,6 +2926,14 @@ export type Database = {
         Args: { order_id_param: string }
         Returns: undefined
       }
+      sync_invoice_status: {
+        Args: {
+          p_invoice_id: string
+          p_next_reminder_at?: string
+          p_status: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "agent" | "user" | "client"
