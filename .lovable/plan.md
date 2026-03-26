@@ -1,73 +1,38 @@
 
 
-## QA Audit: Payment Reminder Termination Across All Systems
+## Fix: Team Member Selection Broken in Reminders
 
-### Audit Scope
-Traced every path where invoice/order status changes and verified `next_reminder_at` is properly cleared when payment is received.
+### Root Cause
 
-### Systems Checked
+The recent security migration recreated `team_members_view` with two changes that broke it:
 
-```text
-Dashboard (toggleOrderStatus)
-  ├── Invoice Paid ON  → invoice.status='paid', next_reminder_at=null  ✅
-  ├── Invoice Paid OFF → invoice.status='sent'|'draft', reminder set/cleared accordingly  ✅
-  ├── Invoice Sent ON  → invoice.status='sent', next_reminder_at=+48h  ✅
-  ├── Invoice Sent OFF → invoice.status='paid'|'draft', reminder handled  ✅
-  ├── Cancelled ON     → next_reminder_at=null on all linked invoices  ✅
-  └── Soft Delete       → next_reminder_at=null on all linked invoices  ✅
+1. Changed from `JOIN auth.users` to `LEFT JOIN app_users` for email
+2. Changed from `security_invoker = false` to `security_invoker = true`
 
-Invoices page (handleUpdateStatus)
-  ├── paid/cancelled/refunded/draft/partially_paid → next_reminder_at=null  ✅
-  ├── sent/overdue → next_reminder_at=+48h (only if not already set)  ✅
-  ├── Reverse sync to order (paid→Invoice Paid, sent→Invoice Sent)  ✅
-  └── Reverse sync to monthly installment (paid/sent/draft)  ✅
+With `security_invoker = true`, the view runs under the calling user's permissions. The `app_users` table has RLS that only lets non-admin users see **their own record**. So when a non-admin user (like Thomas Klein) queries the view, the LEFT JOIN returns `null` emails for everyone except themselves. Since the `<SelectItem value={m.email}>` requires a non-empty string value, items with null emails become unselectable.
 
-Monthly Packages
-  ├── Toggle Paid ON   → invoice.status='paid', next_reminder_at=null  ✅
-  ├── Toggle Paid OFF  → invoice.status='sent', next_reminder_at=+48h  ✅
-  ├── Toggle Email Sent ON  → invoice.status='sent', next_reminder_at=+48h  ✅
-  ├── Toggle Email Sent OFF → invoice.status='draft', next_reminder_at=null  ✅
-  └── Send Monthly Invoice  → invoice.status='sent', next_reminder_at=+48h  ✅
-
-Edge Function (send-invoice-payment-reminders)
-  ├── Only fetches status IN ('sent','overdue') + next_reminder_at <= now  ✅
-  ├── Re-verifies fresh status before sending  ✅
-  ├── Checks reminders_paused (twice: initial + fresh)  ✅
-  ├── Skips deleted/cancelled orders + clears next_reminder_at  ✅
-  └── Handles null order_id (monthly invoices)  ✅
-
-Manual Pause Toggle (Invoices page)
-  └── Sets/clears reminders_paused, edge function respects it  ✅
-```
-
-### Issue Found
-
-**Edge function does NOT check `status_invoice_paid` on the order**
-
-The edge function checks `status_deleted` and `status_cancelled` on the linked order, but does **not** check `status_invoice_paid`. This matters in a race condition scenario:
-
-1. Admin toggles "Invoice Paid" on dashboard
-2. `orderService.ts` updates the order (`status_invoice_paid = true`) and the invoice (`status = 'paid', next_reminder_at = null`)
-3. But if the invoice update fails silently (RLS, network issue), the invoice remains `status = 'sent'` with a valid `next_reminder_at`
-4. The edge function picks it up, re-verifies invoice status (still `sent`), and sends a reminder — even though the order says "paid"
-
-This is the **only remaining gap**. The fix is to add an `status_invoice_paid` check in the edge function alongside the existing `status_deleted`/`status_cancelled` check.
+This is why "Eldin" (the logged-in user) can be selected but nobody else can.
 
 ### Fix
 
-**`supabase/functions/send-invoice-payment-reminders/index.ts`** — After the deleted/cancelled check (line ~454), add:
+Create a new migration that recreates the view with `security_invoker = false` (the original safe setting). The view is a controlled projection of only `id`, `email`, `full_name` for non-client active users — this is intentionally public to the team and does not need per-user RLS filtering.
 
-```typescript
-// Also skip if order is already marked as paid
-if (orderData.status_invoice_paid) {
-  console.log(`Skipping invoice ${invoice.invoice_number} - order is marked as invoice paid`);
-  await supabase.from("invoices").update({ status: 'paid', next_reminder_at: null }).eq("id", invoice.id);
-  continue;
-}
+Use `auth.users` for the email source (as the original did) since `app_users` has restrictive RLS:
+
+```sql
+DROP VIEW IF EXISTS public.team_members_view;
+
+CREATE VIEW public.team_members_view
+WITH (security_invoker = false) AS
+SELECT p.id, u.email,
+  concat_ws(' ', p.first_name, p.last_name) AS full_name
+FROM profiles p
+JOIN auth.users u ON u.id = p.id
+WHERE p.role <> 'client' AND p.disabled = false;
+
+GRANT SELECT ON public.team_members_view TO authenticated;
 ```
 
-This serves as a self-healing mechanism: if the invoice status somehow got out of sync with the order, the edge function corrects it instead of sending an unwanted reminder.
-
 ### Files to modify
-1. `supabase/functions/send-invoice-payment-reminders/index.ts` — Add `status_invoice_paid` guard + auto-correct invoice status
+1. **New migration** — Recreate `team_members_view` with `security_invoker = false` and `JOIN auth.users`
 
