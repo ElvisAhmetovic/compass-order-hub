@@ -790,40 +790,23 @@ export class OrderService {
             const orderAfter = await this.getOrder(orderId);
             newInvoiceStatus = orderAfter?.status_invoice_paid ? "paid" : "draft";
           }
-          const updateData: Record<string, any> = { 
-            status: newInvoiceStatus,
-            updated_at: new Date().toISOString()
-          };
-          
-          if (newInvoiceStatus === 'sent') {
-            updateData.next_reminder_at = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
-          } else {
-            updateData.next_reminder_at = null;
-          }
-          
-          console.log(`📄 Updating invoice ${linkedInvoice.id} (${linkedInvoice.invoice_number}) to status "${newInvoiceStatus}"`, updateData);
 
-          const { data: updateResult, error: invoiceUpdateError } = await supabase
-            .from('invoices')
-            .update(updateData)
-            .eq('id', linkedInvoice.id)
-            .select('id, status, next_reminder_at');
 
-          if (invoiceUpdateError) {
-            console.error('📄 Invoice update error:', invoiceUpdateError);
-          } else if (!updateResult?.length) {
-            console.warn('📄 Invoice update returned no rows — retrying without .select()...');
-            const { error: retryError } = await supabase
-              .from('invoices')
-              .update(updateData)
-              .eq('id', linkedInvoice.id);
-            if (retryError) {
-              console.error('📄 Invoice update retry failed:', retryError);
-            } else {
-              console.log('📄 Invoice update retry succeeded');
-            }
+          const rpcNextReminder = newInvoiceStatus === 'sent' 
+            ? new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString() 
+            : null;
+          console.log(`📄 Syncing invoice ${linkedInvoice.id} (${linkedInvoice.invoice_number}) to status "${newInvoiceStatus}" via RPC`);
+
+          const { error: rpcError } = await supabase.rpc('sync_invoice_status', {
+            p_invoice_id: linkedInvoice.id,
+            p_status: newInvoiceStatus,
+            p_next_reminder_at: rpcNextReminder
+          });
+
+          if (rpcError) {
+            console.error('📄 Invoice sync RPC error:', rpcError);
           } else {
-            console.log(`📄 Synced invoice ${linkedInvoice.invoice_number} to "${updateResult[0].status}"`);
+            console.log(`📄 Synced invoice ${linkedInvoice.invoice_number} to "${newInvoiceStatus}"`);
           }
           invoiceSyncResult = { invoiceSynced: true, invoiceAction: 'updated', invoiceNumber: linkedInvoice.invoice_number };
         } else if (enabled) {
@@ -887,28 +870,26 @@ export class OrderService {
           const newInvoice = await InvoiceService.createInvoice(invoiceData);
           
           const invoiceStatus = status === "Invoice Sent" ? "sent" : "paid";
-          const invoiceUpdateData: Record<string, any> = { 
-            status: invoiceStatus, 
-            order_id: orderId 
-          };
-          if (invoiceStatus === 'sent') {
-            invoiceUpdateData.next_reminder_at = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
-          } else {
-            invoiceUpdateData.next_reminder_at = null;
-          }
-          console.log(`📄 Linking & updating new invoice ${newInvoice.id} with`, invoiceUpdateData);
-          const { data: createUpdateResult, error: createUpdateError } = await supabase
-            .from('invoices')
-            .update(invoiceUpdateData)
-            .eq('id', newInvoice.id)
-            .select('id, status');
+
+
+          // Link order_id first (direct update is fine since creator owns the invoice)
+          await supabase.from('invoices').update({ order_id: orderId }).eq('id', newInvoice.id);
           
-          if (createUpdateError) {
-            console.error('📄 New invoice update error:', createUpdateError);
-            // Fallback without .select()
-            await supabase.from('invoices').update(invoiceUpdateData).eq('id', newInvoice.id);
+          // Then sync status via RPC to bypass RLS
+          const newRpcNextReminder = invoiceStatus === 'sent' 
+            ? new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString() 
+            : null;
+          console.log(`📄 Syncing new invoice ${newInvoice.id} to status "${invoiceStatus}" via RPC`);
+          const { error: newRpcError } = await supabase.rpc('sync_invoice_status', {
+            p_invoice_id: newInvoice.id,
+            p_status: invoiceStatus,
+            p_next_reminder_at: newRpcNextReminder
+          });
+          
+          if (newRpcError) {
+            console.error('📄 New invoice sync RPC error:', newRpcError);
           } else {
-            console.log(`📄 Auto-created invoice ${newInvoice.invoice_number} for order ${orderId}, status: ${createUpdateResult?.[0]?.status || invoiceStatus}`);
+            console.log(`📄 Auto-created invoice ${newInvoice.invoice_number} for order ${orderId}, status: ${invoiceStatus}`);
           }
           invoiceSyncResult = { invoiceSynced: true, invoiceAction: 'created', invoiceNumber: newInvoice.invoice_number };
         }
