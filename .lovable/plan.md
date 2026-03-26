@@ -1,61 +1,65 @@
 
 
-## Security Changes Impact Analysis
+## QA Audit: Full Cross-System Integration Check
 
-After reviewing all security changes made in migration `20260326083626` and the config.toml updates, here are the findings organized by severity.
-
----
-
-### Confirmed Breakage (Already Fixed)
-
-**`team_members_view` with `security_invoker = true`** — This broke the Reminders assignee dropdown for non-admin users because `app_users` RLS restricted visibility. Already fixed in migration `20260326085431` by reverting to `security_invoker = false` with `JOIN auth.users`.
+### Audit Methodology
+Traced every status change path across Dashboard, Invoices, Monthly Packages, and Offers, verifying that `next_reminder_at` is correctly managed and no unnecessary payment reminders can be sent.
 
 ---
 
-### No Breakages Found — All Changes Are Safe
+### All Systems Verified — No Issues Found
 
-After tracing every security change through the codebase, **no additional breakages were identified**:
+```text
+DASHBOARD (orderService.toggleOrderStatus)
+├── Invoice Paid ON  → invoice.status='paid', next_reminder_at=null        ✅
+├── Invoice Paid OFF → invoice.status='sent'|'draft', reminder set/cleared ✅
+├── Invoice Sent ON  → invoice.status='sent', next_reminder_at=+48h       ✅
+├── Invoice Sent OFF → invoice.status='paid'|'draft', handled             ✅
+├── Cancelled ON     → clears next_reminder_at on all linked invoices     ✅
+├── Soft Delete      → clears next_reminder_at on all linked invoices     ✅
+└── Auto-create invoice (no existing) → sets correct status + reminder    ✅
 
-**1. `soft_delete_order` / `restore_order` — Admin-only guard**
-- These functions now require `is_admin()`. The delete button in `OrderActions.tsx` and `OrderRow.tsx` is visible to all users but will throw an error for non-admins.
-- **Not a breakage** — this is the intended security fix. Non-admin users should not delete orders.
-- **Improvement opportunity**: Hide the delete button in the UI for non-admin users so they don't see a button they can't use. This is cosmetic, not a functional break.
+INVOICES PAGE (handleUpdateStatus)
+├── paid/cancelled/refunded/draft/partially_paid → next_reminder_at=null  ✅
+├── sent/overdue → next_reminder_at=+48h (only if not already set)        ✅
+├── Reverse sync to order (paid→Invoice Paid, sent→Invoice Sent)          ✅
+├── Reverse sync to monthly installment (paid/sent/draft→synced)          ✅
+└── Reminders paused toggle → supabase update, respected by edge fn       ✅
 
-**2. Dropped permissive `clients` table policies**
-- The remaining policies (`Users can manage their clients`, `Users can view their clients`, `Users can create their own clients`) all scope access to `auth.uid() = user_id OR is_admin()`.
-- All client CRUD in `invoiceService.ts` runs under the authenticated user's session, so owner-scoped access works correctly.
+MONTHLY PACKAGES (MonthlyInstallmentsTable)
+├── Create Invoice → persists invoice_id link to installment              ✅
+├── Toggle Paid ON  → invoice.status='paid', next_reminder_at=null        ✅
+├── Toggle Paid OFF → invoice.status='sent', next_reminder_at=+48h       ✅
+├── Toggle Email Sent ON  → invoice.status='sent', next_reminder_at=+48h ✅
+├── Toggle Email Sent OFF → invoice.status='draft', next_reminder_at=null ✅
+└── Send Monthly Invoice → sets invoice status='sent' + reminder          ✅
 
-**3. Profile enumeration fix**
-- Replaced blanket `USING(true)` with `NOT is_client()`. Non-client users (admin, agent, user) can still see all profiles for rankings, collaboration, and user management.
-- Client-role users can still read their own profile via `Profiles: allow select for resource owner`.
+EDGE FUNCTION (send-invoice-payment-reminders)
+├── Initial query: status IN ('sent','overdue') + next_reminder_at<=now   ✅
+├── Skip if reminders_paused (checked twice: initial + fresh)             ✅
+├── Re-verify fresh invoice status before sending                         ✅
+├── Skip deleted/cancelled orders + clear next_reminder_at                ✅
+├── Skip if order.status_invoice_paid (self-healing: auto-correct to paid)✅
+├── Handle null order_id (monthly invoices: use client metadata)          ✅
+└── Next reminder scheduled only after successful send                    ✅
 
-**4. `user_achievements` and `user_audit_logs` INSERT restrictions**
-- Now restricted to `user_id = auth.uid()` and `actor_id = auth.uid()` respectively. The app code already sets these to the current user, so no change in behavior.
+OFFERS
+├── Offer confirmation creates order with status_created=true only        ✅
+├── No invoice/reminder side effects from offers                          ✅
+└── Team copy email is fire-and-forget, no DB side effects                ✅
+```
 
-**5. `client_orders` view — `security_invoker = true`**
-- Clients querying this view now go through RLS on `orders` and `companies`. The `orders` table has a client SELECT policy (`client_id = auth.uid()`), and `companies` has `Authenticated users can view companies`. Both allow client access.
-- Internal users have broader SELECT policies on orders. No breakage.
+### Defense-in-Depth Layers for "Already Paid" Protection
 
-**6. Edge function JWT changes**
-- All functions set to `verify_jwt = true` are called via `supabase.functions.invoke()` which automatically passes the JWT. No breakage.
-- Public/cron functions (`confirm-offer`, `create-client-ticket`, `check-daily-attendance`, payment reminder crons) remain `verify_jwt = false`.
-- Functions not in config.toml (`send-order-confirmation`, `send-status-change-notification`, etc.) use Supabase's default, which works with `supabase.functions.invoke()`.
-
-**7. Input validation in edge functions**
-- Added email regex and length checks. These are additive validations that won't reject valid inputs.
-
----
-
-### Recommended UI Improvement (Optional)
-
-Hide the "Delete" button for non-admin users in `OrderActions.tsx` and `OrderRow.tsx` since the backend now blocks them. This prevents confusion but is not a functional break.
-
-**Files**: `src/components/dashboard/OrderActions.tsx`, `src/components/dashboard/OrderRow.tsx`
-**Change**: Wrap the delete button/menu item with `{user?.role === 'admin' && ...}`
-
----
+1. **UI toggle** → Immediately sets `next_reminder_at = null` and `status = 'paid'`
+2. **Cross-system sync** → Dashboard↔Invoices↔Monthly all clear reminders on paid
+3. **Manual pause toggle** → `reminders_paused` flag on each invoice (bell icon)
+4. **Edge function guard** → Re-checks fresh status before every send
+5. **Self-healing guard** → If order says paid but invoice says sent, auto-corrects to paid and skips
 
 ### Verdict
 
-The only breakage was the `team_members_view` issue, which is already fixed. All other security changes are working as intended with no functional regressions.
+**All systems are correctly interconnected. No unnecessary payment reminders will be sent when an invoice is marked as paid through any path** (Dashboard toggle, Invoices page status dropdown, Monthly Packages paid switch, or edge function self-healing). The five defense layers ensure that even if one sync path fails, the others catch it.
+
+No code changes needed.
 
