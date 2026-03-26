@@ -870,15 +870,8 @@ export class OrderService {
           const newInvoice = await InvoiceService.createInvoice(invoiceData);
           
           const invoiceStatus = status === "Invoice Sent" ? "sent" : "paid";
-          const invoiceUpdateData: Record<string, any> = { 
-            status: invoiceStatus, 
-            order_id: orderId 
-          };
-          if (invoiceStatus === 'sent') {
-            invoiceUpdateData.next_reminder_at = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
-          } else {
-            invoiceUpdateData.next_reminder_at = null;
-          }
+
+
           // Link order_id first (direct update is fine since creator owns the invoice)
           await supabase.from('invoices').update({ order_id: orderId }).eq('id', newInvoice.id);
           
