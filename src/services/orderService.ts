@@ -758,57 +758,37 @@ export class OrderService {
       try {
         const { InvoiceService } = await import('./invoiceService');
         
-        // Direct query by order_id instead of fetching all invoices
-        const { data: linkedInvoices } = await supabase
-          .from('invoices')
-          .select('*')
-          .eq('order_id', orderId)
-          .limit(1);
-        
-        let linkedInvoice = linkedInvoices?.[0];
-        
-        // Fallback: search by notes for legacy records without order_id
-        if (!linkedInvoice) {
-          const { data: noteMatches } = await supabase
-            .from('invoices')
-            .select('*')
-            .ilike('notes', `%Order ID: ${orderId}%`)
-            .limit(1);
-          linkedInvoice = noteMatches?.[0];
+        // Determine the target invoice status
+        let newInvoiceStatus: string;
+        if (status === "Invoice Paid" && enabled) {
+          newInvoiceStatus = "paid";
+        } else if (status === "Invoice Sent" && enabled) {
+          newInvoiceStatus = "sent";
+        } else if (status === "Invoice Paid" && !enabled) {
+          const orderAfter = await this.getOrder(orderId);
+          newInvoiceStatus = orderAfter?.status_invoice_sent ? "sent" : "draft";
+        } else {
+          const orderAfter = await this.getOrder(orderId);
+          newInvoiceStatus = orderAfter?.status_invoice_paid ? "paid" : "draft";
         }
 
-        if (linkedInvoice) {
-          let newInvoiceStatus: string;
-          if (status === "Invoice Paid" && enabled) {
-            newInvoiceStatus = "paid";
-          } else if (status === "Invoice Sent" && enabled) {
-            newInvoiceStatus = "sent";
-          } else if (status === "Invoice Paid" && !enabled) {
-            const orderAfter = await this.getOrder(orderId);
-            newInvoiceStatus = orderAfter?.status_invoice_sent ? "sent" : "draft";
-          } else {
-            const orderAfter = await this.getOrder(orderId);
-            newInvoiceStatus = orderAfter?.status_invoice_paid ? "paid" : "draft";
-          }
+        const rpcNextReminder = newInvoiceStatus === 'sent' 
+          ? new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString() 
+          : null;
 
+        // Single RPC call that finds + updates the invoice, bypassing RLS entirely
+        console.log(`📄 Syncing invoice for order ${orderId} to "${newInvoiceStatus}" via RPC`);
+        const { data: syncResult, error: rpcError } = await supabase.rpc('sync_invoice_status_by_order', {
+          p_order_id: orderId,
+          p_status: newInvoiceStatus,
+          p_next_reminder_at: rpcNextReminder
+        });
 
-          const rpcNextReminder = newInvoiceStatus === 'sent' 
-            ? new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString() 
-            : null;
-          console.log(`📄 Syncing invoice ${linkedInvoice.id} (${linkedInvoice.invoice_number}) to status "${newInvoiceStatus}" via RPC`);
-
-          const { error: rpcError } = await supabase.rpc('sync_invoice_status', {
-            p_invoice_id: linkedInvoice.id,
-            p_status: newInvoiceStatus,
-            p_next_reminder_at: rpcNextReminder
-          });
-
-          if (rpcError) {
-            console.error('📄 Invoice sync RPC error:', rpcError);
-          } else {
-            console.log(`📄 Synced invoice ${linkedInvoice.invoice_number} to "${newInvoiceStatus}"`);
-          }
-          invoiceSyncResult = { invoiceSynced: true, invoiceAction: 'updated', invoiceNumber: linkedInvoice.invoice_number };
+        if (rpcError) {
+          console.error('📄 Invoice sync RPC error:', rpcError);
+        } else if (syncResult && syncResult.length > 0) {
+          console.log(`📄 Synced invoice ${syncResult[0].synced_invoice_number} to "${newInvoiceStatus}"`);
+          invoiceSyncResult = { invoiceSynced: true, invoiceAction: 'updated', invoiceNumber: syncResult[0].synced_invoice_number };
         } else if (enabled) {
           console.log(`📄 No linked invoice found for order ${orderId}, auto-creating...`);
           
