@@ -718,14 +718,18 @@ const OrderRow = ({
                 <DropdownMenuItem onClick={() => handleUpdateStatus("Complaint")}>
                   Add Complaint Status
                 </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem 
-                  onClick={handleDelete}
-                  className="text-destructive"
-                  disabled={isDeleting}
-                >
-                  {isDeleting ? "Deleting..." : "Delete Order"}
-                </DropdownMenuItem>
+                {user?.role === 'admin' && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem 
+                      onClick={handleDelete}
+                      className="text-destructive"
+                      disabled={isDeleting}
+                    >
+                      {isDeleting ? "Deleting..." : "Delete Order"}
+                    </DropdownMenuItem>
+                  </>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
