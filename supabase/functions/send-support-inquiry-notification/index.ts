@@ -177,7 +177,7 @@ const handler = async (req: Request): Promise<Response> => {
       const appUrl = Deno.env.get("APP_URL") || "https://www.empriadental.de";
       const emailHtml = generateEmailHtml(inquiryData, appUrl);
 
-      for (const email of emails) {
+      for (const email of validEmails) {
         try {
           console.log(`[Background] Sending email to: ${email}`);
           
