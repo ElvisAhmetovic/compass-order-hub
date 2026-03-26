@@ -35,6 +35,14 @@ serve(async (req) => {
       );
     }
 
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(client_email)) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid client email address' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY_ABMEDIA');
     if (!RESEND_API_KEY) {
       throw new Error('RESEND_API_KEY_ABMEDIA is not configured');

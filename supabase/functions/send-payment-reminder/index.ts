@@ -26,6 +26,24 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     const { to, subject, body, invoiceId, clientName }: PaymentReminderRequest = await req.json();
 
+    // Input validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!to || !emailRegex.test(to)) {
+      return new Response(JSON.stringify({ success: false, error: 'Invalid recipient email address' }), {
+        status: 400, headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+    if (subject && subject.length > 200) {
+      return new Response(JSON.stringify({ success: false, error: 'Subject must be 200 characters or less' }), {
+        status: 400, headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+    if (body && body.length > 10000) {
+      return new Response(JSON.stringify({ success: false, error: 'Body too long' }), {
+        status: 400, headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
     console.log(`Sending payment reminder for invoice ${invoiceId} to ${to}`);
 
     // Convert plain text body to HTML with proper formatting

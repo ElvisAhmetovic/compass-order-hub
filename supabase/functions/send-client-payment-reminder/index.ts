@@ -266,6 +266,19 @@ const handler = async (req: Request): Promise<Response> => {
       invoiceNumber,
     }: ClientReminderRequest = await req.json();
 
+    // Input validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!clientEmail || !emailRegex.test(clientEmail)) {
+      return new Response(JSON.stringify({ error: 'Invalid client email address' }), {
+        status: 400, headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+    if (!orderId || !companyName) {
+      return new Response(JSON.stringify({ error: 'Missing required fields: orderId, companyName' }), {
+        status: 400, headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
     console.log(`Sending client payment reminder to ${clientEmail} for order ${orderId} by ${sentByName}`);
     if (templateName) {
       console.log(`Using template: ${templateName} (${templateId})`);
