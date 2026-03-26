@@ -1,38 +1,61 @@
 
 
-## Fix: Team Member Selection Broken in Reminders
+## Security Changes Impact Analysis
 
-### Root Cause
+After reviewing all security changes made in migration `20260326083626` and the config.toml updates, here are the findings organized by severity.
 
-The recent security migration recreated `team_members_view` with two changes that broke it:
+---
 
-1. Changed from `JOIN auth.users` to `LEFT JOIN app_users` for email
-2. Changed from `security_invoker = false` to `security_invoker = true`
+### Confirmed Breakage (Already Fixed)
 
-With `security_invoker = true`, the view runs under the calling user's permissions. The `app_users` table has RLS that only lets non-admin users see **their own record**. So when a non-admin user (like Thomas Klein) queries the view, the LEFT JOIN returns `null` emails for everyone except themselves. Since the `<SelectItem value={m.email}>` requires a non-empty string value, items with null emails become unselectable.
+**`team_members_view` with `security_invoker = true`** — This broke the Reminders assignee dropdown for non-admin users because `app_users` RLS restricted visibility. Already fixed in migration `20260326085431` by reverting to `security_invoker = false` with `JOIN auth.users`.
 
-This is why "Eldin" (the logged-in user) can be selected but nobody else can.
+---
 
-### Fix
+### No Breakages Found — All Changes Are Safe
 
-Create a new migration that recreates the view with `security_invoker = false` (the original safe setting). The view is a controlled projection of only `id`, `email`, `full_name` for non-client active users — this is intentionally public to the team and does not need per-user RLS filtering.
+After tracing every security change through the codebase, **no additional breakages were identified**:
 
-Use `auth.users` for the email source (as the original did) since `app_users` has restrictive RLS:
+**1. `soft_delete_order` / `restore_order` — Admin-only guard**
+- These functions now require `is_admin()`. The delete button in `OrderActions.tsx` and `OrderRow.tsx` is visible to all users but will throw an error for non-admins.
+- **Not a breakage** — this is the intended security fix. Non-admin users should not delete orders.
+- **Improvement opportunity**: Hide the delete button in the UI for non-admin users so they don't see a button they can't use. This is cosmetic, not a functional break.
 
-```sql
-DROP VIEW IF EXISTS public.team_members_view;
+**2. Dropped permissive `clients` table policies**
+- The remaining policies (`Users can manage their clients`, `Users can view their clients`, `Users can create their own clients`) all scope access to `auth.uid() = user_id OR is_admin()`.
+- All client CRUD in `invoiceService.ts` runs under the authenticated user's session, so owner-scoped access works correctly.
 
-CREATE VIEW public.team_members_view
-WITH (security_invoker = false) AS
-SELECT p.id, u.email,
-  concat_ws(' ', p.first_name, p.last_name) AS full_name
-FROM profiles p
-JOIN auth.users u ON u.id = p.id
-WHERE p.role <> 'client' AND p.disabled = false;
+**3. Profile enumeration fix**
+- Replaced blanket `USING(true)` with `NOT is_client()`. Non-client users (admin, agent, user) can still see all profiles for rankings, collaboration, and user management.
+- Client-role users can still read their own profile via `Profiles: allow select for resource owner`.
 
-GRANT SELECT ON public.team_members_view TO authenticated;
-```
+**4. `user_achievements` and `user_audit_logs` INSERT restrictions**
+- Now restricted to `user_id = auth.uid()` and `actor_id = auth.uid()` respectively. The app code already sets these to the current user, so no change in behavior.
 
-### Files to modify
-1. **New migration** — Recreate `team_members_view` with `security_invoker = false` and `JOIN auth.users`
+**5. `client_orders` view — `security_invoker = true`**
+- Clients querying this view now go through RLS on `orders` and `companies`. The `orders` table has a client SELECT policy (`client_id = auth.uid()`), and `companies` has `Authenticated users can view companies`. Both allow client access.
+- Internal users have broader SELECT policies on orders. No breakage.
+
+**6. Edge function JWT changes**
+- All functions set to `verify_jwt = true` are called via `supabase.functions.invoke()` which automatically passes the JWT. No breakage.
+- Public/cron functions (`confirm-offer`, `create-client-ticket`, `check-daily-attendance`, payment reminder crons) remain `verify_jwt = false`.
+- Functions not in config.toml (`send-order-confirmation`, `send-status-change-notification`, etc.) use Supabase's default, which works with `supabase.functions.invoke()`.
+
+**7. Input validation in edge functions**
+- Added email regex and length checks. These are additive validations that won't reject valid inputs.
+
+---
+
+### Recommended UI Improvement (Optional)
+
+Hide the "Delete" button for non-admin users in `OrderActions.tsx` and `OrderRow.tsx` since the backend now blocks them. This prevents confusion but is not a functional break.
+
+**Files**: `src/components/dashboard/OrderActions.tsx`, `src/components/dashboard/OrderRow.tsx`
+**Change**: Wrap the delete button/menu item with `{user?.role === 'admin' && ...}`
+
+---
+
+### Verdict
+
+The only breakage was the `team_members_view` issue, which is already fixed. All other security changes are working as intended with no functional regressions.
 
