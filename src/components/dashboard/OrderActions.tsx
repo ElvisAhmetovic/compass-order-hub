@@ -503,14 +503,17 @@ const OrderActions = ({ order, onOrderView, onRefresh }: OrderActionsProps) => {
           {activeStatuses.includes("Cancelled") ? "Remove" : "Add"} Cancelled
         </DropdownMenuItem>
         
-        <DropdownMenuSeparator />
-        
-        <DropdownMenuItem 
-          onClick={handleDeleteOrder}
-          className="text-red-600 focus:bg-red-50 focus:text-red-600"
-        >
-          Delete Order
-        </DropdownMenuItem>
+        {isAdmin && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem 
+              onClick={handleDeleteOrder}
+              className="text-red-600 focus:bg-red-50 focus:text-red-600"
+            >
+              Delete Order
+            </DropdownMenuItem>
+          </>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
 
