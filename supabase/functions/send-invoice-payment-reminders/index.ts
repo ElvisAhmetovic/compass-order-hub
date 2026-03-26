@@ -453,6 +453,13 @@ const handler = async (req: Request): Promise<Response> => {
             continue;
           }
 
+          // Also skip if order is already marked as invoice paid (self-healing for sync gaps)
+          if (orderData.status_invoice_paid) {
+            console.log(`Skipping invoice ${invoice.invoice_number} - order is marked as invoice paid, auto-correcting invoice status`);
+            await supabase.from("invoices").update({ status: 'paid', next_reminder_at: null }).eq("id", invoice.id);
+            continue;
+          }
+
           order = orderData;
           clientEmail = order.contact_email;
           detectedLanguage = detectLanguageFromAddress(order.company_address);
