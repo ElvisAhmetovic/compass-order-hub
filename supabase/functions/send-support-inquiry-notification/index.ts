@@ -165,12 +165,19 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("Missing required fields: inquiryData.id, inquiryData.subject, or emails");
     }
 
+    // Cap emails array to prevent abuse
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const validEmails = emails.filter(e => emailRegex.test(e)).slice(0, 20);
+    if (validEmails.length === 0) {
+      throw new Error("No valid email addresses provided");
+    }
+
     // Define the background email sending task
     const sendEmailsInBackground = async () => {
       const appUrl = Deno.env.get("APP_URL") || "https://www.empriadental.de";
       const emailHtml = generateEmailHtml(inquiryData, appUrl);
 
-      for (const email of emails) {
+      for (const email of validEmails) {
         try {
           console.log(`[Background] Sending email to: ${email}`);
           

@@ -111,6 +111,13 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("Missing required fields: clientEmail, clientName, orderId, or companyName");
     }
 
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(clientEmail)) {
+      return new Response(JSON.stringify({ error: 'Invalid client email address' }), {
+        status: 400, headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
     const portalUrl = `${APP_URL}/client/login`;
 
     const emailHtml = getInviteEmailHtml(clientName, companyName, portalUrl);

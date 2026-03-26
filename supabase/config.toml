@@ -58,61 +58,61 @@ verify_jwt = true
 verify_jwt = false
 
 [functions.send-client-payment-reminder]
-verify_jwt = false
+verify_jwt = true
 
 [functions.sync-order-to-sheets]
-verify_jwt = false
+verify_jwt = true
 
 [functions.send-client-invite]
-verify_jwt = false
+verify_jwt = true
 
 [functions.send-client-status-notification]
-verify_jwt = false
+verify_jwt = true
 
 [functions.create-user]
-verify_jwt = false
+verify_jwt = true
 
 [functions.send-support-inquiry-notification]
-verify_jwt = false
+verify_jwt = true
 
 [functions.send-service-delivered-notification]
-verify_jwt = false
+verify_jwt = true
 
 [functions.create-client-ticket]
 verify_jwt = false
 
 [functions.send-invoice-pdf]
-verify_jwt = false
+verify_jwt = true
 
 [functions.translate-upsell]
-verify_jwt = false
+verify_jwt = true
 
 [functions.generate-monthly-installments]
 verify_jwt = false
 
 [functions.send-monthly-toggle-notification]
-verify_jwt = false
+verify_jwt = true
 
 [functions.send-client-portal-credentials]
-verify_jwt = false
+verify_jwt = true
 
 [functions.check-daily-attendance]
 verify_jwt = false
 
 [functions.send-offer-email]
-verify_jwt = false
+verify_jwt = true
 
 [functions.confirm-offer]
 verify_jwt = false
 
 [functions.send-order-created-notification]
-verify_jwt = false
+verify_jwt = true
 
 [functions.request-client-credentials]
 verify_jwt = false
 
 [functions.notify-password-change]
-verify_jwt = false
+verify_jwt = true
 
 [functions.send-invoice-payment-reminders]
 verify_jwt = false
