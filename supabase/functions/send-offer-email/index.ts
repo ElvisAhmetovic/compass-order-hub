@@ -193,7 +193,6 @@ serve(async (req) => {
       'ajosesales36@gmail.com',
       'georgabmediateam@gmail.com',
       'jannes@scoolfinanceedu.com',
-      'johan@team-abmedia.com'
     ];
 
     const teamSubject = `[Team Copy] Your Offer from AB Media Team – ${companyName}`;
