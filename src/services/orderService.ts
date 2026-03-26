@@ -790,17 +790,8 @@ export class OrderService {
             const orderAfter = await this.getOrder(orderId);
             newInvoiceStatus = orderAfter?.status_invoice_paid ? "paid" : "draft";
           }
-          const updateData: Record<string, any> = { 
-            status: newInvoiceStatus,
-            updated_at: new Date().toISOString()
-          };
-          
-          if (newInvoiceStatus === 'sent') {
-            updateData.next_reminder_at = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
-          } else {
-            updateData.next_reminder_at = null;
-          }
-          
+
+
           const rpcNextReminder = newInvoiceStatus === 'sent' 
             ? new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString() 
             : null;
