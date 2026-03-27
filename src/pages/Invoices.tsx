@@ -11,6 +11,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { PlusCircle, FileEdit, Trash2, Download, File, CheckCircle2, XCircle, Send, Eye, Receipt, ArrowUpDown, Bell, BellOff } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
@@ -509,42 +520,84 @@ const Invoices = () => {
                                 </DropdownMenu>
                               </TableCell>
                               <TableCell>
-                                <TooltipProvider>
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-8 w-8"
-                                        onClick={() => handleToggleRemindersPaused(invoice)}
-                                        title={invoice.reminders_paused ? "Reminders paused – click to resume" : "Reminders active – click to pause"}
-                                      >
-                                        {invoice.reminders_paused ? (
-                                          <BellOff size={16} className="text-muted-foreground" />
-                                        ) : (
-                                          <Bell size={16} className="text-primary" />
-                                        )}
-                                      </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                      {invoice.reminders_paused ? "Reminders paused – click to resume" : "Reminders active – click to pause"}
-                                    </TooltipContent>
-                                  </Tooltip>
-                                </TooltipProvider>
+                                <AlertDialog>
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <AlertDialogTrigger asChild>
+                                          <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-8 w-8"
+                                            title={invoice.reminders_paused ? "Reminders paused – click to resume" : "Reminders active – click to pause"}
+                                          >
+                                            {invoice.reminders_paused ? (
+                                              <BellOff size={16} className="text-muted-foreground" />
+                                            ) : (
+                                              <Bell size={16} className="text-primary" />
+                                            )}
+                                          </Button>
+                                        </AlertDialogTrigger>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        {invoice.reminders_paused ? "Reminders paused – click to resume" : "Reminders active – click to pause"}
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>
+                                        {invoice.reminders_paused ? "Resume Reminders" : "Pause Reminders"}
+                                      </AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        {invoice.reminders_paused
+                                          ? `Are you sure you want to resume automatic payment reminders for invoice ${invoice.invoice_number}?`
+                                          : `Are you sure you want to pause automatic payment reminders for invoice ${invoice.invoice_number}? No reminders will be sent until resumed.`}
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                      <AlertDialogAction onClick={() => handleToggleRemindersPaused(invoice)}>
+                                        {invoice.reminders_paused ? "Yes, Resume" : "Yes, Pause"}
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
                               </TableCell>
                               <TableCell>
                                 <div className="flex space-x-1">
                                   {invoice.status !== 'paid' && invoice.status !== 'cancelled' && invoice.status !== 'refunded' && (
-                                    <TooltipProvider>
-                                      <Tooltip>
-                                        <TooltipTrigger asChild>
-                                          <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                                    <AlertDialog>
+                                      <TooltipProvider>
+                                        <Tooltip>
+                                          <TooltipTrigger asChild>
+                                            <AlertDialogTrigger asChild>
+                                              <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                                                title="Confirm Payment Received"
+                                              >
+                                                <CheckCircle2 size={16} />
+                                              </Button>
+                                            </AlertDialogTrigger>
+                                          </TooltipTrigger>
+                                          <TooltipContent>Confirm Payment Received</TooltipContent>
+                                        </Tooltip>
+                                      </TooltipProvider>
+                                      <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                          <AlertDialogTitle>Confirm Payment Received</AlertDialogTitle>
+                                          <AlertDialogDescription>
+                                            Are you sure the payment for invoice <strong>{invoice.invoice_number}</strong> has been received? This will mark the invoice as paid and send a confirmation email to the client.
+                                          </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                          <AlertDialogAction
+                                            className="bg-green-600 hover:bg-green-700"
                                             onClick={async () => {
                                               await handleUpdateStatus(invoice.id, 'paid');
-                                              // Fire-and-forget email
                                               supabase.functions.invoke('send-payment-confirmation', {
                                                 body: {
                                                   invoice_number: invoice.invoice_number,
@@ -559,14 +612,12 @@ const Invoices = () => {
                                                 description: `${invoice.invoice_number} marked as paid & notification sent`,
                                               });
                                             }}
-                                            title="Confirm Payment Received"
                                           >
-                                            <CheckCircle2 size={16} />
-                                          </Button>
-                                        </TooltipTrigger>
-                                        <TooltipContent>Confirm Payment Received</TooltipContent>
-                                      </Tooltip>
-                                    </TooltipProvider>
+                                            Yes, Payment Received
+                                          </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                      </AlertDialogContent>
+                                    </AlertDialog>
                                   )}
                                   <InvoiceReminderHistory invoice={invoice} />
                                   <Button 
@@ -577,14 +628,34 @@ const Invoices = () => {
                                   >
                                     <Eye size={16} />
                                   </Button>
-                                  <Button 
-                                    variant="ghost" 
-                                    size="icon"
-                                    onClick={() => handleDeleteInvoice(invoice.id)}
-                                    title="Delete"
-                                  >
-                                    <Trash2 size={16} />
-                                  </Button>
+                                  <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                      <Button 
+                                        variant="ghost" 
+                                        size="icon"
+                                        title="Delete"
+                                      >
+                                        <Trash2 size={16} />
+                                      </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                      <AlertDialogHeader>
+                                        <AlertDialogTitle>Delete Invoice</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                          Are you sure you want to delete invoice <strong>{invoice.invoice_number}</strong>? This action cannot be undone.
+                                        </AlertDialogDescription>
+                                      </AlertDialogHeader>
+                                      <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction
+                                          className="bg-destructive hover:bg-destructive/90"
+                                          onClick={() => handleDeleteInvoice(invoice.id)}
+                                        >
+                                          Delete Invoice
+                                        </AlertDialogAction>
+                                      </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                  </AlertDialog>
                                   <Button 
                                     variant="ghost" 
                                     size="icon"
