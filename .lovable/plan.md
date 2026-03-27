@@ -1,27 +1,16 @@
 
 
-## Remove johan@team-abmedia.com from Invoice Reminder & Offer Notifications
+## Add Search Bar to Offers Page
 
 ### What
-Johan wants to stop receiving:
-1. **Invoice payment reminder emails** (automated and manual)
-2. **Internal offer notification emails** (when team sends an offer to a client)
+Add a search input at the top of the Offers page that filters offers in real-time by client name, company name, or email.
 
-### Files to modify
+### How
+**File: `src/pages/Offers.tsx`**
+- Add a `searchTerm` state variable
+- Add an `Input` search field next to the header (similar pattern to `CompanySearch.tsx`)
+- Filter the `offers` array by `client_name`, `company_name`, or `client_email` matching the search term (case-insensitive)
+- Use filtered list for rendering the table
 
-Remove `johan@team-abmedia.com` from the notification list in these specific edge functions:
-
-**Invoice/Payment Reminders:**
-1. `supabase/functions/send-invoice-payment-reminders/index.ts` — automated invoice reminders
-2. `supabase/functions/send-order-payment-reminders/index.ts` — order payment reminders
-3. `supabase/functions/send-client-payment-reminder/index.ts` — client payment reminders
-4. `supabase/functions/send-invoice-pdf/index.ts` — invoice PDF team copy
-
-**Offer Notifications:**
-5. `supabase/functions/send-offer-email/index.ts` — when offer is sent to client
-6. `supabase/functions/confirm-offer/index.ts` — when offer is confirmed
-
-Each file: remove the line `"johan@team-abmedia.com"` from the `NOTIFICATION_EMAIL_LIST` array.
-
-Johan stays on other notification lists (tech support tickets, monthly contracts, follow-up reminders, client tickets, etc.).
+The search bar will sit between the page header and the table, with a clear button.
 
