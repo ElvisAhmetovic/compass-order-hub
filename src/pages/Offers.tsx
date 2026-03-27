@@ -269,7 +269,33 @@ const Offers = () => {
               </Badge>
             </div>
 
-            {loading ? (
+            <div className="flex w-full max-w-md items-center space-x-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by client, company, or email..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              {searchTerm && (
+                <Button variant="outline" size="sm" onClick={() => setSearchTerm("")}>
+                  Clear
+                </Button>
+              )}
+            </div>
+
+            {(() => {
+              const term = searchTerm.toLowerCase();
+              const filtered = term
+                ? offers.filter(o =>
+                    o.client_name.toLowerCase().includes(term) ||
+                    o.company_name.toLowerCase().includes(term) ||
+                    o.client_email.toLowerCase().includes(term)
+                  )
+                : offers;
+              return loading ? (
               <div className="text-center py-12 text-muted-foreground">Loading offers...</div>
             ) : offers.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
