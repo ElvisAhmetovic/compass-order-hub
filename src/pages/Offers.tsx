@@ -35,7 +35,10 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { format } from "date-fns";
-import { Search } from "lucide-react";
+import { Search, Filter, X } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DateRangeFilter } from "@/components/user-statistics/DateRangeFilter";
+import { DateRange } from "@/utils/dateRangeHelpers";
 
 interface Offer {
   id: string;
@@ -65,6 +68,9 @@ const Offers = () => {
   const [confirmingOffer, setConfirmingOffer] = useState<string | null>(null);
   const [sendToClientOnConfirm, setSendToClientOnConfirm] = useState(false);
   const [savingOffer, setSavingOffer] = useState(false);
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+  const [sentByFilter, setSentByFilter] = useState("all");
   const [editForm, setEditForm] = useState({
     client_name: "",
     company_name: "",
@@ -265,7 +271,7 @@ const Offers = () => {
                 <p className="text-muted-foreground">All sent offers to clients</p>
               </div>
               <Badge variant="secondary" className="text-sm">
-                {offers.length} offer{offers.length !== 1 ? "s" : ""}
+                {offers.length} total
               </Badge>
             </div>
 
@@ -286,15 +292,62 @@ const Offers = () => {
               )}
             </div>
 
+            <div className="flex flex-wrap items-center gap-3">
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-[140px]">
+                  <Filter className="h-4 w-4 mr-2" />
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="sent">Sent</SelectItem>
+                  <SelectItem value="confirmed">Confirmed</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <DateRangeFilter dateRange={dateRange} onDateRangeChange={setDateRange} />
+
+              <Select value={sentByFilter} onValueChange={setSentByFilter}>
+                <SelectTrigger className="w-[160px]">
+                  <SelectValue placeholder="Sent By" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Users</SelectItem>
+                  {[...new Set(offers.map(o => o.sent_by_name))].sort().map(name => (
+                    <SelectItem key={name} value={name}>{name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {(statusFilter !== "all" || dateRange || sentByFilter !== "all") && (
+                <Button variant="ghost" size="sm" onClick={() => { setStatusFilter("all"); setDateRange(undefined); setSentByFilter("all"); }}>
+                  <X className="h-4 w-4 mr-1" /> Clear Filters
+                </Button>
+              )}
+            </div>
+
             {(() => {
               const term = searchTerm.toLowerCase();
-              const filtered = term
-                ? offers.filter(o =>
-                    o.client_name.toLowerCase().includes(term) ||
-                    o.company_name.toLowerCase().includes(term) ||
-                    o.client_email.toLowerCase().includes(term)
-                  )
-                : offers;
+              let filtered = offers;
+              if (term) {
+                filtered = filtered.filter(o =>
+                  o.client_name.toLowerCase().includes(term) ||
+                  o.company_name.toLowerCase().includes(term) ||
+                  o.client_email.toLowerCase().includes(term)
+                );
+              }
+              if (statusFilter !== "all") {
+                filtered = filtered.filter(o => o.status === statusFilter);
+              }
+              if (dateRange) {
+                filtered = filtered.filter(o => {
+                  const d = new Date(o.created_at);
+                  return d >= dateRange.from && d <= dateRange.to;
+                });
+              }
+              if (sentByFilter !== "all") {
+                filtered = filtered.filter(o => o.sent_by_name === sentByFilter);
+              }
               return loading ? (
                 <div className="text-center py-12 text-muted-foreground">Loading offers...</div>
               ) : offers.length === 0 ? (
