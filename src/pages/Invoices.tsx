@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { PlusCircle, FileEdit, Trash2, Download, File, CheckCircle2, XCircle, Send, Eye, Receipt, ArrowUpDown, Bell, BellOff } from "lucide-react";
+import { import { PlusCircle, FileEdit, Trash2, Download, File, CheckCircle2, XCircle, Send, Eye, Receipt, ArrowUpDown, Bell, Timer, TimerOff } from "lucide-react"; } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   AlertDialog,
@@ -532,9 +532,9 @@ const Invoices = () => {
                                             title={invoice.reminders_paused ? "Reminders paused – click to resume" : "Reminders active – click to pause"}
                                           >
                                             {invoice.reminders_paused ? (
-                                              <BellOff size={16} className="text-muted-foreground" />
+                                              <TimerOff size={16} className="text-muted-foreground" />
                                             ) : (
-                                              <Bell size={16} className="text-primary" />
+                                              <Timer size={16} className="text-primary" />
                                             )}
                                           </Button>
                                         </AlertDialogTrigger>
