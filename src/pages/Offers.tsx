@@ -296,60 +296,65 @@ const Offers = () => {
                   )
                 : offers;
               return loading ? (
-              <div className="text-center py-12 text-muted-foreground">Loading offers...</div>
-            ) : offers.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground">
-                <Send className="mx-auto h-12 w-12 mb-4 opacity-30" />
-                <p>No offers sent yet</p>
-              </div>
-            ) : (
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Client</TableHead>
-                      <TableHead>Company</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Price</TableHead>
-                      <TableHead>Sent By</TableHead>
-                      <TableHead>Date & Time</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {offers.map((offer) => (
-                      <TableRow key={offer.id}>
-                        <TableCell className="font-medium">{offer.client_name}</TableCell>
-                        <TableCell>{offer.company_name}</TableCell>
-                        <TableCell className="text-muted-foreground text-sm">{offer.client_email}</TableCell>
-                        <TableCell className="font-semibold">
-                          {currencySymbol(offer.currency)}{offer.price.toLocaleString("de-DE", { minimumFractionDigits: 2 })}
-                        </TableCell>
-                        <TableCell>{offer.sent_by_name}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {format(new Date(offer.created_at), "dd.MM.yyyy HH:mm")}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-1">
-                            <Button variant="ghost" size="sm" onClick={() => setSelectedOffer(offer)}>
-                              <Eye className="h-4 w-4 mr-1" /> View
-                            </Button>
-                            {offer.status !== "confirmed" && (
-                              <Button variant="ghost" size="sm" className="text-green-600 hover:text-green-700" onClick={() => setConfirmOffer(offer)}>
-                                <CheckCircle2 className="h-4 w-4 mr-1" /> Confirm
-                              </Button>
-                            )}
-                            <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => setDeleteOffer(offer)}>
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
+                <div className="text-center py-12 text-muted-foreground">Loading offers...</div>
+              ) : offers.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <Send className="mx-auto h-12 w-12 mb-4 opacity-30" />
+                  <p>No offers sent yet</p>
+                </div>
+              ) : filtered.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <p>No offers match your search</p>
+                </div>
+              ) : (
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Client</TableHead>
+                        <TableHead>Company</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Price</TableHead>
+                        <TableHead>Sent By</TableHead>
+                        <TableHead>Date & Time</TableHead>
+                        <TableHead>Actions</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
+                    </TableHeader>
+                    <TableBody>
+                      {filtered.map((offer) => (
+                        <TableRow key={offer.id}>
+                          <TableCell className="font-medium">{offer.client_name}</TableCell>
+                          <TableCell>{offer.company_name}</TableCell>
+                          <TableCell className="text-muted-foreground text-sm">{offer.client_email}</TableCell>
+                          <TableCell className="font-semibold">
+                            {currencySymbol(offer.currency)}{offer.price.toLocaleString("de-DE", { minimumFractionDigits: 2 })}
+                          </TableCell>
+                          <TableCell>{offer.sent_by_name}</TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {format(new Date(offer.created_at), "dd.MM.yyyy HH:mm")}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-1">
+                              <Button variant="ghost" size="sm" onClick={() => setSelectedOffer(offer)}>
+                                <Eye className="h-4 w-4 mr-1" /> View
+                              </Button>
+                              {offer.status !== "confirmed" && (
+                                <Button variant="ghost" size="sm" className="text-green-600 hover:text-green-700" onClick={() => setConfirmOffer(offer)}>
+                                  <CheckCircle2 className="h-4 w-4 mr-1" /> Confirm
+                                </Button>
+                              )}
+                              <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => setDeleteOffer(offer)}>
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              );
+            })()}
           </div>
 
           {/* View Offer Dialog */}
