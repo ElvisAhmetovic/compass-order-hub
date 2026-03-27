@@ -56,6 +56,7 @@ interface Offer {
 
 const Offers = () => {
   const [offers, setOffers] = useState<Offer[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const [selectedOffer, setSelectedOffer] = useState<Offer | null>(null);
   const [deleteOffer, setDeleteOffer] = useState<Offer | null>(null);
