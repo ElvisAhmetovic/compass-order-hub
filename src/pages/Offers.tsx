@@ -35,6 +35,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { format } from "date-fns";
+import { Search } from "lucide-react";
 
 interface Offer {
   id: string;
@@ -55,6 +56,7 @@ interface Offer {
 
 const Offers = () => {
   const [offers, setOffers] = useState<Offer[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const [selectedOffer, setSelectedOffer] = useState<Offer | null>(null);
   const [deleteOffer, setDeleteOffer] = useState<Offer | null>(null);
@@ -267,61 +269,92 @@ const Offers = () => {
               </Badge>
             </div>
 
-            {loading ? (
-              <div className="text-center py-12 text-muted-foreground">Loading offers...</div>
-            ) : offers.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground">
-                <Send className="mx-auto h-12 w-12 mb-4 opacity-30" />
-                <p>No offers sent yet</p>
+            <div className="flex w-full max-w-md items-center space-x-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by client, company, or email..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
               </div>
-            ) : (
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Client</TableHead>
-                      <TableHead>Company</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Price</TableHead>
-                      <TableHead>Sent By</TableHead>
-                      <TableHead>Date & Time</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {offers.map((offer) => (
-                      <TableRow key={offer.id}>
-                        <TableCell className="font-medium">{offer.client_name}</TableCell>
-                        <TableCell>{offer.company_name}</TableCell>
-                        <TableCell className="text-muted-foreground text-sm">{offer.client_email}</TableCell>
-                        <TableCell className="font-semibold">
-                          {currencySymbol(offer.currency)}{offer.price.toLocaleString("de-DE", { minimumFractionDigits: 2 })}
-                        </TableCell>
-                        <TableCell>{offer.sent_by_name}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {format(new Date(offer.created_at), "dd.MM.yyyy HH:mm")}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-1">
-                            <Button variant="ghost" size="sm" onClick={() => setSelectedOffer(offer)}>
-                              <Eye className="h-4 w-4 mr-1" /> View
-                            </Button>
-                            {offer.status !== "confirmed" && (
-                              <Button variant="ghost" size="sm" className="text-green-600 hover:text-green-700" onClick={() => setConfirmOffer(offer)}>
-                                <CheckCircle2 className="h-4 w-4 mr-1" /> Confirm
-                              </Button>
-                            )}
-                            <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => setDeleteOffer(offer)}>
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
+              {searchTerm && (
+                <Button variant="outline" size="sm" onClick={() => setSearchTerm("")}>
+                  Clear
+                </Button>
+              )}
+            </div>
+
+            {(() => {
+              const term = searchTerm.toLowerCase();
+              const filtered = term
+                ? offers.filter(o =>
+                    o.client_name.toLowerCase().includes(term) ||
+                    o.company_name.toLowerCase().includes(term) ||
+                    o.client_email.toLowerCase().includes(term)
+                  )
+                : offers;
+              return loading ? (
+                <div className="text-center py-12 text-muted-foreground">Loading offers...</div>
+              ) : offers.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <Send className="mx-auto h-12 w-12 mb-4 opacity-30" />
+                  <p>No offers sent yet</p>
+                </div>
+              ) : filtered.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <p>No offers match your search</p>
+                </div>
+              ) : (
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Client</TableHead>
+                        <TableHead>Company</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Price</TableHead>
+                        <TableHead>Sent By</TableHead>
+                        <TableHead>Date & Time</TableHead>
+                        <TableHead>Actions</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
+                    </TableHeader>
+                    <TableBody>
+                      {filtered.map((offer) => (
+                        <TableRow key={offer.id}>
+                          <TableCell className="font-medium">{offer.client_name}</TableCell>
+                          <TableCell>{offer.company_name}</TableCell>
+                          <TableCell className="text-muted-foreground text-sm">{offer.client_email}</TableCell>
+                          <TableCell className="font-semibold">
+                            {currencySymbol(offer.currency)}{offer.price.toLocaleString("de-DE", { minimumFractionDigits: 2 })}
+                          </TableCell>
+                          <TableCell>{offer.sent_by_name}</TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {format(new Date(offer.created_at), "dd.MM.yyyy HH:mm")}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-1">
+                              <Button variant="ghost" size="sm" onClick={() => setSelectedOffer(offer)}>
+                                <Eye className="h-4 w-4 mr-1" /> View
+                              </Button>
+                              {offer.status !== "confirmed" && (
+                                <Button variant="ghost" size="sm" className="text-green-600 hover:text-green-700" onClick={() => setConfirmOffer(offer)}>
+                                  <CheckCircle2 className="h-4 w-4 mr-1" /> Confirm
+                                </Button>
+                              )}
+                              <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => setDeleteOffer(offer)}>
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              );
+            })()}
           </div>
 
           {/* View Offer Dialog */}
