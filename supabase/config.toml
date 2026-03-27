@@ -119,3 +119,6 @@ verify_jwt = false
 
 [functions.send-follow-up-reminders]
 verify_jwt = false
+
+[functions.send-payment-confirmation]
+verify_jwt = true

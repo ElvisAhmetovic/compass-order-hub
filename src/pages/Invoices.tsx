@@ -534,6 +534,40 @@ const Invoices = () => {
                               </TableCell>
                               <TableCell>
                                 <div className="flex space-x-1">
+                                  {invoice.status !== 'paid' && invoice.status !== 'cancelled' && invoice.status !== 'refunded' && (
+                                    <TooltipProvider>
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                                            onClick={async () => {
+                                              await handleUpdateStatus(invoice.id, 'paid');
+                                              // Fire-and-forget email
+                                              supabase.functions.invoke('send-payment-confirmation', {
+                                                body: {
+                                                  invoice_number: invoice.invoice_number,
+                                                  client_name: invoice.client?.name || 'Client',
+                                                  client_email: invoice.client?.email || '',
+                                                  amount: invoice.total_amount,
+                                                  currency: invoice.currency || 'EUR',
+                                                },
+                                              }).catch(err => console.error('Payment confirmation email error:', err));
+                                              toast({
+                                                title: "✅ Payment confirmed",
+                                                description: `${invoice.invoice_number} marked as paid & notification sent`,
+                                              });
+                                            }}
+                                            title="Confirm Payment Received"
+                                          >
+                                            <CheckCircle2 size={16} />
+                                          </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>Confirm Payment Received</TooltipContent>
+                                      </Tooltip>
+                                    </TooltipProvider>
+                                  )}
                                   <InvoiceReminderHistory invoice={invoice} />
                                   <Button 
                                     variant="ghost" 
