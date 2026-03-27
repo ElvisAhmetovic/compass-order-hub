@@ -1,43 +1,33 @@
 
 
-## Add "Confirm Payment Received" Button to Invoices
+## Add Confirmation Modals to Invoice Actions
 
 ### What
-A green checkmark button on each invoice row that, when clicked:
-1. Sets the invoice status to **paid** (reusing existing `handleUpdateStatus` which already syncs to orders, monthly installments, and clears reminders)
-2. Sends a "Payment Received" confirmation email to the **client**
-3. Sends a team copy to the notification list (excluding johan@team-abmedia.com per existing rule)
-4. Shows a success toast
+Add AlertDialog confirmation modals to three buttons in the Invoices page to prevent accidental clicks:
+1. **Confirm Payment Received** (green checkmark) — "Are you sure this payment has been received?"
+2. **Delete Invoice** (trash icon) — "Are you sure you want to delete this invoice?"
+3. **Toggle Reminders Pause/Resume** (bell icon) — "Are you sure you want to pause/resume reminders?"
 
-### Safety Analysis
+### How
 
-**What could break?**
-- **Nothing in the status sync path** — we reuse the existing `handleUpdateStatus('paid')` which already: clears `next_reminder_at`, syncs to linked orders (toggles Invoice Paid), syncs to linked monthly installments, and updates local state.
-- **Email is fire-and-forget** — if the edge function fails, the status change still succeeds. No blocking.
-- **Button only shows for actionable statuses** — hidden when already paid/cancelled/refunded, preventing duplicate sends.
-- **RLS on invoice update** — `handleUpdateStatus` uses `InvoiceService.updateInvoice` which goes through RLS. For invoices the user doesn't own, this could fail. However, the existing status dropdown already has this same behavior, so this button is no worse than what exists. For cross-user syncs, the order sync path already uses `sync_invoice_status_by_order` RPC.
+**File: `src/pages/Invoices.tsx`**
 
-### Implementation
+All three buttons already exist inline. Wrap each with an `AlertDialog` (already imported in the project via `@/components/ui/alert-dialog`).
 
-**1. New Edge Function: `supabase/functions/send-payment-confirmation/index.ts`**
-- Accepts: `invoice_number`, `client_name`, `client_email`, `amount`, `currency`
-- Validates JWT + input (email regex, required fields)
-- Sends client email: professional "Payment Received — Thank You" HTML email from `noreply@abm-team.com` using `RESEND_API_KEY_ABMEDIA`
-- Sends team copy to notification list (without johan@team-abmedia.com)
-- Batched sending: 2 per batch, 1s delay (existing pattern)
-- European amount formatting (de-DE locale)
+1. **Confirm Payment Received** (lines 537-570): Wrap in AlertDialog with trigger on the green CheckCircle2 button. Dialog text: "Confirm Payment Received — Are you sure the payment for {invoice_number} has been received? This will mark the invoice as paid and notify the client." Action button: green "Yes, Payment Received".
 
-**2. Update `src/pages/Invoices.tsx`**
-- Add a green `CheckCircle2` button in the Actions column (before the View button)
-- Only visible when `invoice.status !== 'paid' && invoice.status !== 'cancelled' && invoice.status !== 'refunded'`
-- On click: calls existing `handleUpdateStatus(invoice.id, 'paid')`, then fire-and-forget invokes `send-payment-confirmation`
-- Toast: "Payment confirmed & notification sent"
+2. **Delete Invoice** (lines 580-587): Wrap in AlertDialog. Dialog text: "Delete Invoice — Are you sure you want to delete {invoice_number}? This action cannot be undone." Action button: red "Delete Invoice".
 
-**3. Update `supabase/config.toml`**
-- Add `[functions.send-payment-confirmation]` with `verify_jwt = true`
+3. **Reminder Toggle** (lines 512-533): Wrap in AlertDialog. Dialog text changes based on current state — "Pause Reminders" or "Resume Reminders" with appropriate description. Action button: "Yes, Pause" or "Yes, Resume".
 
-### Files to create/modify
-1. `supabase/functions/send-payment-confirmation/index.ts` — New edge function
-2. `src/pages/Invoices.tsx` — Add confirm payment button in Actions column
-3. `supabase/config.toml` — Register new function
+Add state variables to track which invoice is pending each action, or use the AlertDialog's built-in open/close pattern with `AlertDialogTrigger asChild`.
+
+### Technical Details
+- Import `AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger` from `@/components/ui/alert-dialog`
+- Each action button becomes an `AlertDialogTrigger asChild` wrapping the existing button
+- The actual handler logic moves into the `AlertDialogAction` onClick
+- No new files needed — single file edit
+
+### Files to modify
+1. `src/pages/Invoices.tsx` — Wrap three buttons with AlertDialog confirmation modals
 
