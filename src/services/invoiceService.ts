@@ -589,10 +589,21 @@ export class InvoiceService {
 
   // Update invoice sequence table for custom numbering
   static async updateInvoiceSequence(year: number, sequence: number): Promise<void> {
+    // Fetch current sequence to prevent accidental resets
+    const { data: current } = await supabase
+      .from('invoice_sequences')
+      .select('last_sequence')
+      .eq('year', year)
+      .eq('prefix', 'INV')
+      .single();
+
+    // Only update if new sequence is higher than current
+    const newSequence = current ? Math.max(current.last_sequence, sequence) : sequence;
+
     const { error } = await supabase
       .from('invoice_sequences')
       .upsert(
-        { year, prefix: 'INV', last_sequence: sequence, updated_at: new Date().toISOString() },
+        { year, prefix: 'INV', last_sequence: newSequence, updated_at: new Date().toISOString() },
         { onConflict: 'year,prefix' }
       );
     
