@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { format } from 'date-fns';
-import { AlarmClock, Trash2, Loader2, Phone, Building2, User, Clock, CheckCircle, XCircle, Plus } from 'lucide-react';
+import { AlarmClock, Trash2, Loader2, Phone, Building2, User, Clock, CheckCircle, XCircle, Plus, RefreshCw } from 'lucide-react';
 import Layout from '@/components/layout/Layout';
 import Sidebar from '@/components/dashboard/Sidebar';
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from '@/hooks/use-toast';
@@ -61,6 +62,13 @@ const Reminders = () => {
   const [timeValue, setTimeValue] = useState('');
   const [assigneeEmail, setAssigneeEmail] = useState('');
   const [files, setFiles] = useState<AttachmentFile[]>([]);
+
+  // Reschedule state
+  const [rescheduleReminder, setRescheduleReminder] = useState<Reminder | null>(null);
+  const [rescheduleDate, setRescheduleDate] = useState<Date>();
+  const [rescheduleTime, setRescheduleTime] = useState('');
+  const [rescheduleNote, setRescheduleNote] = useState('');
+  const [rescheduling, setRescheduling] = useState(false);
 
   const fetchReminders = useCallback(async () => {
     const { data, error } = await supabase
@@ -200,6 +208,52 @@ const Reminders = () => {
     } else {
       setReminders(prev => prev.filter(r => r.id !== id));
       toast({ title: 'Reminder deleted' });
+    }
+  };
+
+  const handleReschedule = async () => {
+    if (!rescheduleReminder || !rescheduleDate || !rescheduleTime) {
+      toast({ title: 'Missing fields', description: 'Please select a date and time.', variant: 'destructive' });
+      return;
+    }
+
+    const [hours, minutes] = rescheduleTime.split(':').map(Number);
+    const remindAt = new Date(rescheduleDate);
+    remindAt.setHours(hours, minutes, 0, 0);
+
+    if (remindAt <= new Date()) {
+      toast({ title: 'Invalid time', description: 'Reminder time must be in the future.', variant: 'destructive' });
+      return;
+    }
+
+    setRescheduling(true);
+    try {
+      const fullNote = rescheduleNote.trim()
+        ? `${rescheduleReminder.note}\n\n--- Reschedule note ---\n${rescheduleNote.trim()}`
+        : rescheduleReminder.note;
+
+      const { error } = await supabase.from('follow_up_reminders').insert({
+        company_name: rescheduleReminder.company_name,
+        contact_phone: rescheduleReminder.contact_phone,
+        note: fullNote,
+        remind_at: remindAt.toISOString(),
+        assignee_email: rescheduleReminder.assignee_email,
+        assignee_name: rescheduleReminder.assignee_name,
+        created_by: user?.id,
+        created_by_name: user?.full_name || user?.email || 'Unknown',
+      });
+
+      if (error) throw error;
+
+      toast({ title: 'Reminder rescheduled', description: `New reminder set for ${format(remindAt, 'PPP HH:mm')}` });
+      setRescheduleReminder(null);
+      setRescheduleDate(undefined);
+      setRescheduleTime('');
+      setRescheduleNote('');
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+    } finally {
+      setRescheduling(false);
     }
   };
 
@@ -427,9 +481,25 @@ const Reminders = () => {
                             {r.sent_at && <span>Sent: {format(new Date(r.sent_at), 'PPP HH:mm')}</span>}
                           </div>
                         </div>
-                        <Button variant="ghost" size="sm" onClick={() => handleDelete(r.id)} className="text-destructive hover:text-destructive">
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                        <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setRescheduleReminder(r);
+                              setRescheduleDate(undefined);
+                              setRescheduleTime('');
+                              setRescheduleNote('');
+                            }}
+                            className="text-primary hover:text-primary"
+                            title="Reschedule"
+                          >
+                            <RefreshCw className="w-4 h-4" />
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => handleDelete(r.id)} className="text-destructive hover:text-destructive">
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
@@ -451,6 +521,83 @@ const Reminders = () => {
             </div>
           )}
         </div>
+
+        {/* Reschedule Dialog */}
+        <Dialog open={!!rescheduleReminder} onOpenChange={(open) => { if (!open) setRescheduleReminder(null); }}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <RefreshCw className="w-5 h-5" />
+                Reschedule Reminder
+              </DialogTitle>
+            </DialogHeader>
+            {rescheduleReminder && (
+              <div className="space-y-4">
+                <div className="p-3 bg-muted rounded-lg space-y-1">
+                  <p className="font-semibold text-foreground">{rescheduleReminder.company_name}</p>
+                  {rescheduleReminder.contact_phone && (
+                    <p className="text-sm text-muted-foreground flex items-center gap-1">
+                      <Phone className="w-3 h-3" />{rescheduleReminder.contact_phone}
+                    </p>
+                  )}
+                  <p className="text-sm text-muted-foreground">→ {rescheduleReminder.assignee_name || rescheduleReminder.assignee_email}</p>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-foreground mb-1.5 block">New Date *</label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn("w-full justify-start text-left font-normal", !rescheduleDate && "text-muted-foreground")}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {rescheduleDate ? format(rescheduleDate, 'PPP') : 'Pick a date'}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={rescheduleDate}
+                          onSelect={setRescheduleDate}
+                          disabled={date => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                          initialFocus
+                          className={cn("p-3 pointer-events-auto")}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium text-foreground mb-1.5 block">New Time *</label>
+                    <Input
+                      type="time"
+                      value={rescheduleTime}
+                      onChange={e => setRescheduleTime(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-foreground mb-1.5 block">Add note (optional)</label>
+                  <Textarea
+                    value={rescheduleNote}
+                    onChange={e => setRescheduleNote(e.target.value)}
+                    placeholder="e.g. Called again, no answer. Try after lunch."
+                    rows={2}
+                  />
+                </div>
+              </div>
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setRescheduleReminder(null)}>Cancel</Button>
+              <Button onClick={handleReschedule} disabled={rescheduling || !rescheduleDate || !rescheduleTime}>
+                {rescheduling ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Saving...</> : <><RefreshCw className="w-4 h-4 mr-2" />Reschedule</>}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </Layout>
     </div>
   );
