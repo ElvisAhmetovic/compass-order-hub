@@ -1,0 +1,1 @@
+UPDATE invoice_sequences SET last_sequence = 513, updated_at = NOW() WHERE year = 2026 AND prefix = 'INV';
