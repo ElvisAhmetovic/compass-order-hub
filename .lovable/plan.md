@@ -1,14 +1,28 @@
 
 
-## Fix Tech Support Page Layout
+## Add "Reschedule" Button to Sent/Past Reminders
 
-### Problem
-The content container on line 156 uses `flex-1 flex` which creates a **horizontal** flex layout. The header (with buttons) and the ticket cards are placed side-by-side instead of stacked vertically, pushing the "Create Ticket" buttons off-screen.
+### What
+When a follow-up reminder has been sent (e.g. you called but nobody picked up), add a "Reschedule" button next to the delete button on past reminders. Clicking it opens a small dialog where you only pick a **new date and time** — all other details (company name, phone, note, assignee) are kept from the original reminder. A new scheduled reminder is created with the same info.
 
-### Fix
-**File: `src/pages/TechSupport.tsx`**
-- Change `className="flex-1 flex p-6 space-y-6"` to `className="flex-1 flex flex-col p-6 space-y-6"` on the main content wrapper (line 156)
-- Same fix on the loading state (line 146): add `flex-col`
+### How
 
-This matches the standard admin page layout pattern used across other pages.
+**File: `src/pages/Reminders.tsx`**
+
+1. Add a `rescheduleReminder` state (`Reminder | null`) to track which reminder is being rescheduled
+2. Add a `rescheduleDate` and `rescheduleTime` state for the new date/time
+3. Add a `RefreshCw` icon import from lucide-react
+4. On each **past reminder** card (sent/failed), add a "Reschedule" button (next to delete) with `RefreshCw` icon
+5. Clicking it sets `rescheduleReminder` to that reminder and opens a Dialog
+6. The Dialog shows:
+   - Company name (read-only, displayed as text)
+   - Date picker and time input (only fields to fill)
+   - Optional: ability to append to the existing note
+7. On submit: insert a new `follow_up_reminders` row with the same `company_name`, `contact_phone`, `note` (optionally appended), `assignee_email`, `assignee_name`, but new `remind_at` and `status: 'scheduled'`
+8. Toast confirmation, close dialog
+
+This way you never re-enter company/phone/notes — just pick a new time.
+
+### Files to modify
+1. `src/pages/Reminders.tsx` — Add reschedule state, dialog, and handler
 
