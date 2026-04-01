@@ -353,8 +353,9 @@ async function createInvoice(
   if (rpcErr) throw new Error(`Failed to generate invoice number: ${rpcErr.message}`);
 
   const totalAmount = contract.monthly_amount;
-  const netAmount = totalAmount;
-  const vatAmount = 0;
+  const vatRate = contract.vat_enabled ? (contract.vat_rate || 0) : 0;
+  const netAmount = vatRate > 0 ? Math.round((totalAmount / (1 + vatRate)) * 100) / 100 : totalAmount;
+  const vatAmount = vatRate > 0 ? Math.round((totalAmount - netAmount) * 100) / 100 : 0;
   const issueDate = new Date().toISOString().split("T")[0];
   const userId = contract.created_by || "00000000-0000-0000-0000-000000000000";
   const dbText = INVOICE_DB_TEXT[lang];
