@@ -136,6 +136,8 @@ const CreateMonthlyContractModal: React.FC<Props> = ({ open, onOpenChange, onCre
     if (open && user) {
       form.setValue("assignedTo", user.id);
       setSelectedInventoryItems([]);
+      setVatEnabled(false);
+      setVatPercentage(19);
     }
   }, [open, user, form]);
 
