@@ -137,7 +137,10 @@ const SendMonthlyInvoiceDialog: React.FC<SendMonthlyInvoiceDialogProps> = ({
       }
 
       // Build line items for PDF
-      const netPrice = installment.amount;
+      const pdfVatEnabled = !!(contract as any).vat_enabled;
+      const pdfVatRate = pdfVatEnabled ? (Number((contract as any).vat_rate) || 0) : 0;
+      const pdfGrossPrice = installment.amount;
+      const pdfNetPrice = pdfVatRate > 0 ? pdfGrossPrice / (1 + pdfVatRate / 100) : pdfGrossPrice;
       const description = contract.description
         ? `${contract.description} - ${installment.month_label}`
         : `Google Monthly Service - ${installment.month_label}`;
@@ -148,10 +151,10 @@ const SendMonthlyInvoiceDialog: React.FC<SendMonthlyInvoiceDialogProps> = ({
         item_description: description,
         quantity: 1,
         unit: "pcs",
-        unit_price: netPrice,
-        vat_rate: 0,
+        unit_price: pdfNetPrice,
+        vat_rate: pdfVatRate,
         discount_rate: 0,
-        line_total: netPrice,
+        line_total: pdfNetPrice,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       }];
