@@ -317,13 +317,24 @@ function formatDate(dateStr: string): string {
 
 // ── Find or create client ──────────────────────────────────────────
 async function findOrCreateClient(supabase: any, contract: any): Promise<string> {
-  const { data: existing } = await supabase
+  // Try email + name match first (prevents wrong client when multiple companies share an email)
+  const { data: exactMatch } = await supabase
+    .from("clients")
+    .select("id")
+    .eq("email", contract.client_email)
+    .eq("name", contract.client_name)
+    .maybeSingle();
+
+  if (exactMatch) return exactMatch.id;
+
+  // Fallback: email only
+  const { data: emailMatch } = await supabase
     .from("clients")
     .select("id")
     .eq("email", contract.client_email)
     .maybeSingle();
 
-  if (existing) return existing.id;
+  if (emailMatch) return emailMatch.id;
 
   const { data: newClient, error } = await supabase
     .from("clients")

@@ -163,13 +163,16 @@ const SendMonthlyInvoiceDialog: React.FC<SendMonthlyInvoiceDialogProps> = ({
         if (raw) savedSettings = JSON.parse(raw);
       } catch {}
 
+      const contractVatEnabled = !!(contract as any).vat_enabled;
+      const contractVatRate = contractVatEnabled ? (Number((contract as any).vat_rate) || 0) : 0;
+
       const templateSettings = {
         ...savedSettings,
         currency: contract.currency || "EUR",
         language,
         selectedPaymentAccount: "both",
-        vatEnabled: true,
-        vatRate: 0,
+        vatEnabled: contractVatEnabled,
+        vatRate: contractVatRate,
       };
 
       const formData = {
