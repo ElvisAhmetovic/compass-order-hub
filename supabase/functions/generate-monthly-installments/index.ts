@@ -353,8 +353,9 @@ async function createInvoice(
   if (rpcErr) throw new Error(`Failed to generate invoice number: ${rpcErr.message}`);
 
   const totalAmount = contract.monthly_amount;
-  const netAmount = totalAmount;
-  const vatAmount = 0;
+  const vatRate = contract.vat_enabled ? (contract.vat_rate || 0) : 0;
+  const netAmount = vatRate > 0 ? Math.round((totalAmount / (1 + vatRate)) * 100) / 100 : totalAmount;
+  const vatAmount = vatRate > 0 ? Math.round((totalAmount - netAmount) * 100) / 100 : 0;
   const issueDate = new Date().toISOString().split("T")[0];
   const userId = contract.created_by || "00000000-0000-0000-0000-000000000000";
   const dbText = INVOICE_DB_TEXT[lang];
@@ -389,7 +390,7 @@ async function createInvoice(
     quantity: 1,
     unit: PDF_LABELS[lang].unit,
     unit_price: netAmount,
-    vat_rate: 0,
+    vat_rate: vatRate,
     discount_rate: 0,
     line_total: totalAmount,
   });
@@ -800,8 +801,9 @@ Deno.serve(async (req) => {
             }
 
             const totalAmount = contract.monthly_amount;
-            const netAmount = Math.round((totalAmount / 1.19) * 100) / 100;
-            const vatAmount = Math.round((totalAmount - netAmount) * 100) / 100;
+            const contractVatRate = contract.vat_enabled ? (contract.vat_rate || 0) : 0;
+            const netAmount = contractVatRate > 0 ? Math.round((totalAmount / (1 + contractVatRate)) * 100) / 100 : totalAmount;
+            const vatAmount = contractVatRate > 0 ? Math.round((totalAmount - netAmount) * 100) / 100 : 0;
             const description = INVOICE_DB_TEXT[lang].lineDescription(contract.description, monthLabel);
             const dueDate = `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-15`;
 
@@ -870,8 +872,9 @@ Deno.serve(async (req) => {
         processed++;
 
         const totalAmount = contract.monthly_amount;
-        const netAmount = Math.round((totalAmount / 1.19) * 100) / 100;
-        const vatAmount = Math.round((totalAmount - netAmount) * 100) / 100;
+        const contractVatRate = contract.vat_enabled ? (contract.vat_rate || 0) : 0;
+        const netAmount = contractVatRate > 0 ? Math.round((totalAmount / (1 + contractVatRate)) * 100) / 100 : totalAmount;
+        const vatAmount = contractVatRate > 0 ? Math.round((totalAmount - netAmount) * 100) / 100 : 0;
         const description = INVOICE_DB_TEXT[lang].lineDescription(contract.description, monthLabel);
 
         const pdfBytes = generateInvoicePDF(

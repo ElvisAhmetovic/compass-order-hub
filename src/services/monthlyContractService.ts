@@ -24,6 +24,8 @@ export interface MonthlyContract {
   internal_notes: string | null;
   inventory_items: string | null;
   billing_frequency: number;
+  vat_enabled: boolean;
+  vat_rate: number;
 }
 
 export interface MonthlyInstallment {
@@ -92,6 +94,8 @@ export const monthlyContractService = {
         assigned_to_name: contract.assigned_to_name,
         internal_notes: contract.internal_notes,
         inventory_items: contract.inventory_items,
+        vat_enabled: contract.vat_enabled || false,
+        vat_rate: contract.vat_rate || 0,
       } as any)
       .select()
       .single();

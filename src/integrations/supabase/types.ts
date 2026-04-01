@@ -1061,6 +1061,8 @@ export type Database = {
           status: string
           total_value: number
           updated_at: string
+          vat_enabled: boolean | null
+          vat_rate: number | null
           website: string | null
         }
         Insert: {
@@ -1086,6 +1088,8 @@ export type Database = {
           status?: string
           total_value: number
           updated_at?: string
+          vat_enabled?: boolean | null
+          vat_rate?: number | null
           website?: string | null
         }
         Update: {
@@ -1111,6 +1115,8 @@ export type Database = {
           status?: string
           total_value?: number
           updated_at?: string
+          vat_enabled?: boolean | null
+          vat_rate?: number | null
           website?: string | null
         }
         Relationships: []

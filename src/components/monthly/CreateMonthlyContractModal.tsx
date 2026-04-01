@@ -33,6 +33,8 @@ import { supabase } from "@/integrations/supabase/client";
 import OrderSearchDropdown from "@/components/dashboard/OrderSearchDropdown";
 import InventoryItemsSelector, { SelectedInventoryItem } from "@/components/dashboard/InventoryItemsSelector";
 import { Order } from "@/types";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 const formSchema = z.object({
   clientName: z.string().min(1, "Company name is required"),
@@ -70,6 +72,8 @@ const CreateMonthlyContractModal: React.FC<Props> = ({ open, onOpenChange, onCre
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
   const [selectedInventoryItems, setSelectedInventoryItems] = useState<SelectedInventoryItem[]>([]);
+  const [vatEnabled, setVatEnabled] = useState(false);
+  const [vatPercentage, setVatPercentage] = useState(19);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -99,6 +103,12 @@ const CreateMonthlyContractModal: React.FC<Props> = ({ open, onOpenChange, onCre
   const numberOfInstallments = durationMonths > 0 && billingFrequency > 0 ? Math.floor(durationMonths / billingFrequency) : 0;
   const installmentAmount = numberOfInstallments > 0 ? totalValue / numberOfInstallments : 0;
 
+  const vatRate = vatPercentage / 100;
+  const netTotal = vatEnabled ? Math.round((totalValue / (1 + vatRate)) * 100) / 100 : totalValue;
+  const vatAmountTotal = vatEnabled ? Math.round((totalValue - netTotal) * 100) / 100 : 0;
+  const netInstallment = numberOfInstallments > 0 ? Math.round((netTotal / numberOfInstallments) * 100) / 100 : 0;
+  const vatInstallment = numberOfInstallments > 0 ? Math.round((vatAmountTotal / numberOfInstallments) * 100) / 100 : 0;
+
   const formatPrice = (value: number) =>
     new Intl.NumberFormat("de-DE", { style: "currency", currency }).format(value);
 
@@ -126,6 +136,8 @@ const CreateMonthlyContractModal: React.FC<Props> = ({ open, onOpenChange, onCre
     if (open && user) {
       form.setValue("assignedTo", user.id);
       setSelectedInventoryItems([]);
+      setVatEnabled(false);
+      setVatPercentage(19);
     }
   }, [open, user, form]);
 
@@ -177,6 +189,8 @@ const CreateMonthlyContractModal: React.FC<Props> = ({ open, onOpenChange, onCre
           internal_notes: values.internalNotes || null,
           inventory_items: selectedInventoryItems.length > 0 ? JSON.stringify(selectedInventoryItems) : null,
           billing_frequency: values.billingFrequency,
+          vat_enabled: vatEnabled,
+          vat_rate: vatEnabled ? vatPercentage / 100 : 0,
         },
         user.id
       );
@@ -333,6 +347,46 @@ const CreateMonthlyContractModal: React.FC<Props> = ({ open, onOpenChange, onCre
                     </FormItem>
                   )} />
                 </div>
+
+                {/* VAT Toggle */}
+                <div className="flex items-center gap-4 p-3 rounded-lg border bg-muted/30">
+                  <div className="flex items-center gap-2">
+                    <Switch checked={vatEnabled} onCheckedChange={setVatEnabled} id="vat-toggle" />
+                    <Label htmlFor="vat-toggle" className="text-sm font-medium">VAT %</Label>
+                  </div>
+                  {vatEnabled && (
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        min="1"
+                        max="30"
+                        step="0.5"
+                        value={vatPercentage}
+                        onChange={(e) => setVatPercentage(Number(e.target.value) || 0)}
+                        className="w-20 h-8"
+                      />
+                      <span className="text-sm text-muted-foreground">%</span>
+                    </div>
+                  )}
+                </div>
+
+                {vatEnabled && totalValue > 0 && (
+                  <div className="rounded-lg border bg-muted/20 p-3 space-y-1">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Netto:</span>
+                      <span>{formatPrice(netTotal)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">VAT ({vatPercentage}%):</span>
+                      <span>{formatPrice(vatAmountTotal)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm font-semibold border-t pt-1">
+                      <span>Total (Brutto):</span>
+                      <span>{formatPrice(totalValue)}</span>
+                    </div>
+                  </div>
+                )}
+
                 <FormField control={form.control} name="startDate" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Start Date *</FormLabel>
@@ -403,6 +457,11 @@ const CreateMonthlyContractModal: React.FC<Props> = ({ open, onOpenChange, onCre
                   {billingFrequency === 1 ? "Monthly Installment" : `Installment (every ${billingFrequency} months)`}
                 </p>
                 <p className="text-2xl font-bold text-primary">{formatPrice(installmentAmount)}</p>
+                {vatEnabled && (
+                  <p className="text-xs text-muted-foreground">
+                    Netto: {formatPrice(netInstallment)} + VAT: {formatPrice(vatInstallment)}
+                  </p>
+                )}
                 <p className="text-xs text-muted-foreground">
                   {numberOfInstallments} installments × {formatPrice(installmentAmount)} = {formatPrice(totalValue)}
                 </p>

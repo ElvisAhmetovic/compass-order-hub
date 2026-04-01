@@ -1,0 +1,3 @@
+ALTER TABLE monthly_contracts
+  ADD COLUMN IF NOT EXISTS vat_enabled BOOLEAN DEFAULT false,
+  ADD COLUMN IF NOT EXISTS vat_rate NUMERIC DEFAULT 0;
