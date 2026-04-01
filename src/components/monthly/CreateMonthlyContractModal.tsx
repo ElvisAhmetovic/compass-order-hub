@@ -181,6 +181,8 @@ const CreateMonthlyContractModal: React.FC<Props> = ({ open, onOpenChange, onCre
           internal_notes: values.internalNotes || null,
           inventory_items: selectedInventoryItems.length > 0 ? JSON.stringify(selectedInventoryItems) : null,
           billing_frequency: values.billingFrequency,
+          vat_enabled: vatEnabled,
+          vat_rate: vatEnabled ? vatPercentage / 100 : 0,
         },
         user.id
       );
