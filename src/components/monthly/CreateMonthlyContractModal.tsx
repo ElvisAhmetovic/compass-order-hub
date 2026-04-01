@@ -457,6 +457,11 @@ const CreateMonthlyContractModal: React.FC<Props> = ({ open, onOpenChange, onCre
                   {billingFrequency === 1 ? "Monthly Installment" : `Installment (every ${billingFrequency} months)`}
                 </p>
                 <p className="text-2xl font-bold text-primary">{formatPrice(installmentAmount)}</p>
+                {vatEnabled && (
+                  <p className="text-xs text-muted-foreground">
+                    Netto: {formatPrice(netInstallment)} + VAT: {formatPrice(vatInstallment)}
+                  </p>
+                )}
                 <p className="text-xs text-muted-foreground">
                   {numberOfInstallments} installments × {formatPrice(installmentAmount)} = {formatPrice(totalValue)}
                 </p>
