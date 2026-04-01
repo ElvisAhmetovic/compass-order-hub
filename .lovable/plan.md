@@ -1,23 +1,26 @@
 
 
-## Fix: Enable Automatic Payment Reminders for Monthly Package Invoices
+## Attach Invoice PDF to Team Notification Emails
 
 ### Problem
-When the `generate-monthly-installments` edge function creates and sends invoices on the 1st of each month, it sets `status: 'sent'` but **never sets `next_reminder_at`**. This means the automated payment reminder system (which checks for `next_reminder_at <= now()`) never picks up these invoices — they never get follow-up reminders.
-
-Today's batch (INV-2026-524 through INV-2026-543, ~20 invoices) all have this issue.
+When monthly invoices are sent on the 1st, the team gets a notification email with just text (client name, invoice number, amount). But they don't get the actual invoice PDF attached — unlike how `send-invoice-pdf` works where team members get the full PDF copy.
 
 ### Fix
 
-**1. Edge function fix — `supabase/functions/generate-monthly-installments/index.ts`**
-- In the `createInvoice` function (line 364-377), add `next_reminder_at` set to 48 hours from creation time, matching the same pattern used everywhere else in the system
-- Change the insert to include: `next_reminder_at: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString()`
+**File: `supabase/functions/generate-monthly-installments/index.ts`**
 
-**2. Database fix — activate reminders on recent monthly invoices**
-- Run a one-time migration to set `next_reminder_at` for all existing invoices that are `status = 'sent'` and `next_reminder_at IS NULL` and `order_id IS NULL` (monthly invoices don't have an order_id)
-- Set them to 48 hours from now so reminders start flowing
+1. Update `sendTeamNotifications` signature to accept `pdfBase64: string` parameter
+2. Add `attachments` array to each team email Resend call: `[{ filename: \`${invoiceNumber}.pdf\`, content: pdfBase64 }]`
+3. Update both call sites (existing installment + new installment paths, lines ~822 and ~892) to pass `pdfBytes` (which is already the base64 PDF string generated right before)
+
+That's it — the PDF is already generated at both call sites and stored in `pdfBytes`. We just need to thread it through to the team email function and attach it.
+
+### Technical Details
+- `pdfBytes` is already a base64-encoded PDF string (from `generateInvoicePDF`)
+- Resend accepts `attachments: [{ filename, content }]` where content is base64
+- Same pattern already used in `send-invoice-pdf` and the client email function
+- Johan stays on this list (no exclusion for monthly team notifications per memory)
 
 ### Files to modify
-1. `supabase/functions/generate-monthly-installments/index.ts` — Add `next_reminder_at` to invoice insert
-2. Database migration — Backfill `next_reminder_at` for existing monthly invoices
+1. `supabase/functions/generate-monthly-installments/index.ts` — Add PDF attachment to team emails
 
