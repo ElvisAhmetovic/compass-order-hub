@@ -8,7 +8,7 @@ const NOTIFICATION_EMAILS = [
   'angelina@abmedia-team.com',
   'service@team-abmedia.com',
   'thomas.thomasklein@gmail.com',
-  'kleinabmedia@gmail.com',
+  'invoice@team-abmedia.com',
   'jungabmedia@gmail.com',
   'wolfabmedia@gmail.com',
   'marcusabmedia@gmail.com',
