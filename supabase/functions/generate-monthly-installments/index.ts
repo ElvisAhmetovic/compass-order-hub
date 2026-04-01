@@ -872,8 +872,9 @@ Deno.serve(async (req) => {
         processed++;
 
         const totalAmount = contract.monthly_amount;
-        const netAmount = Math.round((totalAmount / 1.19) * 100) / 100;
-        const vatAmount = Math.round((totalAmount - netAmount) * 100) / 100;
+        const contractVatRate = contract.vat_enabled ? (contract.vat_rate || 0) : 0;
+        const netAmount = contractVatRate > 0 ? Math.round((totalAmount / (1 + contractVatRate)) * 100) / 100 : totalAmount;
+        const vatAmount = contractVatRate > 0 ? Math.round((totalAmount - netAmount) * 100) / 100 : 0;
         const description = INVOICE_DB_TEXT[lang].lineDescription(contract.description, monthLabel);
 
         const pdfBytes = generateInvoicePDF(
