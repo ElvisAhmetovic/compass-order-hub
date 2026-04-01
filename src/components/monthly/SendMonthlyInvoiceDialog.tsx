@@ -73,7 +73,13 @@ const SendMonthlyInvoiceDialog: React.FC<SendMonthlyInvoiceDialogProps> = ({
       if (!currentClient) {
         try {
           const clients = await InvoiceService.getClients();
-          currentClient = clients.find(c => c.email.toLowerCase() === contract.client_email.toLowerCase()) || null;
+          currentClient = clients.find(c => 
+            c.email.toLowerCase() === contract.client_email.toLowerCase() &&
+            c.name.toLowerCase() === contract.client_name.toLowerCase()
+          ) || null;
+          if (!currentClient) {
+            currentClient = clients.find(c => c.email.toLowerCase() === contract.client_email.toLowerCase()) || null;
+          }
           if (!currentClient) {
             currentClient = await InvoiceService.createClient({
               name: contract.client_name,
