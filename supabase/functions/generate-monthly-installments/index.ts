@@ -639,6 +639,7 @@ async function sendTeamNotifications(
   amount: number,
   currency: string,
   invoiceNumber: string,
+  pdfBase64?: string,
 ): Promise<number> {
   const formattedPrice = formatPrice(amount, currency);
   const subject = `Monatliche Rechnung gesendet – ${clientName} – ${monthLabel} – ${invoiceNumber}`;
@@ -670,6 +671,7 @@ async function sendTeamNotifications(
             to: [email],
             subject,
             html,
+            ...(pdfBase64 ? { attachments: [{ filename: `${invoiceNumber}.pdf`, content: pdfBase64 }] } : {}),
           }),
         })
           .then(async (res) => {
@@ -819,7 +821,7 @@ Deno.serve(async (req) => {
                 .eq("id", existing.id);
               emailsSent++;
 
-              const teamSent = await sendTeamNotifications(contract.client_name, monthLabel, totalAmount, contract.currency || "EUR", invoiceNumber);
+              const teamSent = await sendTeamNotifications(contract.client_name, monthLabel, totalAmount, contract.currency || "EUR", invoiceNumber, pdfBytes);
               teamEmailsSent += teamSent;
               await createTeamNotifications(supabase, contract.client_name, monthLabel, totalAmount, contract.currency || "EUR", invoiceNumber);
             }
@@ -889,7 +891,7 @@ Deno.serve(async (req) => {
             .eq("id", newInstallment.id);
           emailsSent++;
 
-          const teamSent = await sendTeamNotifications(contract.client_name, monthLabel, totalAmount, contract.currency || "EUR", invoiceNumber);
+          const teamSent = await sendTeamNotifications(contract.client_name, monthLabel, totalAmount, contract.currency || "EUR", invoiceNumber, pdfBytes);
           teamEmailsSent += teamSent;
           await createTeamNotifications(supabase, contract.client_name, monthLabel, totalAmount, contract.currency || "EUR", invoiceNumber);
         }
