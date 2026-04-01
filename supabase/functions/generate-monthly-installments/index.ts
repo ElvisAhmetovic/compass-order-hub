@@ -24,10 +24,263 @@ const TEAM_EMAILS = [
   "johan@team-abmedia.com",
 ];
 
-const germanMonths = [
-  "Januar", "Februar", "März", "April", "Mai", "Juni",
-  "Juli", "August", "September", "Oktober", "November", "Dezember",
-];
+// ── Language detection from company address ────────────────────────
+type Lang = "en" | "de" | "nl" | "fr" | "es" | "da" | "no" | "cs" | "pl" | "sv";
+
+function detectLanguageFromAddress(address: string | null): Lang {
+  if (!address) return "en";
+  const lower = address.toLowerCase();
+  const map: [RegExp, Lang][] = [
+    [/deutschland|germany|berlin|münchen|munich|hamburg|köln|frankfurt|düsseldorf|duisburg|stuttgart/, "de"],
+    [/nederland|netherlands|amsterdam|rotterdam|den haag|utrecht/, "nl"],
+    [/france|frankreich|paris|lyon|marseille/, "fr"],
+    [/españa|spain|spanien|madrid|barcelona/, "es"],
+    [/danmark|denmark|dänemark|copenhagen|københavn/, "da"],
+    [/norge|norway|norwegen|oslo|bergen/, "no"],
+    [/česk|czech|tschech|prague|prag|praha/, "cs"],
+    [/polska|poland|polen|warsaw|warschau|warszawa|kraków/, "pl"],
+    [/sverige|sweden|schweden|stockholm|göteborg|malmö/, "sv"],
+    [/österreich|austria|wien|vienna|graz|salzburg/, "de"],
+    [/schweiz|switzerland|zürich|zurich|bern|basel/, "de"],
+  ];
+  for (const [regex, lang] of map) {
+    if (regex.test(lower)) return lang;
+  }
+  return "en";
+}
+
+// ── Localized month names ──────────────────────────────────────────
+const MONTH_NAMES: Record<Lang, string[]> = {
+  en: ["January","February","March","April","May","June","July","August","September","October","November","December"],
+  de: ["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"],
+  nl: ["Januari","Februari","Maart","April","Mei","Juni","Juli","Augustus","September","Oktober","November","December"],
+  fr: ["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"],
+  es: ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"],
+  da: ["Januar","Februar","Marts","April","Maj","Juni","Juli","August","September","Oktober","November","December"],
+  no: ["Januar","Februar","Mars","April","Mai","Juni","Juli","August","September","Oktober","November","Desember"],
+  cs: ["Leden","Únor","Březen","Duben","Květen","Červen","Červenec","Srpen","Září","Říjen","Listopad","Prosinec"],
+  pl: ["Styczeń","Luty","Marzec","Kwiecień","Maj","Czerwiec","Lipiec","Sierpień","Wrzesień","Październik","Listopad","Grudzień"],
+  sv: ["Januari","Februari","Mars","April","Maj","Juni","Juli","Augusti","September","Oktober","November","December"],
+};
+
+// ── PDF label translations ─────────────────────────────────────────
+const PDF_LABELS: Record<Lang, {
+  invoiceRecipient: string; invoiceNumber: string; invoiceDate: string; dueDate: string;
+  invoiceTitle: string; description: string; quantity: string; unitPrice: string; total: string;
+  netAmount: string; vat: string; totalAmount: string; paymentTermsTitle: string;
+  paymentTermsLine1: string; paymentTermsLine2: string; bankDetails: string;
+  unit: string; vatId: string; taxNumber: string; director: string; regNumber: string;
+}> = {
+  en: {
+    invoiceRecipient: "Invoice Recipient:", invoiceNumber: "Invoice Number:", invoiceDate: "Invoice Date:", dueDate: "Due Date:",
+    invoiceTitle: "INVOICE", description: "Description", quantity: "Qty", unitPrice: "Unit Price", total: "Total",
+    netAmount: "Net Amount:", vat: "VAT:", totalAmount: "Total Amount:",
+    paymentTermsTitle: "Payment Terms",
+    paymentTermsLine1: "We kindly request that the invoiced amount be credited/transferred within 3 days.",
+    paymentTermsLine2: "All taxes and social contributions are reported and paid by us to the authorities.",
+    bankDetails: "Bank Details:", unit: "Month",
+    vatId: "VAT ID:", taxNumber: "Tax Number:", director: "Director:", regNumber: "Reg. No.:",
+  },
+  de: {
+    invoiceRecipient: "Rechnungsempfänger:", invoiceNumber: "Rechnungsnummer:", invoiceDate: "Rechnungsdatum:", dueDate: "Fälligkeitsdatum:",
+    invoiceTitle: "RECHNUNG", description: "Beschreibung", quantity: "Menge", unitPrice: "Einzelpreis", total: "Gesamt",
+    netAmount: "Nettobetrag:", vat: "MwSt.:", totalAmount: "Gesamtbetrag:",
+    paymentTermsTitle: "Zahlungsbedingungen",
+    paymentTermsLine1: "Wir bitten darum, dass unsere in Rechnung gestellten Leistungen innerhalb von 3 Tagen",
+    paymentTermsLine2: "gutgeschrieben/überwiesen werden. Alle Steuern und Sozialabgaben werden von uns bei den Behörden angemeldet und abgeführt.",
+    bankDetails: "Bankverbindungen:", unit: "Monat",
+    vatId: "USt-IdNr:", taxNumber: "Steuernummer:", director: "Geschäftsführer:", regNumber: "Handelsregisternr:",
+  },
+  nl: {
+    invoiceRecipient: "Factuurontvanger:", invoiceNumber: "Factuurnummer:", invoiceDate: "Factuurdatum:", dueDate: "Vervaldatum:",
+    invoiceTitle: "FACTUUR", description: "Omschrijving", quantity: "Aantal", unitPrice: "Prijs per eenheid", total: "Totaal",
+    netAmount: "Nettobedrag:", vat: "BTW:", totalAmount: "Totaalbedrag:",
+    paymentTermsTitle: "Betalingsvoorwaarden",
+    paymentTermsLine1: "Wij verzoeken u vriendelijk het gefactureerde bedrag binnen 3 dagen over te maken.",
+    paymentTermsLine2: "Alle belastingen en sociale premies worden door ons bij de autoriteiten aangegeven en afgedragen.",
+    bankDetails: "Bankgegevens:", unit: "Maand",
+    vatId: "BTW-nr:", taxNumber: "Belastingnummer:", director: "Directeur:", regNumber: "KvK-nr:",
+  },
+  fr: {
+    invoiceRecipient: "Destinataire de la facture:", invoiceNumber: "Numéro de facture:", invoiceDate: "Date de facture:", dueDate: "Date d'échéance:",
+    invoiceTitle: "FACTURE", description: "Description", quantity: "Quantité", unitPrice: "Prix unitaire", total: "Total",
+    netAmount: "Montant net:", vat: "TVA:", totalAmount: "Montant total:",
+    paymentTermsTitle: "Conditions de paiement",
+    paymentTermsLine1: "Nous vous prions de bien vouloir régler le montant facturé dans un délai de 3 jours.",
+    paymentTermsLine2: "Toutes les taxes et cotisations sociales sont déclarées et versées par nos soins aux autorités.",
+    bankDetails: "Coordonnées bancaires:", unit: "Mois",
+    vatId: "N° TVA:", taxNumber: "N° fiscal:", director: "Directeur:", regNumber: "N° registre:",
+  },
+  es: {
+    invoiceRecipient: "Destinatario de la factura:", invoiceNumber: "Número de factura:", invoiceDate: "Fecha de factura:", dueDate: "Fecha de vencimiento:",
+    invoiceTitle: "FACTURA", description: "Descripción", quantity: "Cantidad", unitPrice: "Precio unitario", total: "Total",
+    netAmount: "Importe neto:", vat: "IVA:", totalAmount: "Importe total:",
+    paymentTermsTitle: "Condiciones de pago",
+    paymentTermsLine1: "Le rogamos que abone el importe facturado en un plazo de 3 días.",
+    paymentTermsLine2: "Todos los impuestos y cotizaciones sociales son declarados y abonados por nosotros ante las autoridades.",
+    bankDetails: "Datos bancarios:", unit: "Mes",
+    vatId: "NIF/IVA:", taxNumber: "N° fiscal:", director: "Director:", regNumber: "N° registro:",
+  },
+  da: {
+    invoiceRecipient: "Fakturamodtager:", invoiceNumber: "Fakturanummer:", invoiceDate: "Fakturadato:", dueDate: "Forfaldsdato:",
+    invoiceTitle: "FAKTURA", description: "Beskrivelse", quantity: "Antal", unitPrice: "Enhedspris", total: "Total",
+    netAmount: "Nettobeløb:", vat: "Moms:", totalAmount: "Totalbeløb:",
+    paymentTermsTitle: "Betalingsbetingelser",
+    paymentTermsLine1: "Vi beder venligst om, at det fakturerede beløb overføres inden for 3 dage.",
+    paymentTermsLine2: "Alle skatter og sociale bidrag indberettes og betales af os til myndighederne.",
+    bankDetails: "Bankoplysninger:", unit: "Måned",
+    vatId: "Moms-nr:", taxNumber: "Skattenummer:", director: "Direktør:", regNumber: "Reg.nr:",
+  },
+  no: {
+    invoiceRecipient: "Fakturamottaker:", invoiceNumber: "Fakturanummer:", invoiceDate: "Fakturadato:", dueDate: "Forfallsdato:",
+    invoiceTitle: "FAKTURA", description: "Beskrivelse", quantity: "Antall", unitPrice: "Enhetspris", total: "Total",
+    netAmount: "Nettobeløp:", vat: "MVA:", totalAmount: "Totalbeløp:",
+    paymentTermsTitle: "Betalingsbetingelser",
+    paymentTermsLine1: "Vi ber vennligst om at det fakturerte beløpet overføres innen 3 dager.",
+    paymentTermsLine2: "Alle skatter og sosiale avgifter rapporteres og betales av oss til myndighetene.",
+    bankDetails: "Bankdetaljer:", unit: "Måned",
+    vatId: "MVA-nr:", taxNumber: "Skattenummer:", director: "Direktør:", regNumber: "Reg.nr:",
+  },
+  cs: {
+    invoiceRecipient: "Příjemce faktury:", invoiceNumber: "Číslo faktury:", invoiceDate: "Datum vystavení:", dueDate: "Datum splatnosti:",
+    invoiceTitle: "FAKTURA", description: "Popis", quantity: "Množství", unitPrice: "Jednotková cena", total: "Celkem",
+    netAmount: "Částka bez DPH:", vat: "DPH:", totalAmount: "Celková částka:",
+    paymentTermsTitle: "Platební podmínky",
+    paymentTermsLine1: "Žádáme Vás o uhrazení fakturované částky do 3 dnů.",
+    paymentTermsLine2: "Všechny daně a sociální odvody jsou námi přiznány a odvedeny příslušným úřadům.",
+    bankDetails: "Bankovní spojení:", unit: "Měsíc",
+    vatId: "DIČ:", taxNumber: "IČO:", director: "Jednatel:", regNumber: "Reg. č.:",
+  },
+  pl: {
+    invoiceRecipient: "Odbiorca faktury:", invoiceNumber: "Numer faktury:", invoiceDate: "Data wystawienia:", dueDate: "Termin płatności:",
+    invoiceTitle: "FAKTURA", description: "Opis", quantity: "Ilość", unitPrice: "Cena jednostkowa", total: "Razem",
+    netAmount: "Kwota netto:", vat: "VAT:", totalAmount: "Kwota brutto:",
+    paymentTermsTitle: "Warunki płatności",
+    paymentTermsLine1: "Uprzejmie prosimy o uregulowanie kwoty faktury w ciągu 3 dni.",
+    paymentTermsLine2: "Wszystkie podatki i składki socjalne są przez nas zgłaszane i odprowadzane do odpowiednich urzędów.",
+    bankDetails: "Dane bankowe:", unit: "Miesiąc",
+    vatId: "NIP:", taxNumber: "Nr podatkowy:", director: "Dyrektor:", regNumber: "Nr rejestrowy:",
+  },
+  sv: {
+    invoiceRecipient: "Fakturamottagare:", invoiceNumber: "Fakturanummer:", invoiceDate: "Fakturadatum:", dueDate: "Förfallodatum:",
+    invoiceTitle: "FAKTURA", description: "Beskrivning", quantity: "Antal", unitPrice: "Enhetspris", total: "Totalt",
+    netAmount: "Nettobelopp:", vat: "Moms:", totalAmount: "Totalbelopp:",
+    paymentTermsTitle: "Betalningsvillkor",
+    paymentTermsLine1: "Vi ber vänligen att det fakturerade beloppet överförs inom 3 dagar.",
+    paymentTermsLine2: "Alla skatter och sociala avgifter rapporteras och betalas av oss till myndigheterna.",
+    bankDetails: "Bankuppgifter:", unit: "Månad",
+    vatId: "Moms-nr:", taxNumber: "Skattenummer:", director: "Direktör:", regNumber: "Reg.nr:",
+  },
+};
+
+// ── Email translations ─────────────────────────────────────────────
+const EMAIL_TRANSLATIONS: Record<Lang, {
+  subject: (invoiceNumber: string, monthLabel: string, price: string) => string;
+  greeting: (name: string) => string;
+  body: (monthLabel: string) => string;
+  invoiceNumberLabel: string; periodLabel: string; amountLabel: string;
+  attachmentNote: string; paymentRequest: string; questionsNote: string;
+  closing: string;
+}> = {
+  en: {
+    subject: (inv, month, price) => `Invoice ${inv} – ${month} – ${price}`,
+    greeting: (name) => `Hello ${name},`,
+    body: (month) => `Please find attached your invoice for <strong>${month}</strong>.`,
+    invoiceNumberLabel: "Invoice Number:", periodLabel: "Period:", amountLabel: "Amount:",
+    attachmentNote: "The invoice is attached as a PDF.", paymentRequest: "Please arrange payment within 3 days.",
+    questionsNote: "If you have any questions, please don't hesitate to contact us.", closing: "Kind regards,",
+  },
+  de: {
+    subject: (inv, month, price) => `Rechnung ${inv} – ${month} – ${price}`,
+    greeting: (name) => `Hallo ${name},`,
+    body: (month) => `anbei erhalten Sie Ihre Rechnung für <strong>${month}</strong>.`,
+    invoiceNumberLabel: "Rechnungsnummer:", periodLabel: "Zeitraum:", amountLabel: "Betrag:",
+    attachmentNote: "Die Rechnung finden Sie als PDF im Anhang.", paymentRequest: "Bitte veranlassen Sie die Zahlung innerhalb von 3 Tagen.",
+    questionsNote: "Bei Fragen stehen wir Ihnen gerne zur Verfügung.", closing: "Mit freundlichen Grüßen,",
+  },
+  nl: {
+    subject: (inv, month, price) => `Factuur ${inv} – ${month} – ${price}`,
+    greeting: (name) => `Hallo ${name},`,
+    body: (month) => `bijgevoegd vindt u uw factuur voor <strong>${month}</strong>.`,
+    invoiceNumberLabel: "Factuurnummer:", periodLabel: "Periode:", amountLabel: "Bedrag:",
+    attachmentNote: "De factuur is als PDF bijgevoegd.", paymentRequest: "Gelieve de betaling binnen 3 dagen te regelen.",
+    questionsNote: "Heeft u vragen? Neem gerust contact met ons op.", closing: "Met vriendelijke groet,",
+  },
+  fr: {
+    subject: (inv, month, price) => `Facture ${inv} – ${month} – ${price}`,
+    greeting: (name) => `Bonjour ${name},`,
+    body: (month) => `veuillez trouver ci-joint votre facture pour <strong>${month}</strong>.`,
+    invoiceNumberLabel: "Numéro de facture:", periodLabel: "Période:", amountLabel: "Montant:",
+    attachmentNote: "La facture est jointe en PDF.", paymentRequest: "Merci de procéder au paiement dans un délai de 3 jours.",
+    questionsNote: "Pour toute question, n'hésitez pas à nous contacter.", closing: "Cordialement,",
+  },
+  es: {
+    subject: (inv, month, price) => `Factura ${inv} – ${month} – ${price}`,
+    greeting: (name) => `Hola ${name},`,
+    body: (month) => `adjunto encontrará su factura para <strong>${month}</strong>.`,
+    invoiceNumberLabel: "Número de factura:", periodLabel: "Período:", amountLabel: "Importe:",
+    attachmentNote: "La factura se adjunta en formato PDF.", paymentRequest: "Le rogamos que realice el pago en un plazo de 3 días.",
+    questionsNote: "Si tiene alguna pregunta, no dude en contactarnos.", closing: "Un cordial saludo,",
+  },
+  da: {
+    subject: (inv, month, price) => `Faktura ${inv} – ${month} – ${price}`,
+    greeting: (name) => `Hej ${name},`,
+    body: (month) => `vedlagt finder du din faktura for <strong>${month}</strong>.`,
+    invoiceNumberLabel: "Fakturanummer:", periodLabel: "Periode:", amountLabel: "Beløb:",
+    attachmentNote: "Fakturaen er vedhæftet som PDF.", paymentRequest: "Vi beder dig venligst om at betale inden for 3 dage.",
+    questionsNote: "Har du spørgsmål, er du velkommen til at kontakte os.", closing: "Med venlig hilsen,",
+  },
+  no: {
+    subject: (inv, month, price) => `Faktura ${inv} – ${month} – ${price}`,
+    greeting: (name) => `Hei ${name},`,
+    body: (month) => `vedlagt finner du din faktura for <strong>${month}</strong>.`,
+    invoiceNumberLabel: "Fakturanummer:", periodLabel: "Periode:", amountLabel: "Beløp:",
+    attachmentNote: "Fakturaen er vedlagt som PDF.", paymentRequest: "Vi ber deg vennligst om å betale innen 3 dager.",
+    questionsNote: "Har du spørsmål, er du velkommen til å kontakte oss.", closing: "Med vennlig hilsen,",
+  },
+  cs: {
+    subject: (inv, month, price) => `Faktura ${inv} – ${month} – ${price}`,
+    greeting: (name) => `Dobrý den ${name},`,
+    body: (month) => `v příloze naleznete svou fakturu za <strong>${month}</strong>.`,
+    invoiceNumberLabel: "Číslo faktury:", periodLabel: "Období:", amountLabel: "Částka:",
+    attachmentNote: "Faktura je přiložena ve formátu PDF.", paymentRequest: "Žádáme Vás o uhrazení do 3 dnů.",
+    questionsNote: "V případě dotazů nás neváhejte kontaktovat.", closing: "S pozdravem,",
+  },
+  pl: {
+    subject: (inv, month, price) => `Faktura ${inv} – ${month} – ${price}`,
+    greeting: (name) => `Dzień dobry ${name},`,
+    body: (month) => `w załączeniu przesyłamy fakturę za <strong>${month}</strong>.`,
+    invoiceNumberLabel: "Numer faktury:", periodLabel: "Okres:", amountLabel: "Kwota:",
+    attachmentNote: "Faktura jest załączona w formacie PDF.", paymentRequest: "Uprzejmie prosimy o dokonanie płatności w ciągu 3 dni.",
+    questionsNote: "W razie pytań prosimy o kontakt.", closing: "Z poważaniem,",
+  },
+  sv: {
+    subject: (inv, month, price) => `Faktura ${inv} – ${month} – ${price}`,
+    greeting: (name) => `Hej ${name},`,
+    body: (month) => `bifogat finner du din faktura för <strong>${month}</strong>.`,
+    invoiceNumberLabel: "Fakturanummer:", periodLabel: "Period:", amountLabel: "Belopp:",
+    attachmentNote: "Fakturan bifogas som PDF.", paymentRequest: "Vänligen betala inom 3 dagar.",
+    questionsNote: "Har du frågor är du välkommen att kontakta oss.", closing: "Med vänliga hälsningar,",
+  },
+};
+
+// ── Invoice DB text translations ───────────────────────────────────
+const INVOICE_DB_TEXT: Record<Lang, {
+  notes: (monthLabel: string) => string;
+  paymentTerms: string;
+  lineDescription: (desc: string | null, monthLabel: string) => string;
+}> = {
+  en: { notes: (m) => `Automatically generated invoice for ${m}`, paymentTerms: "Payable within 3 days", lineDescription: (d, m) => d ? `${d} – ${m}` : `Monthly Service – ${m}` },
+  de: { notes: (m) => `Automatisch generierte Rechnung für ${m}`, paymentTerms: "Zahlbar innerhalb von 3 Tagen", lineDescription: (d, m) => d ? `${d} – ${m}` : `Monatliche Dienstleistung – ${m}` },
+  nl: { notes: (m) => `Automatisch gegenereerde factuur voor ${m}`, paymentTerms: "Betaalbaar binnen 3 dagen", lineDescription: (d, m) => d ? `${d} – ${m}` : `Maandelijkse dienst – ${m}` },
+  fr: { notes: (m) => `Facture générée automatiquement pour ${m}`, paymentTerms: "Payable sous 3 jours", lineDescription: (d, m) => d ? `${d} – ${m}` : `Service mensuel – ${m}` },
+  es: { notes: (m) => `Factura generada automáticamente para ${m}`, paymentTerms: "Pagadero en 3 días", lineDescription: (d, m) => d ? `${d} – ${m}` : `Servicio mensual – ${m}` },
+  da: { notes: (m) => `Automatisk genereret faktura for ${m}`, paymentTerms: "Betales inden 3 dage", lineDescription: (d, m) => d ? `${d} – ${m}` : `Månedlig service – ${m}` },
+  no: { notes: (m) => `Automatisk generert faktura for ${m}`, paymentTerms: "Betales innen 3 dager", lineDescription: (d, m) => d ? `${d} – ${m}` : `Månedlig tjeneste – ${m}` },
+  cs: { notes: (m) => `Automaticky vygenerovaná faktura za ${m}`, paymentTerms: "Splatné do 3 dnů", lineDescription: (d, m) => d ? `${d} – ${m}` : `Měsíční služba – ${m}` },
+  pl: { notes: (m) => `Automatycznie wygenerowana faktura za ${m}`, paymentTerms: "Płatne w ciągu 3 dni", lineDescription: (d, m) => d ? `${d} – ${m}` : `Usługa miesięczna – ${m}` },
+  sv: { notes: (m) => `Automatiskt genererad faktura för ${m}`, paymentTerms: "Betalas inom 3 dagar", lineDescription: (d, m) => d ? `${d} – ${m}` : `Månadstjänst – ${m}` },
+};
 
 // Company info (matches frontend defaults)
 const COMPANY = {
@@ -94,8 +347,8 @@ async function createInvoice(
   contract: any,
   monthLabel: string,
   dueDate: string,
+  lang: Lang,
 ): Promise<{ invoiceId: string; invoiceNumber: string; issueDate: string }> {
-  // Generate invoice number
   const { data: invoiceNumber, error: rpcErr } = await supabase.rpc("generate_invoice_number", { prefix_param: "INV" });
   if (rpcErr) throw new Error(`Failed to generate invoice number: ${rpcErr.message}`);
 
@@ -103,9 +356,8 @@ async function createInvoice(
   const netAmount = totalAmount;
   const vatAmount = 0;
   const issueDate = new Date().toISOString().split("T")[0];
-
-  // We need a user_id for the invoice — use created_by from contract, or fallback
   const userId = contract.created_by || "00000000-0000-0000-0000-000000000000";
+  const dbText = INVOICE_DB_TEXT[lang];
 
   const { data: invoice, error: invErr } = await supabase
     .from("invoices")
@@ -120,24 +372,21 @@ async function createInvoice(
       currency: contract.currency || "EUR",
       status: "sent",
       user_id: userId,
-      notes: `Automatisch generierte Rechnung für ${monthLabel}`,
-      payment_terms: "Zahlbar innerhalb von 3 Tagen",
+      notes: dbText.notes(monthLabel),
+      payment_terms: dbText.paymentTerms,
     })
     .select("id")
     .single();
 
   if (invErr) throw new Error(`Failed to create invoice: ${invErr.message}`);
 
-  // Create line item
-  const description = contract.description
-    ? `${contract.description} – ${monthLabel}`
-    : `Monatliche Dienstleistung – ${monthLabel}`;
+  const description = dbText.lineDescription(contract.description, monthLabel);
 
   await supabase.from("invoice_line_items").insert({
     invoice_id: invoice.id,
     item_description: description,
     quantity: 1,
-    unit: "Monat",
+    unit: PDF_LABELS[lang].unit,
     unit_price: netAmount,
     vat_rate: 0,
     discount_rate: 0,
@@ -160,7 +409,9 @@ function generateInvoicePDF(
   vatAmount: number,
   totalAmount: number,
   currency: string,
+  lang: Lang,
 ): Uint8Array {
+  const L = PDF_LABELS[lang];
   const doc = new jsPDF({ unit: "mm", format: "a4" });
   const pageWidth = 210;
   const marginLeft = 20;
@@ -179,9 +430,9 @@ function generateInvoicePDF(
   y += 5;
   doc.text(`Tel: ${COMPANY.phone} | E-Mail: ${COMPANY.email}`, marginLeft, y);
   y += 5;
-  doc.text(`USt-IdNr: ${COMPANY.vatId} | Steuernummer: ${COMPANY.taxNumber}`, marginLeft, y);
+  doc.text(`${L.vatId} ${COMPANY.vatId} | ${L.taxNumber} ${COMPANY.taxNumber}`, marginLeft, y);
   y += 5;
-  doc.text(`Geschäftsführer: ${COMPANY.director} | Handelsregisternr: ${COMPANY.registrationNumber}`, marginLeft, y);
+  doc.text(`${L.director} ${COMPANY.director} | ${L.regNumber} ${COMPANY.registrationNumber}`, marginLeft, y);
   y += 3;
 
   // Separator line
@@ -193,7 +444,7 @@ function generateInvoicePDF(
   // ── Client info ──
   doc.setFontSize(10);
   doc.setFont("helvetica", "bold");
-  doc.text("Rechnungsempfänger:", marginLeft, y);
+  doc.text(L.invoiceRecipient, marginLeft, y);
   y += 6;
   doc.setFont("helvetica", "normal");
   doc.text(clientName, marginLeft, y);
@@ -207,25 +458,24 @@ function generateInvoicePDF(
 
   // ── Invoice details (right-aligned block) ──
   const detailsX = pageWidth - marginRight;
-  const detailsY = y - 22; // align with client block
+  const detailsY = y - 22;
   doc.setFontSize(10);
   doc.setFont("helvetica", "bold");
-  doc.text(`Rechnungsnummer: ${invoiceNumber}`, detailsX, detailsY, { align: "right" });
+  doc.text(`${L.invoiceNumber} ${invoiceNumber}`, detailsX, detailsY, { align: "right" });
   doc.setFont("helvetica", "normal");
-  doc.text(`Rechnungsdatum: ${formatDate(issueDate)}`, detailsX, detailsY + 6, { align: "right" });
-  doc.text(`Fälligkeitsdatum: ${formatDate(dueDate)}`, detailsX, detailsY + 12, { align: "right" });
+  doc.text(`${L.invoiceDate} ${formatDate(issueDate)}`, detailsX, detailsY + 6, { align: "right" });
+  doc.text(`${L.dueDate} ${formatDate(dueDate)}`, detailsX, detailsY + 12, { align: "right" });
 
   // ── Title ──
   doc.setFontSize(16);
   doc.setFont("helvetica", "bold");
-  doc.text("RECHNUNG", marginLeft, y);
+  doc.text(L.invoiceTitle, marginLeft, y);
   y += 10;
 
   // ── Line items table ──
   const colWidths = [90, 20, 30, 30];
-  const headers = ["Beschreibung", "Menge", "Einzelpreis", "Gesamt"];
+  const headers = [L.description, L.quantity, L.unitPrice, L.total];
 
-  // Table header
   doc.setFillColor(41, 65, 122);
   doc.rect(marginLeft, y - 5, contentWidth, 8, "F");
   doc.setFontSize(9);
@@ -239,7 +489,6 @@ function generateInvoicePDF(
   doc.setTextColor(0, 0, 0);
   y += 6;
 
-  // Table row
   doc.setFont("helvetica", "normal");
   colX = marginLeft + 2;
   const fp = (v: number) => formatPrice(v, currency);
@@ -250,7 +499,6 @@ function generateInvoicePDF(
   });
   y += 10;
 
-  // Separator
   doc.setDrawColor(200, 200, 200);
   doc.line(marginLeft, y, pageWidth - marginRight, y);
   y += 8;
@@ -258,36 +506,30 @@ function generateInvoicePDF(
   // ── Totals ──
   const totalsX = pageWidth - marginRight - 60;
   doc.setFontSize(10);
-  doc.text("Nettobetrag:", totalsX, y);
+  doc.text(L.netAmount, totalsX, y);
   doc.text(fp(netAmount), pageWidth - marginRight, y, { align: "right" });
   y += 6;
-  doc.text("MwSt.:", totalsX, y);
+  doc.text(L.vat, totalsX, y);
   doc.text(fp(vatAmount), pageWidth - marginRight, y, { align: "right" });
   y += 6;
   doc.setFont("helvetica", "bold");
   doc.setFontSize(12);
-  doc.text("Gesamtbetrag:", totalsX, y);
+  doc.text(L.totalAmount, totalsX, y);
   doc.text(fp(totalAmount), pageWidth - marginRight, y, { align: "right" });
   y += 15;
 
   // ── Payment terms ──
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
-  doc.text(
-    "Wir bitten darum, dass unsere in Rechnung gestellten Leistungen innerhalb von 3 Tagen",
-    marginLeft, y,
-  );
+  doc.text(L.paymentTermsLine1, marginLeft, y);
   y += 5;
-  doc.text(
-    "gutgeschrieben/überwiesen werden. Alle Steuern und Sozialabgaben werden von uns bei den Behörden angemeldet und abgeführt.",
-    marginLeft, y,
-  );
+  doc.text(L.paymentTermsLine2, marginLeft, y);
   y += 12;
 
   // ── Bank details ──
   doc.setFontSize(10);
   doc.setFont("helvetica", "bold");
-  doc.text("Bankverbindungen:", marginLeft, y);
+  doc.text(L.bankDetails, marginLeft, y);
   y += 7;
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
@@ -326,7 +568,6 @@ function generateInvoicePDF(
     y += 3;
   }
 
-  // Return raw bytes
   return doc.output("arraybuffer") as unknown as Uint8Array;
 }
 
@@ -339,6 +580,7 @@ async function sendInvoiceEmail(
   totalAmount: number,
   currency: string,
   pdfBytes: Uint8Array,
+  lang: Lang,
 ): Promise<boolean> {
   if (!RESEND_API_KEY) {
     console.error("RESEND_API_KEY_ABMEDIA not configured");
@@ -346,23 +588,24 @@ async function sendInvoiceEmail(
   }
   const formattedPrice = formatPrice(totalAmount, currency);
   const base64Pdf = btoa(String.fromCharCode(...new Uint8Array(pdfBytes)));
+  const E = EMAIL_TRANSLATIONS[lang];
 
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-      <h2 style="color: #1a1a1a;">Rechnung ${invoiceNumber} – ${monthLabel}</h2>
-      <p>Hallo ${clientName},</p>
-      <p>anbei erhalten Sie Ihre Rechnung für <strong>${monthLabel}</strong>.</p>
+      <h2 style="color: #1a1a1a;">${E.subject(invoiceNumber, monthLabel, formattedPrice)}</h2>
+      <p>${E.greeting(clientName)}</p>
+      <p>${E.body(monthLabel)}</p>
       <div style="background: #f8f9fa; border-radius: 8px; padding: 20px; margin: 20px 0;">
         <table style="width: 100%; border-collapse: collapse;">
-          <tr><td style="padding: 8px 0; color: #666;">Rechnungsnummer:</td><td style="padding: 8px 0; font-weight: bold;">${invoiceNumber}</td></tr>
-          <tr><td style="padding: 8px 0; color: #666;">Zeitraum:</td><td style="padding: 8px 0; font-weight: bold;">${monthLabel}</td></tr>
-          <tr><td style="padding: 8px 0; color: #666;">Betrag:</td><td style="padding: 8px 0; font-weight: bold; font-size: 18px; color: #2563eb;">${formattedPrice}</td></tr>
+          <tr><td style="padding: 8px 0; color: #666;">${E.invoiceNumberLabel}</td><td style="padding: 8px 0; font-weight: bold;">${invoiceNumber}</td></tr>
+          <tr><td style="padding: 8px 0; color: #666;">${E.periodLabel}</td><td style="padding: 8px 0; font-weight: bold;">${monthLabel}</td></tr>
+          <tr><td style="padding: 8px 0; color: #666;">${E.amountLabel}</td><td style="padding: 8px 0; font-weight: bold; font-size: 18px; color: #2563eb;">${formattedPrice}</td></tr>
         </table>
       </div>
-      <p>Die Rechnung finden Sie als PDF im Anhang.</p>
-      <p>Bitte veranlassen Sie die Zahlung innerhalb von 3 Tagen.</p>
-      <p>Bei Fragen stehen wir Ihnen gerne zur Verfügung.</p>
-      <br/><p>Mit freundlichen Grüßen,<br/><strong>AB Media Team</strong></p>
+      <p>${E.attachmentNote}</p>
+      <p>${E.paymentRequest}</p>
+      <p>${E.questionsNote}</p>
+      <br/><p>${E.closing}<br/><strong>AB Media Team</strong></p>
     </div>`;
 
   try {
@@ -372,7 +615,7 @@ async function sendInvoiceEmail(
       body: JSON.stringify({
         from: "Thomas Klein <noreply@abm-team.com>",
         to: [to],
-        subject: `Rechnung ${invoiceNumber} – ${monthLabel} – ${formattedPrice}`,
+        subject: E.subject(invoiceNumber, monthLabel, formattedPrice),
         html,
         attachments: [{ filename: `${invoiceNumber}.pdf`, content: base64Pdf }],
       }),
@@ -388,7 +631,7 @@ async function sendInvoiceEmail(
   }
 }
 
-// ── Send team notifications in parallel ────────────────────────────
+// ── Send team notifications in parallel (stays in German) ──────────
 async function sendTeamNotifications(
   clientName: string,
   monthLabel: string,
@@ -413,7 +656,6 @@ async function sendTeamNotifications(
       <p style="color: #666; font-size: 14px;">Dies ist eine automatische Benachrichtigung des Monatspakete-Systems.</p>
     </div>`;
 
-  // Send in batches of 2 with 1s delay to respect Resend's 2 req/sec rate limit
   let successCount = 0;
   for (let i = 0; i < TEAM_EMAILS.length; i += 2) {
     const batch = TEAM_EMAILS.slice(i, i + 2);
@@ -440,7 +682,6 @@ async function sendTeamNotifications(
       )
     );
     successCount += results.filter((r) => r.status === "fulfilled" && r.value === true).length;
-    // Wait 1 second between batches to avoid rate limiting
     if (i + 2 < TEAM_EMAILS.length) {
       await new Promise((resolve) => setTimeout(resolve, 1000));
     }
@@ -449,7 +690,7 @@ async function sendTeamNotifications(
   return successCount;
 }
 
-// ── Create in-app notifications ────────────────────────────────────
+// ── Create in-app notifications (stays in German) ──────────────────
 async function createTeamNotifications(
   supabase: any,
   clientName: string,
@@ -490,9 +731,8 @@ Deno.serve(async (req) => {
     const now = new Date();
     const currentMonth = now.getMonth();
     const currentYear = now.getFullYear();
-    const monthLabel = `${germanMonths[currentMonth]} ${currentYear}`;
 
-    console.log(`Processing monthly installments for ${monthLabel}`);
+    console.log(`Processing monthly installments for ${currentMonth + 1}/${currentYear}`);
 
     const { data: contracts, error: contractsError } = await supabase
       .from("monthly_contracts")
@@ -515,30 +755,43 @@ Deno.serve(async (req) => {
 
     for (const contract of contracts) {
       try {
-        // Check if installment already exists for this month
-        const { data: existing } = await supabase
+        // Detect language from company address
+        const lang = detectLanguageFromAddress(contract.company_address);
+        const monthLabel = `${MONTH_NAMES[lang][currentMonth]} ${currentYear}`;
+        // German month label for checking existing installments (backward compat)
+        const germanMonthLabel = `${MONTH_NAMES["de"][currentMonth]} ${currentYear}`;
+
+        // Check if installment already exists (try localized label first, then German for backward compat)
+        let { data: existing } = await supabase
           .from("monthly_installments")
           .select("id, email_sent, invoice_id")
           .eq("contract_id", contract.id)
           .eq("month_label", monthLabel)
           .maybeSingle();
 
+        if (!existing && monthLabel !== germanMonthLabel) {
+          const { data: existingDe } = await supabase
+            .from("monthly_installments")
+            .select("id, email_sent, invoice_id")
+            .eq("contract_id", contract.id)
+            .eq("month_label", germanMonthLabel)
+            .maybeSingle();
+          existing = existingDe;
+        }
+
         if (existing) {
-          // Installment exists — check if we still need to send the email
           if (!existing.email_sent) {
-            // Ensure invoice exists
             let invoiceNumber = "";
             let invoiceId = existing.invoice_id;
             if (!invoiceId) {
               const clientId = await findOrCreateClient(supabase, contract);
               const dueDate = `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-15`;
-              const inv = await createInvoice(supabase, clientId, contract, monthLabel, dueDate);
+              const inv = await createInvoice(supabase, clientId, contract, monthLabel, dueDate, lang);
               invoiceId = inv.invoiceId;
               invoiceNumber = inv.invoiceNumber;
               invoicesCreated++;
               await supabase.from("monthly_installments").update({ invoice_id: invoiceId }).eq("id", existing.id);
             } else {
-              // Fetch existing invoice number
               const { data: invData } = await supabase.from("invoices").select("invoice_number").eq("id", invoiceId).single();
               invoiceNumber = invData?.invoice_number || "N/A";
             }
@@ -546,18 +799,18 @@ Deno.serve(async (req) => {
             const totalAmount = contract.monthly_amount;
             const netAmount = Math.round((totalAmount / 1.19) * 100) / 100;
             const vatAmount = Math.round((totalAmount - netAmount) * 100) / 100;
-            const description = contract.description ? `${contract.description} – ${monthLabel}` : `Monatliche Dienstleistung – ${monthLabel}`;
+            const description = INVOICE_DB_TEXT[lang].lineDescription(contract.description, monthLabel);
             const dueDate = `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-15`;
 
             const pdfBytes = generateInvoicePDF(
               invoiceNumber, new Date().toISOString().split("T")[0], dueDate,
               contract.client_name, contract.company_address, contract.client_email,
-              description, netAmount, vatAmount, totalAmount, contract.currency || "EUR",
+              description, netAmount, vatAmount, totalAmount, contract.currency || "EUR", lang,
             );
 
             const sent = await sendInvoiceEmail(
               contract.client_email, contract.client_name, monthLabel,
-              invoiceNumber, totalAmount, contract.currency || "EUR", pdfBytes,
+              invoiceNumber, totalAmount, contract.currency || "EUR", pdfBytes, lang,
             );
             if (sent) {
               await supabase.from("monthly_installments")
@@ -584,13 +837,11 @@ Deno.serve(async (req) => {
           continue;
         }
 
-        // Find or create client + invoice
         const clientId = await findOrCreateClient(supabase, contract);
         const dueDate = `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-15`;
-        const { invoiceId, invoiceNumber, issueDate } = await createInvoice(supabase, clientId, contract, monthLabel, dueDate);
+        const { invoiceId, invoiceNumber, issueDate } = await createInvoice(supabase, clientId, contract, monthLabel, dueDate, lang);
         invoicesCreated++;
 
-        // Create installment row
         const { data: newInstallment, error: insertError } = await supabase
           .from("monthly_installments")
           .insert({
@@ -615,21 +866,20 @@ Deno.serve(async (req) => {
         }
         processed++;
 
-        // Generate PDF and send
         const totalAmount = contract.monthly_amount;
         const netAmount = Math.round((totalAmount / 1.19) * 100) / 100;
         const vatAmount = Math.round((totalAmount - netAmount) * 100) / 100;
-        const description = contract.description ? `${contract.description} – ${monthLabel}` : `Monatliche Dienstleistung – ${monthLabel}`;
+        const description = INVOICE_DB_TEXT[lang].lineDescription(contract.description, monthLabel);
 
         const pdfBytes = generateInvoicePDF(
           invoiceNumber, issueDate, dueDate,
           contract.client_name, contract.company_address, contract.client_email,
-          description, netAmount, vatAmount, totalAmount, contract.currency || "EUR",
+          description, netAmount, vatAmount, totalAmount, contract.currency || "EUR", lang,
         );
 
         const sent = await sendInvoiceEmail(
           contract.client_email, contract.client_name, monthLabel,
-          invoiceNumber, totalAmount, contract.currency || "EUR", pdfBytes,
+          invoiceNumber, totalAmount, contract.currency || "EUR", pdfBytes, lang,
         );
 
         if (sent && newInstallment) {
@@ -651,7 +901,7 @@ Deno.serve(async (req) => {
     console.log(`Processed ${processed} installments, created ${invoicesCreated} invoices, sent ${emailsSent} client emails, ${teamEmailsSent} team emails`);
 
     return new Response(
-      JSON.stringify({ success: true, processed, invoicesCreated, emailsSent, teamEmailsSent, month: monthLabel }),
+      JSON.stringify({ success: true, processed, invoicesCreated, emailsSent, teamEmailsSent }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (error) {
