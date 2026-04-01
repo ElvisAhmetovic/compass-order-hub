@@ -118,6 +118,11 @@ const MonthlyInstallmentsTable: React.FC<Props> = ({ contracts, installments, on
   }, [contracts]);
 
   const handleCreateInvoice = async (contract: MonthlyContract, inst: MonthlyInstallment) => {
+    // Duplicate guard
+    if (invoiceIdMap[inst.id] || inst.invoice_id) {
+      toast({ title: "Invoice already exists", description: "An invoice has already been created for this installment." });
+      return;
+    }
     setCreatingInvoiceIds(prev => new Set(prev).add(inst.id));
     try {
       const clients = await InvoiceService.getClients();
