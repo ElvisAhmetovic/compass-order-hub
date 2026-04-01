@@ -1,39 +1,30 @@
 
 
-## Fix: Wrong Client Matched When Creating Invoice from Monthly Package
+## Apply Email+Name Client Matching Across All Monthly Package Code
 
 ### Problem
-Same root cause as the previous report: when creating an invoice from a monthly contract, the code matches clients by **email only** (lines 124 and 189 in `MonthlyInstallmentsTable.tsx`). Multiple companies share the same email address, so `.find()` returns the first match — the wrong client.
-
-This caused "N V G" to get "Eschertoren"'s client record, and earlier "Nasir Ahmad" got "24h Kanal"'s record.
+The fix was only applied to `MonthlyInstallmentsTable.tsx`. But `SendMonthlyInvoiceDialog.tsx` (line 76) still matches clients by **email only**, causing the same wrong-client bug when sending invoices from that dialog.
 
 ### Fix
-**File: `src/components/monthly/MonthlyInstallmentsTable.tsx`**
+**File: `src/components/monthly/SendMonthlyInvoiceDialog.tsx`** (line 76)
 
-Update both client-matching locations (lines 124 and 189) to match by **email + name** first, then fall back to email-only:
-
+Replace the email-only match:
 ```typescript
-// Try exact match by email AND name
-let matched = clients.find(c => 
+currentClient = clients.find(c => c.email.toLowerCase() === contract.client_email.toLowerCase()) || null;
+```
+
+With email+name priority matching:
+```typescript
+currentClient = clients.find(c => 
   c.email.toLowerCase() === contract.client_email.toLowerCase() &&
   c.name.toLowerCase() === contract.client_name.toLowerCase()
-);
+) || null;
 
-// Fallback: email only
-if (!matched) {
-  matched = clients.find(c => c.email.toLowerCase() === contract.client_email.toLowerCase());
-}
-
-// If still no match, create new client (existing behavior)
-if (!matched) {
-  matched = await InvoiceService.createClient({ ... });
+if (!currentClient) {
+  currentClient = clients.find(c => c.email.toLowerCase() === contract.client_email.toLowerCase()) || null;
 }
 ```
 
-Apply this pattern at both:
-1. **Line 124** — `handleCreateInvoice`
-2. **Line 189** — `handleOpenSendDialog`
-
 ### Files to modify
-1. `src/components/monthly/MonthlyInstallmentsTable.tsx` — Two client-matching blocks
+1. `src/components/monthly/SendMonthlyInvoiceDialog.tsx` — Update client matching (line 76)
 
