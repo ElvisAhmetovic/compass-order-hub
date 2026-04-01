@@ -671,6 +671,7 @@ async function sendTeamNotifications(
             to: [email],
             subject,
             html,
+            ...(pdfBase64 ? { attachments: [{ filename: `${invoiceNumber}.pdf`, content: pdfBase64 }] } : {}),
           }),
         })
           .then(async (res) => {
