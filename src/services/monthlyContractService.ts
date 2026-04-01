@@ -24,6 +24,8 @@ export interface MonthlyContract {
   internal_notes: string | null;
   inventory_items: string | null;
   billing_frequency: number;
+  vat_enabled: boolean;
+  vat_rate: number;
 }
 
 export interface MonthlyInstallment {
