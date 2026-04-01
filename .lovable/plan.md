@@ -1,51 +1,23 @@
 
 
-## Localize Automated Monthly Invoice Emails by Client Country
+## Fix: Enable Automatic Payment Reminders for Monthly Package Invoices
 
-### What
-Currently, the `generate-monthly-installments` edge function sends all automated monthly invoices in **German only** — the email body, subject line, PDF labels (Rechnung, Beschreibung, Menge, etc.), invoice notes, and month names are all hardcoded in German. 
+### Problem
+When the `generate-monthly-installments` edge function creates and sends invoices on the 1st of each month, it sets `status: 'sent'` but **never sets `next_reminder_at`**. This means the automated payment reminder system (which checks for `next_reminder_at <= now()`) never picks up these invoices — they never get follow-up reminders.
 
-This change will detect the client's language from their `company_address` (using the same `detectLanguageFromAddress` pattern already used in the payment reminder system) and localize:
-1. **Client email** — subject line, greeting, body text
-2. **Invoice PDF** — all labels (Invoice, Description, Quantity, Amount, etc.)
-3. **Invoice DB notes** — stored in client's language
-4. **Month labels** — localized month names (e.g. "April" in Danish = "April", in Czech = "Duben")
+Today's batch (INV-2026-524 through INV-2026-543, ~20 invoices) all have this issue.
 
-Team notifications stay in German (internal).
+### Fix
 
-### How
+**1. Edge function fix — `supabase/functions/generate-monthly-installments/index.ts`**
+- In the `createInvoice` function (line 364-377), add `next_reminder_at` set to 48 hours from creation time, matching the same pattern used everywhere else in the system
+- Change the insert to include: `next_reminder_at: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString()`
 
-**File: `supabase/functions/generate-monthly-installments/index.ts`**
-
-1. **Add `detectLanguageFromAddress` function** — same regex map as in `send-invoice-payment-reminders` (DE, NL, FR, ES, DA, NO, CS, PL, SV, default EN)
-
-2. **Add translation objects** for all 10 languages covering:
-   - Month names (`monthNames[lang]`)
-   - PDF labels: "Invoice", "Invoice Recipient", "Invoice Number", "Invoice Date", "Due Date", "Description", "Quantity", "Unit Price", "Total", "Net Amount", "VAT", "Total Amount", "Payment Terms", "Bank Details", payment terms text
-   - Email: subject template, greeting, body text, closing
-   - Invoice DB fields: `notes`, `payment_terms`
-
-3. **In the main processing loop**, for each contract:
-   - Call `detectLanguageFromAddress(contract.company_address)` to get the language
-   - Pass the language to `generateInvoicePDF()` so all PDF labels render in the correct language
-   - Pass the language to `sendInvoiceEmail()` so the email subject and body are localized
-   - Use localized month name instead of hardcoded `germanMonths`
-   - Store localized `notes` and `payment_terms` on the invoice record
-
-4. **Update `generateInvoicePDF` signature** to accept a `lang` parameter and use translated labels instead of hardcoded German strings
-
-5. **Update `sendInvoiceEmail` signature** to accept a `lang` parameter and use translated email templates
-
-6. **Team notifications remain in German** — no changes to `sendTeamNotifications` or `createTeamNotifications`
-
-### Technical Details
-
-- 10 languages supported: EN, DE, NL, FR, ES, DA, NO, CS, PL, SV
-- The `company_address` field on `monthly_contracts` is used for detection (same field used in the payment reminder system)
-- If no country match is found, defaults to English
-- No database changes needed — only the edge function code changes
-- The function must be redeployed after the update
+**2. Database fix — activate reminders on recent monthly invoices**
+- Run a one-time migration to set `next_reminder_at` for all existing invoices that are `status = 'sent'` and `next_reminder_at IS NULL` and `order_id IS NULL` (monthly invoices don't have an order_id)
+- Set them to 48 hours from now so reminders start flowing
 
 ### Files to modify
-1. `supabase/functions/generate-monthly-installments/index.ts` — Add language detection, translations, and localize PDF + email output
+1. `supabase/functions/generate-monthly-installments/index.ts` — Add `next_reminder_at` to invoice insert
+2. Database migration — Backfill `next_reminder_at` for existing monthly invoices
 
