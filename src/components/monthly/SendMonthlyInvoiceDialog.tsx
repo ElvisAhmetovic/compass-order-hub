@@ -85,8 +85,8 @@ const SendMonthlyInvoiceDialog: React.FC<SendMonthlyInvoiceDialogProps> = ({
               name: contract.client_name,
               email: contract.client_email,
               contact_person: contract.client_name,
-              address: (contract as any).company_address || "",
-              phone: (contract as any).contact_phone || "",
+          address: contract.company_address || "",
+              phone: contract.contact_phone || "",
             });
             toast({ title: "Client auto-created", description: `Client "${contract.client_name}" was added to the invoice system.` });
           }
