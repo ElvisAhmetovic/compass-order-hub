@@ -102,8 +102,10 @@ const SendMonthlyInvoiceDialog: React.FC<SendMonthlyInvoiceDialogProps> = ({
       let currentInvoice = invoice;
       if (!currentInvoice) {
         try {
-          const netPrice = installment.amount;
-          const vatAmount = 0;
+          const vatEnabled = !!(contract as any).vat_enabled;
+          const vatRate = vatEnabled ? (Number((contract as any).vat_rate) || 0) : 0;
+          const grossPrice = installment.amount;
+          const netPrice = vatRate > 0 ? grossPrice / (1 + vatRate / 100) : grossPrice;
           const description = contract.description
             ? `${contract.description} - ${installment.month_label}`
             : `Google Monthly Service - ${installment.month_label}`;
@@ -121,7 +123,7 @@ const SendMonthlyInvoiceDialog: React.FC<SendMonthlyInvoiceDialogProps> = ({
               quantity: 1,
               unit: "pcs",
               unit_price: netPrice,
-              vat_rate: 0,
+              vat_rate: vatRate,
               discount_rate: 0,
             }],
           });
