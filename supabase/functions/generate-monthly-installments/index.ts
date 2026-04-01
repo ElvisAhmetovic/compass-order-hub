@@ -639,6 +639,7 @@ async function sendTeamNotifications(
   amount: number,
   currency: string,
   invoiceNumber: string,
+  pdfBase64?: string,
 ): Promise<number> {
   const formattedPrice = formatPrice(amount, currency);
   const subject = `Monatliche Rechnung gesendet – ${clientName} – ${monthLabel} – ${invoiceNumber}`;
