@@ -144,10 +144,10 @@ const MonthlyInstallmentsTable: React.FC<Props> = ({ contracts, installments, on
         toast({ title: "Client auto-created", description: `Client "${contract.client_name}" was added to the invoice system.` });
       }
 
-      const vatEnabled = !!(contract as any).vat_enabled;
-      const vatRate = vatEnabled ? (Number((contract as any).vat_rate) || 0) : 0;
+      const vatEnabled = !!contract.vat_enabled;
+      const vatRate = vatEnabled ? (Number(contract.vat_rate) || 0) : 0;
       const grossPrice = inst.amount;
-      const netPrice = vatRate > 0 ? grossPrice / (1 + vatRate / 100) : grossPrice;
+      const netPrice = vatRate > 0 ? grossPrice / (1 + vatRate) : grossPrice;
       const description = contract.description
         ? `${contract.description} - ${inst.month_label}`
         : `Google Monthly Service - ${inst.month_label}`;
