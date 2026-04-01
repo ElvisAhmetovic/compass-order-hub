@@ -834,7 +834,8 @@ Deno.serve(async (req) => {
                 .eq("id", existing.id);
               emailsSent++;
 
-              const teamSent = await sendTeamNotifications(contract.client_name, monthLabel, totalAmount, contract.currency || "EUR", invoiceNumber, pdfBytes);
+              const teamPdfBase64 = btoa(String.fromCharCode(...new Uint8Array(pdfBytes)));
+              const teamSent = await sendTeamNotifications(contract.client_name, monthLabel, totalAmount, contract.currency || "EUR", invoiceNumber, teamPdfBase64);
               teamEmailsSent += teamSent;
               await createTeamNotifications(supabase, contract.client_name, monthLabel, totalAmount, contract.currency || "EUR", invoiceNumber);
             }
