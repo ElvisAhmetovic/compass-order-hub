@@ -121,7 +121,13 @@ const MonthlyInstallmentsTable: React.FC<Props> = ({ contracts, installments, on
     setCreatingInvoiceIds(prev => new Set(prev).add(inst.id));
     try {
       const clients = await InvoiceService.getClients();
-      let matched = clients.find(c => c.email.toLowerCase() === contract.client_email.toLowerCase());
+      let matched = clients.find(c => 
+        c.email.toLowerCase() === contract.client_email.toLowerCase() &&
+        c.name.toLowerCase() === contract.client_name.toLowerCase()
+      );
+      if (!matched) {
+        matched = clients.find(c => c.email.toLowerCase() === contract.client_email.toLowerCase());
+      }
       if (!matched) {
         matched = await InvoiceService.createClient({
           name: contract.client_name,
@@ -186,7 +192,13 @@ const MonthlyInstallmentsTable: React.FC<Props> = ({ contracts, installments, on
     if (!client) {
       try {
         const clients = await InvoiceService.getClients();
-        client = clients.find(c => c.email.toLowerCase() === contract.client_email.toLowerCase()) || null;
+        client = clients.find(c => 
+          c.email.toLowerCase() === contract.client_email.toLowerCase() &&
+          c.name.toLowerCase() === contract.client_name.toLowerCase()
+        ) || null;
+        if (!client) {
+          client = clients.find(c => c.email.toLowerCase() === contract.client_email.toLowerCase()) || null;
+        }
         if (!client) {
           client = await InvoiceService.createClient({
             name: contract.client_name,
