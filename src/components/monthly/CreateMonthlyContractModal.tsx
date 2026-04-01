@@ -345,6 +345,46 @@ const CreateMonthlyContractModal: React.FC<Props> = ({ open, onOpenChange, onCre
                     </FormItem>
                   )} />
                 </div>
+
+                {/* VAT Toggle */}
+                <div className="flex items-center gap-4 p-3 rounded-lg border bg-muted/30">
+                  <div className="flex items-center gap-2">
+                    <Switch checked={vatEnabled} onCheckedChange={setVatEnabled} id="vat-toggle" />
+                    <Label htmlFor="vat-toggle" className="text-sm font-medium">VAT %</Label>
+                  </div>
+                  {vatEnabled && (
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        min="1"
+                        max="30"
+                        step="0.5"
+                        value={vatPercentage}
+                        onChange={(e) => setVatPercentage(Number(e.target.value) || 0)}
+                        className="w-20 h-8"
+                      />
+                      <span className="text-sm text-muted-foreground">%</span>
+                    </div>
+                  )}
+                </div>
+
+                {vatEnabled && totalValue > 0 && (
+                  <div className="rounded-lg border bg-muted/20 p-3 space-y-1">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Netto:</span>
+                      <span>{formatPrice(netTotal)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">VAT ({vatPercentage}%):</span>
+                      <span>{formatPrice(vatAmountTotal)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm font-semibold border-t pt-1">
+                      <span>Total (Brutto):</span>
+                      <span>{formatPrice(totalValue)}</span>
+                    </div>
+                  </div>
+                )}
+
                 <FormField control={form.control} name="startDate" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Start Date *</FormLabel>
