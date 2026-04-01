@@ -85,8 +85,8 @@ const SendMonthlyInvoiceDialog: React.FC<SendMonthlyInvoiceDialogProps> = ({
               name: contract.client_name,
               email: contract.client_email,
               contact_person: contract.client_name,
-              address: (contract as any).company_address || "",
-              phone: (contract as any).contact_phone || "",
+          address: contract.company_address || "",
+              phone: contract.contact_phone || "",
             });
             toast({ title: "Client auto-created", description: `Client "${contract.client_name}" was added to the invoice system.` });
           }
@@ -102,10 +102,10 @@ const SendMonthlyInvoiceDialog: React.FC<SendMonthlyInvoiceDialogProps> = ({
       let currentInvoice = invoice;
       if (!currentInvoice) {
         try {
-          const vatEnabled = !!(contract as any).vat_enabled;
-          const vatRate = vatEnabled ? (Number((contract as any).vat_rate) || 0) : 0;
+          const vatEnabled = !!contract.vat_enabled;
+          const vatRate = vatEnabled ? (Number(contract.vat_rate) || 0) : 0;
           const grossPrice = installment.amount;
-          const netPrice = vatRate > 0 ? grossPrice / (1 + vatRate / 100) : grossPrice;
+          const netPrice = vatRate > 0 ? grossPrice / (1 + vatRate) : grossPrice;
           const description = contract.description
             ? `${contract.description} - ${installment.month_label}`
             : `Google Monthly Service - ${installment.month_label}`;
@@ -137,10 +137,10 @@ const SendMonthlyInvoiceDialog: React.FC<SendMonthlyInvoiceDialogProps> = ({
       }
 
       // Build line items for PDF
-      const pdfVatEnabled = !!(contract as any).vat_enabled;
-      const pdfVatRate = pdfVatEnabled ? (Number((contract as any).vat_rate) || 0) : 0;
+      const pdfVatEnabled = !!contract.vat_enabled;
+      const pdfVatRate = pdfVatEnabled ? (Number(contract.vat_rate) || 0) : 0;
       const pdfGrossPrice = installment.amount;
-      const pdfNetPrice = pdfVatRate > 0 ? pdfGrossPrice / (1 + pdfVatRate / 100) : pdfGrossPrice;
+      const pdfNetPrice = pdfVatRate > 0 ? pdfGrossPrice / (1 + pdfVatRate) : pdfGrossPrice;
       const description = contract.description
         ? `${contract.description} - ${installment.month_label}`
         : `Google Monthly Service - ${installment.month_label}`;
@@ -166,8 +166,8 @@ const SendMonthlyInvoiceDialog: React.FC<SendMonthlyInvoiceDialogProps> = ({
         if (raw) savedSettings = JSON.parse(raw);
       } catch {}
 
-      const contractVatEnabled = !!(contract as any).vat_enabled;
-      const contractVatRate = contractVatEnabled ? (Number((contract as any).vat_rate) || 0) : 0;
+      const contractVatEnabled = !!contract.vat_enabled;
+      const contractVatRate = contractVatEnabled ? (Number(contract.vat_rate) || 0) : 0;
 
       const templateSettings = {
         ...savedSettings,

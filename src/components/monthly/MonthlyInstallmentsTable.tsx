@@ -118,6 +118,11 @@ const MonthlyInstallmentsTable: React.FC<Props> = ({ contracts, installments, on
   }, [contracts]);
 
   const handleCreateInvoice = async (contract: MonthlyContract, inst: MonthlyInstallment) => {
+    // Duplicate guard
+    if (invoiceIdMap[inst.id] || inst.invoice_id) {
+      toast({ title: "Invoice already exists", description: "An invoice has already been created for this installment." });
+      return;
+    }
     setCreatingInvoiceIds(prev => new Set(prev).add(inst.id));
     try {
       const clients = await InvoiceService.getClients();
@@ -133,16 +138,16 @@ const MonthlyInstallmentsTable: React.FC<Props> = ({ contracts, installments, on
           name: contract.client_name,
           email: contract.client_email,
           contact_person: contract.client_name,
-          address: (contract as any).company_address || "",
-          phone: (contract as any).contact_phone || "",
+          address: contract.company_address || "",
+          phone: contract.contact_phone || "",
         });
         toast({ title: "Client auto-created", description: `Client "${contract.client_name}" was added to the invoice system.` });
       }
 
-      const vatEnabled = !!(contract as any).vat_enabled;
-      const vatRate = vatEnabled ? (Number((contract as any).vat_rate) || 0) : 0;
+      const vatEnabled = !!contract.vat_enabled;
+      const vatRate = vatEnabled ? (Number(contract.vat_rate) || 0) : 0;
       const grossPrice = inst.amount;
-      const netPrice = vatRate > 0 ? grossPrice / (1 + vatRate / 100) : grossPrice;
+      const netPrice = vatRate > 0 ? grossPrice / (1 + vatRate) : grossPrice;
       const description = contract.description
         ? `${contract.description} - ${inst.month_label}`
         : `Google Monthly Service - ${inst.month_label}`;
