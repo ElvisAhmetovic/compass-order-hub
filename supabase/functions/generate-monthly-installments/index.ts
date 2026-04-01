@@ -390,7 +390,7 @@ async function createInvoice(
     quantity: 1,
     unit: PDF_LABELS[lang].unit,
     unit_price: netAmount,
-    vat_rate: 0,
+    vat_rate: vatRate,
     discount_rate: 0,
     line_total: totalAmount,
   });
