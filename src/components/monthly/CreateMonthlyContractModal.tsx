@@ -72,6 +72,8 @@ const CreateMonthlyContractModal: React.FC<Props> = ({ open, onOpenChange, onCre
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
   const [selectedInventoryItems, setSelectedInventoryItems] = useState<SelectedInventoryItem[]>([]);
+  const [vatEnabled, setVatEnabled] = useState(false);
+  const [vatPercentage, setVatPercentage] = useState(19);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
