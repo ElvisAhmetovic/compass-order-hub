@@ -965,7 +965,7 @@ export class OrderService {
       console.log('Sending order update notification emails for:', orderData.company_name);
       
       // Get email recipients - fallback to default emails if secret not available
-      const defaultEmails = 'angelina@abmedia-team.com,service@team-abmedia.com,thomas.thomasklein@gmail.com,const defaultEmails = 'angelina@abmedia-team.com,service@team-abmedia.com,thomas.thomasklein@gmail.com,invoice@team-abmedia.com,jungabmedia@gmail.com,wolfabmedia@gmail.com,marcusabmedia@gmail.com,paulkatz.abmedia@gmail.com,ajosesales36@gmail.com,georgabmediateam@gmail.com,johan@team-abmedia.com';,jungabmedia@gmail.com,wolfabmedia@gmail.com,marcusabmedia@gmail.com,paulkatz.abmedia@gmail.com,ajosesales36@gmail.com,georgabmediateam@gmail.com,johan@team-abmedia.com';
+      const defaultEmails = 'angelina@abmedia-team.com,service@team-abmedia.com,thomas.thomasklein@gmail.com,invoice@team-abmedia.com,jungabmedia@gmail.com,wolfabmedia@gmail.com,marcusabmedia@gmail.com,paulkatz.abmedia@gmail.com,ajosesales36@gmail.com,georgabmediateam@gmail.com,johan@team-abmedia.com';
       const emails = defaultEmails.split(',').map(email => email.trim()).filter(email => email);
       
       // Get inventory items if they exist
