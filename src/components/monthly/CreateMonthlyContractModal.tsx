@@ -103,6 +103,12 @@ const CreateMonthlyContractModal: React.FC<Props> = ({ open, onOpenChange, onCre
   const numberOfInstallments = durationMonths > 0 && billingFrequency > 0 ? Math.floor(durationMonths / billingFrequency) : 0;
   const installmentAmount = numberOfInstallments > 0 ? totalValue / numberOfInstallments : 0;
 
+  const vatRate = vatPercentage / 100;
+  const netTotal = vatEnabled ? Math.round((totalValue / (1 + vatRate)) * 100) / 100 : totalValue;
+  const vatAmountTotal = vatEnabled ? Math.round((totalValue - netTotal) * 100) / 100 : 0;
+  const netInstallment = numberOfInstallments > 0 ? Math.round((netTotal / numberOfInstallments) * 100) / 100 : 0;
+  const vatInstallment = numberOfInstallments > 0 ? Math.round((vatAmountTotal / numberOfInstallments) * 100) / 100 : 0;
+
   const formatPrice = (value: number) =>
     new Intl.NumberFormat("de-DE", { style: "currency", currency }).format(value);
 
