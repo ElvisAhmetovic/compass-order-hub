@@ -166,8 +166,8 @@ const SendMonthlyInvoiceDialog: React.FC<SendMonthlyInvoiceDialogProps> = ({
         if (raw) savedSettings = JSON.parse(raw);
       } catch {}
 
-      const contractVatEnabled = !!(contract as any).vat_enabled;
-      const contractVatRate = contractVatEnabled ? (Number((contract as any).vat_rate) || 0) : 0;
+      const contractVatEnabled = !!contract.vat_enabled;
+      const contractVatRate = contractVatEnabled ? (Number(contract.vat_rate) || 0) : 0;
 
       const templateSettings = {
         ...savedSettings,
