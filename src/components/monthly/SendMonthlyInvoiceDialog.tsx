@@ -137,10 +137,10 @@ const SendMonthlyInvoiceDialog: React.FC<SendMonthlyInvoiceDialogProps> = ({
       }
 
       // Build line items for PDF
-      const pdfVatEnabled = !!(contract as any).vat_enabled;
-      const pdfVatRate = pdfVatEnabled ? (Number((contract as any).vat_rate) || 0) : 0;
+      const pdfVatEnabled = !!contract.vat_enabled;
+      const pdfVatRate = pdfVatEnabled ? (Number(contract.vat_rate) || 0) : 0;
       const pdfGrossPrice = installment.amount;
-      const pdfNetPrice = pdfVatRate > 0 ? pdfGrossPrice / (1 + pdfVatRate / 100) : pdfGrossPrice;
+      const pdfNetPrice = pdfVatRate > 0 ? pdfGrossPrice / (1 + pdfVatRate) : pdfGrossPrice;
       const description = contract.description
         ? `${contract.description} - ${installment.month_label}`
         : `Google Monthly Service - ${installment.month_label}`;
