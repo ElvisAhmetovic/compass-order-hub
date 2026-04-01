@@ -33,6 +33,8 @@ import { supabase } from "@/integrations/supabase/client";
 import OrderSearchDropdown from "@/components/dashboard/OrderSearchDropdown";
 import InventoryItemsSelector, { SelectedInventoryItem } from "@/components/dashboard/InventoryItemsSelector";
 import { Order } from "@/types";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 const formSchema = z.object({
   clientName: z.string().min(1, "Company name is required"),
