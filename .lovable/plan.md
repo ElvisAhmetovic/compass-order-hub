@@ -1,55 +1,51 @@
 
 
-## Fix Invoice Number Sequence Reset Bug
+## Localize Automated Monthly Invoice Emails by Client Country
 
-### Root Cause
-The `updateInvoiceSequence` method in `src/services/invoiceService.ts` directly upserts `last_sequence` without checking if the new value is lower than the current one. When someone manually set a sequence to 13 via the invoice editor on March 27, it overwrote the existing value of 513, causing all subsequent invoices to number from 013 onwards.
+### What
+Currently, the `generate-monthly-installments` edge function sends all automated monthly invoices in **German only** — the email body, subject line, PDF labels (Rechnung, Beschreibung, Menge, etc.), invoice notes, and month names are all hardcoded in German. 
 
-The DB function `generate_invoice_number` has a `GREATEST` check, but `updateInvoiceSequence` bypasses it entirely by writing directly to the table.
+This change will detect the client's language from their `company_address` (using the same `detectLanguageFromAddress` pattern already used in the payment reminder system) and localize:
+1. **Client email** — subject line, greeting, body text
+2. **Invoice PDF** — all labels (Invoice, Description, Quantity, Amount, etc.)
+3. **Invoice DB notes** — stored in client's language
+4. **Month labels** — localized month names (e.g. "April" in Danish = "April", in Czech = "Duben")
 
-### Fix
+Team notifications stay in German (internal).
 
-**1. Database migration — restore correct sequence**
-```sql
-UPDATE invoice_sequences 
-SET last_sequence = 513, updated_at = NOW() 
-WHERE year = 2026 AND prefix = 'INV';
-```
-This restores the counter so the next invoice will be INV-2026-514 (skipping the duplicated 013-018 range).
+### How
 
-**2. Fix `src/services/invoiceService.ts` — prevent future resets**
+**File: `supabase/functions/generate-monthly-installments/index.ts`**
 
-Update `updateInvoiceSequence` to only allow the sequence to go **up**, never down:
+1. **Add `detectLanguageFromAddress` function** — same regex map as in `send-invoice-payment-reminders` (DE, NL, FR, ES, DA, NO, CS, PL, SV, default EN)
 
-```typescript
-static async updateInvoiceSequence(year: number, sequence: number): Promise<void> {
-  const { data: current } = await supabase
-    .from('invoice_sequences')
-    .select('last_sequence')
-    .eq('year', year)
-    .eq('prefix', 'INV')
-    .single();
+2. **Add translation objects** for all 10 languages covering:
+   - Month names (`monthNames[lang]`)
+   - PDF labels: "Invoice", "Invoice Recipient", "Invoice Number", "Invoice Date", "Due Date", "Description", "Quantity", "Unit Price", "Total", "Net Amount", "VAT", "Total Amount", "Payment Terms", "Bank Details", payment terms text
+   - Email: subject template, greeting, body text, closing
+   - Invoice DB fields: `notes`, `payment_terms`
 
-  // Only update if new sequence is higher than current
-  const newSequence = current ? Math.max(current.last_sequence, sequence) : sequence;
+3. **In the main processing loop**, for each contract:
+   - Call `detectLanguageFromAddress(contract.company_address)` to get the language
+   - Pass the language to `generateInvoicePDF()` so all PDF labels render in the correct language
+   - Pass the language to `sendInvoiceEmail()` so the email subject and body are localized
+   - Use localized month name instead of hardcoded `germanMonths`
+   - Store localized `notes` and `payment_terms` on the invoice record
 
-  const { error } = await supabase
-    .from('invoice_sequences')
-    .upsert(
-      { year, prefix: 'INV', last_sequence: newSequence, updated_at: new Date().toISOString() },
-      { onConflict: 'year,prefix' }
-    );
-    
-  if (error) {
-    console.error('Failed to update invoice sequence:', error);
-  }
-}
-```
+4. **Update `generateInvoicePDF` signature** to accept a `lang` parameter and use translated labels instead of hardcoded German strings
 
-### About the duplicate numbers
-INV-2026-013 through INV-2026-018 now exist twice (the originals from early March and the new ones from March 27-30). These are different invoices with different IDs so no data is lost, but they share invoice numbers. You may want to manually renumber the newer duplicates in the Supabase dashboard.
+5. **Update `sendInvoiceEmail` signature** to accept a `lang` parameter and use translated email templates
+
+6. **Team notifications remain in German** — no changes to `sendTeamNotifications` or `createTeamNotifications`
+
+### Technical Details
+
+- 10 languages supported: EN, DE, NL, FR, ES, DA, NO, CS, PL, SV
+- The `company_address` field on `monthly_contracts` is used for detection (same field used in the payment reminder system)
+- If no country match is found, defaults to English
+- No database changes needed — only the edge function code changes
+- The function must be redeployed after the update
 
 ### Files to modify
-1. **Database migration** — restore `last_sequence` to 513 for 2026
-2. **`src/services/invoiceService.ts`** — add `GREATEST` logic to `updateInvoiceSequence`
+1. `supabase/functions/generate-monthly-installments/index.ts` — Add language detection, translations, and localize PDF + email output
 
