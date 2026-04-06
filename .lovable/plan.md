@@ -1,36 +1,26 @@
 
 
-## Replace `kleinabmedia@gmail.com` with `invoice@team-abmedia.com` Across All Team Email Lists
+## Add Offers to Order Autofill Search
 
-### What
-Remove `kleinabmedia@gmail.com` from every hardcoded team notification list across the entire codebase and replace it with `invoice@team-abmedia.com`.
+### Problem
+The "Search existing orders to autofill" dropdown in Create Order only pulls from the `orders` table. Clients who only have offers (but no orders yet) don't appear, so their details can't be autofilled.
 
-### Scope
-17 files contain this email — 1 frontend constant, 1 service file, 1 old migration (read-only, skip), and 14 edge functions. The `notify-password-change` function has a separate `kleinabmedia1@gmail.com` (different email, different purpose) — that one stays untouched.
+### Solution
+Extend `OrderSearchDropdown` to also fetch offers from the `offers` table, merge them into the search results, and map offer fields to the same shape so the autofill handler works seamlessly.
 
-### Files to modify (16 total)
+### How it works
+- When the dropdown opens, fetch both orders AND offers in parallel
+- Convert each offer to a lightweight "pseudo-order" object with the same fields the autofill uses (`company_name`, `contact_email`, `company_address`, `contact_phone`, `currency`, etc.)
+- Parse `order_data` JSON from offers to extract `companyLink`
+- Tag offer entries with a visual badge ("From Offer") so the user can distinguish them
+- Deduplicate: if an order already exists with the same company name + email, skip the offer entry
 
-**Frontend (2 files):**
-1. `src/constants/notificationEmails.ts` — replace `kleinabmedia@gmail.com` → `invoice@team-abmedia.com`
-2. `src/services/orderService.ts` — same replacement in the fallback email string
+### Technical details
+- Offers have: `company_name`, `client_email`, `client_name`, `client_phone`, `client_address`, `currency`, `price`, `description`, `order_data` (JSON with `companyLink`)
+- Map to Order-like shape: `company_name` stays, `client_email` → `contact_email`, `client_phone` → `contact_phone`, `client_address` → `company_address`, `order_data.companyLink` → `company_link`
+- Priority defaults to "medium" for offers
+- The `handleOrderAutofill` in CreateOrderModal already only copies company/client info and resets order-specific fields — no changes needed there
 
-**Edge Functions (14 files):**
-3. `supabase/functions/create-tech-support-ticket/index.ts`
-4. `supabase/functions/send-invoice-payment-reminders/index.ts`
-5. `supabase/functions/send-client-payment-reminder/index.ts`
-6. `supabase/functions/send-offer-email/index.ts`
-7. `supabase/functions/send-payment-confirmation/index.ts`
-8. `supabase/functions/send-order-payment-reminders/index.ts`
-9. `supabase/functions/send-invoice-pdf/index.ts`
-10. `supabase/functions/generate-monthly-installments/index.ts`
-11. `supabase/functions/send-client-portal-credentials/index.ts`
-12. `supabase/functions/send-follow-up-reminders/index.ts`
-13. `supabase/functions/send-monthly-contract-created/index.ts`
-14. `supabase/functions/confirm-offer/index.ts`
-15. `supabase/functions/create-client-ticket/index.ts`
-16. `supabase/functions/send-monthly-toggle-notification/index.ts`
-
-Each file: simple find-and-replace of `kleinabmedia@gmail.com` → `invoice@team-abmedia.com`. Then redeploy all 14 edge functions.
-
-The old migration file (`20251105151028_...`) is already applied and won't be touched.
+### Files to modify
+1. **`src/components/dashboard/OrderSearchDropdown.tsx`** — Fetch offers alongside orders, merge into results list, add "Offer" badge for offer-sourced entries
 
