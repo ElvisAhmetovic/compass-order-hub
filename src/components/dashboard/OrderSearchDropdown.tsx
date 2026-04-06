@@ -100,7 +100,7 @@ const OrderSearchDropdown = ({ onOrderSelect, className }: OrderSearchDropdownPr
           price: offer.price,
           currency: offer.currency,
           description: offer.description || undefined,
-          status: "Offer",
+          status: "Created" as const,
           priority: "medium",
           created_at: offer.created_at,
           _source: "offer"
