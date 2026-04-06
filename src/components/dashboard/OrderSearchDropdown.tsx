@@ -6,7 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Order } from "@/types";
 import { OrderService } from "@/services/orderService";
+import { supabase } from "@/integrations/supabase/client";
 import { formatCurrency } from "@/utils/currencyUtils";
+
+interface SearchableOrder extends Order {
+  _source?: "order" | "offer";
+}
 
 interface OrderSearchDropdownProps {
   onOrderSelect: (order: Order) => void;
@@ -15,8 +20,8 @@ interface OrderSearchDropdownProps {
 
 const OrderSearchDropdown = ({ onOrderSelect, className }: OrderSearchDropdownProps) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
+  const [items, setItems] = useState<SearchableOrder[]>([]);
+  const [filteredItems, setFilteredItems] = useState<SearchableOrder[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -33,48 +38,88 @@ const OrderSearchDropdown = ({ onOrderSelect, className }: OrderSearchDropdownPr
     return () => document.removeEventListener("mousedown", handler);
   }, [isOpen]);
 
-  // Load orders when dropdown opens
+  // Load orders + offers when dropdown opens
   useEffect(() => {
-    if (isOpen && orders.length === 0) {
-      loadOrders();
+    if (isOpen && items.length === 0) {
+      loadItems();
     }
   }, [isOpen]);
 
-  // Filter orders based on search query
+  // Filter based on search query
   useEffect(() => {
     if (!searchQuery.trim()) {
-      setFilteredOrders(orders);
+      setFilteredItems(items);
     } else {
       const query = searchQuery.toLowerCase();
-      const filtered = orders.filter(order => 
-        order.company_name.toLowerCase().includes(query) ||
-        order.contact_email?.toLowerCase().includes(query) ||
-        order.status.toLowerCase().includes(query) ||
-        order.id.toLowerCase().includes(query)
+      const filtered = items.filter(item =>
+        item.company_name.toLowerCase().includes(query) ||
+        item.contact_email?.toLowerCase().includes(query) ||
+        item.status.toLowerCase().includes(query) ||
+        item.id.toLowerCase().includes(query)
       );
-      setFilteredOrders(filtered);
+      setFilteredItems(filtered);
     }
-  }, [searchQuery, orders]);
+  }, [searchQuery, items]);
 
-  const loadOrders = async () => {
+  const loadItems = async () => {
     setLoading(true);
     try {
-      const [regularOrders, yearlyPackages] = await Promise.all([
+      const [regularOrders, yearlyPackages, offersResult] = await Promise.all([
         OrderService.getOrders(),
-        OrderService.getYearlyPackages()
+        OrderService.getYearlyPackages(),
+        supabase.from("offers").select("*").order("created_at", { ascending: false })
       ]);
-      const allOrders = [...regularOrders, ...yearlyPackages];
-      setOrders(allOrders);
-      setFilteredOrders(allOrders);
+
+      const allOrders: SearchableOrder[] = [...regularOrders, ...yearlyPackages].map(o => ({
+        ...o,
+        _source: "order" as const
+      }));
+
+      // Build a set of existing order keys for dedup
+      const orderKeys = new Set(
+        allOrders.map(o => `${o.company_name.toLowerCase()}|${(o.contact_email || "").toLowerCase()}`)
+      );
+
+      // Map offers to pseudo-order shape, skipping duplicates
+      const offers = (offersResult.data || []);
+      const offerItems: SearchableOrder[] = [];
+      for (const offer of offers) {
+        const key = `${offer.company_name.toLowerCase()}|${offer.client_email.toLowerCase()}`;
+        if (orderKeys.has(key)) continue;
+        orderKeys.add(key); // avoid duplicate offers too
+
+        const orderData = (offer.order_data as any) || {};
+        offerItems.push({
+          id: offer.id,
+          company_name: offer.company_name,
+          contact_email: offer.client_email,
+          contact_name: offer.client_name,
+          contact_phone: offer.client_phone || undefined,
+          company_address: offer.client_address || undefined,
+          company_link: orderData.companyLink || undefined,
+          price: offer.price,
+          currency: offer.currency,
+          description: offer.description || undefined,
+          status: "Created" as const,
+          priority: "medium",
+          created_at: offer.created_at,
+          _source: "offer"
+        });
+      }
+
+      const merged = [...allOrders, ...offerItems];
+      setItems(merged);
+      setFilteredItems(merged);
     } catch (error) {
-      console.error("Error loading orders:", error);
+      console.error("Error loading items:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleOrderSelect = (order: Order) => {
-    onOrderSelect(order);
+  const handleOrderSelect = (order: SearchableOrder) => {
+    const { _source, ...cleanOrder } = order;
+    onOrderSelect(cleanOrder as Order);
     setIsOpen(false);
     setSearchQuery("");
   };
@@ -82,7 +127,7 @@ const OrderSearchDropdown = ({ onOrderSelect, className }: OrderSearchDropdownPr
   const getPriorityColor = (priority: string) => {
     const priorityClasses: Record<string, string> = {
       "low": "bg-priority-low text-white",
-      "medium": "bg-priority-medium text-white", 
+      "medium": "bg-priority-medium text-white",
       "high": "bg-priority-high text-white",
       "urgent": "bg-priority-urgent text-white",
     };
@@ -91,8 +136,8 @@ const OrderSearchDropdown = ({ onOrderSelect, className }: OrderSearchDropdownPr
 
   return (
     <div ref={containerRef} className="relative">
-      <Button 
-        variant="outline" 
+      <Button
+        variant="outline"
         className={`w-full justify-between ${className}`}
         type="button"
         onClick={() => setIsOpen(!isOpen)}
@@ -118,55 +163,63 @@ const OrderSearchDropdown = ({ onOrderSelect, className }: OrderSearchDropdownPr
           <div className="max-h-[300px] overflow-y-auto">
             {loading ? (
               <div className="p-4 text-center text-muted-foreground">
-                Loading orders...
+                Loading...
               </div>
-            ) : filteredOrders.length === 0 ? (
+            ) : filteredItems.length === 0 ? (
               <div className="p-4 text-center text-muted-foreground">
-                {searchQuery ? "No orders found matching your search" : "No orders available"}
+                {searchQuery ? "No results found" : "No orders or offers available"}
               </div>
             ) : (
               <div className="p-2">
-                {filteredOrders.map((order) => (
+                {filteredItems.map((item) => (
                   <div
-                    key={order.id}
+                    key={`${item._source}-${item.id}`}
                     className="p-3 hover:bg-muted rounded-md cursor-pointer border-b last:border-b-0"
-                    onClick={() => handleOrderSelect(order)}
+                    onClick={() => handleOrderSelect(item)}
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           <h4 className="font-medium text-sm truncate">
-                            {order.company_name}
+                            {item.company_name}
                           </h4>
-                          <Badge 
-                            variant="secondary" 
-                            className={`text-xs ${getPriorityColor(order.priority || "medium")}`}
-                          >
-                            {order.priority || "medium"}
-                          </Badge>
-                          {order.is_yearly_package && (
-                            <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
-                              Yearly Package
+                          {item._source === "offer" ? (
+                            <Badge variant="outline" className="text-xs bg-amber-50 text-amber-700 border-amber-200">
+                              From Offer
                             </Badge>
+                          ) : (
+                            <>
+                              <Badge
+                                variant="secondary"
+                                className={`text-xs ${getPriorityColor(item.priority || "medium")}`}
+                              >
+                                {item.priority || "medium"}
+                              </Badge>
+                              {item.is_yearly_package && (
+                                <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                                  Yearly Package
+                                </Badge>
+                              )}
+                            </>
                           )}
                         </div>
                         <p className="text-xs text-muted-foreground truncate">
-                          {order.contact_email}
+                          {item.contact_email}
                         </p>
                         <div className="flex items-center gap-2 mt-1">
                           <Badge variant="outline" className="text-xs">
-                            {order.status}
+                            {item.status}
                           </Badge>
-                          {order.price && (
+                          {item.price && (
                             <span className="text-xs font-medium">
-                              {formatCurrency(order.price, order.currency || "EUR")}
+                              {formatCurrency(item.price, item.currency || "EUR")}
                             </span>
                           )}
                         </div>
                       </div>
                     </div>
                     <div className="text-xs text-muted-foreground mt-2 truncate">
-                      ID: {order.id}
+                      ID: {item.id}
                     </div>
                   </div>
                 ))}
