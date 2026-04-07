@@ -40,8 +40,46 @@ serve(async (req) => {
   }
 
   try {
+    // JWT authentication check
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+    const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2.49.8");
+    const supabaseAuth = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_ANON_KEY')!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
+    if (authError || !user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+
     const body: RequestBody = await req.json();
     const { clientName, clientEmail, monthLabel, amount, currency, toggleType, newValue, changedBy } = body;
+
+    // Input validation
+    if (!clientName || !clientEmail || !monthLabel || amount === undefined || !toggleType || !changedBy) {
+      return new Response(JSON.stringify({ error: 'Missing required fields' }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(clientEmail)) {
+      return new Response(JSON.stringify({ error: 'Invalid email address' }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+    if (!['paid', 'invoice_sent'].includes(toggleType)) {
+      return new Response(JSON.stringify({ error: 'Invalid toggle type' }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
 
     const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY_ABMEDIA");
     if (!RESEND_API_KEY) {
