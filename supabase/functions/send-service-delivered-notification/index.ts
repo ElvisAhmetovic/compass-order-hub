@@ -44,6 +44,13 @@ serve(async (req: Request) => {
     if (!orderId) {
       throw new Error("orderId is required");
     }
+    // Validate UUID format
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(orderId)) {
+      return new Response(JSON.stringify({ error: 'Invalid orderId format' }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
 
     // Fetch order details
     const { data: order, error: orderError } = await supabase

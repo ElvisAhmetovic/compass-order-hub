@@ -63,6 +63,24 @@ serve(async (req) => {
     const body: RequestBody = await req.json();
     const { clientName, clientEmail, monthLabel, amount, currency, toggleType, newValue, changedBy } = body;
 
+    // Input validation
+    if (!clientName || !clientEmail || !monthLabel || amount === undefined || !toggleType || !changedBy) {
+      return new Response(JSON.stringify({ error: 'Missing required fields' }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(clientEmail)) {
+      return new Response(JSON.stringify({ error: 'Invalid email address' }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+    if (!['paid', 'invoice_sent'].includes(toggleType)) {
+      return new Response(JSON.stringify({ error: 'Invalid toggle type' }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+
     const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY_ABMEDIA");
     if (!RESEND_API_KEY) {
       throw new Error("RESEND_API_KEY_ABMEDIA not configured");
