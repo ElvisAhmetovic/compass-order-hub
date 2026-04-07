@@ -217,25 +217,8 @@ export const EditUserModal: React.FC<EditUserModalProps> = ({
         }
       }
 
-      // Try to update email in auth system (this might fail due to permissions)
-      if (values.email !== user.email) {
-        try {
-          const { error: emailError } = await supabase.auth.admin.updateUserById(
-            user.id,
-            { email: values.email }
-          );
-          
-          if (emailError) {
-            console.log('Could not update email in auth system:', emailError);
-            // Don't throw error - continue with profile update
-          } else {
-            console.log('Successfully updated email in auth system');
-          }
-        } catch (error) {
-          console.log('Email update not available:', error);
-          // Continue without email update
-        }
-      }
+      // Note: Email updates in auth system should go through a secured edge function.
+      // The profile email is updated below via the profiles table update.
 
       // Create updated user object with new values
       const updatedUser: User = {
