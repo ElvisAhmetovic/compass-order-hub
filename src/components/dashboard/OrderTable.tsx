@@ -44,7 +44,7 @@ const OrderTable = ({
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
-  const [rowsPerPage] = useState(10);
+  const [rowsPerPage] = useState(30);
   
   // Search and filter state
   const [searchFilters, setSearchFilters] = useState<SearchFilters>({});
