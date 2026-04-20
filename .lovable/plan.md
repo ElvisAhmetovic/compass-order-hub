@@ -1,34 +1,36 @@
 
 
-## Add Language Selector for Offer Email
+## Add Multiple CC Emails for Invoice Payment Reminders
 
 ### What
-Add a language dropdown next to/under the "Send Offer" button in `CreateOrderModal`, with 11 EU languages. The selected language is passed to `send-offer-email` and used to render the offer email content (headlines, button label, greeting, body, footer) in that language.
+On the bell icon dialog (Payment Reminders) for each invoice, add an editable list of additional email addresses. The automated reminder cron will send the client-facing reminder to the primary contact **plus** all additional emails in one go (CC), so clients with multiple inboxes always receive it.
 
-### Languages
-English (en), German (de), Dutch (nl), French (fr), Spanish (es), Italian (it), Czech (cs), Polish (pl), Swedish (sv), Norwegian (no), Danish (da). Default: English.
+### Where
+- Bell icon → opens `InvoiceReminderHistory` dialog → new section **"Additional CC Emails"** above the reminder log.
 
-### How
-**Frontend — `src/components/dashboard/CreateOrderModal.tsx`**
-- Add `offerLanguage` state (default `"en"`).
-- Render a compact `Select` next to the "Send Offer" button (label: "Offer language") with the 11 options.
-- Include `language: offerLanguage` in the `send-offer-email` invoke body.
+### UI behavior
+- Shows existing CC emails as removable chips/badges.
+- Input field + "Add" button to add a new email (validated as proper email format, deduped, max 10).
+- Save persists immediately to the invoice row.
+- Subtle helper text: *"These addresses will be CC'd on every automated payment reminder for this invoice."*
 
-**Backend — `supabase/functions/send-offer-email/index.ts`**
-- Add a `translations` map keyed by language code containing all customer-facing strings:
-  - Subject prefix: "Your Offer from AB Media Team"
-  - Header tag: "Service Offer"
-  - Headline: "You have received an offer from AB Media Team"
-  - Price label
-  - CTA button: "Confirm Your Order"
-  - Greeting: "Dear {name},"
-  - Body paragraph + trust line
-  - Footer "Best regards"
-- Read `language` from request body (default `"en"`), look up strings, and inject into `buildOfferEmailHtml`.
-- Localize the email subject as well (sent to client only — team copy keeps `[Team Copy]` prefix in English for internal consistency).
-- Set `<html lang="...">` to the chosen code.
+### Data
+New column on `invoices`:
+- `cc_emails text[] not null default '{}'`
+
+(No RLS policy changes needed — existing invoice policies cover it. The column is nullable-safe via default empty array.)
+
+### Backend (cron)
+In `supabase/functions/send-invoice-payment-reminders/index.ts`:
+- When sending the **client** reminder, build the recipient list as `[clientEmail, ...invoice.cc_emails]` (deduped, lowercased).
+- Send as a single Resend call using `to: [primary]` and `cc: extras` so the client sees fellow recipients (transparent), or alternatively `to: [...all]` if we want each recipient hidden from the others. **Default: use `cc` (transparent)** — matches typical client-comms behavior.
+- Log the full recipient list into `invoice_payment_reminders.sent_to_client` as a comma-separated string so the history dialog reflects all addresses.
 
 ### Files to modify
-1. `src/components/dashboard/CreateOrderModal.tsx` — add Select + state + pass `language` to invoke
-2. `supabase/functions/send-offer-email/index.ts` — add translations, accept `language` param, localize HTML + subject (then redeploy)
+1. **DB migration** — add `cc_emails text[] default '{}'` to `invoices`.
+2. **`src/components/invoices/InvoiceReminderHistory.tsx`** — add CC manager UI (chips + input + add/remove + save to Supabase).
+3. **`supabase/functions/send-invoice-payment-reminders/index.ts`** — read `cc_emails`, include in client reminder send, update log entry. Redeploy.
+
+### Out of scope
+- The "Send Now" manual reminder button on the overdue list (`PaymentReminders.tsx`) — current request is only for the bell icon flow. Easy to extend later if wanted.
 
