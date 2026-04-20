@@ -489,7 +489,17 @@ const handler = async (req: Request): Promise<Response> => {
         };
 
         // Send to client if email exists — in the detected language
+        // Build CC list from invoice.cc_emails (deduped, lowercased, excluding the primary)
+        const primaryLower = (clientEmail || "").trim().toLowerCase();
+        const ccList: string[] = Array.isArray(invoice.cc_emails)
+          ? Array.from(new Set(
+              invoice.cc_emails
+                .map((e: string) => (e || "").trim().toLowerCase())
+                .filter((e: string) => e && e !== primaryLower)
+            ))
+          : [];
         let clientEmailSent = false;
+        let allRecipientsSent: string[] = [];
         if (clientEmail) {
           try {
             const urgencyIdx = newReminderCount >= 3 ? 2 : newReminderCount >= 2 ? 1 : 0;
@@ -498,11 +508,13 @@ const handler = async (req: Request): Promise<Response> => {
             await resend.emails.send({
               from: "AB Media Team <noreply@abm-team.com>",
               to: [clientEmail],
+              cc: ccList.length > 0 ? ccList : undefined,
               subject: clientSubject,
               html: buildReminderEmailHtml({ ...emailData, isClientEmail: true }),
             });
             clientEmailSent = true;
-            console.log(`Client email sent to ${clientEmail} for invoice ${invoice.invoice_number} (lang: ${detectedLanguage})`);
+            allRecipientsSent = [clientEmail, ...ccList];
+            console.log(`Client email sent to ${clientEmail}${ccList.length ? ` (cc: ${ccList.join(", ")})` : ""} for invoice ${invoice.invoice_number} (lang: ${detectedLanguage})`);
             await delay(500);
           } catch (emailErr) {
             console.error(`Failed to send client email to ${clientEmail}:`, emailErr);
