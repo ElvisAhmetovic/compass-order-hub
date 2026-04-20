@@ -82,6 +82,21 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
   const [sendToClient, setSendToClient] = useState(false);
   const [vatEnabled, setVatEnabled] = useState(false);
   const [vatPercentage, setVatPercentage] = useState(20);
+  const [offerLanguage, setOfferLanguage] = useState("en");
+
+  const OFFER_LANGUAGES: { code: string; label: string }[] = [
+    { code: "en", label: "English" },
+    { code: "de", label: "Deutsch" },
+    { code: "nl", label: "Nederlands" },
+    { code: "fr", label: "Français" },
+    { code: "es", label: "Español" },
+    { code: "it", label: "Italiano" },
+    { code: "cs", label: "Čeština" },
+    { code: "pl", label: "Polski" },
+    { code: "sv", label: "Svenska" },
+    { code: "no", label: "Norsk" },
+    { code: "da", label: "Dansk" },
+  ];
   
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
