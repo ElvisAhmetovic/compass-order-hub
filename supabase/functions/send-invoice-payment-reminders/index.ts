@@ -549,12 +549,12 @@ const handler = async (req: Request): Promise<Response> => {
           next_reminder_at: nextReminderAt,
         }).eq("id", invoice.id);
 
-        // Log the reminder
+        // Log the reminder (record full recipient list including CCs)
         await supabase.from("invoice_payment_reminders").insert({
           invoice_id: invoice.id,
           order_id: orderId || invoice.id,
           reminder_number: newReminderCount,
-          sent_to_client: clientEmail || null,
+          sent_to_client: allRecipientsSent.length > 0 ? allRecipientsSent.join(", ") : (clientEmail || null),
           sent_to_team: true,
         });
 
