@@ -989,6 +989,7 @@ Additional internal comments...`}
                         currency: values.currency,
                         senderName: user.full_name || 'AB Media Team',
                         offerId: offerData.id,
+                        language: offerLanguage,
                       },
                     });
                     if (emailErr) throw emailErr;
@@ -1023,6 +1024,19 @@ Additional internal comments...`}
                 <Send className="h-4 w-4 mr-2" />
                 {isSendingOffer ? "Sending..." : "Send Offer"}
               </Button>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs text-muted-foreground px-1">Offer language</label>
+                <Select value={offerLanguage} onValueChange={setOfferLanguage} disabled={isSendingOffer}>
+                  <SelectTrigger className="h-9 w-[160px]">
+                    <SelectValue placeholder="Language" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {OFFER_LANGUAGES.map((lang) => (
+                      <SelectItem key={lang.code} value={lang.code}>{lang.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <Button type="submit" disabled={isSubmitting || isSendingOffer}>
                 {isSubmitting ? "Creating..." : "Create Order"}
               </Button>
