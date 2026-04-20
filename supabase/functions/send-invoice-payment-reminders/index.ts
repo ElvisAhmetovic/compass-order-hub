@@ -489,7 +489,17 @@ const handler = async (req: Request): Promise<Response> => {
         };
 
         // Send to client if email exists — in the detected language
+        // Build CC list from invoice.cc_emails (deduped, lowercased, excluding the primary)
+        const primaryLower = (clientEmail || "").trim().toLowerCase();
+        const ccList: string[] = Array.isArray(invoice.cc_emails)
+          ? Array.from(new Set(
+              invoice.cc_emails
+                .map((e: string) => (e || "").trim().toLowerCase())
+                .filter((e: string) => e && e !== primaryLower)
+            ))
+          : [];
         let clientEmailSent = false;
+        let allRecipientsSent: string[] = [];
         if (clientEmail) {
           try {
             const urgencyIdx = newReminderCount >= 3 ? 2 : newReminderCount >= 2 ? 1 : 0;
@@ -498,11 +508,13 @@ const handler = async (req: Request): Promise<Response> => {
             await resend.emails.send({
               from: "AB Media Team <noreply@abm-team.com>",
               to: [clientEmail],
+              cc: ccList.length > 0 ? ccList : undefined,
               subject: clientSubject,
               html: buildReminderEmailHtml({ ...emailData, isClientEmail: true }),
             });
             clientEmailSent = true;
-            console.log(`Client email sent to ${clientEmail} for invoice ${invoice.invoice_number} (lang: ${detectedLanguage})`);
+            allRecipientsSent = [clientEmail, ...ccList];
+            console.log(`Client email sent to ${clientEmail}${ccList.length ? ` (cc: ${ccList.join(", ")})` : ""} for invoice ${invoice.invoice_number} (lang: ${detectedLanguage})`);
             await delay(500);
           } catch (emailErr) {
             console.error(`Failed to send client email to ${clientEmail}:`, emailErr);
@@ -537,12 +549,12 @@ const handler = async (req: Request): Promise<Response> => {
           next_reminder_at: nextReminderAt,
         }).eq("id", invoice.id);
 
-        // Log the reminder
+        // Log the reminder (record full recipient list including CCs)
         await supabase.from("invoice_payment_reminders").insert({
           invoice_id: invoice.id,
           order_id: orderId || invoice.id,
           reminder_number: newReminderCount,
-          sent_to_client: clientEmail || null,
+          sent_to_client: allRecipientsSent.length > 0 ? allRecipientsSent.join(", ") : (clientEmail || null),
           sent_to_team: true,
         });
 

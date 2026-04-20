@@ -875,6 +875,7 @@ export type Database = {
       }
       invoices: {
         Row: {
+          cc_emails: string[]
           client_id: string
           created_at: string
           currency: string
@@ -899,6 +900,7 @@ export type Database = {
           vat_amount: number
         }
         Insert: {
+          cc_emails?: string[]
           client_id: string
           created_at?: string
           currency?: string
@@ -923,6 +925,7 @@ export type Database = {
           vat_amount?: number
         }
         Update: {
+          cc_emails?: string[]
           client_id?: string
           created_at?: string
           currency?: string
