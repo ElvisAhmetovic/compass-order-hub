@@ -9,7 +9,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { PlusCircle, FileEdit, Trash2, Download, File, CheckCircle2, XCircle, Send, Eye, Receipt, ArrowUpDown, Bell, Timer, TimerOff } from "lucide-react";
+import { PlusCircle, FileEdit, Trash2, Download, File, CheckCircle2, XCircle, Send, Eye, Receipt, ArrowUpDown, Bell, Timer, TimerOff, Loader2 } from "lucide-react";
+import { generateInvoicePDF } from "@/utils/invoicePdfGenerator";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   AlertDialog,
@@ -57,6 +58,7 @@ const Invoices = () => {
   const [loading, setLoading] = useState(true);
   const [filterText, setFilterText] = useState("");
   const [sortOption, setSortOption] = useState<string>("newest");
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
   // Calculate overdue invoices
   const overdueInvoices = invoices.filter(invoice => {
     const dueDate = new Date(invoice.due_date);
@@ -121,6 +123,51 @@ const Invoices = () => {
 
   const handleCreateInvoice = () => {
     navigate("/invoices/new");
+  };
+
+  const handleDownloadInvoicePDF = async (invoice: Invoice) => {
+    if (downloadingId) return;
+    setDownloadingId(invoice.id);
+    try {
+      const [lineItems, client] = await Promise.all([
+        InvoiceService.getLineItems(invoice.id),
+        invoice.client_id ? InvoiceService.getClient(invoice.client_id) : Promise.resolve(null),
+      ]);
+
+      // Load template settings from localStorage (same source as InvoiceDetail)
+      let templateSettings: any = {};
+      try {
+        const saved = localStorage.getItem('invoiceTemplateSettings');
+        if (saved) templateSettings = JSON.parse(saved);
+      } catch (e) {
+        console.warn('Failed to parse invoiceTemplateSettings:', e);
+      }
+
+      await generateInvoicePDF({
+        invoice,
+        lineItems,
+        client: client || undefined,
+        templateSettings: {
+          ...templateSettings,
+          currency: invoice.currency,
+        },
+        formData: { currency: invoice.currency },
+      });
+
+      toast({
+        title: "PDF Downloaded",
+        description: `Invoice ${invoice.invoice_number} has been downloaded successfully.`,
+      });
+    } catch (error) {
+      console.error("Error generating invoice PDF:", error);
+      toast({
+        title: "PDF Generation Failed",
+        description: "There was an error generating the PDF. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setDownloadingId(null);
+    }
   };
 
   const handleToggleRemindersPaused = async (invoice: Invoice) => {
@@ -659,10 +706,15 @@ const Invoices = () => {
                                   <Button 
                                     variant="ghost" 
                                     size="icon"
-                                    onClick={() => {/* TODO: Implement PDF download */}}
+                                    onClick={() => handleDownloadInvoicePDF(invoice)}
+                                    disabled={downloadingId === invoice.id}
                                     title="Download PDF"
                                   >
-                                    <Download size={16} />
+                                    {downloadingId === invoice.id ? (
+                                      <Loader2 size={16} className="animate-spin" />
+                                    ) : (
+                                      <Download size={16} />
+                                    )}
                                   </Button>
                                 </div>
                               </TableCell>
