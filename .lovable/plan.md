@@ -1,36 +1,46 @@
 
 
-## Add Multiple CC Emails for Invoice Payment Reminders
+## Why the Download Button Doesn't Work
 
-### What
-On the bell icon dialog (Payment Reminders) for each invoice, add an editable list of additional email addresses. The automated reminder cron will send the client-facing reminder to the primary contact **plus** all additional emails in one go (CC), so clients with multiple inboxes always receive it.
+In `src/pages/Invoices.tsx` line 662, the download icon's onClick is a placeholder:
 
-### Where
-- Bell icon → opens `InvoiceReminderHistory` dialog → new section **"Additional CC Emails"** above the reminder log.
+```tsx
+onClick={() => {/* TODO: Implement PDF download */}}
+```
 
-### UI behavior
-- Shows existing CC emails as removable chips/badges.
-- Input field + "Add" button to add a new email (validated as proper email format, deduped, max 10).
-- Save persists immediately to the invoice row.
-- Subtle helper text: *"These addresses will be CC'd on every automated payment reminder for this invoice."*
+It was never wired up. Clicking it does literally nothing — no error, no download, no console log. That's why nothing happens.
 
-### Data
-New column on `invoices`:
-- `cc_emails text[] not null default '{}'`
+The actual PDF generator (`generateInvoicePDF` in `src/utils/invoicePdfGenerator.ts`) exists and works fine — it's already used successfully on the invoice detail page (`InvoiceDetail.tsx` line 503).
 
-(No RLS policy changes needed — existing invoice policies cover it. The column is nullable-safe via default empty array.)
+## Fix Plan
 
-### Backend (cron)
-In `supabase/functions/send-invoice-payment-reminders/index.ts`:
-- When sending the **client** reminder, build the recipient list as `[clientEmail, ...invoice.cc_emails]` (deduped, lowercased).
-- Send as a single Resend call using `to: [primary]` and `cc: extras` so the client sees fellow recipients (transparent), or alternatively `to: [...all]` if we want each recipient hidden from the others. **Default: use `cc` (transparent)** — matches typical client-comms behavior.
-- Log the full recipient list into `invoice_payment_reminders.sent_to_client` as a comma-separated string so the history dialog reflects all addresses.
+Replace the no-op handler on the invoices list row with a real download handler that mirrors what `InvoiceDetail.tsx` does.
 
-### Files to modify
-1. **DB migration** — add `cc_emails text[] default '{}'` to `invoices`.
-2. **`src/components/invoices/InvoiceReminderHistory.tsx`** — add CC manager UI (chips + input + add/remove + save to Supabase).
-3. **`supabase/functions/send-invoice-payment-reminders/index.ts`** — read `cc_emails`, include in client reminder send, update log entry. Redeploy.
+### Changes — `src/pages/Invoices.tsx`
 
-### Out of scope
-- The "Send Now" manual reminder button on the overdue list (`PaymentReminders.tsx`) — current request is only for the bell icon flow. Easy to extend later if wanted.
+1. Add a new `handleDownloadInvoicePDF(invoice)` function that:
+   - Fetches the invoice's line items via `InvoiceService.getInvoiceLineItems(invoice.id)`
+   - Loads the client via `InvoiceService.getClientById(invoice.client_id)` (so the Bill-To section renders)
+   - Loads the user's template settings via the existing `useInvoiceSettings`-style fetch (or a direct supabase query of `company_settings` for the current user — same source the detail page uses)
+   - Calls `generateInvoicePDF({ invoice, lineItems, client, templateSettings, formData: { currency: invoice.currency } })`
+   - Shows a toast on success / failure (matching the existing pattern)
+   - Sets a per-row loading state so the icon shows a spinner while generating (one row at a time)
+
+2. Wire the download button:
+   ```tsx
+   onClick={() => handleDownloadInvoicePDF(invoice)}
+   disabled={downloadingId === invoice.id}
+   ```
+
+3. Replace the `Download` icon with a small spinner when `downloadingId === invoice.id`.
+
+### What stays the same
+- The PDF generator itself — no changes.
+- The invoice detail page download flow — unchanged.
+- The list row layout — only the click handler and a tiny loading indicator are added.
+
+### File to modify
+1. `src/pages/Invoices.tsx` — add `handleDownloadInvoicePDF`, add `downloadingId` state, wire the icon button (line ~660), import `generateInvoicePDF` from `@/utils/invoicePdfGenerator`.
+
+That's it — one self-contained patch to the invoices list page restores the download functionality.
 
