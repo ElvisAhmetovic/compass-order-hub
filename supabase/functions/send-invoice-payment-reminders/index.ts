@@ -7,20 +7,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const TEAM_EMAILS = [
-  "angelina@abmedia-team.com",
-  "service@team-abmedia.com",
-  "thomas.thomasklein@gmail.com",
-  "invoice@team-abmedia.com",
-  "jungabmedia@gmail.com",
-  "wolfabmedia@gmail.com",
-  "marcusabmedia@gmail.com",
-  "paulkatz.abmedia@gmail.com",
-  "ajosesales36@gmail.com",
-  "georgabmediateam@gmail.com",
-  "jannes@scoolfinanceedu.com",
-];
-
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 // --- Language detection from address ---
@@ -521,25 +507,8 @@ const handler = async (req: Request): Promise<Response> => {
           }
         }
 
-        // Send to team members — always in English
-        let teamEmailsSent = 0;
-        const companyNameForSubject = order?.company_name || invoice.client?.name || 'Unknown';
-        for (const email of TEAM_EMAILS) {
-          try {
-            await resend.emails.send({
-              from: "AB Media Team <noreply@abm-team.com>",
-              to: [email],
-              subject: `💰 Payment Reminder #${newReminderCount}: ${companyNameForSubject} - Invoice ${invoice.invoice_number} - ${amount}`,
-              html: buildReminderEmailHtml({ ...emailData, isClientEmail: false }),
-            });
-            teamEmailsSent++;
-            if (teamEmailsSent < TEAM_EMAILS.length) await delay(500);
-          } catch (emailErr) {
-            console.error(`Failed to send team email to ${email}:`, emailErr);
-          }
-        }
-
-        console.log(`Sent ${teamEmailsSent}/${TEAM_EMAILS.length} team emails + client=${clientEmailSent} for invoice ${invoice.invoice_number}`);
+        // Team emails intentionally not sent — team monitors reminders inside the app.
+        console.log(`Reminder dispatch complete for invoice ${invoice.invoice_number}: client=${clientEmailSent}, cc=${ccList.length}`);
 
         // Update invoice reminder tracking
         const nextReminderAt = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
@@ -555,7 +524,7 @@ const handler = async (req: Request): Promise<Response> => {
           order_id: orderId || invoice.id,
           reminder_number: newReminderCount,
           sent_to_client: allRecipientsSent.length > 0 ? allRecipientsSent.join(", ") : (clientEmail || null),
-          sent_to_team: true,
+          sent_to_team: false,
         });
 
         processedCount++;

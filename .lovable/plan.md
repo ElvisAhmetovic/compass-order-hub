@@ -1,46 +1,34 @@
+## Stop Sending Invoice Payment Reminders to Team Emails
 
+### What
+The automated invoice payment reminder cron currently sends each reminder to:
+1. The client (and any CC emails on the invoice) — in the client's language
+2. **All 11 internal team emails** — in English
 
-## Why the Download Button Doesn't Work
+You want to stop step 2. The team will continue to monitor reminders inside the app (Payment Reminders page, reminder history, in-app notifications) — no more inbox spam.
 
-In `src/pages/Invoices.tsx` line 662, the download icon's onClick is a placeholder:
+### Why this is safe
+- All reminder activity is already logged to the `invoice_payment_reminders` table and visible in the bell icon's reminder history.
+- The Payment Reminders dashboard page already lists every overdue invoice.
+- In-app payment reminder notifications already exist (`usePaymentReminderDueNotifications`).
+- No other reminder flow (orders, manual sends, follow-ups) sends to the full team list, so this change is isolated.
 
-```tsx
-onClick={() => {/* TODO: Implement PDF download */}}
-```
+### Changes
 
-It was never wired up. Clicking it does literally nothing — no error, no download, no console log. That's why nothing happens.
+**File: `supabase/functions/send-invoice-payment-reminders/index.ts`**
 
-The actual PDF generator (`generateInvoicePDF` in `src/utils/invoicePdfGenerator.ts`) exists and works fine — it's already used successfully on the invoice detail page (`InvoiceDetail.tsx` line 503).
+1. Remove the `TEAM_EMAILS` constant (lines 10–22) — no longer used.
+2. Remove the entire team-email send loop (lines 524–542) that iterates `TEAM_EMAILS` and sends a separate English email per team member.
+3. Update the log line that reports counts to drop the team portion (just log client/CC delivery).
+4. Update the `invoice_payment_reminders` log insert to set `sent_to_team: false` (line 558) so the audit trail correctly reflects that team emails were not sent.
+5. Leave everything else untouched: client email, CC emails, language detection, reminder counter, `next_reminder_at` scheduling, paused/cancelled/paid skip logic, test mode.
 
-## Fix Plan
+**Redeploy**: the edge function must be redeployed for the change to take effect (the cron serves the last-deployed version).
 
-Replace the no-op handler on the invoices list row with a real download handler that mirrors what `InvoiceDetail.tsx` does.
+### Out of scope
+- Manual "Send Reminder" button in the Payment Reminders page (`send-payment-reminder` function) — already only emails the client, no team copy.
+- Order payment reminders (`send-order-payment-reminders`, `send-client-payment-reminder`) — these are separate flows and don't blast the team list.
+- The team notification email list constant in `src/constants/notificationEmails.ts` — still used by other features (orders, tech support) and should remain.
 
-### Changes — `src/pages/Invoices.tsx`
-
-1. Add a new `handleDownloadInvoicePDF(invoice)` function that:
-   - Fetches the invoice's line items via `InvoiceService.getInvoiceLineItems(invoice.id)`
-   - Loads the client via `InvoiceService.getClientById(invoice.client_id)` (so the Bill-To section renders)
-   - Loads the user's template settings via the existing `useInvoiceSettings`-style fetch (or a direct supabase query of `company_settings` for the current user — same source the detail page uses)
-   - Calls `generateInvoicePDF({ invoice, lineItems, client, templateSettings, formData: { currency: invoice.currency } })`
-   - Shows a toast on success / failure (matching the existing pattern)
-   - Sets a per-row loading state so the icon shows a spinner while generating (one row at a time)
-
-2. Wire the download button:
-   ```tsx
-   onClick={() => handleDownloadInvoicePDF(invoice)}
-   disabled={downloadingId === invoice.id}
-   ```
-
-3. Replace the `Download` icon with a small spinner when `downloadingId === invoice.id`.
-
-### What stays the same
-- The PDF generator itself — no changes.
-- The invoice detail page download flow — unchanged.
-- The list row layout — only the click handler and a tiny loading indicator are added.
-
-### File to modify
-1. `src/pages/Invoices.tsx` — add `handleDownloadInvoicePDF`, add `downloadingId` state, wire the icon button (line ~660), import `generateInvoicePDF` from `@/utils/invoicePdfGenerator`.
-
-That's it — one self-contained patch to the invoices list page restores the download functionality.
-
+### Files modified
+1. `supabase/functions/send-invoice-payment-reminders/index.ts` — remove team blast + redeploy.
