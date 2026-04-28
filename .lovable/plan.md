@@ -1,40 +1,33 @@
-## Why the PDF always shows "Tax (21%)"
+## Why "Tax (21%)" still shows after the previous fix
 
-In `src/utils/invoicePdfGenerator.ts` line 783, the tax label is hardcoded with a fallback:
+The previous fix only patched the **PDF generator** (`src/utils/invoicePdfGenerator.ts`). But the screenshot you sent is from the **on-screen invoice preview** — a separate component (`src/components/invoices/InvoicePreview.tsx`) that has the exact same bug on line 637:
 
-```ts
-<span>${getTranslatedText('tax')} (${templateSettings.vatRate || 21}%):</span>
+```tsx
+<span>{getTranslatedText('tax')} ({templateSettings.vatRate || 21}%):</span>
 ```
 
-Two problems:
+It reads `templateSettings.vatRate` (the global template setting, often missing/0) instead of the actual `vat_rate` on the line items, then falls back to a hardcoded `21`. The math next to it is correct (€441.37 / €2323.00 = 19%), proving the line items use 19% — only the label lies.
 
-1. **Wrong source**: It reads `templateSettings.vatRate` (the global template setting), not the actual VAT rate used on the invoice's line items. When generating a PDF for a saved invoice, `templateSettings.vatRate` is often missing/0, so it falls back to **21**.
-2. **Hardcoded fallback**: `|| 21` means any falsy value (0, undefined, null) becomes 21 — even when VAT is set to 0% legitimately.
-
-Meanwhile the actual `vatAmount` (line 187–192) is correctly computed from each line item's own `vat_rate`. So the *amount* is right but the *label* lies.
+Also, the regex I used in the PDF fix (`/\.?0+$/`) accidentally strips trailing zeros from whole numbers (e.g., `20` → `2`, `0` → empty). That needs to be safer.
 
 ## Fix
 
-Derive the displayed VAT % from the line items themselves so the label always matches reality.
+### 1. `src/components/invoices/InvoicePreview.tsx`
+- In `calculateTotals` (line ~26), also derive an `effectiveVatRate` from the line items:
+  - If all items share the same `vat_rate`, use it directly
+  - Otherwise, blended rate = `vatAmount / subtotal * 100`
+  - If subtotal is 0 or VAT disabled, use 0
+- Replace line 637's `templateSettings.vatRate || 21` with the derived rate, formatted cleanly (max 2 decimals, no fake trailing zero stripping that breaks `20` or `0`).
 
-### Change in `src/utils/invoicePdfGenerator.ts`
-
-1. In `calculateTotals` (around line 182), also compute an effective VAT rate:
-   - If all line items share the same `vat_rate`, use that single rate (e.g. `10%`).
-   - If items use mixed rates, show the blended/effective rate: `vatAmount / subtotal * 100`, rounded to 2 decimals.
-   - If `subtotal` is 0, fall back to `0`.
-2. Replace the hardcoded `templateSettings.vatRate || 21` on line 783 with that computed rate.
-3. Format it cleanly (strip trailing `.00` so `20%` shows as `20%`, not `20.00%`).
+### 2. `src/utils/invoicePdfGenerator.ts` (small follow-up)
+- Replace the unsafe `formattedVatRate` formatting (current `replace(/\.?0+$/, '')` corrupts `20` → `2`) with a safer formatter: only strip trailing zeros after a decimal point, never from the integer part. E.g. `19` → `"19"`, `19.5` → `"19.5"`, `19.50` → `"19.5"`, `20` → `"20"`, `0` → `"0"`.
 
 ### Result
-
-- Invoice with all items at 0% VAT → "Tax (0%)"
-- Invoice with all items at 19% → "Tax (19%)"
-- Mixed rates (e.g. 19% + 7%) → shows the effective blended rate matching the displayed amount
+- On-screen preview and downloaded PDF both show the real VAT % from the invoice's line items.
+- 19% invoices show "Tax (19%)", 0% shows "Tax (0%)", 20% shows "Tax (20%)" (no truncation), mixed rates show the blended effective rate.
 
 ### Out of scope
+- No changes to VAT math, currency formatting, line-items table, or template settings.
+- No backend or DB changes.
 
-- The line items table, the `vatAmount` math, currency formatting, and template settings all stay as-is.
-- No backend, RLS, or schema changes.
-
-One file, one small function tweak, one string interpolation change.
+Two files, two small tweaks.
