@@ -795,7 +795,7 @@ const generateInvoiceHTML = (data: InvoicePDFData): string => {
           </div>
           ${templateSettings.vatEnabled ? `
             <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px;">
-              <span>${getTranslatedText('tax')} (${templateSettings.vatRate || 21}%):</span>
+              <span>${getTranslatedText('tax')} (${formattedVatRate}%):</span>
               <span style="font-weight: 600;">${formatCurrency(vatAmount, currentCurrency)}</span>
             </div>
           ` : ''}
