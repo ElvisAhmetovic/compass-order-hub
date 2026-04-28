@@ -650,7 +650,7 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
               </div>
               {templateSettings.vatEnabled && (
                 <div className="flex justify-between text-sm">
-                  <span>{getTranslatedText('tax')} ({templateSettings.vatRate || 21}%):</span>
+                  <span>{getTranslatedText('tax')} ({formattedVatRate}%):</span>
                   <span className="font-semibold">{formatCurrency(vatAmount, currentCurrency)}</span>
                 </div>
               )}
