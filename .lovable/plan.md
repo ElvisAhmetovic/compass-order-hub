@@ -1,34 +1,40 @@
-## Stop Sending Invoice Payment Reminders to Team Emails
+## Why the PDF always shows "Tax (21%)"
 
-### What
-The automated invoice payment reminder cron currently sends each reminder to:
-1. The client (and any CC emails on the invoice) — in the client's language
-2. **All 11 internal team emails** — in English
+In `src/utils/invoicePdfGenerator.ts` line 783, the tax label is hardcoded with a fallback:
 
-You want to stop step 2. The team will continue to monitor reminders inside the app (Payment Reminders page, reminder history, in-app notifications) — no more inbox spam.
+```ts
+<span>${getTranslatedText('tax')} (${templateSettings.vatRate || 21}%):</span>
+```
 
-### Why this is safe
-- All reminder activity is already logged to the `invoice_payment_reminders` table and visible in the bell icon's reminder history.
-- The Payment Reminders dashboard page already lists every overdue invoice.
-- In-app payment reminder notifications already exist (`usePaymentReminderDueNotifications`).
-- No other reminder flow (orders, manual sends, follow-ups) sends to the full team list, so this change is isolated.
+Two problems:
 
-### Changes
+1. **Wrong source**: It reads `templateSettings.vatRate` (the global template setting), not the actual VAT rate used on the invoice's line items. When generating a PDF for a saved invoice, `templateSettings.vatRate` is often missing/0, so it falls back to **21**.
+2. **Hardcoded fallback**: `|| 21` means any falsy value (0, undefined, null) becomes 21 — even when VAT is set to 0% legitimately.
 
-**File: `supabase/functions/send-invoice-payment-reminders/index.ts`**
+Meanwhile the actual `vatAmount` (line 187–192) is correctly computed from each line item's own `vat_rate`. So the *amount* is right but the *label* lies.
 
-1. Remove the `TEAM_EMAILS` constant (lines 10–22) — no longer used.
-2. Remove the entire team-email send loop (lines 524–542) that iterates `TEAM_EMAILS` and sends a separate English email per team member.
-3. Update the log line that reports counts to drop the team portion (just log client/CC delivery).
-4. Update the `invoice_payment_reminders` log insert to set `sent_to_team: false` (line 558) so the audit trail correctly reflects that team emails were not sent.
-5. Leave everything else untouched: client email, CC emails, language detection, reminder counter, `next_reminder_at` scheduling, paused/cancelled/paid skip logic, test mode.
+## Fix
 
-**Redeploy**: the edge function must be redeployed for the change to take effect (the cron serves the last-deployed version).
+Derive the displayed VAT % from the line items themselves so the label always matches reality.
+
+### Change in `src/utils/invoicePdfGenerator.ts`
+
+1. In `calculateTotals` (around line 182), also compute an effective VAT rate:
+   - If all line items share the same `vat_rate`, use that single rate (e.g. `10%`).
+   - If items use mixed rates, show the blended/effective rate: `vatAmount / subtotal * 100`, rounded to 2 decimals.
+   - If `subtotal` is 0, fall back to `0`.
+2. Replace the hardcoded `templateSettings.vatRate || 21` on line 783 with that computed rate.
+3. Format it cleanly (strip trailing `.00` so `20%` shows as `20%`, not `20.00%`).
+
+### Result
+
+- Invoice with all items at 0% VAT → "Tax (0%)"
+- Invoice with all items at 19% → "Tax (19%)"
+- Mixed rates (e.g. 19% + 7%) → shows the effective blended rate matching the displayed amount
 
 ### Out of scope
-- Manual "Send Reminder" button in the Payment Reminders page (`send-payment-reminder` function) — already only emails the client, no team copy.
-- Order payment reminders (`send-order-payment-reminders`, `send-client-payment-reminder`) — these are separate flows and don't blast the team list.
-- The team notification email list constant in `src/constants/notificationEmails.ts` — still used by other features (orders, tech support) and should remain.
 
-### Files modified
-1. `supabase/functions/send-invoice-payment-reminders/index.ts` — remove team blast + redeploy.
+- The line items table, the `vatAmount` math, currency formatting, and template settings all stay as-is.
+- No backend, RLS, or schema changes.
+
+One file, one small function tweak, one string interpolation change.

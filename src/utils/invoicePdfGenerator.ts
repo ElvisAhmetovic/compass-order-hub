@@ -192,11 +192,26 @@ const generateInvoiceHTML = (data: InvoicePDFData): string => {
       : 0;
     
     const total = subtotal + vatAmount;
-    
-    return { subtotal, vatAmount, total };
+
+    // Derive effective VAT rate from line items so the label matches reality
+    let effectiveVatRate = 0;
+    if (templateSettings.vatEnabled && lineItems.length > 0) {
+      const rates = lineItems.map(i => Number(i.vat_rate) || 0);
+      const allSame = rates.every(r => r === rates[0]);
+      if (allSame) {
+        effectiveVatRate = rates[0] * 100;
+      } else if (subtotal > 0) {
+        effectiveVatRate = (vatAmount / subtotal) * 100;
+      }
+    }
+
+    return { subtotal, vatAmount, total, effectiveVatRate };
   };
 
-  const { subtotal, vatAmount, total } = calculateTotals();
+  const { subtotal, vatAmount, total, effectiveVatRate } = calculateTotals();
+  const formattedVatRate = (Math.round(effectiveVatRate * 100) / 100)
+    .toString()
+    .replace(/\.?0+$/, '');
 
   // Translation function for line item descriptions
   const translateLineItemDescription = (description: string, language: string) => {
