@@ -450,7 +450,19 @@ const Invoices = () => {
                   
                   <Card>
                     <CardHeader className="pb-2">
-                      <CardTitle className="text-sm font-medium text-gray-600">Paid This Month</CardTitle>
+                      <div className="flex items-center justify-between gap-2">
+                        <CardTitle className="text-sm font-medium text-gray-600">Paid</CardTitle>
+                        <Select value={selectedPaidMonth} onValueChange={setSelectedPaidMonth}>
+                          <SelectTrigger className="h-7 w-[150px] text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {monthOptions.map(opt => (
+                              <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </CardHeader>
                     <CardContent>
                       <div className="text-2xl font-bold text-green-600">€{totalPaidThisMonth.toFixed(2)}</div>
