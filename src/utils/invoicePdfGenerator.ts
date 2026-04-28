@@ -209,9 +209,11 @@ const generateInvoiceHTML = (data: InvoicePDFData): string => {
   };
 
   const { subtotal, vatAmount, total, effectiveVatRate } = calculateTotals();
-  const formattedVatRate = (Math.round(effectiveVatRate * 100) / 100)
-    .toString()
-    .replace(/\.?0+$/, '');
+  const formatRate = (r: number) => {
+    const rounded = Math.round(r * 100) / 100;
+    return Number.isInteger(rounded) ? String(rounded) : String(rounded).replace(/0+$/, '').replace(/\.$/, '');
+  };
+  const formattedVatRate = formatRate(effectiveVatRate);
 
   // Translation function for line item descriptions
   const translateLineItemDescription = (description: string, language: string) => {

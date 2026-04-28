@@ -36,11 +36,27 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
       : 0;
     
     const total = subtotal + vatAmount;
-    
-    return { subtotal, vatAmount, total };
+
+    let effectiveVatRate = 0;
+    if (templateSettings.vatEnabled && lineItems.length > 0) {
+      const rates = lineItems.map(i => Number(i.vat_rate) || 0);
+      const allSame = rates.every(r => r === rates[0]);
+      if (allSame) {
+        effectiveVatRate = rates[0] * 100;
+      } else if (subtotal > 0) {
+        effectiveVatRate = (vatAmount / subtotal) * 100;
+      }
+    }
+
+    return { subtotal, vatAmount, total, effectiveVatRate };
   };
 
-  const { subtotal, vatAmount, total } = calculateTotals();
+  const { subtotal, vatAmount, total, effectiveVatRate } = calculateTotals();
+  const formatRate = (r: number) => {
+    const rounded = Math.round(r * 100) / 100;
+    return Number.isInteger(rounded) ? String(rounded) : String(rounded).replace(/0+$/, '').replace(/\.$/, '');
+  };
+  const formattedVatRate = formatRate(effectiveVatRate);
   
   // Get translated account names and payment info
   const getAccountTranslations = (language: string, accountId: string) => {
@@ -634,7 +650,7 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
               </div>
               {templateSettings.vatEnabled && (
                 <div className="flex justify-between text-sm">
-                  <span>{getTranslatedText('tax')} ({templateSettings.vatRate || 21}%):</span>
+                  <span>{getTranslatedText('tax')} ({formattedVatRate}%):</span>
                   <span className="font-semibold">{formatCurrency(vatAmount, currentCurrency)}</span>
                 </div>
               )}
