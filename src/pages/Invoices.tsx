@@ -372,13 +372,30 @@ const Invoices = () => {
     .filter(inv => inv.status === 'sent' || inv.status === 'partially_paid' || inv.status === 'overdue')
     .reduce((sum, inv) => sum + inv.total_amount, 0);
 
+  // Selected month for "Paid" card (format: YYYY-MM, default = current month)
+  const [selectedPaidMonth, setSelectedPaidMonth] = useState<string>(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  });
+
+  // Build last 24 months options
+  const monthOptions = useMemo(() => {
+    const opts: { value: string; label: string }[] = [];
+    const now = new Date();
+    for (let i = 0; i < 24; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      const label = d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+      opts.push({ value, label });
+    }
+    return opts;
+  }, []);
+
   const totalPaidThisMonth = invoices
     .filter(inv => {
       const issueDate = new Date(inv.issue_date);
-      const now = new Date();
-      return inv.status === 'paid' && 
-        issueDate.getMonth() === now.getMonth() && 
-        issueDate.getFullYear() === now.getFullYear();
+      const key = `${issueDate.getFullYear()}-${String(issueDate.getMonth() + 1).padStart(2, '0')}`;
+      return inv.status === 'paid' && key === selectedPaidMonth;
     })
     .reduce((sum, inv) => sum + inv.total_amount, 0);
 
