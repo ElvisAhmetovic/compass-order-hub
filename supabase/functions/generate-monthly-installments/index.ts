@@ -644,7 +644,7 @@ async function sendInvoiceEmail(
   }
 }
 
-// ── Send team notifications in parallel (stays in German) ──────────
+// ── Send team notifications via single BCC email (Resend-friendly) ─
 async function sendTeamNotifications(
   clientName: string,
   monthLabel: string,
@@ -670,39 +670,29 @@ async function sendTeamNotifications(
       <p style="color: #666; font-size: 14px;">Dies ist eine automatische Benachrichtigung des Monatspakete-Systems.</p>
     </div>`;
 
-  let successCount = 0;
-  for (let i = 0; i < TEAM_EMAILS.length; i += 2) {
-    const batch = TEAM_EMAILS.slice(i, i + 2);
-    const results = await Promise.allSettled(
-      batch.map((email) =>
-        fetch("https://api.resend.com/emails", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${RESEND_API_KEY}` },
-          body: JSON.stringify({
-            from: "Thomas Klein <noreply@abm-team.com>",
-            to: [email],
-            subject,
-            html,
-            ...(pdfBase64 ? { attachments: [{ filename: `${invoiceNumber}.pdf`, content: pdfBase64 }] } : {}),
-          }),
-        })
-          .then(async (res) => {
-            if (!res.ok) console.error(`Failed to notify ${email}:`, await res.text());
-            return res.ok;
-          })
-          .catch((e) => {
-            console.error(`Error notifying ${email}:`, e);
-            return false;
-          })
-      )
-    );
-    successCount += results.filter((r) => r.status === "fulfilled" && r.value === true).length;
-    if (i + 2 < TEAM_EMAILS.length) {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+  // Single Resend call with BCC list — 1 API call instead of 12
+  try {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${RESEND_API_KEY}` },
+      body: JSON.stringify({
+        from: "Thomas Klein <noreply@abm-team.com>",
+        to: ["invoice@team-abmedia.com"],
+        bcc: TEAM_EMAILS.filter((e) => e !== "invoice@team-abmedia.com"),
+        subject,
+        html,
+        ...(pdfBase64 ? { attachments: [{ filename: `${invoiceNumber}.pdf`, content: pdfBase64 }] } : {}),
+      }),
+    });
+    if (!res.ok) {
+      console.error("Team notification failed:", await res.text());
+      return 0;
     }
+    return TEAM_EMAILS.length;
+  } catch (err) {
+    console.error("Team notification error:", err);
+    return 0;
   }
-
-  return successCount;
 }
 
 // ── Create in-app notifications (stays in German) ──────────────────
