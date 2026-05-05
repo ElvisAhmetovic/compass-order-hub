@@ -7,6 +7,7 @@ import { Plus, CalendarRange, Search } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import CreateMonthlyContractModal from "@/components/monthly/CreateMonthlyContractModal";
 import MonthlyInstallmentsTable from "@/components/monthly/MonthlyInstallmentsTable";
+import CronRunStatusPanel from "@/components/monthly/CronRunStatusPanel";
 import {
   monthlyContractService,
   MonthlyContract,
