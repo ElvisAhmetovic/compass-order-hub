@@ -1124,6 +1124,101 @@ export type Database = {
         }
         Relationships: []
       }
+      monthly_cron_contract_results: {
+        Row: {
+          client_name: string | null
+          contract_id: string | null
+          created_at: string
+          error_detail: string | null
+          id: string
+          invoice_id: string | null
+          month_label: string | null
+          reason: string | null
+          run_id: string
+          status: string
+        }
+        Insert: {
+          client_name?: string | null
+          contract_id?: string | null
+          created_at?: string
+          error_detail?: string | null
+          id?: string
+          invoice_id?: string | null
+          month_label?: string | null
+          reason?: string | null
+          run_id: string
+          status: string
+        }
+        Update: {
+          client_name?: string | null
+          contract_id?: string | null
+          created_at?: string
+          error_detail?: string | null
+          id?: string
+          invoice_id?: string | null
+          month_label?: string | null
+          reason?: string | null
+          run_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monthly_cron_contract_results_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_cron_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      monthly_cron_runs: {
+        Row: {
+          client_emails_sent: number
+          contracts_total: number
+          created_at: string
+          errors_count: number
+          finished_at: string | null
+          id: string
+          invoices_created: number
+          notes: string | null
+          processed: number
+          started_at: string
+          status: string
+          team_emails_sent: number
+          trigger: string
+        }
+        Insert: {
+          client_emails_sent?: number
+          contracts_total?: number
+          created_at?: string
+          errors_count?: number
+          finished_at?: string | null
+          id?: string
+          invoices_created?: number
+          notes?: string | null
+          processed?: number
+          started_at?: string
+          status?: string
+          team_emails_sent?: number
+          trigger?: string
+        }
+        Update: {
+          client_emails_sent?: number
+          contracts_total?: number
+          created_at?: string
+          errors_count?: number
+          finished_at?: string | null
+          id?: string
+          invoices_created?: number
+          notes?: string | null
+          processed?: number
+          started_at?: string
+          status?: string
+          team_emails_sent?: number
+          trigger?: string
+        }
+        Relationships: []
+      }
       monthly_installments: {
         Row: {
           amount: number
