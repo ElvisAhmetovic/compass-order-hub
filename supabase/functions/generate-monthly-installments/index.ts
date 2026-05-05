@@ -662,7 +662,7 @@ async function sendTeamNotifications(
       <div style="background: #f8f9fa; border-radius: 8px; padding: 20px; margin: 20px 0;">
         <table style="width: 100%; border-collapse: collapse;">
           <tr><td style="padding: 8px 0; color: #666;">Kunde:</td><td style="padding: 8px 0; font-weight: bold;">${clientName}</td></tr>
-          <tr><td style="padding: 8px 0; color: #666;">Rechnungsnr.:</td><td style="padding: 8px 0; font-weight: bold;">${invoiceNumber}</td></tr>
+          <tr><td style="padding: 8px 0; color: #666;">Rechnung Nr.:</td><td style="padding: 8px 0; font-weight: bold;">${invoiceNumber}</td></tr>
           <tr><td style="padding: 8px 0; color: #666;">Zeitraum:</td><td style="padding: 8px 0; font-weight: bold;">${monthLabel}</td></tr>
           <tr><td style="padding: 8px 0; color: #666;">Betrag:</td><td style="padding: 8px 0; font-weight: bold; font-size: 18px; color: #2563eb;">${formattedPrice}</td></tr>
         </table>
