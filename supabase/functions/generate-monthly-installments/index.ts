@@ -644,7 +644,7 @@ async function sendInvoiceEmail(
   }
 }
 
-// ── Send team notifications in parallel (stays in German) ──────────
+// ── Send team notifications via single BCC email (Resend-friendly) ─
 async function sendTeamNotifications(
   clientName: string,
   monthLabel: string,
@@ -670,39 +670,29 @@ async function sendTeamNotifications(
       <p style="color: #666; font-size: 14px;">Dies ist eine automatische Benachrichtigung des Monatspakete-Systems.</p>
     </div>`;
 
-  let successCount = 0;
-  for (let i = 0; i < TEAM_EMAILS.length; i += 2) {
-    const batch = TEAM_EMAILS.slice(i, i + 2);
-    const results = await Promise.allSettled(
-      batch.map((email) =>
-        fetch("https://api.resend.com/emails", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${RESEND_API_KEY}` },
-          body: JSON.stringify({
-            from: "Thomas Klein <noreply@abm-team.com>",
-            to: [email],
-            subject,
-            html,
-            ...(pdfBase64 ? { attachments: [{ filename: `${invoiceNumber}.pdf`, content: pdfBase64 }] } : {}),
-          }),
-        })
-          .then(async (res) => {
-            if (!res.ok) console.error(`Failed to notify ${email}:`, await res.text());
-            return res.ok;
-          })
-          .catch((e) => {
-            console.error(`Error notifying ${email}:`, e);
-            return false;
-          })
-      )
-    );
-    successCount += results.filter((r) => r.status === "fulfilled" && r.value === true).length;
-    if (i + 2 < TEAM_EMAILS.length) {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+  // Single Resend call with BCC list — 1 API call instead of 12
+  try {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${RESEND_API_KEY}` },
+      body: JSON.stringify({
+        from: "Thomas Klein <noreply@abm-team.com>",
+        to: ["invoice@team-abmedia.com"],
+        bcc: TEAM_EMAILS.filter((e) => e !== "invoice@team-abmedia.com"),
+        subject,
+        html,
+        ...(pdfBase64 ? { attachments: [{ filename: `${invoiceNumber}.pdf`, content: pdfBase64 }] } : {}),
+      }),
+    });
+    if (!res.ok) {
+      console.error("Team notification failed:", await res.text());
+      return 0;
     }
+    return TEAM_EMAILS.length;
+  } catch (err) {
+    console.error("Team notification error:", err);
+    return 0;
   }
-
-  return successCount;
 }
 
 // ── Create in-app notifications (stays in German) ──────────────────
@@ -738,26 +728,42 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  let runId: string | null = null;
+  let supabase: any = null;
+
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, serviceRoleKey);
+    supabase = createClient(supabaseUrl, serviceRoleKey);
+
+    const url = new URL(req.url);
+    const contractIdFilter = url.searchParams.get("contract_id");
+    const triggerSource = url.searchParams.get("trigger") || (contractIdFilter ? "manual" : "cron");
 
     const now = new Date();
     const currentMonth = now.getMonth();
     const currentYear = now.getFullYear();
 
-    console.log(`Processing monthly installments for ${currentMonth + 1}/${currentYear}`);
+    console.log(`Processing monthly installments for ${currentMonth + 1}/${currentYear}${contractIdFilter ? ` (single contract: ${contractIdFilter})` : ""}`);
 
-    const { data: contracts, error: contractsError } = await supabase
-      .from("monthly_contracts")
-      .select("*")
-      .eq("status", "active");
+    // Create run row
+    const { data: runRow } = await supabase
+      .from("monthly_cron_runs")
+      .insert({ trigger: triggerSource, status: "running" })
+      .select("id")
+      .single();
+    runId = runRow?.id ?? null;
+
+    let contractsQuery = supabase.from("monthly_contracts").select("*").eq("status", "active");
+    if (contractIdFilter) contractsQuery = contractsQuery.eq("id", contractIdFilter);
+    const { data: contracts, error: contractsError } = await contractsQuery;
 
     if (contractsError) throw new Error(`Error fetching contracts: ${contractsError.message}`);
 
     if (!contracts || contracts.length === 0) {
-      console.log("No active contracts found");
+      if (runId) await supabase.from("monthly_cron_runs").update({
+        status: "completed", finished_at: new Date().toISOString(), notes: "No active contracts",
+      }).eq("id", runId);
       return new Response(JSON.stringify({ message: "No active contracts" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -767,16 +773,26 @@ Deno.serve(async (req) => {
     let emailsSent = 0;
     let teamEmailsSent = 0;
     let invoicesCreated = 0;
+    let errorsCount = 0;
+
+    const logResult = async (params: {
+      contract_id: string; client_name: string; month_label: string;
+      status: string; reason?: string; invoice_id?: string | null; error_detail?: string;
+    }) => {
+      if (!runId) return;
+      try {
+        await supabase.from("monthly_cron_contract_results").insert({ run_id: runId, ...params });
+      } catch (e) {
+        console.error("Failed to log result:", e);
+      }
+    };
 
     for (const contract of contracts) {
       try {
-        // Detect language from company address
         const lang = detectLanguageFromAddress(contract.company_address);
         const monthLabel = `${MONTH_NAMES[lang][currentMonth]} ${currentYear}`;
-        // German month label for checking existing installments (backward compat)
         const germanMonthLabel = `${MONTH_NAMES["de"][currentMonth]} ${currentYear}`;
 
-        // Check if installment already exists (try localized label first, then German for backward compat)
         let { data: existing } = await supabase
           .from("monthly_installments")
           .select("id, email_sent, invoice_id")
@@ -795,51 +811,71 @@ Deno.serve(async (req) => {
         }
 
         if (existing) {
-          if (!existing.email_sent) {
-            let invoiceNumber = "";
-            let invoiceId = existing.invoice_id;
-            if (!invoiceId) {
-              const clientId = await findOrCreateClient(supabase, contract);
-              const dueDate = `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-15`;
-              const inv = await createInvoice(supabase, clientId, contract, monthLabel, dueDate, lang);
-              invoiceId = inv.invoiceId;
-              invoiceNumber = inv.invoiceNumber;
-              invoicesCreated++;
-              await supabase.from("monthly_installments").update({ invoice_id: invoiceId }).eq("id", existing.id);
-            } else {
-              const { data: invData } = await supabase.from("invoices").select("invoice_number").eq("id", invoiceId).single();
-              invoiceNumber = invData?.invoice_number || "N/A";
-            }
-
-            const totalAmount = contract.monthly_amount;
-            const contractVatRate = contract.vat_enabled ? (contract.vat_rate || 0) : 0;
-            const netAmount = contractVatRate > 0 ? Math.round((totalAmount / (1 + contractVatRate)) * 100) / 100 : totalAmount;
-            const vatAmount = contractVatRate > 0 ? Math.round((totalAmount - netAmount) * 100) / 100 : 0;
-            const description = INVOICE_DB_TEXT[lang].lineDescription(contract.description, monthLabel);
-            const dueDate = `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-15`;
-
-            const pdfBytes = generateInvoicePDF(
-              invoiceNumber, new Date().toISOString().split("T")[0], dueDate,
-              contract.client_name, contract.company_address, contract.client_email,
-              description, netAmount, vatAmount, totalAmount, contract.currency || "EUR", lang,
-            );
-
-            const sent = await sendInvoiceEmail(
-              contract.client_email, contract.client_name, monthLabel,
-              invoiceNumber, totalAmount, contract.currency || "EUR", pdfBytes, lang,
-            );
-            if (sent) {
-              await supabase.from("monthly_installments")
-                .update({ email_sent: true, email_sent_at: new Date().toISOString() })
-                .eq("id", existing.id);
-              emailsSent++;
-
-              const teamPdfBase64 = btoa(String.fromCharCode(...new Uint8Array(pdfBytes)));
-              const teamSent = await sendTeamNotifications(contract.client_name, monthLabel, totalAmount, contract.currency || "EUR", invoiceNumber, teamPdfBase64);
-              teamEmailsSent += teamSent;
-              await createTeamNotifications(supabase, contract.client_name, monthLabel, totalAmount, contract.currency || "EUR", invoiceNumber);
-            }
+          if (existing.email_sent) {
+            await logResult({
+              contract_id: contract.id, client_name: contract.client_name,
+              month_label: monthLabel, status: "already_sent", reason: "Email already marked as sent",
+              invoice_id: existing.invoice_id,
+            });
+            continue;
           }
+
+          let invoiceNumber = "";
+          let invoiceId = existing.invoice_id;
+          if (!invoiceId) {
+            const clientId = await findOrCreateClient(supabase, contract);
+            const dueDate = `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-15`;
+            const inv = await createInvoice(supabase, clientId, contract, monthLabel, dueDate, lang);
+            invoiceId = inv.invoiceId;
+            invoiceNumber = inv.invoiceNumber;
+            invoicesCreated++;
+            await supabase.from("monthly_installments").update({ invoice_id: invoiceId }).eq("id", existing.id);
+          } else {
+            const { data: invData } = await supabase.from("invoices").select("invoice_number").eq("id", invoiceId).single();
+            invoiceNumber = invData?.invoice_number || "N/A";
+          }
+
+          const totalAmount = contract.monthly_amount;
+          const contractVatRate = contract.vat_enabled ? (contract.vat_rate || 0) : 0;
+          const netAmount = contractVatRate > 0 ? Math.round((totalAmount / (1 + contractVatRate)) * 100) / 100 : totalAmount;
+          const vatAmount = contractVatRate > 0 ? Math.round((totalAmount - netAmount) * 100) / 100 : 0;
+          const description = INVOICE_DB_TEXT[lang].lineDescription(contract.description, monthLabel);
+          const dueDate = `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-15`;
+
+          const pdfBytes = generateInvoicePDF(
+            invoiceNumber, new Date().toISOString().split("T")[0], dueDate,
+            contract.client_name, contract.company_address, contract.client_email,
+            description, netAmount, vatAmount, totalAmount, contract.currency || "EUR", lang,
+          );
+
+          const sent = await sendInvoiceEmail(
+            contract.client_email, contract.client_name, monthLabel,
+            invoiceNumber, totalAmount, contract.currency || "EUR", pdfBytes, lang,
+          );
+          if (sent) {
+            await supabase.from("monthly_installments")
+              .update({ email_sent: true, email_sent_at: new Date().toISOString() })
+              .eq("id", existing.id);
+            emailsSent++;
+
+            const teamPdfBase64 = btoa(String.fromCharCode(...new Uint8Array(pdfBytes)));
+            const teamSent = await sendTeamNotifications(contract.client_name, monthLabel, totalAmount, contract.currency || "EUR", invoiceNumber, teamPdfBase64);
+            teamEmailsSent += teamSent;
+            await createTeamNotifications(supabase, contract.client_name, monthLabel, totalAmount, contract.currency || "EUR", invoiceNumber);
+            await logResult({
+              contract_id: contract.id, client_name: contract.client_name,
+              month_label: monthLabel, status: "sent", invoice_id: invoiceId,
+            });
+          } else {
+            errorsCount++;
+            await logResult({
+              contract_id: contract.id, client_name: contract.client_name,
+              month_label: monthLabel, status: "failed",
+              reason: "Resend client email failed", invoice_id: invoiceId,
+            });
+          }
+          // Small delay between contracts to avoid Resend bursts
+          await new Promise((r) => setTimeout(r, 300));
           continue;
         }
 
@@ -851,6 +887,11 @@ Deno.serve(async (req) => {
           if (monthNumber > contract.duration_months) {
             await supabase.from("monthly_contracts").update({ status: "completed" }).eq("id", contract.id);
           }
+          await logResult({
+            contract_id: contract.id, client_name: contract.client_name,
+            month_label: monthLabel, status: "skipped",
+            reason: monthNumber < 1 ? "Contract not yet started" : "Contract duration ended",
+          });
           continue;
         }
 
@@ -862,23 +903,22 @@ Deno.serve(async (req) => {
         const { data: newInstallment, error: insertError } = await supabase
           .from("monthly_installments")
           .insert({
-            contract_id: contract.id,
-            month_label: monthLabel,
-            month_number: monthNumber,
+            contract_id: contract.id, month_label: monthLabel, month_number: monthNumber,
             due_date: `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-01`,
-            amount: contract.monthly_amount,
-            currency: contract.currency,
-            payment_status: "unpaid",
-            client_name: contract.client_name,
-            client_email: contract.client_email,
-            website: contract.website,
-            invoice_id: invoiceId,
+            amount: contract.monthly_amount, currency: contract.currency,
+            payment_status: "unpaid", client_name: contract.client_name,
+            client_email: contract.client_email, website: contract.website, invoice_id: invoiceId,
           })
           .select()
           .single();
 
         if (insertError) {
-          console.error(`Error creating installment for contract ${contract.id}:`, insertError);
+          errorsCount++;
+          await logResult({
+            contract_id: contract.id, client_name: contract.client_name,
+            month_label: monthLabel, status: "failed",
+            reason: "Installment insert error", error_detail: insertError.message,
+          });
           continue;
         }
         processed++;
@@ -910,21 +950,57 @@ Deno.serve(async (req) => {
           const teamSent = await sendTeamNotifications(contract.client_name, monthLabel, totalAmount, contract.currency || "EUR", invoiceNumber, newTeamPdfBase64);
           teamEmailsSent += teamSent;
           await createTeamNotifications(supabase, contract.client_name, monthLabel, totalAmount, contract.currency || "EUR", invoiceNumber);
+          await logResult({
+            contract_id: contract.id, client_name: contract.client_name,
+            month_label: monthLabel, status: "sent", invoice_id: invoiceId,
+          });
+        } else {
+          errorsCount++;
+          await logResult({
+            contract_id: contract.id, client_name: contract.client_name,
+            month_label: monthLabel, status: "failed",
+            reason: "Resend client email failed", invoice_id: invoiceId,
+          });
         }
+        // Small delay between contracts to avoid Resend bursts
+        await new Promise((r) => setTimeout(r, 300));
       } catch (contractErr) {
+        errorsCount++;
         console.error(`Error processing contract ${contract.id} (${contract.client_name}):`, contractErr);
+        await logResult({
+          contract_id: contract.id, client_name: contract.client_name,
+          month_label: `${MONTH_NAMES["de"][currentMonth]} ${currentYear}`,
+          status: "failed", reason: "Unhandled exception",
+          error_detail: String(contractErr?.message || contractErr),
+        });
         continue;
       }
     }
 
-    console.log(`Processed ${processed} installments, created ${invoicesCreated} invoices, sent ${emailsSent} client emails, ${teamEmailsSent} team emails`);
+    console.log(`Processed ${processed} installments, created ${invoicesCreated} invoices, sent ${emailsSent} client emails, ${teamEmailsSent} team emails, ${errorsCount} errors`);
+
+    if (runId) {
+      await supabase.from("monthly_cron_runs").update({
+        status: errorsCount > 0 ? "completed_with_errors" : "completed",
+        finished_at: new Date().toISOString(),
+        contracts_total: contracts.length,
+        processed, invoices_created: invoicesCreated,
+        client_emails_sent: emailsSent, team_emails_sent: teamEmailsSent,
+        errors_count: errorsCount,
+      }).eq("id", runId);
+    }
 
     return new Response(
-      JSON.stringify({ success: true, processed, invoicesCreated, emailsSent, teamEmailsSent }),
+      JSON.stringify({ success: true, runId, processed, invoicesCreated, emailsSent, teamEmailsSent, errorsCount }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (error) {
     console.error("Error in generate-monthly-installments:", error);
+    if (runId && supabase) {
+      await supabase.from("monthly_cron_runs").update({
+        status: "failed", finished_at: new Date().toISOString(), notes: String(error?.message || error),
+      }).eq("id", runId);
+    }
     return new Response(
       JSON.stringify({ error: error.message }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },

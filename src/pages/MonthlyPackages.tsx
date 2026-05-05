@@ -7,6 +7,7 @@ import { Plus, CalendarRange, Search } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import CreateMonthlyContractModal from "@/components/monthly/CreateMonthlyContractModal";
 import MonthlyInstallmentsTable from "@/components/monthly/MonthlyInstallmentsTable";
+import CronRunStatusPanel from "@/components/monthly/CronRunStatusPanel";
 import {
   monthlyContractService,
   MonthlyContract,
@@ -113,6 +114,8 @@ const MonthlyPackages: React.FC = () => {
                 </p>
               </div>
             </div>
+
+            <CronRunStatusPanel isAdmin={isAdmin} onRefresh={fetchData} />
 
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
