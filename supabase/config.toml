@@ -122,3 +122,6 @@ verify_jwt = false
 
 [functions.send-payment-confirmation]
 verify_jwt = true
+
+[functions.monthly-billing-catchup]
+verify_jwt = false
