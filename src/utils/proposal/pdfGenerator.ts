@@ -531,8 +531,8 @@ const createSecondPageContent = (proposalData: any, language: string = "en") => 
           color: #cbd5e0;
         ">
           <div style="display: inline-block; width: 70%;">
-            REG: ${companyInfo.registrationNumber || '15748871'} | 
-            VAT: ${companyInfo.vatId || 'DE123418679'} | 
+            REG: ${companyInfo.registrationNumber || '15746871'} | 
+            VAT: ${companyInfo.vatId || '13426 27369'} | 
             TAX: ${companyInfo.taxNumber || '13426 27369'}
           </div>
           <div style="display: inline-block; width: 30%; text-align: right;">
