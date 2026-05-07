@@ -514,8 +514,8 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
   const companyInfo = templateSettings.companyInfo || {
     name: "Company Name",
     contactPerson: "Contact Person",
-    registrationNumber: "123456789",
-    vatId: "VAT123456789",
+    registrationNumber: "15746871",
+    vatId: "13426 27369",
     street: "Street Address",
     postal: "12345",
     city: "City",
