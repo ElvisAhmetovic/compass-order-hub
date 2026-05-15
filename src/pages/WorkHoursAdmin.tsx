@@ -491,10 +491,10 @@ const WorkHoursAdmin = () => {
     }
   };
 
-  const buildSheet = (entries: WorkHourV2[], grouped: boolean) => {
+  const buildSheet = (entries: WorkHourV2[], grouped: boolean, missing: MissingItem[] = []) => {
     const aoa: any[][] = [
       ...kpiBlock(),
-      ...(grouped ? groupedBody(entries) : flatBody(entries)),
+      ...(grouped ? groupedBody(entries, missing) : flatBody(entries, missing)),
     ];
     const ws = XLSX.utils.aoa_to_sheet(aoa);
     styleSheet(ws, aoa);
@@ -503,7 +503,7 @@ const WorkHoursAdmin = () => {
 
   const exportXLSX = () => {
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, buildSheet(filtered, view === 'monthly'), 'Work Hours');
+    XLSX.utils.book_append_sheet(wb, buildSheet(filtered, view === 'monthly', exportMissing()), 'Work Hours');
     XLSX.writeFile(wb, `work_hours_${from}_${to}.xlsx`);
   };
 
