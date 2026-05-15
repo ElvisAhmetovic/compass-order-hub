@@ -3,9 +3,18 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from '@/components/ui/table';
 import { fetchWorkHours, upsertWorkHour, bulkUpsertWorkHours, WorkHourEntry } from '@/services/workHoursService';
+import {
+  fetchMyEntries,
+  submitMyHours,
+  adminUnlock,
+  isSuperAdminEmail,
+  companyTodayISO,
+  WorkHourV2,
+} from '@/services/workHoursV2Service';
+import { useAuth } from '@/context/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { Wand2, UserCheck, UserX } from 'lucide-react';
+import { Wand2, UserCheck, UserX, Lock, Unlock, CheckCircle2 } from 'lucide-react';
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -32,20 +41,56 @@ const formatDate = (d: Date) =>
 const toIso = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
+// Parse "12:00-13:00h" / "12:00-13:00" / "60" into minutes.
+const parseBreakMinutes = (raw?: string | null): number => {
+  if (!raw) return 0;
+  const s = raw.trim().replace(/h$/i, '');
+  const m = s.match(/^(\d{1,2}):(\d{2})\s*[-–]\s*(\d{1,2}):(\d{2})$/);
+  if (m) {
+    const start = parseInt(m[1]) * 60 + parseInt(m[2]);
+    const end = parseInt(m[3]) * 60 + parseInt(m[4]);
+    return Math.max(0, end - start);
+  }
+  const num = parseInt(s, 10);
+  return Number.isFinite(num) && num >= 0 ? num : 0;
+};
+
+const normalizeTime = (raw?: string | null): string | null => {
+  if (!raw) return null;
+  const s = raw.trim().replace(/h$/i, '');
+  const m = s.match(/^(\d{1,2}):(\d{2})$/);
+  if (!m) return null;
+  return `${m[1].padStart(2, '0')}:${m[2]}:00`;
+};
+
 const WorkHoursTable = ({ userId, month, year }: WorkHoursTableProps) => {
+  const { user } = useAuth();
+  const isSuper = isSuperAdminEmail((user as any)?.email);
+  const isOwnSheet = user?.id === userId;
+
   const [rows, setRows] = useState<Record<string, WorkHourEntry>>({});
+  const [v2Map, setV2Map] = useState<Record<string, WorkHourV2>>({});
   const [loading, setLoading] = useState(true);
   const [filling, setFilling] = useState(false);
+  const [busyDay, setBusyDay] = useState<string | null>(null);
 
   const weekdays = getWeekdays(year, month);
+  const today = companyTodayISO();
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await fetchWorkHours(userId, year, month);
+      const monthStartIso = `${year}-${String(month + 1).padStart(2, '0')}-01`;
+      const [data, v2] = await Promise.all([
+        fetchWorkHours(userId, year, month),
+        fetchMyEntries(userId, monthStartIso).catch(() => []),
+      ]);
       const map: Record<string, WorkHourEntry> = {};
       data?.forEach((r: any) => { map[r.date] = r; });
       setRows(map);
+      const v2m: Record<string, WorkHourV2> = {};
+      (v2 || []).forEach(r => { v2m[r.work_date] = r; });
+      setV2Map(v2m);
     } catch (e: any) {
       toast({ title: 'Error loading work hours', description: e.message, variant: 'destructive' });
     } finally {
@@ -74,6 +119,55 @@ const WorkHoursTable = ({ userId, month, year }: WorkHoursTableProps) => {
     const entry = getEntry(iso);
     const newAbsent = !entry.absent;
     await save(iso, 'absent', newAbsent);
+  };
+
+  const handleSubmitDay = async (iso: string) => {
+    if (!isOwnSheet && !isSuper) {
+      toast({ title: 'Not allowed', description: 'You can only submit your own day.', variant: 'destructive' });
+      return;
+    }
+    if (iso !== today && !isSuper) {
+      toast({ title: 'Only today can be submitted', description: 'Contact admin for past days.', variant: 'destructive' });
+      return;
+    }
+    const entry = getEntry(iso);
+    if (entry.working_hours == null) {
+      toast({ title: 'Fill hours first', description: 'Enter start, break, hours, end before submitting.', variant: 'destructive' });
+      return;
+    }
+    setBusyDay(iso);
+    try {
+      const row = await submitMyHours({
+        total_hours: Number(entry.working_hours) || 0,
+        start_time: normalizeTime(entry.start_time),
+        end_time: normalizeTime(entry.end_time),
+        break_minutes: parseBreakMinutes(entry.break_time),
+        worker_note: entry.note || null,
+      });
+      setV2Map(prev => ({ ...prev, [iso]: row }));
+      toast({ title: 'Day submitted & locked', description: `${iso} sent to Work Hours Admin.` });
+    } catch (e: any) {
+      toast({ title: 'Submit failed', description: e.message, variant: 'destructive' });
+    } finally {
+      setBusyDay(null);
+    }
+  };
+
+  const handleUnlockDay = async (iso: string) => {
+    const v2 = v2Map[iso];
+    if (!v2) return;
+    const reason = window.prompt('Reason for unlocking this day:');
+    if (!reason || !reason.trim()) return;
+    setBusyDay(iso);
+    try {
+      const row = await adminUnlock(v2.id, reason.trim());
+      setV2Map(prev => ({ ...prev, [iso]: row }));
+      toast({ title: 'Day unlocked', description: `${iso} can now be re-submitted.` });
+    } catch (e: any) {
+      toast({ title: 'Unlock failed', description: e.message, variant: 'destructive' });
+    } finally {
+      setBusyDay(null);
+    }
   };
 
   const handleAutoFill = async () => {
@@ -128,7 +222,8 @@ const WorkHoursTable = ({ userId, month, year }: WorkHoursTableProps) => {
         <TableHeader>
           <TableRow>
             <TableHead className="w-[50px]">#</TableHead>
-            <TableHead className="w-[44px]"></TableHead>
+            <TableHead className="w-[80px]">Submit</TableHead>
+            <TableHead className="w-[44px]">Abs.</TableHead>
             <TableHead className="w-[200px]">Date</TableHead>
             <TableHead className="w-[100px]">Start</TableHead>
             <TableHead className="w-[140px]">Break</TableHead>
@@ -143,13 +238,54 @@ const WorkHoursTable = ({ userId, month, year }: WorkHoursTableProps) => {
             const entry = getEntry(iso);
             const isAbsent = entry.absent;
             const isVacation = !isAbsent && (entry.note?.toUpperCase().includes('GODISNJI') || entry.note?.toUpperCase().includes('GODIŠNJI'));
+            const v2 = v2Map[iso];
+            const isLocked = !!v2?.locked;
+            const isSubmitted = !!v2 && v2.status !== 'not_submitted';
+            const busy = busyDay === iso;
 
             return (
               <TableRow key={iso} className={cn(
                 isAbsent && 'bg-red-50 dark:bg-red-950/30',
                 isVacation && !isAbsent && 'bg-green-50 dark:bg-green-950/30',
+                isLocked && 'bg-emerald-50 dark:bg-emerald-950/30',
               )}>
                 <TableCell className="text-muted-foreground text-sm">{idx + 1}</TableCell>
+                <TableCell className="px-1">
+                  {isLocked ? (
+                    <div className="flex items-center gap-1">
+                      <span title={`Locked: ${v2?.locked_reason || ''}`} className="inline-flex items-center text-emerald-700 dark:text-emerald-400">
+                        <CheckCircle2 className="h-4 w-4" />
+                        <Lock className="h-3 w-3 ml-0.5" />
+                      </span>
+                      {isSuper && (
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => handleUnlockDay(iso)}
+                          className="rounded-md p-1 text-amber-600 hover:bg-amber-100 dark:text-amber-400 dark:hover:bg-amber-900/30 disabled:opacity-50"
+                          title="Admin unlock"
+                        >
+                          <Unlock className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => handleSubmitDay(iso)}
+                      className={cn(
+                        'rounded-md p-1 transition-colors disabled:opacity-50',
+                        isSubmitted
+                          ? 'text-emerald-600 hover:bg-emerald-100 dark:text-emerald-400 dark:hover:bg-emerald-900/30'
+                          : 'text-muted-foreground hover:bg-accent'
+                      )}
+                      title={iso === today || isSuper ? 'Submit & lock day' : 'Only today can be submitted'}
+                    >
+                      <CheckCircle2 className="h-4 w-4" />
+                    </button>
+                  )}
+                </TableCell>
                 <TableCell className="px-1">
                   <button
                     type="button"
@@ -214,7 +350,7 @@ const WorkHoursTable = ({ userId, month, year }: WorkHoursTableProps) => {
         </TableBody>
         <TableFooter>
           <TableRow>
-            <TableCell colSpan={5} className="text-right font-semibold">Total Hours:</TableCell>
+            <TableCell colSpan={6} className="text-right font-semibold">Total Hours:</TableCell>
             <TableCell className="font-bold text-lg">{totalHours}</TableCell>
             <TableCell colSpan={2} />
           </TableRow>
