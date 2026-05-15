@@ -131,6 +131,16 @@ const Sidebar = () => {
     };
   }, [isAdminOrAgent]);
 
+  // Late work-hours submissions count for super admin
+  useEffect(() => {
+    if (!isSuper) return;
+    let cancelled = false;
+    const tick = () => fetchLateCountToday().then(c => { if (!cancelled) setLateWhCount(c); }).catch(() => {});
+    tick();
+    const interval = setInterval(tick, 5 * 60 * 1000);
+    return () => { cancelled = true; clearInterval(interval); };
+  }, [isSuper]);
+
   // Define sidebar items with role restrictions
   const menuItems = [
     { href: '/dashboard', icon: Home, label: 'Dashboard', roles: ['admin', 'agent', 'user'] },
