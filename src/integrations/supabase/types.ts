@@ -2937,6 +2937,126 @@ export type Database = {
         }
         Relationships: []
       }
+      work_hours_audit_log: {
+        Row: {
+          action: Database["public"]["Enums"]["wh_audit_action"]
+          changed_by_email: string | null
+          changed_by_role: string | null
+          changed_by_user_id: string | null
+          created_at: string
+          id: string
+          new_values: Json | null
+          old_values: Json | null
+          reason: string | null
+          source: Database["public"]["Enums"]["wh_audit_source"]
+          work_hours_id: string | null
+          worker_email: string | null
+          worker_id: string | null
+        }
+        Insert: {
+          action: Database["public"]["Enums"]["wh_audit_action"]
+          changed_by_email?: string | null
+          changed_by_role?: string | null
+          changed_by_user_id?: string | null
+          created_at?: string
+          id?: string
+          new_values?: Json | null
+          old_values?: Json | null
+          reason?: string | null
+          source?: Database["public"]["Enums"]["wh_audit_source"]
+          work_hours_id?: string | null
+          worker_email?: string | null
+          worker_id?: string | null
+        }
+        Update: {
+          action?: Database["public"]["Enums"]["wh_audit_action"]
+          changed_by_email?: string | null
+          changed_by_role?: string | null
+          changed_by_user_id?: string | null
+          created_at?: string
+          id?: string
+          new_values?: Json | null
+          old_values?: Json | null
+          reason?: string | null
+          source?: Database["public"]["Enums"]["wh_audit_source"]
+          work_hours_id?: string | null
+          worker_email?: string | null
+          worker_id?: string | null
+        }
+        Relationships: []
+      }
+      work_hours_v2: {
+        Row: {
+          admin_note: string | null
+          admin_override_at: string | null
+          admin_override_by: string | null
+          break_minutes: number | null
+          created_at: string
+          created_by: string | null
+          end_time: string | null
+          id: string
+          locked: boolean
+          locked_at: string | null
+          locked_reason: string | null
+          start_time: string | null
+          status: Database["public"]["Enums"]["wh_status"]
+          submitted_at: string | null
+          total_hours: number
+          updated_at: string
+          updated_by: string | null
+          user_id: string
+          work_date: string
+          worker_email: string | null
+          worker_note: string | null
+        }
+        Insert: {
+          admin_note?: string | null
+          admin_override_at?: string | null
+          admin_override_by?: string | null
+          break_minutes?: number | null
+          created_at?: string
+          created_by?: string | null
+          end_time?: string | null
+          id?: string
+          locked?: boolean
+          locked_at?: string | null
+          locked_reason?: string | null
+          start_time?: string | null
+          status?: Database["public"]["Enums"]["wh_status"]
+          submitted_at?: string | null
+          total_hours?: number
+          updated_at?: string
+          updated_by?: string | null
+          user_id: string
+          work_date: string
+          worker_email?: string | null
+          worker_note?: string | null
+        }
+        Update: {
+          admin_note?: string | null
+          admin_override_at?: string | null
+          admin_override_by?: string | null
+          break_minutes?: number | null
+          created_at?: string
+          created_by?: string | null
+          end_time?: string | null
+          id?: string
+          locked?: boolean
+          locked_at?: string | null
+          locked_reason?: string | null
+          start_time?: string | null
+          status?: Database["public"]["Enums"]["wh_status"]
+          submitted_at?: string | null
+          total_hours?: number
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string
+          work_date?: string
+          worker_email?: string | null
+          worker_note?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       client_orders: {
@@ -3049,10 +3169,138 @@ export type Database = {
           synced_invoice_number: string
         }[]
       }
+      wh_admin_unlock: {
+        Args: { p_id: string; p_reason: string }
+        Returns: {
+          admin_note: string | null
+          admin_override_at: string | null
+          admin_override_by: string | null
+          break_minutes: number | null
+          created_at: string
+          created_by: string | null
+          end_time: string | null
+          id: string
+          locked: boolean
+          locked_at: string | null
+          locked_reason: string | null
+          start_time: string | null
+          status: Database["public"]["Enums"]["wh_status"]
+          submitted_at: string | null
+          total_hours: number
+          updated_at: string
+          updated_by: string | null
+          user_id: string
+          work_date: string
+          worker_email: string | null
+          worker_note: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "work_hours_v2"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      wh_admin_upsert: {
+        Args: {
+          p_admin_note?: string
+          p_break_minutes?: number
+          p_end_time?: string
+          p_locked?: boolean
+          p_reason?: string
+          p_start_time?: string
+          p_status?: Database["public"]["Enums"]["wh_status"]
+          p_total_hours: number
+          p_user_id: string
+          p_work_date: string
+        }
+        Returns: {
+          admin_note: string | null
+          admin_override_at: string | null
+          admin_override_by: string | null
+          break_minutes: number | null
+          created_at: string
+          created_by: string | null
+          end_time: string | null
+          id: string
+          locked: boolean
+          locked_at: string | null
+          locked_reason: string | null
+          start_time: string | null
+          status: Database["public"]["Enums"]["wh_status"]
+          submitted_at: string | null
+          total_hours: number
+          updated_at: string
+          updated_by: string | null
+          user_id: string
+          work_date: string
+          worker_email: string | null
+          worker_note: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "work_hours_v2"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      wh_auto_lock_today: { Args: never; Returns: number }
+      wh_before_deadline: { Args: never; Returns: boolean }
+      wh_company_now: { Args: never; Returns: string }
+      wh_company_today: { Args: never; Returns: string }
+      wh_is_super_admin: { Args: never; Returns: boolean }
+      wh_submit: {
+        Args: {
+          p_break_minutes?: number
+          p_end_time?: string
+          p_start_time?: string
+          p_total_hours: number
+          p_worker_note?: string
+        }
+        Returns: {
+          admin_note: string | null
+          admin_override_at: string | null
+          admin_override_by: string | null
+          break_minutes: number | null
+          created_at: string
+          created_by: string | null
+          end_time: string | null
+          id: string
+          locked: boolean
+          locked_at: string | null
+          locked_reason: string | null
+          start_time: string | null
+          status: Database["public"]["Enums"]["wh_status"]
+          submitted_at: string | null
+          total_hours: number
+          updated_at: string
+          updated_by: string | null
+          user_id: string
+          work_date: string
+          worker_email: string | null
+          worker_note: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "work_hours_v2"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
     }
     Enums: {
       app_role: "admin" | "agent" | "user" | "client"
       user_role: "user" | "admin" | "agent"
+      wh_audit_action:
+        | "created"
+        | "updated"
+        | "locked"
+        | "auto_marked_zero"
+        | "admin_override"
+        | "admin_unlock"
+        | "admin_correction"
+      wh_audit_source: "worker_form" | "admin_panel" | "auto_lock_job" | "api"
+      wh_status: "submitted" | "not_submitted" | "not_worked" | "admin_override"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -3182,6 +3430,17 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "agent", "user", "client"],
       user_role: ["user", "admin", "agent"],
+      wh_audit_action: [
+        "created",
+        "updated",
+        "locked",
+        "auto_marked_zero",
+        "admin_override",
+        "admin_unlock",
+        "admin_correction",
+      ],
+      wh_audit_source: ["worker_form", "admin_panel", "auto_lock_job", "api"],
+      wh_status: ["submitted", "not_submitted", "not_worked", "admin_override"],
     },
   },
 } as const
