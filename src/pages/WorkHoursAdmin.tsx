@@ -275,6 +275,7 @@ const WorkHoursAdmin = () => {
                 </Select>
               </div>
               <Button variant="outline" onClick={exportCSV}><Download className="h-4 w-4 mr-1" />CSV</Button>
+              <Button variant="outline" onClick={exportXLSX}><FileSpreadsheet className="h-4 w-4 mr-1" />Excel</Button>
               <Button onClick={() => openEdit(undefined, workers[0]?.id, companyTodayISO())}>+ Create entry</Button>
             </CardContent>
           </Card>
