@@ -326,9 +326,9 @@ const WorkHoursAdmin = () => {
     fmtTs(r.updated_at),
   ];
 
-  const blankRow = () => HEADERS.map(() => '');
-  const subtotalRow = (label: string, hours: number, count: number) => {
-    const row = blankRow();
+  const blankRow = (): any[] => HEADERS.map(() => '');
+  const subtotalRow = (label: string, hours: number, count: number): any[] => {
+    const row: any[] = blankRow();
     row[2] = label;
     row[3] = `${count} entr${count === 1 ? 'y' : 'ies'}`;
     row[5] = Number(hours.toFixed(2));
