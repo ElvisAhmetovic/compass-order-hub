@@ -377,55 +377,78 @@ const WorkHoursAdmin = () => {
     return block;
   };
 
+  type MissingItem = { user_id: string; work_date: string };
+
   // Builds Worker → Month grouped body rows with subtotals
-  const groupedBody = (entries: WorkHourV2[]) => {
+  const groupedBody = (entries: WorkHourV2[], missing: MissingItem[] = []) => {
     const out: any[][] = [];
-    const byWorker = new Map<string, WorkHourV2[]>();
-    entries.forEach(r => {
-      const k = r.user_id;
-      if (!byWorker.has(k)) byWorker.set(k, []);
-      byWorker.get(k)!.push(r);
-    });
+    const byWorker = new Map<string, { entries: WorkHourV2[]; missing: MissingItem[] }>();
+    const ensure = (k: string) => {
+      if (!byWorker.has(k)) byWorker.set(k, { entries: [], missing: [] });
+      return byWorker.get(k)!;
+    };
+    entries.forEach(r => ensure(r.user_id).entries.push(r));
+    missing.forEach(m => ensure(m.user_id).missing.push(m));
+
     const sortedWorkers = Array.from(byWorker.entries())
       .sort((a, b) => workerName(a[0]).localeCompare(workerName(b[0])));
 
     let grand = 0;
     let grandCount = 0;
-    sortedWorkers.forEach(([uid, list]) => {
-      const byMonth = new Map<string, WorkHourV2[]>();
-      list.forEach(r => {
-        const ym = r.work_date.slice(0, 7);
-        if (!byMonth.has(ym)) byMonth.set(ym, []);
-        byMonth.get(ym)!.push(r);
-      });
+    let grandMissing = 0;
+    sortedWorkers.forEach(([uid, bucket]) => {
+      const byMonth = new Map<string, { entries: WorkHourV2[]; missing: MissingItem[] }>();
+      const ensureMonth = (ym: string) => {
+        if (!byMonth.has(ym)) byMonth.set(ym, { entries: [], missing: [] });
+        return byMonth.get(ym)!;
+      };
+      bucket.entries.forEach(r => ensureMonth(r.work_date.slice(0, 7)).entries.push(r));
+      bucket.missing.forEach(m => ensureMonth(m.work_date.slice(0, 7)).missing.push(m));
+
       const months = Array.from(byMonth.entries()).sort((a, b) => b[0].localeCompare(a[0]));
       let workerTotal = 0;
       let workerCount = 0;
-      months.forEach(([ym, mList]) => {
-        const sorted = mList.slice().sort((a, b) => b.work_date.localeCompare(a.work_date));
-        const monthHours = sorted.reduce((s, r) => s + (Number(r.total_hours) || 0), 0);
+      let workerMissing = 0;
+      months.forEach(([ym, mb]) => {
+        type Row = { date: string; arr: any[]; isMissing: boolean };
+        const all: Row[] = [
+          ...mb.entries.map(r => ({ date: r.work_date, arr: rowToArray(r), isMissing: false })),
+          ...mb.missing.map(m => ({ date: m.work_date, arr: missingRowToArray(m.user_id, m.work_date), isMissing: true })),
+        ].sort((a, b) => b.date.localeCompare(a.date));
+        const monthHours = mb.entries.reduce((s, r) => s + (Number(r.total_hours) || 0), 0);
         out.push([`${workerName(uid)} — ${monthLabel(ym)}`]);
         out.push(HEADERS);
-        sorted.forEach(r => out.push(rowToArray(r)));
-        out.push(subtotalRow(`Subtotal · ${monthLabel(ym)}`, monthHours, sorted.length));
+        all.forEach(r => out.push(r.arr));
+        const labelExtra = mb.missing.length ? ` · ${mb.missing.length} missing` : '';
+        out.push(subtotalRow(`Subtotal · ${monthLabel(ym)}${labelExtra}`, monthHours, mb.entries.length));
         out.push(blankRow());
         workerTotal += monthHours;
-        workerCount += sorted.length;
+        workerCount += mb.entries.length;
+        workerMissing += mb.missing.length;
       });
-      out.push(subtotalRow(`TOTAL · ${workerName(uid)}`, workerTotal, workerCount));
+      const wExtra = workerMissing ? ` · ${workerMissing} missing` : '';
+      out.push(subtotalRow(`TOTAL · ${workerName(uid)}${wExtra}`, workerTotal, workerCount));
       out.push(blankRow());
       grand += workerTotal;
       grandCount += workerCount;
+      grandMissing += workerMissing;
     });
-    out.push(subtotalRow('GRAND TOTAL', grand, grandCount));
+    const gExtra = grandMissing ? ` · ${grandMissing} missing` : '';
+    out.push(subtotalRow(`GRAND TOTAL${gExtra}`, grand, grandCount));
     return out;
   };
 
-  const flatBody = (entries: WorkHourV2[]) => {
+  const flatBody = (entries: WorkHourV2[], missing: MissingItem[] = []) => {
     const out: any[][] = [HEADERS];
     let total = 0;
-    entries.forEach(r => { total += Number(r.total_hours) || 0; out.push(rowToArray(r)); });
-    out.push(subtotalRow('GRAND TOTAL', total, entries.length));
+    type Row = { date: string; arr: any[] };
+    const all: Row[] = [
+      ...entries.map(r => { total += Number(r.total_hours) || 0; return { date: r.work_date, arr: rowToArray(r) }; }),
+      ...missing.map(m => ({ date: m.work_date, arr: missingRowToArray(m.user_id, m.work_date) })),
+    ].sort((a, b) => b.date.localeCompare(a.date));
+    all.forEach(r => out.push(r.arr));
+    const extra = missing.length ? ` · ${missing.length} missing` : '';
+    out.push(subtotalRow(`GRAND TOTAL${extra}`, total, entries.length));
     return out;
   };
 
