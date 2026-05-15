@@ -671,6 +671,12 @@ const WorkHoursAdmin = () => {
                   <Checkbox checked={showMissing} onCheckedChange={(v) => setShowMissing(!!v)} />
                   Show missing days
                 </label>
+                {showMissing && (
+                  <label className="flex items-center gap-2 text-sm pb-2">
+                    <Checkbox checked={includeMissingInExport} onCheckedChange={(v) => setIncludeMissingInExport(!!v)} />
+                    Include in exports
+                  </label>
+                )}
                 <Button onClick={() => openEdit(undefined, workers[0]?.id, today)}>
                   <Plus className="h-4 w-4 mr-1" />Create entry
                 </Button>
