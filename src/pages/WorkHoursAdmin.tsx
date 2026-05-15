@@ -11,7 +11,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { Shield, Lock, Unlock, Pencil, Download } from 'lucide-react';
+import { Shield, Lock, Unlock, Pencil, Download, FileSpreadsheet } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import {
   WorkHourV2, WhAuditRow, WhStatus, isSuperAdminEmail,
   fetchAllEntries, fetchWorkers, fetchAudit, adminUpsert, adminUnlock, companyTodayISO, triggerAutoLock,
