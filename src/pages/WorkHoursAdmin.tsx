@@ -509,37 +509,39 @@ const WorkHoursAdmin = () => {
 
   const exportXLSXByWorker = () => {
     const wb = XLSX.utils.book_new();
-    const byWorker = new Map<string, WorkHourV2[]>();
-    filtered.forEach(r => {
-      const k = r.user_id;
-      const arr = byWorker.get(k) || [];
-      arr.push(r);
-      byWorker.set(k, arr);
-    });
+    const missingAll = exportMissing();
+    const byWorker = new Map<string, { entries: WorkHourV2[]; missing: MissingItem[] }>();
+    const ensure = (k: string) => {
+      if (!byWorker.has(k)) byWorker.set(k, { entries: [], missing: [] });
+      return byWorker.get(k)!;
+    };
+    filtered.forEach(r => ensure(r.user_id).entries.push(r));
+    missingAll.forEach(m => ensure(m.user_id).missing.push(m));
+
     if (byWorker.size === 0) {
       XLSX.utils.book_append_sheet(wb, buildSheet([], false), 'Empty');
     } else {
-      // Summary sheet
       const summary: any[][] = [
         ...kpiBlock(),
-        ['Worker', 'Entries', 'Total hours'],
+        ['Worker', 'Entries', 'Total hours', 'Missing days'],
         ...Array.from(byWorker.entries())
           .sort((a, b) => workerName(a[0]).localeCompare(workerName(b[0])))
-          .map(([uid, list]) => [
+          .map(([uid, b]) => [
             workerName(uid),
-            list.length,
-            Number(list.reduce((s, r) => s + (Number(r.total_hours) || 0), 0).toFixed(2)),
+            b.entries.length,
+            Number(b.entries.reduce((s, r) => s + (Number(r.total_hours) || 0), 0).toFixed(2)),
+            b.missing.length,
           ]),
       ];
       const wsSum = XLSX.utils.aoa_to_sheet(summary);
-      wsSum['!cols'] = [{ wch: 28 }, { wch: 10 }, { wch: 14 }];
+      wsSum['!cols'] = [{ wch: 28 }, { wch: 10 }, { wch: 14 }, { wch: 14 }];
       XLSX.utils.book_append_sheet(wb, wsSum, 'Summary');
 
       Array.from(byWorker.entries())
         .sort((a, b) => workerName(a[0]).localeCompare(workerName(b[0])))
-        .forEach(([uid, list]) => {
+        .forEach(([uid, b]) => {
           const name = (workerName(uid) || 'Worker').replace(/[\\/?*[\]:]/g, '_').slice(0, 31) || 'Worker';
-          XLSX.utils.book_append_sheet(wb, buildSheet(list, true), name);
+          XLSX.utils.book_append_sheet(wb, buildSheet(b.entries, true, b.missing), name);
         });
     }
     XLSX.writeFile(wb, `work_hours_by_worker_${from}_${to}.xlsx`);
