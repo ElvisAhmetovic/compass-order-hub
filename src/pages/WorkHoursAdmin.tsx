@@ -462,7 +462,7 @@ const WorkHoursAdmin = () => {
     const fmtCell = (v: any) => typeof v === 'number' ? esc(v.toFixed(2).replace('.', ',')) : esc(v);
     const block: any[][] = [
       ...kpiBlock(),
-      ...(view === 'monthly' ? groupedBody(filtered) : flatBody(filtered)),
+      ...(view === 'monthly' ? groupedBody(filtered, exportMissing()) : flatBody(filtered, exportMissing())),
     ];
     const lines = block.map(row => row.map(fmtCell).join(';'));
     const blob = new Blob(['\uFEFF' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
