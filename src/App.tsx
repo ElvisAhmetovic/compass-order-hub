@@ -46,6 +46,8 @@ import CustomerTicketDetail from "./pages/CustomerTicketDetail";
 import NotFound from "./pages/NotFound";
 import Reminders from "./pages/Reminders";
 import WorkHours from "./pages/WorkHours";
+import WorkHoursV2 from "./pages/WorkHoursV2";
+import WorkHoursAdmin from "./pages/WorkHoursAdmin";
 import MonthlyPackages from "./pages/MonthlyPackages";
 import Offers from "./pages/Offers";
 import TicketSubmitted from "./pages/TicketSubmitted";
@@ -304,6 +306,16 @@ function App() {
                   <Route path="/work-hours" element={
                     <RequireAuth>
                       <WorkHours />
+                    </RequireAuth>
+                  } />
+                  <Route path="/work-hours-v2" element={
+                    <RequireAuth>
+                      <WorkHoursV2 />
+                    </RequireAuth>
+                  } />
+                  <Route path="/admin/work-hours" element={
+                    <RequireAuth>
+                      <WorkHoursAdmin />
                     </RequireAuth>
                   } />
                   <Route path="/monthly-packages" element={

@@ -125,3 +125,6 @@ verify_jwt = true
 
 [functions.monthly-billing-catchup]
 verify_jwt = false
+
+[functions.wh-auto-lock]
+verify_jwt = false
