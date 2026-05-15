@@ -1,46 +1,29 @@
-# Bridge legacy Work Hours → Admin Work Hours (v2)
+# Lock-down editing on submitted days
 
-The `/admin/work-hours` page and `work_hours_v2` table + audit log already exist. They currently aren't fed by the legacy `/work-hours` page (which writes to a different table, `work_hours`). The user's described workflow needs the legacy "green check" button to also submit + lock the day into v2, so it shows up in the admin page with timestamp and audit trail.
+## Goal
+Once a worker clicks "Submit & Lock" on a day in `/work-hours`, every field on that row (start, break, hours, end, notes, absent toggle, etc.) becomes read-only for everyone except the 5 super-admins (Elvis, Thomas Klein x3, Johann Nowak). Super-admins keep full edit access via the existing Unlock flow.
 
-## Behavior change on `/work-hours` (legacy table)
+## Scope
+Frontend only. No DB changes — the lock state already lives in `work_hours_v2.locked` and `wh_submit` enforces server-side rejection. This change just mirrors that lock visually/interactively in the legacy `/work-hours` table so users can't even type into the inputs.
 
-Repurpose the green check / red X button at the left of each row into a Submit-and-Lock action that writes to `work_hours_v2` via the existing `wh_submit` RPC, in addition to its current absent toggle. Visual states per row:
+## Changes
 
-- Empty row → outline check, click does nothing useful (toast: "Fill start/end/hours first").
-- Filled but not yet locked → green check button: "Submit & lock day". Clicking calls `wh_submit` with the row's start, end, break (parsed from `12:00-13:00h`), and hours; status becomes `submitted` + `locked = true`.
-- Locked → green check + small lock icon. Worker cannot click. Super admin sees an Unlock button (calls `wh_admin_unlock` with a reason prompt).
-- The existing absent toggle moves into a separate small icon next to it so the two actions don't collide.
+### `src/components/work-hours/WorkHoursTable.tsx`
+- For each row, derive `isLocked` from the matching `work_hours_v2` entry already fetched (locked=true).
+- Derive `canEdit = !isLocked || isSuperAdmin`.
+- Apply `disabled` / `readOnly` to all editable cells on that row when `!canEdit`:
+  - start time, end time, break, total hours inputs
+  - notes / worker_note input
+  - absent toggle button
+  - any inline dropdowns
+- Add a subtle muted style + lock tooltip ("Locked — contact admin to unlock") on disabled cells.
+- Submit button stays as it already is (green check + lock icon when locked; super-admin sees Unlock).
 
-Server rules already enforce: only today, before 12:00 Sarajevo, super admins bypass. Any rejection is shown as a toast.
+### No other files
+Service layer and RPCs already enforce this server-side; no changes needed there.
 
-After a successful submit, the legacy row stays as-is (so the existing month view doesn't break), but `/admin/work-hours` immediately shows the entry like:
-"Elvis Ahmetovic — 15.05.2026 — submitted at 09:30 — 6.5h — locked".
-
-## Lock flag in the wh_submit RPC
-
-`wh_submit` currently sets `status = 'submitted'` but leaves `locked = false`. Update it so that, on a normal (non-admin) submit, it also sets `locked = true` + `locked_reason = 'Submitted by worker'` + `locked_at = now()`. Super-admin re-submits keep the existing `admin_override` branch.
-
-## Frontend changes
-
-- `src/components/work-hours/WorkHoursTable.tsx` — split the left action button into Submit/Lock + Absent; wire Submit to a new helper.
-- `src/services/workHoursV2Service.ts` — add `submitDay({ workDate, startTime, endTime, breakMinutes, totalHours, workerNote })` wrapper around `wh_submit` (pure passthrough but keeps the legacy file decoupled).
-- Show locked state by reading the matching `work_hours_v2` row for the visible month/user (one extra query alongside the existing `fetchWorkHours`). Lock badge per row.
-
-## QA test (executed by me before handing back)
-
-For `luciferbebistar@gmail.com`:
-
-1. Read current `work_hours_v2` row for today; if present, unlock+delete via SQL to start clean.
-2. Submit via `wh_submit` RPC (simulated as super admin) → expect row inserted, locked=true, audit `created`.
-3. Call `wh_admin_unlock` with reason "QA: re-test" → expect locked=false, audit `admin_unlock`.
-4. Re-submit `wh_submit` → expect locked=true again, audit `updated` (and `admin_override` since previously admin-touched).
-5. Verify `/admin/work-hours` shows the entry and the 3 audit rows (`created`, `admin_unlock`, `admin_override`).
-6. Cleanup the QA row after verification (delete via SQL as super admin).
-
-I'll also visually confirm the legacy page green-button now triggers the lock and the admin page picks it up.
-
-## Files touched
-
-- DB migration: update `wh_submit` to set `locked=true` on worker submit.
-- `src/services/workHoursV2Service.ts`
-- `src/components/work-hours/WorkHoursTable.tsx`
+## QA
+1. As `luciferbebistar@gmail.com` (super-admin): submit today → row locks → confirm fields stay editable for me, Unlock button visible.
+2. As a regular admin/agent (non-super): submit today → row locks → confirm every input is disabled, absent toggle disabled, no Unlock button.
+3. Refresh page → locked state persists from DB.
+4. Super-admin unlocks → fields become editable again for the worker.
