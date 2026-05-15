@@ -214,7 +214,8 @@ const Sidebar = () => {
     
     const showSupportBadge = item.showBadge && isAdminOrAgent && unreadSupportCount > 0;
     const showTicketBadge = (item as any).showTicketBadge && isAdminOrAgent && openTicketCount > 0;
-    const isLocked = (item as any).superAdminOnly && !isSuperAdminEmail((user as any)?.email);
+    const showWhAdminBadge = (item as any).showWhAdminBadge && isSuper && lateWhCount > 0;
+    const isLocked = (item as any).superAdminOnly && !isSuper;
 
     if (isLocked) {
       return (
