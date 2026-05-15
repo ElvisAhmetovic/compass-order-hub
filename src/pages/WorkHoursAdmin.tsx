@@ -327,6 +327,27 @@ const WorkHoursAdmin = () => {
     fmtTs(r.updated_at),
   ];
 
+  const emailByUser = useMemo(() => {
+    const m: Record<string, string> = {};
+    rows.forEach(r => { if (r.worker_email && !m[r.user_id]) m[r.user_id] = r.worker_email; });
+    return m;
+  }, [rows]);
+  const missingRowToArray = (uid: string, date: string) => [
+    fmtDate(date),
+    workerName(uid),
+    emailByUser[uid] || '',
+    'Missing',
+    'No',
+    0,
+    '',
+    '',
+    0,
+    '',
+    '',
+    '',
+    '',
+  ];
+
   const blankRow = (): any[] => HEADERS.map(() => '');
   const subtotalRow = (label: string, hours: number, count: number): any[] => {
     const row: any[] = blankRow();
