@@ -115,20 +115,112 @@ const WorkHoursAdmin = () => {
     catch (e: any) { toast.error(e.message); }
   };
 
+  const STATUS_LABEL: Record<string, string> = {
+    submitted: 'Submitted',
+    not_submitted: 'Not submitted',
+    not_worked: 'Not worked',
+    admin_override: 'Admin override',
+  };
+
+  const fmtDate = (iso?: string | null) => {
+    if (!iso) return '';
+    const [y, m, d] = iso.slice(0, 10).split('-');
+    return `${d}.${m}.${y}`;
+  };
+  const fmtTime = (t?: string | null) => (t ? t.slice(0, 5) : '');
+  const fmtTs = (iso?: string | null) => {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return '';
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
+
+  const exportRows = () =>
+    filtered.map(r => ({
+      Date: fmtDate(r.work_date),
+      Worker: workerName(r.user_id),
+      Email: r.worker_email || '',
+      Status: STATUS_LABEL[r.status] || r.status,
+      Locked: r.locked ? 'Yes' : 'No',
+      Hours: Number(r.total_hours) || 0,
+      Start: fmtTime(r.start_time),
+      End: fmtTime(r.end_time),
+      'Break (min)': r.break_minutes ?? 0,
+      'Worker Note': (r.worker_note || '').replace(/[\r\n]+/g, ' '),
+      'Admin Note': (r.admin_note || '').replace(/[\r\n]+/g, ' '),
+      Submitted: fmtTs(r.submitted_at as any),
+      'Last Updated': fmtTs(r.updated_at),
+    }));
+
+  const totalHours = () => filtered.reduce((s, r) => s + (Number(r.total_hours) || 0), 0);
+
   const exportCSV = () => {
-    const header = ['work_date', 'worker', 'email', 'status', 'locked', 'total_hours', 'start', 'end', 'break_min', 'worker_note', 'admin_note', 'updated_at'];
-    const lines = [header.join(',')].concat(
-      filtered.map(r => [
-        r.work_date, workerName(r.user_id), r.worker_email || '', r.status, r.locked,
-        r.total_hours, r.start_time || '', r.end_time || '', r.break_minutes ?? '',
-        JSON.stringify(r.worker_note || ''), JSON.stringify(r.admin_note || ''), r.updated_at,
-      ].join(','))
-    );
-    const blob = new Blob([lines.join('\n')], { type: 'text/csv' });
+    const rowsOut = exportRows();
+    const headers = Object.keys(rowsOut[0] || {
+      Date: '', Worker: '', Email: '', Status: '', Locked: '', Hours: '',
+      Start: '', End: '', 'Break (min)': '', 'Worker Note': '', 'Admin Note': '',
+      Submitted: '', 'Last Updated': '',
+    });
+    const esc = (v: any) => {
+      const s = v == null ? '' : String(v);
+      return `"${s.replace(/"/g, '""')}"`;
+    };
+    const lines = [headers.map(esc).join(';')];
+    rowsOut.forEach(r => lines.push(headers.map(h => esc((r as any)[h])).join(';')));
+    // totals row
+    const totals: Record<string, any> = {};
+    headers.forEach(h => (totals[h] = ''));
+    totals['Email'] = 'TOTAL';
+    totals['Hours'] = totalHours().toFixed(2).replace('.', ',');
+    lines.push(headers.map(h => esc(totals[h])).join(';'));
+
+    const blob = new Blob(['\uFEFF' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url; a.download = `work_hours_${from}_${to}.csv`; a.click();
+    const a = document.createElement('a');
+    a.href = url; a.download = `work_hours_${from}_${to}.csv`; a.click();
     URL.revokeObjectURL(url);
   };
+
+  const exportXLSX = () => {
+    const rowsOut = exportRows();
+    const headers = ['Date', 'Worker', 'Email', 'Status', 'Locked', 'Hours', 'Start', 'End', 'Break (min)', 'Worker Note', 'Admin Note', 'Submitted', 'Last Updated'];
+    const aoa: any[][] = [headers];
+    rowsOut.forEach(r => aoa.push(headers.map(h => (r as any)[h])));
+    // totals row
+    const totalsRow: any[] = headers.map(() => '');
+    totalsRow[2] = 'TOTAL';
+    totalsRow[5] = totalHours();
+    aoa.push(totalsRow);
+
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    ws['!cols'] = [
+      { wch: 12 }, { wch: 22 }, { wch: 28 }, { wch: 16 }, { wch: 8 },
+      { wch: 8 }, { wch: 8 }, { wch: 8 }, { wch: 11 }, { wch: 32 }, { wch: 32 },
+      { wch: 18 }, { wch: 18 },
+    ];
+    ws['!freeze'] = { xSplit: 0, ySplit: 1 };
+    (ws as any)['!autofilter'] = { ref: XLSX.utils.encode_range({ s: { c: 0, r: 0 }, e: { c: headers.length - 1, r: aoa.length - 1 } }) };
+
+    // Bold header row + bold totals row + number format on Hours column
+    const range = XLSX.utils.decode_range(ws['!ref']!);
+    for (let c = range.s.c; c <= range.e.c; c++) {
+      const head = ws[XLSX.utils.encode_cell({ r: 0, c })];
+      if (head) head.s = { font: { bold: true }, alignment: { horizontal: 'left' } };
+      const totCell = ws[XLSX.utils.encode_cell({ r: aoa.length - 1, c })];
+      if (totCell) totCell.s = { font: { bold: true } };
+    }
+    // Hours column number format
+    for (let r = 1; r < aoa.length; r++) {
+      const cell = ws[XLSX.utils.encode_cell({ r, c: 5 })];
+      if (cell && typeof cell.v === 'number') { cell.t = 'n'; cell.z = '0.00'; }
+    }
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Work Hours');
+    XLSX.writeFile(wb, `work_hours_${from}_${to}.xlsx`);
+  };
+
 
   if (!isSuper) {
     return (
