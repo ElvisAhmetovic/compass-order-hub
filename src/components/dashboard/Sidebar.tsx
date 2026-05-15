@@ -133,6 +133,7 @@ const Sidebar = () => {
   const menuItems = [
     { href: '/dashboard', icon: Home, label: 'Dashboard', roles: ['admin', 'agent', 'user'] },
     { href: '/work-hours', icon: ClockIcon, label: 'Work Hours', roles: ['admin', 'agent'] },
+    { href: '/admin/work-hours', icon: ShieldCheck, label: 'Work Hours Admin', roles: ['admin', 'agent', 'user'], superAdminOnly: true },
     { href: '/monthly-packages', icon: ClockIcon, label: 'Monthly Packages', roles: ['admin', 'agent'] },
     { href: '/reminders', icon: AlarmClock, label: 'Reminders', roles: ['admin', 'agent'] },
     { href: '/user-management', icon: Users, label: 'User Management', roles: ['admin'] },
