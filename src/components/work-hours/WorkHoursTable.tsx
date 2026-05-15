@@ -242,8 +242,16 @@ const WorkHoursTable = ({ userId, month, year }: WorkHoursTableProps) => {
             const isLocked = !!v2?.locked;
             const isSubmitted = !!v2 && v2.status !== 'not_submitted';
             const busy = busyDay === iso;
-            const fieldsDisabled = isLocked && !isSuper;
-            const lockedTitle = fieldsDisabled ? 'Locked — contact admin to unlock' : undefined;
+            const isPast = iso < today;
+            const isFuture = iso > today;
+            const fieldsDisabled = !isSuper && (isLocked || isPast || isFuture);
+            const lockedTitle = !fieldsDisabled
+              ? undefined
+              : isLocked
+                ? 'Locked — contact admin to unlock'
+                : isPast
+                  ? 'Past day — contact admin to edit'
+                  : 'Not yet — only today can be edited';
 
             return (
               <TableRow key={iso} className={cn(
