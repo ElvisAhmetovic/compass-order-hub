@@ -257,6 +257,15 @@ const Sidebar = () => {
             {openTicketCount > 99 ? '99+' : openTicketCount}
           </Badge>
         )}
+        {showWhAdminBadge && (
+          <Badge
+            variant="destructive"
+            title={`${lateWhCount} late submission${lateWhCount === 1 ? '' : 's'} today`}
+            className="h-5 min-w-[20px] px-1.5 flex items-center justify-center text-xs animate-pulse"
+          >
+            {lateWhCount > 99 ? '99+' : lateWhCount}
+          </Badge>
+        )}
       </Link>
     );
   };
