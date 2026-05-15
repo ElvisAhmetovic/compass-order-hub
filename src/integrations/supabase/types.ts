@@ -3169,6 +3169,10 @@ export type Database = {
           synced_invoice_number: string
         }[]
       }
+      wh_admin_bulk_set_lock: {
+        Args: { p_ids: string[]; p_lock: boolean; p_reason: string }
+        Returns: number
+      }
       wh_admin_unlock: {
         Args: { p_id: string; p_reason: string }
         Returns: {
