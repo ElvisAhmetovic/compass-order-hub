@@ -202,7 +202,25 @@ const Sidebar = () => {
     
     const showSupportBadge = item.showBadge && isAdminOrAgent && unreadSupportCount > 0;
     const showTicketBadge = (item as any).showTicketBadge && isAdminOrAgent && openTicketCount > 0;
-    
+    const isLocked = (item as any).superAdminOnly && !isSuperAdminEmail((user as any)?.email);
+
+    if (isLocked) {
+      return (
+        <div
+          key={`${item.href}-${item.label}`}
+          title="Restricted to authorized admins"
+          aria-disabled="true"
+          className="flex items-center justify-between px-6 py-3 text-foreground/40 cursor-not-allowed select-none"
+        >
+          <div className="flex items-center">
+            <Icon className="w-5 h-5 mr-3" />
+            {item.label}
+          </div>
+          <Lock className="w-4 h-4" />
+        </div>
+      );
+    }
+
     return (
       <Link
         key={`${item.href}-${item.label}`}
