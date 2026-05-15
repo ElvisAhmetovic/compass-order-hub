@@ -452,6 +452,11 @@ const WorkHoursAdmin = () => {
     return out;
   };
 
+  const exportMissing = (): MissingItem[] => {
+    if (!showMissing || !includeMissingInExport) return [];
+    return missingDays.filter(m => workerFilter === 'all' || m.user_id === workerFilter);
+  };
+
   const exportCSV = () => {
     const esc = (v: any) => `"${String(v ?? '').replace(/"/g, '""')}"`;
     const fmtCell = (v: any) => typeof v === 'number' ? esc(v.toFixed(2).replace('.', ',')) : esc(v);
