@@ -242,6 +242,8 @@ const WorkHoursTable = ({ userId, month, year }: WorkHoursTableProps) => {
             const isLocked = !!v2?.locked;
             const isSubmitted = !!v2 && v2.status !== 'not_submitted';
             const busy = busyDay === iso;
+            const fieldsDisabled = isLocked && !isSuper;
+            const lockedTitle = fieldsDisabled ? 'Locked — contact admin to unlock' : undefined;
 
             return (
               <TableRow key={iso} className={cn(
