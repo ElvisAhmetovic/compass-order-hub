@@ -30,8 +30,11 @@ import {
   Clock as ClockIcon,
   AlarmClock,
   ChevronDown,
-  MoreHorizontal
+  MoreHorizontal,
+  Lock,
+  ShieldCheck
 } from 'lucide-react';
+import { isSuperAdminEmail } from '@/services/workHoursV2Service';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
 import { Badge } from '@/components/ui/badge';
