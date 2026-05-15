@@ -307,36 +307,114 @@ const WorkHoursAdmin = () => {
   ];
 
   // ----- Exports -----
-  const exportRows = () =>
-    filtered.map(r => ({
-      Date: fmtDate(r.work_date),
-      Worker: workerName(r.user_id),
-      Email: r.worker_email || '',
-      Status: STATUS_LABEL[r.status] || r.status,
-      Locked: r.locked ? 'Yes' : 'No',
-      Hours: Number(r.total_hours) || 0,
-      Start: fmtTime(r.start_time),
-      End: fmtTime(r.end_time),
-      'Break (min)': r.break_minutes ?? 0,
-      'Worker Note': (r.worker_note || '').replace(/[\r\n]+/g, ' '),
-      'Admin Note': (r.admin_note || '').replace(/[\r\n]+/g, ' '),
-      Submitted: fmtTs(r.submitted_at as any),
-      'Last Updated': fmtTs(r.updated_at),
-    }));
+  const HEADERS = ['Date', 'Worker', 'Email', 'Status', 'Locked', 'Hours', 'Start', 'End', 'Break (min)', 'Worker Note', 'Admin Note', 'Submitted', 'Last Updated'];
+  const COL_WIDTHS = [12, 22, 28, 16, 8, 8, 8, 8, 11, 32, 32, 18, 18];
 
-  const totalHoursAll = () => filtered.reduce((s, r) => s + (Number(r.total_hours) || 0), 0);
+  const rowToArray = (r: WorkHourV2) => [
+    fmtDate(r.work_date),
+    workerName(r.user_id),
+    r.worker_email || '',
+    STATUS_LABEL[r.status] || r.status,
+    r.locked ? 'Yes' : 'No',
+    Number(r.total_hours) || 0,
+    fmtTime(r.start_time),
+    fmtTime(r.end_time),
+    r.break_minutes ?? 0,
+    (r.worker_note || '').replace(/[\r\n]+/g, ' '),
+    (r.admin_note || '').replace(/[\r\n]+/g, ' '),
+    fmtTs(r.submitted_at as any),
+    fmtTs(r.updated_at),
+  ];
+
+  const blankRow = () => HEADERS.map(() => '');
+  const subtotalRow = (label: string, hours: number, count: number) => {
+    const row = blankRow();
+    row[2] = label;
+    row[3] = `${count} entr${count === 1 ? 'y' : 'ies'}`;
+    row[5] = Number(hours.toFixed(2));
+    return row;
+  };
+
+  const filterDescription = () => {
+    const w = workerFilter === 'all' ? 'All workers' : workerName(workerFilter);
+    const s = statusFilter === 'all' ? 'All statuses' : (STATUS_LABEL[statusFilter] || statusFilter);
+    return `Worker: ${w} · Status: ${s}`;
+  };
+
+  // KPI/summary header block (returned as array-of-arrays, no formatting)
+  const kpiBlock = () => {
+    const block: any[][] = [
+      ['Work Hours Report'],
+      [`Range: ${fmtDate(from)} – ${fmtDate(to)}`],
+      [`Filters: ${filterDescription()}`],
+      [`View: ${view === 'monthly' ? 'Monthly (grouped)' : 'List'}`],
+      [],
+      ['Total hours', Number(kpis.totalHours.toFixed(2)), 'Workers active', kpis.activeWorkers, 'Entries', kpis.entries, 'Avg hrs/day', Number(kpis.avg.toFixed(2))],
+      [],
+    ];
+    return block;
+  };
+
+  // Builds Worker → Month grouped body rows with subtotals
+  const groupedBody = (entries: WorkHourV2[]) => {
+    const out: any[][] = [];
+    const byWorker = new Map<string, WorkHourV2[]>();
+    entries.forEach(r => {
+      const k = r.user_id;
+      if (!byWorker.has(k)) byWorker.set(k, []);
+      byWorker.get(k)!.push(r);
+    });
+    const sortedWorkers = Array.from(byWorker.entries())
+      .sort((a, b) => workerName(a[0]).localeCompare(workerName(b[0])));
+
+    let grand = 0;
+    let grandCount = 0;
+    sortedWorkers.forEach(([uid, list]) => {
+      const byMonth = new Map<string, WorkHourV2[]>();
+      list.forEach(r => {
+        const ym = r.work_date.slice(0, 7);
+        if (!byMonth.has(ym)) byMonth.set(ym, []);
+        byMonth.get(ym)!.push(r);
+      });
+      const months = Array.from(byMonth.entries()).sort((a, b) => b[0].localeCompare(a[0]));
+      let workerTotal = 0;
+      let workerCount = 0;
+      months.forEach(([ym, mList]) => {
+        const sorted = mList.slice().sort((a, b) => b.work_date.localeCompare(a.work_date));
+        const monthHours = sorted.reduce((s, r) => s + (Number(r.total_hours) || 0), 0);
+        out.push([`${workerName(uid)} — ${monthLabel(ym)}`]);
+        out.push(HEADERS);
+        sorted.forEach(r => out.push(rowToArray(r)));
+        out.push(subtotalRow(`Subtotal · ${monthLabel(ym)}`, monthHours, sorted.length));
+        out.push(blankRow());
+        workerTotal += monthHours;
+        workerCount += sorted.length;
+      });
+      out.push(subtotalRow(`TOTAL · ${workerName(uid)}`, workerTotal, workerCount));
+      out.push(blankRow());
+      grand += workerTotal;
+      grandCount += workerCount;
+    });
+    out.push(subtotalRow('GRAND TOTAL', grand, grandCount));
+    return out;
+  };
+
+  const flatBody = (entries: WorkHourV2[]) => {
+    const out: any[][] = [HEADERS];
+    let total = 0;
+    entries.forEach(r => { total += Number(r.total_hours) || 0; out.push(rowToArray(r)); });
+    out.push(subtotalRow('GRAND TOTAL', total, entries.length));
+    return out;
+  };
 
   const exportCSV = () => {
-    const rowsOut = exportRows();
-    const headers = ['Date', 'Worker', 'Email', 'Status', 'Locked', 'Hours', 'Start', 'End', 'Break (min)', 'Worker Note', 'Admin Note', 'Submitted', 'Last Updated'];
     const esc = (v: any) => `"${String(v ?? '').replace(/"/g, '""')}"`;
-    const lines = [headers.map(esc).join(';')];
-    rowsOut.forEach(r => lines.push(headers.map(h => esc((r as any)[h])).join(';')));
-    const totals: Record<string, any> = {};
-    headers.forEach(h => (totals[h] = ''));
-    totals['Email'] = 'TOTAL';
-    totals['Hours'] = totalHoursAll().toFixed(2).replace('.', ',');
-    lines.push(headers.map(h => esc(totals[h])).join(';'));
+    const fmtCell = (v: any) => typeof v === 'number' ? esc(v.toFixed(2).replace('.', ',')) : esc(v);
+    const block: any[][] = [
+      ...kpiBlock(),
+      ...(view === 'monthly' ? groupedBody(filtered) : flatBody(filtered)),
+    ];
+    const lines = block.map(row => row.map(fmtCell).join(';'));
     const blob = new Blob(['\uFEFF' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -344,62 +422,38 @@ const WorkHoursAdmin = () => {
     URL.revokeObjectURL(url);
   };
 
-  const styleSheet = (ws: any, aoa: any[][], headers: string[]) => {
-    ws['!cols'] = [
-      { wch: 12 }, { wch: 22 }, { wch: 28 }, { wch: 16 }, { wch: 8 },
-      { wch: 8 }, { wch: 8 }, { wch: 8 }, { wch: 11 }, { wch: 32 }, { wch: 32 },
-      { wch: 18 }, { wch: 18 },
-    ];
-    ws['!freeze'] = { xSplit: 0, ySplit: 1 };
-    (ws as any)['!autofilter'] = { ref: XLSX.utils.encode_range({ s: { c: 0, r: 0 }, e: { c: headers.length - 1, r: aoa.length - 1 } }) };
-    const range = XLSX.utils.decode_range(ws['!ref']!);
-    for (let c = range.s.c; c <= range.e.c; c++) {
-      const head = ws[XLSX.utils.encode_cell({ r: 0, c })];
-      if (head) head.s = { font: { bold: true }, alignment: { horizontal: 'left' } };
-      const totCell = ws[XLSX.utils.encode_cell({ r: aoa.length - 1, c })];
-      if (totCell) totCell.s = { font: { bold: true } };
-    }
-    for (let r = 1; r < aoa.length; r++) {
-      const cell = ws[XLSX.utils.encode_cell({ r, c: 5 })];
-      if (cell && typeof cell.v === 'number') { cell.t = 'n'; cell.z = '0.00'; }
+  const styleSheet = (ws: any, aoa: any[][]) => {
+    ws['!cols'] = COL_WIDTHS.map(wch => ({ wch }));
+    const lastCol = HEADERS.length - 1;
+    for (let r = 0; r < aoa.length; r++) {
+      const first = aoa[r][0];
+      const isHeaderRow = Array.isArray(aoa[r]) && aoa[r][0] === 'Date' && aoa[r][1] === 'Worker';
+      const isGroupHeader = aoa[r].length === 1 && typeof first === 'string' && !!first;
+      const isSubtotal = typeof aoa[r][2] === 'string' && (String(aoa[r][2]).startsWith('Subtotal') || String(aoa[r][2]).startsWith('TOTAL') || aoa[r][2] === 'GRAND TOTAL');
+      for (let c = 0; c <= lastCol; c++) {
+        const cell = ws[XLSX.utils.encode_cell({ r, c })];
+        if (!cell) continue;
+        if (isHeaderRow) cell.s = { font: { bold: true }, fill: { fgColor: { rgb: 'EFEFEF' } } };
+        else if (isGroupHeader) cell.s = { font: { bold: true, color: { rgb: '1F4E79' } } };
+        else if (isSubtotal) cell.s = { font: { bold: true }, fill: { fgColor: { rgb: 'F5F5F5' } } };
+        if (c === 5 && typeof cell.v === 'number') { cell.t = 'n'; cell.z = '0.00'; }
+      }
     }
   };
 
-  const buildSheet = (entries: WorkHourV2[]) => {
-    const headers = ['Date', 'Worker', 'Email', 'Status', 'Locked', 'Hours', 'Start', 'End', 'Break (min)', 'Worker Note', 'Admin Note', 'Submitted', 'Last Updated'];
-    const aoa: any[][] = [headers];
-    let total = 0;
-    entries.forEach(r => {
-      const h = Number(r.total_hours) || 0;
-      total += h;
-      aoa.push([
-        fmtDate(r.work_date),
-        workerName(r.user_id),
-        r.worker_email || '',
-        STATUS_LABEL[r.status] || r.status,
-        r.locked ? 'Yes' : 'No',
-        h,
-        fmtTime(r.start_time),
-        fmtTime(r.end_time),
-        r.break_minutes ?? 0,
-        (r.worker_note || '').replace(/[\r\n]+/g, ' '),
-        (r.admin_note || '').replace(/[\r\n]+/g, ' '),
-        fmtTs(r.submitted_at as any),
-        fmtTs(r.updated_at),
-      ]);
-    });
-    const totRow: any[] = headers.map(() => '');
-    totRow[2] = 'TOTAL';
-    totRow[5] = total;
-    aoa.push(totRow);
+  const buildSheet = (entries: WorkHourV2[], grouped: boolean) => {
+    const aoa: any[][] = [
+      ...kpiBlock(),
+      ...(grouped ? groupedBody(entries) : flatBody(entries)),
+    ];
     const ws = XLSX.utils.aoa_to_sheet(aoa);
-    styleSheet(ws, aoa, headers);
+    styleSheet(ws, aoa);
     return ws;
   };
 
   const exportXLSX = () => {
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, buildSheet(filtered), 'Work Hours');
+    XLSX.utils.book_append_sheet(wb, buildSheet(filtered, view === 'monthly'), 'Work Hours');
     XLSX.writeFile(wb, `work_hours_${from}_${to}.xlsx`);
   };
 
@@ -413,13 +467,29 @@ const WorkHoursAdmin = () => {
       byWorker.set(k, arr);
     });
     if (byWorker.size === 0) {
-      XLSX.utils.book_append_sheet(wb, buildSheet([]), 'Empty');
+      XLSX.utils.book_append_sheet(wb, buildSheet([], false), 'Empty');
     } else {
+      // Summary sheet
+      const summary: any[][] = [
+        ...kpiBlock(),
+        ['Worker', 'Entries', 'Total hours'],
+        ...Array.from(byWorker.entries())
+          .sort((a, b) => workerName(a[0]).localeCompare(workerName(b[0])))
+          .map(([uid, list]) => [
+            workerName(uid),
+            list.length,
+            Number(list.reduce((s, r) => s + (Number(r.total_hours) || 0), 0).toFixed(2)),
+          ]),
+      ];
+      const wsSum = XLSX.utils.aoa_to_sheet(summary);
+      wsSum['!cols'] = [{ wch: 28 }, { wch: 10 }, { wch: 14 }];
+      XLSX.utils.book_append_sheet(wb, wsSum, 'Summary');
+
       Array.from(byWorker.entries())
         .sort((a, b) => workerName(a[0]).localeCompare(workerName(b[0])))
         .forEach(([uid, list]) => {
           const name = (workerName(uid) || 'Worker').replace(/[\\/?*[\]:]/g, '_').slice(0, 31) || 'Worker';
-          XLSX.utils.book_append_sheet(wb, buildSheet(list), name);
+          XLSX.utils.book_append_sheet(wb, buildSheet(list, true), name);
         });
     }
     XLSX.writeFile(wb, `work_hours_by_worker_${from}_${to}.xlsx`);
