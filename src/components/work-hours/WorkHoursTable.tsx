@@ -242,6 +242,8 @@ const WorkHoursTable = ({ userId, month, year }: WorkHoursTableProps) => {
             const isLocked = !!v2?.locked;
             const isSubmitted = !!v2 && v2.status !== 'not_submitted';
             const busy = busyDay === iso;
+            const fieldsDisabled = isLocked && !isSuper;
+            const lockedTitle = fieldsDisabled ? 'Locked — contact admin to unlock' : undefined;
 
             return (
               <TableRow key={iso} className={cn(
@@ -290,13 +292,15 @@ const WorkHoursTable = ({ userId, month, year }: WorkHoursTableProps) => {
                   <button
                     type="button"
                     onClick={() => toggleAbsent(iso)}
+                    disabled={fieldsDisabled}
                     className={cn(
                       'rounded-md p-1 transition-colors',
                       isAbsent
                         ? 'text-destructive hover:bg-destructive/10'
-                        : 'text-green-600 hover:bg-green-100 dark:text-green-400 dark:hover:bg-green-900/30'
+                        : 'text-green-600 hover:bg-green-100 dark:text-green-400 dark:hover:bg-green-900/30',
+                      fieldsDisabled && 'opacity-50 cursor-not-allowed hover:bg-transparent dark:hover:bg-transparent'
                     )}
-                    title={isAbsent ? 'Mark as present' : 'Mark as absent'}
+                    title={fieldsDisabled ? lockedTitle : (isAbsent ? 'Mark as present' : 'Mark as absent')}
                   >
                     {isAbsent ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}
                   </button>
@@ -304,43 +308,58 @@ const WorkHoursTable = ({ userId, month, year }: WorkHoursTableProps) => {
                 <TableCell className="text-sm font-medium">{formatDate(day)}</TableCell>
                 <TableCell>
                   <Input
+                    key={`start-${iso}-${entry.start_time ?? ''}`}
                     className="h-8 text-sm"
                     placeholder="09:00"
                     defaultValue={entry.start_time || ''}
+                    disabled={fieldsDisabled}
+                    title={lockedTitle}
                     onBlur={e => save(iso, 'start_time', e.target.value || null)}
                   />
                 </TableCell>
                 <TableCell>
                   <Input
+                    key={`break-${iso}-${entry.break_time ?? ''}`}
                     className="h-8 text-sm"
                     placeholder="12:00-13:00h"
                     defaultValue={entry.break_time || ''}
+                    disabled={fieldsDisabled}
+                    title={lockedTitle}
                     onBlur={e => save(iso, 'break_time', e.target.value || null)}
                   />
                 </TableCell>
                 <TableCell>
                   <Input
+                    key={`hours-${iso}-${entry.working_hours ?? ''}`}
                     className="h-8 text-sm"
                     type="number"
                     step="0.5"
                     placeholder="8"
                     defaultValue={entry.working_hours ?? ''}
+                    disabled={fieldsDisabled}
+                    title={lockedTitle}
                     onBlur={e => save(iso, 'working_hours', e.target.value ? parseFloat(e.target.value) : null)}
                   />
                 </TableCell>
                 <TableCell>
                   <Input
+                    key={`end-${iso}-${entry.end_time ?? ''}`}
                     className="h-8 text-sm"
                     placeholder="17:00h"
                     defaultValue={entry.end_time || ''}
+                    disabled={fieldsDisabled}
+                    title={lockedTitle}
                     onBlur={e => save(iso, 'end_time', e.target.value || null)}
                   />
                 </TableCell>
                 <TableCell>
                   <Input
+                    key={`note-${iso}-${entry.note ?? ''}`}
                     className="h-8 text-sm"
                     placeholder="e.g. VACATION"
                     defaultValue={entry.note || ''}
+                    disabled={fieldsDisabled}
+                    title={lockedTitle}
                     onBlur={e => save(iso, 'note', e.target.value || null)}
                   />
                 </TableCell>
