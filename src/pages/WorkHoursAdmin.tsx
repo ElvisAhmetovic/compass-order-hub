@@ -113,6 +113,7 @@ const WorkHoursAdmin = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [view, setView] = useState<ViewMode>('list');
   const [showMissing, setShowMissing] = useState(false);
+  const [includeMissingInExport, setIncludeMissingInExport] = useState(true);
   const [rows, setRows] = useState<WorkHourV2[]>([]);
   const [workers, setWorkers] = useState<Array<{ id: string; first_name: string | null; last_name: string | null }>>([]);
   const [loading, setLoading] = useState(false);
