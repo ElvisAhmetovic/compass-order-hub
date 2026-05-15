@@ -113,6 +113,7 @@ const WorkHoursAdmin = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [view, setView] = useState<ViewMode>('list');
   const [showMissing, setShowMissing] = useState(false);
+  const [includeMissingInExport, setIncludeMissingInExport] = useState(true);
   const [rows, setRows] = useState<WorkHourV2[]>([]);
   const [workers, setWorkers] = useState<Array<{ id: string; first_name: string | null; last_name: string | null }>>([]);
   const [loading, setLoading] = useState(false);
@@ -326,6 +327,27 @@ const WorkHoursAdmin = () => {
     fmtTs(r.updated_at),
   ];
 
+  const emailByUser = useMemo(() => {
+    const m: Record<string, string> = {};
+    rows.forEach(r => { if (r.worker_email && !m[r.user_id]) m[r.user_id] = r.worker_email; });
+    return m;
+  }, [rows]);
+  const missingRowToArray = (uid: string, date: string) => [
+    fmtDate(date),
+    workerName(uid),
+    emailByUser[uid] || '',
+    'Missing',
+    'No',
+    0,
+    '',
+    '',
+    0,
+    '',
+    '',
+    '',
+    '',
+  ];
+
   const blankRow = (): any[] => HEADERS.map(() => '');
   const subtotalRow = (label: string, hours: number, count: number): any[] => {
     const row: any[] = blankRow();
@@ -355,56 +377,84 @@ const WorkHoursAdmin = () => {
     return block;
   };
 
+  type MissingItem = { user_id: string; work_date: string };
+
   // Builds Worker → Month grouped body rows with subtotals
-  const groupedBody = (entries: WorkHourV2[]) => {
+  const groupedBody = (entries: WorkHourV2[], missing: MissingItem[] = []) => {
     const out: any[][] = [];
-    const byWorker = new Map<string, WorkHourV2[]>();
-    entries.forEach(r => {
-      const k = r.user_id;
-      if (!byWorker.has(k)) byWorker.set(k, []);
-      byWorker.get(k)!.push(r);
-    });
+    const byWorker = new Map<string, { entries: WorkHourV2[]; missing: MissingItem[] }>();
+    const ensure = (k: string) => {
+      if (!byWorker.has(k)) byWorker.set(k, { entries: [], missing: [] });
+      return byWorker.get(k)!;
+    };
+    entries.forEach(r => ensure(r.user_id).entries.push(r));
+    missing.forEach(m => ensure(m.user_id).missing.push(m));
+
     const sortedWorkers = Array.from(byWorker.entries())
       .sort((a, b) => workerName(a[0]).localeCompare(workerName(b[0])));
 
     let grand = 0;
     let grandCount = 0;
-    sortedWorkers.forEach(([uid, list]) => {
-      const byMonth = new Map<string, WorkHourV2[]>();
-      list.forEach(r => {
-        const ym = r.work_date.slice(0, 7);
-        if (!byMonth.has(ym)) byMonth.set(ym, []);
-        byMonth.get(ym)!.push(r);
-      });
+    let grandMissing = 0;
+    sortedWorkers.forEach(([uid, bucket]) => {
+      const byMonth = new Map<string, { entries: WorkHourV2[]; missing: MissingItem[] }>();
+      const ensureMonth = (ym: string) => {
+        if (!byMonth.has(ym)) byMonth.set(ym, { entries: [], missing: [] });
+        return byMonth.get(ym)!;
+      };
+      bucket.entries.forEach(r => ensureMonth(r.work_date.slice(0, 7)).entries.push(r));
+      bucket.missing.forEach(m => ensureMonth(m.work_date.slice(0, 7)).missing.push(m));
+
       const months = Array.from(byMonth.entries()).sort((a, b) => b[0].localeCompare(a[0]));
       let workerTotal = 0;
       let workerCount = 0;
-      months.forEach(([ym, mList]) => {
-        const sorted = mList.slice().sort((a, b) => b.work_date.localeCompare(a.work_date));
-        const monthHours = sorted.reduce((s, r) => s + (Number(r.total_hours) || 0), 0);
+      let workerMissing = 0;
+      months.forEach(([ym, mb]) => {
+        type Row = { date: string; arr: any[]; isMissing: boolean };
+        const all: Row[] = [
+          ...mb.entries.map(r => ({ date: r.work_date, arr: rowToArray(r), isMissing: false })),
+          ...mb.missing.map(m => ({ date: m.work_date, arr: missingRowToArray(m.user_id, m.work_date), isMissing: true })),
+        ].sort((a, b) => b.date.localeCompare(a.date));
+        const monthHours = mb.entries.reduce((s, r) => s + (Number(r.total_hours) || 0), 0);
         out.push([`${workerName(uid)} — ${monthLabel(ym)}`]);
         out.push(HEADERS);
-        sorted.forEach(r => out.push(rowToArray(r)));
-        out.push(subtotalRow(`Subtotal · ${monthLabel(ym)}`, monthHours, sorted.length));
+        all.forEach(r => out.push(r.arr));
+        const labelExtra = mb.missing.length ? ` · ${mb.missing.length} missing` : '';
+        out.push(subtotalRow(`Subtotal · ${monthLabel(ym)}${labelExtra}`, monthHours, mb.entries.length));
         out.push(blankRow());
         workerTotal += monthHours;
-        workerCount += sorted.length;
+        workerCount += mb.entries.length;
+        workerMissing += mb.missing.length;
       });
-      out.push(subtotalRow(`TOTAL · ${workerName(uid)}`, workerTotal, workerCount));
+      const wExtra = workerMissing ? ` · ${workerMissing} missing` : '';
+      out.push(subtotalRow(`TOTAL · ${workerName(uid)}${wExtra}`, workerTotal, workerCount));
       out.push(blankRow());
       grand += workerTotal;
       grandCount += workerCount;
+      grandMissing += workerMissing;
     });
-    out.push(subtotalRow('GRAND TOTAL', grand, grandCount));
+    const gExtra = grandMissing ? ` · ${grandMissing} missing` : '';
+    out.push(subtotalRow(`GRAND TOTAL${gExtra}`, grand, grandCount));
     return out;
   };
 
-  const flatBody = (entries: WorkHourV2[]) => {
+  const flatBody = (entries: WorkHourV2[], missing: MissingItem[] = []) => {
     const out: any[][] = [HEADERS];
     let total = 0;
-    entries.forEach(r => { total += Number(r.total_hours) || 0; out.push(rowToArray(r)); });
-    out.push(subtotalRow('GRAND TOTAL', total, entries.length));
+    type Row = { date: string; arr: any[] };
+    const all: Row[] = [
+      ...entries.map(r => { total += Number(r.total_hours) || 0; return { date: r.work_date, arr: rowToArray(r) }; }),
+      ...missing.map(m => ({ date: m.work_date, arr: missingRowToArray(m.user_id, m.work_date) })),
+    ].sort((a, b) => b.date.localeCompare(a.date));
+    all.forEach(r => out.push(r.arr));
+    const extra = missing.length ? ` · ${missing.length} missing` : '';
+    out.push(subtotalRow(`GRAND TOTAL${extra}`, total, entries.length));
     return out;
+  };
+
+  const exportMissing = (): MissingItem[] => {
+    if (!showMissing || !includeMissingInExport) return [];
+    return missingDays.filter(m => workerFilter === 'all' || m.user_id === workerFilter);
   };
 
   const exportCSV = () => {
@@ -412,7 +462,7 @@ const WorkHoursAdmin = () => {
     const fmtCell = (v: any) => typeof v === 'number' ? esc(v.toFixed(2).replace('.', ',')) : esc(v);
     const block: any[][] = [
       ...kpiBlock(),
-      ...(view === 'monthly' ? groupedBody(filtered) : flatBody(filtered)),
+      ...(view === 'monthly' ? groupedBody(filtered, exportMissing()) : flatBody(filtered, exportMissing())),
     ];
     const lines = block.map(row => row.map(fmtCell).join(';'));
     const blob = new Blob(['\uFEFF' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
@@ -441,10 +491,10 @@ const WorkHoursAdmin = () => {
     }
   };
 
-  const buildSheet = (entries: WorkHourV2[], grouped: boolean) => {
+  const buildSheet = (entries: WorkHourV2[], grouped: boolean, missing: MissingItem[] = []) => {
     const aoa: any[][] = [
       ...kpiBlock(),
-      ...(grouped ? groupedBody(entries) : flatBody(entries)),
+      ...(grouped ? groupedBody(entries, missing) : flatBody(entries, missing)),
     ];
     const ws = XLSX.utils.aoa_to_sheet(aoa);
     styleSheet(ws, aoa);
@@ -453,43 +503,45 @@ const WorkHoursAdmin = () => {
 
   const exportXLSX = () => {
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, buildSheet(filtered, view === 'monthly'), 'Work Hours');
+    XLSX.utils.book_append_sheet(wb, buildSheet(filtered, view === 'monthly', exportMissing()), 'Work Hours');
     XLSX.writeFile(wb, `work_hours_${from}_${to}.xlsx`);
   };
 
   const exportXLSXByWorker = () => {
     const wb = XLSX.utils.book_new();
-    const byWorker = new Map<string, WorkHourV2[]>();
-    filtered.forEach(r => {
-      const k = r.user_id;
-      const arr = byWorker.get(k) || [];
-      arr.push(r);
-      byWorker.set(k, arr);
-    });
+    const missingAll = exportMissing();
+    const byWorker = new Map<string, { entries: WorkHourV2[]; missing: MissingItem[] }>();
+    const ensure = (k: string) => {
+      if (!byWorker.has(k)) byWorker.set(k, { entries: [], missing: [] });
+      return byWorker.get(k)!;
+    };
+    filtered.forEach(r => ensure(r.user_id).entries.push(r));
+    missingAll.forEach(m => ensure(m.user_id).missing.push(m));
+
     if (byWorker.size === 0) {
       XLSX.utils.book_append_sheet(wb, buildSheet([], false), 'Empty');
     } else {
-      // Summary sheet
       const summary: any[][] = [
         ...kpiBlock(),
-        ['Worker', 'Entries', 'Total hours'],
+        ['Worker', 'Entries', 'Total hours', 'Missing days'],
         ...Array.from(byWorker.entries())
           .sort((a, b) => workerName(a[0]).localeCompare(workerName(b[0])))
-          .map(([uid, list]) => [
+          .map(([uid, b]) => [
             workerName(uid),
-            list.length,
-            Number(list.reduce((s, r) => s + (Number(r.total_hours) || 0), 0).toFixed(2)),
+            b.entries.length,
+            Number(b.entries.reduce((s, r) => s + (Number(r.total_hours) || 0), 0).toFixed(2)),
+            b.missing.length,
           ]),
       ];
       const wsSum = XLSX.utils.aoa_to_sheet(summary);
-      wsSum['!cols'] = [{ wch: 28 }, { wch: 10 }, { wch: 14 }];
+      wsSum['!cols'] = [{ wch: 28 }, { wch: 10 }, { wch: 14 }, { wch: 14 }];
       XLSX.utils.book_append_sheet(wb, wsSum, 'Summary');
 
       Array.from(byWorker.entries())
         .sort((a, b) => workerName(a[0]).localeCompare(workerName(b[0])))
-        .forEach(([uid, list]) => {
+        .forEach(([uid, b]) => {
           const name = (workerName(uid) || 'Worker').replace(/[\\/?*[\]:]/g, '_').slice(0, 31) || 'Worker';
-          XLSX.utils.book_append_sheet(wb, buildSheet(list, true), name);
+          XLSX.utils.book_append_sheet(wb, buildSheet(b.entries, true, b.missing), name);
         });
     }
     XLSX.writeFile(wb, `work_hours_by_worker_${from}_${to}.xlsx`);
@@ -619,6 +671,12 @@ const WorkHoursAdmin = () => {
                   <Checkbox checked={showMissing} onCheckedChange={(v) => setShowMissing(!!v)} />
                   Show missing days
                 </label>
+                {showMissing && (
+                  <label className="flex items-center gap-2 text-sm pb-2">
+                    <Checkbox checked={includeMissingInExport} onCheckedChange={(v) => setIncludeMissingInExport(!!v)} />
+                    Include in exports
+                  </label>
+                )}
                 <Button onClick={() => openEdit(undefined, workers[0]?.id, today)}>
                   <Plus className="h-4 w-4 mr-1" />Create entry
                 </Button>
