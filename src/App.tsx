@@ -308,6 +308,16 @@ function App() {
                       <WorkHours />
                     </RequireAuth>
                   } />
+                  <Route path="/work-hours-v2" element={
+                    <RequireAuth>
+                      <WorkHoursV2 />
+                    </RequireAuth>
+                  } />
+                  <Route path="/admin/work-hours" element={
+                    <RequireAuth>
+                      <WorkHoursAdmin />
+                    </RequireAuth>
+                  } />
                   <Route path="/monthly-packages" element={
                     <RequireAuth>
                       <MonthlyPackages />
