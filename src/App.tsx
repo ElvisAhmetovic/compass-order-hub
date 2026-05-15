@@ -46,6 +46,8 @@ import CustomerTicketDetail from "./pages/CustomerTicketDetail";
 import NotFound from "./pages/NotFound";
 import Reminders from "./pages/Reminders";
 import WorkHours from "./pages/WorkHours";
+import WorkHoursV2 from "./pages/WorkHoursV2";
+import WorkHoursAdmin from "./pages/WorkHoursAdmin";
 import MonthlyPackages from "./pages/MonthlyPackages";
 import Offers from "./pages/Offers";
 import TicketSubmitted from "./pages/TicketSubmitted";
