@@ -174,3 +174,52 @@ export const fetchWorkers = async () => {
   if (error) throw error;
   return data as Array<{ id: string; first_name: string | null; last_name: string | null; role: string }>;
 };
+
+export const adminBulkSetLock = async (ids: string[], lock: boolean, reason: string) => {
+  const { data, error } = await (supabase as any).rpc('wh_admin_bulk_set_lock', {
+    p_ids: ids, p_lock: lock, p_reason: reason,
+  });
+  if (error) throw error;
+  return (data as number) || 0;
+};
+
+export const fetchAuditCounts = async (workHoursIds: string[]): Promise<Record<string, number>> => {
+  if (!workHoursIds.length) return {};
+  const { data, error } = await (supabase as any)
+    .from('work_hours_audit_log')
+    .select('work_hours_id')
+    .in('work_hours_id', workHoursIds);
+  if (error) throw error;
+  const out: Record<string, number> = {};
+  (data || []).forEach((r: any) => {
+    if (r.work_hours_id) out[r.work_hours_id] = (out[r.work_hours_id] || 0) + 1;
+  });
+  return out;
+};
+
+export const subscribeAllEntries = (
+  fromDate: string,
+  toDate: string,
+  onChange: (payload: { eventType: 'INSERT' | 'UPDATE' | 'DELETE'; new: WorkHourV2 | null; old: WorkHourV2 | null }) => void,
+) => {
+  const channel = (supabase as any)
+    .channel(`wh-admin-${fromDate}-${toDate}-${Math.random().toString(36).slice(2, 8)}`)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'work_hours_v2' }, (payload: any) => {
+      const row = (payload.new || payload.old) as WorkHourV2 | null;
+      if (row?.work_date && (row.work_date < fromDate || row.work_date > toDate)) return;
+      onChange({ eventType: payload.eventType, new: payload.new || null, old: payload.old || null });
+    })
+    .subscribe();
+  return () => { try { channel.unsubscribe(); } catch {} };
+};
+
+export const fetchLateCountToday = async (): Promise<number> => {
+  const today = companyTodayISO();
+  const [workersRes, submittedRes] = await Promise.all([
+    (supabase as any).from('profiles').select('id', { count: 'exact', head: true }).in('role', ['admin', 'agent']),
+    (supabase as any).from('work_hours_v2').select('user_id', { count: 'exact', head: true }).eq('work_date', today),
+  ]);
+  const total = workersRes.count ?? 0;
+  const submitted = submittedRes.count ?? 0;
+  return Math.max(0, total - submitted);
+};

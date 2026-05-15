@@ -34,7 +34,7 @@ import {
   Lock,
   ShieldCheck
 } from 'lucide-react';
-import { isSuperAdminEmail } from '@/services/workHoursV2Service';
+import { isSuperAdminEmail, fetchLateCountToday } from '@/services/workHoursV2Service';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
 import { Badge } from '@/components/ui/badge';
@@ -47,6 +47,8 @@ const Sidebar = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [unreadSupportCount, setUnreadSupportCount] = useState(0);
   const [openTicketCount, setOpenTicketCount] = useState(0);
+  const [lateWhCount, setLateWhCount] = useState(0);
+  const isSuper = isSuperAdminEmail((user as any)?.email);
 
   const isAdmin = user?.role === 'admin';
   const isAdminOrAgent = user?.role === 'admin' || user?.role === 'agent';
@@ -129,11 +131,21 @@ const Sidebar = () => {
     };
   }, [isAdminOrAgent]);
 
+  // Late work-hours submissions count for super admin
+  useEffect(() => {
+    if (!isSuper) return;
+    let cancelled = false;
+    const tick = () => fetchLateCountToday().then(c => { if (!cancelled) setLateWhCount(c); }).catch(() => {});
+    tick();
+    const interval = setInterval(tick, 5 * 60 * 1000);
+    return () => { cancelled = true; clearInterval(interval); };
+  }, [isSuper]);
+
   // Define sidebar items with role restrictions
   const menuItems = [
     { href: '/dashboard', icon: Home, label: 'Dashboard', roles: ['admin', 'agent', 'user'] },
     { href: '/work-hours', icon: ClockIcon, label: 'Work Hours', roles: ['admin', 'agent'] },
-    { href: '/admin/work-hours', icon: ShieldCheck, label: 'Work Hours Admin', roles: ['admin', 'agent', 'user'], superAdminOnly: true },
+    { href: '/admin/work-hours', icon: ShieldCheck, label: 'Work Hours Admin', roles: ['admin', 'agent', 'user'], superAdminOnly: true, showWhAdminBadge: true },
     { href: '/monthly-packages', icon: ClockIcon, label: 'Monthly Packages', roles: ['admin', 'agent'] },
     { href: '/reminders', icon: AlarmClock, label: 'Reminders', roles: ['admin', 'agent'] },
     { href: '/user-management', icon: Users, label: 'User Management', roles: ['admin'] },
@@ -202,7 +214,8 @@ const Sidebar = () => {
     
     const showSupportBadge = item.showBadge && isAdminOrAgent && unreadSupportCount > 0;
     const showTicketBadge = (item as any).showTicketBadge && isAdminOrAgent && openTicketCount > 0;
-    const isLocked = (item as any).superAdminOnly && !isSuperAdminEmail((user as any)?.email);
+    const showWhAdminBadge = (item as any).showWhAdminBadge && isSuper && lateWhCount > 0;
+    const isLocked = (item as any).superAdminOnly && !isSuper;
 
     if (isLocked) {
       return (
@@ -242,6 +255,15 @@ const Sidebar = () => {
         {showTicketBadge && (
           <Badge variant="destructive" className="h-5 min-w-[20px] px-1.5 flex items-center justify-center text-xs">
             {openTicketCount > 99 ? '99+' : openTicketCount}
+          </Badge>
+        )}
+        {showWhAdminBadge && (
+          <Badge
+            variant="destructive"
+            title={`${lateWhCount} late submission${lateWhCount === 1 ? '' : 's'} today`}
+            className="h-5 min-w-[20px] px-1.5 flex items-center justify-center text-xs animate-pulse"
+          >
+            {lateWhCount > 99 ? '99+' : lateWhCount}
           </Badge>
         )}
       </Link>
