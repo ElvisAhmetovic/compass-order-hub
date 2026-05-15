@@ -64,8 +64,16 @@ export const isBeforeDeadline = () => {
   return h < 12;
 };
 
+export const WH_SUPER_ADMIN_EMAILS = [
+  'luciferbebistar@gmail.com',
+  'kontakt.abmedia@gmail.com',
+  'kleinabmedia@gmail.com',
+  'thomas.thomasklein@gmail.com',
+  'business@team-abmedia.com',
+] as const;
+
 export const isSuperAdminEmail = (email?: string | null) =>
-  (email || '').toLowerCase() === 'luciferbebistar@gmail.com';
+  WH_SUPER_ADMIN_EMAILS.includes(((email || '').toLowerCase()) as any);
 
 export const fetchMyEntries = async (userId: string, fromDate: string) => {
   const { data, error } = await (supabase as any)

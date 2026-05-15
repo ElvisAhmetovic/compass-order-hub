@@ -30,8 +30,11 @@ import {
   Clock as ClockIcon,
   AlarmClock,
   ChevronDown,
-  MoreHorizontal
+  MoreHorizontal,
+  Lock,
+  ShieldCheck
 } from 'lucide-react';
+import { isSuperAdminEmail } from '@/services/workHoursV2Service';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
 import { Badge } from '@/components/ui/badge';
@@ -130,6 +133,7 @@ const Sidebar = () => {
   const menuItems = [
     { href: '/dashboard', icon: Home, label: 'Dashboard', roles: ['admin', 'agent', 'user'] },
     { href: '/work-hours', icon: ClockIcon, label: 'Work Hours', roles: ['admin', 'agent'] },
+    { href: '/admin/work-hours', icon: ShieldCheck, label: 'Work Hours Admin', roles: ['admin', 'agent', 'user'], superAdminOnly: true },
     { href: '/monthly-packages', icon: ClockIcon, label: 'Monthly Packages', roles: ['admin', 'agent'] },
     { href: '/reminders', icon: AlarmClock, label: 'Reminders', roles: ['admin', 'agent'] },
     { href: '/user-management', icon: Users, label: 'User Management', roles: ['admin'] },
@@ -198,7 +202,25 @@ const Sidebar = () => {
     
     const showSupportBadge = item.showBadge && isAdminOrAgent && unreadSupportCount > 0;
     const showTicketBadge = (item as any).showTicketBadge && isAdminOrAgent && openTicketCount > 0;
-    
+    const isLocked = (item as any).superAdminOnly && !isSuperAdminEmail((user as any)?.email);
+
+    if (isLocked) {
+      return (
+        <div
+          key={`${item.href}-${item.label}`}
+          title="Restricted to authorized admins"
+          aria-disabled="true"
+          className="flex items-center justify-between px-6 py-3 text-foreground/40 cursor-not-allowed select-none"
+        >
+          <div className="flex items-center">
+            <Icon className="w-5 h-5 mr-3" />
+            {item.label}
+          </div>
+          <Lock className="w-4 h-4" />
+        </div>
+      );
+    }
+
     return (
       <Link
         key={`${item.href}-${item.label}`}
