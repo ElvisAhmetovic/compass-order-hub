@@ -47,6 +47,8 @@ const Sidebar = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [unreadSupportCount, setUnreadSupportCount] = useState(0);
   const [openTicketCount, setOpenTicketCount] = useState(0);
+  const [lateWhCount, setLateWhCount] = useState(0);
+  const isSuper = isSuperAdminEmail((user as any)?.email);
 
   const isAdmin = user?.role === 'admin';
   const isAdminOrAgent = user?.role === 'admin' || user?.role === 'agent';
