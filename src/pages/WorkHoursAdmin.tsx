@@ -709,6 +709,24 @@ const WorkHoursAdmin = () => {
                   <Button size="sm" variant="outline" onClick={exportXLSXByWorker}>
                     <FileSpreadsheet className="h-4 w-4 mr-1" />Excel by worker
                   </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={async () => {
+                      try {
+                        const { data, error } = await (await import('@/integrations/supabase/client')).supabase.functions.invoke(
+                          'send-workhours-daily-reminder',
+                          { body: { force: true } },
+                        );
+                        if (error) throw error;
+                        toast.success(`Reminder sent: ${data?.sent ?? 0} / ${data?.total ?? 0}`);
+                      } catch (e: any) {
+                        toast.error(`Failed: ${e.message}`);
+                      }
+                    }}
+                  >
+                    Send reminder now
+                  </Button>
                 </div>
               </div>
             </CardContent>
