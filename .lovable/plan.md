@@ -1,58 +1,22 @@
-# Daily Work Hours Reminder (Bosnian, 09:30)
+# Fix: Send Reminder Now returns 0/12
 
-Send a daily email to every team member at **09:30 Europe/Sarajevo, Monday–Friday**, reminding them to submit their work hours in empriatech. The message tells them that if they fail to submit by 12:00, they must contact **Selmin** or **Elvis**.
+The daily work-hours reminder edge function sends 0/12 because it uses the wrong Resend API key and sender domain.
 
-## What gets built
+## Cause
 
-1. **New edge function**: `send-workhours-daily-reminder`
-   - Skips weekends (Sat/Sun) in Europe/Sarajevo timezone.
-   - Pulls all team recipients from `NOTIFICATION_EMAIL_LIST` (`src/constants/notificationEmails.ts`) — same 12-member list used for other team notifications.
-   - Sends one email per recipient via Resend, serialized at **2/sec** to respect rate limits (consistent with project memory).
-   - From: `AB Media Team <invoice@team-abmedia.com>` (primary team sender).
-   - Subject (Bosnian): `Podsjetnik: Unesite radne sate do 12:00`
-   - HTML body in Bosnian, branded, with a direct CTA button linking to `https://empriatech.com/work-hours`.
-   - Returns counts sent / failed for logging.
+`send-workhours-daily-reminder` currently uses:
+- `RESEND_API_KEY` (scoped to `empriadental.de`)
+- `from: invoice@team-abmedia.com` (NOT verified in Resend)
 
-2. **Cron schedule** via `pg_cron` + `pg_net`:
-   - Runs every weekday at **08:30 UTC** (= 09:30 Sarajevo in standard time; Sarajevo is UTC+1 winter / UTC+2 summer — see "Open question" below).
-   - Calls the edge function with the project anon key.
+Every other team-wide notification in the project uses:
+- `RESEND_API_KEY_ABMEDIA`
+- `from: AB Media Team <noreply@abm-team.com>` (the verified Resend sender for team/financial emails — matches the project memory note about Resend domain separation)
 
-3. **Manual trigger button (optional, admin only)** on `WorkHoursAdmin`:
-   - "Send reminder now" button visible to super admins, invokes the function on demand for testing.
+## Fix
 
-## Email content (Bosnian draft)
+In `supabase/functions/send-workhours-daily-reminder/index.ts`:
+1. Switch the env var to `RESEND_API_KEY_ABMEDIA`.
+2. Change the `from` to `AB Media Team <noreply@abm-team.com>`.
+3. Log Resend's response body on failure so future issues show up in edge function logs (instead of only in the response payload).
 
-> **Subject:** Podsjetnik: Unesite radne sate do 12:00
->
-> Dobro jutro,
->
-> Molimo Vas da unesete svoje radne sate u empriatech sistem što prije.
->
-> **Rok za unos je danas do 12:00.**
->
-> Ukoliko ne unesete radne sate do 12:00, morat ćete kontaktirati **Selmina** ili **Elvisa** kako bi se unos odobrio naknadno.
->
-> [Unesi radne sate »](https://empriatech.com/work-hours)
->
-> Hvala,
-> AB Media Team
-
-## Technical details
-
-- **Files**:
-  - `supabase/functions/send-workhours-daily-reminder/index.ts` (new)
-  - SQL insert (not migration) for the cron schedule
-  - `src/pages/WorkHoursAdmin.tsx` (small "Send reminder now" button for super admins)
-- **Secrets**: uses existing `RESEND_API_KEY` and `APP_URL`. No new secrets needed.
-- **Rate limiting**: 500ms delay between sends (2/sec), matching existing patterns.
-- **Weekend skip**: function checks `getDay()` in Europe/Sarajevo and exits early on Sat/Sun, so even if cron fires it's a no-op.
-- **Recipients**: reuses `NOTIFICATION_EMAIL_LIST`. If you want a different list (e.g. only workers, excluding management), say so and I'll split it.
-
-## Open questions
-
-1. **Recipient list** — use the existing 12-member `NOTIFICATION_EMAIL_LIST`, or a different list of just the workers who actually submit hours?
-2. **Daylight saving** — Sarajevo shifts between UTC+1 and UTC+2. Options:
-   - (a) Fixed cron at `30 8 * * 1-5` UTC → correct in winter, fires at 10:30 local in summer.
-   - (b) Two cron entries that I swap manually each DST change.
-   - (c) Run cron every 15 minutes and let the edge function check local time exactly (most robust — recommended).
-3. **Manual "Send now" button** in admin panel — include it, or skip?
+No DB changes, no cron changes. After redeploy, "Send reminder now" should report 12/12.
