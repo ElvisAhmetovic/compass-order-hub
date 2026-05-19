@@ -92,12 +92,12 @@ Deno.serve(async (req) => {
       )
     }
 
-    const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
-    if (!RESEND_API_KEY) throw new Error('RESEND_API_KEY missing')
+    const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY_ABMEDIA')
+    if (!RESEND_API_KEY) throw new Error('RESEND_API_KEY_ABMEDIA missing')
 
     const html = buildHtml()
     const subject = 'Podsjetnik: Unesite radne sate do 12:00'
-    const from = 'AB Media Team <invoice@team-abmedia.com>'
+    const from = 'AB Media Team <noreply@abm-team.com>'
 
     let sent = 0
     let failed = 0
@@ -115,12 +115,15 @@ Deno.serve(async (req) => {
           body: JSON.stringify({ from, to: [to], subject, html }),
         })
         if (!res.ok) {
+          const body = await res.text()
+          console.error(`Resend failed for ${to}: ${res.status} ${body}`)
           failed++
-          errors.push(`${to}: ${res.status} ${await res.text()}`)
+          errors.push(`${to}: ${res.status} ${body}`)
         } else {
           sent++
         }
       } catch (e) {
+        console.error(`Resend threw for ${to}:`, e)
         failed++
         errors.push(`${to}: ${(e as Error).message}`)
       }
