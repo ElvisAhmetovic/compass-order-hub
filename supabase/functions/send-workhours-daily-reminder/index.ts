@@ -21,7 +21,6 @@ const RECIPIENTS = [
   'jannes@scoolfinanceedu.com',
   // Excluded (bosses): thomas.thomasklein@gmail.com, johan@team-abmedia.com
 ]
-]
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
