@@ -43,16 +43,29 @@ export const PAYMENT_ACCOUNTS: PaymentAccount[] = [
 ];
 
 export const LANGUAGES = [
-  { code: 'en', name: 'English' },
+  { code: 'ru', name: 'Русский' },
   { code: 'de', name: 'Deutsch' },
-  { code: 'nl', name: 'Nederlands' },
   { code: 'fr', name: 'Français' },
+  { code: 'en', name: 'English' },
+  { code: 'it', name: 'Italiano' },
   { code: 'es', name: 'Español' },
-  { code: 'da', name: 'Dansk' },
-  { code: 'no', name: 'Norsk' },
-  { code: 'cs', name: 'Čeština' },
   { code: 'pl', name: 'Polski' },
-  { code: 'sv', name: 'Svenska' }
+  { code: 'uk', name: 'Українська' },
+  { code: 'ro', name: 'Română' },
+  { code: 'nl', name: 'Nederlands' },
+  { code: 'tr', name: 'Türkçe' },
+  { code: 'pt', name: 'Português' },
+  { code: 'hu', name: 'Magyar' },
+  { code: 'el', name: 'Ελληνικά' },
+  { code: 'cs', name: 'Čeština' },
+  { code: 'sv', name: 'Svenska' },
+  { code: 'bg', name: 'Български' },
+  { code: 'da', name: 'Dansk' },
+  { code: 'fi', name: 'Suomi' },
+  { code: 'no', name: 'Norsk' },
+  { code: 'sk', name: 'Slovenčina' },
+  { code: 'sl', name: 'Slovenščina' },
+  { code: 'mk', name: 'Македонски' }
 ];
 
 export const CURRENCIES = [
