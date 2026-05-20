@@ -83,7 +83,7 @@ export const CURRENCIES = [
 
 export const DEFAULT_COMPANY_LOGO = "/lovable-uploads/f7433a5f-4a36-45f5-a9c0-0609818523fe.png";
 
-const DEFAULT_TERMS: Record<string, string> = {
+export const DEFAULT_TERMS: Record<string, string> = {
   en: "We request that our invoiced services are credited/transferred within 3 days. All taxes and social contributions are declared and paid by us to the authorities.",
   nl: "Wij verzoeken dat de door ons gefactureerde diensten binnen 3 dagen worden gecrediteerd/overgemaakt. Alle belastingen en sociale premies worden door ons aangegeven en afgedragen aan de autoriteiten.",
   de: "Wir bitten darum, dass unsere in Rechnung gestellten Leistungen innerhalb von 3 Tagen gutgeschrieben/überwiesen werden. Alle Steuern und Sozialabgaben werden von uns bei den Behörden angemeldet und abgeführt.",

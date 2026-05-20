@@ -39,7 +39,7 @@ type LineItemKey =
   | "Sample Service" | "Consulting" | "Design Work" | "Development" | "Web Development"
   | "Marketing" | "Training" | "Support" | "Maintenance" | "License";
 
-const LINE_ITEMS: Record<LineItemKey, Record<string, string>> = {
+export const LINE_ITEMS: Record<LineItemKey, Record<string, string>> = {
   "Sample Service": { en: "Sample Service", de: "Beispielservice", fr: "Service d'exemple", nl: "Voorbeelddienst", es: "Servicio de muestra", da: "Eksempeltjeneste", no: "Eksempeltjeneste", cs: "Ukázková služba", pl: "Przykładowa usługa", sv: "Exempeltjänst", ru: "Образец услуги", it: "Servizio di esempio", uk: "Зразок послуги", ro: "Serviciu exemplu", tr: "Örnek Hizmet", pt: "Serviço de exemplo", hu: "Mintaszolgáltatás", el: "Δείγμα υπηρεσίας", bg: "Примерна услуга", fi: "Esimerkkipalvelu", sk: "Ukážková služba", sl: "Vzorčna storitev", mk: "Примерна услуга" },
   "Consulting": { en: "Consulting", de: "Beratung", fr: "Consultation", nl: "Consultancy", es: "Consultoría", da: "Rådgivning", no: "Rådgivning", cs: "Poradenství", pl: "Doradztwo", sv: "Rådgivning", ru: "Консалтинг", it: "Consulenza", uk: "Консалтинг", ro: "Consultanță", tr: "Danışmanlık", pt: "Consultoria", hu: "Tanácsadás", el: "Συμβουλευτική", bg: "Консултации", fi: "Konsultointi", sk: "Poradenstvo", sl: "Svetovanje", mk: "Консалтинг" },
   "Design Work": { en: "Design Work", de: "Designarbeit", fr: "Travail de conception", nl: "Ontwerpwerk", es: "Trabajo de diseño", da: "Designarbejde", no: "Designarbeid", cs: "Designová práce", pl: "Praca projektowa", sv: "Designarbete", ru: "Дизайн-работа", it: "Lavoro di design", uk: "Дизайнерська робота", ro: "Lucrări de design", tr: "Tasarım Çalışması", pt: "Trabalho de design", hu: "Tervezési munka", el: "Εργασία σχεδιασμού", bg: "Дизайнерска работа", fi: "Suunnittelutyö", sk: "Dizajnérska práca", sl: "Oblikovalsko delo", mk: "Дизајнерска работа" },
@@ -66,7 +66,7 @@ type InvoiceLabelKey =
 
 type LabelMap = Record<InvoiceLabelKey, string>;
 
-const INVOICE_LABELS: Record<string, LabelMap> = {
+export const INVOICE_LABELS: Record<string, LabelMap> = {
   en: { date: "Date:", dueDate: "Due Date:", balanceDue: "Balance Due:", billTo: "Bill To:", item: "Item", quantity: "Quantity", rate: "Rate", amount: "Amount", subtotal: "Subtotal:", tax: "Tax", total: "Total:", notes: "Notes:", bankDetails: "Bank Details:", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "ACCOUNT", bank: "Bank", contactPerson: "Contact Person:", companyRegistrationNumber: "Company Registration Number:", uidNumber: "UID- Number:" },
   de: { date: "Datum:", dueDate: "Fälligkeitsdatum:", balanceDue: "Saldo:", billTo: "Rechnung an:", item: "Artikel", quantity: "Menge", rate: "Preis", amount: "Betrag", subtotal: "Zwischensumme:", tax: "MwSt", total: "Gesamt:", notes: "Notizen:", bankDetails: "Bankverbindung:", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "KONTO", bank: "Bank", contactPerson: "Ansprechpartner:", companyRegistrationNumber: "Firmenregistrierungsnummer:", uidNumber: "UID-Nummer:" },
   fr: { date: "Date:", dueDate: "Date d'échéance:", balanceDue: "Solde dû:", billTo: "Facturer à:", item: "Article", quantity: "Quantité", rate: "Taux", amount: "Montant", subtotal: "Sous-total:", tax: "TVA", total: "Total:", notes: "Notes:", bankDetails: "Coordonnées bancaires:", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "COMPTE", bank: "Banque", contactPerson: "Personne de contact:", companyRegistrationNumber: "Numéro d'enregistrement de l'entreprise:", uidNumber: "Numéro UID:" },
@@ -100,7 +100,7 @@ export function getInvoiceLabel(language: string, key: InvoiceLabelKey): string 
 type PaymentPanelKey = "paymentAccount" | "iban" | "bic" | "blz" | "account" | "bank" | "bothAccounts" | "sortCode" | "accountNumber" | "address";
 type PaymentPanelMap = Record<PaymentPanelKey, string>;
 
-const PAYMENT_PANEL: Record<string, PaymentPanelMap> = {
+export const PAYMENT_PANEL: Record<string, PaymentPanelMap> = {
   en: { paymentAccount: "Payment Account", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Account", bank: "Bank", bothAccounts: "All Accounts", sortCode: "Sort Code", accountNumber: "Account Number", address: "Address" },
   de: { paymentAccount: "Zahlungskonto", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Konto", bank: "Bank", bothAccounts: "Alle Konten", sortCode: "Bankleitzahl", accountNumber: "Kontonummer", address: "Adresse" },
   fr: { paymentAccount: "Compte de paiement", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Compte", bank: "Banque", bothAccounts: "Tous les comptes", sortCode: "Code guichet", accountNumber: "Numéro de compte", address: "Adresse" },
