@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/utils/currencyUtils";
 import { Invoice, InvoiceLineItem, Client } from "@/types/invoice";
 import { getDefaultTerms } from "@/components/invoices/constants";
+import { translateLineItem, getAccountName, getInvoiceLabel } from "@/components/invoices/invoiceTranslations";
 
 interface InvoicePreviewProps {
   invoice?: Invoice;
