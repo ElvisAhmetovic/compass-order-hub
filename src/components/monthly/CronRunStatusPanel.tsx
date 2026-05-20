@@ -169,10 +169,11 @@ const CronRunStatusPanel: React.FC<Props> = ({ isAdmin, onRefresh }) => {
                     <span className="font-medium truncate">{r.client_name}</span>
                     <Badge variant="outline" className="text-xs">{r.status}</Badge>
                   </div>
-                  <div className="text-xs text-muted-foreground ml-6">
+                  <div className="text-xs text-muted-foreground ml-6 break-words">
                     {r.month_label} {r.reason && `— ${r.reason}`}
                     {r.error_detail && <span className="text-red-600"> ({r.error_detail})</span>}
                   </div>
+
                 </div>
                 {r.status === "failed" && r.contract_id && isAdmin && (
                   <Button size="sm" variant="outline"
