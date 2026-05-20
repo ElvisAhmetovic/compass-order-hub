@@ -1,28 +1,18 @@
-# Fix Monthly Packages page still overflowing horizontally
+# Audit monthly/contract pages for horizontal overflow
 
-## Problem
-After the previous fix to the contract header row, the Monthly Packages page still requires the user to scroll horizontally to see the right side of the page. The contract rows themselves no longer overflow, but the page as a whole is wider than the viewport.
+## Scope
+Apply the same overflow fix to other monthly/contract-related pages and tables so none of them push the page wider than the viewport.
 
-## Root cause
-The page layout chain is:
+## Findings
 
-```text
-<div className="flex min-h-screen">
-  <Sidebar />
-  <div className="flex-1 flex">        <- no min-w-0
-    <Layout>                            <- Layout's outer div is flex-1 with no min-w-0
-      <div className="space-y-6"> ...   <- contract rows + inner table
-```
-
-In a flex container, a flex child's default minimum width is the width of its content, not zero. Without `min-w-0` on the intermediate wrappers, any wide child (the expanded installments `<Table>`, the cron status panel, or a long client email/website inside a contract header) pushes the whole page wider than the sidebar leaves room for, so the browser shows a horizontal scrollbar.
-
-Other pages like Facebook/Instagram have the same wrapper pattern but their `OrderTable` self-contains its overflow. Monthly Packages doesn't, so the overflow bubbles up to the page.
+1. `src/pages/YearlyPackages.tsx` — has the same `<div className="flex-1 flex">` wrapper as Monthly Packages did, in **two** places (lines 55 and 69, the loading branch and the main branch). Missing `min-w-0`, so any wide child can widen the page.
+2. `src/components/monthly/CronRunStatusPanel.tsx` — renders a results dialog with a list of contract results (client name, month label, reason text, error_detail). Long error strings can stretch the row. The panel itself uses `flex-1 min-w-0` correctly, but the dialog body content should be safe; will re-check during implementation and add `min-w-0` / `break-words` if a long error pushes the dialog wider than its max width.
+3. `src/components/monthly/CreateMonthlyContractModal.tsx` and `src/components/monthly/SendMonthlyInvoiceDialog.tsx` — both render inside a fixed-width `Dialog`, so they cannot push the page wider. Only fix if a quick scan shows a child explicitly forcing width (unlikely).
+4. `src/components/monthly/MonthlyInstallmentsTable.tsx` — already fixed in the previous turn (header wraps, expanded table is `overflow-x-auto`).
 
 ## Fix
-Constrain the flex chain so children can shrink to the available width and any wide content (table, panel) scrolls inside its own container instead of widening the page.
 
-1. `src/pages/MonthlyPackages.tsx` — add `min-w-0` to the `flex-1 flex` wrapper around `<Layout>`.
-2. `src/components/layout/Layout.tsx` — add `min-w-0` to the outer `flex-1` wrapper so Layout itself cannot exceed its flex slot.
-3. `src/components/monthly/MonthlyInstallmentsTable.tsx` — add `overflow-x-auto` to the expanded installments table wrapper so a wide installments table scrolls inside the contract card instead of widening the page.
+1. `src/pages/YearlyPackages.tsx` — add `min-w-0` to both `flex-1 flex` wrappers (lines 55 and 69).
+2. `src/components/monthly/CronRunStatusPanel.tsx` — quick read of the dialog body; if any row can render a long unbroken string (error_detail, reason, notes), add `break-words` / `min-w-0` so it wraps instead of stretching.
 
-No logic changes, no other pages touched.
+No logic, data, or styling-system changes. Pure layout containment.
