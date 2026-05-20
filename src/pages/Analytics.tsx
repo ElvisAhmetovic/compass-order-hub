@@ -74,7 +74,7 @@ const Analytics = () => {
     return (
       <div className="flex min-h-screen">
         <Sidebar />
-        <div className="flex-1 flex">
+        <div className="flex-1 flex min-w-0">
           <Layout userRole={user?.role || "user"}>
             <div className="space-y-6">
               <div>
@@ -104,7 +104,7 @@ const Analytics = () => {
   return (
     <div className="flex min-h-screen">
       <Sidebar />
-      <div className="flex-1 flex">
+      <div className="flex-1 flex min-w-0">
         <Layout userRole={user?.role || "user"}>
           <div className="space-y-6">
             <div>

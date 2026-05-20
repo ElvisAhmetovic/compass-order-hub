@@ -40,7 +40,7 @@ const Reviews = () => {
   return (
     <div className="flex min-h-screen">
       <Sidebar />
-      <div className="flex-1 flex">
+      <div className="flex-1 flex min-w-0">
         <Layout userRole={userRole}>
           <div className="space-y-6">
             <DashboardHeader 
