@@ -60,23 +60,9 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
   const formattedVatRate = formatRate(effectiveVatRate);
   
   // Get translated account names and payment info
-  const getAccountTranslations = (language: string, accountId: string) => {
-    const translations = {
-      en: { belgium: "Belgian Bank Account", germany: "German Bank Account", uk: "UK Bank Account (Wise)" },
-      nl: { belgium: "Bankrekening België", germany: "Duitse Bankrekening", uk: "Britse Bankrekening (Wise)" },
-      de: { belgium: "Belgisches Bankkonto", germany: "Deutsches Bankkonto", uk: "Britisches Bankkonto (Wise)" },
-      fr: { belgium: "Compte bancaire belge", germany: "Compte bancaire allemand", uk: "Compte bancaire britannique (Wise)" },
-      es: { belgium: "Cuenta bancaria belga", germany: "Cuenta bancaria alemana", uk: "Cuenta bancaria británica (Wise)" },
-      da: { belgium: "Belgisk bankkonto", germany: "Tysk bankkonto", uk: "Britisk bankkonto (Wise)" },
-      no: { belgium: "Belgisk bankkonto", germany: "Tysk bankkonto", uk: "Britisk bankkonto (Wise)" },
-      cs: { belgium: "Belgický bankovní účet", germany: "Německý bankovní účet", uk: "Britský bankovní účet (Wise)" },
-      pl: { belgium: "Belgijskie konto bankowe", germany: "Niemieckie konto bankowe", uk: "Brytyjskie konto bankowe (Wise)" },
-      sv: { belgium: "Belgiskt bankkonto", germany: "Tyskt bankkonto", uk: "Brittiskt bankkonto (Wise)" }
-    };
-    
-    const lang = language || 'en';
-    return translations[lang]?.[accountId] || translations.en[accountId];
-  };
+  const getAccountTranslations = (language: string, accountId: "belgium" | "germany" | "uk") =>
+    getAccountName(language, accountId);
+
 
   const belgiumAccount = {
     id: "belgium" as const,
