@@ -340,18 +340,18 @@ const MonthlyInstallmentsTable: React.FC<Props> = ({ contracts, installments, on
         return (
           <div key={contract.id} className="border rounded-lg overflow-hidden bg-card">
             <div
-              className="flex items-center justify-between p-4 cursor-pointer hover:bg-accent/50 transition-colors"
+              className="flex flex-wrap items-center justify-between gap-3 p-4 cursor-pointer hover:bg-accent/50 transition-colors"
               onClick={() => toggleExpand(contract.id)}
             >
-              <div className="flex items-center gap-3">
-                {isExpanded ? <ChevronDown className="w-5 h-5 text-muted-foreground" /> : <ChevronRight className="w-5 h-5 text-muted-foreground" />}
-                <div>
+              <div className="flex items-center gap-3 min-w-0 flex-1">
+                {isExpanded ? <ChevronDown className="w-5 h-5 text-muted-foreground shrink-0" /> : <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />}
+                <div className="min-w-0">
                   <div className="font-semibold text-foreground flex items-center gap-2">
-                    {contract.client_name}
+                    <span className="truncate">{contract.client_name}</span>
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <span>
+                          <span className="shrink-0">
                             {hasPortal ? (
                               <UserCheck className="w-4 h-4 text-green-500" />
                             ) : (
@@ -365,7 +365,7 @@ const MonthlyInstallmentsTable: React.FC<Props> = ({ contracts, installments, on
                       </Tooltip>
                     </TooltipProvider>
                   </div>
-                  <div className="text-sm text-muted-foreground">
+                  <div className="text-sm text-muted-foreground truncate">
                     {contract.client_email}
                     {(contract as any).contact_phone && ` · ${(contract as any).contact_phone}`}
                     {contract.website && (
@@ -378,17 +378,17 @@ const MonthlyInstallmentsTable: React.FC<Props> = ({ contracts, installments, on
                     )}
                   </div>
                   {(contract as any).company_address && (
-                    <div className="text-xs text-muted-foreground">{(contract as any).company_address}</div>
+                    <div className="text-xs text-muted-foreground truncate">{(contract as any).company_address}</div>
                   )}
                 </div>
               </div>
 
-              <div className="flex items-center gap-6">
+              <div className="flex items-center flex-wrap gap-3 shrink-0 ml-auto">
                 <div className="text-right">
                   <div className="text-sm font-medium">{formatPrice(contract.monthly_amount, contract.currency)} / {getFrequencyLabel(contract.billing_frequency || 1)}</div>
                   <div className="text-xs text-muted-foreground">Total: {formatPrice(contract.total_value, contract.currency)}</div>
                 </div>
-                <div className="w-40">
+                <div className="w-32 md:w-40">
                   <div className="flex items-center justify-between text-xs mb-1">
                     <span className="text-muted-foreground">{paidCount} / {totalInstallments} paid</span>
                     <span className="font-medium">{Math.round(progressPercent)}%</span>
