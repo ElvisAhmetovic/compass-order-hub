@@ -433,7 +433,7 @@ const MonthlyInstallmentsTable: React.FC<Props> = ({ contracts, installments, on
             </div>
 
             {isExpanded && (
-              <div className="border-t">
+              <div className="border-t overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
