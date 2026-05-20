@@ -43,16 +43,29 @@ export const PAYMENT_ACCOUNTS: PaymentAccount[] = [
 ];
 
 export const LANGUAGES = [
-  { code: 'en', name: 'English' },
+  { code: 'ru', name: 'Русский' },
   { code: 'de', name: 'Deutsch' },
-  { code: 'nl', name: 'Nederlands' },
   { code: 'fr', name: 'Français' },
+  { code: 'en', name: 'English' },
+  { code: 'it', name: 'Italiano' },
   { code: 'es', name: 'Español' },
-  { code: 'da', name: 'Dansk' },
-  { code: 'no', name: 'Norsk' },
-  { code: 'cs', name: 'Čeština' },
   { code: 'pl', name: 'Polski' },
-  { code: 'sv', name: 'Svenska' }
+  { code: 'uk', name: 'Українська' },
+  { code: 'ro', name: 'Română' },
+  { code: 'nl', name: 'Nederlands' },
+  { code: 'tr', name: 'Türkçe' },
+  { code: 'pt', name: 'Português' },
+  { code: 'hu', name: 'Magyar' },
+  { code: 'el', name: 'Ελληνικά' },
+  { code: 'cs', name: 'Čeština' },
+  { code: 'sv', name: 'Svenska' },
+  { code: 'bg', name: 'Български' },
+  { code: 'da', name: 'Dansk' },
+  { code: 'fi', name: 'Suomi' },
+  { code: 'no', name: 'Norsk' },
+  { code: 'sk', name: 'Slovenčina' },
+  { code: 'sl', name: 'Slovenščina' },
+  { code: 'mk', name: 'Македонски' }
 ];
 
 export const CURRENCIES = [
@@ -81,6 +94,19 @@ const DEFAULT_TERMS: Record<string, string> = {
   cs: "Žádáme, aby naše fakturované služby byly připsány/převedeny do 3 dnů. Všechny daně a sociální odvody jsou námi přiznány a odvedeny příslušným úřadům.",
   pl: "Prosimy o zaksięgowanie/przelanie naszych zafakturowanych usług w ciągu 3 dni. Wszystkie podatki i składki na ubezpieczenia społeczne są przez nas deklarowane i odprowadzane do odpowiednich organów.",
   sv: "Vi ber om att våra fakturerade tjänster krediteras/överförs inom 3 dagar. Alla skatter och sociala avgifter deklareras och betalas av oss till myndigheterna.",
+  ru: "Просим зачислить/перевести оплату по выставленным нами счетам в течение 3 дней. Все налоги и социальные взносы декларируются и уплачиваются нами в соответствующие органы.",
+  it: "Chiediamo che i nostri servizi fatturati vengano accreditati/trasferiti entro 3 giorni. Tutte le tasse e i contributi sociali sono dichiarati e versati da noi alle autorità competenti.",
+  uk: "Просимо зарахувати/перерахувати оплату за наші виставлені послуги протягом 3 днів. Усі податки та соціальні внески декларуються та сплачуються нами відповідним органам.",
+  ro: "Vă rugăm ca serviciile noastre facturate să fie creditate/transferate în termen de 3 zile. Toate taxele și contribuțiile sociale sunt declarate și plătite de noi autorităților.",
+  tr: "Faturalandırdığımız hizmetlerin 3 gün içinde hesabımıza geçirilmesini/aktarılmasını rica ederiz. Tüm vergiler ve sosyal katkı payları tarafımızca beyan edilip ilgili makamlara ödenmektedir.",
+  pt: "Solicitamos que os nossos serviços faturados sejam creditados/transferidos no prazo de 3 dias. Todos os impostos e contribuições sociais são declarados e pagos por nós às autoridades.",
+  hu: "Kérjük, hogy a kiszámlázott szolgáltatásaink ellenértékét 3 napon belül szíveskedjenek jóváírni/átutalni. Minden adót és társadalombiztosítási járulékot mi vallunk be és fizetünk be a hatóságoknak.",
+  el: "Παρακαλούμε όπως τα τιμολογημένα μας υπηρεσίες πιστωθούν/μεταφερθούν εντός 3 ημερών. Όλοι οι φόροι και οι εισφορές κοινωνικής ασφάλισης δηλώνονται και καταβάλλονται από εμάς στις αρχές.",
+  bg: "Моля, фактурираните от нас услуги да бъдат кредитирани/преведени в рамките на 3 дни. Всички данъци и социални осигуровки се декларират и плащат от нас на компетентните органи.",
+  fi: "Pyydämme, että laskuttamamme palvelut hyvitetään/siirretään 3 päivän kuluessa. Kaikki verot ja sosiaalimaksut ilmoitamme ja maksamme viranomaisille itse.",
+  sk: "Žiadame, aby boli naše fakturované služby pripísané/prevedené do 3 dní. Všetky dane a sociálne odvody priznávame a odvádzame príslušným orgánom my.",
+  sl: "Prosimo, da se naše zaračunane storitve nakažejo/preknjižijo v 3 dneh. Vse davke in socialne prispevke prijavljamo in plačujemo pristojnim organom sami.",
+  mk: "Ве молиме нашите фактурирани услуги да бидат уплатени/префрлени во рок од 3 дена. Сите даноци и социјални придонеси ги пријавуваме и ги плаќаме ние на соодветните органи.",
 };
 
 export const getDefaultTerms = (language: string): string => {
