@@ -267,6 +267,8 @@ export class OrderService {
         .from('orders')
         .select('*')
         .eq('is_yearly_package', true)
+        .is('deleted_at', null)
+        .neq('status_deleted', true)
         .order('created_at', { ascending: false });
 
       if (error) {
