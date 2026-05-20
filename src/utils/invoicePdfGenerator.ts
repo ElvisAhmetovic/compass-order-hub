@@ -4,6 +4,7 @@ import { Invoice, InvoiceLineItem, Client } from '@/types/invoice';
 import { formatCurrency } from '@/utils/currencyUtils';
 import { sanitizeHtml } from '@/utils/sanitize';
 import { getDefaultTerms } from '@/components/invoices/constants';
+import { translateLineItem, getAccountName, getInvoiceLabel } from '@/components/invoices/invoiceTranslations';
 
 interface InvoicePDFData {
   invoice?: Invoice;
