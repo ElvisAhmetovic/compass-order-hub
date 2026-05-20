@@ -214,7 +214,7 @@ const Dashboard = () => {
     return (
       <div className="flex min-h-screen">
         <Sidebar />
-        <div className="flex-1 flex">
+        <div className="flex-1 flex min-w-0">
           <Layout userRole={userRole}>
             <div className="flex justify-center items-center h-64">
               <p className="text-muted-foreground">Please log in to access the dashboard.</p>
@@ -230,7 +230,7 @@ const Dashboard = () => {
       <TemporaryNotificationBanner />
       <div className="flex min-h-screen">
         <Sidebar />
-        <div className="flex-1 flex">
+        <div className="flex-1 flex min-w-0">
           <Layout userRole={userRole}>
           <div className="space-y-6">
             <div className="flex justify-between items-start">

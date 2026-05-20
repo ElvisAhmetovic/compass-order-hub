@@ -139,7 +139,7 @@ const CustomerTicketDetail = () => {
   return (
     <div className="flex min-h-screen">
       <Sidebar />
-      <div className="flex-1 flex">
+      <div className="flex-1 flex min-w-0">
         <Layout>
           <div className="space-y-6 max-w-3xl mx-auto">
         <div className="flex items-center gap-4">
@@ -222,7 +222,7 @@ const CustomerTicketDetail = () => {
             ) : (
               <div className="flex items-center gap-3">
                 <Select value={selectedClientId} onValueChange={setSelectedClientId}>
-                  <SelectTrigger className="flex-1 flex">
+                  <SelectTrigger className="flex-1 flex min-w-0">
                     <SelectValue placeholder="Select a client user..." />
                   </SelectTrigger>
                   <SelectContent>

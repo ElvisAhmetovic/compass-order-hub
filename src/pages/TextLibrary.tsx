@@ -139,7 +139,7 @@ const TextLibrary = () => {
   return (
     <div className="flex min-h-screen">
       <Sidebar />
-      <div className="flex-1 flex">
+      <div className="flex-1 flex min-w-0">
         <Layout>
           <div className="p-6 max-w-4xl mx-auto">
             {!selectedCategoryId ? (

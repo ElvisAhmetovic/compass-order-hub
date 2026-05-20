@@ -89,7 +89,7 @@ const UserStatistics = () => {
   return (
     <div className="flex min-h-screen">
       <Sidebar />
-      <div className="flex-1 flex">
+      <div className="flex-1 flex min-w-0">
         <Layout userRole={user?.role}>
           <div className="p-6 space-y-6">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">

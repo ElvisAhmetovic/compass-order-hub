@@ -191,7 +191,7 @@ const NotificationSettings = () => {
   return (
     <div className="flex min-h-screen">
       <Sidebar />
-      <div className="flex-1 flex">
+      <div className="flex-1 flex min-w-0">
         <Layout userRole={user?.role || "user"}>
           <div className="container mx-auto py-8 space-y-6">
             <div className="flex items-center justify-between">

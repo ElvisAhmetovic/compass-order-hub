@@ -105,7 +105,7 @@ const UserManagement = () => {
     <AdminGuard>
       <div className="flex min-h-screen">
         <Sidebar />
-        <div className="flex-1 flex">
+        <div className="flex-1 flex min-w-0">
           <Layout userRole={currentUser?.role || "admin"}>
             <div className="space-y-6">
               <div className="flex justify-between items-center">
