@@ -1,32 +1,37 @@
-# Add 13 new languages to invoice settings
+# i18n completeness check + per-language PDF verification
 
-Currently the invoice language dropdown supports 10 languages: English, German, French, Spanish, Dutch, Polish, Czech, Swedish, Danish, Norwegian. Selecting a language changes everything language-specific on the generated invoice and PDF.
+Two deliverables on top of the new 23-language invoice translations.
 
-You asked to add: Russian, Italian, Ukrainian, Romanian, Turkish, Portuguese, Hungarian, Greek, Bulgarian, Finnish, Slovak, Slovenian, Macedonian.
+## 1. Automated completeness check
 
-## What "language" controls on an invoice
+Add a small unit test (Vitest) at `src/components/invoices/__tests__/invoiceTranslations.test.ts` that imports the four translation maps from `invoiceTranslations.ts` plus `LANGUAGES` and `DEFAULT_TERMS` from `constants.ts`, and asserts:
 
-When you change the language in Invoice Settings, these things switch automatically:
+- Every code in `LANGUAGES` has an entry in `ACCOUNT_NAME_TRANSLATIONS`, `INVOICE_LABELS`, `PAYMENT_PANEL`, and `DEFAULT_TERMS`.
+- Every line-item key in `LINE_ITEMS` has a translation for every code in `LANGUAGES`.
+- For each label/line-item entry, every required sub-key (e.g. `date`, `dueDate`, `billTo`, …) is present and non-empty.
+- No stray language codes exist in the translation maps that aren't in `LANGUAGES` (catches typos like `ua` vs `uk`).
 
-1. **Invoice labels** in the PDF and live preview — Date, Due Date, Bill To, Item, Quantity, Rate, Amount, Subtotal, Tax, Total, Notes, Bank Details, Contact Person, etc.
-2. **Bank account display names** — e.g. "German Bank Account" becomes "Deutsches Bankkonto".
-3. **Payment Information panel labels** in the settings UI (IBAN, BIC, Account, All Accounts, Sort Code, etc.).
-4. **Default terms text** at the bottom of the invoice (the "Please pay within 3 days…" paragraph).
-5. **Auto-translated common line item descriptions** (Sample Service, Consulting, Design Work, Development, Web Development, Marketing, Training, Support, Maintenance, License).
+Failure output names the language code + missing key so gaps are obvious. Test runs via `bunx vitest run`.
 
-## What will be added
+To make the check usable without exporting internals, `invoiceTranslations.ts` will export the raw maps (`ACCOUNT_NAME_TRANSLATIONS`, `INVOICE_LABELS`, `PAYMENT_PANEL`, `LINE_ITEMS`) alongside the existing accessor functions.
 
-For each of the 13 new languages, full translations will be added in all five places above. Same coverage as the existing 10 languages — nothing on the invoice will appear in English if a non-English language is selected.
+## 2. Per-language PDF verification
 
-Language codes used (ISO 639-1): `ru`, `it`, `uk` (Ukrainian), `ro`, `tr`, `pt`, `hu`, `el`, `bg`, `fi`, `sk`, `sl`, `mk`. Final list in the dropdown will be 23 languages, ordered as you provided.
+Render the live invoice preview at `/invoices/{id}` once per language by switching the language dropdown in Invoice Settings, then capture a full-page screenshot of the preview. For each of the 23 languages I'll inspect:
 
-No backend/database changes. The PDF generator already reads `templateSettings.language` and falls back to English for unknown codes — extending the translation tables is enough.
+- Header labels (Date, Due Date, Balance Due, Bill To)
+- Table headers (Item, Quantity, Rate, Amount)
+- Totals block (Subtotal, Tax, Total)
+- Bank Details block (account name, IBAN/BIC/BLZ/ACCOUNT/Bank labels)
+- Notes / default terms paragraph
+- Contact Person / Company Registration Number / UID labels
+
+Any rendering issues (missing glyphs for Cyrillic/Greek, overflow, untranslated strings, layout breakage at long Hungarian/Finnish strings) get reported back with a fix. If the live preview matches, the generated PDF matches — both go through the same HTML template.
+
+No production behavior changes from this verification — it's read-only QA.
 
 ## Files touched (technical)
 
-- `src/components/invoices/constants.ts` — extend `LANGUAGES` list and `DEFAULT_TERMS` map.
-- `src/utils/invoicePdfGenerator.ts` — extend `translateLineItemDescription`, `getAccountTranslations`, and the labels `translations` object.
-- `src/components/invoices/InvoicePreview.tsx` — mirror the same three translation tables (live preview).
-- `src/components/invoices/components/PaymentInformation.tsx` — extend the `getPaymentTranslations` map.
-
-No edits to monthly/yearly invoice email templates (separate scope — those use their own German/English copy and aren't tied to this dropdown).
+- `src/components/invoices/invoiceTranslations.ts` — export `LINE_ITEMS` and rename internal maps to be exported (no logic change).
+- `src/components/invoices/__tests__/invoiceTranslations.test.ts` — new Vitest spec.
+- No changes to PDF generator, preview, or settings UI.
