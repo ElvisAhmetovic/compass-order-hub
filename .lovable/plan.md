@@ -1,51 +1,68 @@
-# Give Super Admins Full Work Hours Control
+# Fix Work Hours Page Saving the Wrong Data Source
 
 ## Problem
 
-The Work Hours Admin page lists multiple super admins in `WH_SUPER_ADMIN_EMAILS` (frontend), but the database function `wh_is_super_admin()` only recognizes **one** email:
+The super-admin email fix is already in place, but the screen the user is actually using is still the old `/work-hours` page.
 
-```sql
-lower(...) = 'luciferbebistar@gmail.com'
-```
+That page:
 
-Every guarded RPC (`wh_admin_upsert`, `wh_admin_unlock`, `wh_admin_bulk_set_lock`, RLS SELECT/DELETE on `work_hours_v2`, audit log SELECT) calls this function. Result: the other super admins pass the frontend `isSuper` check, see the UI, click Save — and the RPC silently rejects with "Only super admin can perform this action". Their edits to past days, today's day, hours, lock/unlock, and "mark as worked" don't stick.
+- reads and writes `public.work_hours`
+- shows lock/submission state from `public.work_hours_v2`
+- does not use the admin RPCs that persist overrides in the V2 system
+
+Result: a super admin can change checkmarks, hours, and notes on `/work-hours`, but after refresh the visible state is rebuilt from the newer V2 records and the old-table edits appear to “revert”.
 
 ## Fix
 
-Expand `public.wh_is_super_admin()` to match the same email list the frontend uses, so all configured super admins can:
-
-- Edit/insert any user's hours for any date (past, today, future)
-- Override locked entries
-- Unlock entries
-- Bulk lock/unlock
-- See all rows and full audit history
-
-No other restriction changes needed — `wh_admin_upsert` already accepts any `p_work_date` and bypasses the deadline; only the gate function is wrong.
+Make `/work-hours` use the same V2 persistence rules as the real admin system so edits for past days, today, locked days, and “worked” status all save to the authoritative source and survive refresh.
 
 ## Changes
 
-### 1. Database migration
+### 1. Unify the `/work-hours` page with V2 saving
 
-Replace `public.wh_is_super_admin()` so it returns true for any of:
-- `luciferbebistar@gmail.com`
-- `kontakt.abmedia@gmail.com`
-- `kleinabmedia@gmail.com`
-- `thomas.thomasklein@gmail.com`
-- `business@team-abmedia.com`
+Update the `WorkHoursTable` flow so super-admin edits for any selected employee save through `wh_admin_upsert` / `work_hours_v2` instead of the legacy `work_hours` table.
 
-(Same list as `WH_SUPER_ADMIN_EMAILS` in `src/services/workHoursV2Service.ts`.)
+This includes:
 
-Function stays `SECURITY DEFINER STABLE`, reads email from `auth.jwt() ->> 'email'`, lowercased. All existing callers (RPCs + RLS policies) automatically pick up the new behavior — no policy or RPC rewrites needed.
+- changing hour, start, end, break, and note values
+- toggling absent / worked state
+- editing past or future dates as super admin
+- editing rows that are currently locked
 
-### 2. No frontend changes
+### 2. Keep old and new UI behavior aligned
 
-`isSuperAdminEmail` already matches the same list, so the UI already shows the admin panel and edit controls to all 5 admins. Once the DB function is aligned, their saves will persist.
+Preserve the existing table UI on `/work-hours`, but connect its actions to the same business rules already used on `WorkHoursAdmin`:
+
+- super admins can override any date
+- non-super users keep the existing restrictions
+- lock state shown in the table matches the data source being saved
+- refresh reloads the exact saved values
+
+### 3. Remove the stale dual-source mismatch
+
+Replace the mixed old/new loading strategy so the page no longer combines editable fields from `work_hours` with status data from `work_hours_v2`.
+
+Technical direction:
+
+- either read/write only V2 for this screen
+- or map legacy rows into V2-compatible display state while saving only to V2
+
+The goal is one authoritative save path.
+
+## Technical details
+
+- `src/components/work-hours/WorkHoursTable.tsx` is the main bug location.
+- `src/services/workHoursService.ts` is legacy and currently powers `/work-hours`.
+- `src/services/workHoursV2Service.ts` already has the correct admin RPCs and lock logic.
+- No new database schema change is planned unless a missing policy or RPC edge case appears during implementation.
 
 ## Verification
 
-After migration, sign in as one of the additional super-admin emails (e.g. `kleinabmedia@gmail.com`) and confirm:
-1. Editing today's hours for another user saves and reloads correctly.
-2. Editing a past day (e.g. last week) for another user saves.
-3. Marking a previously "not_worked" past day as worked sticks.
-4. Lock/unlock toggles persist.
-5. Audit log shows the action under the editor's email.
+After implementation, verify on `/work-hours` as a super admin:
+
+1. Open another employee sheet (for example Suzie).
+2. Change old days like 7, 8, 9, 10 to worked.
+3. Change hours/start/end/note on those days.
+4. Refresh the page.
+5. Confirm all values remain changed.
+6. Confirm locked days can still be overridden by super admin and remain overridden after refresh.
