@@ -1,37 +1,51 @@
-# i18n completeness check + per-language PDF verification
+# Give Super Admins Full Work Hours Control
 
-Two deliverables on top of the new 23-language invoice translations.
+## Problem
 
-## 1. Automated completeness check
+The Work Hours Admin page lists multiple super admins in `WH_SUPER_ADMIN_EMAILS` (frontend), but the database function `wh_is_super_admin()` only recognizes **one** email:
 
-Add a small unit test (Vitest) at `src/components/invoices/__tests__/invoiceTranslations.test.ts` that imports the four translation maps from `invoiceTranslations.ts` plus `LANGUAGES` and `DEFAULT_TERMS` from `constants.ts`, and asserts:
+```sql
+lower(...) = 'luciferbebistar@gmail.com'
+```
 
-- Every code in `LANGUAGES` has an entry in `ACCOUNT_NAME_TRANSLATIONS`, `INVOICE_LABELS`, `PAYMENT_PANEL`, and `DEFAULT_TERMS`.
-- Every line-item key in `LINE_ITEMS` has a translation for every code in `LANGUAGES`.
-- For each label/line-item entry, every required sub-key (e.g. `date`, `dueDate`, `billTo`, …) is present and non-empty.
-- No stray language codes exist in the translation maps that aren't in `LANGUAGES` (catches typos like `ua` vs `uk`).
+Every guarded RPC (`wh_admin_upsert`, `wh_admin_unlock`, `wh_admin_bulk_set_lock`, RLS SELECT/DELETE on `work_hours_v2`, audit log SELECT) calls this function. Result: the other super admins pass the frontend `isSuper` check, see the UI, click Save — and the RPC silently rejects with "Only super admin can perform this action". Their edits to past days, today's day, hours, lock/unlock, and "mark as worked" don't stick.
 
-Failure output names the language code + missing key so gaps are obvious. Test runs via `bunx vitest run`.
+## Fix
 
-To make the check usable without exporting internals, `invoiceTranslations.ts` will export the raw maps (`ACCOUNT_NAME_TRANSLATIONS`, `INVOICE_LABELS`, `PAYMENT_PANEL`, `LINE_ITEMS`) alongside the existing accessor functions.
+Expand `public.wh_is_super_admin()` to match the same email list the frontend uses, so all configured super admins can:
 
-## 2. Per-language PDF verification
+- Edit/insert any user's hours for any date (past, today, future)
+- Override locked entries
+- Unlock entries
+- Bulk lock/unlock
+- See all rows and full audit history
 
-Render the live invoice preview at `/invoices/{id}` once per language by switching the language dropdown in Invoice Settings, then capture a full-page screenshot of the preview. For each of the 23 languages I'll inspect:
+No other restriction changes needed — `wh_admin_upsert` already accepts any `p_work_date` and bypasses the deadline; only the gate function is wrong.
 
-- Header labels (Date, Due Date, Balance Due, Bill To)
-- Table headers (Item, Quantity, Rate, Amount)
-- Totals block (Subtotal, Tax, Total)
-- Bank Details block (account name, IBAN/BIC/BLZ/ACCOUNT/Bank labels)
-- Notes / default terms paragraph
-- Contact Person / Company Registration Number / UID labels
+## Changes
 
-Any rendering issues (missing glyphs for Cyrillic/Greek, overflow, untranslated strings, layout breakage at long Hungarian/Finnish strings) get reported back with a fix. If the live preview matches, the generated PDF matches — both go through the same HTML template.
+### 1. Database migration
 
-No production behavior changes from this verification — it's read-only QA.
+Replace `public.wh_is_super_admin()` so it returns true for any of:
+- `luciferbebistar@gmail.com`
+- `kontakt.abmedia@gmail.com`
+- `kleinabmedia@gmail.com`
+- `thomas.thomasklein@gmail.com`
+- `business@team-abmedia.com`
 
-## Files touched (technical)
+(Same list as `WH_SUPER_ADMIN_EMAILS` in `src/services/workHoursV2Service.ts`.)
 
-- `src/components/invoices/invoiceTranslations.ts` — export `LINE_ITEMS` and rename internal maps to be exported (no logic change).
-- `src/components/invoices/__tests__/invoiceTranslations.test.ts` — new Vitest spec.
-- No changes to PDF generator, preview, or settings UI.
+Function stays `SECURITY DEFINER STABLE`, reads email from `auth.jwt() ->> 'email'`, lowercased. All existing callers (RPCs + RLS policies) automatically pick up the new behavior — no policy or RPC rewrites needed.
+
+### 2. No frontend changes
+
+`isSuperAdminEmail` already matches the same list, so the UI already shows the admin panel and edit controls to all 5 admins. Once the DB function is aligned, their saves will persist.
+
+## Verification
+
+After migration, sign in as one of the additional super-admin emails (e.g. `kleinabmedia@gmail.com`) and confirm:
+1. Editing today's hours for another user saves and reloads correctly.
+2. Editing a past day (e.g. last week) for another user saves.
+3. Marking a previously "not_worked" past day as worked sticks.
+4. Lock/unlock toggles persist.
+5. Audit log shows the action under the editor's email.
