@@ -7,6 +7,7 @@ import {
   fetchMyEntries,
   submitMyHours,
   adminUnlock,
+  adminUpsert,
   isSuperAdminEmail,
   companyTodayISO,
   WorkHourV2,
@@ -63,6 +64,8 @@ const normalizeTime = (raw?: string | null): string | null => {
   return `${m[1].padStart(2, '0')}:${m[2]}:00`;
 };
 
+const timeToHHMM = (t?: string | null): string => (t ? t.slice(0, 5) : '');
+
 const WorkHoursTable = ({ userId, month, year }: WorkHoursTableProps) => {
   const { user } = useAuth();
   const isSuper = isSuperAdminEmail((user as any)?.email);
@@ -76,6 +79,32 @@ const WorkHoursTable = ({ userId, month, year }: WorkHoursTableProps) => {
 
   const weekdays = getWeekdays(year, month);
   const today = companyTodayISO();
+
+  // Build display entry: V2 wins, fallback to legacy for fields V2 doesn't carry (e.g. break range text).
+  const buildEntry = useCallback((iso: string, legacy: Record<string, WorkHourEntry>, v2m: Record<string, WorkHourV2>): WorkHourEntry => {
+    const legacyRow = legacy[iso];
+    const v2 = v2m[iso];
+    if (v2) {
+      const isAbsent = v2.status === 'not_worked';
+      return {
+        user_id: userId,
+        date: iso,
+        start_time: timeToHHMM(v2.start_time) || legacyRow?.start_time || null,
+        // Prefer legacy break_time text when minutes match (preserves "12:00-13:00h" display).
+        break_time:
+          legacyRow?.break_time && parseBreakMinutes(legacyRow.break_time) === (v2.break_minutes || 0)
+            ? legacyRow.break_time
+            : (v2.break_minutes ? String(v2.break_minutes) : (legacyRow?.break_time || null)),
+        working_hours: isAbsent ? 0 : (Number(v2.total_hours) || legacyRow?.working_hours || null),
+        end_time: timeToHHMM(v2.end_time) || legacyRow?.end_time || null,
+        note: v2.worker_note || legacyRow?.note || null,
+        absent: isAbsent,
+      };
+    }
+    return legacyRow || {
+      user_id: userId, date: iso, start_time: null, break_time: null, working_hours: null, end_time: null, note: null, absent: false,
+    };
+  }, [userId]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -100,16 +129,41 @@ const WorkHoursTable = ({ userId, month, year }: WorkHoursTableProps) => {
 
   useEffect(() => { load(); }, [load]);
 
-  const getEntry = (iso: string): WorkHourEntry => rows[iso] || {
-    user_id: userId, date: iso, start_time: null, break_time: null, working_hours: null, end_time: null, note: null, absent: false,
-  };
+  const getEntry = (iso: string): WorkHourEntry => buildEntry(iso, rows, v2Map);
 
+  // Persist a single field. Super admin -> V2 (authoritative). Otherwise legacy table.
   const save = async (iso: string, field: keyof WorkHourEntry, value: string | number | boolean | null) => {
-    const entry = { ...getEntry(iso), [field]: value };
-    entry.user_id = userId;
+    const current = getEntry(iso);
+    const next = { ...current, [field]: value, user_id: userId, date: iso };
+
+    if (isSuper) {
+      try {
+        const isAbsent = !!next.absent;
+        const row = await adminUpsert({
+          user_id: userId,
+          work_date: iso,
+          total_hours: isAbsent ? 0 : (Number(next.working_hours) || 0),
+          start_time: normalizeTime(next.start_time),
+          end_time: normalizeTime(next.end_time),
+          break_minutes: parseBreakMinutes(next.break_time),
+          status: isAbsent ? 'not_worked' : 'admin_override',
+          locked: v2Map[iso]?.locked ?? false,
+          admin_note: v2Map[iso]?.admin_note ?? null,
+          reason: 'Admin edit from Work Hours sheet',
+        });
+        setV2Map(prev => ({ ...prev, [iso]: row }));
+        // Keep legacy table in sync so break_time text persists for display.
+        upsertWorkHour(next).catch(() => {});
+        setRows(prev => ({ ...prev, [iso]: next }));
+      } catch (e: any) {
+        toast({ title: 'Save error', description: e.message, variant: 'destructive' });
+      }
+      return;
+    }
+
     try {
-      await upsertWorkHour(entry);
-      setRows(prev => ({ ...prev, [iso]: entry }));
+      await upsertWorkHour(next);
+      setRows(prev => ({ ...prev, [iso]: next }));
     } catch (e: any) {
       toast({ title: 'Save error', description: e.message, variant: 'destructive' });
     }
@@ -122,21 +176,43 @@ const WorkHoursTable = ({ userId, month, year }: WorkHoursTableProps) => {
   };
 
   const handleSubmitDay = async (iso: string) => {
-    if (!isOwnSheet && !isSuper) {
-      toast({ title: 'Not allowed', description: 'You can only submit your own day.', variant: 'destructive' });
-      return;
-    }
-    if (iso !== today && !isSuper) {
-      toast({ title: 'Only today can be submitted', description: 'Contact admin for past days.', variant: 'destructive' });
-      return;
-    }
     const entry = getEntry(iso);
     if (entry.working_hours == null) {
       toast({ title: 'Fill hours first', description: 'Enter start, break, hours, end before submitting.', variant: 'destructive' });
       return;
     }
+
     setBusyDay(iso);
     try {
+      // Super admin can submit/lock ANY user's ANY date via V2 admin RPC.
+      if (isSuper) {
+        const row = await adminUpsert({
+          user_id: userId,
+          work_date: iso,
+          total_hours: Number(entry.working_hours) || 0,
+          start_time: normalizeTime(entry.start_time),
+          end_time: normalizeTime(entry.end_time),
+          break_minutes: parseBreakMinutes(entry.break_time),
+          status: 'admin_override',
+          locked: true,
+          admin_note: v2Map[iso]?.admin_note ?? null,
+          reason: 'Admin submit & lock from Work Hours sheet',
+        });
+        setV2Map(prev => ({ ...prev, [iso]: row }));
+        upsertWorkHour({ ...entry, user_id: userId, date: iso }).catch(() => {});
+        toast({ title: 'Day submitted & locked', description: `${iso} saved.` });
+        return;
+      }
+
+      // Worker submitting their own today.
+      if (!isOwnSheet) {
+        toast({ title: 'Not allowed', description: 'You can only submit your own day.', variant: 'destructive' });
+        return;
+      }
+      if (iso !== today) {
+        toast({ title: 'Only today can be submitted', description: 'Contact admin for past days.', variant: 'destructive' });
+        return;
+      }
       const row = await submitMyHours({
         total_hours: Number(entry.working_hours) || 0,
         start_time: normalizeTime(entry.start_time),
@@ -175,7 +251,7 @@ const WorkHoursTable = ({ userId, month, year }: WorkHoursTableProps) => {
     try {
       const entriesToFill: WorkHourEntry[] = weekdays
         .map(day => toIso(day))
-        .filter(iso => !rows[iso])
+        .filter(iso => !rows[iso] && !v2Map[iso])
         .map(iso => ({
           user_id: userId,
           date: iso,
@@ -205,7 +281,10 @@ const WorkHoursTable = ({ userId, month, year }: WorkHoursTableProps) => {
     }
   };
 
-  const totalHours = Object.values(rows).reduce((sum, r) => sum + (r.absent ? 0 : (r.working_hours || 0)), 0);
+  const totalHours = weekdays.reduce((sum, d) => {
+    const e = getEntry(toIso(d));
+    return sum + (e.absent ? 0 : (Number(e.working_hours) || 0));
+  }, 0);
 
   if (loading) return <div className="py-8 text-center text-muted-foreground">Loading...</div>;
 
