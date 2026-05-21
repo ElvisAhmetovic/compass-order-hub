@@ -336,7 +336,9 @@ const WorkHoursTable = ({ userId, month, year }: WorkHoursTableProps) => {
             const isAbsent = entry.absent;
             const isVacation = !isAbsent && (entry.note?.toUpperCase().includes('GODISNJI') || entry.note?.toUpperCase().includes('GODIŠNJI'));
             const v2 = v2Map[iso];
-            const isLocked = !!v2?.locked;
+            const isMissed = !!v2 && v2.status === 'not_submitted';
+            // Treat auto-locked "missed" rows as NOT locked/submitted for UI purposes — show as Missed only.
+            const isLocked = !!v2?.locked && !isMissed;
             const isSubmitted = !!v2 && v2.status !== 'not_submitted';
             const busy = busyDay === iso;
             const isPast = iso < today;
@@ -355,10 +357,15 @@ const WorkHoursTable = ({ userId, month, year }: WorkHoursTableProps) => {
                 isAbsent && 'bg-red-50 dark:bg-red-950/30',
                 isVacation && !isAbsent && 'bg-green-50 dark:bg-green-950/30',
                 isLocked && 'bg-emerald-50 dark:bg-emerald-950/30',
+                isMissed && 'bg-red-50/60 dark:bg-red-950/20',
               )}>
                 <TableCell className="text-muted-foreground text-sm">{idx + 1}</TableCell>
                 <TableCell className="px-1">
-                  {isLocked ? (
+                  {isMissed ? (
+                    <span title="Missed 12:00 submission deadline" className="inline-flex items-center text-destructive text-[10px] font-semibold uppercase">
+                      Missed
+                    </span>
+                  ) : isLocked ? (
                     <div className="flex items-center gap-1">
                       <span title={`Locked: ${v2?.locked_reason || ''}`} className="inline-flex items-center text-emerald-700 dark:text-emerald-400">
                         <CheckCircle2 className="h-4 w-4" />
