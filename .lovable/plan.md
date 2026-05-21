@@ -1,68 +1,40 @@
-# Fix Work Hours Page Saving the Wrong Data Source
+# Stop work hours from auto-appearing as "present + locked"
 
 ## Problem
 
-The super-admin email fix is already in place, but the screen the user is actually using is still the old `/work-hours` page.
+New days look "checked as present and locked" for everyone even when no one submitted. Three things conspire to cause this:
 
-That page:
+1. The 10:00 cron (`check-daily-attendance`) writes legacy `work_hours` rows. Any legacy row that isn't `absent: true` renders as a green "worked" row.
+2. The 12:00 cron (`wh_auto_lock_today`) inserts a `work_hours_v2` row for every admin/agent with `locked: true`, regardless of whether they submitted.
+3. The "Auto-Fill Month" button bulk-creates default 09:00–17:00 rows in the legacy `work_hours` table — those then look like a real workday.
 
-- reads and writes `public.work_hours`
-- shows lock/submission state from `public.work_hours_v2`
-- does not use the admin RPCs that persist overrides in the V2 system
+## Fix (display + automation only — no schema change)
 
-Result: a super admin can change checkmarks, hours, and notes on `/work-hours`, but after refresh the visible state is rebuilt from the newer V2 records and the old-table edits appear to “revert”.
+### A. Treat empty days as empty
+- In `WorkHoursTable.tsx`, change the rendering so a day with no `v2` row AND no legacy row stays visually empty: no green submit check, no "present" styling, no implied hours.
+- A day should only render as "worked / submitted / locked" when an explicit `work_hours_v2` row exists with `status IN ('submitted','admin_override')` OR a legacy row exists with real `start_time`/`working_hours` filled by a human.
+- A row created by the missed-deadline auto-lock (`status='not_submitted'`, `locked=true`) keeps the existing red "Missed" badge but must NOT render as a green/locked workday and must NOT contribute to the totalHours sum.
 
-## Fix
+### B. Stop the legacy auto-default-fill from looking automatic
+- Remove the auto-default behavior on initial page load (no implicit fallback row in `buildEntry` / `getEntry` when nothing exists). The user must click "Auto-Fill Month" intentionally to seed defaults.
+- Keep the "Auto-Fill Month" button (it's an explicit user action), but only enable it for the row owner or a super admin viewing their own sheet — don't auto-fill another person's sheet.
 
-Make `/work-hours` use the same V2 persistence rules as the real admin system so edits for past days, today, locked days, and “worked” status all save to the authoritative source and survive refresh.
+### C. Keep the 12:00 auto-lock but make it non-misleading
+- Leave `wh_auto_lock_today` as-is server-side (it correctly marks missed days as `not_submitted` + locked for accountability).
+- In the UI, missed/auto-locked rows render with the existing "Missed" badge only — no green check, no hours, no fake start/end times.
 
-## Changes
+### D. Disable the 10:00 legacy attendance cron's silent inserts
+- Update `supabase/functions/check-daily-attendance/index.ts` so that when no activity is found it does NOT upsert a `work_hours` row at all. Absence will be inferred at read time from the absence of a submission, matching the V2 model. (Existing rows are untouched.)
 
-### 1. Unify the `/work-hours` page with V2 saving
+## Files touched
 
-Update the `WorkHoursTable` flow so super-admin edits for any selected employee save through `wh_admin_upsert` / `work_hours_v2` instead of the legacy `work_hours` table.
-
-This includes:
-
-- changing hour, start, end, break, and note values
-- toggling absent / worked state
-- editing past or future dates as super admin
-- editing rows that are currently locked
-
-### 2. Keep old and new UI behavior aligned
-
-Preserve the existing table UI on `/work-hours`, but connect its actions to the same business rules already used on `WorkHoursAdmin`:
-
-- super admins can override any date
-- non-super users keep the existing restrictions
-- lock state shown in the table matches the data source being saved
-- refresh reloads the exact saved values
-
-### 3. Remove the stale dual-source mismatch
-
-Replace the mixed old/new loading strategy so the page no longer combines editable fields from `work_hours` with status data from `work_hours_v2`.
-
-Technical direction:
-
-- either read/write only V2 for this screen
-- or map legacy rows into V2-compatible display state while saving only to V2
-
-The goal is one authoritative save path.
-
-## Technical details
-
-- `src/components/work-hours/WorkHoursTable.tsx` is the main bug location.
-- `src/services/workHoursService.ts` is legacy and currently powers `/work-hours`.
-- `src/services/workHoursV2Service.ts` already has the correct admin RPCs and lock logic.
-- No new database schema change is planned unless a missing policy or RPC edge case appears during implementation.
+- `src/components/work-hours/WorkHoursTable.tsx` — display logic, totals, autofill gating
+- `supabase/functions/check-daily-attendance/index.ts` — remove the silent absent-upsert
 
 ## Verification
 
-After implementation, verify on `/work-hours` as a super admin:
-
-1. Open another employee sheet (for example Suzie).
-2. Change old days like 7, 8, 9, 10 to worked.
-3. Change hours/start/end/note on those days.
-4. Refresh the page.
-5. Confirm all values remain changed.
-6. Confirm locked days can still be overridden by super admin and remain overridden after refresh.
+1. Load `/work-hours` for a worker who hasn't submitted today → row appears empty (no green check, no locked icon, no hours).
+2. After 12:00 with no submission → row shows red "Missed" badge only; hours total excludes it.
+3. Worker submits today's hours → row turns green/locked as expected.
+4. Super admin edits a past day → change persists after refresh (already fixed previously).
+5. Clicking "Auto-Fill Month" still works on the user's own sheet.
