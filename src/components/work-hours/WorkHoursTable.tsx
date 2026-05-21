@@ -292,19 +292,27 @@ const WorkHoursTable = ({ userId, month, year }: WorkHoursTableProps) => {
   };
 
   const totalHours = weekdays.reduce((sum, d) => {
-    const e = getEntry(toIso(d));
+    const iso = toIso(d);
+    const v2 = v2Map[iso];
+    // Exclude auto-locked "missed" rows from totals — they aren't real worked hours.
+    if (v2 && v2.status === 'not_submitted') return sum;
+    const e = getEntry(iso);
     return sum + (e.absent ? 0 : (Number(e.working_hours) || 0));
   }, 0);
+
+  const canAutoFill = isOwnSheet; // only fill your own sheet
 
   if (loading) return <div className="py-8 text-center text-muted-foreground">Loading...</div>;
 
   return (
     <div>
       <div className="flex justify-end mb-3">
-        <Button onClick={handleAutoFill} disabled={filling} variant="outline" size="sm">
-          <Wand2 className="h-4 w-4 mr-1" />
-          {filling ? 'Filling...' : 'Auto-Fill Month'}
-        </Button>
+        {canAutoFill && (
+          <Button onClick={handleAutoFill} disabled={filling} variant="outline" size="sm">
+            <Wand2 className="h-4 w-4 mr-1" />
+            {filling ? 'Filling...' : 'Auto-Fill Month'}
+          </Button>
+        )}
       </div>
       <div className="border rounded-lg overflow-auto">
       <Table>
