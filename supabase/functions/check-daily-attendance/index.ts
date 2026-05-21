@@ -93,23 +93,10 @@ Deno.serve(async (req) => {
 
       if (msgCount && msgCount > 0) continue
 
-      // No activity found — mark as absent
-      await supabase
-        .from('work_hours')
-        .upsert(
-          {
-            user_id: user.id,
-            date: todayBerlin,
-            absent: true,
-            start_time: null,
-            break_time: null,
-            working_hours: null,
-            end_time: null,
-            note: null,
-          },
-          { onConflict: 'user_id,date' }
-        )
-
+      // No activity found — do NOT auto-upsert a "present/absent" row.
+      // Absence is inferred at read time from the absence of a submission in work_hours_v2.
+      // (Previously this wrote an absent row to legacy work_hours, which then rendered as if
+      // the system had pre-checked the day for the user.)
       markedCount++
     }
 
