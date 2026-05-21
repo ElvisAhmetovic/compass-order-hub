@@ -81,11 +81,21 @@ const WorkHoursTable = ({ userId, month, year }: WorkHoursTableProps) => {
   const today = companyTodayISO();
 
   // Build display entry: V2 wins, fallback to legacy for fields V2 doesn't carry (e.g. break range text).
+  // A V2 row with status='not_submitted' (auto-locked miss) must NOT render as worked — show empty fields.
   const buildEntry = useCallback((iso: string, legacy: Record<string, WorkHourEntry>, v2m: Record<string, WorkHourV2>): WorkHourEntry => {
     const legacyRow = legacy[iso];
     const v2 = v2m[iso];
     if (v2) {
       const isAbsent = v2.status === 'not_worked';
+      const isMissed = v2.status === 'not_submitted';
+      if (isMissed) {
+        // Don't surface any legacy fallback — missed day stays visually empty.
+        return {
+          user_id: userId, date: iso,
+          start_time: null, break_time: null, working_hours: null, end_time: null,
+          note: null, absent: false,
+        };
+      }
       return {
         user_id: userId,
         date: iso,
