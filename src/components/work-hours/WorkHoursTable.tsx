@@ -81,11 +81,21 @@ const WorkHoursTable = ({ userId, month, year }: WorkHoursTableProps) => {
   const today = companyTodayISO();
 
   // Build display entry: V2 wins, fallback to legacy for fields V2 doesn't carry (e.g. break range text).
+  // A V2 row with status='not_submitted' (auto-locked miss) must NOT render as worked — show empty fields.
   const buildEntry = useCallback((iso: string, legacy: Record<string, WorkHourEntry>, v2m: Record<string, WorkHourV2>): WorkHourEntry => {
     const legacyRow = legacy[iso];
     const v2 = v2m[iso];
     if (v2) {
       const isAbsent = v2.status === 'not_worked';
+      const isMissed = v2.status === 'not_submitted';
+      if (isMissed) {
+        // Don't surface any legacy fallback — missed day stays visually empty.
+        return {
+          user_id: userId, date: iso,
+          start_time: null, break_time: null, working_hours: null, end_time: null,
+          note: null, absent: false,
+        };
+      }
       return {
         user_id: userId,
         date: iso,
@@ -282,19 +292,27 @@ const WorkHoursTable = ({ userId, month, year }: WorkHoursTableProps) => {
   };
 
   const totalHours = weekdays.reduce((sum, d) => {
-    const e = getEntry(toIso(d));
+    const iso = toIso(d);
+    const v2 = v2Map[iso];
+    // Exclude auto-locked "missed" rows from totals — they aren't real worked hours.
+    if (v2 && v2.status === 'not_submitted') return sum;
+    const e = getEntry(iso);
     return sum + (e.absent ? 0 : (Number(e.working_hours) || 0));
   }, 0);
+
+  const canAutoFill = isOwnSheet; // only fill your own sheet
 
   if (loading) return <div className="py-8 text-center text-muted-foreground">Loading...</div>;
 
   return (
     <div>
       <div className="flex justify-end mb-3">
-        <Button onClick={handleAutoFill} disabled={filling} variant="outline" size="sm">
-          <Wand2 className="h-4 w-4 mr-1" />
-          {filling ? 'Filling...' : 'Auto-Fill Month'}
-        </Button>
+        {canAutoFill && (
+          <Button onClick={handleAutoFill} disabled={filling} variant="outline" size="sm">
+            <Wand2 className="h-4 w-4 mr-1" />
+            {filling ? 'Filling...' : 'Auto-Fill Month'}
+          </Button>
+        )}
       </div>
       <div className="border rounded-lg overflow-auto">
       <Table>
@@ -318,7 +336,9 @@ const WorkHoursTable = ({ userId, month, year }: WorkHoursTableProps) => {
             const isAbsent = entry.absent;
             const isVacation = !isAbsent && (entry.note?.toUpperCase().includes('GODISNJI') || entry.note?.toUpperCase().includes('GODIŠNJI'));
             const v2 = v2Map[iso];
-            const isLocked = !!v2?.locked;
+            const isMissed = !!v2 && v2.status === 'not_submitted';
+            // Treat auto-locked "missed" rows as NOT locked/submitted for UI purposes — show as Missed only.
+            const isLocked = !!v2?.locked && !isMissed;
             const isSubmitted = !!v2 && v2.status !== 'not_submitted';
             const busy = busyDay === iso;
             const isPast = iso < today;
@@ -337,10 +357,15 @@ const WorkHoursTable = ({ userId, month, year }: WorkHoursTableProps) => {
                 isAbsent && 'bg-red-50 dark:bg-red-950/30',
                 isVacation && !isAbsent && 'bg-green-50 dark:bg-green-950/30',
                 isLocked && 'bg-emerald-50 dark:bg-emerald-950/30',
+                isMissed && 'bg-red-50/60 dark:bg-red-950/20',
               )}>
                 <TableCell className="text-muted-foreground text-sm">{idx + 1}</TableCell>
                 <TableCell className="px-1">
-                  {isLocked ? (
+                  {isMissed ? (
+                    <span title="Missed 12:00 submission deadline" className="inline-flex items-center text-destructive text-[10px] font-semibold uppercase">
+                      Missed
+                    </span>
+                  ) : isLocked ? (
                     <div className="flex items-center gap-1">
                       <span title={`Locked: ${v2?.locked_reason || ''}`} className="inline-flex items-center text-emerald-700 dark:text-emerald-400">
                         <CheckCircle2 className="h-4 w-4" />
