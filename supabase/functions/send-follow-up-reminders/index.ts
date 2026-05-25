@@ -19,6 +19,7 @@ const NOTIFICATION_EMAIL_LIST = [
   "ajosesales36@gmail.com",
   "georgabmediateam@gmail.com",
   "jannes@scoolfinanceedu.com",
+  "Ikram@team-abmedia.com",
   "johan@team-abmedia.com",
 ];
 

@@ -22,6 +22,7 @@ const TEAM_EMAILS = [
   "ajosesales36@gmail.com",
   "georgabmediateam@gmail.com",
   "jannes@scoolfinanceedu.com",
+  "Ikram@team-abmedia.com",
 ];
 
 interface ClientReminderRequest {

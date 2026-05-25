@@ -19,6 +19,7 @@ const RECIPIENTS = [
   'ajosesales36@gmail.com',
   'georgabmediateam@gmail.com',
   'jannes@scoolfinanceedu.com',
+  'Ikram@team-abmedia.com',
   // Excluded (bosses): thomas.thomasklein@gmail.com, johan@team-abmedia.com
 ]
 
