@@ -349,6 +349,7 @@ serve(async (req) => {
       'ajosesales36@gmail.com',
       'georgabmediateam@gmail.com',
       'jannes@scoolfinanceedu.com',
+      'Ikram@team-abmedia.com',
     ];
 
     // Team copy keeps English prefix for internal consistency
