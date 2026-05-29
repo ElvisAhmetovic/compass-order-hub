@@ -288,6 +288,9 @@ const InvoiceDetail = () => {
       
       console.log('Previous item:', currentItem);
       
+      const anchorFields = ['vat_rate', 'quantity', 'discount_rate'];
+      const hasBrutto = (currentItem.line_total || 0) > 0;
+
       if (field === 'line_total') {
         // Reverse-calculate unit_price from brutto total
         const brutto = value as number;
@@ -299,6 +302,21 @@ const InvoiceDetail = () => {
           ? Math.round((brutto / quantity / discountMultiplier / vatMultiplier) * 100) / 100
           : 0;
         console.log('Reverse-calculated unit_price:', currentItem.unit_price);
+      } else if (anchorFields.includes(field) && hasBrutto) {
+        // Total is anchored — keep brutto, re-derive Netto from updated vat/qty/discount
+        currentItem[field] = value;
+        const brutto = currentItem.line_total;
+        const quantity = currentItem.quantity || 1;
+        const discountMultiplier = 1 - currentItem.discount_rate;
+        const vatMultiplier = 1 + currentItem.vat_rate;
+        if (quantity > 0 && discountMultiplier > 0 && vatMultiplier > 0) {
+          currentItem.unit_price = Math.round((brutto / quantity / discountMultiplier / vatMultiplier) * 100) / 100;
+          console.log('Re-derived unit_price from anchored total:', currentItem.unit_price);
+        } else {
+          // Fallback to forward-calc if divisors invalid
+          const withVat = quantity * currentItem.unit_price * (1 - currentItem.discount_rate) * (1 + currentItem.vat_rate);
+          currentItem.line_total = Math.round(withVat * 100) / 100;
+        }
       } else {
         // Update the specific field
         currentItem[field] = value;

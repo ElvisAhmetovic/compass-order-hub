@@ -1,41 +1,46 @@
-# Add Ikram to all team notification lists
+# Reverse-calc Netto when VAT is changed after Total
 
-New admin `Ikram@team-abmedia.com` must receive every email the rest of the team currently receives (orders, offers, tickets, payment reminders, invoices, monthly contracts, work-hours reminders, follow-ups, etc.).
+## Problem
 
-## What changes
+In `src/pages/InvoiceDetail.tsx` the line-item updater already supports reverse-calc when the user edits `line_total` (brutto):
 
-### 1. Central constants
-- `src/constants/notificationEmails.ts` — add `Ikram@team-abmedia.com` to `NOTIFICATION_EMAIL_LIST`.
+```
+unit_price = brutto / quantity / (1 - discount) / (1 + vat)
+```
 
-### 2. Edge functions with hardcoded recipient arrays
-Add `Ikram@team-abmedia.com` to the recipient list in each of these:
-- `supabase/functions/confirm-offer/index.ts`
-- `supabase/functions/create-client-ticket/index.ts`
-- `supabase/functions/create-tech-support-ticket/index.ts`
-- `supabase/functions/generate-monthly-installments/index.ts`
-- `supabase/functions/send-client-payment-reminder/index.ts`
-- `supabase/functions/send-client-portal-credentials/index.ts`
-- `supabase/functions/send-follow-up-reminders/index.ts`
-- `supabase/functions/send-invoice-pdf/index.ts`
-- `supabase/functions/send-monthly-contract-created/index.ts`
-- `supabase/functions/send-monthly-toggle-notification/index.ts`
-- `supabase/functions/send-offer-email/index.ts`
-- `supabase/functions/send-order-payment-reminders/index.ts`
-- `supabase/functions/send-payment-confirmation/index.ts`
-- `supabase/functions/send-workhours-daily-reminder/index.ts`
-- `src/services/orderService.ts` (if it has a local list — will check and update if so)
+But if the colleague enters **Total = 50** first and **then** sets **VAT = 19%**, the `else` branch fires and forward-calculates a new `line_total` (50 × 1.19 = 59.50), overwriting the 50 they typed. Same thing happens if they change quantity or discount afterwards. So the "backwards" logic only works if the typing order is perfect — which is why it feels broken.
 
-### 3. Database
-- Update the single row in `notification_settings.recipient_emails` (id `bd7ee53f-…`) to append `Ikram@team-abmedia.com`. Done via the insert/update tool (data change, not schema).
+## Fix
 
-## What is NOT changed
-- `notify-password-change/index.ts` — recipients are only the two senior admins (Thomas/Stefan). Per existing pattern, plain-text password resets stay limited to primaries. Skipped unless you want Ikram in there too.
-- The existing exclusion for `johan@team-abmedia.com` from financial emails is johan-specific and stays as-is. Ikram is included everywhere by default.
-- Old migration files under `supabase/migrations/` are historical snapshots and won't be edited.
+Treat **Total (brutto)** as the anchored value once the user has entered it. When `vat_rate`, `quantity`, or `discount_rate` changes and a non-zero `line_total` already exists, reverse-calc `unit_price` from that existing brutto instead of forward-calculating a new brutto.
 
-## Verification
-After deploy: trigger one order-created and one work-hours reminder, confirm Ikram receives both. Confirm `notification_settings.recipient_emails` includes the new address.
+Only one file changes: `src/pages/InvoiceDetail.tsx`, inside the `updateLineItem` function (around lines 285–315).
 
-Confirm:
-1. Add Ikram to **all** team lists (default behavior above), and
-2. Whether to also add Ikram to `notify-password-change` (currently only 2 senior admins).
+### New logic (pseudocode)
+
+```text
+if field === 'line_total':
+    // explicit brutto edit → reverse-calc Netto (existing behavior)
+    currentItem.line_total = value
+    currentItem.unit_price = brutto / qty / (1 - discount) / (1 + vat)
+
+else if field in ['vat_rate', 'quantity', 'discount_rate'] AND currentItem.line_total > 0:
+    // Total is anchored → keep brutto, re-derive Netto
+    currentItem[field] = value
+    currentItem.unit_price = line_total / qty / (1 - discount) / (1 + vat)
+
+else:
+    // unit_price edited, or no brutto yet → forward-calc (existing behavior)
+    currentItem[field] = value
+    currentItem.line_total = qty * unit_price * (1 - discount) * (1 + vat)
+```
+
+Guard against division by zero (qty > 0, vatMultiplier > 0, discountMultiplier > 0); fall back to current forward-calc behavior in that case. Round `unit_price` to 2 decimals as today.
+
+### Result
+
+- Enter Total 50, then VAT 19% → unit_price becomes 42.02, Total stays 50.
+- Enter unit_price 42.02, then VAT 19% with empty Total → Total fills to 50.02 (forward-calc, unchanged behavior).
+- Editing Total at any time still reverse-calculates Netto (unchanged behavior).
+
+No other files, no DB changes, no PDF/preview changes needed — totals are derived from the same fields downstream.
