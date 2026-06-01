@@ -62,9 +62,14 @@ Deno.serve(async (req) => {
 
     console.log(`Catch-up: re-triggering ${contractsToRetrigger.size} contracts`);
 
-    // Fire-and-forget so a single edge-function invocation can fan out across all contracts
-    // without exceeding the wall-clock limit.
+    // Fan out one short-lived invocation per contract. Each invocation paces
+    // its own Resend sends internally; we additionally stagger the kick-offs
+    // by 3 s so even a large catchup never bursts past Resend's 2 req/sec
+    // account ceiling end-to-end.
+    const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+    const STAGGER_MS = 3000;
     const results: any[] = [];
+    let i = 0;
     for (const contractId of contractsToRetrigger) {
       try {
         fetch(
@@ -75,6 +80,8 @@ Deno.serve(async (req) => {
       } catch (e) {
         results.push({ contractId, error: String(e) });
       }
+      i++;
+      if (i < contractsToRetrigger.size) await sleep(STAGGER_MS);
     }
 
     return new Response(
