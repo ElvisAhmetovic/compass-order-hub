@@ -852,11 +852,11 @@ Deno.serve(async (req) => {
             description, netAmount, vatAmount, totalAmount, contract.currency || "EUR", lang,
           );
 
-          const sent = await sendInvoiceEmail(
+          const result = await sendInvoiceEmail(
             contract.client_email, contract.client_name, monthLabel,
             invoiceNumber, totalAmount, contract.currency || "EUR", pdfBytes, lang,
           );
-          if (sent) {
+          if (result.ok) {
             await supabase.from("monthly_installments")
               .update({ email_sent: true, email_sent_at: new Date().toISOString() })
               .eq("id", existing.id);
@@ -876,6 +876,7 @@ Deno.serve(async (req) => {
               contract_id: contract.id, client_name: contract.client_name,
               month_label: monthLabel, status: "failed",
               reason: "Resend client email failed", invoice_id: invoiceId,
+              error_detail: result.error,
             });
           }
           // Small delay between contracts to avoid Resend bursts
