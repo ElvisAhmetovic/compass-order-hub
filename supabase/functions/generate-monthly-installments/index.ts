@@ -653,16 +653,12 @@ async function sendInvoiceEmail(
     </div>`;
 
   try {
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${RESEND_API_KEY}` },
-      body: JSON.stringify({
-        from: "Thomas Klein <noreply@abm-team.com>",
-        to: [to],
-        subject: E.subject(invoiceNumber, monthLabel, formattedPrice),
-        html,
-        attachments: [{ filename: `${invoiceNumber}.pdf`, content: base64Pdf }],
-      }),
+    const res = await resendFetchWithRetry({
+      from: "Thomas Klein <noreply@abm-team.com>",
+      to: [to],
+      subject: E.subject(invoiceNumber, monthLabel, formattedPrice),
+      html,
+      attachments: [{ filename: `${invoiceNumber}.pdf`, content: base64Pdf }],
     });
     if (!res.ok) {
       const body = await res.text();
