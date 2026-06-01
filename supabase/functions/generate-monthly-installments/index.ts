@@ -885,6 +885,8 @@ Deno.serve(async (req) => {
             emailsSent++;
 
             const teamPdfBase64 = btoa(String.fromCharCode(...new Uint8Array(pdfBytes)));
+            // Pause between client email and team copy to stay under Resend's 2 req/sec ceiling
+            await sleep(INTER_EMAIL_DELAY_MS);
             const teamSent = await sendTeamNotifications(contract.client_name, monthLabel, totalAmount, contract.currency || "EUR", invoiceNumber, teamPdfBase64);
             teamEmailsSent += teamSent;
             await createTeamNotifications(supabase, contract.client_name, monthLabel, totalAmount, contract.currency || "EUR", invoiceNumber);
@@ -901,8 +903,8 @@ Deno.serve(async (req) => {
               error_detail: result.error,
             });
           }
-          // Small delay between contracts to avoid Resend bursts
-          await new Promise((r) => setTimeout(r, 300));
+          // Longer delay between contracts to avoid Resend rate limits (2 req/sec)
+          await sleep(INTER_CONTRACT_DELAY_MS);
           continue;
         }
 
