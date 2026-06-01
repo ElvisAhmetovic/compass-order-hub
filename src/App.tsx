@@ -324,6 +324,11 @@ function App() {
                       <MonthlyPackages />
                     </RequireAuth>
                   } />
+                  <Route path="/monthly-invoice-status" element={
+                    <RequireAuth>
+                      <MonthlyInvoiceStatus />
+                    </RequireAuth>
+                  } />
                   <Route path="/reminders" element={
                     <RequireAuth>
                       <Reminders />
