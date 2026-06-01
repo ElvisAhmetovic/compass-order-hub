@@ -702,17 +702,13 @@ async function sendTeamNotifications(
 
   // Single Resend call with BCC list — 1 API call instead of 12
   try {
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${RESEND_API_KEY}` },
-      body: JSON.stringify({
-        from: "Thomas Klein <noreply@abm-team.com>",
-        to: ["invoice@team-abmedia.com"],
-        bcc: TEAM_EMAILS.filter((e) => e !== "invoice@team-abmedia.com"),
-        subject,
-        html,
-        ...(pdfBase64 ? { attachments: [{ filename: `${invoiceNumber}.pdf`, content: pdfBase64 }] } : {}),
-      }),
+    const res = await resendFetchWithRetry({
+      from: "Thomas Klein <noreply@abm-team.com>",
+      to: ["invoice@team-abmedia.com"],
+      bcc: TEAM_EMAILS.filter((e) => e !== "invoice@team-abmedia.com"),
+      subject,
+      html,
+      ...(pdfBase64 ? { attachments: [{ filename: `${invoiceNumber}.pdf`, content: pdfBase64 }] } : {}),
     });
     if (!res.ok) {
       console.error("Team notification failed:", await res.text());
