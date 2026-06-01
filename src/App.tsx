@@ -49,6 +49,7 @@ import WorkHours from "./pages/WorkHours";
 import WorkHoursV2 from "./pages/WorkHoursV2";
 import WorkHoursAdmin from "./pages/WorkHoursAdmin";
 import MonthlyPackages from "./pages/MonthlyPackages";
+import MonthlyInvoiceStatus from "./pages/MonthlyInvoiceStatus";
 import Offers from "./pages/Offers";
 import TicketSubmitted from "./pages/TicketSubmitted";
 import TicketLoading from "./pages/TicketLoading";
