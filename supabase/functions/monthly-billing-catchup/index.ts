@@ -16,13 +16,13 @@ Deno.serve(async (req) => {
 
     const today = new Date().toISOString().split("T")[0];
 
-    // Find unpaid installments past due that never got an email sent
+    // Find missed installments: either no email sent yet, OR email sent but invoice never linked (orphans)
     const { data: missed, error } = await supabase
       .from("monthly_installments")
-      .select("id, contract_id, client_name, month_label")
+      .select("id, contract_id, client_name, month_label, email_sent, invoice_id")
       .lte("due_date", today)
-      .eq("email_sent", false)
-      .eq("payment_status", "unpaid");
+      .eq("payment_status", "unpaid")
+      .or("email_sent.eq.false,invoice_id.is.null");
 
     if (error) throw error;
 
@@ -35,8 +35,11 @@ Deno.serve(async (req) => {
       .eq("status", "active");
 
     const contractsToRetrigger = new Set<string>();
+    const orphanInstallmentIds: string[] = [];
     for (const m of missed || []) {
       if (m.contract_id) contractsToRetrigger.add(m.contract_id);
+      // Orphan: email_sent=true but invoice_id=null — reset so the generator picks it up
+      if (m.email_sent === true && !m.invoice_id) orphanInstallmentIds.push(m.id);
     }
     for (const c of activeContracts || []) {
       const { data: instThisMonth } = await supabase
@@ -48,25 +51,34 @@ Deno.serve(async (req) => {
       if (!instThisMonth) contractsToRetrigger.add(c.id);
     }
 
+    // Reset orphan rows so the generator will recreate the invoice and resend the email
+    if (orphanInstallmentIds.length > 0) {
+      await supabase
+        .from("monthly_installments")
+        .update({ email_sent: false, email_sent_at: null })
+        .in("id", orphanInstallmentIds);
+      console.log(`Reset ${orphanInstallmentIds.length} orphan installments (email_sent=true, invoice_id=null)`);
+    }
+
     console.log(`Catch-up: re-triggering ${contractsToRetrigger.size} contracts`);
 
+    // Fire-and-forget so a single edge-function invocation can fan out across all contracts
+    // without exceeding the wall-clock limit.
     const results: any[] = [];
     for (const contractId of contractsToRetrigger) {
       try {
-        const res = await fetch(
+        fetch(
           `${supabaseUrl}/functions/v1/generate-monthly-installments?contract_id=${contractId}&trigger=catchup`,
           { method: "POST", headers: { Authorization: `Bearer ${serviceRoleKey}` } },
-        );
-        results.push({ contractId, status: res.status });
-        // Small delay between triggers
-        await new Promise((r) => setTimeout(r, 500));
+        ).catch((e) => console.error(`Fire-and-forget trigger failed for ${contractId}:`, e));
+        results.push({ contractId, queued: true });
       } catch (e) {
         results.push({ contractId, error: String(e) });
       }
     }
 
     return new Response(
-      JSON.stringify({ success: true, retriggered: contractsToRetrigger.size, results }),
+      JSON.stringify({ success: true, retriggered: contractsToRetrigger.size, orphans_reset: orphanInstallmentIds.length, results }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (error: any) {
