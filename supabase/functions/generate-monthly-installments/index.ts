@@ -9,6 +9,36 @@ const corsHeaders = {
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY_ABMEDIA");
 
+// ── Resend pacing helpers ──────────────────────────────────────────
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+// Resend default account limit is 2 req/sec. We send 2 emails per contract
+// (client invoice + team copy). Tuned so we stay safely under that ceiling
+// even when several invocations run back-to-back.
+const INTER_EMAIL_DELAY_MS = 2000;   // pause between client and team email
+const INTER_CONTRACT_DELAY_MS = 4000; // pause between contracts in batch mode
+const RATE_LIMIT_BACKOFF_MS = 1500;   // extra sleep after a 429 before retrying
+
+// Wrap a Resend send with one automatic retry on HTTP 429 (Too Many Requests).
+async function resendFetchWithRetry(body: unknown): Promise<Response> {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${RESEND_API_KEY}` },
+      body: JSON.stringify(body),
+    });
+    if (res.status !== 429) return res;
+    console.warn(`Resend 429 received, sleeping ${RATE_LIMIT_BACKOFF_MS}ms before retry (attempt ${attempt + 1})`);
+    await sleep(RATE_LIMIT_BACKOFF_MS);
+  }
+  // Final attempt — return whatever Resend gives us (caller logs it).
+  return fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${RESEND_API_KEY}` },
+    body: JSON.stringify(body),
+  });
+}
+
 const TEAM_EMAILS = [
   "angelina@abmedia-team.com",
   "service@team-abmedia.com",
@@ -623,16 +653,12 @@ async function sendInvoiceEmail(
     </div>`;
 
   try {
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${RESEND_API_KEY}` },
-      body: JSON.stringify({
-        from: "Thomas Klein <noreply@abm-team.com>",
-        to: [to],
-        subject: E.subject(invoiceNumber, monthLabel, formattedPrice),
-        html,
-        attachments: [{ filename: `${invoiceNumber}.pdf`, content: base64Pdf }],
-      }),
+    const res = await resendFetchWithRetry({
+      from: "Thomas Klein <noreply@abm-team.com>",
+      to: [to],
+      subject: E.subject(invoiceNumber, monthLabel, formattedPrice),
+      html,
+      attachments: [{ filename: `${invoiceNumber}.pdf`, content: base64Pdf }],
     });
     if (!res.ok) {
       const body = await res.text();
@@ -676,17 +702,13 @@ async function sendTeamNotifications(
 
   // Single Resend call with BCC list — 1 API call instead of 12
   try {
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${RESEND_API_KEY}` },
-      body: JSON.stringify({
-        from: "Thomas Klein <noreply@abm-team.com>",
-        to: ["invoice@team-abmedia.com"],
-        bcc: TEAM_EMAILS.filter((e) => e !== "invoice@team-abmedia.com"),
-        subject,
-        html,
-        ...(pdfBase64 ? { attachments: [{ filename: `${invoiceNumber}.pdf`, content: pdfBase64 }] } : {}),
-      }),
+    const res = await resendFetchWithRetry({
+      from: "Thomas Klein <noreply@abm-team.com>",
+      to: ["invoice@team-abmedia.com"],
+      bcc: TEAM_EMAILS.filter((e) => e !== "invoice@team-abmedia.com"),
+      subject,
+      html,
+      ...(pdfBase64 ? { attachments: [{ filename: `${invoiceNumber}.pdf`, content: pdfBase64 }] } : {}),
     });
     if (!res.ok) {
       console.error("Team notification failed:", await res.text());
@@ -863,6 +885,8 @@ Deno.serve(async (req) => {
             emailsSent++;
 
             const teamPdfBase64 = btoa(String.fromCharCode(...new Uint8Array(pdfBytes)));
+            // Pause between client email and team copy to stay under Resend's 2 req/sec ceiling
+            await sleep(INTER_EMAIL_DELAY_MS);
             const teamSent = await sendTeamNotifications(contract.client_name, monthLabel, totalAmount, contract.currency || "EUR", invoiceNumber, teamPdfBase64);
             teamEmailsSent += teamSent;
             await createTeamNotifications(supabase, contract.client_name, monthLabel, totalAmount, contract.currency || "EUR", invoiceNumber);
@@ -879,8 +903,8 @@ Deno.serve(async (req) => {
               error_detail: result.error,
             });
           }
-          // Small delay between contracts to avoid Resend bursts
-          await new Promise((r) => setTimeout(r, 300));
+          // Longer delay between contracts to avoid Resend rate limits (2 req/sec)
+          await sleep(INTER_CONTRACT_DELAY_MS);
           continue;
         }
 
@@ -952,6 +976,8 @@ Deno.serve(async (req) => {
           emailsSent++;
 
           const newTeamPdfBase64 = btoa(String.fromCharCode(...new Uint8Array(pdfBytes)));
+          // Pause between client email and team copy to stay under Resend's 2 req/sec ceiling
+          await sleep(INTER_EMAIL_DELAY_MS);
           const teamSent = await sendTeamNotifications(contract.client_name, monthLabel, totalAmount, contract.currency || "EUR", invoiceNumber, newTeamPdfBase64);
           teamEmailsSent += teamSent;
           await createTeamNotifications(supabase, contract.client_name, monthLabel, totalAmount, contract.currency || "EUR", invoiceNumber);
@@ -968,8 +994,8 @@ Deno.serve(async (req) => {
             error_detail: result.error,
           });
         }
-        // Small delay between contracts to avoid Resend bursts
-        await new Promise((r) => setTimeout(r, 300));
+        // Longer delay between contracts to avoid Resend rate limits (2 req/sec)
+        await sleep(INTER_CONTRACT_DELAY_MS);
       } catch (contractErr) {
         errorsCount++;
         console.error(`Error processing contract ${contract.id} (${contract.client_name}):`, contractErr);
