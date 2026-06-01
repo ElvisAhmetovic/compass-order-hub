@@ -1,46 +1,39 @@
-# Reverse-calc Netto when VAT is changed after Total
+## Goal
 
-## Problem
+1. Re-trigger the two contracts that failed on June 1 so their client emails go out today.
+2. Improve `generate-monthly-installments` so any future Resend failure stores the real error (HTTP status + Resend response body) in `monthly_cron_contract_results.error_detail`, instead of the generic "Resend client email failed" string.
 
-In `src/pages/InvoiceDetail.tsx` the line-item updater already supports reverse-calc when the user edits `line_total` (brutto):
+## Part 1 — Retry the two failed contracts
 
-```
-unit_price = brutto / quantity / (1 - discount) / (1 + vat)
-```
+Trigger the edge function once per failed contract via the existing per-contract entry point (same path the "Retry" button uses):
 
-But if the colleague enters **Total = 50** first and **then** sets **VAT = 19%**, the `else` branch fires and forward-calculates a new `line_total` (50 × 1.19 = 59.50), overwriting the 50 they typed. Same thing happens if they change quantity or discount afterwards. So the "backwards" logic only works if the typing order is perfect — which is why it feels broken.
+- Praxis Maintal – Dr. med. Fatma Kathenbach
+  `contract_id = 6030c118-0e7b-4043-8e0b-159a9638c405`
+- Nova Dance Utrecht
+  `contract_id = 196a782b-5021-4529-a13c-30656ebe169e`
 
-## Fix
+For each: `POST {functions-url}/generate-monthly-installments?contract_id={id}&trigger=manual` using the service role key, with a short delay between the two calls.
 
-Treat **Total (brutto)** as the anchored value once the user has entered it. When `vat_rate`, `quantity`, or `discount_rate` changes and a non-zero `line_total` already exists, reverse-calc `unit_price` from that existing brutto instead of forward-calculating a new brutto.
+If the underlying cause was a bad recipient address, the retry will fail the same way — but now (after Part 2 is deployed) we'll see the exact reason in the run details.
 
-Only one file changes: `src/pages/InvoiceDetail.tsx`, inside the `updateLineItem` function (around lines 285–315).
+## Part 2 — Capture real Resend error in `error_detail`
 
-### New logic (pseudocode)
+Single file: `supabase/functions/generate-monthly-installments/index.ts`.
 
-```text
-if field === 'line_total':
-    // explicit brutto edit → reverse-calc Netto (existing behavior)
-    currentItem.line_total = value
-    currentItem.unit_price = brutto / qty / (1 - discount) / (1 + vat)
+1. Change `sendInvoiceEmail(...)` return type from `Promise<boolean>` to `Promise<{ ok: boolean; error?: string }>`:
+   - On non-OK response: read the body once, return `{ ok: false, error: \`HTTP ${res.status}: ${body.slice(0, 500)}\` }`.
+   - On thrown exception: return `{ ok: false, error: String(err?.message || err) }`.
+   - On success: `{ ok: true }`.
 
-else if field in ['vat_rate', 'quantity', 'discount_rate'] AND currentItem.line_total > 0:
-    // Total is anchored → keep brutto, re-derive Netto
-    currentItem[field] = value
-    currentItem.unit_price = line_total / qty / (1 - discount) / (1 + vat)
+2. Update both call sites (around lines 852 and 939):
+   - Replace `const sent = await sendInvoiceEmail(...)` with `const result = await sendInvoiceEmail(...)`.
+   - Replace `if (sent)` with `if (result.ok)`.
+   - In each failure branch, pass `error_detail: result.error` into `logResult({...})` alongside the existing `reason: "Resend client email failed"`.
 
-else:
-    // unit_price edited, or no brutto yet → forward-calc (existing behavior)
-    currentItem[field] = value
-    currentItem.line_total = qty * unit_price * (1 - discount) * (1 + vat)
-```
+No changes to DB schema, RLS, or the team/notification path. No behavior change for successful sends.
 
-Guard against division by zero (qty > 0, vatMultiplier > 0, discountMultiplier > 0); fall back to current forward-calc behavior in that case. Round `unit_price` to 2 decimals as today.
+## Verification
 
-### Result
-
-- Enter Total 50, then VAT 19% → unit_price becomes 42.02, Total stays 50.
-- Enter unit_price 42.02, then VAT 19% with empty Total → Total fills to 50.02 (forward-calc, unchanged behavior).
-- Editing Total at any time still reverse-calculates Netto (unchanged behavior).
-
-No other files, no DB changes, no PDF/preview changes needed — totals are derived from the same fields downstream.
+- After deploy: re-trigger both failed contracts (Part 1).
+- Open Monthly Packages → Cron Run Status → Details. Failed rows will now show the actual Resend message (e.g. "HTTP 422: invalid `to` field" or "HTTP 403: domain not verified") instead of the generic string.
+- Confirm `monthly_installments.email_sent` flips to true for the two affected June rows on success.
