@@ -595,10 +595,10 @@ async function sendInvoiceEmail(
   currency: string,
   pdfBytes: Uint8Array,
   lang: Lang,
-): Promise<boolean> {
+): Promise<{ ok: boolean; error?: string }> {
   if (!RESEND_API_KEY) {
     console.error("RESEND_API_KEY_ABMEDIA not configured");
-    return false;
+    return { ok: false, error: "RESEND_API_KEY_ABMEDIA not configured" };
   }
   const formattedPrice = formatPrice(totalAmount, currency);
   const base64Pdf = btoa(String.fromCharCode(...new Uint8Array(pdfBytes)));
@@ -635,13 +635,16 @@ async function sendInvoiceEmail(
       }),
     });
     if (!res.ok) {
-      console.error("Resend error:", await res.text());
-      return false;
+      const body = await res.text();
+      const errMsg = `HTTP ${res.status}: ${body.slice(0, 500)}`;
+      console.error("Resend error:", errMsg);
+      return { ok: false, error: errMsg };
     }
-    return true;
-  } catch (err) {
-    console.error("Email send error:", err);
-    return false;
+    return { ok: true };
+  } catch (err: any) {
+    const errMsg = String(err?.message || err);
+    console.error("Email send error:", errMsg);
+    return { ok: false, error: errMsg };
   }
 }
 
@@ -849,11 +852,11 @@ Deno.serve(async (req) => {
             description, netAmount, vatAmount, totalAmount, contract.currency || "EUR", lang,
           );
 
-          const sent = await sendInvoiceEmail(
+          const result = await sendInvoiceEmail(
             contract.client_email, contract.client_name, monthLabel,
             invoiceNumber, totalAmount, contract.currency || "EUR", pdfBytes, lang,
           );
-          if (sent) {
+          if (result.ok) {
             await supabase.from("monthly_installments")
               .update({ email_sent: true, email_sent_at: new Date().toISOString() })
               .eq("id", existing.id);
@@ -873,6 +876,7 @@ Deno.serve(async (req) => {
               contract_id: contract.id, client_name: contract.client_name,
               month_label: monthLabel, status: "failed",
               reason: "Resend client email failed", invoice_id: invoiceId,
+              error_detail: result.error,
             });
           }
           // Small delay between contracts to avoid Resend bursts
@@ -936,12 +940,12 @@ Deno.serve(async (req) => {
           description, netAmount, vatAmount, totalAmount, contract.currency || "EUR", lang,
         );
 
-        const sent = await sendInvoiceEmail(
+        const result = await sendInvoiceEmail(
           contract.client_email, contract.client_name, monthLabel,
           invoiceNumber, totalAmount, contract.currency || "EUR", pdfBytes, lang,
         );
 
-        if (sent && newInstallment) {
+        if (result.ok && newInstallment) {
           await supabase.from("monthly_installments")
             .update({ email_sent: true, email_sent_at: new Date().toISOString() })
             .eq("id", newInstallment.id);
@@ -961,6 +965,7 @@ Deno.serve(async (req) => {
             contract_id: contract.id, client_name: contract.client_name,
             month_label: monthLabel, status: "failed",
             reason: "Resend client email failed", invoice_id: invoiceId,
+            error_detail: result.error,
           });
         }
         // Small delay between contracts to avoid Resend bursts
