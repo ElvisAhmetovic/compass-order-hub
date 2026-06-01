@@ -147,6 +147,7 @@ const Sidebar = () => {
     { href: '/work-hours', icon: ClockIcon, label: 'Work Hours', roles: ['admin', 'agent'] },
     { href: '/admin/work-hours', icon: ShieldCheck, label: 'Work Hours Admin', roles: ['admin', 'agent', 'user'], superAdminOnly: true, showWhAdminBadge: true },
     { href: '/monthly-packages', icon: ClockIcon, label: 'Monthly Packages', roles: ['admin', 'agent'] },
+    { href: '/monthly-invoice-status', icon: Receipt, label: 'Invoice Status', roles: ['admin', 'agent'] },
     { href: '/reminders', icon: AlarmClock, label: 'Reminders', roles: ['admin', 'agent'] },
     { href: '/user-management', icon: Users, label: 'User Management', roles: ['admin'] },
     { href: '/support', icon: HelpCircle, label: 'Support', roles: ['admin', 'agent', 'user'], showBadge: true },
