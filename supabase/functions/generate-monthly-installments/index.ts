@@ -568,7 +568,7 @@ function generateInvoicePDF(
   doc.setFont("helvetica", "normal");
   colX = marginLeft + 2;
   const fp = (v: number) => formatPrice(v, currency);
-  const rowData = [description, "1", fp(netAmount), fp(netAmount)];
+  const rowData = [safeDescription, "1", fp(netAmount), fp(netAmount)];
   rowData.forEach((val, i) => {
     doc.text(val, colX, y);
     colX += colWidths[i];
