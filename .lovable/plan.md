@@ -1,91 +1,44 @@
-## What I found
+## Which invoice is bugged
 
-Your boss is correct — the 08:00 UTC cron run on June 1st did NOT create invoices for all active contracts. Current state for "Juni 2026":
+**INV-2026-854** — Villa Miramar Frontignan Luis‑Mickaël Zaragoza, 125,00 €, June 2026 monthly installment (invoice id `915e05fe-ca50-45b6-81e0-776f83569918`).
 
-- **66** active contracts that should have been billed
-- **49** got the email sent
-- **46** got an invoice row created in `invoices`
-- **17 contracts still have no June invoice** (and 3 of those even have `email_sent=true` but `invoice_id=NULL` — orphaned: email went out, invoice row never linked)
+Same client also has older invoices INV-2026-666 (May) and INV-2026-520 (April) that very likely have the same corruption, plus any other client whose name/address contains characters outside Latin‑1.
 
-The 17 missing-invoice contracts include: Able Facility Solutions, Autohalle Buchholz, Autoland AG Reust, Aux Clefs des Sacres, Carstar AG, Carz And Dealz, Cleanteam Group, Falkirk Van Sales, Flurim Haustechnik, Isoconfort, Juwelier Gattinger, LogisGreen, Medpassion, N7 Auto Repairs, Premium Huis, Ra Autocenter, RDL Loodgieters, R.E. Immo, The Cube Utrecht, United Dance Utrecht.
+## Why it got bugged
 
-### Why it happened
+The recipient name is rendered as `&V&i&l&l&a& &M&i&r&a&m&a&r& &L&u&i&s&...` — every letter prefixed with `&`. That's not a data problem in the database (the name is stored cleanly: `Villa Miramar Frontignan Luis‑Mickaël Zaragoza`), it's a PDF encoding problem.
 
-1. `generate-monthly-installments` (the 08:00 job) loops through **all 66 active contracts in a single edge-function invocation**, generating PDFs + Resend calls serialized per contract. It exceeded the Supabase edge function wall-clock limit and the invocation was killed mid-loop. The `monthly_cron_runs` row for 08:00 shows `status: running`, `finished_at: NULL`, `contracts_total: 0`.
-2. The 09:00 `monthly-billing-catchup` only picks up rows where `email_sent=false AND payment_status='unpaid' AND due_date<=today`. It misses the 3 orphan rows where `email_sent=true` but `invoice_id IS NULL` (email succeeded but the invoice insert failed), so those never get retried.
-3. Catchup was rate-limited by its own 500 ms delay, and Supabase edge functions still capped its total runtime, so it only worked through ~17 contracts before stopping.
+Root cause is in `supabase/functions/generate-monthly-installments/index.ts` → `generateInvoicePDF()`:
 
-## Plan
+- It uses **jsPDF with the built-in `helvetica` font**, which only supports **WinAnsi / Latin‑1** characters.
+- The client name contains `‑` (U+2011, NON‑BREAKING HYPHEN, between "Luis" and "Mickaël"). U+2011 is **not** in WinAnsi.
+- When jsPDF hits a character outside WinAnsi while still in a single `doc.text(...)` call, it falls back to a UTF‑16 escape path for the whole string. The PDF viewer then renders each codepoint as a 2‑byte pair, which displays as the garbled `&letter&letter&...` pattern visible in the screenshot.
+- Address fields with German `ß`, Czech/Slovak/Polish/French diacritics, em‑dashes (`–`, `—`), curly quotes, etc. will trigger the exact same bug.
 
-### 1. Restructure the 08:00 cron to DB-side fanout (root fix)
+A second, smaller issue is visible in the same image: the long client name overflows into the right‑aligned `Invoice Number` block (`Invoice Number: INV-2026-854` is overlapped by the name). That's a layout bug, not an encoding one — but it's worth fixing in the same pass since it's the same code path.
 
-Change cron job `generate-monthly-installments` (jobid 3) so the SQL itself enumerates active contracts and fires **one `net.http_post` per contract** to the existing `generate-monthly-installments?contract_id=…&trigger=cron` endpoint. The edge function already supports per-contract invocations (the catchup uses this path successfully). Each invocation is short-lived and independent, so no single timeout can take down the whole batch.
+## The fix
 
-The cron job command becomes:
+Edit only the monthly PDF generator: `supabase/functions/generate-monthly-installments/index.ts`.
 
-```sql
-SELECT net.http_post(
-  url := 'https://fjybmlugiqmiggsdrkiq.supabase.co/functions/v1/generate-monthly-installments?contract_id='
-         || c.id || '&trigger=cron',
-  headers := '{"Content-Type":"application/json","Authorization":"Bearer <anon>"}'::jsonb,
-  body := '{}'::jsonb
-)
-FROM public.monthly_contracts c
-WHERE c.status = 'active'
-  AND c.start_date <= (now() AT TIME ZONE 'UTC')::date;
-```
+1. **Sanitize text before `doc.text(...)`** — add a small `toPdfSafe(s)` helper used for every `doc.text` call that prints client / address / description data:
+   - Replace `‑` (U+2011), `‒`, `–`, `—`, `−` → `-`
+   - Replace `‘ ’ ‚ ‛` → `'` and `“ ” „ ‟` → `"`
+   - Replace `…` → `...`, `•` → `*`, `\u00A0` (NBSP) → regular space
+   - Final fallback: any remaining char with codepoint > 0xFF gets replaced with `?` (so one stray glyph can never corrupt the whole line again).
+2. **Wrap long recipient name + address** so they don't run under the right‑side invoice details block:
+   - Compute a safe `recipientMaxWidth = (pageWidth - marginRight) - marginLeft - 70` (~70 mm reserved for the right block).
+   - Use `doc.splitTextToSize(toPdfSafe(clientName), recipientMaxWidth)` and advance `y` per line.
+   - Do the same for `clientAddress`.
+3. **Re‑position the right‑aligned details block** to start at the same `y` as the recipient label (not `y - 22`), so it's predictable regardless of how many wrapped recipient lines were drawn.
+4. **No DB / schema / RLS / cron changes.** Existing already‑sent bugged PDFs (854, 666, 520) stay in clients' inboxes — the user can manually re‑send any of them from `/monthly-invoice-status` once this fix is deployed; the regenerated PDF will be clean.
 
-`pg_net` queues these asynchronously, so the cron itself returns immediately and each contract gets its own ~10–30 s function run.
+## Out of scope
 
-### 2. Harden the catchup to also pick up orphans
+- Switching jsPDF to a Unicode TTF font (e.g. embedding Noto Sans). That would be the "real" fix but adds ~300 KB to the edge function and changes the visual style; the sanitize + replacement approach is enough for the character set this CRM actually sees (EU Latin scripts).
+- Re‑rendering the bugged historic PDFs automatically.
+- Any change to the HTML email body (it uses normal HTML rendering, not jsPDF, so it doesn't have this bug).
 
-Update `supabase/functions/monthly-billing-catchup/index.ts` so the "missed" set includes installments where `invoice_id IS NULL` even if `email_sent=true`. New query:
+## Files touched
 
-```ts
-.or("email_sent.eq.false,invoice_id.is.null")
-.eq("payment_status", "unpaid")
-.lte("due_date", today)
-```
-
-Also fire the per-contract requests **without awaiting** (fire-and-forget loop) and drop the 500 ms delay — let `pg_net`-style parallelism happen at the function layer too, so a 60-contract catchup completes inside one invocation.
-
-### 3. Immediate one-shot recovery for the 17 affected contracts
-
-Before deploying #1/#2, manually re-trigger the 17 contracts so today's invoices are produced. For the 3 orphan rows (Autohalle Buchholz, Flurim Haustechnik, Medpassion) the function will skip them because `email_sent=true` already — so first reset those 3 rows:
-
-```sql
-UPDATE monthly_installments
-SET email_sent = false, email_sent_at = NULL
-WHERE contract_id IN (
-  'c84b7688-114b-469f-aa51-495ec2d0cb58',
-  '024c52d5-0a50-4b64-97dc-d40706d96796',
-  'f7ab6de0-c9cd-4f31-a341-1853ed0d2a64'
-)
-AND month_label IN ('Juni 2026','June 2026')
-AND invoice_id IS NULL;
-```
-
-Then `POST generate-monthly-installments?contract_id={id}&trigger=manual` for each of the 17 contracts (with a 1.5 s delay between calls so Resend stays under its 2/sec ceiling).
-
-### 4. Verification
-
-After running, re-check:
-
-```sql
-SELECT COUNT(*) AS total, COUNT(invoice_id) AS with_invoice
-FROM monthly_installments mi
-WHERE mi.month_label IN ('Juni 2026','June 2026')
-  AND mi.contract_id IN (
-    SELECT id FROM monthly_contracts WHERE status='active' AND start_date <= '2026-06-01'
-  );
-```
-
-Expect `total = with_invoice = 66`.
-
-## Files / DB touched
-
-- `supabase/functions/monthly-billing-catchup/index.ts` — query + fire-and-forget loop
-- `cron.job` row id 3 — command replaced (migration)
-- One-shot `UPDATE` to clear 3 orphan rows + 17 manual edge-function calls
-
-No changes to `generate-monthly-installments/index.ts` itself, no schema changes, no RLS changes, no team-notification changes.
+- `supabase/functions/generate-monthly-installments/index.ts` (only)
