@@ -486,19 +486,49 @@ function generateInvoicePDF(
   y += 10;
 
   // ── Client info ──
-  // Sanitize text to keep jsPDF helvetica (WinAnsi) from falling back to a
-  // UTF-16 path that corrupts the whole line (e.g. U+2011 non-breaking hyphen
-  // in "Luis‑Mickaël" produced &V&i&l&l&a&... output in INV-2026-854).
-  const toPdfSafe = (s: string | null | undefined): string => {
-    if (!s) return "";
-    return s
-      .replace(/[\u2010\u2011\u2012\u2013\u2014\u2212]/g, "-")
-      .replace(/[\u2018\u2019\u201A\u201B]/g, "'")
-      .replace(/[\u201C\u201D\u201E\u201F]/g, '"')
+  // Sanitize text to keep jsPDF helvetica (WinAnsi/Latin-1) from falling back
+  // to a UTF-16 path that corrupts the whole line (e.g. U+2011 non-breaking
+  // hyphen in "Luis‑Mickaël" produced &V&i&l&l&a&... output in INV-2026-854).
+  // Pipeline: NFKC normalize → strip zero-width/bidi/controls → fold whitespace
+  // → normalize punctuation → NFC + strip stray combining marks → transliterate
+  // common non-Latin-1 EU letters → replace any remaining >0xFF with '?'.
+  const TRANSLIT: Record<string, string> = {
+    "ą":"a","Ą":"A","ć":"c","Ć":"C","ę":"e","Ę":"E","ł":"l","Ł":"L",
+    "ń":"n","Ń":"N","ś":"s","Ś":"S","ź":"z","Ź":"Z","ż":"z","Ż":"Z",
+    "č":"c","Č":"C","ď":"d","Ď":"D","ě":"e","Ě":"E","ň":"n","Ň":"N",
+    "ř":"r","Ř":"R","š":"s","Š":"S","ť":"t","Ť":"T","ů":"u","Ů":"U",
+    "ž":"z","Ž":"Z","ő":"o","Ő":"O","ű":"u","Ű":"U",
+    "ș":"s","Ș":"S","ş":"s","Ş":"S","ț":"t","Ț":"T","ţ":"t","Ţ":"T",
+    "ă":"a","Ă":"A","ı":"i","İ":"I","ğ":"g","Ğ":"G",
+    "ĵ":"j","Ĵ":"J","œ":"oe","Œ":"OE",
+  };
+  const toPdfSafe = (raw: string | null | undefined): string => {
+    if (!raw) return "";
+    let s = String(raw).normalize("NFKC");
+    // Strip zero-width, bidi, BOM, soft-hyphen, and C0/C1 controls (keep \t\n\r)
+    s = s.replace(
+      /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F\u0080-\u009F\u00AD\u200B-\u200D\u200E\u200F\u202A-\u202E\u2060\u2066-\u2069\uFEFF]/g,
+      "",
+    );
+    // Fold exotic whitespace to plain space
+    s = s.replace(/[\u00A0\u2000-\u200A\u202F\u205F\u3000\t]/g, " ");
+    // Punctuation normalization
+    s = s
+      .replace(/[\u2010-\u2015\u2212]/g, "-")
+      .replace(/[\u2018\u2019\u201A\u201B\u2032]/g, "'")
+      .replace(/[\u201C\u201D\u201E\u201F\u2033\u00AB\u00BB]/g, '"')
       .replace(/\u2026/g, "...")
-      .replace(/\u2022/g, "*")
-      .replace(/\u00A0/g, " ")
-      .replace(/[^\x00-\xFF]/g, "?");
+      .replace(/[\u2022\u2023\u25E6\u2043]/g, "*")
+      .replace(/\u00B7/g, ".");
+    // Recompose, drop any orphan combining marks that didn't recompose
+    s = s.normalize("NFC").replace(/\p{M}/gu, "");
+    // Transliterate common EU letters outside Latin-1
+    s = s.replace(/[^\x00-\xFF]/g, (ch) => TRANSLIT[ch] ?? ch);
+    // Final guard: anything still outside Latin-1 becomes '?'
+    s = s.replace(/[^\x00-\xFF]/g, "?");
+    // Collapse runs of spaces
+    s = s.replace(/ {2,}/g, " ");
+    return s;
   };
 
   const safeName = toPdfSafe(clientName);
