@@ -486,29 +486,61 @@ function generateInvoicePDF(
   y += 10;
 
   // ── Client info ──
+  // Sanitize text to keep jsPDF helvetica (WinAnsi) from falling back to a
+  // UTF-16 path that corrupts the whole line (e.g. U+2011 non-breaking hyphen
+  // in "Luis‑Mickaël" produced &V&i&l&l&a&... output in INV-2026-854).
+  const toPdfSafe = (s: string | null | undefined): string => {
+    if (!s) return "";
+    return s
+      .replace(/[\u2010\u2011\u2012\u2013\u2014\u2212]/g, "-")
+      .replace(/[\u2018\u2019\u201A\u201B]/g, "'")
+      .replace(/[\u201C\u201D\u201E\u201F]/g, '"')
+      .replace(/\u2026/g, "...")
+      .replace(/\u2022/g, "*")
+      .replace(/\u00A0/g, " ")
+      .replace(/[^\x00-\xFF]/g, "?");
+  };
+
+  const safeName = toPdfSafe(clientName);
+  const safeAddress = toPdfSafe(clientAddress || "");
+  const safeEmail = toPdfSafe(clientEmail);
+  const safeDescription = toPdfSafe(description);
+
+  // Reserve ~75mm on the right for the invoice details block
+  const recipientMaxWidth = contentWidth - 75;
+  const nameLines: string[] = doc.splitTextToSize(safeName, recipientMaxWidth);
+  const addressLines: string[] = safeAddress
+    ? doc.splitTextToSize(safeAddress, recipientMaxWidth)
+    : [];
+
   doc.setFontSize(10);
   doc.setFont("helvetica", "bold");
   doc.text(L.invoiceRecipient, marginLeft, y);
-  y += 6;
-  doc.setFont("helvetica", "normal");
-  doc.text(clientName, marginLeft, y);
-  y += 5;
-  if (clientAddress) {
-    doc.text(clientAddress, marginLeft, y);
-    y += 5;
-  }
-  doc.text(clientEmail, marginLeft, y);
-  y += 12;
 
-  // ── Invoice details (right-aligned block) ──
+  // Right-aligned invoice details aligned with the recipient label
   const detailsX = pageWidth - marginRight;
-  const detailsY = y - 22;
-  doc.setFontSize(10);
-  doc.setFont("helvetica", "bold");
+  const detailsY = y;
   doc.text(`${L.invoiceNumber} ${invoiceNumber}`, detailsX, detailsY, { align: "right" });
   doc.setFont("helvetica", "normal");
   doc.text(`${L.invoiceDate} ${formatDate(issueDate)}`, detailsX, detailsY + 6, { align: "right" });
   doc.text(`${L.dueDate} ${formatDate(dueDate)}`, detailsX, detailsY + 12, { align: "right" });
+
+  y += 6;
+  doc.setFont("helvetica", "normal");
+  nameLines.forEach((line: string) => {
+    doc.text(line, marginLeft, y);
+    y += 5;
+  });
+  addressLines.forEach((line: string) => {
+    doc.text(line, marginLeft, y);
+    y += 5;
+  });
+  doc.text(safeEmail, marginLeft, y);
+  y += 12;
+
+  // Ensure title is below the right-side details block as well
+  const detailsBottom = detailsY + 12 + 6;
+  if (y < detailsBottom) y = detailsBottom;
 
   // ── Title ──
   doc.setFontSize(16);
