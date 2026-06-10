@@ -32,7 +32,12 @@ import {
   ChevronDown,
   MoreHorizontal,
   Lock,
-  ShieldCheck
+  ShieldCheck,
+  Facebook as FacebookIcon,
+  Globe,
+  Music2,
+  Twitter as TwitterIcon,
+  Share2
 } from 'lucide-react';
 import { isSuperAdminEmail, fetchLateCountToday } from '@/services/workHoursV2Service';
 import { cn } from '@/lib/utils';
