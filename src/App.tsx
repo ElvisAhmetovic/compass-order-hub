@@ -59,6 +59,7 @@ import SocialAbmWebsite from "./pages/social/AbmWebsite";
 import SocialInstagram from "./pages/social/Instagram";
 import SocialTikTok from "./pages/social/TikTok";
 import SocialTwitter from "./pages/social/Twitter";
+import SocialWeeklyReport from "./pages/social/WeeklyReportPage";
 import { RequireAuth } from "./components/auth/RequireAuth";
 import AdminGuard from "./components/auth/AdminGuard";
 import ClientGuard from "./components/client-portal/ClientGuard";
@@ -361,6 +362,7 @@ function App() {
                   <Route path="/social/instagram" element={<RequireAuth><SocialInstagram /></RequireAuth>} />
                   <Route path="/social/tiktok" element={<RequireAuth><SocialTikTok /></RequireAuth>} />
                   <Route path="/social/twitter" element={<RequireAuth><SocialTwitter /></RequireAuth>} />
+                  <Route path="/social/:platform/report" element={<RequireAuth><SocialWeeklyReport /></RequireAuth>} />
                   
                   {/* Client Portal Routes */}
                   <Route path="/client/login" element={<ClientLogin />} />

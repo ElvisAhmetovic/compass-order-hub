@@ -20,6 +20,14 @@ export interface SocialChecklistItem {
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
+  // engagement
+  likes: number | null;
+  shares: number | null;
+  comments: number | null;
+  reach: number | null;
+  impressions: number | null;
+  performance_note: string | null;
+  performance_recorded_at: string | null;
 }
 
 export interface CreateChecklistItemPayload {
@@ -47,6 +55,24 @@ export async function listItems(platform: SocialPlatform, date: string): Promise
   return (data ?? []) as SocialChecklistItem[];
 }
 
+export async function listItemsRange(
+  platform: SocialPlatform,
+  fromDate: string,
+  toDate: string,
+): Promise<SocialChecklistItem[]> {
+  const { data, error } = await (supabase as any)
+    .from(TABLE)
+    .select("*")
+    .eq("platform", platform)
+    .gte("checklist_date", fromDate)
+    .lte("checklist_date", toDate)
+    .is("deleted_at", null)
+    .order("checklist_date", { ascending: true })
+    .order("scheduled_time", { ascending: true, nullsFirst: false });
+  if (error) throw error;
+  return (data ?? []) as SocialChecklistItem[];
+}
+
 export async function createItem(payload: CreateChecklistItemPayload): Promise<void> {
   const { data: auth } = await supabase.auth.getUser();
   const uid = auth.user?.id;
@@ -69,6 +95,31 @@ export async function updateItem(id: string, patch: Partial<CreateChecklistItemP
   if (error) throw error;
 }
 
+export async function rescheduleItem(id: string, newDate: string): Promise<void> {
+  const { error } = await (supabase as any)
+    .from(TABLE)
+    .update({ checklist_date: newDate })
+    .eq("id", id);
+  if (error) throw error;
+}
+
+export async function duplicateItemToDate(item: SocialChecklistItem, newDate: string): Promise<void> {
+  const { data: auth } = await supabase.auth.getUser();
+  const uid = auth.user?.id;
+  if (!uid) throw new Error("Not authenticated");
+  const { error } = await (supabase as any).from(TABLE).insert({
+    platform: item.platform,
+    checklist_date: newDate,
+    title: item.title,
+    description: item.description,
+    link_url: item.link_url,
+    scheduled_time: item.scheduled_time,
+    priority: item.priority,
+    created_by: uid,
+  });
+  if (error) throw error;
+}
+
 export async function toggleDone(id: string, done: boolean, note?: string | null): Promise<void> {
   const { data: auth } = await supabase.auth.getUser();
   const uid = auth.user?.id ?? null;
@@ -83,6 +134,24 @@ export async function softDelete(id: string): Promise<void> {
   const { error } = await (supabase as any)
     .from(TABLE)
     .update({ deleted_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) throw error;
+}
+
+// ===== Performance =====
+export interface PerformancePatch {
+  likes?: number | null;
+  shares?: number | null;
+  comments?: number | null;
+  reach?: number | null;
+  impressions?: number | null;
+  performance_note?: string | null;
+}
+
+export async function updatePerformance(id: string, patch: PerformancePatch): Promise<void> {
+  const { error } = await (supabase as any)
+    .from(TABLE)
+    .update({ ...patch, performance_recorded_at: new Date().toISOString() })
     .eq("id", id);
   if (error) throw error;
 }
@@ -175,4 +244,146 @@ export async function applyTemplatesToDate(
   const { error } = await (supabase as any).from(TABLE).insert(rows);
   if (error) throw error;
   return { inserted: rows.length };
+}
+
+// ===== Content ideas =====
+
+const IDEAS_TABLE = "social_media_content_ideas" as const;
+
+export type IdeaStatus = "open" | "used" | "archived";
+
+export interface ContentIdea {
+  id: string;
+  platform: SocialPlatform;
+  title: string;
+  description: string | null;
+  link_url: string | null;
+  tags: string[];
+  status: IdeaStatus;
+  used_on_date: string | null;
+  used_item_id: string | null;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateIdeaPayload {
+  platform: SocialPlatform;
+  title: string;
+  description?: string | null;
+  link_url?: string | null;
+  tags?: string[];
+}
+
+export async function listIdeas(platform: SocialPlatform, status?: IdeaStatus): Promise<ContentIdea[]> {
+  let q = (supabase as any).from(IDEAS_TABLE).select("*").eq("platform", platform);
+  if (status) q = q.eq("status", status);
+  const { data, error } = await q.order("created_at", { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as ContentIdea[];
+}
+
+export async function createIdea(payload: CreateIdeaPayload): Promise<void> {
+  const { data: auth } = await supabase.auth.getUser();
+  const uid = auth.user?.id;
+  if (!uid) throw new Error("Not authenticated");
+  const { error } = await (supabase as any).from(IDEAS_TABLE).insert({
+    platform: payload.platform,
+    title: payload.title,
+    description: payload.description ?? null,
+    link_url: payload.link_url ?? null,
+    tags: payload.tags ?? [],
+    created_by: uid,
+  });
+  if (error) throw error;
+}
+
+export async function updateIdea(id: string, patch: Partial<ContentIdea>): Promise<void> {
+  const { error } = await (supabase as any).from(IDEAS_TABLE).update(patch).eq("id", id);
+  if (error) throw error;
+}
+
+export async function deleteIdea(id: string): Promise<void> {
+  const { error } = await (supabase as any).from(IDEAS_TABLE).delete().eq("id", id);
+  if (error) throw error;
+}
+
+export async function useIdeaOnDate(idea: ContentIdea, date: string): Promise<void> {
+  const { data: auth } = await supabase.auth.getUser();
+  const uid = auth.user?.id;
+  if (!uid) throw new Error("Not authenticated");
+  const { data: inserted, error: insErr } = await (supabase as any)
+    .from(TABLE)
+    .insert({
+      platform: idea.platform,
+      checklist_date: date,
+      title: idea.title,
+      description: idea.description,
+      link_url: idea.link_url,
+      priority: "medium",
+      created_by: uid,
+    })
+    .select("id");
+  if (insErr) throw insErr;
+  const newItemId = inserted?.[0]?.id ?? null;
+  await (supabase as any)
+    .from(IDEAS_TABLE)
+    .update({ status: "used", used_on_date: date, used_item_id: newItemId })
+    .eq("id", idea.id);
+}
+
+// ===== Best times =====
+
+const BEST_TIMES_TABLE = "social_media_best_times" as const;
+
+export interface BestTimeRow {
+  id: string;
+  platform: SocialPlatform;
+  day_of_week: number;
+  hour: number;
+  source: "default" | "computed" | "manual";
+  score: number;
+  note: string | null;
+}
+
+export async function listBestTimes(platform: SocialPlatform): Promise<BestTimeRow[]> {
+  const { data, error } = await (supabase as any)
+    .from(BEST_TIMES_TABLE)
+    .select("*")
+    .eq("platform", platform)
+    .order("day_of_week", { ascending: true })
+    .order("hour", { ascending: true });
+  if (error) throw error;
+  return (data ?? []) as BestTimeRow[];
+}
+
+/** Compute average engagement per hour from past 90 days of items with metrics. */
+export async function computeBestHoursFromData(
+  platform: SocialPlatform,
+): Promise<{ hour: number; avgEngagement: number; count: number }[]> {
+  const since = new Date();
+  since.setDate(since.getDate() - 90);
+  const sinceStr = since.toISOString().slice(0, 10);
+  const { data, error } = await (supabase as any)
+    .from(TABLE)
+    .select("scheduled_time, likes, shares, comments")
+    .eq("platform", platform)
+    .gte("checklist_date", sinceStr)
+    .not("performance_recorded_at", "is", null)
+    .not("scheduled_time", "is", null)
+    .is("deleted_at", null);
+  if (error) throw error;
+  const buckets = new Map<number, { sum: number; count: number }>();
+  for (const r of (data ?? []) as any[]) {
+    const h = parseInt(String(r.scheduled_time).slice(0, 2), 10);
+    if (Number.isNaN(h)) continue;
+    const eng = (r.likes ?? 0) + (r.shares ?? 0) + (r.comments ?? 0);
+    const b = buckets.get(h) ?? { sum: 0, count: 0 };
+    b.sum += eng;
+    b.count += 1;
+    buckets.set(h, b);
+  }
+  return Array.from(buckets.entries())
+    .map(([hour, { sum, count }]) => ({ hour, avgEngagement: sum / Math.max(count, 1), count }))
+    .sort((a, b) => b.avgEngagement - a.avgEngagement);
 }
