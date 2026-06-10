@@ -387,3 +387,115 @@ export async function computeBestHoursFromData(
     .map(([hour, { sum, count }]) => ({ hour, avgEngagement: sum / Math.max(count, 1), count }))
     .sort((a, b) => b.avgEngagement - a.avgEngagement);
 }
+
+// ===== Platform-wide metrics =====
+
+const PLATFORM_METRICS_TABLE = "social_media_platform_metrics" as const;
+
+export type MetricPeriodType = "day" | "week" | "month";
+
+export interface PlatformMetric {
+  id: string;
+  platform: SocialPlatform;
+  period_type: MetricPeriodType;
+  period_start: string;
+  period_end: string;
+  likes: number | null;
+  shares: number | null;
+  comments: number | null;
+  reach: number | null;
+  impressions: number | null;
+  note: string | null;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface UpsertPlatformMetricPayload {
+  platform: SocialPlatform;
+  period_type: MetricPeriodType;
+  period_start: string;
+  period_end: string;
+  likes?: number | null;
+  shares?: number | null;
+  comments?: number | null;
+  reach?: number | null;
+  impressions?: number | null;
+  note?: string | null;
+}
+
+export async function getPlatformMetric(
+  platform: SocialPlatform,
+  period_type: MetricPeriodType,
+  period_start: string,
+): Promise<PlatformMetric | null> {
+  const { data, error } = await (supabase as any)
+    .from(PLATFORM_METRICS_TABLE)
+    .select("*")
+    .eq("platform", platform)
+    .eq("period_type", period_type)
+    .eq("period_start", period_start)
+    .limit(1);
+  if (error) throw error;
+  return (data?.[0] ?? null) as PlatformMetric | null;
+}
+
+export async function upsertPlatformMetric(payload: UpsertPlatformMetricPayload): Promise<void> {
+  const { data: auth } = await supabase.auth.getUser();
+  const uid = auth.user?.id;
+  if (!uid) throw new Error("Not authenticated");
+  const { error } = await (supabase as any)
+    .from(PLATFORM_METRICS_TABLE)
+    .upsert(
+      {
+        platform: payload.platform,
+        period_type: payload.period_type,
+        period_start: payload.period_start,
+        period_end: payload.period_end,
+        likes: payload.likes ?? null,
+        shares: payload.shares ?? null,
+        comments: payload.comments ?? null,
+        reach: payload.reach ?? null,
+        impressions: payload.impressions ?? null,
+        note: payload.note ?? null,
+        created_by: uid,
+      },
+      { onConflict: "platform,period_type,period_start" },
+    );
+  if (error) throw error;
+}
+
+export async function listPlatformMetricsInRange(
+  platform: SocialPlatform,
+  from: string,
+  to: string,
+): Promise<PlatformMetric[]> {
+  const { data, error } = await (supabase as any)
+    .from(PLATFORM_METRICS_TABLE)
+    .select("*")
+    .eq("platform", platform)
+    .gte("period_start", from)
+    .lte("period_end", to)
+    .order("period_start", { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as PlatformMetric[];
+}
+
+export async function listRecentPlatformMetrics(
+  platform: SocialPlatform,
+  limit = 20,
+): Promise<PlatformMetric[]> {
+  const { data, error } = await (supabase as any)
+    .from(PLATFORM_METRICS_TABLE)
+    .select("*")
+    .eq("platform", platform)
+    .order("period_start", { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return (data ?? []) as PlatformMetric[];
+}
+
+export async function deletePlatformMetric(id: string): Promise<void> {
+  const { error } = await (supabase as any).from(PLATFORM_METRICS_TABLE).delete().eq("id", id);
+  if (error) throw error;
+}
