@@ -164,6 +164,12 @@ const SocialMediaChecklistPage = ({ platform, title }: Props) => {
             platform={platform}
             date={date}
           />
+          <ManageTemplatesDialog
+            open={templatesOpen}
+            onClose={() => setTemplatesOpen(false)}
+            platform={platform}
+            platformLabel={title}
+          />
         </Layout>
       </div>
     </div>
