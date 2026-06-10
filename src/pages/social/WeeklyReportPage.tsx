@@ -304,22 +304,45 @@ const WeeklyReportPage = () => {
                 <div className="text-xs text-muted-foreground">Overdue</div>
                 <div className="text-2xl font-bold">{stats.overdue}</div>
               </Card>
-              <Card className="p-4">
-                <div className="text-xs text-muted-foreground flex items-center justify-between">
-                  <span>Engagement</span>
-                  <Badge variant="outline" className="text-[10px]">{stats.totals.likes.source === "platform" ? "platform" : "items"}</Badge>
-                </div>
-                <div className="text-2xl font-bold">{stats.totals.likes.value + stats.totals.shares.value + stats.totals.comments.value}</div>
-                <div className="text-xs text-muted-foreground">❤ {stats.totals.likes.value} · ↻ {stats.totals.shares.value} · 💬 {stats.totals.comments.value}</div>
-              </Card>
-              <Card className="p-4">
-                <div className="text-xs text-muted-foreground flex items-center justify-between">
-                  <span>Reach / Impressions</span>
-                  <Badge variant="outline" className="text-[10px]">{stats.totals.reach.source === "platform" ? "platform" : "items"}</Badge>
-                </div>
-                <div className="text-2xl font-bold">{stats.totals.reach.value}</div>
-                <div className="text-xs text-muted-foreground">{stats.totals.impressions.value} impressions</div>
-              </Card>
+              {isWeb ? (
+                <>
+                  <Card className="p-4">
+                    <div className="text-xs text-muted-foreground">Clicks / Impressions</div>
+                    <div className="text-2xl font-bold">{stats.webTotals.clicks.toLocaleString()}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {stats.webTotals.impressions.toLocaleString()} impressions · CTR {stats.webTotals.ctr != null ? stats.webTotals.ctr.toFixed(2) + "%" : "—"}
+                    </div>
+                  </Card>
+                  <Card className="p-4">
+                    <div className="text-xs text-muted-foreground">Avg. position / Users</div>
+                    <div className="text-2xl font-bold">
+                      {stats.webTotals.avg_position != null ? stats.webTotals.avg_position.toFixed(1) : "—"}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {stats.webTotals.users.toLocaleString()} users · {stats.webTotals.sessions.toLocaleString()} sessions
+                    </div>
+                  </Card>
+                </>
+              ) : (
+                <>
+                  <Card className="p-4">
+                    <div className="text-xs text-muted-foreground flex items-center justify-between">
+                      <span>Engagement</span>
+                      <Badge variant="outline" className="text-[10px]">{stats.totals.likes.source === "platform" ? "platform" : "items"}</Badge>
+                    </div>
+                    <div className="text-2xl font-bold">{stats.totals.likes.value + stats.totals.shares.value + stats.totals.comments.value}</div>
+                    <div className="text-xs text-muted-foreground">❤ {stats.totals.likes.value} · ↻ {stats.totals.shares.value} · 💬 {stats.totals.comments.value}</div>
+                  </Card>
+                  <Card className="p-4">
+                    <div className="text-xs text-muted-foreground flex items-center justify-between">
+                      <span>Reach / Impressions</span>
+                      <Badge variant="outline" className="text-[10px]">{stats.totals.reach.source === "platform" ? "platform" : "items"}</Badge>
+                    </div>
+                    <div className="text-2xl font-bold">{stats.totals.reach.value}</div>
+                    <div className="text-xs text-muted-foreground">{stats.totals.impressions.value} impressions</div>
+                  </Card>
+                </>
+              )}
             </div>
 
             <Card className="p-4">
