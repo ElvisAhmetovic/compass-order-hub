@@ -43,20 +43,26 @@ const WeeklyReportPage = () => {
   const [from, setFrom] = useState(fmt(startOfWeek(today, { weekStartsOn: 1 })));
   const [to, setTo] = useState(fmt(endOfWeek(today, { weekStartsOn: 1 })));
   const [items, setItems] = useState<SocialChecklistItem[]>([]);
+  const [platformMetrics, setPlatformMetrics] = useState<PlatformMetric[]>([]);
   const [loading, setLoading] = useState(true);
+  const [reloadKey, setReloadKey] = useState(0);
 
   const load = async () => {
     setLoading(true);
     try {
-      const data = await listItemsRange(platform, from, to);
+      const [data, metrics] = await Promise.all([
+        listItemsRange(platform, from, to),
+        listPlatformMetricsInRange(platform, from, to),
+      ]);
       setItems(data);
+      setPlatformMetrics(metrics);
     } catch (e: any) {
       toast({ title: "Failed to load", description: e?.message, variant: "destructive" });
     } finally {
       setLoading(false);
     }
   };
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, [platform, from, to]);
+  useEffect(() => { load(); /* eslint-disable-next-line */ }, [platform, from, to, reloadKey]);
 
   const stats = useMemo(() => {
     const total = items.length;
