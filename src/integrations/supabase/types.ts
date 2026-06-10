@@ -2227,6 +2227,48 @@ export type Database = {
         }
         Relationships: []
       }
+      social_media_checklist_templates: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          link_url: string | null
+          platform: string
+          priority: string
+          scheduled_time: string | null
+          sort_order: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          link_url?: string | null
+          platform: string
+          priority?: string
+          scheduled_time?: string | null
+          sort_order?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          link_url?: string | null
+          platform?: string
+          priority?: string
+          scheduled_time?: string | null
+          sort_order?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       support_inquiries: {
         Row: {
           created_at: string | null
