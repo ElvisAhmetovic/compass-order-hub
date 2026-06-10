@@ -86,3 +86,93 @@ export async function softDelete(id: string): Promise<void> {
     .eq("id", id);
   if (error) throw error;
 }
+
+// ===== Templates =====
+
+const TEMPLATES_TABLE = "social_media_checklist_templates" as const;
+
+export interface ChecklistTemplate {
+  id: string;
+  platform: SocialPlatform;
+  title: string;
+  description: string | null;
+  link_url: string | null;
+  scheduled_time: string | null;
+  priority: ChecklistPriority;
+  sort_order: number;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateTemplatePayload {
+  platform: SocialPlatform;
+  title: string;
+  description?: string | null;
+  link_url?: string | null;
+  scheduled_time?: string | null;
+  priority?: ChecklistPriority;
+  sort_order?: number;
+}
+
+export async function listTemplates(platform: SocialPlatform): Promise<ChecklistTemplate[]> {
+  const { data, error } = await (supabase as any)
+    .from(TEMPLATES_TABLE)
+    .select("*")
+    .eq("platform", platform)
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: true });
+  if (error) throw error;
+  return (data ?? []) as ChecklistTemplate[];
+}
+
+export async function createTemplate(payload: CreateTemplatePayload): Promise<void> {
+  const { data: auth } = await supabase.auth.getUser();
+  const uid = auth.user?.id;
+  if (!uid) throw new Error("Not authenticated");
+  const { error } = await (supabase as any).from(TEMPLATES_TABLE).insert({
+    platform: payload.platform,
+    title: payload.title,
+    description: payload.description ?? null,
+    link_url: payload.link_url ?? null,
+    scheduled_time: payload.scheduled_time ?? null,
+    priority: payload.priority ?? "medium",
+    sort_order: payload.sort_order ?? 0,
+    created_by: uid,
+  });
+  if (error) throw error;
+}
+
+export async function updateTemplate(id: string, patch: Partial<CreateTemplatePayload>): Promise<void> {
+  const { error } = await (supabase as any).from(TEMPLATES_TABLE).update(patch).eq("id", id);
+  if (error) throw error;
+}
+
+export async function deleteTemplate(id: string): Promise<void> {
+  const { error } = await (supabase as any).from(TEMPLATES_TABLE).delete().eq("id", id);
+  if (error) throw error;
+}
+
+export async function applyTemplatesToDate(
+  platform: SocialPlatform,
+  date: string
+): Promise<{ inserted: number }> {
+  const { data: auth } = await supabase.auth.getUser();
+  const uid = auth.user?.id;
+  if (!uid) throw new Error("Not authenticated");
+  const templates = await listTemplates(platform);
+  if (templates.length === 0) return { inserted: 0 };
+  const rows = templates.map((t) => ({
+    platform,
+    checklist_date: date,
+    title: t.title,
+    description: t.description,
+    link_url: t.link_url,
+    scheduled_time: t.scheduled_time,
+    priority: t.priority,
+    created_by: uid,
+  }));
+  const { error } = await (supabase as any).from(TABLE).insert(rows);
+  if (error) throw error;
+  return { inserted: rows.length };
+}

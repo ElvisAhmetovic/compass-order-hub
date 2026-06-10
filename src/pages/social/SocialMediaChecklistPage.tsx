@@ -4,10 +4,11 @@ import Sidebar from "@/components/dashboard/Sidebar";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, ListChecks, Calendar as CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react";
-import { listItems, SocialChecklistItem, SocialPlatform } from "@/services/socialChecklistService";
+import { Plus, ListChecks, Calendar as CalendarIcon, ChevronLeft, ChevronRight, LayoutTemplate, Wand2 } from "lucide-react";
+import { applyTemplatesToDate, listItems, SocialChecklistItem, SocialPlatform } from "@/services/socialChecklistService";
 import { toast } from "@/hooks/use-toast";
 import AddChecklistItemDialog from "@/components/social/AddChecklistItemDialog";
+import ManageTemplatesDialog from "@/components/social/ManageTemplatesDialog";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format, parseISO, addDays, subDays } from "date-fns";
@@ -30,6 +31,25 @@ const SocialMediaChecklistPage = ({ platform, title }: Props) => {
   const [items, setItems] = useState<SocialChecklistItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [addOpen, setAddOpen] = useState(false);
+  const [templatesOpen, setTemplatesOpen] = useState(false);
+  const [applying, setApplying] = useState(false);
+
+  const handleApplyTemplates = async () => {
+    setApplying(true);
+    try {
+      const { inserted } = await applyTemplatesToDate(platform, date);
+      if (inserted === 0) {
+        toast({ title: "No templates yet", description: "Add some templates first." });
+      } else {
+        toast({ title: `Added ${inserted} item${inserted === 1 ? "" : "s"} from templates` });
+        await load();
+      }
+    } catch (e: any) {
+      toast({ title: "Failed to apply templates", description: e?.message, variant: "destructive" });
+    } finally {
+      setApplying(false);
+    }
+  };
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -106,6 +126,12 @@ const SocialMediaChecklistPage = ({ platform, title }: Props) => {
                 {!isToday && (
                   <Button variant="ghost" size="sm" onClick={() => setDate(todayBerlin())}>Today</Button>
                 )}
+                <Button variant="outline" onClick={handleApplyTemplates} disabled={applying}>
+                  <Wand2 className="w-4 h-4 mr-1" /> {applying ? "Applying…" : "Apply template"}
+                </Button>
+                <Button variant="outline" onClick={() => setTemplatesOpen(true)}>
+                  <LayoutTemplate className="w-4 h-4 mr-1" /> Templates
+                </Button>
                 <Button onClick={() => setAddOpen(true)}>
                   <Plus className="w-4 h-4 mr-1" /> Add item
                 </Button>
@@ -137,6 +163,12 @@ const SocialMediaChecklistPage = ({ platform, title }: Props) => {
             onCreated={load}
             platform={platform}
             date={date}
+          />
+          <ManageTemplatesDialog
+            open={templatesOpen}
+            onClose={() => setTemplatesOpen(false)}
+            platform={platform}
+            platformLabel={title}
           />
         </Layout>
       </div>
