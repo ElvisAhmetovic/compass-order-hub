@@ -76,16 +76,36 @@ const SocialMediaChecklistPage = ({ platform, title }: Props) => {
                   {title}
                 </h1>
                 <p className="text-muted-foreground">
-                  Daily checklist {isToday ? "for today" : `for ${date}`} · {doneCount} / {items.length} done
+                  Daily checklist {isToday ? "for today" : `for ${format(parseISO(date), "PPP")}`} · {doneCount} / {items.length} done
                 </p>
               </div>
-              <div className="flex items-center gap-2">
-                <Input
-                  type="date"
-                  value={date}
-                  onChange={(e) => setDate(e.target.value || todayBerlin())}
-                  className="w-44"
-                />
+              <div className="flex flex-wrap items-center gap-2">
+                <Button variant="outline" size="icon" onClick={() => setDate(format(subDays(parseISO(date), 1), "yyyy-MM-dd"))} aria-label="Previous day">
+                  <ChevronLeft className="w-4 h-4" />
+                </Button>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className={cn("min-w-[200px] justify-start text-left font-normal")}>
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {format(parseISO(date), "PPP")}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0 z-50 bg-popover" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={parseISO(date)}
+                      onSelect={(d) => d && setDate(format(d, "yyyy-MM-dd"))}
+                      initialFocus
+                      className={cn("p-3 pointer-events-auto")}
+                    />
+                  </PopoverContent>
+                </Popover>
+                <Button variant="outline" size="icon" onClick={() => setDate(format(addDays(parseISO(date), 1), "yyyy-MM-dd"))} aria-label="Next day">
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+                {!isToday && (
+                  <Button variant="ghost" size="sm" onClick={() => setDate(todayBerlin())}>Today</Button>
+                )}
                 <Button onClick={() => setAddOpen(true)}>
                   <Plus className="w-4 h-4 mr-1" /> Add item
                 </Button>
