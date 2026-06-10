@@ -131,7 +131,20 @@ const WeeklyReportPage = () => {
     lines.push("");
     lines.push(`- Completed: **${stats.done} / ${stats.total}** (${stats.total ? Math.round((stats.done / stats.total) * 100) : 0}%)`);
     lines.push(`- Overdue (past, not done): **${stats.overdue}**`);
-    lines.push(`- Likes: ${stats.totals.likes} · Shares: ${stats.totals.shares} · Comments: ${stats.totals.comments} · Reach: ${stats.totals.reach} · Impressions: ${stats.totals.impressions}`);
+    const tag = (s: "platform" | "items") => s === "platform" ? "[platform]" : "[items]";
+    lines.push(`- Likes: ${stats.totals.likes.value} ${tag(stats.totals.likes.source)} · Shares: ${stats.totals.shares.value} ${tag(stats.totals.shares.source)} · Comments: ${stats.totals.comments.value} ${tag(stats.totals.comments.source)} · Reach: ${stats.totals.reach.value} ${tag(stats.totals.reach.source)} · Impressions: ${stats.totals.impressions.value} ${tag(stats.totals.impressions.source)}`);
+    if (platformMetrics.length > 0) {
+      lines.push("");
+      lines.push("## Platform metrics entries");
+      for (const m of platformMetrics) {
+        const label = m.period_type === "day"
+          ? m.period_start
+          : m.period_type === "week"
+            ? `Week of ${m.period_start}`
+            : `Month ${m.period_start.slice(0, 7)}`;
+        lines.push(`- ${label} — ❤ ${m.likes ?? 0} · ↻ ${m.shares ?? 0} · 💬 ${m.comments ?? 0} · 👥 ${m.reach ?? 0} · 👁 ${m.impressions ?? 0}`);
+      }
+    }
     if (stats.top.length > 0) {
       lines.push("");
       lines.push("## Top performing");
