@@ -88,6 +88,7 @@ const PlatformMetricsCard = ({ platform, platformLabel, onChanged }: Props) => {
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const [history, setHistory] = useState<PlatformMetric[]>([]);
+  const [fieldErrors, setFieldErrors] = useState<MetricErrors>({});
 
   const loadExisting = async () => {
     try {
