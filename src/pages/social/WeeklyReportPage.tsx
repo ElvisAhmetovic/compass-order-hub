@@ -232,6 +232,12 @@ const WeeklyReportPage = () => {
               </div>
             </div>
 
+            <PlatformMetricsCard
+              platform={platform}
+              platformLabel={platformLabel}
+              onChanged={() => setReloadKey((k) => k + 1)}
+            />
+
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <Card className="p-4">
                 <div className="text-xs text-muted-foreground">Completion rate</div>
