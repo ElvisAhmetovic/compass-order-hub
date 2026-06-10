@@ -208,6 +208,19 @@ const Sidebar = () => {
     (item.href === '/active-orders' && location.pathname.startsWith('/active-orders'))
   );
 
+  // Social Media group
+  const socialItems = [
+    { href: '/social/facebook', icon: FacebookIcon, label: 'Facebook' },
+    { href: '/social/abm-website', icon: Globe, label: 'ABM Website' },
+    { href: '/social/instagram', icon: Instagram, label: 'Instagram' },
+    { href: '/social/tiktok', icon: Music2, label: 'TikTok' },
+    { href: '/social/twitter', icon: TwitterIcon, label: 'Twitter (X)' },
+  ];
+  const socialActive = socialItems.some(i => location.pathname.startsWith(i.href));
+  const [socialOpen, setSocialOpen] = useState(false);
+  useEffect(() => { if (socialActive) setSocialOpen(true); }, [socialActive]);
+  const showSocialGroup = isAdminOrAgent;
+
   useEffect(() => {
     if (activeInMore) setMoreOpen(true);
   }, [activeInMore]);
