@@ -2368,6 +2368,57 @@ export type Database = {
         }
         Relationships: []
       }
+      social_media_platform_metrics: {
+        Row: {
+          comments: number | null
+          created_at: string
+          created_by: string
+          id: string
+          impressions: number | null
+          likes: number | null
+          note: string | null
+          period_end: string
+          period_start: string
+          period_type: string
+          platform: string
+          reach: number | null
+          shares: number | null
+          updated_at: string
+        }
+        Insert: {
+          comments?: number | null
+          created_at?: string
+          created_by: string
+          id?: string
+          impressions?: number | null
+          likes?: number | null
+          note?: string | null
+          period_end: string
+          period_start: string
+          period_type: string
+          platform: string
+          reach?: number | null
+          shares?: number | null
+          updated_at?: string
+        }
+        Update: {
+          comments?: number | null
+          created_at?: string
+          created_by?: string
+          id?: string
+          impressions?: number | null
+          likes?: number | null
+          note?: string | null
+          period_end?: string
+          period_start?: string
+          period_type?: string
+          platform?: string
+          reach?: number | null
+          shares?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       support_inquiries: {
         Row: {
           created_at: string | null
