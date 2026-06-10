@@ -2170,9 +2170,43 @@ export type Database = {
         }
         Relationships: []
       }
+      social_media_best_times: {
+        Row: {
+          day_of_week: number
+          hour: number
+          id: string
+          note: string | null
+          platform: string
+          score: number
+          source: string
+          updated_at: string
+        }
+        Insert: {
+          day_of_week: number
+          hour: number
+          id?: string
+          note?: string | null
+          platform: string
+          score?: number
+          source?: string
+          updated_at?: string
+        }
+        Update: {
+          day_of_week?: number
+          hour?: number
+          id?: string
+          note?: string | null
+          platform?: string
+          score?: number
+          source?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       social_media_checklist_items: {
         Row: {
           checklist_date: string
+          comments: number | null
           created_at: string
           created_by: string
           deleted_at: string | null
@@ -2181,16 +2215,23 @@ export type Database = {
           done_by: string | null
           done_note: string | null
           id: string
+          impressions: number | null
           is_done: boolean
+          likes: number | null
           link_url: string | null
+          performance_note: string | null
+          performance_recorded_at: string | null
           platform: string
           priority: string
+          reach: number | null
           scheduled_time: string | null
+          shares: number | null
           title: string
           updated_at: string
         }
         Insert: {
           checklist_date: string
+          comments?: number | null
           created_at?: string
           created_by: string
           deleted_at?: string | null
@@ -2199,16 +2240,23 @@ export type Database = {
           done_by?: string | null
           done_note?: string | null
           id?: string
+          impressions?: number | null
           is_done?: boolean
+          likes?: number | null
           link_url?: string | null
+          performance_note?: string | null
+          performance_recorded_at?: string | null
           platform: string
           priority?: string
+          reach?: number | null
           scheduled_time?: string | null
+          shares?: number | null
           title: string
           updated_at?: string
         }
         Update: {
           checklist_date?: string
+          comments?: number | null
           created_at?: string
           created_by?: string
           deleted_at?: string | null
@@ -2217,11 +2265,17 @@ export type Database = {
           done_by?: string | null
           done_note?: string | null
           id?: string
+          impressions?: number | null
           is_done?: boolean
+          likes?: number | null
           link_url?: string | null
+          performance_note?: string | null
+          performance_recorded_at?: string | null
           platform?: string
           priority?: string
+          reach?: number | null
           scheduled_time?: string | null
+          shares?: number | null
           title?: string
           updated_at?: string
         }
@@ -2266,6 +2320,51 @@ export type Database = {
           sort_order?: number
           title?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      social_media_content_ideas: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          link_url: string | null
+          platform: string
+          status: string
+          tags: string[]
+          title: string
+          updated_at: string
+          used_item_id: string | null
+          used_on_date: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          link_url?: string | null
+          platform: string
+          status?: string
+          tags?: string[]
+          title: string
+          updated_at?: string
+          used_item_id?: string | null
+          used_on_date?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          link_url?: string | null
+          platform?: string
+          status?: string
+          tags?: string[]
+          title?: string
+          updated_at?: string
+          used_item_id?: string | null
+          used_on_date?: string | null
         }
         Relationships: []
       }
