@@ -31,6 +31,25 @@ const SocialMediaChecklistPage = ({ platform, title }: Props) => {
   const [items, setItems] = useState<SocialChecklistItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [addOpen, setAddOpen] = useState(false);
+  const [templatesOpen, setTemplatesOpen] = useState(false);
+  const [applying, setApplying] = useState(false);
+
+  const handleApplyTemplates = async () => {
+    setApplying(true);
+    try {
+      const { inserted } = await applyTemplatesToDate(platform, date);
+      if (inserted === 0) {
+        toast({ title: "No templates yet", description: "Add some templates first." });
+      } else {
+        toast({ title: `Added ${inserted} item${inserted === 1 ? "" : "s"} from templates` });
+        await load();
+      }
+    } catch (e: any) {
+      toast({ title: "Failed to apply templates", description: e?.message, variant: "destructive" });
+    } finally {
+      setApplying(false);
+    }
+  };
 
   const load = useCallback(async () => {
     setLoading(true);
