@@ -405,6 +405,11 @@ export interface PlatformMetric {
   comments: number | null;
   reach: number | null;
   impressions: number | null;
+  clicks: number | null;
+  ctr: number | null;
+  avg_position: number | null;
+  users: number | null;
+  sessions: number | null;
   note: string | null;
   created_by: string;
   created_at: string;
@@ -421,6 +426,11 @@ export interface UpsertPlatformMetricPayload {
   comments?: number | null;
   reach?: number | null;
   impressions?: number | null;
+  clicks?: number | null;
+  ctr?: number | null;
+  avg_position?: number | null;
+  users?: number | null;
+  sessions?: number | null;
   note?: string | null;
 }
 
@@ -457,6 +467,11 @@ export async function upsertPlatformMetric(payload: UpsertPlatformMetricPayload)
         comments: payload.comments ?? null,
         reach: payload.reach ?? null,
         impressions: payload.impressions ?? null,
+        clicks: payload.clicks ?? null,
+        ctr: payload.ctr ?? null,
+        avg_position: payload.avg_position ?? null,
+        users: payload.users ?? null,
+        sessions: payload.sessions ?? null,
         note: payload.note ?? null,
         created_by: uid,
       },
