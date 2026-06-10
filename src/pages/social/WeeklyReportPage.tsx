@@ -68,7 +68,7 @@ const WeeklyReportPage = () => {
     const total = items.length;
     const done = items.filter((i) => i.is_done).length;
     const overdue = items.filter((i) => !i.is_done && i.checklist_date < fmt(today)).length;
-    const totals = items.reduce(
+    const itemTotals = items.reduce(
       (a, i) => ({
         likes: a.likes + (i.likes ?? 0),
         shares: a.shares + (i.shares ?? 0),
@@ -78,6 +78,23 @@ const WeeklyReportPage = () => {
       }),
       { likes: 0, shares: 0, comments: 0, reach: 0, impressions: 0 },
     );
+    const sumPlatform = (key: "likes" | "shares" | "comments" | "reach" | "impressions") => {
+      const rows = platformMetrics.filter((m) => m[key] != null);
+      if (rows.length === 0) return null;
+      return rows.reduce((s, r) => s + (r[key] ?? 0), 0);
+    };
+    const pickWithSource = (key: "likes" | "shares" | "comments" | "reach" | "impressions") => {
+      const p = sumPlatform(key);
+      if (p != null) return { value: p, source: "platform" as const };
+      return { value: itemTotals[key], source: "items" as const };
+    };
+    const totals = {
+      likes: pickWithSource("likes"),
+      shares: pickWithSource("shares"),
+      comments: pickWithSource("comments"),
+      reach: pickWithSource("reach"),
+      impressions: pickWithSource("impressions"),
+    };
     const byDay = new Map<string, { date: string; completed: number; total: number }>();
     for (const it of items) {
       const b = byDay.get(it.checklist_date) ?? { date: it.checklist_date, completed: 0, total: 0 };
@@ -92,7 +109,7 @@ const WeeklyReportPage = () => {
       .sort((a, b) => b.eng - a.eng)
       .slice(0, 5);
     return { total, done, overdue, totals, chartData, top };
-  }, [items]);
+  }, [items, platformMetrics]);
 
   const setPreset = (kind: "this_week" | "last_week" | "this_month") => {
     if (kind === "this_week") {
