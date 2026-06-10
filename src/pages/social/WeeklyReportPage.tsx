@@ -367,28 +367,56 @@ const WeeklyReportPage = () => {
               )}
             </Card>
 
-            <Card className="p-4">
-              <div className="font-medium mb-3">Top performing items</div>
-              {stats.top.length === 0 ? (
-                <div className="text-sm text-muted-foreground">Add engagement numbers to completed items to populate this.</div>
-              ) : (
-                <div className="space-y-2">
-                  {stats.top.map((t) => (
-                    <div key={t.id} className="flex items-center justify-between border rounded-md p-2">
-                      <div className="min-w-0">
-                        <div className="font-medium truncate">{t.title}</div>
-                        <div className="text-xs text-muted-foreground">{t.checklist_date}</div>
+            {isWeb ? (
+              <Card className="p-4">
+                <div className="font-medium mb-3">Recent search performance</div>
+                {platformMetrics.length === 0 ? (
+                  <div className="text-sm text-muted-foreground">No search analytics entries in this range yet. Log GSC numbers above.</div>
+                ) : (
+                  <div className="space-y-2">
+                    {platformMetrics.map((m) => (
+                      <div key={m.id} className="flex items-center justify-between border rounded-md p-2">
+                        <div className="min-w-0">
+                          <div className="font-medium truncate">
+                            {m.period_type === "day" ? m.period_start : m.period_type === "week" ? `Week of ${m.period_start}` : `Month ${m.period_start.slice(0, 7)}`}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            🖱 {m.clicks ?? 0} · 👁 {m.impressions ?? 0} · CTR {m.ctr ?? 0}% · pos {m.avg_position ?? 0}
+                          </div>
+                        </div>
+                        <div className="flex gap-2 text-xs">
+                          <Badge variant="secondary">👥 {m.users ?? 0}</Badge>
+                          <Badge variant="secondary">📈 {m.sessions ?? 0}</Badge>
+                        </div>
                       </div>
-                      <div className="flex gap-2 text-xs">
-                        <Badge variant="secondary">❤ {t.likes ?? 0}</Badge>
-                        <Badge variant="secondary">↻ {t.shares ?? 0}</Badge>
-                        <Badge variant="secondary">💬 {t.comments ?? 0}</Badge>
+                    ))}
+                  </div>
+                )}
+              </Card>
+            ) : (
+              <Card className="p-4">
+                <div className="font-medium mb-3">Top performing items</div>
+                {stats.top.length === 0 ? (
+                  <div className="text-sm text-muted-foreground">Add engagement numbers to completed items to populate this.</div>
+                ) : (
+                  <div className="space-y-2">
+                    {stats.top.map((t) => (
+                      <div key={t.id} className="flex items-center justify-between border rounded-md p-2">
+                        <div className="min-w-0">
+                          <div className="font-medium truncate">{t.title}</div>
+                          <div className="text-xs text-muted-foreground">{t.checklist_date}</div>
+                        </div>
+                        <div className="flex gap-2 text-xs">
+                          <Badge variant="secondary">❤ {t.likes ?? 0}</Badge>
+                          <Badge variant="secondary">↻ {t.shares ?? 0}</Badge>
+                          <Badge variant="secondary">💬 {t.comments ?? 0}</Badge>
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </Card>
+                    ))}
+                  </div>
+                )}
+              </Card>
+            )}
           </div>
         </Layout>
       </div>
