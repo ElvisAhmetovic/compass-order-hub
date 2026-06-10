@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { z } from "zod";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -54,10 +55,24 @@ const periodLabel = (m: PlatformMetric) => {
 
 const toNum = (v: string): number | null => {
   if (v.trim() === "") return null;
-  const n = parseInt(v.replace(/[^\d-]/g, ""), 10);
+  const n = parseInt(v.replace(/\D/g, ""), 10);
   return Number.isNaN(n) ? null : n;
 };
 const toStr = (n: number | null | undefined) => (n == null ? "" : String(n));
+
+const metricSchema = z.object({
+  likes: z.number().int().min(0).nullable(),
+  shares: z.number().int().min(0).nullable(),
+  comments: z.number().int().min(0).nullable(),
+  reach: z.number().int().min(0).nullable(),
+  impressions: z.number().int().min(0).nullable(),
+}).refine((data) => Object.values(data).some((v) => v != null && v > 0), {
+  message: "At least one metric must be greater than 0",
+});
+
+type MetricErrors = Partial<Record<"likes" | "shares" | "comments" | "reach" | "impressions" | "_form", string>>;
+
+const clampDigits = (v: string) => v.replace(/\D/g, "");
 
 const PlatformMetricsCard = ({ platform, platformLabel, onChanged }: Props) => {
   const [periodType, setPeriodType] = useState<MetricPeriodType>("week");
@@ -73,6 +88,7 @@ const PlatformMetricsCard = ({ platform, platformLabel, onChanged }: Props) => {
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const [history, setHistory] = useState<PlatformMetric[]>([]);
+  const [fieldErrors, setFieldErrors] = useState<MetricErrors>({});
 
   const loadExisting = async () => {
     try {
@@ -106,7 +122,33 @@ const PlatformMetricsCard = ({ platform, platformLabel, onChanged }: Props) => {
   useEffect(() => { loadExisting(); /* eslint-disable-next-line */ }, [platform, periodType, range.start]);
   useEffect(() => { loadHistory(); /* eslint-disable-next-line */ }, [platform]);
 
+  const validate = () => {
+    const parsed = metricSchema.safeParse({
+      likes: toNum(likes),
+      shares: toNum(shares),
+      comments: toNum(comments),
+      reach: toNum(reach),
+      impressions: toNum(impressions),
+    });
+    if (parsed.success) {
+      setFieldErrors({});
+      return true;
+    }
+    const next: MetricErrors = {};
+    parsed.error.errors.forEach((err) => {
+      if (err.path.length === 0) {
+        next._form = err.message;
+      } else {
+        const key = err.path[0] as keyof MetricErrors;
+        if (key && !next[key]) next[key] = err.message;
+      }
+    });
+    setFieldErrors(next);
+    return false;
+  };
+
   const save = async () => {
+    if (!validate()) return;
     setBusy(true);
     try {
       await upsertPlatformMetric({
@@ -121,6 +163,7 @@ const PlatformMetricsCard = ({ platform, platformLabel, onChanged }: Props) => {
         impressions: toNum(impressions),
         note: note.trim() || null,
       });
+      setFieldErrors({});
       toast({ title: "Platform metrics saved" });
       await Promise.all([loadExisting(), loadHistory()]);
       onChanged?.();
@@ -200,27 +243,34 @@ const PlatformMetricsCard = ({ platform, platformLabel, onChanged }: Props) => {
         {existingId && <Badge variant="secondary">Editing existing entry</Badge>}
       </div>
 
+      {fieldErrors._form && (
+        <p className="text-xs text-destructive">{fieldErrors._form}</p>
+      )}
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-        <div>
-          <Label className="text-xs">Likes</Label>
-          <Input value={likes} onChange={(e) => setLikes(e.target.value)} inputMode="numeric" />
-        </div>
-        <div>
-          <Label className="text-xs">Shares</Label>
-          <Input value={shares} onChange={(e) => setShares(e.target.value)} inputMode="numeric" />
-        </div>
-        <div>
-          <Label className="text-xs">Comments</Label>
-          <Input value={comments} onChange={(e) => setComments(e.target.value)} inputMode="numeric" />
-        </div>
-        <div>
-          <Label className="text-xs">Reach</Label>
-          <Input value={reach} onChange={(e) => setReach(e.target.value)} inputMode="numeric" />
-        </div>
-        <div>
-          <Label className="text-xs">Impressions</Label>
-          <Input value={impressions} onChange={(e) => setImpressions(e.target.value)} inputMode="numeric" />
-        </div>
+        {([
+          ["likes", likes, setLikes],
+          ["shares", shares, setShares],
+          ["comments", comments, setComments],
+          ["reach", reach, setReach],
+          ["impressions", impressions, setImpressions],
+        ] as [keyof MetricErrors, string, React.Dispatch<React.SetStateAction<string>>][]).map(([key, value, setter]) => (
+          <div key={key}>
+            <Label className="text-xs capitalize">{key}</Label>
+            <Input
+              value={value}
+              onChange={(e) => {
+                setter(clampDigits(e.target.value));
+                if (fieldErrors[key] || fieldErrors._form) {
+                  setFieldErrors((prev) => { const n = { ...prev }; delete n[key]; delete n._form; return n; });
+                }
+              }}
+              inputMode="numeric"
+              min={0}
+              className={cn(fieldErrors[key] && "border-destructive focus-visible:ring-destructive")}
+            />
+            {fieldErrors[key] && <p className="text-[10px] text-destructive mt-0.5">{fieldErrors[key]}</p>}
+          </div>
+        ))}
       </div>
       <div>
         <Label className="text-xs">Note</Label>
