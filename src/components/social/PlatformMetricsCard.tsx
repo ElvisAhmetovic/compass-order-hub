@@ -55,10 +55,24 @@ const periodLabel = (m: PlatformMetric) => {
 
 const toNum = (v: string): number | null => {
   if (v.trim() === "") return null;
-  const n = parseInt(v.replace(/[^\d-]/g, ""), 10);
+  const n = parseInt(v.replace(/\D/g, ""), 10);
   return Number.isNaN(n) ? null : n;
 };
 const toStr = (n: number | null | undefined) => (n == null ? "" : String(n));
+
+const metricSchema = z.object({
+  likes: z.number().int().min(0).nullable(),
+  shares: z.number().int().min(0).nullable(),
+  comments: z.number().int().min(0).nullable(),
+  reach: z.number().int().min(0).nullable(),
+  impressions: z.number().int().min(0).nullable(),
+}).refine((data) => Object.values(data).some((v) => v != null && v > 0), {
+  message: "At least one metric must be greater than 0",
+});
+
+type MetricErrors = Partial<Record<"likes" | "shares" | "comments" | "reach" | "impressions" | "_form", string>>;
+
+const clampDigits = (v: string) => v.replace(/\D/g, "");
 
 const PlatformMetricsCard = ({ platform, platformLabel, onChanged }: Props) => {
   const [periodType, setPeriodType] = useState<MetricPeriodType>("week");
