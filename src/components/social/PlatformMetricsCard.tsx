@@ -239,27 +239,34 @@ const PlatformMetricsCard = ({ platform, platformLabel, onChanged }: Props) => {
         {existingId && <Badge variant="secondary">Editing existing entry</Badge>}
       </div>
 
+      {fieldErrors._form && (
+        <p className="text-xs text-destructive">{fieldErrors._form}</p>
+      )}
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-        <div>
-          <Label className="text-xs">Likes</Label>
-          <Input value={likes} onChange={(e) => setLikes(e.target.value)} inputMode="numeric" />
-        </div>
-        <div>
-          <Label className="text-xs">Shares</Label>
-          <Input value={shares} onChange={(e) => setShares(e.target.value)} inputMode="numeric" />
-        </div>
-        <div>
-          <Label className="text-xs">Comments</Label>
-          <Input value={comments} onChange={(e) => setComments(e.target.value)} inputMode="numeric" />
-        </div>
-        <div>
-          <Label className="text-xs">Reach</Label>
-          <Input value={reach} onChange={(e) => setReach(e.target.value)} inputMode="numeric" />
-        </div>
-        <div>
-          <Label className="text-xs">Impressions</Label>
-          <Input value={impressions} onChange={(e) => setImpressions(e.target.value)} inputMode="numeric" />
-        </div>
+        {([
+          ["likes", likes, setLikes],
+          ["shares", shares, setShares],
+          ["comments", comments, setComments],
+          ["reach", reach, setReach],
+          ["impressions", impressions, setImpressions],
+        ] as [keyof MetricErrors, string, React.Dispatch<React.SetStateAction<string>>][]).map(([key, value, setter]) => (
+          <div key={key}>
+            <Label className="text-xs capitalize">{key}</Label>
+            <Input
+              value={value}
+              onChange={(e) => {
+                setter(clampDigits(e.target.value));
+                if (fieldErrors[key] || fieldErrors._form) {
+                  setFieldErrors((prev) => { const n = { ...prev }; delete n[key]; delete n._form; return n; });
+                }
+              }}
+              inputMode="numeric"
+              min={0}
+              className={cn(fieldErrors[key] && "border-destructive focus-visible:ring-destructive")}
+            />
+            {fieldErrors[key] && <p className="text-[10px] text-destructive mt-0.5">{fieldErrors[key]}</p>}
+          </div>
+        ))}
       </div>
       <div>
         <Label className="text-xs">Note</Label>
