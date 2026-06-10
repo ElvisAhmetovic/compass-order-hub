@@ -1,59 +1,52 @@
-# Platform-wide engagement entries on the Report
+## Goal
+Make the ABM Website report track Google Search Console / GA-style metrics instead of social engagement (likes, shares, comments, reach, impressions).
 
-Let the marketing worker log overall engagement, reach and impressions per platform for a chosen day, week, or month, and have those numbers drive the report (replacing per-item sums when present).
+## Metrics for ABM Website
+Replace the 5 social fields with 6 web analytics fields:
+- **Clicks** — total clicks from Search (GSC)
+- **Impressions** — times site appeared in Search (GSC)
+- **CTR (%)** — click-through rate (GSC) — decimal, 0–100
+- **Avg. position** — average ranking position (GSC) — decimal
+- **Users** — unique visitors (GA, optional)
+- **Sessions** — total sessions (GA, optional)
 
-## Data model
+All other platforms (Facebook, Instagram, TikTok, Twitter) keep the existing social engagement fields unchanged.
 
-New table `social_media_platform_metrics`:
+## Database
+Add 4 nullable numeric columns to `social_media_platform_metrics`:
+- `clicks integer`
+- `ctr numeric(5,2)` (0–100, 2 decimals)
+- `avg_position numeric(5,2)`
+- `users integer`
+- `sessions integer`
 
-- `platform` (text, same enum as elsewhere)
-- `period_type` ('day' | 'week' | 'month')
-- `period_start` (date — Mon for week, 1st for month)
-- `period_end` (date — Sun for week, last day for month, same as start for day)
-- `likes`, `shares`, `comments`, `reach`, `impressions` (int, nullable)
-- `note` (text, nullable)
-- `created_by`, `created_at`, `updated_at`
-- Unique on `(platform, period_type, period_start)` so each span has one editable row (upsert).
+Reuse the existing `impressions integer` column for GSC impressions (same concept). The social-only columns (`likes`, `shares`, `comments`, `reach`) simply stay null for `abm_website` rows.
 
-RLS: admins + agents can read / insert / update; admins or creator can delete (same pattern as ideas/templates).
+## UI — `PlatformMetricsCard.tsx`
+Branch the field set by `platform`:
+- If `platform === "abm_website"`: render Clicks, Impressions, CTR, Avg Position, Users, Sessions inputs. CTR allows one decimal (0–100 cap); Avg Position allows one decimal (≥0). Others are non-negative integers. Validation requires at least one field > 0.
+- Otherwise: keep today's likes/shares/comments/reach/impressions form.
+- Recent-entries summary line also branches: shows `🖱 clicks · 👁 impressions · CTR x% · pos x.x · 👥 users · 📈 sessions` for abm_website.
+- Title/help text says "Search & site analytics" instead of "engagement" when abm_website.
 
-## UI on the report page (`/social/:platform/report`)
+## UI — `WeeklyReportPage.tsx`
+On the ABM Website report only:
+- Stats cards become: **Completion rate**, **Overdue**, **Clicks / Impressions** (with CTR underneath), **Avg position / Users** (sessions underneath). Source badge logic (`platform` vs `items`) is dropped for abm_website since per-item fields don't apply — totals always come from platform-metric entries.
+- Hide the "Top performing items" card for abm_website (engagement-based, not meaningful here). Show instead a small "Recent search performance" list summarising the latest platform-metric entries.
+- Markdown export + CSV export use the new fields for abm_website.
 
-1. **New "Platform metrics" card** at the top of the report:
-   - Period-type tabs: Day / Week / Month.
-   - Date picker tied to the chosen period type (week shows Mon–Sun span; month shows the chosen month).
-   - Inputs: Likes, Shares, Comments, Reach, Impressions, Note.
-   - Save / Delete buttons. Save is an upsert keyed on (platform, period_type, period_start).
-   - Loads any existing row for the selected period and pre-fills.
+Other platforms render unchanged.
 
-2. **History list** below the form: recent platform-metric entries for this platform with period label (e.g. "Week of 9 Jun 2026"), totals, and edit/delete actions.
-
-## Report totals logic
-
-When computing the totals shown in the top stat cards and "Engagement totals" for the selected report range (`from`–`to`):
-
-- Pull all `social_media_platform_metrics` rows for this platform whose `period_start` ≥ `from` and `period_end` ≤ `to` (fully contained in the report range, to avoid partial double-counting).
-- For each metric (likes/shares/comments/reach/impressions):
-  - If at least one platform-wide row in range has a non-null value for that metric → use the **sum of platform-wide rows** for that metric.
-  - Otherwise → fall back to the **sum of per-item metrics** (current behavior).
-- Show a small badge on each stat card indicating the source: "Platform totals" vs "From items" so she always knows what she's looking at.
-- The "Top performing items" section keeps using per-item metrics as today (platform-wide entries aren't tied to items).
-- CSV/Markdown export uses the same combined logic and appends a "Platform metrics" section listing each contributing row.
+## Service layer (`socialChecklistService.ts`)
+- Extend `PlatformMetric` type and `upsertPlatformMetric` payload with `clicks`, `ctr`, `avg_position`, `users`, `sessions` (all nullable).
+- No new endpoints needed.
 
 ## Out of scope
+- Live pulling from Google Search Console / Analytics APIs (manual entry only, same pattern as social).
+- Per-item GSC tracking on individual checklist items.
+- Historical trend charts of clicks/impressions (current bar chart of completed items stays).
 
-- Splitting a week/month entry back across days.
-- Auto-fetching from social APIs.
-- Reconciliation warnings when both per-item and platform-wide numbers exist (we just prefer platform-wide, per your choice).
-
-## Technical Details
-
-- Migration creates the table with the four-step pattern (CREATE → GRANT to authenticated + service_role → ENABLE RLS → policies) and an updated_at trigger.
-- New service file additions in `src/services/socialChecklistService.ts`: `upsertPlatformMetric`, `getPlatformMetric(platform, period_type, period_start)`, `listPlatformMetricsInRange(platform, from, to)`, `deletePlatformMetric(id)`.
-- New component `src/components/social/PlatformMetricsCard.tsx` for the form + history.
-- Update `src/pages/social/WeeklyReportPage.tsx`:
-  - Fetch contained platform-metric rows for `[from, to]` alongside items.
-  - Compute totals via the "platform overrides items per metric" rule and annotate cards with source.
-  - Add Platform metrics card above the stats grid.
-  - Extend CSV/Markdown export.
-- `period_start`/`period_end` helpers via existing `date-fns` (`startOfWeek` Mon, `endOfWeek` Sun, `startOfMonth`, `endOfMonth`).
+## Technical notes
+- Migration uses `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`; no GRANT/RLS changes needed.
+- CTR input sanitised to digits + single dot, clamped 0–100; Avg position same pattern, no upper clamp.
+- Zod schema branches: `abmWebsiteSchema` (numbers can be null, CTR ≤ 100, at-least-one rule) vs existing `socialSchema`.
