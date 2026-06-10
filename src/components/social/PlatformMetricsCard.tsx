@@ -53,14 +53,27 @@ const periodLabel = (m: PlatformMetric) => {
   return format(s, "MMMM yyyy");
 };
 
-const toNum = (v: string): number | null => {
+const toInt = (v: string): number | null => {
   if (v.trim() === "") return null;
   const n = parseInt(v.replace(/\D/g, ""), 10);
   return Number.isNaN(n) ? null : n;
 };
+const toFloat = (v: string): number | null => {
+  if (v.trim() === "") return null;
+  const n = parseFloat(v);
+  return Number.isNaN(n) ? null : n;
+};
 const toStr = (n: number | null | undefined) => (n == null ? "" : String(n));
+const clampDigits = (v: string) => v.replace(/\D/g, "");
+const clampDecimal = (v: string) => {
+  const cleaned = v.replace(/[^\d.]/g, "");
+  const parts = cleaned.split(".");
+  if (parts.length <= 1) return cleaned;
+  return parts[0] + "." + parts.slice(1).join("").slice(0, 2);
+};
 
-const metricSchema = z.object({
+// --- Social schema ---
+const socialSchema = z.object({
   likes: z.number().int().min(0).nullable(),
   shares: z.number().int().min(0).nullable(),
   comments: z.number().int().min(0).nullable(),
@@ -70,25 +83,57 @@ const metricSchema = z.object({
   message: "At least one metric must be greater than 0",
 });
 
-type MetricErrors = Partial<Record<"likes" | "shares" | "comments" | "reach" | "impressions" | "_form", string>>;
+// --- ABM website (GSC/GA) schema ---
+const webSchema = z.object({
+  clicks: z.number().int().min(0).nullable(),
+  impressions: z.number().int().min(0).nullable(),
+  ctr: z.number().min(0).max(100).nullable(),
+  avg_position: z.number().min(0).nullable(),
+  users: z.number().int().min(0).nullable(),
+  sessions: z.number().int().min(0).nullable(),
+}).refine((data) => Object.values(data).some((v) => v != null && v > 0), {
+  message: "At least one metric must be greater than 0",
+});
 
-const clampDigits = (v: string) => v.replace(/\D/g, "");
+type FieldKey =
+  | "likes" | "shares" | "comments" | "reach" | "impressions"
+  | "clicks" | "ctr" | "avg_position" | "users" | "sessions"
+  | "_form";
+
+type MetricErrors = Partial<Record<FieldKey, string>>;
 
 const PlatformMetricsCard = ({ platform, platformLabel, onChanged }: Props) => {
+  const isWeb = platform === "abm_website";
+
   const [periodType, setPeriodType] = useState<MetricPeriodType>("week");
   const [anchor, setAnchor] = useState<Date>(new Date());
   const range = computeRange(periodType, anchor);
 
   const [existingId, setExistingId] = useState<string | null>(null);
+  // social fields
   const [likes, setLikes] = useState("");
   const [shares, setShares] = useState("");
   const [comments, setComments] = useState("");
   const [reach, setReach] = useState("");
+  // shared
   const [impressions, setImpressions] = useState("");
+  // web-only
+  const [clicks, setClicks] = useState("");
+  const [ctr, setCtr] = useState("");
+  const [avgPosition, setAvgPosition] = useState("");
+  const [users, setUsers] = useState("");
+  const [sessions, setSessions] = useState("");
+
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const [history, setHistory] = useState<PlatformMetric[]>([]);
   const [fieldErrors, setFieldErrors] = useState<MetricErrors>({});
+
+  const resetFields = () => {
+    setLikes(""); setShares(""); setComments(""); setReach(""); setImpressions("");
+    setClicks(""); setCtr(""); setAvgPosition(""); setUsers(""); setSessions("");
+    setNote("");
+  };
 
   const loadExisting = async () => {
     try {
@@ -100,10 +145,15 @@ const PlatformMetricsCard = ({ platform, platformLabel, onChanged }: Props) => {
         setComments(toStr(row.comments));
         setReach(toStr(row.reach));
         setImpressions(toStr(row.impressions));
+        setClicks(toStr(row.clicks));
+        setCtr(toStr(row.ctr));
+        setAvgPosition(toStr(row.avg_position));
+        setUsers(toStr(row.users));
+        setSessions(toStr(row.sessions));
         setNote(row.note ?? "");
       } else {
         setExistingId(null);
-        setLikes(""); setShares(""); setComments(""); setReach(""); setImpressions(""); setNote("");
+        resetFields();
       }
     } catch (e: any) {
       toast({ title: "Failed to load entry", description: e?.message, variant: "destructive" });
@@ -123,13 +173,22 @@ const PlatformMetricsCard = ({ platform, platformLabel, onChanged }: Props) => {
   useEffect(() => { loadHistory(); /* eslint-disable-next-line */ }, [platform]);
 
   const validate = () => {
-    const parsed = metricSchema.safeParse({
-      likes: toNum(likes),
-      shares: toNum(shares),
-      comments: toNum(comments),
-      reach: toNum(reach),
-      impressions: toNum(impressions),
-    });
+    const parsed = isWeb
+      ? webSchema.safeParse({
+          clicks: toInt(clicks),
+          impressions: toInt(impressions),
+          ctr: toFloat(ctr),
+          avg_position: toFloat(avgPosition),
+          users: toInt(users),
+          sessions: toInt(sessions),
+        })
+      : socialSchema.safeParse({
+          likes: toInt(likes),
+          shares: toInt(shares),
+          comments: toInt(comments),
+          reach: toInt(reach),
+          impressions: toInt(impressions),
+        });
     if (parsed.success) {
       setFieldErrors({});
       return true;
@@ -139,7 +198,7 @@ const PlatformMetricsCard = ({ platform, platformLabel, onChanged }: Props) => {
       if (err.path.length === 0) {
         next._form = err.message;
       } else {
-        const key = err.path[0] as keyof MetricErrors;
+        const key = err.path[0] as FieldKey;
         if (key && !next[key]) next[key] = err.message;
       }
     });
@@ -151,18 +210,33 @@ const PlatformMetricsCard = ({ platform, platformLabel, onChanged }: Props) => {
     if (!validate()) return;
     setBusy(true);
     try {
-      await upsertPlatformMetric({
-        platform,
-        period_type: periodType,
-        period_start: range.start,
-        period_end: range.end,
-        likes: toNum(likes),
-        shares: toNum(shares),
-        comments: toNum(comments),
-        reach: toNum(reach),
-        impressions: toNum(impressions),
-        note: note.trim() || null,
-      });
+      const payload = isWeb
+        ? {
+            platform,
+            period_type: periodType,
+            period_start: range.start,
+            period_end: range.end,
+            clicks: toInt(clicks),
+            impressions: toInt(impressions),
+            ctr: toFloat(ctr),
+            avg_position: toFloat(avgPosition),
+            users: toInt(users),
+            sessions: toInt(sessions),
+            note: note.trim() || null,
+          }
+        : {
+            platform,
+            period_type: periodType,
+            period_start: range.start,
+            period_end: range.end,
+            likes: toInt(likes),
+            shares: toInt(shares),
+            comments: toInt(comments),
+            reach: toInt(reach),
+            impressions: toInt(impressions),
+            note: note.trim() || null,
+          };
+      await upsertPlatformMetric(payload);
       setFieldErrors({});
       toast({ title: "Platform metrics saved" });
       await Promise.all([loadExisting(), loadHistory()]);
@@ -201,14 +275,57 @@ const PlatformMetricsCard = ({ platform, platformLabel, onChanged }: Props) => {
     }
   };
 
+  const clearErr = (key: FieldKey) => {
+    if (fieldErrors[key] || fieldErrors._form) {
+      setFieldErrors((prev) => { const n = { ...prev }; delete n[key]; delete n._form; return n; });
+    }
+  };
+
+  const intField = (key: FieldKey, label: string, value: string, setter: (v: string) => void) => (
+    <div key={key}>
+      <Label className="text-xs">{label}</Label>
+      <Input
+        value={value}
+        onChange={(e) => { setter(clampDigits(e.target.value)); clearErr(key); }}
+        inputMode="numeric"
+        min={0}
+        className={cn(fieldErrors[key] && "border-destructive focus-visible:ring-destructive")}
+      />
+      {fieldErrors[key] && <p className="text-[10px] text-destructive mt-0.5">{fieldErrors[key]}</p>}
+    </div>
+  );
+
+  const decField = (key: FieldKey, label: string, value: string, setter: (v: string) => void, placeholder?: string) => (
+    <div key={key}>
+      <Label className="text-xs">{label}</Label>
+      <Input
+        value={value}
+        onChange={(e) => { setter(clampDecimal(e.target.value)); clearErr(key); }}
+        inputMode="decimal"
+        placeholder={placeholder}
+        className={cn(fieldErrors[key] && "border-destructive focus-visible:ring-destructive")}
+      />
+      {fieldErrors[key] && <p className="text-[10px] text-destructive mt-0.5">{fieldErrors[key]}</p>}
+    </div>
+  );
+
+  const historyLine = (m: PlatformMetric) =>
+    isWeb
+      ? `🖱 ${m.clicks ?? 0} · 👁 ${m.impressions ?? 0} · CTR ${m.ctr ?? 0}% · pos ${m.avg_position ?? 0} · 👥 ${m.users ?? 0} · 📈 ${m.sessions ?? 0}`
+      : `❤ ${m.likes ?? 0} · ↻ ${m.shares ?? 0} · 💬 ${m.comments ?? 0} · 👥 ${m.reach ?? 0} · 👁 ${m.impressions ?? 0}`;
+
   return (
     <Card className="p-4 space-y-4">
       <div className="flex items-center gap-2">
         <Gauge className="w-5 h-5 text-primary" />
-        <div className="font-medium">{platformLabel} — Platform metrics</div>
+        <div className="font-medium">
+          {platformLabel} — {isWeb ? "Search & site analytics" : "Platform metrics"}
+        </div>
       </div>
       <p className="text-xs text-muted-foreground -mt-2">
-        Log overall engagement for {platformLabel}. These totals replace per-item sums in the report when present.
+        {isWeb
+          ? `Log Google Search Console & Analytics numbers for ${platformLabel}. These totals power the report.`
+          : `Log overall engagement for ${platformLabel}. These totals replace per-item sums in the report when present.`}
       </p>
 
       <div className="flex flex-wrap items-center gap-2">
@@ -246,32 +363,26 @@ const PlatformMetricsCard = ({ platform, platformLabel, onChanged }: Props) => {
       {fieldErrors._form && (
         <p className="text-xs text-destructive">{fieldErrors._form}</p>
       )}
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-        {([
-          ["likes", likes, setLikes],
-          ["shares", shares, setShares],
-          ["comments", comments, setComments],
-          ["reach", reach, setReach],
-          ["impressions", impressions, setImpressions],
-        ] as [keyof MetricErrors, string, React.Dispatch<React.SetStateAction<string>>][]).map(([key, value, setter]) => (
-          <div key={key}>
-            <Label className="text-xs capitalize">{key}</Label>
-            <Input
-              value={value}
-              onChange={(e) => {
-                setter(clampDigits(e.target.value));
-                if (fieldErrors[key] || fieldErrors._form) {
-                  setFieldErrors((prev) => { const n = { ...prev }; delete n[key]; delete n._form; return n; });
-                }
-              }}
-              inputMode="numeric"
-              min={0}
-              className={cn(fieldErrors[key] && "border-destructive focus-visible:ring-destructive")}
-            />
-            {fieldErrors[key] && <p className="text-[10px] text-destructive mt-0.5">{fieldErrors[key]}</p>}
-          </div>
-        ))}
-      </div>
+
+      {isWeb ? (
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          {intField("clicks", "Clicks", clicks, setClicks)}
+          {intField("impressions", "Impressions", impressions, setImpressions)}
+          {decField("ctr", "CTR (%)", ctr, setCtr, "e.g. 3.2")}
+          {decField("avg_position", "Avg. position", avgPosition, setAvgPosition, "e.g. 12.4")}
+          {intField("users", "Users", users, setUsers)}
+          {intField("sessions", "Sessions", sessions, setSessions)}
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+          {intField("likes", "Likes", likes, setLikes)}
+          {intField("shares", "Shares", shares, setShares)}
+          {intField("comments", "Comments", comments, setComments)}
+          {intField("reach", "Reach", reach, setReach)}
+          {intField("impressions", "Impressions", impressions, setImpressions)}
+        </div>
+      )}
+
       <div>
         <Label className="text-xs">Note</Label>
         <Textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} placeholder="Anything to remember about this period" />
@@ -296,9 +407,7 @@ const PlatformMetricsCard = ({ platform, platformLabel, onChanged }: Props) => {
               <div key={m.id} className="flex items-center justify-between text-sm border rounded-md px-2 py-1">
                 <div className="min-w-0">
                   <div className="font-medium truncate">{periodLabel(m)}</div>
-                  <div className="text-xs text-muted-foreground">
-                    ❤ {m.likes ?? 0} · ↻ {m.shares ?? 0} · 💬 {m.comments ?? 0} · 👥 {m.reach ?? 0} · 👁 {m.impressions ?? 0}
-                  </div>
+                  <div className="text-xs text-muted-foreground">{historyLine(m)}</div>
                 </div>
                 <div className="flex gap-1 shrink-0">
                   <Button
