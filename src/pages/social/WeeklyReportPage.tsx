@@ -12,12 +12,15 @@ import { ArrowLeft, CalendarIcon, Copy, Download, BarChart3 } from "lucide-react
 import { addDays, endOfMonth, endOfWeek, format, parseISO, startOfMonth, startOfWeek, subDays } from "date-fns";
 import { cn } from "@/lib/utils";
 import {
+  PlatformMetric,
   SocialChecklistItem,
   SocialPlatform,
   listItemsRange,
+  listPlatformMetricsInRange,
 } from "@/services/socialChecklistService";
 import { toast } from "@/hooks/use-toast";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import PlatformMetricsCard from "@/components/social/PlatformMetricsCard";
 
 const PLATFORM_LABELS: Record<SocialPlatform, string> = {
   facebook: "Facebook",
@@ -40,26 +43,32 @@ const WeeklyReportPage = () => {
   const [from, setFrom] = useState(fmt(startOfWeek(today, { weekStartsOn: 1 })));
   const [to, setTo] = useState(fmt(endOfWeek(today, { weekStartsOn: 1 })));
   const [items, setItems] = useState<SocialChecklistItem[]>([]);
+  const [platformMetrics, setPlatformMetrics] = useState<PlatformMetric[]>([]);
   const [loading, setLoading] = useState(true);
+  const [reloadKey, setReloadKey] = useState(0);
 
   const load = async () => {
     setLoading(true);
     try {
-      const data = await listItemsRange(platform, from, to);
+      const [data, metrics] = await Promise.all([
+        listItemsRange(platform, from, to),
+        listPlatformMetricsInRange(platform, from, to),
+      ]);
       setItems(data);
+      setPlatformMetrics(metrics);
     } catch (e: any) {
       toast({ title: "Failed to load", description: e?.message, variant: "destructive" });
     } finally {
       setLoading(false);
     }
   };
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, [platform, from, to]);
+  useEffect(() => { load(); /* eslint-disable-next-line */ }, [platform, from, to, reloadKey]);
 
   const stats = useMemo(() => {
     const total = items.length;
     const done = items.filter((i) => i.is_done).length;
     const overdue = items.filter((i) => !i.is_done && i.checklist_date < fmt(today)).length;
-    const totals = items.reduce(
+    const itemTotals = items.reduce(
       (a, i) => ({
         likes: a.likes + (i.likes ?? 0),
         shares: a.shares + (i.shares ?? 0),
@@ -69,6 +78,23 @@ const WeeklyReportPage = () => {
       }),
       { likes: 0, shares: 0, comments: 0, reach: 0, impressions: 0 },
     );
+    const sumPlatform = (key: "likes" | "shares" | "comments" | "reach" | "impressions") => {
+      const rows = platformMetrics.filter((m) => m[key] != null);
+      if (rows.length === 0) return null;
+      return rows.reduce((s, r) => s + (r[key] ?? 0), 0);
+    };
+    const pickWithSource = (key: "likes" | "shares" | "comments" | "reach" | "impressions") => {
+      const p = sumPlatform(key);
+      if (p != null) return { value: p, source: "platform" as const };
+      return { value: itemTotals[key], source: "items" as const };
+    };
+    const totals = {
+      likes: pickWithSource("likes"),
+      shares: pickWithSource("shares"),
+      comments: pickWithSource("comments"),
+      reach: pickWithSource("reach"),
+      impressions: pickWithSource("impressions"),
+    };
     const byDay = new Map<string, { date: string; completed: number; total: number }>();
     for (const it of items) {
       const b = byDay.get(it.checklist_date) ?? { date: it.checklist_date, completed: 0, total: 0 };
@@ -83,7 +109,7 @@ const WeeklyReportPage = () => {
       .sort((a, b) => b.eng - a.eng)
       .slice(0, 5);
     return { total, done, overdue, totals, chartData, top };
-  }, [items]);
+  }, [items, platformMetrics]);
 
   const setPreset = (kind: "this_week" | "last_week" | "this_month") => {
     if (kind === "this_week") {
@@ -105,7 +131,20 @@ const WeeklyReportPage = () => {
     lines.push("");
     lines.push(`- Completed: **${stats.done} / ${stats.total}** (${stats.total ? Math.round((stats.done / stats.total) * 100) : 0}%)`);
     lines.push(`- Overdue (past, not done): **${stats.overdue}**`);
-    lines.push(`- Likes: ${stats.totals.likes} · Shares: ${stats.totals.shares} · Comments: ${stats.totals.comments} · Reach: ${stats.totals.reach} · Impressions: ${stats.totals.impressions}`);
+    const tag = (s: "platform" | "items") => s === "platform" ? "[platform]" : "[items]";
+    lines.push(`- Likes: ${stats.totals.likes.value} ${tag(stats.totals.likes.source)} · Shares: ${stats.totals.shares.value} ${tag(stats.totals.shares.source)} · Comments: ${stats.totals.comments.value} ${tag(stats.totals.comments.source)} · Reach: ${stats.totals.reach.value} ${tag(stats.totals.reach.source)} · Impressions: ${stats.totals.impressions.value} ${tag(stats.totals.impressions.source)}`);
+    if (platformMetrics.length > 0) {
+      lines.push("");
+      lines.push("## Platform metrics entries");
+      for (const m of platformMetrics) {
+        const label = m.period_type === "day"
+          ? m.period_start
+          : m.period_type === "week"
+            ? `Week of ${m.period_start}`
+            : `Month ${m.period_start.slice(0, 7)}`;
+        lines.push(`- ${label} — ❤ ${m.likes ?? 0} · ↻ ${m.shares ?? 0} · 💬 ${m.comments ?? 0} · 👥 ${m.reach ?? 0} · 👁 ${m.impressions ?? 0}`);
+      }
+    }
     if (stats.top.length > 0) {
       lines.push("");
       lines.push("## Top performing");
@@ -135,7 +174,27 @@ const WeeklyReportPage = () => {
       i.reach ?? "",
       i.impressions ?? "",
     ].join(","));
-    const csv = [header.join(","), ...rows].join("\n");
+    const pmHeader = ["period_type","period_start","period_end","likes","shares","comments","reach","impressions","note"];
+    const pmRows = platformMetrics.map((m) => [
+      m.period_type,
+      m.period_start,
+      m.period_end,
+      m.likes ?? "",
+      m.shares ?? "",
+      m.comments ?? "",
+      m.reach ?? "",
+      m.impressions ?? "",
+      `"${(m.note ?? "").replace(/"/g, '""')}"`,
+    ].join(","));
+    const csv = [
+      "# Items",
+      header.join(","),
+      ...rows,
+      "",
+      "# Platform metrics",
+      pmHeader.join(","),
+      ...pmRows,
+    ].join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -193,6 +252,12 @@ const WeeklyReportPage = () => {
               </div>
             </div>
 
+            <PlatformMetricsCard
+              platform={platform}
+              platformLabel={platformLabel}
+              onChanged={() => setReloadKey((k) => k + 1)}
+            />
+
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <Card className="p-4">
                 <div className="text-xs text-muted-foreground">Completion rate</div>
@@ -204,14 +269,20 @@ const WeeklyReportPage = () => {
                 <div className="text-2xl font-bold">{stats.overdue}</div>
               </Card>
               <Card className="p-4">
-                <div className="text-xs text-muted-foreground">Engagement</div>
-                <div className="text-2xl font-bold">{stats.totals.likes + stats.totals.shares + stats.totals.comments}</div>
-                <div className="text-xs text-muted-foreground">❤ {stats.totals.likes} · ↻ {stats.totals.shares} · 💬 {stats.totals.comments}</div>
+                <div className="text-xs text-muted-foreground flex items-center justify-between">
+                  <span>Engagement</span>
+                  <Badge variant="outline" className="text-[10px]">{stats.totals.likes.source === "platform" ? "platform" : "items"}</Badge>
+                </div>
+                <div className="text-2xl font-bold">{stats.totals.likes.value + stats.totals.shares.value + stats.totals.comments.value}</div>
+                <div className="text-xs text-muted-foreground">❤ {stats.totals.likes.value} · ↻ {stats.totals.shares.value} · 💬 {stats.totals.comments.value}</div>
               </Card>
               <Card className="p-4">
-                <div className="text-xs text-muted-foreground">Reach / Impressions</div>
-                <div className="text-2xl font-bold">{stats.totals.reach}</div>
-                <div className="text-xs text-muted-foreground">{stats.totals.impressions} impressions</div>
+                <div className="text-xs text-muted-foreground flex items-center justify-between">
+                  <span>Reach / Impressions</span>
+                  <Badge variant="outline" className="text-[10px]">{stats.totals.reach.source === "platform" ? "platform" : "items"}</Badge>
+                </div>
+                <div className="text-2xl font-bold">{stats.totals.reach.value}</div>
+                <div className="text-xs text-muted-foreground">{stats.totals.impressions.value} impressions</div>
               </Card>
             </div>
 

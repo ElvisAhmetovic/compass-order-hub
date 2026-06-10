@@ -1,73 +1,59 @@
-# Social Media Checklist — Power-User Upgrades
+# Platform-wide engagement entries on the Report
 
-Five additions layered on top of the existing per-day, per-platform checklist on `/social/:platform`.
+Let the marketing worker log overall engagement, reach and impressions per platform for a chosen day, week, or month, and have those numbers drive the report (replacing per-item sums when present).
 
-## 1. Weekly / Monthly Calendar View (plan ahead)
+## Data model
 
-- New tab toggle on `SocialMediaChecklistPage`: **Day / Week / Month**.
-- Week view: 7-column grid, each column lists that day's checklist items (compact cards: title + time + priority dot).
-- Month view: standard month grid; each cell shows a count badge + first 2 item titles; clicking a cell jumps to Day view for that date.
-- **Drag & drop**: drag an item card from one day to another to reschedule (updates `scheduled_date` on the existing `social_media_checklist_items` row). Use `@dnd-kit/core` (already in shadcn ecosystem; add if missing).
-- "Duplicate to…" context action on an item: copies it to a chosen future date (handy for recurring posts without templates).
+New table `social_media_platform_metrics`:
 
-## 2. Post-Performance Tracking
+- `platform` (text, same enum as elsewhere)
+- `period_type` ('day' | 'week' | 'month')
+- `period_start` (date — Mon for week, 1st for month)
+- `period_end` (date — Sun for week, last day for month, same as start for day)
+- `likes`, `shares`, `comments`, `reach`, `impressions` (int, nullable)
+- `note` (text, nullable)
+- `created_by`, `created_at`, `updated_at`
+- Unique on `(platform, period_type, period_start)` so each span has one editable row (upsert).
 
-- Extend `social_media_checklist_items` with optional engagement fields: `likes`, `shares`, `comments`, `reach`, `impressions`, `performance_note`, `performance_recorded_at`.
-- On a completed item, show a **"Add performance"** button → small inline form / dialog with the numeric fields.
-- Completed item card displays the metrics inline (e.g. `❤ 124 · ↻ 18 · 💬 9 · 👁 2.4k`).
-- Metrics are per-item, not aggregated to a separate table — keeps it simple and tied to the original task.
+RLS: admins + agents can read / insert / update; admins or creator can delete (same pattern as ideas/templates).
 
-## 3. Content Idea Backlog
+## UI on the report page (`/social/:platform/report`)
 
-- New table `social_media_content_ideas`: `platform`, `title`, `description`, `link_url`, `tags` (text[]), `status` ('open' | 'used' | 'archived'), `used_on_date`, `used_item_id`.
-- New page section (accessible from a **"Ideas"** button on the checklist page) → drawer/dialog listing ideas for the current platform with filter (open / used / archived), search, and add/edit/delete.
-- "**Use idea**" button on an idea → opens the existing Add Checklist Item dialog prefilled with title/description/link, scheduled to the currently selected date. On save, idea is marked `used` and linked to the new checklist item.
-- Ideas are shared per platform (same access as checklist: admins + agents).
+1. **New "Platform metrics" card** at the top of the report:
+   - Period-type tabs: Day / Week / Month.
+   - Date picker tied to the chosen period type (week shows Mon–Sun span; month shows the chosen month).
+   - Inputs: Likes, Shares, Comments, Reach, Impressions, Note.
+   - Save / Delete buttons. Save is an upsert keyed on (platform, period_type, period_start).
+   - Loads any existing row for the selected period and pre-fills.
 
-## 4. Best-Time-to-Post Reference Panel
+2. **History list** below the form: recent platform-metric entries for this platform with period label (e.g. "Week of 9 Jun 2026"), totals, and edit/delete actions.
 
-- Collapsible side panel (sheet on mobile, sticky aside on desktop) on the checklist page, per platform.
-- **Static defaults** seeded per platform (industry-standard windows, e.g. IG: Tue–Thu 11:00–13:00 & 19:00–21:00, TikTok: Tue/Thu 18:00–22:00, etc.).
-- **Data-driven overlay**: once performance data exists, compute average engagement (likes + shares + comments) bucketed by `scheduled_time` hour from past 90 days of items on that platform; render a simple bar/heat strip highlighting top 3 hours.
-- Stored in a new table `social_media_best_times` (platform, day_of_week, hour, source 'default' | 'computed', score) refreshed client-side from a query when the panel opens.
+## Report totals logic
 
-## 5. Weekly Accomplishment Report
+When computing the totals shown in the top stat cards and "Engagement totals" for the selected report range (`from`–`to`):
 
-- New route `/social/:platform/report` (and a top-level `/social/report` for all-platforms summary).
-- Date range picker defaulting to current ISO week (Mon–Sun); also quick presets: This week / Last week / This month.
-- Sections:
-  - **Completed items** count per platform + per day (bar chart).
-  - **Completion rate**: completed / total scheduled in range.
-  - **Engagement totals**: sum likes / shares / comments / reach for completed items with metrics.
-  - **Top performing items**: list top 5 by total engagement, with link.
-  - **Carry-over**: items still open past their scheduled date.
-- Export button: **Copy as Markdown** (for standup) and **Download CSV**. No PDF/email automation in v1.
+- Pull all `social_media_platform_metrics` rows for this platform whose `period_start` ≥ `from` and `period_end` ≤ `to` (fully contained in the report range, to avoid partial double-counting).
+- For each metric (likes/shares/comments/reach/impressions):
+  - If at least one platform-wide row in range has a non-null value for that metric → use the **sum of platform-wide rows** for that metric.
+  - Otherwise → fall back to the **sum of per-item metrics** (current behavior).
+- Show a small badge on each stat card indicating the source: "Platform totals" vs "From items" so she always knows what she's looking at.
+- The "Top performing items" section keeps using per-item metrics as today (platform-wide entries aren't tied to items).
+- CSV/Markdown export uses the same combined logic and appends a "Platform metrics" section listing each contributing row.
+
+## Out of scope
+
+- Splitting a week/month entry back across days.
+- Auto-fetching from social APIs.
+- Reconciliation warnings when both per-item and platform-wide numbers exist (we just prefer platform-wide, per your choice).
 
 ## Technical Details
 
-### Database migrations
-1. `ALTER TABLE social_media_checklist_items` add: `likes int`, `shares int`, `comments int`, `reach int`, `impressions int`, `performance_note text`, `performance_recorded_at timestamptz`. All nullable.
-2. `CREATE TABLE social_media_content_ideas` (id, platform, title, description, link_url, tags text[], status text default 'open', used_on_date date, used_item_id uuid, created_by, created_at, updated_at) + GRANTs to authenticated/service_role + RLS: admins and agents full access (same pattern as `social_media_checklist_items`).
-3. `CREATE TABLE social_media_best_times` (id, platform, day_of_week smallint, hour smallint, source text, score numeric, updated_at) + GRANTs + RLS (read all auth, write admins). Seed default rows in migration.
-
-### Frontend
-- `src/services/socialChecklistService.ts`: add CRUD for ideas, performance update, best-times read, report aggregation queries.
-- New components:
-  - `src/components/social/CalendarView.tsx` (week + month, dnd-kit).
-  - `src/components/social/PerformanceForm.tsx` (inline metrics editor).
-  - `src/components/social/ContentIdeasDialog.tsx`.
-  - `src/components/social/BestTimesPanel.tsx`.
-  - `src/pages/social/WeeklyReportPage.tsx` (+ route in `App.tsx`).
-- `SocialMediaChecklistPage.tsx`: add Day/Week/Month tabs, Ideas & Best Times buttons, Report link.
-- Sidebar: add "Reports" sublink under Social.
-
-### Dependencies
-- `@dnd-kit/core` and `@dnd-kit/sortable` for drag-and-drop (if not already present).
-- `date-fns` (already used) for week/month grid math.
-- Recharts (already used) for report bar chart.
-
-## Out of Scope (for this round)
-- Auto-fetching live engagement from platform APIs.
-- Scheduling/publishing posts directly to platforms.
-- Email/Slack delivery of the weekly report.
-- Team approval workflow on ideas or items.
+- Migration creates the table with the four-step pattern (CREATE → GRANT to authenticated + service_role → ENABLE RLS → policies) and an updated_at trigger.
+- New service file additions in `src/services/socialChecklistService.ts`: `upsertPlatformMetric`, `getPlatformMetric(platform, period_type, period_start)`, `listPlatformMetricsInRange(platform, from, to)`, `deletePlatformMetric(id)`.
+- New component `src/components/social/PlatformMetricsCard.tsx` for the form + history.
+- Update `src/pages/social/WeeklyReportPage.tsx`:
+  - Fetch contained platform-metric rows for `[from, to]` alongside items.
+  - Compute totals via the "platform overrides items per metric" rule and annotate cards with source.
+  - Add Platform metrics card above the stats grid.
+  - Extend CSV/Markdown export.
+- `period_start`/`period_end` helpers via existing `date-fns` (`startOfWeek` Mon, `endOfWeek` Sun, `startOfMonth`, `endOfMonth`).
