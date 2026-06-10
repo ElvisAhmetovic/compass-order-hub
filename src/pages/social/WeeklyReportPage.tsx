@@ -148,21 +148,30 @@ const WeeklyReportPage = () => {
     lines.push("");
     lines.push(`- Completed: **${stats.done} / ${stats.total}** (${stats.total ? Math.round((stats.done / stats.total) * 100) : 0}%)`);
     lines.push(`- Overdue (past, not done): **${stats.overdue}**`);
-    const tag = (s: "platform" | "items") => s === "platform" ? "[platform]" : "[items]";
-    lines.push(`- Likes: ${stats.totals.likes.value} ${tag(stats.totals.likes.source)} · Shares: ${stats.totals.shares.value} ${tag(stats.totals.shares.source)} · Comments: ${stats.totals.comments.value} ${tag(stats.totals.comments.source)} · Reach: ${stats.totals.reach.value} ${tag(stats.totals.reach.source)} · Impressions: ${stats.totals.impressions.value} ${tag(stats.totals.impressions.source)}`);
+    if (isWeb) {
+      const w = stats.webTotals;
+      lines.push(`- Clicks: ${w.clicks} · Impressions: ${w.impressions} · CTR: ${w.ctr != null ? w.ctr.toFixed(2) + "%" : "—"} · Avg. position: ${w.avg_position != null ? w.avg_position.toFixed(2) : "—"} · Users: ${w.users} · Sessions: ${w.sessions}`);
+    } else {
+      const tag = (s: "platform" | "items") => s === "platform" ? "[platform]" : "[items]";
+      lines.push(`- Likes: ${stats.totals.likes.value} ${tag(stats.totals.likes.source)} · Shares: ${stats.totals.shares.value} ${tag(stats.totals.shares.source)} · Comments: ${stats.totals.comments.value} ${tag(stats.totals.comments.source)} · Reach: ${stats.totals.reach.value} ${tag(stats.totals.reach.source)} · Impressions: ${stats.totals.impressions.value} ${tag(stats.totals.impressions.source)}`);
+    }
     if (platformMetrics.length > 0) {
       lines.push("");
-      lines.push("## Platform metrics entries");
+      lines.push(isWeb ? "## Search & analytics entries" : "## Platform metrics entries");
       for (const m of platformMetrics) {
         const label = m.period_type === "day"
           ? m.period_start
           : m.period_type === "week"
             ? `Week of ${m.period_start}`
             : `Month ${m.period_start.slice(0, 7)}`;
-        lines.push(`- ${label} — ❤ ${m.likes ?? 0} · ↻ ${m.shares ?? 0} · 💬 ${m.comments ?? 0} · 👥 ${m.reach ?? 0} · 👁 ${m.impressions ?? 0}`);
+        if (isWeb) {
+          lines.push(`- ${label} — 🖱 ${m.clicks ?? 0} · 👁 ${m.impressions ?? 0} · CTR ${m.ctr ?? 0}% · pos ${m.avg_position ?? 0} · 👥 ${m.users ?? 0} · 📈 ${m.sessions ?? 0}`);
+        } else {
+          lines.push(`- ${label} — ❤ ${m.likes ?? 0} · ↻ ${m.shares ?? 0} · 💬 ${m.comments ?? 0} · 👥 ${m.reach ?? 0} · 👁 ${m.impressions ?? 0}`);
+        }
       }
     }
-    if (stats.top.length > 0) {
+    if (!isWeb && stats.top.length > 0) {
       lines.push("");
       lines.push("## Top performing");
       for (const t of stats.top) {
@@ -191,8 +200,21 @@ const WeeklyReportPage = () => {
       i.reach ?? "",
       i.impressions ?? "",
     ].join(","));
-    const pmHeader = ["period_type","period_start","period_end","likes","shares","comments","reach","impressions","note"];
-    const pmRows = platformMetrics.map((m) => [
+    const pmHeader = isWeb
+      ? ["period_type","period_start","period_end","clicks","impressions","ctr","avg_position","users","sessions","note"]
+      : ["period_type","period_start","period_end","likes","shares","comments","reach","impressions","note"];
+    const pmRows = platformMetrics.map((m) => (isWeb ? [
+      m.period_type,
+      m.period_start,
+      m.period_end,
+      m.clicks ?? "",
+      m.impressions ?? "",
+      m.ctr ?? "",
+      m.avg_position ?? "",
+      m.users ?? "",
+      m.sessions ?? "",
+      `"${(m.note ?? "").replace(/"/g, '""')}"`,
+    ] : [
       m.period_type,
       m.period_start,
       m.period_end,
@@ -202,16 +224,13 @@ const WeeklyReportPage = () => {
       m.reach ?? "",
       m.impressions ?? "",
       `"${(m.note ?? "").replace(/"/g, '""')}"`,
-    ].join(","));
-    const csv = [
-      "# Items",
-      header.join(","),
-      ...rows,
-      "",
-      "# Platform metrics",
-      pmHeader.join(","),
-      ...pmRows,
-    ].join("\n");
+    ]).join(","));
+    const sections: string[] = [];
+    if (!isWeb) {
+      sections.push("# Items", header.join(","), ...rows, "");
+    }
+    sections.push(isWeb ? "# Search & analytics" : "# Platform metrics", pmHeader.join(","), ...pmRows);
+    const csv = sections.join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
