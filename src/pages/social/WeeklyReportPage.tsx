@@ -243,14 +243,20 @@ const WeeklyReportPage = () => {
                 <div className="text-2xl font-bold">{stats.overdue}</div>
               </Card>
               <Card className="p-4">
-                <div className="text-xs text-muted-foreground">Engagement</div>
-                <div className="text-2xl font-bold">{stats.totals.likes + stats.totals.shares + stats.totals.comments}</div>
-                <div className="text-xs text-muted-foreground">❤ {stats.totals.likes} · ↻ {stats.totals.shares} · 💬 {stats.totals.comments}</div>
+                <div className="text-xs text-muted-foreground flex items-center justify-between">
+                  <span>Engagement</span>
+                  <Badge variant="outline" className="text-[10px]">{stats.totals.likes.source === "platform" ? "platform" : "items"}</Badge>
+                </div>
+                <div className="text-2xl font-bold">{stats.totals.likes.value + stats.totals.shares.value + stats.totals.comments.value}</div>
+                <div className="text-xs text-muted-foreground">❤ {stats.totals.likes.value} · ↻ {stats.totals.shares.value} · 💬 {stats.totals.comments.value}</div>
               </Card>
               <Card className="p-4">
-                <div className="text-xs text-muted-foreground">Reach / Impressions</div>
-                <div className="text-2xl font-bold">{stats.totals.reach}</div>
-                <div className="text-xs text-muted-foreground">{stats.totals.impressions} impressions</div>
+                <div className="text-xs text-muted-foreground flex items-center justify-between">
+                  <span>Reach / Impressions</span>
+                  <Badge variant="outline" className="text-[10px]">{stats.totals.reach.source === "platform" ? "platform" : "items"}</Badge>
+                </div>
+                <div className="text-2xl font-bold">{stats.totals.reach.value}</div>
+                <div className="text-xs text-muted-foreground">{stats.totals.impressions.value} impressions</div>
               </Card>
             </div>
 
