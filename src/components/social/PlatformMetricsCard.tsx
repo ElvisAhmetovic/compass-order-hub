@@ -122,7 +122,29 @@ const PlatformMetricsCard = ({ platform, platformLabel, onChanged }: Props) => {
   useEffect(() => { loadExisting(); /* eslint-disable-next-line */ }, [platform, periodType, range.start]);
   useEffect(() => { loadHistory(); /* eslint-disable-next-line */ }, [platform]);
 
+  const validate = () => {
+    const parsed = metricSchema.safeParse({
+      likes: toNum(likes),
+      shares: toNum(shares),
+      comments: toNum(comments),
+      reach: toNum(reach),
+      impressions: toNum(impressions),
+    });
+    if (parsed.success) {
+      setFieldErrors({});
+      return true;
+    }
+    const next: MetricErrors = {};
+    parsed.error.errors.forEach((err) => {
+      const key = err.path[0] as keyof MetricErrors;
+      if (key && !next[key]) next[key] = err.message;
+    });
+    setFieldErrors(next);
+    return false;
+  };
+
   const save = async () => {
+    if (!validate()) return;
     setBusy(true);
     try {
       await upsertPlatformMetric({
@@ -137,6 +159,7 @@ const PlatformMetricsCard = ({ platform, platformLabel, onChanged }: Props) => {
         impressions: toNum(impressions),
         note: note.trim() || null,
       });
+      setFieldErrors({});
       toast({ title: "Platform metrics saved" });
       await Promise.all([loadExisting(), loadHistory()]);
       onChanged?.();
