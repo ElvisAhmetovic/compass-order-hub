@@ -1,0 +1,269 @@
+import { useEffect, useMemo, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import Layout from "@/components/layout/Layout";
+import Sidebar from "@/components/dashboard/Sidebar";
+import { useAuth } from "@/context/AuthContext";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Badge } from "@/components/ui/badge";
+import { ArrowLeft, CalendarIcon, Copy, Download, BarChart3 } from "lucide-react";
+import { addDays, endOfMonth, endOfWeek, format, parseISO, startOfMonth, startOfWeek, subDays } from "date-fns";
+import { cn } from "@/lib/utils";
+import {
+  SocialChecklistItem,
+  SocialPlatform,
+  listItemsRange,
+} from "@/services/socialChecklistService";
+import { toast } from "@/hooks/use-toast";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+
+const PLATFORM_LABELS: Record<SocialPlatform, string> = {
+  facebook: "Facebook",
+  instagram: "Instagram",
+  tiktok: "TikTok",
+  twitter: "Twitter (X)",
+  abm_website: "ABM Website",
+};
+
+const fmt = (d: Date) => format(d, "yyyy-MM-dd");
+
+const WeeklyReportPage = () => {
+  const { platform: platformParam } = useParams<{ platform: string }>();
+  const platform = (platformParam?.replace("-", "_") as SocialPlatform) || ("facebook" as SocialPlatform);
+  const platformLabel = PLATFORM_LABELS[platform] ?? platform;
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  const today = new Date();
+  const [from, setFrom] = useState(fmt(startOfWeek(today, { weekStartsOn: 1 })));
+  const [to, setTo] = useState(fmt(endOfWeek(today, { weekStartsOn: 1 })));
+  const [items, setItems] = useState<SocialChecklistItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const data = await listItemsRange(platform, from, to);
+      setItems(data);
+    } catch (e: any) {
+      toast({ title: "Failed to load", description: e?.message, variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
+  useEffect(() => { load(); /* eslint-disable-next-line */ }, [platform, from, to]);
+
+  const stats = useMemo(() => {
+    const total = items.length;
+    const done = items.filter((i) => i.is_done).length;
+    const overdue = items.filter((i) => !i.is_done && i.checklist_date < fmt(today)).length;
+    const totals = items.reduce(
+      (a, i) => ({
+        likes: a.likes + (i.likes ?? 0),
+        shares: a.shares + (i.shares ?? 0),
+        comments: a.comments + (i.comments ?? 0),
+        reach: a.reach + (i.reach ?? 0),
+        impressions: a.impressions + (i.impressions ?? 0),
+      }),
+      { likes: 0, shares: 0, comments: 0, reach: 0, impressions: 0 },
+    );
+    const byDay = new Map<string, { date: string; completed: number; total: number }>();
+    for (const it of items) {
+      const b = byDay.get(it.checklist_date) ?? { date: it.checklist_date, completed: 0, total: 0 };
+      b.total += 1;
+      if (it.is_done) b.completed += 1;
+      byDay.set(it.checklist_date, b);
+    }
+    const chartData = Array.from(byDay.values()).sort((a, b) => a.date.localeCompare(b.date));
+    const top = [...items]
+      .map((i) => ({ ...i, eng: (i.likes ?? 0) + (i.shares ?? 0) + (i.comments ?? 0) }))
+      .filter((i) => i.eng > 0)
+      .sort((a, b) => b.eng - a.eng)
+      .slice(0, 5);
+    return { total, done, overdue, totals, chartData, top };
+  }, [items]);
+
+  const setPreset = (kind: "this_week" | "last_week" | "this_month") => {
+    if (kind === "this_week") {
+      setFrom(fmt(startOfWeek(today, { weekStartsOn: 1 })));
+      setTo(fmt(endOfWeek(today, { weekStartsOn: 1 })));
+    } else if (kind === "last_week") {
+      const lw = subDays(startOfWeek(today, { weekStartsOn: 1 }), 7);
+      setFrom(fmt(lw));
+      setTo(fmt(addDays(lw, 6)));
+    } else {
+      setFrom(fmt(startOfMonth(today)));
+      setTo(fmt(endOfMonth(today)));
+    }
+  };
+
+  const buildMarkdown = () => {
+    const lines: string[] = [];
+    lines.push(`# ${platformLabel} report — ${from} → ${to}`);
+    lines.push("");
+    lines.push(`- Completed: **${stats.done} / ${stats.total}** (${stats.total ? Math.round((stats.done / stats.total) * 100) : 0}%)`);
+    lines.push(`- Overdue (past, not done): **${stats.overdue}**`);
+    lines.push(`- Likes: ${stats.totals.likes} · Shares: ${stats.totals.shares} · Comments: ${stats.totals.comments} · Reach: ${stats.totals.reach} · Impressions: ${stats.totals.impressions}`);
+    if (stats.top.length > 0) {
+      lines.push("");
+      lines.push("## Top performing");
+      for (const t of stats.top) {
+        lines.push(`- **${t.title}** (${t.checklist_date}) — ❤ ${t.likes ?? 0} · ↻ ${t.shares ?? 0} · 💬 ${t.comments ?? 0}`);
+      }
+    }
+    return lines.join("\n");
+  };
+
+  const copyMarkdown = async () => {
+    await navigator.clipboard.writeText(buildMarkdown());
+    toast({ title: "Copied as Markdown" });
+  };
+
+  const downloadCsv = () => {
+    const header = ["date","title","done","priority","scheduled_time","likes","shares","comments","reach","impressions"];
+    const rows = items.map((i) => [
+      i.checklist_date,
+      `"${(i.title ?? "").replace(/"/g, '""')}"`,
+      i.is_done ? "yes" : "no",
+      i.priority,
+      i.scheduled_time ?? "",
+      i.likes ?? "",
+      i.shares ?? "",
+      i.comments ?? "",
+      i.reach ?? "",
+      i.impressions ?? "",
+    ].join(","));
+    const csv = [header.join(","), ...rows].join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${platform}-report-${from}_${to}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  if (!user) return null;
+
+  return (
+    <div className="flex min-h-screen">
+      <Sidebar />
+      <div className="flex-1 flex flex-col min-w-0">
+        <Layout userRole={user.role}>
+          <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <Button variant="ghost" size="sm" onClick={() => navigate(`/social/${platformParam}`)} className="mb-2">
+                  <ArrowLeft className="w-4 h-4 mr-1" /> Back to checklist
+                </Button>
+                <h1 className="text-3xl font-bold flex items-center gap-2">
+                  <BarChart3 className="w-7 h-7 text-primary" />
+                  {platformLabel} report
+                </h1>
+                <p className="text-muted-foreground">{from} → {to}</p>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <Button variant="outline" size="sm" onClick={() => setPreset("this_week")}>This week</Button>
+                <Button variant="outline" size="sm" onClick={() => setPreset("last_week")}>Last week</Button>
+                <Button variant="outline" size="sm" onClick={() => setPreset("this_month")}>This month</Button>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className={cn("justify-start text-left font-normal")}>
+                      <CalendarIcon className="mr-2 h-4 w-4" /> From: {from}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0 z-50 bg-popover" align="start">
+                    <Calendar mode="single" selected={parseISO(from)} onSelect={(d) => d && setFrom(fmt(d))} initialFocus className="p-3 pointer-events-auto" />
+                  </PopoverContent>
+                </Popover>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className={cn("justify-start text-left font-normal")}>
+                      <CalendarIcon className="mr-2 h-4 w-4" /> To: {to}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0 z-50 bg-popover" align="start">
+                    <Calendar mode="single" selected={parseISO(to)} onSelect={(d) => d && setTo(fmt(d))} initialFocus className="p-3 pointer-events-auto" />
+                  </PopoverContent>
+                </Popover>
+                <Button variant="outline" onClick={copyMarkdown}><Copy className="w-4 h-4 mr-1" /> Markdown</Button>
+                <Button variant="outline" onClick={downloadCsv}><Download className="w-4 h-4 mr-1" /> CSV</Button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <Card className="p-4">
+                <div className="text-xs text-muted-foreground">Completion rate</div>
+                <div className="text-2xl font-bold">{stats.total ? Math.round((stats.done / stats.total) * 100) : 0}%</div>
+                <div className="text-xs text-muted-foreground">{stats.done} / {stats.total}</div>
+              </Card>
+              <Card className="p-4">
+                <div className="text-xs text-muted-foreground">Overdue</div>
+                <div className="text-2xl font-bold">{stats.overdue}</div>
+              </Card>
+              <Card className="p-4">
+                <div className="text-xs text-muted-foreground">Engagement</div>
+                <div className="text-2xl font-bold">{stats.totals.likes + stats.totals.shares + stats.totals.comments}</div>
+                <div className="text-xs text-muted-foreground">❤ {stats.totals.likes} · ↻ {stats.totals.shares} · 💬 {stats.totals.comments}</div>
+              </Card>
+              <Card className="p-4">
+                <div className="text-xs text-muted-foreground">Reach / Impressions</div>
+                <div className="text-2xl font-bold">{stats.totals.reach}</div>
+                <div className="text-xs text-muted-foreground">{stats.totals.impressions} impressions</div>
+              </Card>
+            </div>
+
+            <Card className="p-4">
+              <div className="font-medium mb-3">Completed per day</div>
+              {loading ? (
+                <div className="text-sm text-muted-foreground">Loading…</div>
+              ) : stats.chartData.length === 0 ? (
+                <div className="text-sm text-muted-foreground">No data in range.</div>
+              ) : (
+                <div style={{ width: "100%", height: 220 }}>
+                  <ResponsiveContainer>
+                    <BarChart data={stats.chartData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="date" fontSize={12} />
+                      <YAxis allowDecimals={false} fontSize={12} />
+                      <Tooltip />
+                      <Bar dataKey="completed" fill="hsl(var(--primary))" />
+                      <Bar dataKey="total" fill="hsl(var(--muted-foreground))" opacity={0.4} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+            </Card>
+
+            <Card className="p-4">
+              <div className="font-medium mb-3">Top performing items</div>
+              {stats.top.length === 0 ? (
+                <div className="text-sm text-muted-foreground">Add engagement numbers to completed items to populate this.</div>
+              ) : (
+                <div className="space-y-2">
+                  {stats.top.map((t) => (
+                    <div key={t.id} className="flex items-center justify-between border rounded-md p-2">
+                      <div className="min-w-0">
+                        <div className="font-medium truncate">{t.title}</div>
+                        <div className="text-xs text-muted-foreground">{t.checklist_date}</div>
+                      </div>
+                      <div className="flex gap-2 text-xs">
+                        <Badge variant="secondary">❤ {t.likes ?? 0}</Badge>
+                        <Badge variant="secondary">↻ {t.shares ?? 0}</Badge>
+                        <Badge variant="secondary">💬 {t.comments ?? 0}</Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card>
+          </div>
+        </Layout>
+      </div>
+    </div>
+  );
+};
+
+export default WeeklyReportPage;

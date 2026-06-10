@@ -4,11 +4,12 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Trash2, ExternalLink, Clock, Check, X } from "lucide-react";
+import { Trash2, ExternalLink, Clock, Check, X, BarChart3 } from "lucide-react";
 import { SocialChecklistItem, softDelete, toggleDone } from "@/services/socialChecklistService";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
+import PerformanceForm from "@/components/social/PerformanceForm";
 
 interface Props {
   item: SocialChecklistItem;
@@ -21,11 +22,15 @@ const priorityColor: Record<string, string> = {
   high: "bg-red-500/15 text-red-600 dark:text-red-400",
 };
 
+const hasMetrics = (item: SocialChecklistItem) =>
+  item.likes != null || item.shares != null || item.comments != null || item.reach != null || item.impressions != null;
+
 const ChecklistItemCard = ({ item, onChanged }: Props) => {
   const { user } = useAuth();
   const [noteOpen, setNoteOpen] = useState(false);
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
+  const [perfOpen, setPerfOpen] = useState(false);
 
   const canDelete = user?.role === "admin" || user?.id === item.created_by;
 
@@ -123,6 +128,32 @@ const ChecklistItemCard = ({ item, onChanged }: Props) => {
             <div className="mt-2 text-xs text-muted-foreground italic">
               Note: {item.done_note}
             </div>
+          )}
+
+          {item.is_done && hasMetrics(item) && (
+            <div className="mt-2 flex flex-wrap gap-2 text-xs">
+              {item.likes != null && <Badge variant="secondary">❤ {item.likes}</Badge>}
+              {item.shares != null && <Badge variant="secondary">↻ {item.shares}</Badge>}
+              {item.comments != null && <Badge variant="secondary">💬 {item.comments}</Badge>}
+              {item.reach != null && <Badge variant="secondary">👥 {item.reach} reach</Badge>}
+              {item.impressions != null && <Badge variant="secondary">👁 {item.impressions} imp.</Badge>}
+            </div>
+          )}
+          {item.is_done && item.performance_note && (
+            <div className="mt-1 text-xs text-muted-foreground">📊 {item.performance_note}</div>
+          )}
+
+          {item.is_done && !perfOpen && (
+            <Button size="sm" variant="ghost" className="mt-2 h-7 px-2" onClick={() => setPerfOpen(true)}>
+              <BarChart3 className="w-3 h-3 mr-1" /> {hasMetrics(item) ? "Edit performance" : "Add performance"}
+            </Button>
+          )}
+          {perfOpen && (
+            <PerformanceForm
+              item={item}
+              onSaved={() => { setPerfOpen(false); onChanged(); }}
+              onCancel={() => setPerfOpen(false)}
+            />
           )}
 
           {noteOpen && (
