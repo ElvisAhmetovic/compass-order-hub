@@ -64,6 +64,8 @@ const WeeklyReportPage = () => {
   };
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [platform, from, to, reloadKey]);
 
+  const isWeb = platform === "abm_website";
+
   const stats = useMemo(() => {
     const total = items.length;
     const done = items.filter((i) => i.is_done).length;
@@ -78,10 +80,16 @@ const WeeklyReportPage = () => {
       }),
       { likes: 0, shares: 0, comments: 0, reach: 0, impressions: 0 },
     );
-    const sumPlatform = (key: "likes" | "shares" | "comments" | "reach" | "impressions") => {
+    const sumPlatform = (key: keyof PlatformMetric) => {
       const rows = platformMetrics.filter((m) => m[key] != null);
       if (rows.length === 0) return null;
-      return rows.reduce((s, r) => s + (r[key] ?? 0), 0);
+      return rows.reduce((s, r) => s + ((r[key] as number) ?? 0), 0);
+    };
+    const avgPlatform = (key: keyof PlatformMetric) => {
+      const rows = platformMetrics.filter((m) => m[key] != null);
+      if (rows.length === 0) return null;
+      const sum = rows.reduce((s, r) => s + ((r[key] as number) ?? 0), 0);
+      return sum / rows.length;
     };
     const pickWithSource = (key: "likes" | "shares" | "comments" | "reach" | "impressions") => {
       const p = sumPlatform(key);
@@ -94,6 +102,15 @@ const WeeklyReportPage = () => {
       comments: pickWithSource("comments"),
       reach: pickWithSource("reach"),
       impressions: pickWithSource("impressions"),
+    };
+    // Web (GSC/GA) totals — always from platform metrics rows
+    const webTotals = {
+      clicks: sumPlatform("clicks") ?? 0,
+      impressions: sumPlatform("impressions") ?? 0,
+      ctr: avgPlatform("ctr"),
+      avg_position: avgPlatform("avg_position"),
+      users: sumPlatform("users") ?? 0,
+      sessions: sumPlatform("sessions") ?? 0,
     };
     const byDay = new Map<string, { date: string; completed: number; total: number }>();
     for (const it of items) {
@@ -108,7 +125,7 @@ const WeeklyReportPage = () => {
       .filter((i) => i.eng > 0)
       .sort((a, b) => b.eng - a.eng)
       .slice(0, 5);
-    return { total, done, overdue, totals, chartData, top };
+    return { total, done, overdue, totals, webTotals, chartData, top };
   }, [items, platformMetrics]);
 
   const setPreset = (kind: "this_week" | "last_week" | "this_month") => {
@@ -131,21 +148,30 @@ const WeeklyReportPage = () => {
     lines.push("");
     lines.push(`- Completed: **${stats.done} / ${stats.total}** (${stats.total ? Math.round((stats.done / stats.total) * 100) : 0}%)`);
     lines.push(`- Overdue (past, not done): **${stats.overdue}**`);
-    const tag = (s: "platform" | "items") => s === "platform" ? "[platform]" : "[items]";
-    lines.push(`- Likes: ${stats.totals.likes.value} ${tag(stats.totals.likes.source)} · Shares: ${stats.totals.shares.value} ${tag(stats.totals.shares.source)} · Comments: ${stats.totals.comments.value} ${tag(stats.totals.comments.source)} · Reach: ${stats.totals.reach.value} ${tag(stats.totals.reach.source)} · Impressions: ${stats.totals.impressions.value} ${tag(stats.totals.impressions.source)}`);
+    if (isWeb) {
+      const w = stats.webTotals;
+      lines.push(`- Clicks: ${w.clicks} · Impressions: ${w.impressions} · CTR: ${w.ctr != null ? w.ctr.toFixed(2) + "%" : "—"} · Avg. position: ${w.avg_position != null ? w.avg_position.toFixed(2) : "—"} · Users: ${w.users} · Sessions: ${w.sessions}`);
+    } else {
+      const tag = (s: "platform" | "items") => s === "platform" ? "[platform]" : "[items]";
+      lines.push(`- Likes: ${stats.totals.likes.value} ${tag(stats.totals.likes.source)} · Shares: ${stats.totals.shares.value} ${tag(stats.totals.shares.source)} · Comments: ${stats.totals.comments.value} ${tag(stats.totals.comments.source)} · Reach: ${stats.totals.reach.value} ${tag(stats.totals.reach.source)} · Impressions: ${stats.totals.impressions.value} ${tag(stats.totals.impressions.source)}`);
+    }
     if (platformMetrics.length > 0) {
       lines.push("");
-      lines.push("## Platform metrics entries");
+      lines.push(isWeb ? "## Search & analytics entries" : "## Platform metrics entries");
       for (const m of platformMetrics) {
         const label = m.period_type === "day"
           ? m.period_start
           : m.period_type === "week"
             ? `Week of ${m.period_start}`
             : `Month ${m.period_start.slice(0, 7)}`;
-        lines.push(`- ${label} — ❤ ${m.likes ?? 0} · ↻ ${m.shares ?? 0} · 💬 ${m.comments ?? 0} · 👥 ${m.reach ?? 0} · 👁 ${m.impressions ?? 0}`);
+        if (isWeb) {
+          lines.push(`- ${label} — 🖱 ${m.clicks ?? 0} · 👁 ${m.impressions ?? 0} · CTR ${m.ctr ?? 0}% · pos ${m.avg_position ?? 0} · 👥 ${m.users ?? 0} · 📈 ${m.sessions ?? 0}`);
+        } else {
+          lines.push(`- ${label} — ❤ ${m.likes ?? 0} · ↻ ${m.shares ?? 0} · 💬 ${m.comments ?? 0} · 👥 ${m.reach ?? 0} · 👁 ${m.impressions ?? 0}`);
+        }
       }
     }
-    if (stats.top.length > 0) {
+    if (!isWeb && stats.top.length > 0) {
       lines.push("");
       lines.push("## Top performing");
       for (const t of stats.top) {
@@ -174,8 +200,21 @@ const WeeklyReportPage = () => {
       i.reach ?? "",
       i.impressions ?? "",
     ].join(","));
-    const pmHeader = ["period_type","period_start","period_end","likes","shares","comments","reach","impressions","note"];
-    const pmRows = platformMetrics.map((m) => [
+    const pmHeader = isWeb
+      ? ["period_type","period_start","period_end","clicks","impressions","ctr","avg_position","users","sessions","note"]
+      : ["period_type","period_start","period_end","likes","shares","comments","reach","impressions","note"];
+    const pmRows = platformMetrics.map((m) => (isWeb ? [
+      m.period_type,
+      m.period_start,
+      m.period_end,
+      m.clicks ?? "",
+      m.impressions ?? "",
+      m.ctr ?? "",
+      m.avg_position ?? "",
+      m.users ?? "",
+      m.sessions ?? "",
+      `"${(m.note ?? "").replace(/"/g, '""')}"`,
+    ] : [
       m.period_type,
       m.period_start,
       m.period_end,
@@ -185,16 +224,13 @@ const WeeklyReportPage = () => {
       m.reach ?? "",
       m.impressions ?? "",
       `"${(m.note ?? "").replace(/"/g, '""')}"`,
-    ].join(","));
-    const csv = [
-      "# Items",
-      header.join(","),
-      ...rows,
-      "",
-      "# Platform metrics",
-      pmHeader.join(","),
-      ...pmRows,
-    ].join("\n");
+    ]).join(","));
+    const sections: string[] = [];
+    if (!isWeb) {
+      sections.push("# Items", header.join(","), ...rows, "");
+    }
+    sections.push(isWeb ? "# Search & analytics" : "# Platform metrics", pmHeader.join(","), ...pmRows);
+    const csv = sections.join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -268,22 +304,45 @@ const WeeklyReportPage = () => {
                 <div className="text-xs text-muted-foreground">Overdue</div>
                 <div className="text-2xl font-bold">{stats.overdue}</div>
               </Card>
-              <Card className="p-4">
-                <div className="text-xs text-muted-foreground flex items-center justify-between">
-                  <span>Engagement</span>
-                  <Badge variant="outline" className="text-[10px]">{stats.totals.likes.source === "platform" ? "platform" : "items"}</Badge>
-                </div>
-                <div className="text-2xl font-bold">{stats.totals.likes.value + stats.totals.shares.value + stats.totals.comments.value}</div>
-                <div className="text-xs text-muted-foreground">❤ {stats.totals.likes.value} · ↻ {stats.totals.shares.value} · 💬 {stats.totals.comments.value}</div>
-              </Card>
-              <Card className="p-4">
-                <div className="text-xs text-muted-foreground flex items-center justify-between">
-                  <span>Reach / Impressions</span>
-                  <Badge variant="outline" className="text-[10px]">{stats.totals.reach.source === "platform" ? "platform" : "items"}</Badge>
-                </div>
-                <div className="text-2xl font-bold">{stats.totals.reach.value}</div>
-                <div className="text-xs text-muted-foreground">{stats.totals.impressions.value} impressions</div>
-              </Card>
+              {isWeb ? (
+                <>
+                  <Card className="p-4">
+                    <div className="text-xs text-muted-foreground">Clicks / Impressions</div>
+                    <div className="text-2xl font-bold">{stats.webTotals.clicks.toLocaleString()}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {stats.webTotals.impressions.toLocaleString()} impressions · CTR {stats.webTotals.ctr != null ? stats.webTotals.ctr.toFixed(2) + "%" : "—"}
+                    </div>
+                  </Card>
+                  <Card className="p-4">
+                    <div className="text-xs text-muted-foreground">Avg. position / Users</div>
+                    <div className="text-2xl font-bold">
+                      {stats.webTotals.avg_position != null ? stats.webTotals.avg_position.toFixed(1) : "—"}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {stats.webTotals.users.toLocaleString()} users · {stats.webTotals.sessions.toLocaleString()} sessions
+                    </div>
+                  </Card>
+                </>
+              ) : (
+                <>
+                  <Card className="p-4">
+                    <div className="text-xs text-muted-foreground flex items-center justify-between">
+                      <span>Engagement</span>
+                      <Badge variant="outline" className="text-[10px]">{stats.totals.likes.source === "platform" ? "platform" : "items"}</Badge>
+                    </div>
+                    <div className="text-2xl font-bold">{stats.totals.likes.value + stats.totals.shares.value + stats.totals.comments.value}</div>
+                    <div className="text-xs text-muted-foreground">❤ {stats.totals.likes.value} · ↻ {stats.totals.shares.value} · 💬 {stats.totals.comments.value}</div>
+                  </Card>
+                  <Card className="p-4">
+                    <div className="text-xs text-muted-foreground flex items-center justify-between">
+                      <span>Reach / Impressions</span>
+                      <Badge variant="outline" className="text-[10px]">{stats.totals.reach.source === "platform" ? "platform" : "items"}</Badge>
+                    </div>
+                    <div className="text-2xl font-bold">{stats.totals.reach.value}</div>
+                    <div className="text-xs text-muted-foreground">{stats.totals.impressions.value} impressions</div>
+                  </Card>
+                </>
+              )}
             </div>
 
             <Card className="p-4">
@@ -308,28 +367,56 @@ const WeeklyReportPage = () => {
               )}
             </Card>
 
-            <Card className="p-4">
-              <div className="font-medium mb-3">Top performing items</div>
-              {stats.top.length === 0 ? (
-                <div className="text-sm text-muted-foreground">Add engagement numbers to completed items to populate this.</div>
-              ) : (
-                <div className="space-y-2">
-                  {stats.top.map((t) => (
-                    <div key={t.id} className="flex items-center justify-between border rounded-md p-2">
-                      <div className="min-w-0">
-                        <div className="font-medium truncate">{t.title}</div>
-                        <div className="text-xs text-muted-foreground">{t.checklist_date}</div>
+            {isWeb ? (
+              <Card className="p-4">
+                <div className="font-medium mb-3">Recent search performance</div>
+                {platformMetrics.length === 0 ? (
+                  <div className="text-sm text-muted-foreground">No search analytics entries in this range yet. Log GSC numbers above.</div>
+                ) : (
+                  <div className="space-y-2">
+                    {platformMetrics.map((m) => (
+                      <div key={m.id} className="flex items-center justify-between border rounded-md p-2">
+                        <div className="min-w-0">
+                          <div className="font-medium truncate">
+                            {m.period_type === "day" ? m.period_start : m.period_type === "week" ? `Week of ${m.period_start}` : `Month ${m.period_start.slice(0, 7)}`}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            🖱 {m.clicks ?? 0} · 👁 {m.impressions ?? 0} · CTR {m.ctr ?? 0}% · pos {m.avg_position ?? 0}
+                          </div>
+                        </div>
+                        <div className="flex gap-2 text-xs">
+                          <Badge variant="secondary">👥 {m.users ?? 0}</Badge>
+                          <Badge variant="secondary">📈 {m.sessions ?? 0}</Badge>
+                        </div>
                       </div>
-                      <div className="flex gap-2 text-xs">
-                        <Badge variant="secondary">❤ {t.likes ?? 0}</Badge>
-                        <Badge variant="secondary">↻ {t.shares ?? 0}</Badge>
-                        <Badge variant="secondary">💬 {t.comments ?? 0}</Badge>
+                    ))}
+                  </div>
+                )}
+              </Card>
+            ) : (
+              <Card className="p-4">
+                <div className="font-medium mb-3">Top performing items</div>
+                {stats.top.length === 0 ? (
+                  <div className="text-sm text-muted-foreground">Add engagement numbers to completed items to populate this.</div>
+                ) : (
+                  <div className="space-y-2">
+                    {stats.top.map((t) => (
+                      <div key={t.id} className="flex items-center justify-between border rounded-md p-2">
+                        <div className="min-w-0">
+                          <div className="font-medium truncate">{t.title}</div>
+                          <div className="text-xs text-muted-foreground">{t.checklist_date}</div>
+                        </div>
+                        <div className="flex gap-2 text-xs">
+                          <Badge variant="secondary">❤ {t.likes ?? 0}</Badge>
+                          <Badge variant="secondary">↻ {t.shares ?? 0}</Badge>
+                          <Badge variant="secondary">💬 {t.comments ?? 0}</Badge>
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </Card>
+                    ))}
+                  </div>
+                )}
+              </Card>
+            )}
           </div>
         </Layout>
       </div>
