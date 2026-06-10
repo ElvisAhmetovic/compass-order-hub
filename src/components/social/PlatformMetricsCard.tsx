@@ -136,8 +136,12 @@ const PlatformMetricsCard = ({ platform, platformLabel, onChanged }: Props) => {
     }
     const next: MetricErrors = {};
     parsed.error.errors.forEach((err) => {
-      const key = err.path[0] as keyof MetricErrors;
-      if (key && !next[key]) next[key] = err.message;
+      if (err.path.length === 0) {
+        next._form = err.message;
+      } else {
+        const key = err.path[0] as keyof MetricErrors;
+        if (key && !next[key]) next[key] = err.message;
+      }
     });
     setFieldErrors(next);
     return false;
