@@ -2370,9 +2370,12 @@ export type Database = {
       }
       social_media_platform_metrics: {
         Row: {
+          avg_position: number | null
+          clicks: number | null
           comments: number | null
           created_at: string
           created_by: string
+          ctr: number | null
           id: string
           impressions: number | null
           likes: number | null
@@ -2382,13 +2385,18 @@ export type Database = {
           period_type: string
           platform: string
           reach: number | null
+          sessions: number | null
           shares: number | null
           updated_at: string
+          users: number | null
         }
         Insert: {
+          avg_position?: number | null
+          clicks?: number | null
           comments?: number | null
           created_at?: string
           created_by: string
+          ctr?: number | null
           id?: string
           impressions?: number | null
           likes?: number | null
@@ -2398,13 +2406,18 @@ export type Database = {
           period_type: string
           platform: string
           reach?: number | null
+          sessions?: number | null
           shares?: number | null
           updated_at?: string
+          users?: number | null
         }
         Update: {
+          avg_position?: number | null
+          clicks?: number | null
           comments?: number | null
           created_at?: string
           created_by?: string
+          ctr?: number | null
           id?: string
           impressions?: number | null
           likes?: number | null
@@ -2414,8 +2427,10 @@ export type Database = {
           period_type?: string
           platform?: string
           reach?: number | null
+          sessions?: number | null
           shares?: number | null
           updated_at?: string
+          users?: number | null
         }
         Relationships: []
       }
