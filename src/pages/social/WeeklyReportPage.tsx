@@ -174,7 +174,27 @@ const WeeklyReportPage = () => {
       i.reach ?? "",
       i.impressions ?? "",
     ].join(","));
-    const csv = [header.join(","), ...rows].join("\n");
+    const pmHeader = ["period_type","period_start","period_end","likes","shares","comments","reach","impressions","note"];
+    const pmRows = platformMetrics.map((m) => [
+      m.period_type,
+      m.period_start,
+      m.period_end,
+      m.likes ?? "",
+      m.shares ?? "",
+      m.comments ?? "",
+      m.reach ?? "",
+      m.impressions ?? "",
+      `"${(m.note ?? "").replace(/"/g, '""')}"`,
+    ].join(","));
+    const csv = [
+      "# Items",
+      header.join(","),
+      ...rows,
+      "",
+      "# Platform metrics",
+      pmHeader.join(","),
+      ...pmRows,
+    ].join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
