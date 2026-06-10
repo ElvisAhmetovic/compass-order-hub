@@ -1,87 +1,87 @@
-## Goal
+## Social Media Section — Daily Checklists per Platform
 
-Harden `toPdfSafe()` in `supabase/functions/generate-monthly-installments/index.ts` so any name/address/description rendered through jsPDF (helvetica / WinAnsi) is normalized first and never falls back to the UTF-16 path that corrupted INV-2026-854.
+### Sidebar
+Add a new collapsible **Social Media** group in `src/components/dashboard/Sidebar.tsx` (admins + agents). Five child links:
+- Facebook (`/social/facebook`)
+- ABM Website (`/social/abm-website`)
+- Instagram (`/social/instagram`)
+- TikTok (`/social/tiktok`)
+- Twitter (X) (`/social/twitter`)
 
-## Changes (single file: `supabase/functions/generate-monthly-installments/index.ts`)
+Each item gets its own icon (Facebook, Globe, Instagram, Music2, Twitter). The group uses the same expand/collapse pattern as the existing "More..." section.
 
-Replace the current `toPdfSafe()` (lines ~492-502) with a stricter pipeline, and apply it to every user-provided text field passed to `doc.text(...)`.
+Note: the legacy `/facebook` and `/instagram` order pages stay where they are — the new pages live under `/social/*` so nothing collides.
 
-### 1. Normalize first (NFKC)
+### Pages
+One reusable page component `SocialMediaChecklistPage` rendered by five thin wrappers (one per platform) under `src/pages/social/`. Routes wired in `src/App.tsx` behind `RequireAuth` with admin/agent guard.
 
-```ts
-s = s.normalize("NFKC");
-```
+Layout follows the standard: `flex min-h-screen` > Sidebar + `flex-1 flex flex-col` with Layout/Header.
 
-- Collapses compatibility forms (full-width Latin, ligatures like `ﬁ`, superscripts, etc.) into their plain ASCII/Latin-1 equivalents where possible.
-- Splits accented composed glyphs into base + combining marks so the next steps can handle them predictably.
+Page contents:
+- Header: platform name + today's date (Europe/Berlin).
+- Date picker to view past days (read-only when not today, or editable for admins — see below).
+- "Add Checklist Item" button → opens a dialog with: Title (required), Description (textarea), Link/URL (optional), Time (optional `time` input), Priority (Low/Med/High select).
+- List of items for the selected day, each as a card with:
+  - Checkbox to toggle done.
+  - Title, description, link (clickable), priority badge, time chip.
+  - When checking off → small inline prompt for an optional **completion note**; saved alongside `done_at` and `done_by`.
+  - Edit / Delete (delete = soft delete, admins or item creator only).
+- Empty state with the Add button.
+- Progress summary at the top: `X / Y done`.
 
-### 2. Strip zero-width / bidi / control junk
+### Data model
+New table `public.social_media_checklist_items`:
+- `id uuid pk`
+- `platform text` — enum-like check constraint: `facebook | abm_website | instagram | tiktok | twitter`
+- `checklist_date date` — the day this item belongs to (Europe/Berlin date, set client-side)
+- `title text not null`
+- `description text`
+- `link_url text`
+- `scheduled_time time`
+- `priority text` — `low | medium | high`, default `medium`
+- `is_done boolean default false`
+- `done_at timestamptz`
+- `done_by uuid` (auth user)
+- `done_note text`
+- `created_by uuid not null`
+- `created_at timestamptz default now()`
+- `updated_at timestamptz default now()` + trigger
+- `deleted_at timestamptz` (soft delete)
 
-Remove characters that are invisible but break jsPDF text width calc and selection:
-- ZWSP / ZWNJ / ZWJ / WORD JOINER: `\u200B-\u200D`, `\u2060`, `\uFEFF` (BOM)
-- LRM/RLM and bidi isolates: `\u200E`, `\u200F`, `\u202A-\u202E`, `\u2066-\u2069`
-- Soft hyphen: `\u00AD`
-- C0 controls except `\t \n \r`: `\u0000-\u0008`, `\u000B`, `\u000C`, `\u000E-\u001F`, `\u007F`
-- C1 controls: `\u0080-\u009F`
+Indexes on `(platform, checklist_date)` and `(checklist_date)`.
 
-### 3. Whitespace folding
+**Shared per platform**: any admin/agent sees the same list for a given platform+date. "Fresh each day" is achieved naturally because queries filter by `checklist_date = today`.
 
-- NBSP (`\u00A0`), narrow NBSP (`\u202F`), figure space (`\u2007`), thin/hair/en/em spaces (`\u2002-\u200A`), ideographic space (`\u3000`) → regular space.
-- Tabs → single space (PDF line; keep newlines for address line breaks since `splitTextToSize` handles them).
-- Collapse runs of spaces to one.
+### RLS (permissive, per project standard)
+- `GRANT SELECT, INSERT, UPDATE, DELETE ... TO authenticated; GRANT ALL ... TO service_role;`
+- Enable RLS.
+- SELECT: any authenticated user where `is_admin()` OR profile role in (`admin`,`agent`).
+- INSERT: same admin/agent check; force `created_by = auth.uid()`.
+- UPDATE: admin/agent (so anyone on the team can tick items off — matches "shared" intent).
+- DELETE: `is_admin()` OR `created_by = auth.uid()` (soft delete via UPDATE of `deleted_at` is preferred from the client).
 
-### 4. Punctuation normalization (extends current)
+### Service layer
+`src/services/socialChecklistService.ts`:
+- `listItems(platform, date)` — filters out `deleted_at`.
+- `createItem(payload)`
+- `updateItem(id, patch)`
+- `toggleDone(id, done, note?)` — sets `is_done`, `done_at`, `done_by`, `done_note`.
+- `softDelete(id)`
 
-- Hyphens/dashes/minus: `\u2010-\u2015`, `\u2212`, `\u00AD` → `-`
-- Quotes: `\u2018\u2019\u201A\u201B\u2032` → `'`; `\u201C\u201D\u201E\u201F\u2033\u00AB\u00BB` → `"`
-- Ellipsis `\u2026` → `...`
-- Bullets `\u2022\u2023\u25E6\u2043` → `*`
-- Middle dot `\u00B7` → `.`
-- Multiplication / division kept as-is (they're Latin-1).
+All calls go through the existing `@/integrations/supabase/client`, no `.single()` on updates (per project rule).
 
-### 5. After NFKC, recompose then strip remaining combining marks for glyphs that don't have a Latin-1 precomposed form
+### Out of scope
+- No notifications/emails for checklist activity.
+- No carry-over of unfinished items (explicit user choice: fresh each day).
+- No per-user personal lists (explicit: shared per platform).
+- No changes to the existing `/facebook` and `/instagram` order pages.
 
-```ts
-s = s.normalize("NFC");
-// strip stray combining marks that didn't recompose (e.g. behind non-Latin base)
-s = s.replace(/\p{M}/gu, "");
-```
-
-This keeps `é à ü ß ñ ç` (all in Latin-1, fine for helvetica) while removing decorative combining marks that would otherwise trigger the UTF-16 fallback.
-
-### 6. Last-resort transliteration for common non-Latin-1 European letters
-
-A small map covers the realistic CRM client set (Polish, Czech, Slovak, Hungarian, Romanian, Turkish) before the `?` fallback:
-
-```
-ąĄ→a/A, ćĆ→c/C, ęĘ→e/E, łŁ→l/L, ńŃ→n/N, śŚ→s/S, źŹżŻ→z/Z,
-čČ→c/C, ďĎ→d/D, ěĚ→e/E, ňŇ→n/N, řŘ→r/R, šŠ→s/S, ťŤ→t/T, ůŮ→u/U, žŽ→z/Z,
-őŐűŰ→o/O,u/U,
-șȘşŞ→s/S, țȚţŢ→t/T, ăĂ→a/A, ıİ→i/I, ğĞ→g/G, ŞŠ→S, ĵĴ→j/J,
-œŒ→oe/OE, æÆ→ae/AE  // already Latin-1 except œŒ
-```
-
-### 7. Final guard
-
-Any remaining codepoint > `0xFF` → `?`. So even an emoji or CJK glyph pasted into a client name can never poison a whole line again.
-
-### 8. Apply everywhere user data hits `doc.text`
-
-Re-audit `generateInvoicePDF()` and pipe through `toPdfSafe`:
-- `safeName`, `safeAddress`, `safeEmail`, `safeDescription` (already wrapped)
-- Also wrap any other user/company-derived strings if present in this function (none expected from the company constants since those are ASCII, but the helper is idempotent and cheap so it's fine to add defensively where strings come from DB).
-
-### 9. Keep existing wrap/layout fixes
-
-No change to `splitTextToSize` recipient wrap or the right-side details block — they stay as in the previous fix.
-
-## Out of scope
-
-- Switching jsPDF to a Unicode TTF font (Noto Sans). Adds ~300KB to the edge function; current transliteration covers every script the CRM actually sees.
-- Re-rendering historic bugged PDFs.
-- Touching the HTML email body (not affected by this bug).
-- Any other edge function or frontend PDF generator (`src/utils/invoicePdfGenerator.ts` uses a different path; not in this request).
-
-## Files touched
-
-- `supabase/functions/generate-monthly-installments/index.ts` (only — replace the `toPdfSafe` helper, no other logic changes).
+### Files touched
+- `supabase/migrations/<new>.sql` — table + grants + RLS + indexes + updated_at trigger.
+- `src/components/dashboard/Sidebar.tsx` — add Social Media group + 5 links.
+- `src/App.tsx` — register 5 routes.
+- `src/pages/social/SocialMediaChecklistPage.tsx` — reusable page.
+- `src/pages/social/{Facebook,AbmWebsite,Instagram,TikTok,Twitter}.tsx` — thin wrappers passing the platform key/label.
+- `src/components/social/ChecklistItemCard.tsx`
+- `src/components/social/AddChecklistItemDialog.tsx`
+- `src/services/socialChecklistService.ts`

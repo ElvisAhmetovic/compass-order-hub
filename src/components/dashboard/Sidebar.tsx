@@ -32,7 +32,12 @@ import {
   ChevronDown,
   MoreHorizontal,
   Lock,
-  ShieldCheck
+  ShieldCheck,
+  Facebook as FacebookIcon,
+  Globe,
+  Music2,
+  Twitter as TwitterIcon,
+  Share2
 } from 'lucide-react';
 import { isSuperAdminEmail, fetchLateCountToday } from '@/services/workHoursV2Service';
 import { cn } from '@/lib/utils';
@@ -203,6 +208,19 @@ const Sidebar = () => {
     (item.href === '/active-orders' && location.pathname.startsWith('/active-orders'))
   );
 
+  // Social Media group
+  const socialItems = [
+    { href: '/social/facebook', icon: FacebookIcon, label: 'Facebook' },
+    { href: '/social/abm-website', icon: Globe, label: 'ABM Website' },
+    { href: '/social/instagram', icon: Instagram, label: 'Instagram' },
+    { href: '/social/tiktok', icon: Music2, label: 'TikTok' },
+    { href: '/social/twitter', icon: TwitterIcon, label: 'Twitter (X)' },
+  ];
+  const socialActive = socialItems.some(i => location.pathname.startsWith(i.href));
+  const [socialOpen, setSocialOpen] = useState(false);
+  useEffect(() => { if (socialActive) setSocialOpen(true); }, [socialActive]);
+  const showSocialGroup = isAdminOrAgent;
+
   useEffect(() => {
     if (activeInMore) setMoreOpen(true);
   }, [activeInMore]);
@@ -295,7 +313,46 @@ const Sidebar = () => {
         ) : (
           <>
             {mainItems.map(renderItem)}
-            
+
+            {showSocialGroup && (
+              <div className="border-t border-border mt-2">
+                <button
+                  onClick={() => setSocialOpen(!socialOpen)}
+                  className={cn(
+                    "flex items-center justify-between w-full px-6 py-3 text-foreground/70 hover:bg-accent hover:text-foreground transition-colors",
+                    socialActive && "text-primary"
+                  )}
+                >
+                  <div className="flex items-center">
+                    <Share2 className="w-5 h-5 mr-3" />
+                    Social Media
+                  </div>
+                  <ChevronDown className={cn("w-4 h-4 transition-transform", socialOpen && "rotate-180")} />
+                </button>
+                {socialOpen && (
+                  <div className="bg-muted/30">
+                    {socialItems.map((item) => {
+                      const Icon = item.icon;
+                      const isActive = location.pathname === item.href;
+                      return (
+                        <Link
+                          key={item.href}
+                          to={item.href}
+                          className={cn(
+                            "flex items-center px-10 py-2.5 text-sm text-foreground/70 hover:bg-accent hover:text-foreground transition-colors",
+                            isActive && "bg-primary/10 text-primary border-r-2 border-primary"
+                          )}
+                        >
+                          <Icon className="w-4 h-4 mr-3" />
+                          {item.label}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+
             {moreItems.length > 0 && (
               <div className="border-t border-border mt-2">
                 <button

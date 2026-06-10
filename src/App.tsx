@@ -54,6 +54,11 @@ import Offers from "./pages/Offers";
 import TicketSubmitted from "./pages/TicketSubmitted";
 import TicketLoading from "./pages/TicketLoading";
 import ConfirmOffer from "./pages/ConfirmOffer";
+import SocialFacebook from "./pages/social/Facebook";
+import SocialAbmWebsite from "./pages/social/AbmWebsite";
+import SocialInstagram from "./pages/social/Instagram";
+import SocialTikTok from "./pages/social/TikTok";
+import SocialTwitter from "./pages/social/Twitter";
 import { RequireAuth } from "./components/auth/RequireAuth";
 import AdminGuard from "./components/auth/AdminGuard";
 import ClientGuard from "./components/client-portal/ClientGuard";
@@ -351,6 +356,11 @@ function App() {
                       </AdminGuard>
                     </RequireAuth>
                   } />
+                  <Route path="/social/facebook" element={<RequireAuth><SocialFacebook /></RequireAuth>} />
+                  <Route path="/social/abm-website" element={<RequireAuth><SocialAbmWebsite /></RequireAuth>} />
+                  <Route path="/social/instagram" element={<RequireAuth><SocialInstagram /></RequireAuth>} />
+                  <Route path="/social/tiktok" element={<RequireAuth><SocialTikTok /></RequireAuth>} />
+                  <Route path="/social/twitter" element={<RequireAuth><SocialTwitter /></RequireAuth>} />
                   
                   {/* Client Portal Routes */}
                   <Route path="/client/login" element={<ClientLogin />} />

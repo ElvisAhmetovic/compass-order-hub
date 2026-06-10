@@ -2170,6 +2170,63 @@ export type Database = {
         }
         Relationships: []
       }
+      social_media_checklist_items: {
+        Row: {
+          checklist_date: string
+          created_at: string
+          created_by: string
+          deleted_at: string | null
+          description: string | null
+          done_at: string | null
+          done_by: string | null
+          done_note: string | null
+          id: string
+          is_done: boolean
+          link_url: string | null
+          platform: string
+          priority: string
+          scheduled_time: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          checklist_date: string
+          created_at?: string
+          created_by: string
+          deleted_at?: string | null
+          description?: string | null
+          done_at?: string | null
+          done_by?: string | null
+          done_note?: string | null
+          id?: string
+          is_done?: boolean
+          link_url?: string | null
+          platform: string
+          priority?: string
+          scheduled_time?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          checklist_date?: string
+          created_at?: string
+          created_by?: string
+          deleted_at?: string | null
+          description?: string | null
+          done_at?: string | null
+          done_by?: string | null
+          done_note?: string | null
+          id?: string
+          is_done?: boolean
+          link_url?: string | null
+          platform?: string
+          priority?: string
+          scheduled_time?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       support_inquiries: {
         Row: {
           created_at: string | null
