@@ -126,6 +126,12 @@ const SocialMediaChecklistPage = ({ platform, title }: Props) => {
                 {!isToday && (
                   <Button variant="ghost" size="sm" onClick={() => setDate(todayBerlin())}>Today</Button>
                 )}
+                <Button variant="outline" onClick={handleApplyTemplates} disabled={applying}>
+                  <Wand2 className="w-4 h-4 mr-1" /> {applying ? "Applying…" : "Apply template"}
+                </Button>
+                <Button variant="outline" onClick={() => setTemplatesOpen(true)}>
+                  <LayoutTemplate className="w-4 h-4 mr-1" /> Templates
+                </Button>
                 <Button onClick={() => setAddOpen(true)}>
                   <Plus className="w-4 h-4 mr-1" /> Add item
                 </Button>
