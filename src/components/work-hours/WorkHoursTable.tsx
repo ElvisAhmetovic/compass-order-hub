@@ -378,9 +378,17 @@ const WorkHoursTable = ({ userId, month, year }: WorkHoursTableProps) => {
     <div>
       <div className="flex justify-end mb-3">
         {canAutoFill && (
-          <Button onClick={handleAutoFill} disabled={filling} variant="outline" size="sm">
+          <Button
+            onClick={handleAutoFill}
+            disabled={filling}
+            variant="outline"
+            size="sm"
+            title="Fill weekdays with 09:00 / 12:00–13:00h / 6.5h / 17:00 and submit & lock each day"
+          >
             <Wand2 className="h-4 w-4 mr-1" />
-            {filling ? 'Filling...' : 'Auto-Fill Month'}
+            {filling
+              ? (fillProgress ? `Filling ${fillProgress.done}/${fillProgress.total}…` : 'Filling…')
+              : 'Auto-Fill Month'}
           </Button>
         )}
       </div>
