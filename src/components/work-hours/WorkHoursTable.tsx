@@ -550,7 +550,22 @@ const WorkHoursTable = ({ userId, month, year }: WorkHoursTableProps) => {
                     {isAbsent ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}
                   </button>
                 </TableCell>
-                <TableCell className="text-sm font-medium">{formatDate(day)}</TableCell>
+                <TableCell className="text-sm font-medium">
+                  <div className="flex items-center gap-2">
+                    <span>{formatDate(day)}</span>
+                    {!isLocked && !isMissed && !isFuture && (isSuper || (isOwnSheet && iso === today)) && (
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => handleAutoFillDay(iso)}
+                        className="rounded-md p-1 text-primary hover:bg-primary/10 disabled:opacity-50"
+                        title="Auto-fill 09:00 / 12:00–13:00h / 6.5h / 17:00 and submit & lock"
+                      >
+                        <Wand2 className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </div>
+                </TableCell>
                 <TableCell>
                   <Input
                     key={`start-${iso}-${entry.start_time ?? ''}`}
