@@ -1,52 +1,46 @@
 ## Goal
-Make the ABM Website report track Google Search Console / GA-style metrics instead of social engagement (likes, shares, comments, reach, impressions).
+Make the existing "Auto-Fill Month" button on the Work Hours sheet also **submit & lock each filled day** automatically, and let **super-admins use it on any worker's sheet**.
 
-## Metrics for ABM Website
-Replace the 5 social fields with 6 web analytics fields:
-- **Clicks** — total clicks from Search (GSC)
-- **Impressions** — times site appeared in Search (GSC)
-- **CTR (%)** — click-through rate (GSC) — decimal, 0–100
-- **Avg. position** — average ranking position (GSC) — decimal
-- **Users** — unique visitors (GA, optional)
-- **Sessions** — total sessions (GA, optional)
+## Scope (UI / frontend only)
 
-All other platforms (Facebook, Instagram, TikTok, Twitter) keep the existing social engagement fields unchanged.
+**File:** `src/components/work-hours/WorkHoursTable.tsx`
 
-## Database
-Add 4 nullable numeric columns to `social_media_platform_metrics`:
-- `clicks integer`
-- `ctr numeric(5,2)` (0–100, 2 decimals)
-- `avg_position numeric(5,2)`
-- `users integer`
-- `sessions integer`
+### 1. Permissions
+- Change `canAutoFill` from `isOwnSheet` to `isOwnSheet || isSuper`.
+  - Workers: still only on their own sheet (unchanged).
+  - Super-admins (the 5 emails already in `WH_SUPER_ADMIN_EMAILS`): can use it on anyone's sheet.
 
-Reuse the existing `impressions integer` column for GSC impressions (same concept). The social-only columns (`likes`, `shares`, `comments`, `reach`) simply stay null for `abm_website` rows.
+### 2. Button behavior — `handleAutoFill`
+For every weekday of the visible month that is **not yet submitted** (`!v2Map[iso]` OR `v2Map[iso].status === 'not_submitted'`) AND is **not in the future**:
 
-## UI — `PlatformMetricsCard.tsx`
-Branch the field set by `platform`:
-- If `platform === "abm_website"`: render Clicks, Impressions, CTR, Avg Position, Users, Sessions inputs. CTR allows one decimal (0–100 cap); Avg Position allows one decimal (≥0). Others are non-negative integers. Validation requires at least one field > 0.
-- Otherwise: keep today's likes/shares/comments/reach/impressions form.
-- Recent-entries summary line also branches: shows `🖱 clicks · 👁 impressions · CTR x% · pos x.x · 👥 users · 📈 sessions` for abm_website.
-- Title/help text says "Search & site analytics" instead of "engagement" when abm_website.
+1. Compose the default entry: `start_time: '09:00'`, `break_time: '12:00-13:00h'`, `working_hours: 6.5`, `end_time: '17:00'`, `absent: false`.
+2. Persist to legacy `work_hours` via `bulkUpsertWorkHours` (keeps break-text display, same as today).
+3. Submit & lock each day in `work_hours_v2`:
+   - **Super-admin path** (own or other sheet): call `adminUpsert` per day with `status: 'admin_override'`, `locked: true`, `reason: 'Auto-fill month from Work Hours sheet'`, `break_minutes: 60`, `total_hours: 6.5`, start/end normalized to `HH:MM:00`.
+   - **Worker path on own sheet**: only the entry for `today` (if it's a weekday and not yet submitted) is submitted via `submitMyHours` — past/future days cannot be self-submitted by workers (current rule). Past unsubmitted weekdays are still filled in legacy but a toast notes "Contact admin to lock past days." Future days are skipped entirely.
+4. Run V2 submissions **sequentially** (simple `for…of await`) to avoid hammering the RPC; show progress in the button label ("Filling 3/12…").
+5. Refresh local state: merge returned V2 rows into `v2Map` and filled entries into `rows`.
 
-## UI — `WeeklyReportPage.tsx`
-On the ABM Website report only:
-- Stats cards become: **Completion rate**, **Overdue**, **Clicks / Impressions** (with CTR underneath), **Avg position / Users** (sessions underneath). Source badge logic (`platform` vs `items`) is dropped for abm_website since per-item fields don't apply — totals always come from platform-metric entries.
-- Hide the "Top performing items" card for abm_website (engagement-based, not meaningful here). Show instead a small "Recent search performance" list summarising the latest platform-metric entries.
-- Markdown export + CSV export use the new fields for abm_website.
+### 3. Skip rules (don't overwrite or re-submit)
+- Skip any day already present in `v2Map` with status `admin_override` / `submitted` / `not_worked` (already submitted or marked absent).
+- Skip days where `v2Map[iso]?.locked === true`.
+- Skip future weekdays.
+- Re-fill `not_submitted` (missed) rows: super-admin overrides them; worker path skips them with a toast count.
 
-Other platforms render unchanged.
+### 4. Toast feedback
+Final toast summarizes: `Filled X days, submitted & locked Y, skipped Z (already submitted / locked / future)`.
 
-## Service layer (`socialChecklistService.ts`)
-- Extend `PlatformMetric` type and `upsertPlatformMetric` payload with `clicks`, `ctr`, `avg_position`, `users`, `sessions` (all nullable).
-- No new endpoints needed.
+### 5. Tooltip / label
+Keep icon `Wand2`. Label stays "Auto-Fill Month"; tooltip updated to "Fill weekdays with 09:00 / 12:00–13:00h / 6.5h / 17:00 and submit & lock each day".
 
 ## Out of scope
-- Live pulling from Google Search Console / Analytics APIs (manual entry only, same pattern as social).
-- Per-item GSC tracking on individual checklist items.
-- Historical trend charts of clicks/impressions (current bar chart of completed items stays).
+- No DB migration. Uses existing `wh_admin_upsert` and `wh_submit` RPCs.
+- No change to defaults (still 09:00 / 12:00–13:00h / 6.5h / 17:00).
+- No change to weekend handling (weekends still excluded).
+- No change to absence logic or the per-day Submit button.
 
 ## Technical notes
-- Migration uses `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`; no GRANT/RLS changes needed.
-- CTR input sanitised to digits + single dot, clamped 0–100; Avg position same pattern, no upper clamp.
-- Zod schema branches: `abmWebsiteSchema` (numbers can be null, CTR ≤ 100, at-least-one rule) vs existing `socialSchema`.
+- Reuse helpers already in the file: `normalizeTime`, `parseBreakMinutes`, `toIso`, `getWeekdays`.
+- `adminUpsert` returns the saved `WorkHourV2`; collect into a temp map and `setV2Map(prev => ({ ...prev, ...newV2 }))` once at the end to avoid render thrash.
+- Use a counter in `setFilling` state (e.g. `{ done, total }`) so the button can show progress, then reset.
+- Wrap each per-day RPC in try/catch; on a single failure, continue with the next day and include the failure count in the final toast.
