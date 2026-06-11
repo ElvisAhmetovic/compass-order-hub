@@ -258,6 +258,61 @@ const WorkHoursTable = ({ userId, month, year }: WorkHoursTableProps) => {
 
   const [fillProgress, setFillProgress] = useState<{ done: number; total: number } | null>(null);
 
+  // Per-day auto-fill: writes defaults (09:00 / 12:00–13:00h / 6.5h / 17:00) AND submits & locks that single day.
+  const handleAutoFillDay = async (iso: string) => {
+    setBusyDay(iso);
+    try {
+      const entry: WorkHourEntry = {
+        user_id: userId,
+        date: iso,
+        start_time: '09:00',
+        break_time: '12:00-13:00h',
+        working_hours: 6.5,
+        end_time: '17:00',
+        note: null,
+        absent: false,
+      };
+      await upsertWorkHour(entry);
+      setRows(prev => ({ ...prev, [iso]: entry }));
+
+      if (isSuper) {
+        const row = await adminUpsert({
+          user_id: userId,
+          work_date: iso,
+          total_hours: 6.5,
+          start_time: '09:00:00',
+          end_time: '17:00:00',
+          break_minutes: 60,
+          status: 'admin_override',
+          locked: true,
+          admin_note: v2Map[iso]?.admin_note ?? null,
+          reason: 'Auto-fill day from Work Hours sheet',
+        });
+        setV2Map(prev => ({ ...prev, [iso]: row }));
+        toast({ title: 'Day filled & locked', description: iso });
+      } else if (isOwnSheet && iso === today) {
+        const row = await submitMyHours({
+          total_hours: 6.5,
+          start_time: '09:00:00',
+          end_time: '17:00:00',
+          break_minutes: 60,
+          worker_note: null,
+        });
+        setV2Map(prev => ({ ...prev, [iso]: row }));
+        toast({ title: 'Day filled & locked', description: iso });
+      } else {
+        toast({
+          title: 'Filled but not locked',
+          description: 'Only today can be submitted by workers. Contact admin to lock past days.',
+        });
+      }
+    } catch (e: any) {
+      toast({ title: 'Auto-fill failed', description: e.message, variant: 'destructive' });
+    } finally {
+      setBusyDay(null);
+    }
+  };
+
   const handleAutoFill = async () => {
     setFilling(true);
     setFillProgress(null);
@@ -495,7 +550,22 @@ const WorkHoursTable = ({ userId, month, year }: WorkHoursTableProps) => {
                     {isAbsent ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}
                   </button>
                 </TableCell>
-                <TableCell className="text-sm font-medium">{formatDate(day)}</TableCell>
+                <TableCell className="text-sm font-medium">
+                  <div className="flex items-center gap-2">
+                    <span>{formatDate(day)}</span>
+                    {!isLocked && !isMissed && !isFuture && (isSuper || (isOwnSheet && iso === today)) && (
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => handleAutoFillDay(iso)}
+                        className="rounded-md p-1 text-primary hover:bg-primary/10 disabled:opacity-50"
+                        title="Auto-fill 09:00 / 12:00–13:00h / 6.5h / 17:00 and submit & lock"
+                      >
+                        <Wand2 className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </div>
+                </TableCell>
                 <TableCell>
                   <Input
                     key={`start-${iso}-${entry.start_time ?? ''}`}
