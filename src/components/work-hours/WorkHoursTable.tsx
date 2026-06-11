@@ -553,19 +553,21 @@ const WorkHoursTable = ({ userId, month, year }: WorkHoursTableProps) => {
                 <TableCell className="text-sm font-medium">
                   <div className="flex items-center gap-2">
                     <span>{formatDate(day)}</span>
-                    {!isLocked && !isMissed && !isFuture && (isSuper || (isOwnSheet && iso === today)) && (
+                    {!isLocked && !isMissed && !isFuture && (isSuper || isOwnSheet) && (
                       <button
                         type="button"
                         disabled={busy}
                         onClick={() => handleAutoFillDay(iso)}
-                        className="rounded-md p-1 text-primary hover:bg-primary/10 disabled:opacity-50"
+                        className="inline-flex items-center gap-1 rounded-md border border-primary/30 bg-primary/5 px-2 py-1 text-xs font-medium text-primary hover:bg-primary/10 disabled:opacity-50"
                         title="Auto-fill 09:00 / 12:00–13:00h / 6.5h / 17:00 and submit & lock"
                       >
-                        <Wand2 className="h-3.5 w-3.5" />
+                        <Wand2 className="h-4 w-4" />
+                        Fill
                       </button>
                     )}
                   </div>
                 </TableCell>
+
                 <TableCell>
                   <Input
                     key={`start-${iso}-${entry.start_time ?? ''}`}
