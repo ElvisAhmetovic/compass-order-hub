@@ -431,29 +431,39 @@ const PlatformMetricsCard = ({ platform, platformLabel, onChanged, externalReloa
         <div className="pt-2 border-t">
           <div className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Recent entries</div>
           <div className="space-y-1">
-            {history.map((m) => (
-              <div key={m.id} className="flex items-center justify-between text-sm border rounded-md px-2 py-1">
-                <div className="min-w-0">
-                  <div className="font-medium truncate">{periodLabel(m)}</div>
-                  <div className="text-xs text-muted-foreground">{historyLine(m)}</div>
+            {history.map((m) => {
+              const loadRow = () => {
+                setPeriodType(m.period_type);
+                setAnchor(parseISO(m.period_start));
+              };
+              return (
+                <div
+                  key={m.id}
+                  className="flex items-start justify-between gap-2 text-sm border rounded-md px-2 py-1 hover:bg-muted/40 cursor-pointer"
+                  onClick={loadRow}
+                  role="button"
+                  tabIndex={0}
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="font-medium truncate">{periodLabel(m)}</div>
+                    <div className="text-xs text-muted-foreground">{historyLine(m)}</div>
+                    {m.note && m.note.trim().length > 0 && (
+                      <div className="text-xs text-muted-foreground mt-1 whitespace-pre-wrap break-words">
+                        📝 {m.note}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+                    <Button size="sm" variant="ghost" onClick={loadRow}>
+                      Edit
+                    </Button>
+                    <Button size="icon" variant="ghost" onClick={() => removeFromHistory(m)}>
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex gap-1 shrink-0">
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => {
-                      setPeriodType(m.period_type);
-                      setAnchor(parseISO(m.period_start));
-                    }}
-                  >
-                    Edit
-                  </Button>
-                  <Button size="icon" variant="ghost" onClick={() => removeFromHistory(m)}>
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
