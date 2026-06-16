@@ -184,7 +184,13 @@ const PlatformMetricsCard = ({ platform, platformLabel, onChanged, externalReloa
   };
 
   useEffect(() => { loadExisting(); /* eslint-disable-next-line */ }, [platform, periodType, range.start]);
-  useEffect(() => { loadHistory(); /* eslint-disable-next-line */ }, [platform]);
+  useEffect(() => { loadHistory(); /* eslint-disable-next-line */ }, [platform, externalReloadKey]);
+  useEffect(() => {
+    if (focusPeriod) {
+      setPeriodType(focusPeriod.period_type);
+      setAnchor(parseISO(focusPeriod.period_start));
+    }
+  }, [focusPeriod?.period_type, focusPeriod?.period_start]);
 
   const validate = () => {
     const parsed = isWeb
