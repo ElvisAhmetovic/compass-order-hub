@@ -193,6 +193,7 @@ const PlatformMetricsCard = ({ platform, platformLabel, onChanged }: Props) => {
           avg_position: toFloat(avgPosition),
           users: toInt(users),
           sessions: toInt(sessions),
+          note: note,
         })
       : socialSchema.safeParse({
           likes: toInt(likes),
@@ -200,6 +201,7 @@ const PlatformMetricsCard = ({ platform, platformLabel, onChanged }: Props) => {
           comments: toInt(comments),
           reach: toInt(reach),
           impressions: toInt(impressions),
+          note: note,
         });
     if (parsed.success) {
       setFieldErrors({});
@@ -215,8 +217,14 @@ const PlatformMetricsCard = ({ platform, platformLabel, onChanged }: Props) => {
       }
     });
     setFieldErrors(next);
+    toast({
+      title: "Nothing to save",
+      description: next._form ?? Object.values(next)[0] ?? "Please review the form",
+      variant: "destructive",
+    });
     return false;
   };
+
 
   const save = async () => {
     if (!validate()) return;
