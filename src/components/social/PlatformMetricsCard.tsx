@@ -34,6 +34,8 @@ interface Props {
   platform: SocialPlatform;
   platformLabel: string;
   onChanged?: () => void;
+  externalReloadKey?: number;
+  focusPeriod?: { period_type: MetricPeriodType; period_start: string } | null;
 }
 
 const fmt = (d: Date) => format(d, "yyyy-MM-dd");
