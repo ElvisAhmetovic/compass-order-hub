@@ -400,18 +400,27 @@ const WeeklyReportPage = () => {
                 ) : (
                   <div className="space-y-2">
                     {platformMetrics.map((m) => (
-                      <div key={m.id} className="flex items-center justify-between border rounded-md p-2">
-                        <div className="min-w-0">
+                      <div key={m.id} className="flex items-start justify-between gap-2 border rounded-md p-2">
+                        <div className="min-w-0 flex-1">
                           <div className="font-medium truncate">
                             {m.period_type === "day" ? m.period_start : m.period_type === "week" ? `Week of ${m.period_start}` : `Month ${m.period_start.slice(0, 7)}`}
                           </div>
                           <div className="text-xs text-muted-foreground">
-                            🖱 {m.clicks ?? 0} · 👁 {m.impressions ?? 0} · CTR {m.ctr ?? 0}% · pos {m.avg_position ?? 0}
+                            🖱 {m.clicks ?? 0} · 👁 {m.impressions ?? 0} · CTR {m.ctr ?? 0}% · pos {m.avg_position ?? 0} · 👥 {m.users ?? 0} · 📈 {m.sessions ?? 0}
                           </div>
+                          {m.note && m.note.trim().length > 0 && (
+                            <div className="text-xs text-muted-foreground mt-1 whitespace-pre-wrap break-words">
+                              📝 {m.note}
+                            </div>
+                          )}
                         </div>
-                        <div className="flex gap-2 text-xs">
-                          <Badge variant="secondary">👥 {m.users ?? 0}</Badge>
-                          <Badge variant="secondary">📈 {m.sessions ?? 0}</Badge>
+                        <div className="flex gap-1 shrink-0">
+                          <Button size="sm" variant="ghost" onClick={() => handleEditMetric(m)}>
+                            <Pencil className="w-4 h-4 mr-1" /> Edit
+                          </Button>
+                          <Button size="icon" variant="ghost" onClick={() => handleDeleteMetric(m)}>
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
                         </div>
                       </div>
                     ))}
