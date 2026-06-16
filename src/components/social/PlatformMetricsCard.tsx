@@ -79,8 +79,14 @@ const socialSchema = z.object({
   comments: z.number().int().min(0).nullable(),
   reach: z.number().int().min(0).nullable(),
   impressions: z.number().int().min(0).nullable(),
-}).refine((data) => Object.values(data).some((v) => v != null && v > 0), {
-  message: "At least one metric must be greater than 0",
+  note: z.string().nullable().optional(),
+}).refine((data) => {
+  const hasMetric = (["likes","shares","comments","reach","impressions"] as const)
+    .some((k) => (data as any)[k] != null && (data as any)[k] > 0);
+  const hasNote = !!(data.note && data.note.trim().length > 0);
+  return hasMetric || hasNote;
+}, {
+  message: "Enter at least one metric greater than 0, or add a note",
 });
 
 // --- ABM website (GSC/GA) schema ---
@@ -91,8 +97,14 @@ const webSchema = z.object({
   avg_position: z.number().min(0).nullable(),
   users: z.number().int().min(0).nullable(),
   sessions: z.number().int().min(0).nullable(),
-}).refine((data) => Object.values(data).some((v) => v != null && v > 0), {
-  message: "At least one metric must be greater than 0",
+  note: z.string().nullable().optional(),
+}).refine((data) => {
+  const hasMetric = (["clicks","impressions","ctr","avg_position","users","sessions"] as const)
+    .some((k) => (data as any)[k] != null && (data as any)[k] > 0);
+  const hasNote = !!(data.note && data.note.trim().length > 0);
+  return hasMetric || hasNote;
+}, {
+  message: "Enter at least one metric greater than 0, or add a note",
 });
 
 type FieldKey =
