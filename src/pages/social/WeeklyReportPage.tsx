@@ -49,6 +49,24 @@ const WeeklyReportPage = () => {
   const [platformMetrics, setPlatformMetrics] = useState<PlatformMetric[]>([]);
   const [loading, setLoading] = useState(true);
   const [reloadKey, setReloadKey] = useState(0);
+  const [focusPeriod, setFocusPeriod] = useState<{ period_type: MetricPeriodType; period_start: string } | null>(null);
+
+  const handleEditMetric = (m: PlatformMetric) => {
+    setFocusPeriod({ period_type: m.period_type, period_start: m.period_start });
+    const el = document.getElementById("platform-metrics-card");
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  const handleDeleteMetric = async (m: PlatformMetric) => {
+    if (!confirm("Delete this entry?")) return;
+    try {
+      await deletePlatformMetric(m.id);
+      toast({ title: "Deleted" });
+      setReloadKey((k) => k + 1);
+    } catch (e: any) {
+      toast({ title: "Failed to delete", description: e?.message, variant: "destructive" });
+    }
+  };
 
   const load = async () => {
     setLoading(true);
