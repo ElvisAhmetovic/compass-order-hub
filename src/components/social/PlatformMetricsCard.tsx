@@ -116,7 +116,7 @@ type FieldKey =
 
 type MetricErrors = Partial<Record<FieldKey, string>>;
 
-const PlatformMetricsCard = ({ platform, platformLabel, onChanged }: Props) => {
+const PlatformMetricsCard = ({ platform, platformLabel, onChanged, externalReloadKey, focusPeriod }: Props) => {
   const isWeb = platform === "abm_website";
 
   const [periodType, setPeriodType] = useState<MetricPeriodType>("week");
