@@ -12,15 +12,18 @@ import { ArrowLeft, CalendarIcon, Copy, Download, BarChart3 } from "lucide-react
 import { addDays, endOfMonth, endOfWeek, format, parseISO, startOfMonth, startOfWeek, subDays } from "date-fns";
 import { cn } from "@/lib/utils";
 import {
+  MetricPeriodType,
   PlatformMetric,
   SocialChecklistItem,
   SocialPlatform,
+  deletePlatformMetric,
   listItemsRange,
   listPlatformMetricsInRange,
 } from "@/services/socialChecklistService";
 import { toast } from "@/hooks/use-toast";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import PlatformMetricsCard from "@/components/social/PlatformMetricsCard";
+import { Trash2, Pencil } from "lucide-react";
 
 const PLATFORM_LABELS: Record<SocialPlatform, string> = {
   facebook: "Facebook",
