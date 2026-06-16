@@ -309,11 +309,15 @@ const WeeklyReportPage = () => {
               </div>
             </div>
 
-            <PlatformMetricsCard
-              platform={platform}
-              platformLabel={platformLabel}
-              onChanged={() => setReloadKey((k) => k + 1)}
-            />
+            <div id="platform-metrics-card">
+              <PlatformMetricsCard
+                platform={platform}
+                platformLabel={platformLabel}
+                onChanged={() => setReloadKey((k) => k + 1)}
+                externalReloadKey={reloadKey}
+                focusPeriod={focusPeriod}
+              />
+            </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <Card className="p-4">
