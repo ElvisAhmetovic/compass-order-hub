@@ -29,7 +29,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Eye, Send, Trash2, Loader2, CheckCircle2, Save } from "lucide-react";
+import { Eye, Send, Trash2, Loader2, CheckCircle2, Save, Copy, MessageCircle, Phone } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -416,8 +416,46 @@ const Offers = () => {
               <DialogHeader>
                 <DialogTitle>Offer Details</DialogTitle>
               </DialogHeader>
-              {selectedOffer && (
+              {selectedOffer && (() => {
+                const confirmLink = `${window.location.origin}/confirm-offer/${selectedOffer.id}`;
+                const shareMsg = `Hi ${selectedOffer.client_name || "there"}, here is your offer from AB Media Team: ${confirmLink}`;
+                const phoneDigits = (selectedOffer.client_phone || "").replace(/\D/g, "");
+                const waUrl = phoneDigits
+                  ? `https://wa.me/${phoneDigits}?text=${encodeURIComponent(shareMsg)}`
+                  : `https://wa.me/?text=${encodeURIComponent(shareMsg)}`;
+                const viberUrl = `viber://forward?text=${encodeURIComponent(shareMsg)}`;
+                const copyLink = async () => {
+                  try {
+                    await navigator.clipboard.writeText(confirmLink);
+                    toast({ title: "Link copied", description: "Confirmation link copied to clipboard." });
+                  } catch {
+                    toast({ variant: "destructive", title: "Copy failed", description: "Could not copy link." });
+                  }
+                };
+                return (
                 <div className="space-y-4">
+                  <div className="rounded-md border border-border bg-muted/30 p-3 space-y-2">
+                    <Label className="text-muted-foreground text-xs">Confirmation link (send manually via WhatsApp / Viber)</Label>
+                    <div className="flex gap-2">
+                      <Input readOnly value={confirmLink} onFocus={(e) => e.currentTarget.select()} className="h-8 font-mono text-xs" />
+                      <Button type="button" size="sm" variant="outline" onClick={copyLink} className="h-8 shrink-0">
+                        <Copy className="h-3.5 w-3.5 mr-1" /> Copy
+                      </Button>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button type="button" size="sm" variant="outline" asChild className="h-8 flex-1 text-green-700 border-green-300 hover:bg-green-50">
+                        <a href={waUrl} target="_blank" rel="noopener noreferrer">
+                          <MessageCircle className="h-3.5 w-3.5 mr-1" /> WhatsApp
+                        </a>
+                      </Button>
+                      <Button type="button" size="sm" variant="outline" asChild className="h-8 flex-1 text-purple-700 border-purple-300 hover:bg-purple-50">
+                        <a href={viberUrl}>
+                          <Phone className="h-3.5 w-3.5 mr-1" /> Viber
+                        </a>
+                      </Button>
+                    </div>
+                  </div>
+
                   <div className="grid grid-cols-2 gap-3 text-sm">
                     <div>
                       <Label className="text-muted-foreground text-xs">Client Name</Label>
@@ -499,7 +537,9 @@ const Offers = () => {
                     </div>
                   </div>
                 </div>
-              )}
+                );
+              })()}
+
             </DialogContent>
           </Dialog>
 
