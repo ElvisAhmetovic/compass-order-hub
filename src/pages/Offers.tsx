@@ -537,7 +537,9 @@ const Offers = () => {
                     </div>
                   </div>
                 </div>
-              )}
+                );
+              })()}
+
             </DialogContent>
           </Dialog>
 
