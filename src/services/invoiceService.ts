@@ -1,6 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { Invoice, Client, InvoiceLineItem, Payment, InvoiceFormData } from "@/types/invoice";
+import { InvoiceAuditService, type InvoiceAuditSource } from "./invoiceAuditService";
 
 export class InvoiceService {
   // Helper method to get authenticated user with extensive logging
