@@ -79,7 +79,7 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.send-review-request]
-verify_jwt = true
+verify_jwt = false
 
 [functions.create-client-ticket]
 verify_jwt = false
