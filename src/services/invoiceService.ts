@@ -153,10 +153,10 @@ export class InvoiceService {
   // Server-side lookup for an existing invoice already linked to an order.
   // Used to short-circuit duplicate creation without scanning every invoice client-side.
   static async getInvoiceByOrderId(orderId: string): Promise<Invoice | null> {
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from('invoices')
       .select('*, client:clients(*)')
-      .eq('order_id' as any, orderId)
+      .eq('order_id', orderId)
       .neq('status', 'cancelled')
       .order('created_at', { ascending: false })
       .limit(1);
