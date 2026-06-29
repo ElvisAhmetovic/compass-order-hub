@@ -873,7 +873,29 @@ export class OrderService {
             line_items: lineItems
           };
 
-          const newInvoice = await InvoiceService.createInvoice(invoiceData);
+          const resolvedClient = clients.find(c => c.id === clientId);
+          const auditCtx = {
+            source: 'order_status_toggle' as const,
+            order_id: orderId,
+            order_company_name: currentOrder.company_name,
+            order_contact_email: currentOrder.contact_email,
+            order_price: currentOrder.price,
+            order_currency: currentOrder.currency,
+            client_name: resolvedClient?.name || currentOrder.company_name,
+          };
+
+          let newInvoice;
+          try {
+            newInvoice = await InvoiceService.createInvoice(invoiceData, undefined, undefined, auditCtx);
+          } catch (createErr) {
+            const { InvoiceAuditService } = await import('./invoiceAuditService');
+            void InvoiceAuditService.logError(createErr, {
+              ...auditCtx,
+              client_id: clientId,
+              metadata: { phase: 'auto_create_on_status_toggle', target_status: newInvoiceStatus },
+            });
+            throw createErr;
+          }
           
           const invoiceStatus = status === "Invoice Sent" ? "sent" : "paid";
 
