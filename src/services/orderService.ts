@@ -795,8 +795,24 @@ export class OrderService {
           console.log(`📄 No linked invoice found for order ${orderId}, auto-creating...`);
           
           const clients = await InvoiceService.getClients();
-          let clientId = clients.find(c => c.name === currentOrder.company_name)?.id;
-          
+          const orderEmail = (currentOrder.contact_email || '').toLowerCase().trim();
+          const orderName = (currentOrder.company_name || '').toLowerCase().trim();
+
+          // 1. Exact match on name + email
+          let clientId = clients.find(c =>
+            (c.name || '').toLowerCase().trim() === orderName &&
+            (c.email || '').toLowerCase().trim() === orderEmail &&
+            orderEmail !== ''
+          )?.id;
+          // 2. Fallback: email only (prevents duplicate-email insert)
+          if (!clientId && orderEmail) {
+            clientId = clients.find(c => (c.email || '').toLowerCase().trim() === orderEmail)?.id;
+          }
+          // 3. Fallback: name only
+          if (!clientId) {
+            clientId = clients.find(c => (c.name || '').toLowerCase().trim() === orderName)?.id;
+          }
+
           if (!clientId) {
             const newClient = await InvoiceService.createClient({
               name: currentOrder.company_name,
