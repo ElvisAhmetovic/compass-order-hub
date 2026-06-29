@@ -86,8 +86,8 @@ const MultiStatusBadges = ({ order, onRefresh, compact = false }: MultiStatusBad
         toast({
           title: "📄 Invoice automatically synced",
           description: result.invoiceAction === 'created'
-            ? `New invoice ${result.invoiceNumber || ''} created and marked as ${pendingStatus.toLowerCase()}`
-            : `Invoice ${result.invoiceNumber || ''} updated to ${pendingStatus.toLowerCase()}`,
+            ? `New invoice ${result.invoiceNumber || ''} created and appears in Invoices.`
+            : `Invoice ${result.invoiceNumber || ''} updated to ${pendingStatus.toLowerCase()}. Find it in Invoices by invoice number or client name.`,
         });
       }
       

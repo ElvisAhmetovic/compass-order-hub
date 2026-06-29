@@ -321,8 +321,27 @@ const Invoices = () => {
     }
   };
 
+  const getDateSearchText = (dateValue?: string) => {
+    if (!dateValue) return '';
+    const date = new Date(dateValue);
+    if (Number.isNaN(date.getTime())) return dateValue.toLowerCase();
+
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+
+    return [
+      dateValue,
+      `${day}/${month}/${year}`,
+      `${day}.${month}.${year}`,
+      `${year}-${month}-${day}`,
+      date.toLocaleDateString(),
+    ].join(' ').toLowerCase();
+  };
+
   const filteredInvoices = invoices.filter(invoice => {
     const search = filterText.toLowerCase();
+    const linkedOrder = (invoice as any).order;
     return (
       invoice.invoice_number.toLowerCase().includes(search) ||
       invoice.client?.name?.toLowerCase().includes(search) ||
@@ -331,9 +350,21 @@ const Invoices = () => {
       invoice.status.toLowerCase().includes(search) ||
       invoice.currency?.toLowerCase().includes(search) ||
       invoice.total_amount?.toString().includes(search) ||
-      invoice.notes?.toLowerCase().includes(search)
+      invoice.notes?.toLowerCase().includes(search) ||
+      (invoice as any).order_id?.toLowerCase().includes(search) ||
+      linkedOrder?.company_name?.toLowerCase().includes(search) ||
+      linkedOrder?.contact_email?.toLowerCase().includes(search) ||
+      linkedOrder?.assigned_to_name?.toLowerCase().includes(search) ||
+      getDateSearchText(linkedOrder?.created_at).includes(search) ||
+      getDateSearchText(invoice.issue_date).includes(search) ||
+      getDateSearchText(invoice.created_at).includes(search)
     );
   });
+
+  const getInvoiceCreatedTime = (invoice: Invoice) => {
+    const createdTime = new Date(invoice.created_at).getTime();
+    return Number.isNaN(createdTime) ? new Date(invoice.issue_date).getTime() : createdTime;
+  };
 
   const sortedInvoices = useMemo(() => {
     let result = [...filteredInvoices];
@@ -346,6 +377,7 @@ const Invoices = () => {
     result.sort((a, b) => {
       switch (sortOption) {
         case 'newest':
+          return getInvoiceCreatedTime(b) - getInvoiceCreatedTime(a);
         case 'sent':
         case 'draft':
         case 'paid':
@@ -503,7 +535,7 @@ const Invoices = () => {
                         </Select>
                         <div className="w-72">
                           <Input
-                            placeholder="Search by invoice #, client, status, amount..."
+                            placeholder="Search invoice #, client, order date, worker, amount..."
                             value={filterText}
                             onChange={(e) => setFilterText(e.target.value)}
                             className="max-w-sm"
@@ -518,7 +550,7 @@ const Invoices = () => {
                         <TableRow>
                           <TableHead>Invoice #</TableHead>
                           <TableHead>Client</TableHead>
-                          <TableHead>Issue Date</TableHead>
+                          <TableHead>Issue / Created</TableHead>
                           <TableHead>Due Date</TableHead>
                           <TableHead>Amount</TableHead>
                           <TableHead>Status</TableHead>
@@ -566,9 +598,20 @@ const Invoices = () => {
                                 <div>
                                   <div className="font-medium">{invoice.client?.name}</div>
                                   <div className="text-sm text-gray-500">{invoice.client?.email}</div>
+                                  {(invoice as any).order?.created_at && (
+                                    <div className="text-xs text-gray-500">
+                                      Order {new Date((invoice as any).order.created_at).toLocaleDateString()}
+                                      {(invoice as any).order?.assigned_to_name ? ` • ${(invoice as any).order.assigned_to_name}` : ''}
+                                    </div>
+                                  )}
                                 </div>
                               </TableCell>
-                              <TableCell>{new Date(invoice.issue_date).toLocaleDateString()}</TableCell>
+                              <TableCell>
+                                <div>{new Date(invoice.issue_date).toLocaleDateString()}</div>
+                                <div className="text-xs text-gray-500">
+                                  Created {new Date(invoice.created_at).toLocaleDateString()} {new Date(invoice.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </div>
+                              </TableCell>
                               <TableCell>{new Date(invoice.due_date).toLocaleDateString()}</TableCell>
                               <TableCell>
                                 {formatCurrency(invoice.total_amount, invoice.currency)}

@@ -75,7 +75,7 @@ const OrderActions = ({ order, onOrderView, onRefresh }: OrderActionsProps) => {
       
       toast({
         title: "Invoice updated",
-        description: `Existing invoice ${existingInvoice.invoice_number} status updated to ${invoiceStatus}.`,
+        description: `Existing invoice ${existingInvoice.invoice_number} status updated to ${invoiceStatus}. You can find it in Invoices by searching the invoice number or client name.`,
       });
       return;
     }
@@ -168,7 +168,7 @@ const OrderActions = ({ order, onOrderView, onRefresh }: OrderActionsProps) => {
     
     toast({
       title: "Invoice created",
-      description: `Invoice ${newInvoice.invoice_number} has been created and status set to ${invoiceStatus}.`,
+      description: `Invoice ${newInvoice.invoice_number} has been created and appears in Invoices. Search the invoice number or ${orderData.company_name}.`,
     });
   };
 
@@ -260,8 +260,8 @@ const OrderActions = ({ order, onOrderView, onRefresh }: OrderActionsProps) => {
         toast({
           title: "📄 Invoice automatically synced",
           description: result.invoiceAction === 'created'
-            ? `New invoice ${result.invoiceNumber || ''} created and marked as ${pendingStatus.toLowerCase()}`
-            : `Invoice ${result.invoiceNumber || ''} updated to ${pendingStatus.toLowerCase()}`,
+            ? `New invoice ${result.invoiceNumber || ''} created and appears in Invoices.`
+            : `Invoice ${result.invoiceNumber || ''} updated to ${pendingStatus.toLowerCase()}. Find it in Invoices by invoice number or client name.`,
         });
       }
       
