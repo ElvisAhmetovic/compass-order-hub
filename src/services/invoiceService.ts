@@ -150,10 +150,33 @@ export class InvoiceService {
     return data;
   }
 
-  static async createInvoice(invoiceData: InvoiceFormData, customYear?: number, customSequence?: number): Promise<Invoice> {
+  static async createInvoice(
+    invoiceData: InvoiceFormData,
+    customYear?: number,
+    customSequence?: number,
+    auditContext?: {
+      source?: InvoiceAuditSource;
+      order_id?: string | null;
+      order_company_name?: string | null;
+      order_contact_email?: string | null;
+      order_price?: number | null;
+      order_currency?: string | null;
+      client_name?: string | null;
+    }
+  ): Promise<Invoice> {
     console.log('🚀 INVOICE CREATION REQUEST STARTED');
     console.log('Request timestamp:', new Date().toISOString());
     console.log('Invoice data received:', invoiceData);
+    const auditBase = {
+      source: auditContext?.source ?? ("manual_invoice_page" as InvoiceAuditSource),
+      order_id: auditContext?.order_id ?? null,
+      order_company_name: auditContext?.order_company_name ?? null,
+      order_contact_email: auditContext?.order_contact_email ?? null,
+      order_price: auditContext?.order_price ?? null,
+      order_currency: auditContext?.order_currency ?? invoiceData.currency ?? null,
+      client_id: invoiceData.client_id ?? null,
+      client_name: auditContext?.client_name ?? null,
+    };
     
     try {
       // Check authentication first
