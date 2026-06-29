@@ -323,6 +323,7 @@ const Invoices = () => {
 
   const filteredInvoices = invoices.filter(invoice => {
     const search = filterText.toLowerCase();
+    const linkedOrder = (invoice as any).order;
     return (
       invoice.invoice_number.toLowerCase().includes(search) ||
       invoice.client?.name?.toLowerCase().includes(search) ||
@@ -331,9 +332,17 @@ const Invoices = () => {
       invoice.status.toLowerCase().includes(search) ||
       invoice.currency?.toLowerCase().includes(search) ||
       invoice.total_amount?.toString().includes(search) ||
-      invoice.notes?.toLowerCase().includes(search)
+      invoice.notes?.toLowerCase().includes(search) ||
+      (invoice as any).order_id?.toLowerCase().includes(search) ||
+      linkedOrder?.company_name?.toLowerCase().includes(search) ||
+      linkedOrder?.contact_email?.toLowerCase().includes(search)
     );
   });
+
+  const getInvoiceCreatedTime = (invoice: Invoice) => {
+    const createdTime = new Date(invoice.created_at).getTime();
+    return Number.isNaN(createdTime) ? new Date(invoice.issue_date).getTime() : createdTime;
+  };
 
   const sortedInvoices = useMemo(() => {
     let result = [...filteredInvoices];
@@ -346,6 +355,7 @@ const Invoices = () => {
     result.sort((a, b) => {
       switch (sortOption) {
         case 'newest':
+          return getInvoiceCreatedTime(b) - getInvoiceCreatedTime(a);
         case 'sent':
         case 'draft':
         case 'paid':
@@ -518,7 +528,7 @@ const Invoices = () => {
                         <TableRow>
                           <TableHead>Invoice #</TableHead>
                           <TableHead>Client</TableHead>
-                          <TableHead>Issue Date</TableHead>
+                          <TableHead>Issue / Created</TableHead>
                           <TableHead>Due Date</TableHead>
                           <TableHead>Amount</TableHead>
                           <TableHead>Status</TableHead>
@@ -568,7 +578,12 @@ const Invoices = () => {
                                   <div className="text-sm text-gray-500">{invoice.client?.email}</div>
                                 </div>
                               </TableCell>
-                              <TableCell>{new Date(invoice.issue_date).toLocaleDateString()}</TableCell>
+                              <TableCell>
+                                <div>{new Date(invoice.issue_date).toLocaleDateString()}</div>
+                                <div className="text-xs text-gray-500">
+                                  Created {new Date(invoice.created_at).toLocaleDateString()} {new Date(invoice.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </div>
+                              </TableCell>
                               <TableCell>{new Date(invoice.due_date).toLocaleDateString()}</TableCell>
                               <TableCell>
                                 {formatCurrency(invoice.total_amount, invoice.currency)}

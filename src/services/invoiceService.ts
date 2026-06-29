@@ -81,16 +81,58 @@ export class InvoiceService {
 
   // Invoice operations
   static async getInvoices(): Promise<Invoice[]> {
-    const { data, error } = await supabase
-      .from('invoices')
-      .select(`
-        *,
-        client:clients(*)
-      `)
-      .order('created_at', { ascending: false });
+    const pageSize = 1000;
+    let from = 0;
+    let allInvoices: Invoice[] = [];
 
-    if (error) throw error;
-    return data || [];
+    while (true) {
+      const { data, error } = await supabase
+        .from('invoices')
+        .select(`
+          *,
+          client:clients(*)
+        `)
+        .order('created_at', { ascending: false })
+        .range(from, from + pageSize - 1);
+
+      if (error) throw error;
+
+      const page = data || [];
+      allInvoices = [...allInvoices, ...page];
+
+      if (page.length < pageSize) break;
+      from += pageSize;
+    }
+
+    const orderIds = [...new Set(
+      allInvoices
+        .map(invoice => (invoice as any).order_id)
+        .filter(Boolean)
+    )];
+
+    if (orderIds.length === 0) return allInvoices;
+
+    try {
+      const { data: linkedOrders, error: orderError } = await supabase
+        .from('orders')
+        .select('id, company_name, contact_email, created_at, price, currency, assigned_to')
+        .in('id', orderIds);
+
+      if (orderError) {
+        console.warn('Unable to load linked order context for invoices:', orderError);
+        return allInvoices;
+      }
+
+      const ordersById = new Map((linkedOrders || []).map(order => [order.id, order]));
+
+      return allInvoices.map(invoice => ({
+        ...invoice,
+        order: ordersById.get((invoice as any).order_id) || null,
+      } as Invoice & { order?: any }));
+    } catch (error) {
+      console.warn('Unable to attach linked order context to invoices:', error);
+      return allInvoices;
+    }
   }
 
   static async getInvoice(id: string): Promise<Invoice | null> {
