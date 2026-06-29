@@ -1,23 +1,24 @@
-## Add confirmation link to the offer details modal
+## Problem
 
-In `src/pages/Offers.tsx`, inside the "View Offer Dialog" (around line 414), add a new "Confirmation link" field at the top of the form so workers can grab the URL to send manually via WhatsApp/Viber.
+Clicking "Invoice" on the LogisGreen Bordeaux order fails with "Failed to create invoice."
 
-### What the user will see
-A read-only field containing the full link, e.g. `https://empriatech.com/confirm-offer/<offer-id>`, with three small buttons next to it:
-- **Copy** — copies link to clipboard (toast confirmation)
-- **WhatsApp** — opens `https://wa.me/<phone>?text=<prefilled message + link>` in a new tab (falls back to `https://wa.me/?text=...` if no phone on file)
-- **Viber** — opens `viber://forward?text=<prefilled message + link>`
+Root cause: `createInvoiceFromOrder` in `src/components/dashboard/OrderRow.tsx` looks up the client only by exact `name === order.company_name`. The order's company name is `Entreprise de nettoyage Bordeaux - société LogisGreen`, but the existing client is named `LOGISGREEN` and already owns the email `logisgreensocietedenettoyage@gmail.com`. So the lookup misses, and `createClient` then fails with a duplicate-email error (Postgres 23505) — surfaced as the generic toast.
 
-Prefilled message: short greeting + the link, using the client's name and price, e.g. *"Hi {name}, here is your offer from AB Media Team: {link}"*.
+This violates the project's standard client-matching rule (name+email exact, fallback to email-only).
 
-### Technical notes
-- Link is built as `${window.location.origin}/confirm-offer/${selectedOffer.id}` to match the existing `/confirm-offer/:offerId` route in `App.tsx`. For production this resolves to the empriatech.com domain.
-- Use `navigator.clipboard.writeText` + existing `toast` hook for copy feedback.
-- Phone for WhatsApp/Viber comes from `selectedOffer.client_phone`, stripped of non-digits.
-- No DB/schema changes, no edge function changes, no business-logic changes — purely a UI addition inside the existing view/edit dialog.
-- Resend flow (`handleResend`) creates a new offer ID; the link shown always reflects the currently viewed offer.
+## Fix
 
-### Out of scope
-- The "Resend" action's behavior
-- Email templates
-- Anything outside the View Offer Dialog
+In `src/components/dashboard/OrderRow.tsx` `createInvoiceFromOrder`, update the client resolution to:
+
+1. Try exact match on `name === order.company_name` AND `email === order.contact_email` (case-insensitive).
+2. Fallback to email-only match (case-insensitive).
+3. Only create a new client if neither matches.
+
+Apply the same fix in `src/components/dashboard/OrderActions.tsx` (which has an identical pattern and the same error toast).
+
+No schema changes, no UI changes — just smarter client lookup so the invoice creation reuses the existing client record instead of triggering a duplicate-email insert.
+
+## Verification
+
+- Re-trigger "Invoice" on the Bordeaux order → expect an invoice to be created and linked to the existing `LOGISGREEN` client.
+- Existing LOGISGREEN orders (exact name match) still resolve correctly.
