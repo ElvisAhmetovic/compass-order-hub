@@ -48,6 +48,7 @@ import Reminders from "./pages/Reminders";
 import WorkHours from "./pages/WorkHours";
 import WorkHoursV2 from "./pages/WorkHoursV2";
 import WorkHoursAdmin from "./pages/WorkHoursAdmin";
+import InvoiceAuditLogPage from "./pages/admin/InvoiceAuditLogPage";
 import MonthlyPackages from "./pages/MonthlyPackages";
 import MonthlyInvoiceStatus from "./pages/MonthlyInvoiceStatus";
 import Offers from "./pages/Offers";
@@ -323,6 +324,11 @@ function App() {
                   <Route path="/admin/work-hours" element={
                     <RequireAuth>
                       <WorkHoursAdmin />
+                    </RequireAuth>
+                  } />
+                  <Route path="/admin/invoice-audit" element={
+                    <RequireAuth>
+                      <InvoiceAuditLogPage />
                     </RequireAuth>
                   } />
                   <Route path="/monthly-packages" element={

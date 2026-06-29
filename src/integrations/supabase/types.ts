@@ -755,6 +755,78 @@ export type Database = {
         }
         Relationships: []
       }
+      invoice_audit_logs: {
+        Row: {
+          actor_email: string | null
+          actor_name: string | null
+          actor_role: string | null
+          actor_user_id: string | null
+          attempt_number: number
+          client_id: string | null
+          client_name: string | null
+          created_at: string
+          error_code: string | null
+          error_message: string | null
+          id: string
+          invoice_id: string | null
+          invoice_number: string | null
+          metadata: Json | null
+          order_company_name: string | null
+          order_contact_email: string | null
+          order_currency: string | null
+          order_id: string | null
+          order_price: number | null
+          outcome: string
+          source: string | null
+        }
+        Insert: {
+          actor_email?: string | null
+          actor_name?: string | null
+          actor_role?: string | null
+          actor_user_id?: string | null
+          attempt_number?: number
+          client_id?: string | null
+          client_name?: string | null
+          created_at?: string
+          error_code?: string | null
+          error_message?: string | null
+          id?: string
+          invoice_id?: string | null
+          invoice_number?: string | null
+          metadata?: Json | null
+          order_company_name?: string | null
+          order_contact_email?: string | null
+          order_currency?: string | null
+          order_id?: string | null
+          order_price?: number | null
+          outcome: string
+          source?: string | null
+        }
+        Update: {
+          actor_email?: string | null
+          actor_name?: string | null
+          actor_role?: string | null
+          actor_user_id?: string | null
+          attempt_number?: number
+          client_id?: string | null
+          client_name?: string | null
+          created_at?: string
+          error_code?: string | null
+          error_message?: string | null
+          id?: string
+          invoice_id?: string | null
+          invoice_number?: string | null
+          metadata?: Json | null
+          order_company_name?: string | null
+          order_contact_email?: string | null
+          order_currency?: string | null
+          order_id?: string | null
+          order_price?: number | null
+          outcome?: string
+          source?: string | null
+        }
+        Relationships: []
+      }
       invoice_line_items: {
         Row: {
           created_at: string
