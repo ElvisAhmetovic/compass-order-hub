@@ -184,8 +184,7 @@ const OrderActions = ({ order, onOrderView, onRefresh }: OrderActionsProps) => {
       throw err;
     }
 
-    // Link invoice to order via order_id column
-    await InvoiceService.updateInvoice(newInvoice.id, { order_id: orderId } as any);
+    // order_id is now set at invoice insert-time (enforced by DB unique index).
     
     // Update the invoice status to match the order status
     const invoiceStatus = status === "Invoice Sent" ? "sent" : "paid";
