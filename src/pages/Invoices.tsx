@@ -321,6 +321,24 @@ const Invoices = () => {
     }
   };
 
+  const getDateSearchText = (dateValue?: string) => {
+    if (!dateValue) return '';
+    const date = new Date(dateValue);
+    if (Number.isNaN(date.getTime())) return dateValue.toLowerCase();
+
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+
+    return [
+      dateValue,
+      `${day}/${month}/${year}`,
+      `${day}.${month}.${year}`,
+      `${year}-${month}-${day}`,
+      date.toLocaleDateString(),
+    ].join(' ').toLowerCase();
+  };
+
   const filteredInvoices = invoices.filter(invoice => {
     const search = filterText.toLowerCase();
     const linkedOrder = (invoice as any).order;
@@ -335,7 +353,10 @@ const Invoices = () => {
       invoice.notes?.toLowerCase().includes(search) ||
       (invoice as any).order_id?.toLowerCase().includes(search) ||
       linkedOrder?.company_name?.toLowerCase().includes(search) ||
-      linkedOrder?.contact_email?.toLowerCase().includes(search)
+      linkedOrder?.contact_email?.toLowerCase().includes(search) ||
+      getDateSearchText(linkedOrder?.created_at).includes(search) ||
+      getDateSearchText(invoice.issue_date).includes(search) ||
+      getDateSearchText(invoice.created_at).includes(search)
     );
   });
 
@@ -576,6 +597,11 @@ const Invoices = () => {
                                 <div>
                                   <div className="font-medium">{invoice.client?.name}</div>
                                   <div className="text-sm text-gray-500">{invoice.client?.email}</div>
+                                  {(invoice as any).order?.created_at && (
+                                    <div className="text-xs text-gray-500">
+                                      Order {new Date((invoice as any).order.created_at).toLocaleDateString()}
+                                    </div>
+                                  )}
                                 </div>
                               </TableCell>
                               <TableCell>
