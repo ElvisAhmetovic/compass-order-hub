@@ -297,15 +297,6 @@ export class InvoiceService {
             });
             continue;
           }
-            console.warn(`Invoice number ${invoiceNumber} already exists. Retrying with the next number...`);
-            void InvoiceAuditService.logError(invoiceError, {
-              ...auditBase,
-              invoice_number: invoiceNumber,
-              attempt_number: attempt,
-              metadata: { phase: 'retry_conflict' },
-            });
-            continue;
-          }
 
           if (isInvoiceNumberConflict(invoiceError)) {
             void InvoiceAuditService.logError(invoiceError, {
