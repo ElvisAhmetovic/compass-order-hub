@@ -354,6 +354,7 @@ const Invoices = () => {
       (invoice as any).order_id?.toLowerCase().includes(search) ||
       linkedOrder?.company_name?.toLowerCase().includes(search) ||
       linkedOrder?.contact_email?.toLowerCase().includes(search) ||
+      linkedOrder?.assigned_to_name?.toLowerCase().includes(search) ||
       getDateSearchText(linkedOrder?.created_at).includes(search) ||
       getDateSearchText(invoice.issue_date).includes(search) ||
       getDateSearchText(invoice.created_at).includes(search)
@@ -600,6 +601,7 @@ const Invoices = () => {
                                   {(invoice as any).order?.created_at && (
                                     <div className="text-xs text-gray-500">
                                       Order {new Date((invoice as any).order.created_at).toLocaleDateString()}
+                                      {(invoice as any).order?.assigned_to_name ? ` • ${(invoice as any).order.assigned_to_name}` : ''}
                                     </div>
                                   )}
                                 </div>

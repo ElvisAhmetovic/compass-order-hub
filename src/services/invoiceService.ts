@@ -115,7 +115,7 @@ export class InvoiceService {
     try {
       const { data: linkedOrders, error: orderError } = await supabase
         .from('orders')
-        .select('id, company_name, contact_email, created_at, price, currency, assigned_to')
+        .select('id, company_name, contact_email, created_at, price, currency, assigned_to, assigned_to_name')
         .in('id', orderIds);
 
       if (orderError) {
