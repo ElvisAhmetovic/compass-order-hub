@@ -1687,6 +1687,7 @@ export type Database = {
           is_yearly_package: boolean | null
           price: number | null
           priority: string | null
+          review_request_sent_at: string | null
           status: string
           status_cancelled: boolean | null
           status_complaint: boolean | null
@@ -1731,6 +1732,7 @@ export type Database = {
           is_yearly_package?: boolean | null
           price?: number | null
           priority?: string | null
+          review_request_sent_at?: string | null
           status: string
           status_cancelled?: boolean | null
           status_complaint?: boolean | null
@@ -1775,6 +1777,7 @@ export type Database = {
           is_yearly_package?: boolean | null
           price?: number | null
           priority?: string | null
+          review_request_sent_at?: string | null
           status?: string
           status_cancelled?: boolean | null
           status_complaint?: boolean | null
