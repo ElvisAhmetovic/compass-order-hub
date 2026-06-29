@@ -15,6 +15,7 @@ import { useAuth } from "@/context/AuthContext";
 import { InvoiceService } from "@/services/invoiceService";
 import { OrderService } from "@/services/orderService";
 import { WorkflowService } from "@/services/workflowService";
+import { InvoiceAuditService } from "@/services/invoiceAuditService";
 import { SelectedInventoryItem } from "./InventoryItemsSelector";
 
 interface OrderActionsProps {
@@ -161,7 +162,28 @@ const OrderActions = ({ order, onOrderView, onRefresh }: OrderActionsProps) => {
       line_items: lineItems
     };
 
-    const newInvoice = await InvoiceService.createInvoice(invoiceData);
+    const resolvedClient = clients.find(c => c.id === clientId);
+    const auditCtx = {
+      source: 'order_actions_button' as const,
+      order_id: orderId,
+      order_company_name: orderData.company_name,
+      order_contact_email: orderData.contact_email,
+      order_price: orderData.price,
+      order_currency: orderData.currency,
+      client_name: resolvedClient?.name || orderData.company_name,
+    };
+
+    let newInvoice;
+    try {
+      newInvoice = await InvoiceService.createInvoice(invoiceData, undefined, undefined, auditCtx);
+    } catch (err) {
+      void InvoiceAuditService.logError(err, {
+        ...auditCtx,
+        client_id: clientId,
+        metadata: { phase: 'create_invoice_from_order' },
+      });
+      throw err;
+    }
 
     // Link invoice to order via order_id column
     await InvoiceService.updateInvoice(newInvoice.id, { order_id: orderId } as any);
