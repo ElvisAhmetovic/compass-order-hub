@@ -979,6 +979,32 @@ export class OrderService {
         console.error('Error sending service delivered notification:', serviceDeliveredError);
       }
     }
+
+    // Auto-send Google review request when order is BOTH Resolved AND Invoice Paid.
+    // Idempotency is enforced server-side via orders.review_request_sent_at.
+    if (enabled && (status === 'Resolved' || status === 'Invoice Paid')) {
+      try {
+        const { data: freshOrder } = await supabase
+          .from('orders')
+          .select('status_resolved, status_invoice_paid, review_request_sent_at, contact_email')
+          .eq('id', orderId)
+          .maybeSingle();
+
+        if (
+          freshOrder?.status_resolved &&
+          freshOrder?.status_invoice_paid &&
+          !freshOrder?.review_request_sent_at &&
+          freshOrder?.contact_email
+        ) {
+          const { enqueueNotification } = await import('@/utils/notificationQueue');
+          enqueueNotification('send-review-request', { orderId });
+          console.log('⭐ Queued Google review request for order', orderId);
+        }
+      } catch (reviewErr) {
+        console.error('Error enqueuing review request:', reviewErr);
+      }
+    }
+
     return invoiceSyncResult;
   }
 

@@ -78,6 +78,9 @@ verify_jwt = true
 [functions.send-service-delivered-notification]
 verify_jwt = true
 
+[functions.send-review-request]
+verify_jwt = true
+
 [functions.create-client-ticket]
 verify_jwt = false
 
