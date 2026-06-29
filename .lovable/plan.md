@@ -1,35 +1,74 @@
-## What actually happened
 
-The Nousgerons invoice **was created successfully** — it's not missing. Here's the record:
+## Goal
 
-- Invoice: **INV-2026-105**
-- Amount: **€100**
-- Status: **sent**
-- Created: **2026-06-29 09:14:50 UTC** by **Thomas Klein**
-- Linked to order: `86323485…` (Nousgerons, 19/06/2026, €100)
+Give super admins a single place to see **every invoice creation attempt** — successes and failures — so when a worker says "I clicked the button and nothing happened," you can immediately see who tried, for which order, what invoice number was assigned (or what error blocked it, e.g. 409 duplicate), and when.
 
-### Why your admin couldn't find it
+## What gets recorded
 
-There are **two client records sharing the same email** `contact@investissement-locatif.com`:
+For every invoice creation attempt (manual, from-order, and the auto-create inside `toggleOrderStatus`):
 
+- Actor: user id, email, full name, role
+- Order context: order id, company name, contact email, order date, price
+- Client context: resolved client id + name (so we can spot duplicate-client mismatches like the Nousgerons case)
+- Outcome: `success`, `conflict_409`, `validation_error`, `permission_denied`, `unknown_error`
+- Invoice number (when generated) + invoice id (on success)
+- Attempt number (for retry loop in `InvoiceService.createInvoice`)
+- Error code (e.g. Postgres `23505`), error message, raw payload snippet
+- Source: `manual_invoice_page`, `order_actions_button`, `order_status_toggle`, `bulk_sync`
+- Timestamp + user-agent
 
-| Client ID   | Name                                    | Created    |
-| ----------- | --------------------------------------- | ---------- |
-| `9ac5a81d…` | **Investissement Locatif**              | 2026-02-19 |
-| `b4d7ca74…` | **Nousgerons (Investissement Locatif)** | 2026-04-20 |
+## Database
 
+New table `public.invoice_audit_logs` (admin-read-only, append-only):
 
-The order's company name is just `Nousgerons`, which doesn't exactly match either client name. So the lookup fell through to the email-only fallback and matched the **older** row (`Investissement Locatif`). The invoice exists in your list — just filed under "Investissement Locatif", not "Nousgerons". Searching "nousgerons" on the Invoices page therefore returns nothing.
+```text
+id, created_at,
+actor_user_id, actor_email, actor_name, actor_role,
+order_id, order_company_name, order_contact_email, order_price, order_currency,
+client_id, client_name,
+invoice_id (nullable), invoice_number (nullable),
+outcome (text), error_code (text), error_message (text),
+attempt_number (int, default 1),
+source (text),
+metadata (jsonb)
+```
 
-## Fix plan
+- RLS: only super admins (`wh_is_super_admin()` already exists) can `SELECT`; `authenticated` can `INSERT` their own rows (`actor_user_id = auth.uid()`); `service_role` full access.
+- Index on `created_at desc`, `order_id`, `actor_user_id`, `outcome`.
+- No FK on `order_id` / `invoice_id` (so a failed attempt with a bad id still logs).
 
-1. **Smarter client matching in `OrderActions.tsx` and `orderService.ts**` — when multiple clients share the same email, prefer the one whose name contains (or is contained in) the order's `company_name`. Only fall back to "first match" if none overlap. This stops new Nousgerons invoices from landing on the wrong client.
-2. **Make Invoices search find by linked order's company name** in `src/pages/Invoices.tsx` — currently it only searches the invoice's own client name/number. Add the joined `orders.company_name` to the search predicate so typing "Nousgerons" surfaces INV-2026-105 even though its client is recorded as "Investissement Locatif".
-3. **Re-link the existing INV-2026-105** to the `Nousgerons (Investissement Locatif)` client via a one-off migration, so it shows up correctly in the list right now without your admin re-creating anything.
-4. **Optional cleanup (ask before doing)**: merge the two duplicate client rows so this can't happen again for this customer. I'll wait for your go-ahead before touching client data beyond step 3.
+## Backend logging hooks
 
-No schema changes needed — only a small data update for step 3 and frontend logic tweaks for steps 1 and 2.  
-  
-Also any new invoice created should be found at the top of the invoices by creation date, and also i dont know how exactly the system works but if someone from our team creates a new invoice even if its for the same company or offer or  order it should show up in the invoices right? 
+Add a small helper `logInvoiceAttempt(payload)` in `src/services/invoiceAuditService.ts` that inserts into the new table and never throws (failure to log must never block invoice creation).
 
-&nbsp;
+Wire it into the three creation paths:
+
+1. `src/services/invoiceService.ts` → `createInvoice`: log on success, log on each retry, log on final failure with the Postgres error code (catches the 409 / `23505` duplicates).
+2. `src/components/dashboard/OrderActions.tsx` → `createInvoiceFromOrder`: log when the order→client resolution picks a client and when the create call returns / throws.
+3. `src/services/orderService.ts` → `toggleOrderStatus` auto-create branch: log the auto-create attempt + outcome, including which fallback matched (name+email / email-only / name-only / new client).
+
+Each call passes `source` so the log row tells you which entry point triggered it.
+
+## Admin UI
+
+New route `/admin/invoice-audit` (super-admin only, guarded the same way the work-hours admin pages are) with page `src/pages/admin/InvoiceAuditLogPage.tsx`:
+
+- Table with columns: Time · Actor · Order (company + date) · Client · Invoice # · Outcome (colored badge) · Error · Source
+- Filters: outcome (success / conflict / error), actor, date range, free-text search (matches invoice #, company, email, error message)
+- Row click → side panel with the full `metadata` JSON, attempt history for that order, and a "View invoice" / "View order" deep link
+- Pagination (100/page) + CSV export of the current filter
+- Add a link to it from the existing admin sidebar under the Invoices section, visible only to super admins
+
+## Files touched
+
+- New migration: create table + RLS + indexes
+- New: `src/services/invoiceAuditService.ts`
+- New: `src/pages/admin/InvoiceAuditLogPage.tsx` + small `InvoiceAuditTable.tsx`, `InvoiceAuditFilters.tsx` components
+- Edit: `src/services/invoiceService.ts`, `src/services/orderService.ts`, `src/components/dashboard/OrderActions.tsx` — add `logInvoiceAttempt` calls (no behavior changes)
+- Edit: `src/App.tsx` (route) + sidebar config to expose the link
+
+## Out of scope (ask if you want these too)
+
+- Backfilling history for past invoices (we can't reconstruct failed attempts that were never recorded; successes could be backfilled from `invoices.created_at` + `created_by` if that column exists — let me know).
+- Email/Slack alert when a `conflict_409` occurs.
+- Logging invoice **edits** and **deletes** (this plan covers creation only, matching your request).
