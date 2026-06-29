@@ -163,6 +163,7 @@ const Sidebar = () => {
     { href: '/invoice-sent', icon: Receipt, label: 'Invoice Sent', roles: ['admin', 'agent'] },
     { href: '/invoice-paid', icon: Receipt, label: 'Invoice Paid', roles: ['admin', 'agent'] },
     { href: '/invoices', icon: Receipt, label: 'Invoices', roles: ['admin', 'agent'] },
+    { href: '/admin/invoice-audit', icon: ShieldCheck, label: 'Invoice Audit Log', roles: ['admin', 'agent', 'user'], superAdminOnly: true },
     { href: '/proposals', icon: FileText, label: 'Proposals', roles: ['admin', 'agent'] },
     { href: '/offers', icon: Send, label: 'Offers', roles: ['admin', 'agent'] },
     
