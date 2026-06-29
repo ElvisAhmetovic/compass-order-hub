@@ -1,30 +1,21 @@
-## What I found
+I checked the database: the Magnum Motors invoice was created successfully and linked to the order.
 
-Thomas Klein’s invoice creation is reaching the database successfully, but the insert fails with **409 Conflict** because the app generated `INV-2026-103`, and that invoice number already exists.
+Current row found:
+- Invoice: `INV-2026-104`
+- Client: `Magnum Motors`
+- Amount: `30 EUR`
+- Status: `sent`
+- Created: `2026-06-29 09:12 UTC`
+- Created by: `Thomas Klein`
+- Linked order: `74534417-be4b-4c6b-a4f1-65d137960b18`
 
-The invoice sequence row currently says the latest sequence is `1039`, but the invoice-number function pads with at least 3 digits only. That means sequence `103` becomes `INV-2026-103`, which can conflict with older invoices if the sequence was reset or manually overridden.
+The likely issue is the invoice page is not making newly-created/linked order invoices easy to find, and it may sort by issue date only, not by actual creation time. Since all invoices made today share the same issue date, a new invoice can appear lower than expected.
 
-## Plan
+Plan:
+1. Update the invoice list sorting so `Newest` sorts by `created_at` first, then issue date, making just-created invoices appear at the top.
+2. Add the linked order info into invoice search visibility, so searching Magnum/order/client details finds the invoice reliably.
+3. Improve the invoice creation success toast from the dashboard to include the exact invoice number and a clear hint that it can be found in Invoices.
+4. Make `InvoiceService.getInvoices()` return enough linked client/order context for the invoice page to display and filter consistently.
+5. Add a visible “Created” date/time column or secondary text under issue date so workers understand when an invoice was actually generated versus the original order date.
 
-1. **Fix the database invoice-number function**
-   - Update `generate_invoice_number` so automatic numbering never returns an invoice number that already exists.
-   - It will loop forward from the sequence until it finds a free number.
-   - Keep manual custom invoice numbers supported, but make the sequence advance safely.
-
-2. **Make invoice creation more resilient in the app**
-   - In `InvoiceService.createInvoice`, if the insert fails specifically because `invoice_number` already exists, request the next invoice number and retry a few times instead of immediately showing the generic error.
-   - Keep other errors unchanged so real permission/RLS problems still surface.
-
-3. **Improve the error toast**
-   - Replace the vague “Failed to create invoice” for duplicate-number conflicts with a clearer message if retries fail.
-
-4. **Verify with current data**
-   - Confirm `INV-2026-103` already exists.
-   - Confirm the next generated invoice number skips conflicts and inserts successfully.
-
-## Files / database touched
-
-- Database migration: `public.generate_invoice_number(...)`
-- `src/services/invoiceService.ts`
-
-No changes to invoice UI layout are needed.
+No database schema change is needed because the invoice already exists correctly.
