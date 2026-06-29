@@ -176,7 +176,7 @@ serve(async (req: Request) => {
           ${t.ps}
         </td></tr>
         <tr><td style="padding:18px 36px 26px 36px;border-top:1px solid #eef0f4;font-size:12px;color:#9ca3af;">
-          ${t.footer} · <a href="mailto:invoice@team-abmedia.com" style="color:#6b7280;text-decoration:none;">invoice@team-abmedia.com</a>
+          ${t.footer} · <a href="mailto:noreply@abm-team.com" style="color:#6b7280;text-decoration:none;">noreply@abm-team.com</a>
         </td></tr>
       </table>
     </td></tr>
@@ -185,7 +185,7 @@ serve(async (req: Request) => {
 
     const resend = new Resend(Deno.env.get("RESEND_API_KEY_ABMEDIA"));
     const sendResp = await resend.emails.send({
-      from: "AB Media Team <invoice@team-abmedia.com>",
+      from: "AB Media Team <noreply@abm-team.com>",
       to: [recipientEmail],
       subject: t.subject,
       html,

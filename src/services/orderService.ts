@@ -996,9 +996,13 @@ export class OrderService {
           !freshOrder?.review_request_sent_at &&
           freshOrder?.contact_email
         ) {
-          const { enqueueNotification } = await import('@/utils/notificationQueue');
-          enqueueNotification('send-review-request', { orderId });
-          console.log('⭐ Queued Google review request for order', orderId);
+          // Direct fire-and-forget invoke (NOT through the 8s queue), so the
+          // review email isn't trapped behind the 12-recipient status-change blast.
+          supabase.functions
+            .invoke('send-review-request', { body: { orderId } })
+            .then((r) => console.log('⭐ Review request invoke result', r))
+            .catch((e) => console.error('Review request invoke failed', e));
+          console.log('⭐ Triggered Google review request for order', orderId);
         }
       } catch (reviewErr) {
         console.error('Error enqueuing review request:', reviewErr);

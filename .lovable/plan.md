@@ -1,51 +1,43 @@
-## Cilj
-Kad order dobije **i Resolved i Invoice Paid** statuse, automatski poslati klijentu email sa linkom za Google recenziju. Šalje se samo jednom po order-u.
+## Diagnoza
 
-## Implementacija
+Naručio sam stanje za "test GMBH" order `18704276-…`:
+- `status_resolved = true` ✅
+- `status_invoice_paid = true` ✅
+- `contact_email = jusufprazina788@gmail.com` ✅
+- `review_request_sent_at = NULL` ❌ (nikad nije obeleženo)
 
-### 1. Place ID konfiguracija
-- Dodati kolonu `google_review_place_id` (TEXT) u `company_settings` tabelu.
-- Mali admin UI u Settings stranici (input + save), vidljiv samo admin-ima.
-- Razlog za `company_settings` umesto secret: lako menjanje bez deploy-a, i podržava više brendova/kompanija u budućnosti.
-- Review URL: `https://search.google.com/local/writereview?placeid={PLACE_ID}`
+Edge function `send-review-request` je deployovana i radi (ručni test vraća 401 jer nema auth header — znači funkcija postoji), **ali u logovima funkcije NEMA NIJEDNOG poziva**. Znači klijent nikad nije pozvao funkciju.
 
-### 2. Tracking
-- Nova kolona u `orders`: `review_request_sent_at TIMESTAMPTZ` — sprečava duplo slanje.
+### Uzrok
 
-### 3. Edge function: `send-review-request`
-- Input: `{ orderId }`.
-- Učitava order + linked client (ime, email, jezik) + company_name.
-- Učitava Place ID iz `company_settings`. Ako fali, loguje i izlazi (no-op).
-- Provera: ako `review_request_sent_at` nije null → skip.
-- Šalje preko **Resend** (`RESEND_API_KEY_ABMEDIA`) sa sender-om `invoice@team-abmedia.com` (već postojeća integracija u sistemu).
-- HTML email sa:
-  - Personalizovan pozdrav (Hi {ime})
-  - Multi-jezik (DE/EN/FR/IT/ES/IT) — koristi `emailTranslationService` pattern već u sistemu
-  - Veliko CTA dugme **"Leave a Google Review ⭐"** → review URL
-  - Brand footer (AB Media Team)
-- Nakon uspeha:
-  - Update `orders.review_request_sent_at = now()`
-  - Insert log u `client_email_logs` sa `email_type: 'review_request'`
+Trigger u `OrderService.toggleOrderStatus` koristi `enqueueNotification('send-review-request', ...)` koja:
+1. Stavlja poziv u **in-browser red** (`src/utils/notificationQueue.ts`).
+2. Procesira ga **serijski sa 8s pauzom** između svakih poziva.
+3. Kada user toggluje "Invoice Paid" ili "Resolved", paralelno se queueuje i `send-status-change-notification` koji šalje 12 emailova jedan po jedan (≈90s). Review request se dodaje **na kraj reda**.
+4. Ako user u međuvremenu **refreshuje stranicu, navigira ili zatvori tab**, queue se uništi i poziv nikad ne stigne.
 
-### 4. Trigger u workflow-u (Resolved + Invoice Paid)
-- U `OrderService.toggleOrderStatus`: nakon svake izmene statusa proveri:
-  ```
-  if (order.status_resolved && order.status_invoice_paid && !order.review_request_sent_at && order.client_id)
-    → enqueueNotification('send-review-request', { orderId })
-  ```
-- Isto i u `WorkflowService.handlePaymentReceived` i `handleComplaintResolved` (samo kao centralizovani helper `maybeSendReviewRequest(order)` da se ne ponavlja).
-- Fire-and-forget preko `enqueueNotification` (već postoji `8s` queue).
-- Toast: `"📧 Google review request sent to client."` (samo ako je trigger ovog puta poslao).
+Plus: ne postoji nikakav server-side fallback. Ako klijentski poziv padne, ništa nikad ne pošalje email.
 
-### 5. Bez manual dugmeta
-Po dogovoru — samo automatika, bez UI buttona.
+## Plan popravke
 
-## Tehnički detalji
-- **DB migracije**: dodaju se 2 polja (`company_settings.google_review_place_id`, `orders.review_request_sent_at`).
-- **Idempotentnost**: kombinacija `review_request_sent_at` kolone + provera na ulazu edge funkcije.
-- **Failure handling**: ako edge fn padne, `review_request_sent_at` ostaje null pa će sledeća status izmena ponovo pokušati (do uspeha).
-- **Throttle**: već imamo 8s queue delay u `enqueueNotification`.
+### 1. Direktan poziv umesto queue-a (klijent)
+U `src/services/orderService.ts` zameniti `enqueueNotification('send-review-request', ...)` sa direktnim `supabase.functions.invoke('send-review-request', { body: { orderId } })` fire-and-forget. Razlog: ova funkcija šalje samo **jedan** email klijentu (ne 12 timskih), nema rate-limit problem, i ne sme da čeka iza dugog status-notification reda.
 
-## Šta neće biti dirano
-- Postojeća `Resolved` automatika (service-delivered email itd.) ostaje netaknuta — review email je dodatak.
-- Bez izmena na `client_email_logs` schemi (samo nov `email_type` string).
+### 2. Server-side fallback (DB trigger)
+Dodati Postgres trigger `AFTER UPDATE ON orders` koji se okida kada `status_resolved` ILI `status_invoice_paid` pređu u true i `review_request_sent_at IS NULL`. Trigger preko `pg_net.http_post` poziva edge function sa service role headerom. Ovo garantuje slanje čak i ako klijent padne, refreshuje, ili je status menjan kroz cron/SQL.
+
+Zahteva:
+- Omogućiti `pg_net` ekstenziju (ako već nije).
+- Sačuvati `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` u trigger funkciji kao secrets (preko `vault` ili hard-coded URL + role iz `current_setting`).
+- Trigger samo enqueue-uje HTTP — async, ne blokira UPDATE.
+
+### 3. Backfill za "test GMBH"
+Ručno pozvati edge function za order `18704276-6788-4fa3-bfe6-11aae242566b` da se trenutno pošalje email i postavi `review_request_sent_at`.
+
+### 4. Mali logging dodatak
+U edge funkciji već postoji `console.log("Order not Resolved+Paid, skipping")` itd. — dovoljno za buduću dijagnostiku preko Edge Function logova.
+
+## Šta se NE dira
+- Postojeća logika `send-status-change-notification` i ostatak `enqueueNotification` reda (oni i dalje trebaju 8s pauze zbog Resend rate limita za 12-člani tim).
+- HTML/multi-jezik sadržaj review emaila.
+- Idempotentnost (`review_request_sent_at`) — već je čvrsta na server strani.
