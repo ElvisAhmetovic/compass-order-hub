@@ -900,8 +900,7 @@ export class OrderService {
           const invoiceStatus = status === "Invoice Sent" ? "sent" : "paid";
 
 
-          // Link order_id first (direct update is fine since creator owns the invoice)
-          await supabase.from('invoices').update({ order_id: orderId }).eq('id', newInvoice.id);
+          // order_id is now set at invoice insert-time (enforced by DB unique index).
           
           // Then sync status via RPC to bypass RLS
           const newRpcNextReminder = invoiceStatus === 'sent' 
