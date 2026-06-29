@@ -90,7 +90,14 @@ const OrderActions = ({ order, onOrderView, onRefresh }: OrderActionsProps) => {
       orderEmail !== ''
     )?.id;
     if (!clientId && orderEmail) {
-      clientId = clients.find(c => (c.email || '').toLowerCase().trim() === orderEmail)?.id;
+      const emailMatches = clients.filter(c => (c.email || '').toLowerCase().trim() === orderEmail);
+      if (emailMatches.length > 0) {
+        const overlap = emailMatches.find(c => {
+          const n = (c.name || '').toLowerCase().trim();
+          return orderName && (n.includes(orderName) || orderName.includes(n));
+        });
+        clientId = (overlap || emailMatches[0]).id;
+      }
     }
     if (!clientId) {
       clientId = clients.find(c => (c.name || '').toLowerCase().trim() === orderName)?.id;

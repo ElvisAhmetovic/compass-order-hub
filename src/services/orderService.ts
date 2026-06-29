@@ -804,9 +804,17 @@ export class OrderService {
             (c.email || '').toLowerCase().trim() === orderEmail &&
             orderEmail !== ''
           )?.id;
-          // 2. Fallback: email only (prevents duplicate-email insert)
+          // 2. Fallback: email only — if multiple clients share the email,
+          // prefer one whose name overlaps the order's company name.
           if (!clientId && orderEmail) {
-            clientId = clients.find(c => (c.email || '').toLowerCase().trim() === orderEmail)?.id;
+            const emailMatches = clients.filter(c => (c.email || '').toLowerCase().trim() === orderEmail);
+            if (emailMatches.length > 0) {
+              const overlap = emailMatches.find(c => {
+                const n = (c.name || '').toLowerCase().trim();
+                return orderName && (n.includes(orderName) || orderName.includes(n));
+              });
+              clientId = (overlap || emailMatches[0]).id;
+            }
           }
           // 3. Fallback: name only
           if (!clientId) {
