@@ -80,10 +80,22 @@ const OrderActions = ({ order, onOrderView, onRefresh }: OrderActionsProps) => {
       return;
     }
 
-    // First, create or find the client
+    // First, create or find the client (match by name+email exact, then fallback to email)
     const clients = await InvoiceService.getClients();
-    let clientId = clients.find(c => c.name === orderData.company_name)?.id;
-    
+    const orderEmail = (orderData.contact_email || '').toLowerCase().trim();
+    const orderName = (orderData.company_name || '').toLowerCase().trim();
+    let clientId = clients.find(c =>
+      (c.name || '').toLowerCase().trim() === orderName &&
+      (c.email || '').toLowerCase().trim() === orderEmail &&
+      orderEmail !== ''
+    )?.id;
+    if (!clientId && orderEmail) {
+      clientId = clients.find(c => (c.email || '').toLowerCase().trim() === orderEmail)?.id;
+    }
+    if (!clientId) {
+      clientId = clients.find(c => (c.name || '').toLowerCase().trim() === orderName)?.id;
+    }
+
     if (!clientId) {
       const newClient = await InvoiceService.createClient({
         name: orderData.company_name,
