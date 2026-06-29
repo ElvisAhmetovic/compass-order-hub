@@ -79,10 +79,18 @@ serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const placeId = Deno.env.get("GOOGLE_REVIEW_PLACE_ID");
+    const placeId = Deno.env.get("GOOGLE_REVIEW_PLACE_ID")?.trim();
     if (!placeId) {
       console.log("GOOGLE_REVIEW_PLACE_ID not configured, skipping");
       return new Response(JSON.stringify({ success: false, reason: "no_place_id" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (/^\d+$/.test(placeId) || !/^ChIJ[A-Za-z0-9_-]+$/.test(placeId)) {
+      console.error("GOOGLE_REVIEW_PLACE_ID is not a valid Google Place ID. Expected a Place ID starting with ChIJ, not a numeric CID.");
+      return new Response(JSON.stringify({ success: false, reason: "invalid_place_id" }), {
+        status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
