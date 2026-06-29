@@ -197,9 +197,10 @@ const OrderActions = ({ order, onOrderView, onRefresh }: OrderActionsProps) => {
       
     } catch (error) {
       console.error("Error creating invoice:", error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to create invoice. Please check your connection and try again.";
       toast({
         title: "Error",
-        description: "Failed to create invoice. Please check your connection and try again.",
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {
