@@ -242,17 +242,43 @@ export class InvoiceService {
 
           if (isInvoiceNumberConflict(invoiceError) && attempt < maxInvoiceAttempts) {
             console.warn(`Invoice number ${invoiceNumber} already exists. Retrying with the next number...`);
+            void InvoiceAuditService.logError(invoiceError, {
+              ...auditBase,
+              invoice_number: invoiceNumber,
+              attempt_number: attempt,
+              metadata: { phase: 'retry_conflict' },
+            });
             continue;
           }
 
           if (isInvoiceNumberConflict(invoiceError)) {
+            void InvoiceAuditService.logError(invoiceError, {
+              ...auditBase,
+              invoice_number: invoiceNumber,
+              attempt_number: attempt,
+              metadata: { phase: 'final_conflict' },
+            });
             throw new Error('This invoice number already exists. Please refresh and try again so the next available number can be used.');
           }
 
+          void InvoiceAuditService.logError(invoiceError, {
+            ...auditBase,
+            invoice_number: invoiceNumber,
+            attempt_number: attempt,
+            metadata: { phase: 'insert_failed' },
+          });
           throw invoiceError;
         }
 
         invoiceResult = insertedInvoice;
+        void InvoiceAuditService.log({
+          ...auditBase,
+          outcome: 'success',
+          invoice_id: invoiceResult.id,
+          invoice_number: invoiceResult.invoice_number,
+          attempt_number: attempt,
+          metadata: { phase: 'invoice_inserted' },
+        });
         break;
       }
 
