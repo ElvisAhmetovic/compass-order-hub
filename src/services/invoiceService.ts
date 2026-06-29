@@ -124,47 +124,74 @@ export class InvoiceService {
 
       console.log('✅ User authenticated successfully');
 
-      // Generate invoice number with optional custom year/sequence
-      console.log('Step 2: Generating invoice number...');
-      const rpcParams: any = { prefix_param: 'INV' };
-      if (customYear) rpcParams.year_param = customYear;
-      if (customSequence) rpcParams.sequence_param = customSequence;
-      
-      const { data: invoiceNumber, error: numberError } = await supabase
-        .rpc('generate_invoice_number', rpcParams);
-
-      if (numberError) {
-        console.error('🚫 INVOICE NUMBER GENERATION FAILED:', numberError);
-        throw numberError;
-      }
-
-      console.log('✅ Invoice number generated:', invoiceNumber);
-
-      // Create invoice first
-      console.log('Step 3: Creating invoice record...');
-      const invoiceInsertData = {
-        invoice_number: invoiceNumber,
-        client_id: invoiceData.client_id,
-        issue_date: invoiceData.issue_date,
-        due_date: invoiceData.due_date,
-        currency: invoiceData.currency,
-        payment_terms: invoiceData.payment_terms,
-        notes: invoiceData.notes,
-        internal_notes: invoiceData.internal_notes,
-        user_id: user.id,
+      const isInvoiceNumberConflict = (error: any) => {
+        const message = String(error?.message || error?.details || '');
+        return error?.code === '23505' && message.includes('invoice_number');
       };
 
-      console.log('Invoice insert data:', invoiceInsertData);
+      let invoiceResult: Invoice | null = null;
+      const maxInvoiceAttempts = customSequence ? 1 : 5;
 
-      const { data: invoiceResult, error: invoiceError } = await supabase
-        .from('invoices')
-        .insert(invoiceInsertData)
-        .select()
-        .single();
+      for (let attempt = 1; attempt <= maxInvoiceAttempts; attempt++) {
+        // Generate invoice number with optional custom year/sequence
+        console.log(`Step 2: Generating invoice number${attempt > 1 ? ` (retry ${attempt})` : ''}...`);
+        const rpcParams: any = { prefix_param: 'INV' };
+        if (customYear) rpcParams.year_param = customYear;
+        if (customSequence) rpcParams.sequence_param = customSequence;
+        
+        const { data: invoiceNumber, error: numberError } = await supabase
+          .rpc('generate_invoice_number', rpcParams);
 
-      if (invoiceError) {
-        console.error('🚫 INVOICE CREATION FAILED:', invoiceError);
-        throw invoiceError;
+        if (numberError) {
+          console.error('🚫 INVOICE NUMBER GENERATION FAILED:', numberError);
+          throw numberError;
+        }
+
+        console.log('✅ Invoice number generated:', invoiceNumber);
+
+        // Create invoice first
+        console.log('Step 3: Creating invoice record...');
+        const invoiceInsertData = {
+          invoice_number: invoiceNumber,
+          client_id: invoiceData.client_id,
+          issue_date: invoiceData.issue_date,
+          due_date: invoiceData.due_date,
+          currency: invoiceData.currency,
+          payment_terms: invoiceData.payment_terms,
+          notes: invoiceData.notes,
+          internal_notes: invoiceData.internal_notes,
+          user_id: user.id,
+        };
+
+        console.log('Invoice insert data:', invoiceInsertData);
+
+        const { data: insertedInvoice, error: invoiceError } = await supabase
+          .from('invoices')
+          .insert(invoiceInsertData)
+          .select()
+          .single();
+
+        if (invoiceError) {
+          console.error('🚫 INVOICE CREATION FAILED:', invoiceError);
+
+          if (isInvoiceNumberConflict(invoiceError) && attempt < maxInvoiceAttempts) {
+            console.warn(`Invoice number ${invoiceNumber} already exists. Retrying with the next number...`);
+            continue;
+          }
+
+          if (isInvoiceNumberConflict(invoiceError)) {
+            throw new Error('This invoice number already exists. Please refresh and try again so the next available number can be used.');
+          }
+
+          throw invoiceError;
+        }
+
+        invoiceResult = insertedInvoice;
+        break;
+      }
+
+      if (!invoiceResult) {
+        throw new Error('Invoice could not be created after retrying invoice numbering. Please try again.');
       }
 
       console.log('✅ Invoice created successfully:', invoiceResult);
