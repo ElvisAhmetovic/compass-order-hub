@@ -535,7 +535,7 @@ const Invoices = () => {
                         </Select>
                         <div className="w-72">
                           <Input
-                            placeholder="Search by invoice #, client, status, amount..."
+                            placeholder="Search invoice #, client, order date, worker, amount..."
                             value={filterText}
                             onChange={(e) => setFilterText(e.target.value)}
                             className="max-w-sm"
