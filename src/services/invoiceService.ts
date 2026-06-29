@@ -150,6 +150,24 @@ export class InvoiceService {
     return data;
   }
 
+  // Server-side lookup for an existing invoice already linked to an order.
+  // Used to short-circuit duplicate creation without scanning every invoice client-side.
+  static async getInvoiceByOrderId(orderId: string): Promise<Invoice | null> {
+    const { data, error } = await supabase
+      .from('invoices')
+      .select('*, client:clients(*)')
+      .eq('order_id' as any, orderId)
+      .neq('status', 'cancelled')
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    if (error) {
+      console.warn('getInvoiceByOrderId failed:', error);
+      return null;
+    }
+    return (data && data[0]) || null;
+  }
+
   static async createInvoice(
     invoiceData: InvoiceFormData,
     customYear?: number,
