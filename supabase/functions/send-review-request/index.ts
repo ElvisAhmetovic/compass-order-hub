@@ -185,7 +185,7 @@ serve(async (req: Request) => {
 
     const resend = new Resend(Deno.env.get("RESEND_API_KEY_ABMEDIA"));
     const sendResp = await resend.emails.send({
-      from: "AB Media Team <invoice@team-abmedia.com>",
+      from: "AB Media Team <noreply@abm-team.com>",
       to: [recipientEmail],
       subject: t.subject,
       html,
