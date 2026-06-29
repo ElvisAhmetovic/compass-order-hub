@@ -1,43 +1,54 @@
-## Diagnoza
+## Problem
 
-Naručio sam stanje za "test GMBH" order `18704276-…`:
-- `status_resolved = true` ✅
-- `status_invoice_paid = true` ✅
-- `contact_email = jusufprazina788@gmail.com` ✅
-- `review_request_sent_at = NULL` ❌ (nikad nije obeleženo)
+Toggling "Invoice Paid" fails with:
+```
+function extensions.http_post(url => text, body => jsonb, headers => jsonb) does not exist
+```
 
-Edge function `send-review-request` je deployovana i radi (ručni test vraća 401 jer nema auth header — znači funkcija postoji), **ali u logovima funkcije NEMA NIJEDNOG poziva**. Znači klijent nikad nije pozvao funkciju.
+This comes from the `trigger_review_request_on_order_update` trigger I added last turn. It calls `extensions.http_post(...)`, but `pg_net` exposes the function as `net.http_post(...)` (in the `net` schema), not `extensions.http_post`. Because the trigger errors out, the entire `UPDATE orders` transaction is rolled back — so the status toggle itself fails.
 
-### Uzrok
+## Fix
 
-Trigger u `OrderService.toggleOrderStatus` koristi `enqueueNotification('send-review-request', ...)` koja:
-1. Stavlja poziv u **in-browser red** (`src/utils/notificationQueue.ts`).
-2. Procesira ga **serijski sa 8s pauzom** između svakih poziva.
-3. Kada user toggluje "Invoice Paid" ili "Resolved", paralelno se queueuje i `send-status-change-notification` koji šalje 12 emailova jedan po jedan (≈90s). Review request se dodaje **na kraj reda**.
-4. Ako user u međuvremenu **refreshuje stranicu, navigira ili zatvori tab**, queue se uništi i poziv nikad ne stigne.
+Replace the trigger function so it calls the correct `pg_net` function and never blocks the order update even if the HTTP call fails.
 
-Plus: ne postoji nikakav server-side fallback. Ako klijentski poziv padne, ništa nikad ne pošalje email.
+### Migration
 
-## Plan popravke
+```sql
+CREATE OR REPLACE FUNCTION public.trigger_review_request_on_order_update()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_url text := 'https://fjybmlugiqmiggsdrkiq.supabase.co/functions/v1/send-review-request';
+BEGIN
+  IF NEW.status_resolved IS TRUE
+     AND NEW.status_invoice_paid IS TRUE
+     AND NEW.review_request_sent_at IS NULL
+     AND (
+       OLD.status_resolved IS DISTINCT FROM NEW.status_resolved
+       OR OLD.status_invoice_paid IS DISTINCT FROM NEW.status_invoice_paid
+     )
+  THEN
+    BEGIN
+      PERFORM net.http_post(
+        url := v_url,
+        body := jsonb_build_object('orderId', NEW.id::text),
+        headers := '{"Content-Type":"application/json"}'::jsonb
+      );
+    EXCEPTION WHEN OTHERS THEN
+      -- Never block the order update if the HTTP enqueue fails
+      RAISE WARNING 'send-review-request enqueue failed: %', SQLERRM;
+    END;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+```
 
-### 1. Direktan poziv umesto queue-a (klijent)
-U `src/services/orderService.ts` zameniti `enqueueNotification('send-review-request', ...)` sa direktnim `supabase.functions.invoke('send-review-request', { body: { orderId } })` fire-and-forget. Razlog: ova funkcija šalje samo **jedan** email klijentu (ne 12 timskih), nema rate-limit problem, i ne sme da čeka iza dugog status-notification reda.
+The client-side fire-and-forget invoke in `orderService.ts` stays as the primary path; this trigger is just the server-side fallback, now wrapped so any failure logs a warning instead of aborting the transaction.
 
-### 2. Server-side fallback (DB trigger)
-Dodati Postgres trigger `AFTER UPDATE ON orders` koji se okida kada `status_resolved` ILI `status_invoice_paid` pređu u true i `review_request_sent_at IS NULL`. Trigger preko `pg_net.http_post` poziva edge function sa service role headerom. Ovo garantuje slanje čak i ako klijent padne, refreshuje, ili je status menjan kroz cron/SQL.
+## Validation
 
-Zahteva:
-- Omogućiti `pg_net` ekstenziju (ako već nije).
-- Sačuvati `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` u trigger funkciji kao secrets (preko `vault` ili hard-coded URL + role iz `current_setting`).
-- Trigger samo enqueue-uje HTTP — async, ne blokira UPDATE.
-
-### 3. Backfill za "test GMBH"
-Ručno pozvati edge function za order `18704276-6788-4fa3-bfe6-11aae242566b` da se trenutno pošalje email i postavi `review_request_sent_at`.
-
-### 4. Mali logging dodatak
-U edge funkciji već postoji `console.log("Order not Resolved+Paid, skipping")` itd. — dovoljno za buduću dijagnostiku preko Edge Function logova.
-
-## Šta se NE dira
-- Postojeća logika `send-status-change-notification` i ostatak `enqueueNotification` reda (oni i dalje trebaju 8s pauze zbog Resend rate limita za 12-člani tim).
-- HTML/multi-jezik sadržaj review emaila.
-- Idempotentnost (`review_request_sent_at`) — već je čvrsta na server strani.
+After the migration, toggling "Invoice Paid" on any order should succeed without the 42883 error, and a Resolved + Invoice Paid order should still trigger the review email.
