@@ -804,20 +804,18 @@ export class OrderService {
             (c.email || '').toLowerCase().trim() === orderEmail &&
             orderEmail !== ''
           )?.id;
-          // 2. Fallback: email only — if multiple clients share the email,
-          // prefer one whose name overlaps the order's company name.
-          if (!clientId && orderEmail) {
+          // 2. Email match — ONLY reuse if the client name overlaps the order's company name.
+          // (Prevents Nousgerons → Investissement Locatif style hijacks.)
+          if (!clientId && orderEmail && orderName) {
             const emailMatches = clients.filter(c => (c.email || '').toLowerCase().trim() === orderEmail);
-            if (emailMatches.length > 0) {
-              const overlap = emailMatches.find(c => {
-                const n = (c.name || '').toLowerCase().trim();
-                return orderName && (n.includes(orderName) || orderName.includes(n));
-              });
-              clientId = (overlap || emailMatches[0]).id;
-            }
+            const overlap = emailMatches.find(c => {
+              const n = (c.name || '').toLowerCase().trim();
+              return n && (n.includes(orderName) || orderName.includes(n));
+            });
+            if (overlap) clientId = overlap.id;
           }
-          // 3. Fallback: name only
-          if (!clientId) {
+          // 3. Fallback: name-only exact match
+          if (!clientId && orderName) {
             clientId = clients.find(c => (c.name || '').toLowerCase().trim() === orderName)?.id;
           }
 
@@ -900,8 +898,7 @@ export class OrderService {
           const invoiceStatus = status === "Invoice Sent" ? "sent" : "paid";
 
 
-          // Link order_id first (direct update is fine since creator owns the invoice)
-          await supabase.from('invoices').update({ order_id: orderId }).eq('id', newInvoice.id);
+          // order_id is now set at invoice insert-time (enforced by DB unique index).
           
           // Then sync status via RPC to bypass RLS
           const newRpcNextReminder = invoiceStatus === 'sent' 

@@ -150,6 +150,24 @@ export class InvoiceService {
     return data;
   }
 
+  // Server-side lookup for an existing invoice already linked to an order.
+  // Used to short-circuit duplicate creation without scanning every invoice client-side.
+  static async getInvoiceByOrderId(orderId: string): Promise<Invoice | null> {
+    const { data, error } = await (supabase as any)
+      .from('invoices')
+      .select('*, client:clients(*)')
+      .eq('order_id', orderId)
+      .neq('status', 'cancelled')
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    if (error) {
+      console.warn('getInvoiceByOrderId failed:', error);
+      return null;
+    }
+    return (data && data[0]) || null;
+  }
+
   static async createInvoice(
     invoiceData: InvoiceFormData,
     customYear?: number,
@@ -217,7 +235,7 @@ export class InvoiceService {
 
         // Create invoice first
         console.log('Step 3: Creating invoice record...');
-        const invoiceInsertData = {
+        const invoiceInsertData: any = {
           invoice_number: invoiceNumber,
           client_id: invoiceData.client_id,
           issue_date: invoiceData.issue_date,
@@ -229,6 +247,12 @@ export class InvoiceService {
           user_id: user.id,
         };
 
+        // Link to order at insert-time so the DB unique index prevents duplicates
+        // (paths B and C pass auditContext.order_id; manual path A leaves it null).
+        if (auditContext?.order_id) {
+          invoiceInsertData.order_id = auditContext.order_id;
+        }
+
         console.log('Invoice insert data:', invoiceInsertData);
 
         const { data: insertedInvoice, error: invoiceError } = await supabase
@@ -239,6 +263,29 @@ export class InvoiceService {
 
         if (invoiceError) {
           console.error('🚫 INVOICE CREATION FAILED:', invoiceError);
+
+          // If we tripped the partial unique index on order_id, another invoice
+          // already exists for this order — return it instead of throwing.
+          const message = String(invoiceError?.message || invoiceError?.details || '');
+          const isOrderConflict =
+            invoiceError?.code === '23505' &&
+            (message.includes('order_id') || message.includes('uniq_invoices_order_id_active'));
+
+          if (isOrderConflict && auditContext?.order_id) {
+            console.warn(`Order ${auditContext.order_id} already has an invoice. Returning existing one.`);
+            const existing = await this.getInvoiceByOrderId(auditContext.order_id);
+            if (existing) {
+              void InvoiceAuditService.log({
+                ...auditBase,
+                outcome: 'success',
+                invoice_id: existing.id,
+                invoice_number: existing.invoice_number,
+                attempt_number: attempt,
+                metadata: { phase: 'existing_returned_on_order_conflict' },
+              });
+              return existing;
+            }
+          }
 
           if (isInvoiceNumberConflict(invoiceError) && attempt < maxInvoiceAttempts) {
             console.warn(`Invoice number ${invoiceNumber} already exists. Retrying with the next number...`);

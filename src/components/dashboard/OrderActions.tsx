@@ -63,17 +63,14 @@ const OrderActions = ({ order, onOrderView, onRefresh }: OrderActionsProps) => {
       throw new Error("You must be logged in to create invoices.");
     }
 
-    // Check if invoice already exists for this order using direct order_id link
-    const existingInvoices = await InvoiceService.getInvoices();
-    const existingInvoice = existingInvoices.find(inv => 
-      (inv as any).order_id === orderId || (inv.notes && inv.notes.includes(`Order ID: ${orderId}`))
-    );
+    // Check if invoice already exists for this order (server-side, by order_id)
+    const existingInvoice = await InvoiceService.getInvoiceByOrderId(orderId);
 
     if (existingInvoice) {
       // Update existing invoice status
       const invoiceStatus = status === "Invoice Sent" ? "sent" : "paid";
       await InvoiceService.updateInvoice(existingInvoice.id, { status: invoiceStatus });
-      
+
       toast({
         title: "Invoice updated",
         description: `Existing invoice ${existingInvoice.invoice_number} status updated to ${invoiceStatus}. You can find it in Invoices by searching the invoice number or client name.`,
@@ -81,26 +78,28 @@ const OrderActions = ({ order, onOrderView, onRefresh }: OrderActionsProps) => {
       return;
     }
 
-    // First, create or find the client (match by name+email exact, then fallback to email)
+    // Resolve / create client without letting a shared email hijack a different company.
     const clients = await InvoiceService.getClients();
     const orderEmail = (orderData.contact_email || '').toLowerCase().trim();
     const orderName = (orderData.company_name || '').toLowerCase().trim();
+    // 1. Exact match on name + email
     let clientId = clients.find(c =>
       (c.name || '').toLowerCase().trim() === orderName &&
       (c.email || '').toLowerCase().trim() === orderEmail &&
       orderEmail !== ''
     )?.id;
-    if (!clientId && orderEmail) {
+    // 2. Email match — ONLY reuse if the client name overlaps the order's company name.
+    // (Prevents Nousgerons → Investissement Locatif style hijacks.)
+    if (!clientId && orderEmail && orderName) {
       const emailMatches = clients.filter(c => (c.email || '').toLowerCase().trim() === orderEmail);
-      if (emailMatches.length > 0) {
-        const overlap = emailMatches.find(c => {
-          const n = (c.name || '').toLowerCase().trim();
-          return orderName && (n.includes(orderName) || orderName.includes(n));
-        });
-        clientId = (overlap || emailMatches[0]).id;
-      }
+      const overlap = emailMatches.find(c => {
+        const n = (c.name || '').toLowerCase().trim();
+        return n && (n.includes(orderName) || orderName.includes(n));
+      });
+      if (overlap) clientId = overlap.id;
     }
-    if (!clientId) {
+    // 3. Fallback: name-only exact match
+    if (!clientId && orderName) {
       clientId = clients.find(c => (c.name || '').toLowerCase().trim() === orderName)?.id;
     }
 
@@ -185,8 +184,7 @@ const OrderActions = ({ order, onOrderView, onRefresh }: OrderActionsProps) => {
       throw err;
     }
 
-    // Link invoice to order via order_id column
-    await InvoiceService.updateInvoice(newInvoice.id, { order_id: orderId } as any);
+    // order_id is now set at invoice insert-time (enforced by DB unique index).
     
     // Update the invoice status to match the order status
     const invoiceStatus = status === "Invoice Sent" ? "sent" : "paid";
