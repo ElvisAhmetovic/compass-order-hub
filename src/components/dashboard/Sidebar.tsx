@@ -293,7 +293,14 @@ const Sidebar = () => {
   return (
     <div className="w-64 bg-card border-r border-border min-h-screen">
       <div className="p-6">
-        <h2 className="text-xl font-semibold text-foreground">AB Media Team CRM</h2>
+        <a
+          href="https://www.abm-team.com/en"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-block text-xl font-semibold text-foreground hover:text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded transition-colors"
+        >
+          AB Media Team CRM
+        </a>
         <div className="mt-2 text-muted-foreground">
           <div className="font-mono text-lg font-semibold text-foreground">
             {currentTime.toLocaleTimeString('de-DE', { timeZone: 'Europe/Berlin' })}
