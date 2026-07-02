@@ -1,25 +1,13 @@
-## Plan
+Make the "AB Media Team CRM" sidebar title a clickable external link to https://www.abm-team.com/en, opened in a new tab.
 
-1. **Update the runtime secret**
-   - Set `GOOGLE_REVIEW_PLACE_ID` to the real Google Place ID:
-     `ChIJ50FDykeVuEcRrf2fjhu8za4`
-   - This is likely the main issue because the old numeric value is not hardcoded in the current source code.
+1. Edit `src/components/dashboard/Sidebar.tsx` line 296.
+   - Wrap the current `<h2 className="text-xl font-semibold text-foreground">AB Media Team CRM</h2>` in an `<a>` element.
+   - Set `href="https://www.abm-team.com/en"`.
+   - Add `target="_blank"` and `rel="noopener noreferrer"` for safe external navigation.
+   - Keep existing styling (`text-xl font-semibold text-foreground`) and add hover/focus cues so it looks clickable.
 
-2. **Redeploy the review email function**
-   - Redeploy `send-review-request` so Supabase Edge Functions definitely reload the latest code and environment.
+2. Verify the change is the only place the title appears (confirmed via search: only `Sidebar.tsx:296`).
 
-3. **Add a safety guard in the email function**
-   - Add validation so if `GOOGLE_REVIEW_PLACE_ID` is accidentally set to a numeric CID again, the function refuses to send a broken review link and logs a clear error.
-   - This prevents future emails from silently going out with `/local/writereview?placeid=11731173374506860818`.
+3. Run the project typecheck/build to ensure no compile errors.
 
-4. **Clarify old emails behavior**
-   - Already-sent emails cannot be changed. If someone clicks an older email, it will still contain the old broken link.
-   - New emails sent after the secret update + redeploy should use the correct Place ID.
-
-## Technical details
-
-- Current code builds the button link from:
-  `Deno.env.get("GOOGLE_REVIEW_PLACE_ID")`
-- Code search found the old numeric ID only in `.lovable/plan.md`, not in the live function source.
-- Existing review URL format is correct when the value is a real Place ID:
-  `https://search.google.com/local/writereview?placeid=ChIJ50FDykeVuEcRrf2fjhu8za4`
+No other UI or business logic changes.
