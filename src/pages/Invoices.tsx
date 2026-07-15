@@ -389,9 +389,9 @@ const Invoices = () => {
         case 'inv-high':
           return b.invoice_number.localeCompare(a.invoice_number, undefined, { numeric: true });
         case 'a-z':
-          return (a.client?.name || '').localeCompare(b.client?.name || '');
+          return ((a.bill_to_name || a.client?.name) || '').localeCompare((b.bill_to_name || b.client?.name) || '');
         case 'z-a':
-          return (b.client?.name || '').localeCompare(a.client?.name || '');
+          return ((b.bill_to_name || b.client?.name) || '').localeCompare((a.bill_to_name || a.client?.name) || '');
         default:
           return 0;
       }
