@@ -1,51 +1,41 @@
-# Fix: invoice company-detail edits not reflecting in the Invoices list
+# QA verification — invoice edits not reflecting in the list
 
-## The problem
-When editing an invoice, the "Bill To" section (company name, address, email, city, zip code, country) lives in a local React state called `billToOverride` in `src/pages/InvoiceDetail.tsx`. That state is:
+## What your boss reported
+1. Edits an invoice, hits Save. The emailed PDF is correct, but the Invoices list still shows the old data.
+2. Editing the **price** saves fine. Editing the **company details** (name/address/email) does not.
 
-- used to render the PDF and preview (so the emailed PDF is correct — matches what your boss sees),
-- **never written back to the database** on save.
+## Diagnosis (confirmed)
+In `src/pages/InvoiceDetail.tsx`, the "Bill To" fields (company name, email, address, city, zip, country) lived in local React state `billToOverride`, used only to render the PDF/preview. The `handleSave` function only wrote `client_id`, dates, currency, payment terms, and notes to the DB — never the Bill-To fields. Line items (price) were saved through a separate path, which is why the **price change persisted but company edits did not**. The Invoices list then re-rendered from `invoice.client?.name/email` — an untouched foreign row — so the change looked lost.
 
-The `handleSave` function only persists: `client_id`, `issue_date`, `due_date`, `currency`, `payment_terms`, `notes`, `internal_notes`, plus line items (which is why the **price change did save** — line items are updated separately).
+## Fix status: applied
 
-The Invoices list then displays `invoice.client?.name` / `invoice.client?.email` pulled from the linked client record, which was never touched. Result: the invoice row looks unchanged even though the PDF is correct.
+### Database — verified
+Six new nullable columns exist on `public.invoices`:
+`bill_to_name, bill_to_email, bill_to_address, bill_to_city, bill_to_zip_code, bill_to_country`.
 
-## The fix
+### Code — verified
+- `src/types/invoice.ts` — six optional `bill_to_*` fields added to the `Invoice` type.
+- `src/pages/InvoiceDetail.tsx`
+  - `handleSave` (existing-invoice branch) now writes all six `bill_to_*` fields alongside the other invoice fields.
+  - The unmount auto-save also writes the six fields, so unsaved edits aren't dropped.
+  - `loadData` hydrates `billToOverride` from the invoice's stored `bill_to_*` values first, falling back to the linked client for empty fields.
+  - The "auto-fill on client change" effect now bails out during initial load (`!initialLoadDone.current`), so it can't wipe the stored override the moment the invoice opens.
+- `src/pages/Invoices.tsx`
+  - Client name cell: `invoice.bill_to_name || invoice.client?.name`.
+  - Client email cell: same fallback.
+  - Search filter and A-Z / Z-A sort use the same override-first fallback.
+- PDF generator unchanged — it already reads from the `billToClient` object built off `billToOverride`, which is why the PDF was already correct.
 
-Persist the Bill-To override on the invoice itself (not on the client — per project rule, we don't overwrite the client record from an invoice edit), and show those override values in the Invoices list when present.
+## Manual test checklist for you to run
+1. Open an existing invoice, change the company name + email + address, click Save, return to `/invoices` — the row should now show the new name/email.
+2. Reopen the same invoice — the Bill-To fields should still show your edits (not the raw client record).
+3. Change only the price on a different invoice — the list's client column stays the same, the price stays saved.
+4. On an invoice, switch the linked client from the dropdown — Bill-To should auto-fill from the newly picked client (still expected behavior).
+5. Download the PDF after step 1 — it should match the new Bill-To values, same as before.
 
-### 1. Database
-Add six nullable columns to `public.invoices`:
-- `bill_to_name`, `bill_to_email`, `bill_to_address`, `bill_to_city`, `bill_to_zip_code`, `bill_to_country` (all `text`).
+## Not changed (intentional)
+- The `clients` table is not modified when a Bill-To override is entered — per the project rule that overrides preserve edits for a single invoice's PDF without altering the underlying client record.
+- No email/PDF template changes.
+- Price/line-item save path untouched.
 
-No RLS changes required — existing invoice policies already cover these columns.
-
-### 2. Save path — `src/pages/InvoiceDetail.tsx`
-- Include the `bill_to_*` fields in the `invoiceUpdateData` object inside `handleSave` (the existing-invoice branch, ~line 428).
-- Also include them in the auto-save-on-unmount effect (~line 135) so unsaved edits aren't lost.
-- On initial load, hydrate `billToOverride` from the invoice's `bill_to_*` columns first, and only fall back to the client record if those are empty (the current effect at line 158 unconditionally overwrites from the client — change it to only fill blanks or run only when the client is switched, not on initial mount).
-
-### 3. Load path — `src/services/invoiceService.ts`
-`getInvoice` / `getInvoices` already return all invoice columns via `select('*')`, so the new fields flow through automatically. Update the `Invoice` TypeScript type in `src/types/invoice.ts` to include the six optional `bill_to_*` fields.
-
-### 4. Listing display — `src/pages/Invoices.tsx`
-In the client cell (~lines 599–600) and the search filter (~lines 347–349), prefer the override when present:
-- name: `invoice.bill_to_name || invoice.client?.name`
-- email: `invoice.bill_to_email || invoice.client?.email`
-
-Sort comparators (lines 392/394) get the same fallback.
-
-### 5. PDF generator
-No change needed — it already reads from `billToOverride` via the `billToClient` object passed to `InvoiceService`/PDF utilities.
-
-## Out of scope
-- Not modifying the underlying `clients` table on invoice save (project rule: Bill-To override preserves edits for the PDF without altering the client record).
-- Not changing price/line-item logic — that path already works.
-- Not touching email/PDF templates.
-
-## Verification
-1. Open an existing invoice, change company name + address + email, save.
-2. Confirm the Invoices list row shows the new name/email immediately after refresh.
-3. Confirm the PDF still renders the same edited values.
-4. Confirm editing only the price (without touching Bill-To) still saves and the client column is unchanged.
-5. Confirm switching the linked client on an invoice still auto-fills Bill-To from that new client.
+Approve this plan and I'll run a live Playwright smoke test against the preview to capture screenshot evidence of the fix on a real invoice.
