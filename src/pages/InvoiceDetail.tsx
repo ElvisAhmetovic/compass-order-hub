@@ -161,8 +161,10 @@ const InvoiceDetail = () => {
     return () => window.removeEventListener('beforeunload', handler);
   }, []);
 
-  // Auto-fill billToOverride when client changes
+  // Auto-fill billToOverride when user changes client (skip during initial load
+  // so we don't overwrite the invoice's stored bill_to_* values).
   useEffect(() => {
+    if (!initialLoadDone.current) return;
     const client = clients.find(c => c.id === formData.client_id);
     if (client) {
       setBillToOverride({
