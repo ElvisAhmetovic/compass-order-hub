@@ -40,6 +40,12 @@ export interface Invoice {
   last_reminder_sent_at?: string | null;
   client?: Client;
   reminders_paused?: boolean;
+  bill_to_name?: string | null;
+  bill_to_email?: string | null;
+  bill_to_address?: string | null;
+  bill_to_city?: string | null;
+  bill_to_zip_code?: string | null;
+  bill_to_country?: string | null;
 }
 
 export interface InvoiceLineItem {

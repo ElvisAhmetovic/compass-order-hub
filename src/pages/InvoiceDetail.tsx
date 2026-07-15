@@ -132,6 +132,7 @@ const InvoiceDetail = () => {
     return () => {
       if (!isNewInvoice && id && isDirty.current) {
         const data = formDataRef.current;
+        const bt = billToOverrideRef.current;
         InvoiceService.updateInvoice(id, {
           client_id: data.client_id,
           issue_date: data.issue_date,
@@ -139,7 +140,13 @@ const InvoiceDetail = () => {
           currency: data.currency,
           payment_terms: data.payment_terms,
           notes: data.notes,
-          internal_notes: data.internal_notes
+          internal_notes: data.internal_notes,
+          bill_to_name: bt.name || null,
+          bill_to_email: bt.email || null,
+          bill_to_address: bt.address || null,
+          bill_to_city: bt.city || null,
+          bill_to_zip_code: bt.zip_code || null,
+          bill_to_country: bt.country || null,
         }).catch(err => console.error('Auto-save failed:', err));
       }
     };
@@ -154,8 +161,10 @@ const InvoiceDetail = () => {
     return () => window.removeEventListener('beforeunload', handler);
   }, []);
 
-  // Auto-fill billToOverride when client changes
+  // Auto-fill billToOverride when user changes client (skip during initial load
+  // so we don't overwrite the invoice's stored bill_to_* values).
   useEffect(() => {
+    if (!initialLoadDone.current) return;
     const client = clients.find(c => c.id === formData.client_id);
     if (client) {
       setBillToOverride({
@@ -213,7 +222,19 @@ const InvoiceDetail = () => {
             line_items: []
           };
           setFormData(newFormData);
-          
+
+          // Hydrate Bill-To override from the invoice's saved fields first,
+          // falling back to the linked client for any empty fields.
+          const linkedClient = clientsData.find(c => c.id === invoiceData.client_id);
+          setBillToOverride({
+            name: (invoiceData as any).bill_to_name || linkedClient?.name || '',
+            email: (invoiceData as any).bill_to_email || linkedClient?.email || '',
+            address: (invoiceData as any).bill_to_address || linkedClient?.address || '',
+            city: (invoiceData as any).bill_to_city || linkedClient?.city || '',
+            zip_code: (invoiceData as any).bill_to_zip_code || linkedClient?.zip_code || '',
+            country: (invoiceData as any).bill_to_country || linkedClient?.country || '',
+          });
+
           // Update template settings with invoice currency
           setTemplateSettings(prev => ({
             ...prev,
@@ -433,6 +454,12 @@ const InvoiceDetail = () => {
           payment_terms: formData.payment_terms,
           notes: formData.notes,
           internal_notes: formData.internal_notes,
+          bill_to_name: billToOverride.name || null,
+          bill_to_email: billToOverride.email || null,
+          bill_to_address: billToOverride.address || null,
+          bill_to_city: billToOverride.city || null,
+          bill_to_zip_code: billToOverride.zip_code || null,
+          bill_to_country: billToOverride.country || null,
           ...(customInvoiceNumber ? { invoice_number: customInvoiceNumber } : {})
         };
 

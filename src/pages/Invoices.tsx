@@ -344,8 +344,8 @@ const Invoices = () => {
     const linkedOrder = (invoice as any).order;
     return (
       invoice.invoice_number.toLowerCase().includes(search) ||
-      invoice.client?.name?.toLowerCase().includes(search) ||
-      invoice.client?.email?.toLowerCase().includes(search) ||
+      (invoice.bill_to_name || invoice.client?.name)?.toLowerCase().includes(search) ||
+      (invoice.bill_to_email || invoice.client?.email)?.toLowerCase().includes(search) ||
       invoice.client?.contact_person?.toLowerCase().includes(search) ||
       invoice.status.toLowerCase().includes(search) ||
       invoice.currency?.toLowerCase().includes(search) ||
@@ -389,9 +389,9 @@ const Invoices = () => {
         case 'inv-high':
           return b.invoice_number.localeCompare(a.invoice_number, undefined, { numeric: true });
         case 'a-z':
-          return (a.client?.name || '').localeCompare(b.client?.name || '');
+          return ((a.bill_to_name || a.client?.name) || '').localeCompare((b.bill_to_name || b.client?.name) || '');
         case 'z-a':
-          return (b.client?.name || '').localeCompare(a.client?.name || '');
+          return ((b.bill_to_name || b.client?.name) || '').localeCompare((a.bill_to_name || a.client?.name) || '');
         default:
           return 0;
       }
@@ -596,8 +596,8 @@ const Invoices = () => {
                               </TableCell>
                               <TableCell>
                                 <div>
-                                  <div className="font-medium">{invoice.client?.name}</div>
-                                  <div className="text-sm text-gray-500">{invoice.client?.email}</div>
+                                  <div className="font-medium">{invoice.bill_to_name || invoice.client?.name}</div>
+                                  <div className="text-sm text-gray-500">{invoice.bill_to_email || invoice.client?.email}</div>
                                   {(invoice as any).order?.created_at && (
                                     <div className="text-xs text-gray-500">
                                       Order {new Date((invoice as any).order.created_at).toLocaleDateString()}
