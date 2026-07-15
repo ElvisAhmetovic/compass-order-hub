@@ -222,7 +222,19 @@ const InvoiceDetail = () => {
             line_items: []
           };
           setFormData(newFormData);
-          
+
+          // Hydrate Bill-To override from the invoice's saved fields first,
+          // falling back to the linked client for any empty fields.
+          const linkedClient = clientsData.find(c => c.id === invoiceData.client_id);
+          setBillToOverride({
+            name: (invoiceData as any).bill_to_name || linkedClient?.name || '',
+            email: (invoiceData as any).bill_to_email || linkedClient?.email || '',
+            address: (invoiceData as any).bill_to_address || linkedClient?.address || '',
+            city: (invoiceData as any).bill_to_city || linkedClient?.city || '',
+            zip_code: (invoiceData as any).bill_to_zip_code || linkedClient?.zip_code || '',
+            country: (invoiceData as any).bill_to_country || linkedClient?.country || '',
+          });
+
           // Update template settings with invoice currency
           setTemplateSettings(prev => ({
             ...prev,
