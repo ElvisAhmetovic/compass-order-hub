@@ -344,8 +344,8 @@ const Invoices = () => {
     const linkedOrder = (invoice as any).order;
     return (
       invoice.invoice_number.toLowerCase().includes(search) ||
-      invoice.client?.name?.toLowerCase().includes(search) ||
-      invoice.client?.email?.toLowerCase().includes(search) ||
+      (invoice.bill_to_name || invoice.client?.name)?.toLowerCase().includes(search) ||
+      (invoice.bill_to_email || invoice.client?.email)?.toLowerCase().includes(search) ||
       invoice.client?.contact_person?.toLowerCase().includes(search) ||
       invoice.status.toLowerCase().includes(search) ||
       invoice.currency?.toLowerCase().includes(search) ||
