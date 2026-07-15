@@ -132,6 +132,7 @@ const InvoiceDetail = () => {
     return () => {
       if (!isNewInvoice && id && isDirty.current) {
         const data = formDataRef.current;
+        const bt = billToOverrideRef.current;
         InvoiceService.updateInvoice(id, {
           client_id: data.client_id,
           issue_date: data.issue_date,
@@ -139,7 +140,13 @@ const InvoiceDetail = () => {
           currency: data.currency,
           payment_terms: data.payment_terms,
           notes: data.notes,
-          internal_notes: data.internal_notes
+          internal_notes: data.internal_notes,
+          bill_to_name: bt.name || null,
+          bill_to_email: bt.email || null,
+          bill_to_address: bt.address || null,
+          bill_to_city: bt.city || null,
+          bill_to_zip_code: bt.zip_code || null,
+          bill_to_country: bt.country || null,
         }).catch(err => console.error('Auto-save failed:', err));
       }
     };
