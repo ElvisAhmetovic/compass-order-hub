@@ -454,6 +454,12 @@ const InvoiceDetail = () => {
           payment_terms: formData.payment_terms,
           notes: formData.notes,
           internal_notes: formData.internal_notes,
+          bill_to_name: billToOverride.name || null,
+          bill_to_email: billToOverride.email || null,
+          bill_to_address: billToOverride.address || null,
+          bill_to_city: billToOverride.city || null,
+          bill_to_zip_code: billToOverride.zip_code || null,
+          bill_to_country: billToOverride.country || null,
           ...(customInvoiceNumber ? { invoice_number: customInvoiceNumber } : {})
         };
 
