@@ -596,8 +596,8 @@ const Invoices = () => {
                               </TableCell>
                               <TableCell>
                                 <div>
-                                  <div className="font-medium">{invoice.client?.name}</div>
-                                  <div className="text-sm text-gray-500">{invoice.client?.email}</div>
+                                  <div className="font-medium">{invoice.bill_to_name || invoice.client?.name}</div>
+                                  <div className="text-sm text-gray-500">{invoice.bill_to_email || invoice.client?.email}</div>
                                   {(invoice as any).order?.created_at && (
                                     <div className="text-xs text-gray-500">
                                       Order {new Date((invoice as any).order.created_at).toLocaleDateString()}
