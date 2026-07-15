@@ -947,6 +947,12 @@ export type Database = {
       }
       invoices: {
         Row: {
+          bill_to_address: string | null
+          bill_to_city: string | null
+          bill_to_country: string | null
+          bill_to_email: string | null
+          bill_to_name: string | null
+          bill_to_zip_code: string | null
           cc_emails: string[]
           client_id: string
           created_at: string
@@ -972,6 +978,12 @@ export type Database = {
           vat_amount: number
         }
         Insert: {
+          bill_to_address?: string | null
+          bill_to_city?: string | null
+          bill_to_country?: string | null
+          bill_to_email?: string | null
+          bill_to_name?: string | null
+          bill_to_zip_code?: string | null
           cc_emails?: string[]
           client_id: string
           created_at?: string
@@ -997,6 +1009,12 @@ export type Database = {
           vat_amount?: number
         }
         Update: {
+          bill_to_address?: string | null
+          bill_to_city?: string | null
+          bill_to_country?: string | null
+          bill_to_email?: string | null
+          bill_to_name?: string | null
+          bill_to_zip_code?: string | null
           cc_emails?: string[]
           client_id?: string
           created_at?: string
