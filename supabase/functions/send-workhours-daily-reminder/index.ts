@@ -10,7 +10,6 @@ const corsHeaders = {
 
 const RECIPIENTS = [
   'angelina@abmedia-team.com',
-  'service@team-abmedia.com',
   'invoice@team-abmedia.com',
   'jungabmedia@gmail.com',
   'wolfabmedia@gmail.com',
@@ -21,6 +20,7 @@ const RECIPIENTS = [
   'jannes@scoolfinanceedu.com',
   'Ikram@team-abmedia.com',
   // Excluded (bosses): thomas.thomasklein@gmail.com, johan@team-abmedia.com
+  // Excluded by request: service@team-abmedia.com
 ]
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
