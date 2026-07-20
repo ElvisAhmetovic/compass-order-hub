@@ -315,7 +315,7 @@ const INVOICE_DB_TEXT: Record<Lang, {
 
 // Company info (matches frontend defaults)
 const COMPANY = {
-  name: "AB MEDIA TEAM",
+  name: "AB MEDIA TEAM LTD",
   contactPerson: "Andreas Berger",
   street: "Weseler Str.73",
   postal: "47169",
@@ -466,7 +466,7 @@ function generateInvoicePDF(
   // ── Header ──
   doc.setFontSize(22);
   doc.setFont("helvetica", "bold");
-  doc.text("AB MEDIA TEAM", marginLeft, y);
+  doc.text("AB MEDIA TEAM LTD", marginLeft, y);
   y += 8;
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
