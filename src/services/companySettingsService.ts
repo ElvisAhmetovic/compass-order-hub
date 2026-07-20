@@ -57,7 +57,7 @@ export interface CompanySettingsInput {
 // Default company info for fallback
 const DEFAULT_COMPANY_INFO: CompanySettingsInput = {
   logo: "https://placehold.co/200x60?text=Your+Logo",
-  name: "AB MEDIA TEAM",
+  name: "AB MEDIA TEAM LTD",
   contact_person: "Andreas Berger",
   street: "Weseler Str.73",
   postal: "47169",
