@@ -1,41 +1,20 @@
-# QA verification — invoice edits not reflecting in the list
+## Goal
+Change the company name shown on generated invoice/proposal PDFs from **"AB MEDIA TEAM"** to **"AB MEDIA TEAM LTD"**.
 
-## What your boss reported
-1. Edits an invoice, hits Save. The emailed PDF is correct, but the Invoices list still shows the old data.
-2. Editing the **price** saves fine. Editing the **company details** (name/address/email) does not.
+## Where the name comes from
+Invoice + proposal PDFs render `companyInfo.name`, which is loaded from `public.company_settings` for the signed-in user, falling back to hard-coded defaults when no row exists (which is the case for most admins — only 1 row exists today, and it belongs to "Selmin Huzbasic", not the AB Media Team default).
 
-## Diagnosis (confirmed)
-In `src/pages/InvoiceDetail.tsx`, the "Bill To" fields (company name, email, address, city, zip, country) lived in local React state `billToOverride`, used only to render the PDF/preview. The `handleSave` function only wrote `client_id`, dates, currency, payment terms, and notes to the DB — never the Bill-To fields. Line items (price) were saved through a separate path, which is why the **price change persisted but company edits did not**. The Invoices list then re-rendered from `invoice.client?.name/email` — an untouched foreign row — so the change looked lost.
+So the actual on-PDF value for the boss and every other admin comes from the code-level defaults, not the DB.
 
-## Fix status: applied
+## Changes (frontend/PDF defaults only)
+1. `src/services/companySettingsService.ts` — `DEFAULT_COMPANY_INFO.name`: `"AB MEDIA TEAM"` → `"AB MEDIA TEAM LTD"`.
+2. `src/utils/proposal/companyInfo.ts` — `DEFAULT_COMPANY_INFO.name`: same rename (drives invoice PDF + proposal PDF fallbacks).
+3. `src/utils/proposal/pdfGenerator.ts` — both inline fallbacks `companyInfo.name || 'AB MEDIA TEAM'` → `'AB MEDIA TEAM LTD'`.
+4. `supabase/functions/generate-monthly-installments/index.ts` — the two hard-coded `"AB MEDIA TEAM"` strings (default company object + PDF header `doc.text`) → `"AB MEDIA TEAM LTD"`, then redeploy the function.
 
-### Database — verified
-Six new nullable columns exist on `public.invoices`:
-`bill_to_name, bill_to_email, bill_to_address, bill_to_city, bill_to_zip_code, bill_to_country`.
+## Explicitly out of scope (unchanged)
+- Email body sign-offs, sender identities ("AB Media Team <noreply@abm-team.com>"), sidebar title, and translation templates — these are the brand/team display name, not the legal company name on invoices. If you want those renamed too, say the word and I'll extend the change.
+- The one existing `company_settings` row (name = "Selmin Huzbasic") — it's a different user's custom setting, not the AB Media Team default, so I'll leave it alone.
 
-### Code — verified
-- `src/types/invoice.ts` — six optional `bill_to_*` fields added to the `Invoice` type.
-- `src/pages/InvoiceDetail.tsx`
-  - `handleSave` (existing-invoice branch) now writes all six `bill_to_*` fields alongside the other invoice fields.
-  - The unmount auto-save also writes the six fields, so unsaved edits aren't dropped.
-  - `loadData` hydrates `billToOverride` from the invoice's stored `bill_to_*` values first, falling back to the linked client for empty fields.
-  - The "auto-fill on client change" effect now bails out during initial load (`!initialLoadDone.current`), so it can't wipe the stored override the moment the invoice opens.
-- `src/pages/Invoices.tsx`
-  - Client name cell: `invoice.bill_to_name || invoice.client?.name`.
-  - Client email cell: same fallback.
-  - Search filter and A-Z / Z-A sort use the same override-first fallback.
-- PDF generator unchanged — it already reads from the `billToClient` object built off `billToOverride`, which is why the PDF was already correct.
-
-## Manual test checklist for you to run
-1. Open an existing invoice, change the company name + email + address, click Save, return to `/invoices` — the row should now show the new name/email.
-2. Reopen the same invoice — the Bill-To fields should still show your edits (not the raw client record).
-3. Change only the price on a different invoice — the list's client column stays the same, the price stays saved.
-4. On an invoice, switch the linked client from the dropdown — Bill-To should auto-fill from the newly picked client (still expected behavior).
-5. Download the PDF after step 1 — it should match the new Bill-To values, same as before.
-
-## Not changed (intentional)
-- The `clients` table is not modified when a Bill-To override is entered — per the project rule that overrides preserve edits for a single invoice's PDF without altering the underlying client record.
-- No email/PDF template changes.
-- Price/line-item save path untouched.
-
-Approve this plan and I'll run a live Playwright smoke test against the preview to capture screenshot evidence of the fix on a real invoice.
+## Verification
+After the edits: build passes, and a freshly generated invoice PDF (via preview) shows "AB MEDIA TEAM LTD" in the header for any admin without a custom `company_settings` row.

@@ -110,7 +110,7 @@ const createFirstPageContent = (proposalData: any, language: string = "en") => {
             margin-bottom: 6px; 
             color: #1a202c;
           ">
-            ${companyInfo.name || 'AB MEDIA TEAM'}
+            ${companyInfo.name || 'AB MEDIA TEAM LTD'}
           </div>
           <div style="line-height: 1.4; color: #4a5568; font-size: 13px;">
             <div>${companyInfo.street || 'Weseler Str.73'}</div>
@@ -498,7 +498,7 @@ const createSecondPageContent = (proposalData: any, language: string = "en") => 
           text-align: center; 
           font-weight: 600;
         ">
-          ${companyInfo.name || 'AB MEDIA TEAM'}
+          ${companyInfo.name || 'AB MEDIA TEAM LTD'}
         </div>
         
         <div style="padding: 12px 15px; font-size: 12px;">
