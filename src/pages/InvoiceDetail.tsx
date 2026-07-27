@@ -446,7 +446,7 @@ const InvoiceDetail = () => {
           customInvoiceNumber = `INV-${yearNum}-${String(seqNum).padStart(3, '0')}`;
         }
 
-        const invoiceUpdateData: any = {
+        const header: Record<string, any> = {
           client_id: formData.client_id,
           issue_date: formData.issue_date,
           due_date: formData.due_date,
@@ -463,44 +463,65 @@ const InvoiceDetail = () => {
           ...(customInvoiceNumber ? { invoice_number: customInvoiceNumber } : {})
         };
 
-        await InvoiceService.updateInvoice(id, invoiceUpdateData);
-        
-        // Update the sequence table if custom number was set
+        const linesPayload = lineItems.map(item => ({
+          id: item.id && !item.id.startsWith('temp-') ? item.id : null,
+          item_description: item.item_description,
+          quantity: item.quantity,
+          unit: item.unit,
+          unit_price: item.unit_price,
+          vat_rate: item.vat_rate,
+          discount_rate: item.discount_rate,
+        }));
+
+        // Atomic save: header + line items in one transaction (recalc trigger fires at end)
+        const { supabase } = await import('@/integrations/supabase/client');
+        const { error: rpcError } = await supabase.rpc('update_invoice_with_lines', {
+          p_invoice_id: id,
+          p_header: header,
+          p_lines: linesPayload,
+        });
+        if (rpcError) {
+          console.error('Atomic invoice save failed, falling back to legacy path:', rpcError);
+          // Fallback so a bad RPC never blocks a save on the live site
+          await InvoiceService.updateInvoice(id, header);
+          const existingLineItems = await InvoiceService.getLineItems(id);
+          const existingIds = existingLineItems.map(item => item.id);
+          for (const existingItem of existingLineItems) {
+            const stillExists = lineItems.find(item => item.id === existingItem.id);
+            if (!stillExists) await InvoiceService.deleteLineItem(existingItem.id);
+          }
+          for (const item of lineItems) {
+            if (item.id.startsWith('temp-')) {
+              await InvoiceService.addLineItems(id, [{
+                item_description: item.item_description,
+                quantity: item.quantity,
+                unit: item.unit,
+                unit_price: item.unit_price,
+                vat_rate: item.vat_rate,
+                discount_rate: item.discount_rate,
+              }]);
+            } else if (existingIds.includes(item.id)) {
+              await InvoiceService.updateLineItem(item.id, {
+                item_description: item.item_description,
+                quantity: item.quantity,
+                unit: item.unit,
+                unit_price: item.unit_price,
+                vat_rate: item.vat_rate,
+                discount_rate: item.discount_rate,
+              });
+            }
+          }
+        }
+
         if (yearNum && seqNum) {
           await InvoiceService.updateInvoiceSequence(yearNum, seqNum);
         }
-        
-        const existingLineItems = await InvoiceService.getLineItems(id);
-        const existingIds = existingLineItems.map(item => item.id);
-        
-        for (const existingItem of existingLineItems) {
-          const stillExists = lineItems.find(item => item.id === existingItem.id);
-          if (!stillExists) {
-            await InvoiceService.deleteLineItem(existingItem.id);
-          }
-        }
-        
-        for (const item of lineItems) {
-          if (item.id.startsWith('temp-')) {
-            await InvoiceService.addLineItems(id, [{
-              item_description: item.item_description,
-              quantity: item.quantity,
-              unit: item.unit,
-              unit_price: item.unit_price,
-              vat_rate: item.vat_rate,
-              discount_rate: item.discount_rate
-            }]);
-          } else if (existingIds.includes(item.id)) {
-            await InvoiceService.updateLineItem(item.id, {
-              item_description: item.item_description,
-              quantity: item.quantity,
-              unit: item.unit,
-              unit_price: item.unit_price,
-              vat_rate: item.vat_rate,
-              discount_rate: item.discount_rate
-            });
-          }
-        }
+
+        // Refresh line items so temp- ids get replaced with real ids
+        try {
+          const refreshed = await InvoiceService.getLineItems(id);
+          setLineItems(refreshed);
+        } catch (e) { /* non-fatal */ }
 
         isDirty.current = false;
         toast({

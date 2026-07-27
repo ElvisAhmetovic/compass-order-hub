@@ -50,7 +50,10 @@ const SendInvoicePDFDialog: React.FC<SendInvoicePDFDialogProps> = ({
   useEffect(() => {
     if (open) {
       const lang = templateSettings?.language || "en";
-      setClientEmail(client?.email || "");
+      // Prefer the invoice's Bill-To override email over the linked client's email,
+      // so PDF cover email goes to the address that was saved on this invoice.
+      const preferredEmail = (invoice as any)?.bill_to_email || client?.email || "";
+      setClientEmail(preferredEmail);
       setSubject(SUBJECT_TEMPLATES[lang] || SUBJECT_TEMPLATES["en"]);
       setMessage(MESSAGE_TEMPLATES[lang] || MESSAGE_TEMPLATES["en"]);
       setLanguage(lang);
