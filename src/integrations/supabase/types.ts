@@ -3526,6 +3526,10 @@ export type Database = {
           synced_invoice_number: string
         }[]
       }
+      update_invoice_with_lines: {
+        Args: { p_header: Json; p_invoice_id: string; p_lines: Json }
+        Returns: undefined
+      }
       wh_admin_bulk_set_lock: {
         Args: { p_ids: string[]; p_lock: boolean; p_reason: string }
         Returns: number
