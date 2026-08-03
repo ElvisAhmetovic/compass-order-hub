@@ -242,6 +242,67 @@ const InvoiceReminderHistory: React.FC<InvoiceReminderHistoryProps> = ({ invoice
             )}
           </div>
 
+          {/* Reminder Interval */}
+          {!isPaid && (
+            <div className="space-y-2 p-3 rounded-lg border">
+              <div className="flex items-center gap-2">
+                <Timer size={16} className="text-muted-foreground" />
+                <span className="text-sm font-medium">Reminder Interval</span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                How often automated reminders repeat for this invoice. Current:{" "}
+                <strong>{intervalHours % 24 === 0 && intervalHours >= 24 ? `${intervalHours / 24} day(s)` : `${intervalHours} hour(s)`}</strong>
+              </p>
+              <div className="flex gap-2 items-end">
+                <div className="flex-1">
+                  <Input
+                    type="number"
+                    min="1"
+                    step="1"
+                    value={intervalValue}
+                    onChange={(e) => setIntervalValue(e.target.value)}
+                    disabled={savingInterval}
+                    className="h-9"
+                  />
+                </div>
+                <div className="flex gap-1">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={intervalUnit === "hours" ? "default" : "outline"}
+                    onClick={() => {
+                      setIntervalUnit("hours");
+                      if (intervalValue) setIntervalValue(String(parseFloat(intervalValue)));
+                    }}
+                    disabled={savingInterval}
+                  >
+                    Hours
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={intervalUnit === "days" ? "default" : "outline"}
+                    onClick={() => {
+                      setIntervalUnit("days");
+                      if (intervalValue) setIntervalValue(String(parseFloat(intervalValue)));
+                    }}
+                    disabled={savingInterval}
+                  >
+                    Days
+                  </Button>
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={saveInterval}
+                  disabled={savingInterval || !intervalValue.trim()}
+                >
+                  {savingInterval ? "Saving..." : "Save"}
+                </Button>
+              </div>
+            </div>
+          )}
+
           {/* Additional CC Emails */}
           <div className="space-y-2 p-3 rounded-lg border">
             <div className="flex items-center gap-2">
