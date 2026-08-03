@@ -301,7 +301,7 @@ const Reminders = () => {
                       <SelectValue placeholder="Select team member" />
                     </SelectTrigger>
                     <SelectContent>
-                      {teamMembers.map(m => (
+                      {teamMembers.filter(m => !!m.email).map(m => (
                         <SelectItem key={m.id} value={m.email}>
                           <div className="flex items-center gap-2">
                             <User className="w-4 h-4 text-muted-foreground" />
