@@ -3,10 +3,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Bell, Mail, Clock, CheckCircle2, X, Plus, Users } from "lucide-react";
+import { Bell, Mail, Clock, CheckCircle2, X, Plus, Users, Timer } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Invoice } from "@/types/invoice";
 import { useToast } from "@/hooks/use-toast";
+
 
 interface ReminderLog {
   id: string;
@@ -34,6 +35,10 @@ const InvoiceReminderHistory: React.FC<InvoiceReminderHistoryProps> = ({ invoice
   const [ccEmails, setCcEmails] = useState<string[]>([]);
   const [newEmail, setNewEmail] = useState("");
   const [savingCc, setSavingCc] = useState(false);
+  const [intervalHours, setIntervalHours] = useState<number>(48);
+  const [intervalUnit, setIntervalUnit] = useState<"hours" | "days">("hours");
+  const [intervalValue, setIntervalValue] = useState<string>("48");
+  const [savingInterval, setSavingInterval] = useState(false);
 
   const reminderCount = (invoice as any).reminder_count || 0;
   const nextReminderAt = (invoice as any).next_reminder_at;
@@ -42,6 +47,7 @@ const InvoiceReminderHistory: React.FC<InvoiceReminderHistoryProps> = ({ invoice
     if (open) {
       loadReminders();
       loadCcEmails();
+      loadInterval();
     }
   }, [open]);
 
@@ -76,6 +82,57 @@ const InvoiceReminderHistory: React.FC<InvoiceReminderHistoryProps> = ({ invoice
       }
     } catch (err) {
       console.error("Error loading cc emails:", err);
+    }
+  };
+
+  const loadInterval = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("invoices")
+        .select("reminder_interval_hours")
+        .eq("id", invoice.id)
+        .single();
+      if (!error && data) {
+        const hours = (data as any).reminder_interval_hours || 48;
+        setIntervalHours(hours);
+        if (hours % 24 === 0 && hours >= 24) {
+          setIntervalUnit("days");
+          setIntervalValue(String(hours / 24));
+        } else {
+          setIntervalUnit("hours");
+          setIntervalValue(String(hours));
+        }
+      }
+    } catch (err) {
+      console.error("Error loading reminder interval:", err);
+    }
+  };
+
+  const saveInterval = async () => {
+    const numValue = parseFloat(intervalValue);
+    if (isNaN(numValue) || numValue <= 0) {
+      toast({ title: "Invalid interval", description: "Enter a positive number.", variant: "destructive" });
+      return;
+    }
+    const hours = intervalUnit === "days" ? Math.round(numValue * 24) : Math.round(numValue);
+    if (hours < 1 || hours > 720) {
+      toast({ title: "Out of range", description: "Interval must be between 1 hour and 30 days.", variant: "destructive" });
+      return;
+    }
+    setSavingInterval(true);
+    try {
+      const { error } = await supabase
+        .from("invoices")
+        .update({ reminder_interval_hours: hours } as any)
+        .eq("id", invoice.id);
+      if (error) throw error;
+      setIntervalHours(hours);
+      toast({ title: "Reminder interval saved", description: `Reminders will send every ${intervalUnit === "days" ? numValue + " day(s)" : hours + " hour(s)"}.` });
+    } catch (err: any) {
+      console.error("Error saving interval:", err);
+      toast({ title: "Failed to save", description: err?.message || "Could not update interval.", variant: "destructive" });
+    } finally {
+      setSavingInterval(false);
     }
   };
 
@@ -184,6 +241,67 @@ const InvoiceReminderHistory: React.FC<InvoiceReminderHistoryProps> = ({ invoice
               </>
             )}
           </div>
+
+          {/* Reminder Interval */}
+          {!isPaid && (
+            <div className="space-y-2 p-3 rounded-lg border">
+              <div className="flex items-center gap-2">
+                <Timer size={16} className="text-muted-foreground" />
+                <span className="text-sm font-medium">Reminder Interval</span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                How often automated reminders repeat for this invoice. Current:{" "}
+                <strong>{intervalHours % 24 === 0 && intervalHours >= 24 ? `${intervalHours / 24} day(s)` : `${intervalHours} hour(s)`}</strong>
+              </p>
+              <div className="flex gap-2 items-end">
+                <div className="flex-1">
+                  <Input
+                    type="number"
+                    min="1"
+                    step="1"
+                    value={intervalValue}
+                    onChange={(e) => setIntervalValue(e.target.value)}
+                    disabled={savingInterval}
+                    className="h-9"
+                  />
+                </div>
+                <div className="flex gap-1">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={intervalUnit === "hours" ? "default" : "outline"}
+                    onClick={() => {
+                      setIntervalUnit("hours");
+                      if (intervalValue) setIntervalValue(String(parseFloat(intervalValue)));
+                    }}
+                    disabled={savingInterval}
+                  >
+                    Hours
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={intervalUnit === "days" ? "default" : "outline"}
+                    onClick={() => {
+                      setIntervalUnit("days");
+                      if (intervalValue) setIntervalValue(String(parseFloat(intervalValue)));
+                    }}
+                    disabled={savingInterval}
+                  >
+                    Days
+                  </Button>
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={saveInterval}
+                  disabled={savingInterval || !intervalValue.trim()}
+                >
+                  {savingInterval ? "Saving..." : "Save"}
+                </Button>
+              </div>
+            </div>
+          )}
 
           {/* Additional CC Emails */}
           <div className="space-y-2 p-3 rounded-lg border">

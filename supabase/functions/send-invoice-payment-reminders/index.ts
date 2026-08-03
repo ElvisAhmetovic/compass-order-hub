@@ -510,8 +510,9 @@ const handler = async (req: Request): Promise<Response> => {
         // Team emails intentionally not sent — team monitors reminders inside the app.
         console.log(`Reminder dispatch complete for invoice ${invoice.invoice_number}: client=${clientEmailSent}, cc=${ccList.length}`);
 
-        // Update invoice reminder tracking
-        const nextReminderAt = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
+        // Update invoice reminder tracking — use per-invoice interval (default 48h)
+        const intervalHours = invoice.reminder_interval_hours || 48;
+        const nextReminderAt = new Date(Date.now() + intervalHours * 60 * 60 * 1000).toISOString();
         await supabase.from("invoices").update({
           reminder_count: newReminderCount,
           last_reminder_sent_at: now,

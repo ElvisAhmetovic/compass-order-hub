@@ -1,0 +1,1 @@
+ALTER TABLE public.invoices ADD COLUMN IF NOT EXISTS reminder_interval_hours integer DEFAULT 48;

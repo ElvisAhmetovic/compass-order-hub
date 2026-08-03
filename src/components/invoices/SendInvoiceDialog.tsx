@@ -119,10 +119,11 @@ AB Media Team`);
     try {
       const { supabase } = await import("@/integrations/supabase/client");
       const updateData: any = {};
-      // Set next_reminder_at if not already scheduled
-      const { data: currentInvoice } = await supabase.from('invoices').select('next_reminder_at, status, order_id').eq('id', invoice.id).single();
+      // Set next_reminder_at if not already scheduled — use per-invoice interval (default 48h)
+      const { data: currentInvoice } = await supabase.from('invoices').select('next_reminder_at, status, order_id, reminder_interval_hours').eq('id', invoice.id).single();
       if (!currentInvoice?.next_reminder_at) {
-        updateData.next_reminder_at = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
+        const intervalHours = currentInvoice?.reminder_interval_hours || 48;
+        updateData.next_reminder_at = new Date(Date.now() + intervalHours * 60 * 60 * 1000).toISOString();
       }
       // Mark as sent if still draft
       if (currentInvoice?.status === 'draft') {

@@ -37,6 +37,7 @@ export interface Invoice {
   order_id?: string | null;
   reminder_count?: number;
   next_reminder_at?: string | null;
+  reminder_interval_hours?: number | null;
   last_reminder_sent_at?: string | null;
   client?: Client;
   reminders_paused?: boolean;
