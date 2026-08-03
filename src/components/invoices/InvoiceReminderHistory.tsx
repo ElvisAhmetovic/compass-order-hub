@@ -3,10 +3,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Bell, Mail, Clock, CheckCircle2, X, Plus, Users } from "lucide-react";
+import { Bell, Mail, Clock, CheckCircle2, X, Plus, Users, Timer } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Invoice } from "@/types/invoice";
 import { useToast } from "@/hooks/use-toast";
+
 
 interface ReminderLog {
   id: string;
@@ -34,6 +35,10 @@ const InvoiceReminderHistory: React.FC<InvoiceReminderHistoryProps> = ({ invoice
   const [ccEmails, setCcEmails] = useState<string[]>([]);
   const [newEmail, setNewEmail] = useState("");
   const [savingCc, setSavingCc] = useState(false);
+  const [intervalHours, setIntervalHours] = useState<number>(48);
+  const [intervalUnit, setIntervalUnit] = useState<"hours" | "days">("hours");
+  const [intervalValue, setIntervalValue] = useState<string>("48");
+  const [savingInterval, setSavingInterval] = useState(false);
 
   const reminderCount = (invoice as any).reminder_count || 0;
   const nextReminderAt = (invoice as any).next_reminder_at;
@@ -42,6 +47,7 @@ const InvoiceReminderHistory: React.FC<InvoiceReminderHistoryProps> = ({ invoice
     if (open) {
       loadReminders();
       loadCcEmails();
+      loadInterval();
     }
   }, [open]);
 
