@@ -85,6 +85,57 @@ const InvoiceReminderHistory: React.FC<InvoiceReminderHistoryProps> = ({ invoice
     }
   };
 
+  const loadInterval = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("invoices")
+        .select("reminder_interval_hours")
+        .eq("id", invoice.id)
+        .single();
+      if (!error && data) {
+        const hours = (data as any).reminder_interval_hours || 48;
+        setIntervalHours(hours);
+        if (hours % 24 === 0 && hours >= 24) {
+          setIntervalUnit("days");
+          setIntervalValue(String(hours / 24));
+        } else {
+          setIntervalUnit("hours");
+          setIntervalValue(String(hours));
+        }
+      }
+    } catch (err) {
+      console.error("Error loading reminder interval:", err);
+    }
+  };
+
+  const saveInterval = async () => {
+    const numValue = parseFloat(intervalValue);
+    if (isNaN(numValue) || numValue <= 0) {
+      toast({ title: "Invalid interval", description: "Enter a positive number.", variant: "destructive" });
+      return;
+    }
+    const hours = intervalUnit === "days" ? Math.round(numValue * 24) : Math.round(numValue);
+    if (hours < 1 || hours > 720) {
+      toast({ title: "Out of range", description: "Interval must be between 1 hour and 30 days.", variant: "destructive" });
+      return;
+    }
+    setSavingInterval(true);
+    try {
+      const { error } = await supabase
+        .from("invoices")
+        .update({ reminder_interval_hours: hours } as any)
+        .eq("id", invoice.id);
+      if (error) throw error;
+      setIntervalHours(hours);
+      toast({ title: "Reminder interval saved", description: `Reminders will send every ${intervalUnit === "days" ? numValue + " day(s)" : hours + " hour(s)"}.` });
+    } catch (err: any) {
+      console.error("Error saving interval:", err);
+      toast({ title: "Failed to save", description: err?.message || "Could not update interval.", variant: "destructive" });
+    } finally {
+      setSavingInterval(false);
+    }
+  };
+
   const persistCcEmails = async (next: string[]) => {
     setSavingCc(true);
     try {
