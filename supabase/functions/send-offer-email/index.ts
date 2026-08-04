@@ -171,10 +171,18 @@ const buildOfferEmailHtml = (data: {
   senderName: string;
   confirmUrl: string;
   language: string;
+  vatRate?: number;
+  netPrice?: number;
 }) => {
+  const hasVat = !!data.vatRate && data.vatRate > 0 && !!data.netPrice;
   const formattedPrice = formatPrice(data.price, data.currency);
   const initial = (data.clientName || 'C').charAt(0).toUpperCase();
   const t = TRANSLATIONS[data.language] || TRANSLATIONS.en;
+  const vatBlock = hasVat
+    ? `<div style="color:#5f6368; font-size:13px; margin-top:8px;">${t.priceLabel} (net): ${formatPrice(data.netPrice!, data.currency)}</div>
+       <div style="color:#5f6368; font-size:13px; margin-top:2px;">VAT (${data.vatRate}%): ${formatPrice(data.price - data.netPrice!, data.currency)}</div>`
+    : '';
+
 
   return `<!DOCTYPE html>
 <html lang="${data.language}">
