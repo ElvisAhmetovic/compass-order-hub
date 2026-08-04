@@ -319,6 +319,8 @@ serve(async (req) => {
       senderName: senderName || 'AB Media Team',
       confirmUrl,
       language: lang,
+      vatRate: typeof vatRate === 'number' ? vatRate : undefined,
+      netPrice: typeof netPrice === 'number' ? netPrice : undefined,
     });
 
     const clientSubject = `${t.subject} – ${companyName}`;
