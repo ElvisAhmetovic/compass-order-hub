@@ -226,7 +226,9 @@ const buildOfferEmailHtml = (data: {
                 <div style="color:#5f6368; font-size:13px; margin-top:4px;">📧 ${data.clientEmail}</div>
                 ${data.clientPhone ? `<div style="color:#5f6368; font-size:13px; margin-top:2px;">📞 ${data.clientPhone}</div>` : ''}
                 ${data.clientAddress ? `<div style="color:#5f6368; font-size:13px; margin-top:2px;">📍 ${data.clientAddress}</div>` : ''}
-                <div style="color:#1a73e8; font-size:18px; font-weight:bold; margin-top:8px;">${t.priceLabel}: ${formattedPrice}</div>
+                ${vatBlock}
+                <div style="color:#1a73e8; font-size:18px; font-weight:bold; margin-top:8px;">${t.priceLabel}${hasVat ? ' (incl. VAT)' : ''}: ${formattedPrice}</div>
+
                 ${data.description ? `<div style="color:#5f6368; font-size:13px; line-height:1.6; margin-top:8px;">${data.description.replace(/\n/g, '<br>')}</div>` : ''}
               </td>
             </tr>
