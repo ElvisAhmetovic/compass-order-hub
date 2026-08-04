@@ -294,7 +294,7 @@ serve(async (req) => {
     }
 
     const body = await req.json();
-    const { clientEmail, clientName, clientPhone, clientAddress, companyName, description, price, currency, senderName, offerId, language } = body;
+    const { clientEmail, clientName, clientPhone, clientAddress, companyName, description, price, currency, senderName, offerId, language, vatRate, netPrice } = body;
 
     if (!clientEmail || !clientName || !companyName) {
       throw new Error('Missing required fields: clientEmail, clientName, companyName');
