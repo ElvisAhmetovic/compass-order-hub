@@ -171,10 +171,18 @@ const buildOfferEmailHtml = (data: {
   senderName: string;
   confirmUrl: string;
   language: string;
+  vatRate?: number;
+  netPrice?: number;
 }) => {
+  const hasVat = !!data.vatRate && data.vatRate > 0 && !!data.netPrice;
   const formattedPrice = formatPrice(data.price, data.currency);
   const initial = (data.clientName || 'C').charAt(0).toUpperCase();
   const t = TRANSLATIONS[data.language] || TRANSLATIONS.en;
+  const vatBlock = hasVat
+    ? `<div style="color:#5f6368; font-size:13px; margin-top:8px;">${t.priceLabel} (net): ${formatPrice(data.netPrice!, data.currency)}</div>
+       <div style="color:#5f6368; font-size:13px; margin-top:2px;">VAT (${data.vatRate}%): ${formatPrice(data.price - data.netPrice!, data.currency)}</div>`
+    : '';
+
 
   return `<!DOCTYPE html>
 <html lang="${data.language}">
@@ -218,7 +226,9 @@ const buildOfferEmailHtml = (data: {
                 <div style="color:#5f6368; font-size:13px; margin-top:4px;">📧 ${data.clientEmail}</div>
                 ${data.clientPhone ? `<div style="color:#5f6368; font-size:13px; margin-top:2px;">📞 ${data.clientPhone}</div>` : ''}
                 ${data.clientAddress ? `<div style="color:#5f6368; font-size:13px; margin-top:2px;">📍 ${data.clientAddress}</div>` : ''}
-                <div style="color:#1a73e8; font-size:18px; font-weight:bold; margin-top:8px;">${t.priceLabel}: ${formattedPrice}</div>
+                ${vatBlock}
+                <div style="color:#1a73e8; font-size:18px; font-weight:bold; margin-top:8px;">${t.priceLabel}${hasVat ? ' (incl. VAT)' : ''}: ${formattedPrice}</div>
+
                 ${data.description ? `<div style="color:#5f6368; font-size:13px; line-height:1.6; margin-top:8px;">${data.description.replace(/\n/g, '<br>')}</div>` : ''}
               </td>
             </tr>
@@ -284,7 +294,7 @@ serve(async (req) => {
     }
 
     const body = await req.json();
-    const { clientEmail, clientName, clientPhone, clientAddress, companyName, description, price, currency, senderName, offerId, language } = body;
+    const { clientEmail, clientName, clientPhone, clientAddress, companyName, description, price, currency, senderName, offerId, language, vatRate, netPrice } = body;
 
     if (!clientEmail || !clientName || !companyName) {
       throw new Error('Missing required fields: clientEmail, clientName, companyName');
@@ -309,6 +319,8 @@ serve(async (req) => {
       senderName: senderName || 'AB Media Team',
       confirmUrl,
       language: lang,
+      vatRate: typeof vatRate === 'number' ? vatRate : undefined,
+      netPrice: typeof netPrice === 'number' ? netPrice : undefined,
     });
 
     const clientSubject = `${t.subject} – ${companyName}`;

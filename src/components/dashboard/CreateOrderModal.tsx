@@ -951,6 +951,10 @@ Additional internal comments...`}
                     return;
                   }
                   const values = form.getValues();
+                  const netPrice = Number(values.price || 0);
+                  const grossPrice = vatEnabled
+                    ? Math.round((netPrice * (1 + vatPercentage / 100)) * 100) / 100
+                    : netPrice;
                   setIsSendingOffer(true);
                   try {
                     // First insert the offer into the database to get the offerId
@@ -961,7 +965,7 @@ Additional internal comments...`}
                       client_address: values.companyAddress?.trim() || null,
                       company_name: values.companyName.trim(),
                       description: values.description?.trim() || null,
-                      price: values.price,
+                      price: grossPrice,
                       currency: values.currency,
                       sent_by: user.id,
                       sent_by_name: user.full_name || 'Unknown',
@@ -969,6 +973,9 @@ Additional internal comments...`}
                         companyLink: values.companyLink,
                         priority: values.priority,
                         internalNotes: values.internalNotes,
+                        vatEnabled,
+                        vatPercentage: vatEnabled ? vatPercentage : 0,
+                        netPrice,
                       },
                     } as any).select().single();
                     if (dbErr) {
@@ -985,11 +992,13 @@ Additional internal comments...`}
                         clientAddress: values.companyAddress?.trim() || '',
                         companyName: values.companyName.trim(),
                         description: values.description?.trim() || '',
-                        price: values.price,
+                        price: grossPrice,
                         currency: values.currency,
                         senderName: user.full_name || 'AB Media Team',
                         offerId: offerData.id,
                         language: offerLanguage,
+                        vatRate: vatEnabled ? vatPercentage : 0,
+                        netPrice,
                       },
                     });
                     if (emailErr) throw emailErr;
