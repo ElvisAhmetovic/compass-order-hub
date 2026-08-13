@@ -122,7 +122,7 @@ AB Media Team`);
       // Set next_reminder_at if not already scheduled — use per-invoice interval (default 48h)
       const { data: currentInvoice } = await supabase.from('invoices').select('next_reminder_at, status, order_id, reminder_interval_hours').eq('id', invoice.id).single();
       if (!currentInvoice?.next_reminder_at) {
-        const intervalHours = currentInvoice?.reminder_interval_hours || 48;
+        const intervalHours = currentInvoice?.reminder_interval_hours || 168;
         updateData.next_reminder_at = new Date(Date.now() + intervalHours * 60 * 60 * 1000).toISOString();
       }
       // Mark as sent if still draft
