@@ -35,9 +35,9 @@ const InvoiceReminderHistory: React.FC<InvoiceReminderHistoryProps> = ({ invoice
   const [ccEmails, setCcEmails] = useState<string[]>([]);
   const [newEmail, setNewEmail] = useState("");
   const [savingCc, setSavingCc] = useState(false);
-  const [intervalHours, setIntervalHours] = useState<number>(48);
-  const [intervalUnit, setIntervalUnit] = useState<"hours" | "days">("hours");
-  const [intervalValue, setIntervalValue] = useState<string>("48");
+  const [intervalHours, setIntervalHours] = useState<number>(168);
+  const [intervalUnit, setIntervalUnit] = useState<"hours" | "days">("days");
+  const [intervalValue, setIntervalValue] = useState<string>("7");
   const [savingInterval, setSavingInterval] = useState(false);
 
   const reminderCount = (invoice as any).reminder_count || 0;
@@ -93,7 +93,7 @@ const InvoiceReminderHistory: React.FC<InvoiceReminderHistoryProps> = ({ invoice
         .eq("id", invoice.id)
         .single();
       if (!error && data) {
-        const hours = (data as any).reminder_interval_hours || 48;
+        const hours = (data as any).reminder_interval_hours || 168;
         setIntervalHours(hours);
         if (hours % 24 === 0 && hours >= 24) {
           setIntervalUnit("days");

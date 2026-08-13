@@ -511,7 +511,7 @@ const handler = async (req: Request): Promise<Response> => {
         console.log(`Reminder dispatch complete for invoice ${invoice.invoice_number}: client=${clientEmailSent}, cc=${ccList.length}`);
 
         // Update invoice reminder tracking — use per-invoice interval (default 48h)
-        const intervalHours = invoice.reminder_interval_hours || 48;
+        const intervalHours = invoice.reminder_interval_hours || 168;
         const nextReminderAt = new Date(Date.now() + intervalHours * 60 * 60 * 1000).toISOString();
         await supabase.from("invoices").update({
           reminder_count: newReminderCount,
