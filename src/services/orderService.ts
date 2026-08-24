@@ -1,6 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { Order, OrderStatus } from "@/types";
+import { nextReminderForInvoice, nextReminderForOrder } from "@/utils/reminderInterval";
 
 export class OrderService {
   // Get all orders with proper error handling - now excludes soft deleted orders by default
@@ -775,7 +776,7 @@ export class OrderService {
         }
 
         const rpcNextReminder = newInvoiceStatus === 'sent' 
-          ? new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString() 
+          ? await nextReminderForOrder(orderId)
           : null;
 
         // Single RPC call that finds + updates the invoice, bypassing RLS entirely
@@ -902,7 +903,7 @@ export class OrderService {
           
           // Then sync status via RPC to bypass RLS
           const newRpcNextReminder = invoiceStatus === 'sent' 
-            ? new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString() 
+            ? await nextReminderForInvoice(newInvoice.id)
             : null;
           console.log(`📄 Syncing new invoice ${newInvoice.id} to status "${invoiceStatus}" via RPC`);
           const { error: newRpcError } = await supabase.rpc('sync_invoice_status', {

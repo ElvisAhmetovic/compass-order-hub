@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Invoice, InvoiceLineItem, Client } from "@/types/invoice";
 import { Mail, Send } from "lucide-react";
 import { SUBJECT_TEMPLATES, MESSAGE_TEMPLATES, TEMPLATE_LANGUAGES } from "@/components/monthly/monthlyInvoiceTemplates";
+import { nextReminderFromHours } from "@/utils/reminderInterval";
 
 const LANGUAGES = [
   { value: "en", label: "English" },
@@ -86,10 +87,10 @@ const SendInvoicePDFDialog: React.FC<SendInvoicePDFDialogProps> = ({
       // Schedule payment reminder and mark as sent if invoice exists in DB
       if (invoice?.id) {
         try {
-          const { data: currentInvoice } = await supabase.from('invoices').select('next_reminder_at, status, order_id').eq('id', invoice.id).single();
+          const { data: currentInvoice } = await supabase.from('invoices').select('next_reminder_at, status, order_id, reminder_interval_hours').eq('id', invoice.id).single();
           const updateData: any = {};
           if (!currentInvoice?.next_reminder_at) {
-            updateData.next_reminder_at = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
+            updateData.next_reminder_at = nextReminderFromHours((currentInvoice as any)?.reminder_interval_hours);
           }
           if (currentInvoice?.status === 'draft') {
             updateData.status = 'sent';

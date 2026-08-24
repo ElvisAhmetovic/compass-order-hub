@@ -16,6 +16,7 @@ import { Invoice, InvoiceLineItem, Client } from "@/types/invoice";
 import { Mail, Send } from "lucide-react";
 import { MonthlyContract, MonthlyInstallment } from "@/services/monthlyContractService";
 import { SUBJECT_TEMPLATES, MESSAGE_TEMPLATES, TEMPLATE_LANGUAGES } from "./monthlyInvoiceTemplates";
+import { nextReminderForInvoice } from "@/utils/reminderInterval";
 
 const LANGUAGES = [
   { value: "en", label: "English" },
@@ -207,7 +208,7 @@ const SendMonthlyInvoiceDialog: React.FC<SendMonthlyInvoiceDialogProps> = ({
         .from('invoices')
         .update({
           status: 'sent',
-          next_reminder_at: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(),
+          next_reminder_at: await nextReminderForInvoice(currentInvoice.id),
         })
         .eq('id', currentInvoice.id);
 
