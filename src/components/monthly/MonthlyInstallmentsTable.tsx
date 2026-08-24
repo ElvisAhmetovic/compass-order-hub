@@ -23,6 +23,7 @@ import SendMonthlyInvoiceDialog from "./SendMonthlyInvoiceDialog";
 import CreateClientPortalModal from "@/components/dashboard/CreateClientPortalModal";
 import { supabase } from "@/integrations/supabase/client";
 import { enqueueNotification } from "@/utils/notificationQueue";
+import { nextReminderForInvoice } from "@/utils/reminderInterval";
 
 const getFrequencyLabel = (freq: number): string => {
   if (freq === 1) return "month";
@@ -260,7 +261,7 @@ const MonthlyInstallmentsTable: React.FC<Props> = ({ contracts, installments, on
         if (newStatus === "paid") {
           await supabase.from('invoices').update({ status: 'paid', next_reminder_at: null }).eq('id', linkedInvoiceId);
         } else {
-          await supabase.from('invoices').update({ status: 'sent', next_reminder_at: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString() }).eq('id', linkedInvoiceId);
+          await supabase.from('invoices').update({ status: 'sent', next_reminder_at: await nextReminderForInvoice(linkedInvoiceId) }).eq('id', linkedInvoiceId);
         }
       }
 
@@ -284,7 +285,7 @@ const MonthlyInstallmentsTable: React.FC<Props> = ({ contracts, installments, on
       const linkedInvoiceId = invoiceIdMap[installment.id] || installment.invoice_id;
       if (linkedInvoiceId) {
         if (newStatus) {
-          await supabase.from('invoices').update({ status: 'sent', next_reminder_at: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString() }).eq('id', linkedInvoiceId);
+          await supabase.from('invoices').update({ status: 'sent', next_reminder_at: await nextReminderForInvoice(linkedInvoiceId) }).eq('id', linkedInvoiceId);
         } else {
           await supabase.from('invoices').update({ status: 'draft', next_reminder_at: null }).eq('id', linkedInvoiceId);
         }

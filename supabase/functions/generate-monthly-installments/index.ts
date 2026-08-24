@@ -417,7 +417,7 @@ async function createInvoice(
       user_id: userId,
       notes: dbText.notes(monthLabel),
       payment_terms: dbText.paymentTerms,
-      next_reminder_at: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(),
+      next_reminder_at: new Date(Date.now() + 168 * 60 * 60 * 1000).toISOString(),
     })
     .select("id")
     .single();

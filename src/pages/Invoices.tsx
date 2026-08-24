@@ -39,6 +39,7 @@ import PaymentReminders from "@/components/invoices/PaymentReminders";
 import { formatCurrency } from "@/utils/currencyUtils";
 import InvoiceReminderHistory from "@/components/invoices/InvoiceReminderHistory";
 import { supabase } from "@/integrations/supabase/client";
+import { nextReminderForInvoice } from "@/utils/reminderInterval";
 
 const INVOICE_STATUSES = [
   "draft",
@@ -214,7 +215,7 @@ const Invoices = () => {
         // Only set next_reminder_at if not already set
         const currentInvoice = invoices.find(inv => inv.id === id);
         if (!(currentInvoice as any)?.next_reminder_at) {
-          updateData.next_reminder_at = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
+          updateData.next_reminder_at = await nextReminderForInvoice(id);
         }
       }
       
