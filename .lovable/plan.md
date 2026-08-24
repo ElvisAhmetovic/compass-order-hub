@@ -1,76 +1,36 @@
-# PulseCRM Plan Review + Gap Analysis vs. the Lovable CRM
+# Fix remaining 48-hour reminder schedules (7-day default not applied everywhere)
 
-Two documents were reviewed: the **CRM SaaS Development Plan v3.1** (vision, stack, 4 plan tiers, incremental delivery) and the **PulseCRM Starter Sprint Backlog** (10 sprints, use cases, class diagram, DoD per sprint).
+## What actually happened with Sievers Bestattungen GmbH
 
-## Verdict on your colleague's plan
+Confirmed from the database:
 
-The structure is solid and genuinely production-minded:
-- Multi-tenancy + RLS + RBAC declared non-negotiable from day one — correct, and the single biggest thing this Lovable app does *not* have.
-- Entitlements/feature-flags driven by configuration instead of hard-coded plan checks — correct.
-- Subscriptions built early rather than last — correct.
-- Sprint order (Customers → Leads → Tasks → Employees/Time → Products → Quotes/Invoices → Payments → Reports → Entitlements → QA) is a sensible dependency chain.
+- Invoice INV-2026-1410 was created Fri **Aug 21, 13:55 UTC**.
+- Its `reminder_interval_hours` is **168** (7 days) — the new default is stored correctly.
+- But `next_reminder_at` was set to **Aug 23, 14:00** — exactly **48 hours** after creation.
+- The cron fired at that time and sent reminder #1 on Saturday to `info@bestattungen-sievers.de`.
+- The *next* reminder is correctly scheduled for Aug 30 (7 days), because the edge function already uses 168.
 
-The stack differs from what exists here: she proposes **Next.js + FastAPI (Python) + Supabase**. The current app is **Vite + React + Supabase with edge functions and no separate backend**. That means the rebuild is a genuine rewrite of the data/service layer, not a port. That is a legitimate choice, but it should be a conscious one — the alternative (Next.js + Supabase directly, no FastAPI) would let a large share of the current TypeScript service layer be reused.
+So the earlier fix covered the *repeat* interval and two dialogs, but the **first** reminder is still scheduled +48h by several other code paths that hardcode 48 hours and ignore `reminder_interval_hours`.
 
-## What her plan is missing (features you actually run in production today)
+## Confirmed places still hardcoding 48 hours
 
-These exist and are battle-tested in the Lovable CRM but appear nowhere, or only vaguely, in the Starter backlog. Each one is a real commercial differentiator.
+- `src/services/orderService.ts` (two spots): when an order flips to "Invoice Sent", it syncs the invoice with `next_reminder_at = now + 48h`. This is the path that produced the Sievers schedule.
+- `src/pages/Invoices.tsx`: status change to `sent` sets +48h.
+- `src/components/invoices/SendInvoicePDFDialog.tsx`: +48h.
+- `src/components/monthly/SendMonthlyInvoiceDialog.tsx`: +48h.
+- `src/components/monthly/MonthlyInstallmentsTable.tsx` (three spots): +48h.
+- `supabase/functions/generate-monthly-installments/index.ts`: +48h.
 
-**Orders & multi-status workflow** — the plan jumps Leads → Opportunities → Invoices. Your business runs on an *Orders* entity with 14 parallel boolean statuses (Created, In Progress, Invoice Sent, Invoice Paid, Complaint, Resolved, Cancelled, Review, Facebook, Instagram, Trustpilot, Trustpilot Deletion, Google Deletion), status history, soft delete/restore, and assignment. "Opportunities + pipeline" does not cover this.
+Already correct: `SendInvoiceDialog.tsx`, `InvoiceReminderHistory.tsx`, and the `send-invoice-payment-reminders` edge function.
 
-**Offers with public client confirmation** — offer generation, branded email, a public `/confirm-offer/:id` page, manual WhatsApp/Viber share links, VAT breakdown (net / VAT / gross) in the email. Not in the plan at all.
+## Changes
 
-**Automated payment-reminder engine** — per-invoice configurable reminder interval (default 7 days), cron-driven escalation, `next_reminder_at` auto-pause when status leaves sent/overdue, reminder logs, PDF attached to reminder emails. The plan lists "basic reminders" for tasks only.
+1. **Single source of truth for the default.** Add a shared constant (e.g. `DEFAULT_REMINDER_INTERVAL_HOURS = 168`) plus a small helper that, given an invoice id, reads `reminder_interval_hours` and returns `now + interval` — so every path respects a per-invoice override and falls back to 7 days.
+2. **Replace every hardcoded 48h** in the files listed above with that helper/constant. Where the invoice row is already loaded, use its `reminder_interval_hours`; otherwise fetch it in the same query that is already being made.
+3. **Edge function** `generate-monthly-installments`: use 168 hours as the fallback for newly generated monthly invoices, redeploy.
+4. **Backfill the currently-wrong schedules.** For invoices still in `sent`/`overdue` whose `next_reminder_at` was computed with 48h (i.e. `next_reminder_at - created_at` ≈ 48h and `reminder_count = 0`), re-schedule to `created_at + reminder_interval_hours`. Invoices whose reminder already went out (like Sievers) keep the correct Aug 30 next date — no double sending.
+5. **Verification**: query the affected invoices before/after the backfill and confirm no `sent`/`overdue` invoice with `reminder_count = 0` has a `next_reminder_at` less than 7 days from creation; run lint, typecheck and the unit test suite.
 
-**Recurring/monthly contracts & billing automation** — monthly contracts, installment generation, a 1st-of-month cron, catch-up job, monthly invoice status board. The plan says "recurring billing" as one bullet with no mechanics.
+## Note
 
-**Client portal** — isolated `/client/*` routes, separate login, client-scoped orders view, client invoices, client support threads, onboarding dialog, avatar/settings, opt-in notification preferences, multi-language. The plan defers the portal to the Professional tier; you already sell against it.
-
-**Employee time tracking as built** — you have work_hours v2 with submit/lock, deadline logic, auto-lock cron, admin override/unlock with audit trail and reasons, bulk lock, daily attendance cron, auto-fill defaults. Sprint 4 in her plan covers clock in/out and timesheets but not locking, deadlines, admin correction audit, or the automated jobs.
-
-**Email/notification infrastructure** — Resend with domain separation, HTML templates per language, a template manager, send serialization (2/sec rate-limit batching), fire-and-forget dispatch, team distribution lists, notification logs. The plan says "notifications" with no delivery architecture.
-
-**Support & ticketing** — internal support inquiries with replies and unread tracking, tech-support tickets, public customer ticket intake with throttling and attachments. Absent from the plan.
-
-**Invoice depth** — invoice audit log (who created what, and 409 conflicts), atomic `update_invoice_with_lines` RPC, bill-to override separate from the client record, invoice numbering with collision retry, language auto-detection from billing country (10 EU locales), per-country bank details, PDF generator.
-
-**Proposals & templates** — proposal builder, line items, proposal templates, template fields, PDF export, translations.
-
-**Gamification & team layer** — achievements, streaks, challenges, rankings, activity feed, emoji reactions, internal chat with realtime. Listed in the vision doc but with no sprint carrying it.
-
-**Social/marketing module** — per-platform checklists, content ideas, best-times, weekly reports, Search Console-style metrics for the website. Very likely out of scope for a generic CRM, but it is currently ~10% of your app and should be an explicit "excluded / plugin" decision rather than an omission.
-
-**Integrations** — Google Sheets sync, Google review-request flow via Place ID, AI translation via an LLM gateway, calendar events, file attachments with storage privacy rules.
-
-## Gaps in the plan that are architectural, not features
-
-1. **No tenant-branding model.** Selling to multiple companies means per-tenant logo, sender email/domain, invoice numbering prefix, bank details, VAT defaults, locale, and PDF theme. Today all of that is effectively hard-coded or single-row. This needs a `tenant_settings` design in Sprint 1, not later.
-2. **Email sending per tenant.** Resend domains are per-company. The plan has no story for tenant-owned sending domains, verification, or fallback to a platform domain.
-3. **Cron/background jobs are tenant-blind.** Every scheduled job (reminders, monthly billing, auto-lock, attendance) must iterate tenants and respect each tenant's timezone and business calendar. Nothing in the backlog addresses this.
-4. **Storage isolation.** Files must be pathed per tenant with policies, plus per-plan storage quotas that are actually measured. "Limited file storage" has no enforcement story.
-5. **No data-migration story.** Bringing your existing production data (67 tables) into the new tenant-scoped schema needs its own sprint.
-6. **Testing tenant isolation is declared but not scheduled.** It should be an automated test suite that runs every sprint, not a Sprint 10 checkbox.
-7. **Numbering sequences per tenant.** Invoice/offer numbering must be unique per tenant, with collision handling — you already hit 409 conflicts on this in the single-tenant version.
-
-## Recommended changes to the sprint plan
-
-- Add **Sprint 1.5 — Tenant Settings & Branding** (logo, sender identity, numbering prefixes, bank details, VAT, locale, timezone).
-- Rename Sprint 2 to **Leads, Opportunities & Orders** and fold the multi-status order workflow in.
-- Insert **Offers / Quotes with public confirmation** into Sprint 6 rather than treating quotes as an invoice draft.
-- Split Sprint 7 into *Payments* and *Reminder & Recurring-Billing Automation* — the automation layer is a sprint on its own.
-- Move a **thin client portal** (read-only orders + invoices) into Starter; it is cheap and it closes deals.
-- Add a final **Data Migration & Cutover** sprint.
-
-## Deliverable
-
-A single markdown document, `PULSECRM-GAP-ANALYSIS.md`, at the project root containing everything above, expanded with:
-- a feature-by-feature comparison table (Lovable CRM feature → present in plan? → which sprint should own it),
-- a table of every current DB table grouped by module, with a keep / rename / drop / tenant-scope recommendation,
-- the list of every edge function with its cron schedule and what it must become in multi-tenant form,
-- concrete tenant-scoping notes (which tables need `tenant_id`, which are platform-level).
-
-It will also be copied to your documents folder so you can download and send it to your colleague.
-
-## Technical notes
-
-Read-only work: the document is generated from `HANDOFF.md`, the live Supabase schema, the `src/services` and `src/pages` trees, and `supabase/functions`. No application code, database, or edge function is modified.
+Reminders can land on weekends because the cron runs every minute, every day. If you also want reminders to never send on Saturday/Sunday (push to Monday), say so and I will add that rule to the edge function as part of this work.
