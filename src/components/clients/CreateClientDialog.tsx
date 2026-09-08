@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { Client } from "@/types/invoice";
 import { InvoiceService } from "@/services/invoiceService";
@@ -34,6 +35,7 @@ export const CreateClientDialog: React.FC<CreateClientDialogProps> = ({
     country: "",
     vat_id: "",
     tax_id: "",
+    auto_reminders_enabled: true,
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -104,6 +106,7 @@ export const CreateClientDialog: React.FC<CreateClientDialogProps> = ({
         country: "",
         vat_id: "",
         tax_id: "",
+        auto_reminders_enabled: true,
       });
       
       onOpenChange(false);

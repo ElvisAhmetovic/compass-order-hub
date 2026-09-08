@@ -35,6 +35,7 @@ export const EditClientDialog: React.FC<EditClientDialogProps> = ({
     country: "",
     vat_id: "",
     tax_id: "",
+    auto_reminders_enabled: true,
   });
 
   useEffect(() => {
@@ -50,6 +51,7 @@ export const EditClientDialog: React.FC<EditClientDialogProps> = ({
         country: client.country || "",
         vat_id: client.vat_id || "",
         tax_id: client.tax_id || "",
+        auto_reminders_enabled: client.auto_reminders_enabled !== false,
       });
     }
   }, [client]);
