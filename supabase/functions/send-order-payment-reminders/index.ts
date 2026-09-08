@@ -23,7 +23,7 @@ const TEAM_EMAILS = [
   "Ikram@team-abmedia.com",
 ];
 
-const APP_URL = Deno.env.get("APP_URL") || "https://www.empriadental.de";
+const APP_URL = Deno.env.get("APP_URL") || "https://www.empriatech.com";
 
 // Helper function to add delay between email sends
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));

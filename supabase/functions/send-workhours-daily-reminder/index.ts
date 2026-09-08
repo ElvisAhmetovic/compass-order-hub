@@ -40,7 +40,7 @@ const sarajevoParts = () => {
 }
 
 const buildHtml = () => {
-  const appUrl = Deno.env.get('APP_URL') || 'https://empriatech.com'
+  const appUrl = Deno.env.get('APP_URL') || 'https://www.empriatech.com'
   const link = `${appUrl.replace(/\/$/, '')}/work-hours`
   return `<!doctype html>
 <html lang="bs"><head><meta charset="utf-8" /></head>
