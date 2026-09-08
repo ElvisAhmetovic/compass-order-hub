@@ -11,6 +11,7 @@ export interface Client {
   country?: string;
   vat_id?: string;
   tax_id?: string;
+  auto_reminders_enabled?: boolean;
   created_at: string;
   updated_at: string;
   user_id?: string;
