@@ -71,9 +71,9 @@ serve(async (req) => {
       });
     }
 
-    // Check if user already exists
+    // Check if a client account already exists for this email
     const { data: existingProfile } = await supabase
-      .from('profiles')
+      .from('app_users')
       .select('id, role')
       .eq('email', clientEmail)
       .eq('role', 'client')
