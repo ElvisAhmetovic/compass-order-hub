@@ -36,7 +36,7 @@ serve(async (req: Request) => {
     const resend = new Resend(Deno.env.get("RESEND_API_KEY_ABMEDIA"));
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const appUrl = Deno.env.get("APP_URL") || "https://www.empriadental.de";
+    const appUrl = Deno.env.get("APP_URL") || "https://www.empriatech.com";
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const { orderId, changedBy } = await req.json();

@@ -194,7 +194,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Define the background email sending task
     const sendEmailsInBackground = async () => {
-      const appUrl = Deno.env.get("APP_URL") || "https://www.empriadental.de";
+      const appUrl = Deno.env.get("APP_URL") || "https://www.empriatech.com";
       const emailHtml = generateEmailHtml(inquiryData, appUrl);
 
       for (const email of validEmails) {

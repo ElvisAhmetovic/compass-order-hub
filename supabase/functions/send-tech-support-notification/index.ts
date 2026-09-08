@@ -126,7 +126,7 @@ const handler = async (req: Request): Promise<Response> => {
       });
     };
 
-    const appUrl = Deno.env.get("APP_URL") || "https://www.empriadental.de";
+    const appUrl = Deno.env.get("APP_URL") || "https://www.empriatech.com";
     const emailSubject = `🔧 Tech Support Ticket - ${ticketData.company_name}`;
     
     const emailHtml = `

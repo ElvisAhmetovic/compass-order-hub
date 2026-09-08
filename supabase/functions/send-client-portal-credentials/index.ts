@@ -54,7 +54,7 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
-    const APP_URL = Deno.env.get("APP_URL") || "https://www.empriadental.de";
+    const APP_URL = Deno.env.get("APP_URL") || "https://www.empriatech.com";
     const portalUrl = `${APP_URL}/client/login`;
 
     const {

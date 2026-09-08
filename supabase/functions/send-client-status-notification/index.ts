@@ -20,7 +20,7 @@ interface ClientStatusNotificationRequest {
   customMessage?: string;
 }
 
-const APP_URL = Deno.env.get("APP_URL") || "https://www.empriadental.de";
+const APP_URL = Deno.env.get("APP_URL") || "https://www.empriatech.com";
 
 const getClientEmailHtml = (
   clientName: string,

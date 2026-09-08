@@ -20,7 +20,7 @@ const NOTIFICATION_EMAILS = [
   'johan@team-abmedia.com'
 ];
 
-const APP_URL = Deno.env.get("APP_URL") || "https://www.empriadental.de";
+const APP_URL = Deno.env.get("APP_URL") || "https://www.empriatech.com";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",

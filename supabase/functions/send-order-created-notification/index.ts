@@ -137,7 +137,7 @@ serve(async (req) => {
       throw new Error('Missing required fields: clientEmail, companyName');
     }
 
-    const portalUrl = `https://empriatech.com/client/login?requestCredentials=${orderId || ''}`;
+    const portalUrl = `https://www.empriatech.com/client/login?requestCredentials=${orderId || ''}`;
 
     const html = buildOrderCreatedEmailHtml({
       clientName: clientName || 'Client',
