@@ -456,6 +456,24 @@ const handler = async (req: Request): Promise<Response> => {
           detectedLanguage = detectLanguageFromAddress(invoice.client?.address || null);
         }
 
+        // Respect per-client "automatic reminders" switch
+        let clientRecord: any = invoice.client || null;
+        if (!clientRecord && clientEmail) {
+          const { data: matchedClient } = await supabase
+            .from("clients")
+            .select("id, auto_reminders_enabled")
+            .ilike("email", clientEmail)
+            .limit(1)
+            .maybeSingle();
+          clientRecord = matchedClient || null;
+        }
+
+        if (clientRecord && clientRecord.auto_reminders_enabled === false) {
+          console.log(`Skipping invoice ${invoice.invoice_number} - client has automatic reminders disabled`);
+          await supabase.from("invoices").update({ next_reminder_at: null }).eq("id", invoice.id);
+          continue;
+        }
+
         const newReminderCount = (invoice.reminder_count || 0) + 1;
         const amount = formatPrice(invoice.total_amount, invoice.currency);
         const t = getTranslations(detectedLanguage);
