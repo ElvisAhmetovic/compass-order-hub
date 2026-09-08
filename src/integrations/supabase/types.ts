@@ -263,6 +263,7 @@ export type Database = {
       clients: {
         Row: {
           address: string | null
+          auto_reminders_enabled: boolean
           city: string | null
           contact_person: string | null
           country: string | null
@@ -279,6 +280,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          auto_reminders_enabled?: boolean
           city?: string | null
           contact_person?: string | null
           country?: string | null
@@ -295,6 +297,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          auto_reminders_enabled?: boolean
           city?: string | null
           contact_person?: string | null
           country?: string | null
