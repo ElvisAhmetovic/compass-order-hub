@@ -1,3 +1,4 @@
+import { getOfferConfirmUrl } from "@/config/appUrl";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import Layout from "@/components/layout/Layout";
@@ -417,7 +418,7 @@ const Offers = () => {
                 <DialogTitle>Offer Details</DialogTitle>
               </DialogHeader>
               {selectedOffer && (() => {
-                const confirmLink = `${window.location.origin}/confirm-offer/${selectedOffer.id}`;
+                const confirmLink = getOfferConfirmUrl(selectedOffer.id);
                 const shareMsg = `Hi ${selectedOffer.client_name || "there"}, here is your offer from AB Media Team: ${confirmLink}`;
                 const phoneDigits = (selectedOffer.client_phone || "").replace(/\D/g, "");
                 const waUrl = phoneDigits
