@@ -35,16 +35,23 @@ const handler = async (req: Request): Promise<Response> => {
         status: 401, headers: { "Content-Type": "application/json", ...corsHeaders }
       });
     }
-    const supabaseAuthClient = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_ANON_KEY')!,
-      { global: { headers: { Authorization: authHeader } } }
-    );
-    const { data: { user }, error: authError } = await supabaseAuthClient.auth.getUser();
-    if (authError || !user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401, headers: { "Content-Type": "application/json", ...corsHeaders }
-      });
+    const bearerToken = authHeader.replace('Bearer ', '').trim();
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+    // Allow trusted server-to-server calls from other edge functions (service role),
+    // otherwise require a valid signed-in user.
+    const isServiceCall = serviceRoleKey.length > 0 && bearerToken === serviceRoleKey;
+    if (!isServiceCall) {
+      const supabaseAuthClient = createClient(
+        Deno.env.get('SUPABASE_URL')!,
+        Deno.env.get('SUPABASE_ANON_KEY')!,
+        { global: { headers: { Authorization: authHeader } } }
+      );
+      const { data: { user }, error: authError } = await supabaseAuthClient.auth.getUser();
+      if (authError || !user) {
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+          status: 401, headers: { "Content-Type": "application/json", ...corsHeaders }
+        });
+      }
     }
 
     const APP_URL = Deno.env.get("APP_URL") || "https://www.empriadental.de";
