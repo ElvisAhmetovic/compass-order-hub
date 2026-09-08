@@ -108,14 +108,17 @@ serve(async (req) => {
       if (createError) {
         // If user exists in auth but not as client profile, try updating
         if (createError.message?.includes('already been registered')) {
-          // Look up the auth user by email
-          const { data: { users } } = await supabase.auth.admin.listUsers();
-          const authUser = users?.find(u => u.email?.toLowerCase() === clientEmail);
+          // Look up the auth user by email (paginate — the default page holds only 50 users)
+          let authUser: { id: string } | undefined;
+          for (let page = 1; page <= 20 && !authUser; page++) {
+            const { data } = await supabase.auth.admin.listUsers({ page, perPage: 1000 });
+            const users = data?.users ?? [];
+            authUser = users.find((u) => u.email?.toLowerCase() === clientEmail);
+            if (users.length < 1000) break;
+          }
           if (authUser) {
             userId = authUser.id;
             await supabase.auth.admin.updateUserById(userId, { password });
-            // Update profile role
-            await supabase.from('profiles').update({ role: 'client' }).eq('id', userId);
           } else {
             throw new Error('Failed to find or create user');
           }
@@ -126,11 +129,16 @@ serve(async (req) => {
         userId = newUser.user!.id;
       }
 
-      // Update profile role to client
-      await supabase.from('profiles').update({ 
-        role: 'client',
-        email: clientEmail,
-      }).eq('id', userId!);
+      // Make sure the account is a fully set-up portal client
+      await supabase.from('profiles').update({ role: 'client' }).eq('id', userId!);
+      await supabase.from('user_roles').upsert(
+        { user_id: userId!, role: 'client' },
+        { onConflict: 'user_id,role', ignoreDuplicates: true },
+      );
+      await supabase.from('app_users').upsert(
+        { id: userId!, email: clientEmail, full_name: clientName, role: 'client' },
+        { onConflict: 'id', ignoreDuplicates: true },
+      );
 
       // Link this order to the client
       await supabase.from('orders').update({ client_id: userId! }).eq('id', orderId);
