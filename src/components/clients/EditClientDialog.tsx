@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { Client } from "@/types/invoice";
 import { InvoiceService } from "@/services/invoiceService";
@@ -34,6 +35,7 @@ export const EditClientDialog: React.FC<EditClientDialogProps> = ({
     country: "",
     vat_id: "",
     tax_id: "",
+    auto_reminders_enabled: true,
   });
 
   useEffect(() => {
@@ -49,6 +51,7 @@ export const EditClientDialog: React.FC<EditClientDialogProps> = ({
         country: client.country || "",
         vat_id: client.vat_id || "",
         tax_id: client.tax_id || "",
+        auto_reminders_enabled: client.auto_reminders_enabled !== false,
       });
     }
   }, [client]);
@@ -188,7 +191,21 @@ export const EditClientDialog: React.FC<EditClientDialogProps> = ({
               />
             </div>
           </div>
-          
+
+          <div className="flex items-center justify-between rounded-md border p-4">
+            <div className="space-y-0.5 pr-4">
+              <Label htmlFor="auto_reminders_enabled">Send automatic payment reminders</Label>
+              <p className="text-sm text-muted-foreground">
+                Turn this off to stop scheduled reminder emails to this client. Manual reminders still work.
+              </p>
+            </div>
+            <Switch
+              id="auto_reminders_enabled"
+              checked={formData.auto_reminders_enabled}
+              onCheckedChange={(checked) => setFormData({ ...formData, auto_reminders_enabled: checked })}
+            />
+          </div>
+
           <div className="flex justify-end gap-4 pt-4">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel

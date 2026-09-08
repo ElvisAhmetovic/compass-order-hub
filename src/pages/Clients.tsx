@@ -189,6 +189,11 @@ const Clients = () => {
                             <div className="flex items-center gap-2">
                               <Users size={16} className="text-gray-400" />
                               <span className="font-medium">{client.name}</span>
+                              {client.auto_reminders_enabled === false && (
+                                <span className="rounded-full border px-2 py-0.5 text-xs text-muted-foreground">
+                                  Reminders off
+                                </span>
+                              )}
                             </div>
                           </TableCell>
                           <TableCell>{client.contact_person || '-'}</TableCell>
