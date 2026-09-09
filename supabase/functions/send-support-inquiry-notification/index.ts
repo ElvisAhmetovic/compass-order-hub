@@ -202,7 +202,7 @@ const handler = async (req: Request): Promise<Response> => {
           console.log(`[Background] Sending email to: ${email}`);
           
           const { error } = await resend.emails.send({
-            from: "AB Media Team <noreply@empriadental.de>",
+            from: "AB Media Team <noreply@empriatech.com>",
             to: [email],
             subject: `New Support Inquiry: ${inquiryData.subject}`,
             html: emailHtml,
