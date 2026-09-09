@@ -300,7 +300,7 @@ const handler = async (req: Request): Promise<Response> => {
         console.log(`Attempting to send tech support notification to: ${email}`);
         
         const emailResponse = await resend.emails.send({
-          from: "AB Media Team <noreply@empriadental.de>",
+          from: "AB Media Team <noreply@empriatech.com>",
           to: [email],
           subject: emailSubject,
           html: emailHtml,

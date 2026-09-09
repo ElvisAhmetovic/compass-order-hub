@@ -38,7 +38,7 @@ serve(async (req) => {
           Authorization: `Bearer ${RESEND_API_KEY}`,
         },
         body: JSON.stringify({
-          from: "noreply@empriadental.de",
+          from: "noreply@empriatech.com",
           to: [email],
           subject,
           html,

@@ -194,7 +194,7 @@ serve(async (req: Request) => {
 
     // Send email
     const emailResponse = await resend.emails.send({
-      from: "AB Media Team <noreply@empriadental.de>",
+      from: "AB Media Team <noreply@empriatech.com>",
       to: [order.contact_email],
       subject: subject,
       html: htmlBody,
