@@ -31,7 +31,7 @@ serve(async (req) => {
     `;
 
     for (const email of adminEmails) {
-      await fetch("https://api.resend.com/emails", {
+      const res = await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -44,6 +44,12 @@ serve(async (req) => {
           html,
         }),
       });
+      const bodyText = await res.text();
+      if (!res.ok) {
+        console.error(`Resend send failed for ${email} [${res.status}]: ${bodyText}`);
+      } else {
+        console.log(`Password-change email sent to ${email}: ${bodyText}`);
+      }
     }
 
     return new Response(JSON.stringify({ success: true }), {
