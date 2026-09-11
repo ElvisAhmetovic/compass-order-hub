@@ -30,7 +30,7 @@ const handler = async (req: Request): Promise<Response> => {
 
   try {
     // Check if RESEND_API_KEY is configured
-    const resendApiKey = Deno.env.get("RESEND_API_KEY");
+    const resendApiKey = (Deno.env.get("RESEND_API_KEY_ABMEDIA") ?? Deno.env.get("RESEND_API_KEY"));
     console.log('RESEND_API_KEY exists:', !!resendApiKey);
     
     if (!resendApiKey) {
@@ -329,7 +329,7 @@ const handler = async (req: Request): Promise<Response> => {
         console.log(`Attempting to send order confirmation to: ${email}`);
         
         const emailResponse = await resend.emails.send({
-          from: "AB Media Team <noreply@empriatech.com>",
+          from: "AB Media Team <noreply@abm-team.com>",
           to: [email],
           subject: emailSubject,
           html: emailHtml,
