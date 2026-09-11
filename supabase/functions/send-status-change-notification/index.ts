@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.8";
 import { Resend } from "npm:resend@2.0.0";
 
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+const resend = new Resend((Deno.env.get("RESEND_API_KEY_ABMEDIA") ?? Deno.env.get("RESEND_API_KEY")));
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -208,7 +208,7 @@ const handler = async (req: Request): Promise<Response> => {
       
       try {
         const emailResponse = await resend.emails.send({
-          from: "AB Media Team <noreply@empriatech.com>",
+          from: "AB Media Team <noreply@abm-team.com>",
           to: [email],
           subject: emailSubject,
           html: emailHtml,

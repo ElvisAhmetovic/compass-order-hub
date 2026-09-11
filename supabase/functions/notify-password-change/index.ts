@@ -12,7 +12,7 @@ serve(async (req) => {
 
   try {
     const { userEmail, userName, companyName, newPassword } = await req.json();
-    const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+    const RESEND_API_KEY = (Deno.env.get("RESEND_API_KEY_ABMEDIA") ?? Deno.env.get("RESEND_API_KEY"));
 
     if (!RESEND_API_KEY) {
       throw new Error("RESEND_API_KEY not configured");
@@ -31,19 +31,25 @@ serve(async (req) => {
     `;
 
     for (const email of adminEmails) {
-      await fetch("https://api.resend.com/emails", {
+      const res = await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${RESEND_API_KEY}`,
         },
         body: JSON.stringify({
-          from: "noreply@empriatech.com",
+          from: "AB Media Team <noreply@abm-team.com>",
           to: [email],
           subject,
           html,
         }),
       });
+      const bodyText = await res.text();
+      if (!res.ok) {
+        console.error(`Resend send failed for ${email} [${res.status}]: ${bodyText}`);
+      } else {
+        console.log(`Password-change email sent to ${email}: ${bodyText}`);
+      }
     }
 
     return new Response(JSON.stringify({ success: true }), {
