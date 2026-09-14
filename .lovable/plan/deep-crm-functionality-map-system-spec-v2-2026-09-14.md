@@ -19,6 +19,7 @@ New and deepened sections:
 - **Edge cases and failure behaviour.** Duplicate clients with the same email, two orders for the same client, an offer confirmed twice, invoice number collisions, email provider rejections, a client with no portal account.
 
 **2. Diagrams** (Mermaid, downloadable files)
+
 - Full entity lifecycle: lead → offer → order → invoice → payment → review
 - Offer acceptance sequence: client, public page, backend, database, emails, team
 - Invoice and reminder state machine
@@ -30,4 +31,6 @@ Everything is written from the real code and the live database — edge function
 
 ## Out of scope
 
-No behaviour changes, no migrations, no redesign. Multi-tenant productization notes stay in the separate handoff document.
+No behaviour changes, no migrations, no redesign. Multi-tenant productization notes stay in the separate handoff document.  
+  
+needs to be super detailed, not like basic surface level 
