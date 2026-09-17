@@ -10,6 +10,8 @@ export interface CustomerTicket {
   status: 'open' | 'in_progress' | 'closed';
   created_at: string;
   notes: string | null;
+  message: string | null;
+  client_subject: string | null;
   assigned_client_id: string | null;
   assigned_client_name: string | null;
   assigned_client_email: string | null;
@@ -19,6 +21,18 @@ export interface ClientUser {
   id: string;
   name: string;
   email: string;
+}
+
+export interface TicketOrderContext {
+  id: string;
+  company_name: string | null;
+  contact_name: string | null;
+  contact_email: string | null;
+  contact_phone: string | null;
+  description: string | null;
+  price: number | null;
+  status: string | null;
+  created_at: string;
 }
 
 export const customerTicketService = {
