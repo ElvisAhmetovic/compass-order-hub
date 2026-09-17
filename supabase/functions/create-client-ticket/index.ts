@@ -125,7 +125,12 @@ const sendBackgroundNotifications = async (
   }
 };
 
-const processTicket = async (orderId: string, email: string) => {
+const processTicket = async (
+  orderId: string,
+  email: string,
+  message = "",
+  clientSubject = ""
+) => {
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
@@ -171,10 +176,25 @@ const processTicket = async (orderId: string, email: string) => {
     }
   }
 
-  const subject = `Support request for ${order.company_name}`;
+  const subject = clientSubject?.trim()
+    ? clientSubject.trim().slice(0, 150)
+    : `Support request for ${order.company_name}`;
+
+  // Auto-link to an existing client portal account with the same email
+  let portalUser: { id: string; email: string; full_name: string | null } | null = null;
+  const { data: matchedUsers } = await supabase
+    .from("app_users")
+    .select("id, email, full_name")
+    .eq("role", "client")
+    .ilike("email", email)
+    .limit(1);
+
+  if (matchedUsers && matchedUsers.length > 0) {
+    portalUser = matchedUsers[0];
+  }
 
   // Insert ticket
-  const { error: insertError } = await supabase
+  const { data: inserted, error: insertError } = await supabase
     .from("customer_tickets")
     .insert({
       order_id: orderId,
@@ -182,20 +202,46 @@ const processTicket = async (orderId: string, email: string) => {
       client_name: clientName,
       company_name: order.company_name,
       subject,
+      client_subject: clientSubject?.trim() || null,
+      message: message?.trim() || null,
       status: "open",
-    });
+      assigned_client_id: portalUser?.id ?? null,
+      assigned_client_name: portalUser ? portalUser.full_name || portalUser.email : null,
+      assigned_client_email: portalUser?.email ?? null,
+    })
+    .select("id")
+    .maybeSingle();
 
   if (insertError) {
     console.error("Error creating ticket:", insertError);
     return { status: "error", company: order.company_name };
   }
 
-  console.log("Customer ticket created for", email, "order", orderId);
+  console.log("Customer ticket created for", email, "order", orderId, "ticket", inserted?.id);
+
+  // If auto-linked, mirror it into the client portal support inbox
+  if (portalUser) {
+    const { error: inquiryError } = await supabase.from("support_inquiries").insert({
+      user_id: portalUser.id,
+      user_email: portalUser.email,
+      user_name: portalUser.full_name || portalUser.email,
+      subject,
+      message: message?.trim() || `Support request from ${email}`,
+      status: "open",
+      order_id: orderId,
+    });
+    if (inquiryError) console.error("Portal inquiry insert failed:", inquiryError);
+  }
 
   // Fire-and-forget: send emails and notifications in background
-  sendBackgroundNotifications(supabase, order, clientName, email).catch(
-    (err) => console.error("Background notification error:", err)
-  );
+  sendBackgroundNotifications(
+    supabase,
+    order,
+    clientName,
+    email,
+    message?.trim() || "",
+    portalUser ? portalUser.full_name || portalUser.email : null
+  ).catch((err) => console.error("Background notification error:", err));
 
   return { status: "success", company: order.company_name };
 };
