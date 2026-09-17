@@ -273,8 +273,8 @@ const CustomerTicketDetail = () => {
                 <FileText className="w-5 h-5" />
                 Related order
               </CardTitle>
-              <Button variant="outline" size="sm" onClick={() => navigate('/dashboard')}>
-                <ExternalLink className="w-4 h-4 mr-1" /> Open orders
+<Button variant="outline" size="sm" onClick={() => navigate(`/dashboard?orderId=${ticket.order_id}`)}>
+                <ExternalLink className="w-4 h-4 mr-1" /> Open this order
               </Button>
             </CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
