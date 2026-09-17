@@ -254,13 +254,15 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     // POST = JSON request from TicketLoading page
     if (req.method === "POST") {
-      const { orderId, email } = await req.json();
+      const { orderId, email, message, subject } = await req.json();
       if (!orderId || !email) {
         return new Response(JSON.stringify({ status: "error" }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      const result = await processTicket(orderId, email);
+      const safeMessage = typeof message === "string" ? message.slice(0, 2000) : "";
+      const safeSubject = typeof subject === "string" ? subject.slice(0, 150) : "";
+      const result = await processTicket(orderId, email, safeMessage, safeSubject);
       return new Response(JSON.stringify(result), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
