@@ -37,13 +37,25 @@ const redirectTo = (status: string, company?: string) => {
 };
 
 // Fire-and-forget background work
+const escapeHtml = (value: string) =>
+  value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+
 const sendBackgroundNotifications = async (
   supabase: any,
   order: any,
   clientName: string,
-  email: string
+  email: string,
+  message: string,
+  assignedTo: string | null
 ) => {
   const dashboardUrl = `${APP_URL}/customer-tickets`;
+  const messageHtml = message
+    ? escapeHtml(message).replace(/\n/g, "<br>")
+    : "<em>No description provided.</em>";
   const teamEmailHtml = `
     <!DOCTYPE html>
     <html>
@@ -58,6 +70,13 @@ const sendBackgroundNotifications = async (
           <p style="margin: 0;"><strong>Client:</strong> ${clientName}</p>
           <p style="margin: 8px 0 0 0;"><strong>Email:</strong> ${email}</p>
           <p style="margin: 8px 0 0 0;"><strong>Company:</strong> ${order.company_name}</p>
+          <p style="margin: 8px 0 0 0;"><strong>Portal account:</strong> ${
+            assignedTo ? `linked to ${escapeHtml(assignedTo)}` : "no matching portal account found"
+          }</p>
+        </div>
+        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 0 0 20px 0; border-left: 4px solid #1976d2;">
+          <p style="margin: 0 0 8px 0;"><strong>Client message:</strong></p>
+          <p style="margin: 0;">${messageHtml}</p>
         </div>
         <div style="text-align: center; margin: 30px 0;">
           <a href="${dashboardUrl}" style="display: inline-block; background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%); color: #ffffff; text-decoration: none; padding: 15px 40px; border-radius: 8px; font-weight: bold; font-size: 16px;">View Customer Tickets</a>
