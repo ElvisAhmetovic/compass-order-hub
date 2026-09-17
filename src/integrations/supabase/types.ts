@@ -489,9 +489,11 @@ export type Database = {
           assigned_client_name: string | null
           client_email: string
           client_name: string | null
+          client_subject: string | null
           company_name: string | null
           created_at: string
           id: string
+          message: string | null
           notes: string | null
           order_id: string
           status: string
@@ -503,9 +505,11 @@ export type Database = {
           assigned_client_name?: string | null
           client_email: string
           client_name?: string | null
+          client_subject?: string | null
           company_name?: string | null
           created_at?: string
           id?: string
+          message?: string | null
           notes?: string | null
           order_id: string
           status?: string
@@ -517,9 +521,11 @@ export type Database = {
           assigned_client_name?: string | null
           client_email?: string
           client_name?: string | null
+          client_subject?: string | null
           company_name?: string | null
           created_at?: string
           id?: string
+          message?: string | null
           notes?: string | null
           order_id?: string
           status?: string
