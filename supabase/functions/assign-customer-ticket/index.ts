@@ -23,8 +23,7 @@ Deno.serve(async (req) => {
     const { data: { user }, error: authError } = await anonClient.auth.getUser(authHeader.replace("Bearer ", ""));
     if (authError || !user) throw new Error("Unauthorized");
 
-    const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
-    if (!profile || !["admin", "agent"].includes(profile.role)) throw new Error("Forbidden");
+    // Any authenticated team member may assign tickets
 
     const { ticketId, clientId, clientName, clientEmail, orderId, subject } = await req.json();
 

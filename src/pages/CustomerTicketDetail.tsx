@@ -6,8 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Mail, Building2, FileText, Calendar, Ticket, Trash2, UserPlus, X } from 'lucide-react';
-import { customerTicketService, CustomerTicket, ClientUser } from '@/services/customerTicketService';
+import { ArrowLeft, Mail, Building2, FileText, Calendar, Ticket, Trash2, UserPlus, X, MessageSquare, AlertTriangle, KeyRound, ExternalLink } from 'lucide-react';
+import { customerTicketService, CustomerTicket, ClientUser, TicketOrderContext } from '@/services/customerTicketService';
 import { useParams, useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { toast } from '@/hooks/use-toast';
@@ -24,6 +24,10 @@ const CustomerTicketDetail = () => {
   const [clientUsers, setClientUsers] = useState<ClientUser[]>([]);
   const [selectedClientId, setSelectedClientId] = useState<string>('');
   const [assigning, setAssigning] = useState(false);
+  const [orderContext, setOrderContext] = useState<TicketOrderContext | null>(null);
+  const [portalMatch, setPortalMatch] = useState<ClientUser | null>(null);
+  const [portalChecked, setPortalChecked] = useState(false);
+  const [creatingPortal, setCreatingPortal] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -32,6 +36,18 @@ const CustomerTicketDetail = () => {
         const data = await customerTicketService.getById(id);
         setTicket(data);
         setNotes(data?.notes || '');
+        if (data?.order_id) {
+          customerTicketService.getOrderContext(data.order_id).then(setOrderContext).catch(console.error);
+        }
+        if (data?.client_email) {
+          customerTicketService
+            .findPortalUserByEmail(data.client_email)
+            .then(setPortalMatch)
+            .catch(console.error)
+            .finally(() => setPortalChecked(true));
+        } else {
+          setPortalChecked(true);
+        }
       } catch {
         toast({ title: 'Error', description: 'Ticket not found', variant: 'destructive' });
         navigate('/customer-tickets');
@@ -45,6 +61,38 @@ const CustomerTicketDetail = () => {
   useEffect(() => {
     customerTicketService.getClientUsers().then(setClientUsers).catch(console.error);
   }, []);
+
+  const handleCreatePortalAccount = async () => {
+    if (!ticket) return;
+    setCreatingPortal(true);
+    try {
+      await customerTicketService.createPortalAccount(ticket.order_id);
+      const match = await customerTicketService.findPortalUserByEmail(ticket.client_email);
+      setPortalMatch(match);
+      if (match && id) {
+        await customerTicketService.assignToClient(id, {
+          clientId: match.id,
+          clientName: match.name,
+          clientEmail: match.email,
+          orderId: ticket.order_id,
+          subject: ticket.subject,
+        });
+        setTicket({
+          ...ticket,
+          assigned_client_id: match.id,
+          assigned_client_name: match.name,
+          assigned_client_email: match.email,
+        });
+      }
+      const refreshed = await customerTicketService.getClientUsers();
+      setClientUsers(refreshed);
+      toast({ title: 'Portal login sent', description: `Login details emailed to ${ticket.client_email}` });
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message || 'Could not create the portal login', variant: 'destructive' });
+    } finally {
+      setCreatingPortal(false);
+    }
+  };
 
   const handleStatusChange = async (status: string) => {
     if (!id || !ticket) return;
@@ -199,6 +247,93 @@ const CustomerTicketDetail = () => {
             </div>
           </CardContent>
         </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <MessageSquare className="w-5 h-5" />
+              Client's message
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {ticket.message ? (
+              <p className="whitespace-pre-wrap">{ticket.message}</p>
+            ) : (
+              <p className="text-muted-foreground">
+                No description provided (submitted before the form existed).
+              </p>
+            )}
+          </CardContent>
+        </Card>
+
+        {orderContext && (
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="w-5 h-5" />
+                Related order
+              </CardTitle>
+              <Button variant="outline" size="sm" onClick={() => navigate('/dashboard')}>
+                <ExternalLink className="w-4 h-4 mr-1" /> Open orders
+              </Button>
+            </CardHeader>
+            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm text-muted-foreground">Company</p>
+                <p className="font-medium">{orderContext.company_name || '-'}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Contact</p>
+                <p className="font-medium">{orderContext.contact_name || '-'}</p>
+                <p className="text-sm text-muted-foreground">{orderContext.contact_email || ''}</p>
+                <p className="text-sm text-muted-foreground">{orderContext.contact_phone || ''}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Order status</p>
+                <p className="font-medium">{orderContext.status || '-'}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Value</p>
+                <p className="font-medium">
+                  {orderContext.price != null
+                    ? new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(orderContext.price)
+                    : '-'}
+                </p>
+              </div>
+              {orderContext.description && (
+                <div className="md:col-span-2">
+                  <p className="text-sm text-muted-foreground">Order description</p>
+                  <p className="whitespace-pre-wrap">{orderContext.description}</p>
+                </div>
+              )}
+              <div>
+                <p className="text-sm text-muted-foreground">Order created</p>
+                <p>{format(new Date(orderContext.created_at), 'dd.MM.yyyy HH:mm')}</p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {portalChecked && !portalMatch && !ticket.assigned_client_id && (
+          <Card className="border-destructive/40">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-destructive">
+                <AlertTriangle className="w-5 h-5" />
+                This client has no portal login
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                There is no client portal account for {ticket.client_email}, so this ticket cannot be linked yet.
+                Create the account and we will email the login details to the client and link this ticket.
+              </p>
+              <Button onClick={handleCreatePortalAccount} disabled={creatingPortal}>
+                <KeyRound className="w-4 h-4 mr-2" />
+                {creatingPortal ? 'Creating and sending...' : 'Create portal login & send'}
+              </Button>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Assign to Client */}
         <Card>

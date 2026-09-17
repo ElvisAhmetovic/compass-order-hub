@@ -10,6 +10,8 @@ export interface CustomerTicket {
   status: 'open' | 'in_progress' | 'closed';
   created_at: string;
   notes: string | null;
+  message: string | null;
+  client_subject: string | null;
   assigned_client_id: string | null;
   assigned_client_name: string | null;
   assigned_client_email: string | null;
@@ -19,6 +21,18 @@ export interface ClientUser {
   id: string;
   name: string;
   email: string;
+}
+
+export interface TicketOrderContext {
+  id: string;
+  company_name: string | null;
+  contact_name: string | null;
+  contact_email: string | null;
+  contact_phone: string | null;
+  description: string | null;
+  price: number | null;
+  status: string | null;
+  created_at: string;
 }
 
 export const customerTicketService = {
@@ -109,6 +123,43 @@ export const customerTicketService = {
       email: u.email,
     }));
   },
+
+  async getOrderContext(orderId: string): Promise<TicketOrderContext | null> {
+    const { data, error } = await supabase
+      .from('orders')
+      .select('id, company_name, contact_name, contact_email, contact_phone, description, price, status, created_at')
+      .eq('id', orderId)
+      .maybeSingle();
+
+    if (error) {
+      console.error('Error loading order context:', error);
+      return null;
+    }
+    return (data as unknown as TicketOrderContext) ?? null;
+  },
+
+  async findPortalUserByEmail(email: string): Promise<ClientUser | null> {
+    if (!email) return null;
+    const { data, error } = await supabase
+      .from('app_users')
+      .select('id, full_name, email')
+      .eq('role', 'client')
+      .ilike('email', email)
+      .limit(1);
+
+    if (error || !data || data.length === 0) return null;
+    return { id: data[0].id, name: data[0].full_name || data[0].email, email: data[0].email };
+  },
+
+  async createPortalAccount(orderId: string): Promise<void> {
+    const { data, error } = await supabase.functions.invoke('request-client-credentials', {
+      body: { orderId },
+    });
+    if (error) throw error;
+    if (data?.error) throw new Error(data.error);
+  },
+
+
 
   async assignToClient(ticketId: string, params: {
     clientId: string;

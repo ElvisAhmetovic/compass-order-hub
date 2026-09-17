@@ -37,13 +37,25 @@ const redirectTo = (status: string, company?: string) => {
 };
 
 // Fire-and-forget background work
+const escapeHtml = (value: string) =>
+  value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+
 const sendBackgroundNotifications = async (
   supabase: any,
   order: any,
   clientName: string,
-  email: string
+  email: string,
+  message: string,
+  assignedTo: string | null
 ) => {
   const dashboardUrl = `${APP_URL}/customer-tickets`;
+  const messageHtml = message
+    ? escapeHtml(message).replace(/\n/g, "<br>")
+    : "<em>No description provided.</em>";
   const teamEmailHtml = `
     <!DOCTYPE html>
     <html>
@@ -58,6 +70,13 @@ const sendBackgroundNotifications = async (
           <p style="margin: 0;"><strong>Client:</strong> ${clientName}</p>
           <p style="margin: 8px 0 0 0;"><strong>Email:</strong> ${email}</p>
           <p style="margin: 8px 0 0 0;"><strong>Company:</strong> ${order.company_name}</p>
+          <p style="margin: 8px 0 0 0;"><strong>Portal account:</strong> ${
+            assignedTo ? `linked to ${escapeHtml(assignedTo)}` : "no matching portal account found"
+          }</p>
+        </div>
+        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 0 0 20px 0; border-left: 4px solid #1976d2;">
+          <p style="margin: 0 0 8px 0;"><strong>Client message:</strong></p>
+          <p style="margin: 0;">${messageHtml}</p>
         </div>
         <div style="text-align: center; margin: 30px 0;">
           <a href="${dashboardUrl}" style="display: inline-block; background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%); color: #ffffff; text-decoration: none; padding: 15px 40px; border-radius: 8px; font-weight: bold; font-size: 16px;">View Customer Tickets</a>
@@ -106,7 +125,12 @@ const sendBackgroundNotifications = async (
   }
 };
 
-const processTicket = async (orderId: string, email: string) => {
+const processTicket = async (
+  orderId: string,
+  email: string,
+  message = "",
+  clientSubject = ""
+) => {
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
@@ -152,10 +176,25 @@ const processTicket = async (orderId: string, email: string) => {
     }
   }
 
-  const subject = `Support request for ${order.company_name}`;
+  const subject = clientSubject?.trim()
+    ? clientSubject.trim().slice(0, 150)
+    : `Support request for ${order.company_name}`;
+
+  // Auto-link to an existing client portal account with the same email
+  let portalUser: { id: string; email: string; full_name: string | null } | null = null;
+  const { data: matchedUsers } = await supabase
+    .from("app_users")
+    .select("id, email, full_name")
+    .eq("role", "client")
+    .ilike("email", email)
+    .limit(1);
+
+  if (matchedUsers && matchedUsers.length > 0) {
+    portalUser = matchedUsers[0];
+  }
 
   // Insert ticket
-  const { error: insertError } = await supabase
+  const { data: inserted, error: insertError } = await supabase
     .from("customer_tickets")
     .insert({
       order_id: orderId,
@@ -163,20 +202,46 @@ const processTicket = async (orderId: string, email: string) => {
       client_name: clientName,
       company_name: order.company_name,
       subject,
+      client_subject: clientSubject?.trim() || null,
+      message: message?.trim() || null,
       status: "open",
-    });
+      assigned_client_id: portalUser?.id ?? null,
+      assigned_client_name: portalUser ? portalUser.full_name || portalUser.email : null,
+      assigned_client_email: portalUser?.email ?? null,
+    })
+    .select("id")
+    .maybeSingle();
 
   if (insertError) {
     console.error("Error creating ticket:", insertError);
     return { status: "error", company: order.company_name };
   }
 
-  console.log("Customer ticket created for", email, "order", orderId);
+  console.log("Customer ticket created for", email, "order", orderId, "ticket", inserted?.id);
+
+  // If auto-linked, mirror it into the client portal support inbox
+  if (portalUser) {
+    const { error: inquiryError } = await supabase.from("support_inquiries").insert({
+      user_id: portalUser.id,
+      user_email: portalUser.email,
+      user_name: portalUser.full_name || portalUser.email,
+      subject,
+      message: message?.trim() || `Support request from ${email}`,
+      status: "open",
+      order_id: orderId,
+    });
+    if (inquiryError) console.error("Portal inquiry insert failed:", inquiryError);
+  }
 
   // Fire-and-forget: send emails and notifications in background
-  sendBackgroundNotifications(supabase, order, clientName, email).catch(
-    (err) => console.error("Background notification error:", err)
-  );
+  sendBackgroundNotifications(
+    supabase,
+    order,
+    clientName,
+    email,
+    message?.trim() || "",
+    portalUser ? portalUser.full_name || portalUser.email : null
+  ).catch((err) => console.error("Background notification error:", err));
 
   return { status: "success", company: order.company_name };
 };
@@ -189,13 +254,15 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     // POST = JSON request from TicketLoading page
     if (req.method === "POST") {
-      const { orderId, email } = await req.json();
+      const { orderId, email, message, subject } = await req.json();
       if (!orderId || !email) {
         return new Response(JSON.stringify({ status: "error" }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      const result = await processTicket(orderId, email);
+      const safeMessage = typeof message === "string" ? message.slice(0, 2000) : "";
+      const safeSubject = typeof subject === "string" ? subject.slice(0, 150) : "";
+      const result = await processTicket(orderId, email, safeMessage, safeSubject);
       return new Response(JSON.stringify(result), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
