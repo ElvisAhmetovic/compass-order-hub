@@ -248,6 +248,93 @@ const CustomerTicketDetail = () => {
           </CardContent>
         </Card>
 
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <MessageSquare className="w-5 h-5" />
+              Client's message
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {ticket.message ? (
+              <p className="whitespace-pre-wrap">{ticket.message}</p>
+            ) : (
+              <p className="text-muted-foreground">
+                No description provided (submitted before the form existed).
+              </p>
+            )}
+          </CardContent>
+        </Card>
+
+        {orderContext && (
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="w-5 h-5" />
+                Related order
+              </CardTitle>
+              <Button variant="outline" size="sm" onClick={() => navigate('/dashboard')}>
+                <ExternalLink className="w-4 h-4 mr-1" /> Open orders
+              </Button>
+            </CardHeader>
+            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm text-muted-foreground">Company</p>
+                <p className="font-medium">{orderContext.company_name || '-'}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Contact</p>
+                <p className="font-medium">{orderContext.contact_name || '-'}</p>
+                <p className="text-sm text-muted-foreground">{orderContext.contact_email || ''}</p>
+                <p className="text-sm text-muted-foreground">{orderContext.contact_phone || ''}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Order status</p>
+                <p className="font-medium">{orderContext.status || '-'}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Value</p>
+                <p className="font-medium">
+                  {orderContext.price != null
+                    ? new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(orderContext.price)
+                    : '-'}
+                </p>
+              </div>
+              {orderContext.description && (
+                <div className="md:col-span-2">
+                  <p className="text-sm text-muted-foreground">Order description</p>
+                  <p className="whitespace-pre-wrap">{orderContext.description}</p>
+                </div>
+              )}
+              <div>
+                <p className="text-sm text-muted-foreground">Order created</p>
+                <p>{format(new Date(orderContext.created_at), 'dd.MM.yyyy HH:mm')}</p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {portalChecked && !portalMatch && !ticket.assigned_client_id && (
+          <Card className="border-destructive/40">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-destructive">
+                <AlertTriangle className="w-5 h-5" />
+                This client has no portal login
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                There is no client portal account for {ticket.client_email}, so this ticket cannot be linked yet.
+                Create the account and we will email the login details to the client and link this ticket.
+              </p>
+              <Button onClick={handleCreatePortalAccount} disabled={creatingPortal}>
+                <KeyRound className="w-4 h-4 mr-2" />
+                {creatingPortal ? 'Creating and sending...' : 'Create portal login & send'}
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Assign to Client */}
         <Card>
           <CardHeader>
