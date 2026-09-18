@@ -39,6 +39,8 @@ const ConfirmOffer = () => {
 
         if (data.offer.confirmed_at) {
           setAlreadyConfirmed(true);
+        } else if (isExpired(data.offer.expires_at)) {
+          setExpired(true);
         }
         setOffer(data.offer);
       } catch (err: any) {
