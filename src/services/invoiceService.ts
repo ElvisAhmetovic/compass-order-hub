@@ -142,7 +142,8 @@ export class InvoiceService {
       .from('invoices')
       .select(`
         *,
-        client:clients(*)
+        client:clients(*),
+        payments(amount)
       `)
       .eq('id', id)
       .single();
