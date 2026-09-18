@@ -199,6 +199,12 @@ const ConfirmOffer = () => {
           )}
         </Button>
 
+        {offer?.expires_at && (
+          <p className="text-center text-sm text-muted-foreground">
+            Valid until {new Date(offer.expires_at).toLocaleDateString('de-DE')}
+          </p>
+        )}
+
         <p className="text-center text-xs text-muted-foreground">
           By confirming, you agree to proceed with the services outlined above.
         </p>
