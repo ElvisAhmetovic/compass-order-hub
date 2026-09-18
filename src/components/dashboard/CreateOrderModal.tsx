@@ -956,11 +956,12 @@ Additional internal comments...`}
                     toast({ variant: "destructive", title: "You must be logged in" });
                     return;
                   }
-                  const values = form.getValues();
-                  const netPrice = Number(values.price || 0);
-                  const grossPrice = vatEnabled
-                    ? Math.round((netPrice * (1 + vatPercentage / 100)) * 100) / 100
-                    : netPrice;
+                   const values = form.getValues();
+                   // The price entered is the gross total the client pays.
+                   const grossPrice = Number(values.price || 0);
+                   const netPrice = vatEnabled
+                     ? Math.round((grossPrice / (1 + vatPercentage / 100)) * 100) / 100
+                     : grossPrice;
                   setIsSendingOffer(true);
                   try {
                     // First insert the offer into the database to get the offerId
