@@ -17,7 +17,11 @@ const ConfirmOffer = () => {
   const [confirming, setConfirming] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
   const [alreadyConfirmed, setAlreadyConfirmed] = useState(false);
+  const [expired, setExpired] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const isExpired = (value?: string | null) =>
+    !!value && new Date(value).getTime() < Date.now();
 
   useEffect(() => {
     const fetchOffer = async () => {
