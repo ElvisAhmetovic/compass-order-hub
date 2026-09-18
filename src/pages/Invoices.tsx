@@ -405,7 +405,7 @@ const Invoices = () => {
 
   const totalOutstanding = invoices
     .filter(inv => inv.status === 'sent' || inv.status === 'partially_paid' || inv.status === 'overdue')
-    .reduce((sum, inv) => sum + inv.total_amount, 0);
+    .reduce((sum, inv) => sum + getOutstandingAmount(inv), 0);
 
   // Selected month for "Paid" card (format: YYYY-MM, default = current month)
   const [selectedPaidMonth, setSelectedPaidMonth] = useState<string>(() => {
