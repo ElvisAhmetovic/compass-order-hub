@@ -505,7 +505,23 @@ const handler = async (req: Request): Promise<Response> => {
         }
 
         const newReminderCount = (invoice.reminder_count || 0) + 1;
-        const amount = formatPrice(invoice.total_amount, invoice.currency);
+
+        // Chase the remaining balance, not the original total
+        const paidAmount = Array.isArray((invoice as any).payments)
+          ? (invoice as any).payments.reduce((sum: number, p: any) => sum + (Number(p?.amount) || 0), 0)
+          : 0;
+        const outstandingAmount = Math.max(0, Number(invoice.total_amount || 0) - paidAmount);
+
+        if (paidAmount > 0 && outstandingAmount <= 0) {
+          console.log(`Skipping invoice ${invoice.invoice_number} - fully covered by recorded payments`);
+          await supabase.from("invoices").update({ status: 'paid', next_reminder_at: null }).eq("id", invoice.id);
+          continue;
+        }
+
+        const amount = formatPrice(outstandingAmount, invoice.currency);
+        if (paidAmount > 0) {
+          console.log(`Invoice ${invoice.invoice_number}: partially paid, chasing remaining ${amount}`);
+        }
         const t = getTranslations(detectedLanguage);
         console.log(`Invoice ${invoice.invoice_number}: detected language '${detectedLanguage}'`);
 
