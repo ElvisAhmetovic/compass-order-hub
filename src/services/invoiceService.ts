@@ -91,7 +91,8 @@ export class InvoiceService {
         .from('invoices')
         .select(`
           *,
-          client:clients(*)
+          client:clients(*),
+          payments(amount)
         `)
         .order('created_at', { ascending: false })
         .range(from, from + pageSize - 1);
@@ -141,7 +142,8 @@ export class InvoiceService {
       .from('invoices')
       .select(`
         *,
-        client:clients(*)
+        client:clients(*),
+        payments(amount)
       `)
       .eq('id', id)
       .single();

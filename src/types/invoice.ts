@@ -41,6 +41,7 @@ export interface Invoice {
   reminder_interval_hours?: number | null;
   last_reminder_sent_at?: string | null;
   client?: Client;
+  payments?: { amount: number }[];
   reminders_paused?: boolean;
   bill_to_name?: string | null;
   bill_to_email?: string | null;

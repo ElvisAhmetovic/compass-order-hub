@@ -17,7 +17,11 @@ const ConfirmOffer = () => {
   const [confirming, setConfirming] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
   const [alreadyConfirmed, setAlreadyConfirmed] = useState(false);
+  const [expired, setExpired] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const isExpired = (value?: string | null) =>
+    !!value && new Date(value).getTime() < Date.now();
 
   useEffect(() => {
     const fetchOffer = async () => {
@@ -35,6 +39,8 @@ const ConfirmOffer = () => {
 
         if (data.offer.confirmed_at) {
           setAlreadyConfirmed(true);
+        } else if (isExpired(data.offer.expires_at)) {
+          setExpired(true);
         }
         setOffer(data.offer);
       } catch (err: any) {
@@ -55,6 +61,10 @@ const ConfirmOffer = () => {
       if (fnError) throw fnError;
       if (data?.alreadyConfirmed) {
         setAlreadyConfirmed(true);
+        return;
+      }
+      if (data?.expired) {
+        setExpired(true);
         return;
       }
       setConfirmed(true);
@@ -99,6 +109,21 @@ const ConfirmOffer = () => {
             We will contact you shortly via WhatsApp or email.
           </p>
           <p className="text-xs text-muted-foreground">Redirecting in a few seconds…</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (expired) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <div className="max-w-md w-full text-center space-y-4">
+          <AlertCircle className="h-16 w-16 text-yellow-500 mx-auto" />
+          <h1 className="text-2xl font-bold text-foreground">This offer has expired</h1>
+          <p className="text-muted-foreground">
+            This offer is no longer valid. Please contact us and we will gladly send you an updated offer.
+          </p>
+          <p className="text-muted-foreground text-sm">AB Media Team</p>
         </div>
       </div>
     );
@@ -173,6 +198,12 @@ const ConfirmOffer = () => {
             "Confirm Your Order with AB Media Team"
           )}
         </Button>
+
+        {offer?.expires_at && (
+          <p className="text-center text-sm text-muted-foreground">
+            Valid until {new Date(offer.expires_at).toLocaleDateString('de-DE')}
+          </p>
+        )}
 
         <p className="text-center text-xs text-muted-foreground">
           By confirming, you agree to proceed with the services outlined above.

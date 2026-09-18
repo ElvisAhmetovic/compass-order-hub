@@ -9,6 +9,26 @@ const corsHeaders = {
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
+// --- Sending window: weekdays 09:00–17:00 in company local time ---
+const COMPANY_TIMEZONE = "Europe/Sarajevo";
+const WINDOW_START_HOUR = 9;
+const WINDOW_END_HOUR = 17;
+
+const isWithinSendingWindow = (date: Date = new Date()): boolean => {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: COMPANY_TIMEZONE,
+    weekday: "short",
+    hour: "2-digit",
+    hour12: false,
+  }).formatToParts(date);
+
+  const weekday = parts.find(p => p.type === "weekday")?.value || "";
+  const hour = parseInt(parts.find(p => p.type === "hour")?.value || "0", 10);
+
+  if (["Sat", "Sun"].includes(weekday)) return false;
+  return hour >= WINDOW_START_HOUR && hour < WINDOW_END_HOUR;
+};
+
 // --- Language detection from address ---
 const detectLanguageFromAddress = (address: string | null | undefined): string => {
   if (!address) return "en";
@@ -357,11 +377,21 @@ const handler = async (req: Request): Promise<Response> => {
 
     const now = new Date().toISOString();
 
+    // Only send client reminders on weekdays during business hours.
+    // Anything due outside the window simply waits for the next allowed run.
+    if (!isWithinSendingWindow() && !body?.force) {
+      console.log("Outside sending window (weekdays 09:00-17:00 Europe/Sarajevo) - skipping this run");
+      return new Response(
+        JSON.stringify({ message: "Outside sending window", processed: 0, skipped: true }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Find invoices due for a reminder
     const { data: dueInvoices, error: fetchError } = await supabase
       .from("invoices")
-      .select("*, client:clients(*)")
-      .in("status", ["sent", "overdue"])
+      .select("*, client:clients(*), payments(amount)")
+      .in("status", ["sent", "overdue", "partially_paid"])
       .not("next_reminder_at", "is", null)
       .lte("next_reminder_at", now);
 
@@ -397,7 +427,7 @@ const handler = async (req: Request): Promise<Response> => {
           .eq("id", invoice.id)
           .single();
 
-        if (!freshInvoice || !['sent', 'overdue'].includes(freshInvoice.status)) {
+        if (!freshInvoice || !['sent', 'overdue', 'partially_paid'].includes(freshInvoice.status)) {
           console.log(`Skipping invoice ${invoice.invoice_number} - status changed to ${freshInvoice?.status}`);
           continue;
         }
@@ -475,7 +505,23 @@ const handler = async (req: Request): Promise<Response> => {
         }
 
         const newReminderCount = (invoice.reminder_count || 0) + 1;
-        const amount = formatPrice(invoice.total_amount, invoice.currency);
+
+        // Chase the remaining balance, not the original total
+        const paidAmount = Array.isArray((invoice as any).payments)
+          ? (invoice as any).payments.reduce((sum: number, p: any) => sum + (Number(p?.amount) || 0), 0)
+          : 0;
+        const outstandingAmount = Math.max(0, Number(invoice.total_amount || 0) - paidAmount);
+
+        if (paidAmount > 0 && outstandingAmount <= 0) {
+          console.log(`Skipping invoice ${invoice.invoice_number} - fully covered by recorded payments`);
+          await supabase.from("invoices").update({ status: 'paid', next_reminder_at: null }).eq("id", invoice.id);
+          continue;
+        }
+
+        const amount = formatPrice(outstandingAmount, invoice.currency);
+        if (paidAmount > 0) {
+          console.log(`Invoice ${invoice.invoice_number}: partially paid, chasing remaining ${amount}`);
+        }
         const t = getTranslations(detectedLanguage);
         console.log(`Invoice ${invoice.invoice_number}: detected language '${detectedLanguage}'`);
 

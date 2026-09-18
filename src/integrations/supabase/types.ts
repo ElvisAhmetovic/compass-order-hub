@@ -1575,6 +1575,7 @@ export type Database = {
           created_at: string
           currency: string
           description: string | null
+          expires_at: string | null
           id: string
           order_data: Json
           price: number
@@ -1592,6 +1593,7 @@ export type Database = {
           created_at?: string
           currency?: string
           description?: string | null
+          expires_at?: string | null
           id?: string
           order_data?: Json
           price?: number
@@ -1609,6 +1611,7 @@ export type Database = {
           created_at?: string
           currency?: string
           description?: string | null
+          expires_at?: string | null
           id?: string
           order_data?: Json
           price?: number

@@ -40,6 +40,7 @@ import { formatCurrency } from "@/utils/currencyUtils";
 import InvoiceReminderHistory from "@/components/invoices/InvoiceReminderHistory";
 import { supabase } from "@/integrations/supabase/client";
 import { nextReminderForInvoice } from "@/utils/reminderInterval";
+import { getOutstandingAmount, getPaidAmount } from "@/utils/invoiceBalance";
 
 const INVOICE_STATUSES = [
   "draft",
@@ -209,9 +210,10 @@ const Invoices = () => {
       };
       
       // Auto-manage reminder scheduling based on status
-      if (['paid', 'cancelled', 'refunded', 'draft', 'partially_paid'].includes(newStatus)) {
+      // Partially paid invoices keep being chased for the remaining balance.
+      if (['paid', 'cancelled', 'refunded', 'draft'].includes(newStatus)) {
         updateData.next_reminder_at = null; // Stop reminders
-      } else if (newStatus === 'sent' || newStatus === 'overdue') {
+      } else if (newStatus === 'sent' || newStatus === 'overdue' || newStatus === 'partially_paid') {
         // Only set next_reminder_at if not already set
         const currentInvoice = invoices.find(inv => inv.id === id);
         if (!(currentInvoice as any)?.next_reminder_at) {
@@ -403,7 +405,7 @@ const Invoices = () => {
 
   const totalOutstanding = invoices
     .filter(inv => inv.status === 'sent' || inv.status === 'partially_paid' || inv.status === 'overdue')
-    .reduce((sum, inv) => sum + inv.total_amount, 0);
+    .reduce((sum, inv) => sum + getOutstandingAmount(inv), 0);
 
   // Selected month for "Paid" card (format: YYYY-MM, default = current month)
   const [selectedPaidMonth, setSelectedPaidMonth] = useState<string>(() => {
@@ -554,6 +556,7 @@ const Invoices = () => {
                           <TableHead>Issue / Created</TableHead>
                           <TableHead>Due Date</TableHead>
                           <TableHead>Amount</TableHead>
+                          <TableHead>Outstanding</TableHead>
                           <TableHead>Status</TableHead>
                           <TableHead className="w-[50px]">
                             <TooltipProvider>
@@ -571,11 +574,11 @@ const Invoices = () => {
                       <TableBody>
                         {loading ? (
                           <TableRow>
-                           <TableCell colSpan={8} className="text-center py-8">Loading invoices...</TableCell>
+                           <TableCell colSpan={9} className="text-center py-8">Loading invoices...</TableCell>
                           </TableRow>
                         ) : sortedInvoices.length === 0 ? (
                           <TableRow>
-                            <TableCell colSpan={8} className="text-center py-8">No invoices found</TableCell>
+                            <TableCell colSpan={9} className="text-center py-8">No invoices found</TableCell>
                           </TableRow>
                         ) : (
                           sortedInvoices.map((invoice) => (
@@ -616,6 +619,27 @@ const Invoices = () => {
                               <TableCell>{new Date(invoice.due_date).toLocaleDateString()}</TableCell>
                               <TableCell>
                                 {formatCurrency(invoice.total_amount, invoice.currency)}
+                              </TableCell>
+                              <TableCell>
+                                {(() => {
+                                  const paid = getPaidAmount(invoice);
+                                  const outstanding = getOutstandingAmount(invoice);
+                                  if (outstanding <= 0) {
+                                    return <span className="text-muted-foreground text-sm">—</span>;
+                                  }
+                                  return (
+                                    <div>
+                                      <div className="font-medium text-destructive">
+                                        {formatCurrency(outstanding, invoice.currency)}
+                                      </div>
+                                      {paid > 0 && (
+                                        <div className="text-xs text-muted-foreground">
+                                          paid {formatCurrency(paid, invoice.currency)}
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })()}
                               </TableCell>
                               <TableCell>
                                 <DropdownMenu>
