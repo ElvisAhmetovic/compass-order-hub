@@ -242,6 +242,7 @@ const buildOfferEmailHtml = (data: {
         <!-- Confirm button -->
         <tr><td style="text-align:center; padding:16px 32px 32px;">
           <a href="${data.confirmUrl || 'https://www.empriatech.com'}" style="display:inline-block; height:48px; padding:0 28px; border-radius:8px; background:#1a73e8; color:#ffffff; font-family:Roboto,Arial,sans-serif; font-size:16px; font-weight:700; line-height:48px; text-decoration:none; white-space:nowrap; box-shadow:0 1px 2px rgba(60,64,67,.15),0 2px 6px rgba(60,64,67,.10);">${t.cta}</a>
+          ${expiryText ? `<div style="margin-top:12px; font-family:Roboto,Arial,sans-serif; font-size:13px; color:#5f6368;">Valid until ${expiryText}</div>` : ''}
         </td></tr>
 
         <!-- Greeting -->
