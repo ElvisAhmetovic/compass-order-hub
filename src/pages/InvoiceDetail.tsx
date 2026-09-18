@@ -22,6 +22,7 @@ import { useToast } from "@/hooks/use-toast";
 import { InvoiceService } from "@/services/invoiceService";
 import CurrencySelector from "@/components/invoices/CurrencySelector";
 import { formatCurrency } from "@/utils/currencyUtils";
+import { getOutstandingAmount, getPaidAmount } from "@/utils/invoiceBalance";
 import LineItemRow from "@/components/invoices/LineItemRow";
 import SendInvoiceDialog from "@/components/invoices/SendInvoiceDialog";
 
