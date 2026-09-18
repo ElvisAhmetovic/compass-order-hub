@@ -56,6 +56,14 @@ serve(async (req) => {
       });
     }
 
+    // Offers with an expiry date can no longer be accepted once that date has passed.
+    // Offers without an expiry date (older ones) stay valid.
+    if (offer.expires_at && new Date(offer.expires_at).getTime() < Date.now()) {
+      return new Response(JSON.stringify({ success: false, expired: true, expiresAt: offer.expires_at }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     // Parse order_data JSON
     const orderData = (offer.order_data || {}) as Record<string, any>;
 
