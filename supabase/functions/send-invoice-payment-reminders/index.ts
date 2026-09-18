@@ -377,11 +377,21 @@ const handler = async (req: Request): Promise<Response> => {
 
     const now = new Date().toISOString();
 
+    // Only send client reminders on weekdays during business hours.
+    // Anything due outside the window simply waits for the next allowed run.
+    if (!isWithinSendingWindow() && !body?.force) {
+      console.log("Outside sending window (weekdays 09:00-17:00 Europe/Sarajevo) - skipping this run");
+      return new Response(
+        JSON.stringify({ message: "Outside sending window", processed: 0, skipped: true }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Find invoices due for a reminder
     const { data: dueInvoices, error: fetchError } = await supabase
       .from("invoices")
-      .select("*, client:clients(*)")
-      .in("status", ["sent", "overdue"])
+      .select("*, client:clients(*), payments(amount)")
+      .in("status", ["sent", "overdue", "partially_paid"])
       .not("next_reminder_at", "is", null)
       .lte("next_reminder_at", now);
 
