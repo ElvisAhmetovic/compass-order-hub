@@ -574,11 +574,11 @@ const Invoices = () => {
                       <TableBody>
                         {loading ? (
                           <TableRow>
-                           <TableCell colSpan={8} className="text-center py-8">Loading invoices...</TableCell>
+                           <TableCell colSpan={9} className="text-center py-8">Loading invoices...</TableCell>
                           </TableRow>
                         ) : sortedInvoices.length === 0 ? (
                           <TableRow>
-                            <TableCell colSpan={8} className="text-center py-8">No invoices found</TableCell>
+                            <TableCell colSpan={9} className="text-center py-8">No invoices found</TableCell>
                           </TableRow>
                         ) : (
                           sortedInvoices.map((invoice) => (
