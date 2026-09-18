@@ -556,6 +556,7 @@ const Invoices = () => {
                           <TableHead>Issue / Created</TableHead>
                           <TableHead>Due Date</TableHead>
                           <TableHead>Amount</TableHead>
+                          <TableHead>Outstanding</TableHead>
                           <TableHead>Status</TableHead>
                           <TableHead className="w-[50px]">
                             <TooltipProvider>
@@ -618,6 +619,27 @@ const Invoices = () => {
                               <TableCell>{new Date(invoice.due_date).toLocaleDateString()}</TableCell>
                               <TableCell>
                                 {formatCurrency(invoice.total_amount, invoice.currency)}
+                              </TableCell>
+                              <TableCell>
+                                {(() => {
+                                  const paid = getPaidAmount(invoice);
+                                  const outstanding = getOutstandingAmount(invoice);
+                                  if (outstanding <= 0) {
+                                    return <span className="text-muted-foreground text-sm">—</span>;
+                                  }
+                                  return (
+                                    <div>
+                                      <div className="font-medium text-destructive">
+                                        {formatCurrency(outstanding, invoice.currency)}
+                                      </div>
+                                      {paid > 0 && (
+                                        <div className="text-xs text-muted-foreground">
+                                          paid {formatCurrency(paid, invoice.currency)}
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })()}
                               </TableCell>
                               <TableCell>
                                 <DropdownMenu>
