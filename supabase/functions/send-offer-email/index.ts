@@ -299,7 +299,7 @@ serve(async (req) => {
     }
 
     const body = await req.json();
-    const { clientEmail, clientName, clientPhone, clientAddress, companyName, description, price, currency, senderName, offerId, language, vatRate, netPrice } = body;
+    const { clientEmail, clientName, clientPhone, clientAddress, companyName, description, price, currency, senderName, offerId, language, vatRate, netPrice, expiresAt } = body;
 
     if (!clientEmail || !clientName || !companyName) {
       throw new Error('Missing required fields: clientEmail, clientName, companyName');
@@ -326,6 +326,7 @@ serve(async (req) => {
       language: lang,
       vatRate: typeof vatRate === 'number' ? vatRate : undefined,
       netPrice: typeof netPrice === 'number' ? netPrice : undefined,
+      expiresAt: typeof expiresAt === 'string' ? expiresAt : undefined,
     });
 
     const clientSubject = `${t.subject} – ${companyName}`;
