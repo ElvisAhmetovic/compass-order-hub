@@ -833,6 +833,18 @@ const InvoiceDetail = () => {
                           <span>Total:</span>
                           <span>{formatCurrency(totalAmount, formData.currency)}</span>
                         </div>
+                        {!isNewInvoice && invoice && getPaidAmount(invoice) > 0 && (
+                          <>
+                            <div className="flex justify-between text-green-600">
+                              <span>Paid:</span>
+                              <span>{formatCurrency(getPaidAmount(invoice), formData.currency)}</span>
+                            </div>
+                            <div className="flex justify-between font-semibold text-destructive">
+                              <span>Outstanding:</span>
+                              <span>{formatCurrency(getOutstandingAmount(invoice), formData.currency)}</span>
+                            </div>
+                          </>
+                        )}
                       </CardContent>
                     </Card>
 
