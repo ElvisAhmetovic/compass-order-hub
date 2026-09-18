@@ -427,7 +427,7 @@ const handler = async (req: Request): Promise<Response> => {
           .eq("id", invoice.id)
           .single();
 
-        if (!freshInvoice || !['sent', 'overdue'].includes(freshInvoice.status)) {
+        if (!freshInvoice || !['sent', 'overdue', 'partially_paid'].includes(freshInvoice.status)) {
           console.log(`Skipping invoice ${invoice.invoice_number} - status changed to ${freshInvoice?.status}`);
           continue;
         }
