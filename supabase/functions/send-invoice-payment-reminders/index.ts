@@ -9,6 +9,26 @@ const corsHeaders = {
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
+// --- Sending window: weekdays 09:00–17:00 in company local time ---
+const COMPANY_TIMEZONE = "Europe/Sarajevo";
+const WINDOW_START_HOUR = 9;
+const WINDOW_END_HOUR = 17;
+
+const isWithinSendingWindow = (date: Date = new Date()): boolean => {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: COMPANY_TIMEZONE,
+    weekday: "short",
+    hour: "2-digit",
+    hour12: false,
+  }).formatToParts(date);
+
+  const weekday = parts.find(p => p.type === "weekday")?.value || "";
+  const hour = parseInt(parts.find(p => p.type === "hour")?.value || "0", 10);
+
+  if (["Sat", "Sun"].includes(weekday)) return false;
+  return hour >= WINDOW_START_HOUR && hour < WINDOW_END_HOUR;
+};
+
 // --- Language detection from address ---
 const detectLanguageFromAddress = (address: string | null | undefined): string => {
   if (!address) return "en";
