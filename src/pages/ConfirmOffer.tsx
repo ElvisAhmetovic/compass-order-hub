@@ -63,6 +63,10 @@ const ConfirmOffer = () => {
         setAlreadyConfirmed(true);
         return;
       }
+      if (data?.expired) {
+        setExpired(true);
+        return;
+      }
       setConfirmed(true);
       // Redirect after 5 seconds
       setTimeout(() => {
