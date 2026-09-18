@@ -213,7 +213,7 @@ const Invoices = () => {
       // Partially paid invoices keep being chased for the remaining balance.
       if (['paid', 'cancelled', 'refunded', 'draft'].includes(newStatus)) {
         updateData.next_reminder_at = null; // Stop reminders
-      } else if (newStatus === 'sent' || newStatus === 'overdue') {
+      } else if (newStatus === 'sent' || newStatus === 'overdue' || newStatus === 'partially_paid') {
         // Only set next_reminder_at if not already set
         const currentInvoice = invoices.find(inv => inv.id === id);
         if (!(currentInvoice as any)?.next_reminder_at) {
