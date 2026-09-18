@@ -962,7 +962,9 @@ Additional internal comments...`}
                    const netPrice = vatEnabled
                      ? Math.round((grossPrice / (1 + vatPercentage / 100)) * 100) / 100
                      : grossPrice;
-                  setIsSendingOffer(true);
+                   setIsSendingOffer(true);
+                   // Offers stay valid for 30 days from the moment they are sent
+                   const offerExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
                   try {
                     // First insert the offer into the database to get the offerId
                     const { data: offerData, error: dbErr } = await supabase.from('offers').insert({
