@@ -986,6 +986,7 @@ Additional internal comments...`}
                         vatPercentage: vatEnabled ? vatPercentage : 0,
                         netPrice,
                       },
+                      expires_at: offerExpiresAt,
                     } as any).select().single();
                     if (dbErr) {
                       console.error('Error saving offer:', dbErr);
@@ -1008,6 +1009,7 @@ Additional internal comments...`}
                         language: offerLanguage,
                         vatRate: vatEnabled ? vatPercentage : 0,
                         netPrice,
+                        expiresAt: offerExpiresAt,
                       },
                     });
                     if (emailErr) throw emailErr;
