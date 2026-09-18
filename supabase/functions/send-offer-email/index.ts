@@ -173,7 +173,11 @@ const buildOfferEmailHtml = (data: {
   language: string;
   vatRate?: number;
   netPrice?: number;
+  expiresAt?: string;
 }) => {
+  const expiryText = data.expiresAt
+    ? new Date(data.expiresAt).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })
+    : '';
   const hasVat = !!data.vatRate && data.vatRate > 0 && !!data.netPrice;
   const formattedPrice = formatPrice(data.price, data.currency);
   const initial = (data.clientName || 'C').charAt(0).toUpperCase();
