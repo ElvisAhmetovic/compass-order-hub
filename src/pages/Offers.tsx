@@ -200,7 +200,15 @@ const Offers = () => {
 
       if (insertError || !newOffer) throw insertError || new Error("Failed to create new offer");
 
-      // 2. Send email with new offer ID
+      // 2. Send email with new offer ID (keep the original VAT breakdown)
+      const od = (offer.order_data || {}) as Record<string, unknown>;
+      const vatRate = od.vatEnabled ? Number(od.vatPercentage || 0) : 0;
+      const netPrice = vatRate > 0
+        ? (typeof od.netPrice === 'number'
+            ? od.netPrice
+            : Math.round((Number(offer.price) / (1 + vatRate / 100)) * 100) / 100)
+        : undefined;
+
       const { error: emailError } = await supabase.functions.invoke("send-offer-email", {
         body: {
           clientEmail: offer.client_email,
@@ -213,6 +221,7 @@ const Offers = () => {
           currency: offer.currency,
           senderName: offer.sent_by_name,
           offerId: newOffer.id,
+          ...(vatRate > 0 ? { vatRate, netPrice } : {}),
         },
       });
 

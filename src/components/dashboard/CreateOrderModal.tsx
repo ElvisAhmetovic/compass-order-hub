@@ -695,22 +695,28 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
                         </div>
                       )}
                     </div>
-                    {vatEnabled && (
-                      <div className="rounded-md border border-border bg-muted/50 p-3 text-sm space-y-1">
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Net Price</span>
-                          <span>{getCurrencySymbol(form.watch('currency'))}{Number(form.watch('price') || 0).toFixed(2)}</span>
+                    {vatEnabled && (() => {
+                      const gross = Number(form.watch('price') || 0);
+                      const net = Math.round((gross / (1 + vatPercentage / 100)) * 100) / 100;
+                      const vat = Math.round((gross - net) * 100) / 100;
+                      const sym = getCurrencySymbol(form.watch('currency'));
+                      return (
+                        <div className="rounded-md border border-border bg-muted/50 p-3 text-sm space-y-1">
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Net Price</span>
+                            <span>{sym}{net.toFixed(2)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">VAT ({vatPercentage}%)</span>
+                            <span>{sym}{vat.toFixed(2)}</span>
+                          </div>
+                          <div className="flex justify-between font-medium border-t border-border pt-1">
+                            <span>Total (price entered)</span>
+                            <span>{sym}{gross.toFixed(2)}</span>
+                          </div>
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">VAT ({vatPercentage}%)</span>
-                          <span>{getCurrencySymbol(form.watch('currency'))}{((Number(form.watch('price') || 0) * vatPercentage) / 100).toFixed(2)}</span>
-                        </div>
-                        <div className="flex justify-between font-medium border-t border-border pt-1">
-                          <span>Total</span>
-                          <span>{getCurrencySymbol(form.watch('currency'))}{(Number(form.watch('price') || 0) + (Number(form.watch('price') || 0) * vatPercentage) / 100).toFixed(2)}</span>
-                        </div>
-                      </div>
-                    )}
+                      );
+                    })()}
                   </div>
 
                   {/* Priority */}
@@ -950,11 +956,12 @@ Additional internal comments...`}
                     toast({ variant: "destructive", title: "You must be logged in" });
                     return;
                   }
-                  const values = form.getValues();
-                  const netPrice = Number(values.price || 0);
-                  const grossPrice = vatEnabled
-                    ? Math.round((netPrice * (1 + vatPercentage / 100)) * 100) / 100
-                    : netPrice;
+                   const values = form.getValues();
+                   // The price entered is the gross total the client pays.
+                   const grossPrice = Number(values.price || 0);
+                   const netPrice = vatEnabled
+                     ? Math.round((grossPrice / (1 + vatPercentage / 100)) * 100) / 100
+                     : grossPrice;
                   setIsSendingOffer(true);
                   try {
                     // First insert the offer into the database to get the offerId
