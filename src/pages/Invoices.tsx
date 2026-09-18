@@ -40,6 +40,7 @@ import { formatCurrency } from "@/utils/currencyUtils";
 import InvoiceReminderHistory from "@/components/invoices/InvoiceReminderHistory";
 import { supabase } from "@/integrations/supabase/client";
 import { nextReminderForInvoice } from "@/utils/reminderInterval";
+import { getOutstandingAmount, getPaidAmount } from "@/utils/invoiceBalance";
 
 const INVOICE_STATUSES = [
   "draft",
@@ -209,7 +210,8 @@ const Invoices = () => {
       };
       
       // Auto-manage reminder scheduling based on status
-      if (['paid', 'cancelled', 'refunded', 'draft', 'partially_paid'].includes(newStatus)) {
+      // Partially paid invoices keep being chased for the remaining balance.
+      if (['paid', 'cancelled', 'refunded', 'draft'].includes(newStatus)) {
         updateData.next_reminder_at = null; // Stop reminders
       } else if (newStatus === 'sent' || newStatus === 'overdue') {
         // Only set next_reminder_at if not already set
