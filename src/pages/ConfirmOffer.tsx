@@ -114,6 +114,21 @@ const ConfirmOffer = () => {
     );
   }
 
+  if (expired) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <div className="max-w-md w-full text-center space-y-4">
+          <AlertCircle className="h-16 w-16 text-yellow-500 mx-auto" />
+          <h1 className="text-2xl font-bold text-foreground">This offer has expired</h1>
+          <p className="text-muted-foreground">
+            This offer is no longer valid. Please contact us and we will gladly send you an updated offer.
+          </p>
+          <p className="text-muted-foreground text-sm">AB Media Team</p>
+        </div>
+      </div>
+    );
+  }
+
   if (alreadyConfirmed) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
