@@ -167,6 +167,34 @@ const Offers = () => {
     setSentByFilter("all");
   };
 
+  const filteredOffers = useMemo(() => {
+    const term = searchTerm.toLowerCase();
+    let filtered = offers;
+    if (term) {
+      filtered = filtered.filter(o =>
+        o.client_name.toLowerCase().includes(term) ||
+        o.company_name.toLowerCase().includes(term) ||
+        o.client_email.toLowerCase().includes(term)
+      );
+    }
+    if (statusFilter !== "all") {
+      filtered = filtered.filter(o => o.status === statusFilter);
+    }
+    if (dateRange.from || dateRange.to) {
+      filtered = filtered.filter(o => {
+        const t = new Date(o.created_at).getTime();
+        if (Number.isNaN(t)) return false;
+        if (dateRange.from && t < dateRange.from.getTime()) return false;
+        if (dateRange.to && t > dateRange.to.getTime()) return false;
+        return true;
+      });
+    }
+    if (sentByFilter !== "all") {
+      filtered = filtered.filter(o => o.sent_by_name === sentByFilter);
+    }
+    return filtered;
+  }, [offers, searchTerm, statusFilter, dateRange, sentByFilter]);
+
   useEffect(() => {
     fetchOffers();
 
@@ -498,27 +526,7 @@ const Offers = () => {
             </div>
 
             {(() => {
-              const term = searchTerm.toLowerCase();
-              let filtered = offers;
-              if (term) {
-                filtered = filtered.filter(o =>
-                  o.client_name.toLowerCase().includes(term) ||
-                  o.company_name.toLowerCase().includes(term) ||
-                  o.client_email.toLowerCase().includes(term)
-                );
-              }
-              if (statusFilter !== "all") {
-                filtered = filtered.filter(o => o.status === statusFilter);
-              }
-              if (dateRange) {
-                filtered = filtered.filter(o => {
-                  const d = new Date(o.created_at);
-                  return d >= dateRange.from && d <= dateRange.to;
-                });
-              }
-              if (sentByFilter !== "all") {
-                filtered = filtered.filter(o => o.sent_by_name === sentByFilter);
-              }
+              const filtered = filteredOffers;
               return loading ? (
                 <div className="text-center py-12 text-muted-foreground">Loading offers...</div>
               ) : offers.length === 0 ? (
