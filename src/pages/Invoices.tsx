@@ -516,34 +516,110 @@ const Invoices = () => {
 
                 <Card>
                   <CardHeader className="pb-3">
-                     <div className="flex items-center justify-between">
-                      <CardTitle>Manage Invoices</CardTitle>
-                      <div className="flex items-center gap-3">
-                        <Select value={sortOption} onValueChange={setSortOption}>
-                          <SelectTrigger className="w-[180px]">
-                            <ArrowUpDown className="h-4 w-4 mr-2 opacity-50" />
-                            <SelectValue placeholder="Sort by..." />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="newest">Newest</SelectItem>
-                            <SelectItem value="oldest">Oldest</SelectItem>
-                            <SelectItem value="sent">Sent</SelectItem>
-                            <SelectItem value="draft">Draft</SelectItem>
-                            <SelectItem value="paid">Paid</SelectItem>
-                            <SelectItem value="inv-low">Lowest INV #</SelectItem>
-                            <SelectItem value="inv-high">Highest INV #</SelectItem>
-                            <SelectItem value="a-z">A → Z</SelectItem>
-                            <SelectItem value="z-a">Z → A</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <div className="w-72">
-                          <Input
-                            placeholder="Search invoice #, client, order date, worker, amount..."
-                            value={filterText}
-                            onChange={(e) => setFilterText(e.target.value)}
-                            className="max-w-sm"
-                          />
+                    <div className="flex flex-col gap-3">
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <CardTitle>Manage Invoices</CardTitle>
+                        <div className="flex flex-wrap items-center gap-3">
+                          <Select value={statusFilter} onValueChange={setStatusFilter}>
+                            <SelectTrigger className="w-[160px]">
+                              <SelectValue placeholder="Status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">All statuses</SelectItem>
+                              <SelectItem value="draft">Draft</SelectItem>
+                              <SelectItem value="sent">Sent</SelectItem>
+                              <SelectItem value="paid">Paid</SelectItem>
+                              <SelectItem value="partially_paid">Partially paid</SelectItem>
+                              <SelectItem value="overdue">Overdue</SelectItem>
+                              <SelectItem value="cancelled">Cancelled</SelectItem>
+                            </SelectContent>
+                          </Select>
+
+                          <Select value={periodFilter} onValueChange={setPeriodFilter}>
+                            <SelectTrigger className="w-[170px]">
+                              <CalendarIcon className="h-4 w-4 mr-2 opacity-50" />
+                              <SelectValue placeholder="Period" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">All time</SelectItem>
+                              <SelectItem value="today">Today</SelectItem>
+                              <SelectItem value="this-week">This week</SelectItem>
+                              <SelectItem value="this-month">This month</SelectItem>
+                              <SelectItem value="last-month">Last month</SelectItem>
+                              <SelectItem value="this-year">This year</SelectItem>
+                              <SelectItem value="last-year">Last year</SelectItem>
+                              <SelectItem value="custom">Custom range</SelectItem>
+                            </SelectContent>
+                          </Select>
+
+                          <Select value={sortOption} onValueChange={setSortOption}>
+                            <SelectTrigger className="w-[170px]">
+                              <ArrowUpDown className="h-4 w-4 mr-2 opacity-50" />
+                              <SelectValue placeholder="Sort by..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="newest">Newest</SelectItem>
+                              <SelectItem value="oldest">Oldest</SelectItem>
+                              <SelectItem value="inv-low">Lowest INV #</SelectItem>
+                              <SelectItem value="inv-high">Highest INV #</SelectItem>
+                              <SelectItem value="a-z">A → Z</SelectItem>
+                              <SelectItem value="z-a">Z → A</SelectItem>
+                            </SelectContent>
+                          </Select>
+
+                          <div className="w-72">
+                            <Input
+                              placeholder="Search invoice #, client, order date, worker, amount..."
+                              value={filterText}
+                              onChange={(e) => setFilterText(e.target.value)}
+                              className="max-w-sm"
+                            />
+                          </div>
                         </div>
+                      </div>
+
+                      {periodFilter === 'custom' && (
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button variant="outline" size="sm" className={cn("justify-start text-left font-normal", !customFrom && "text-muted-foreground")}>
+                                <CalendarIcon className="h-4 w-4 mr-2" />
+                                {customFrom ? format(customFrom, "dd.MM.yyyy") : "From"}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <Calendar mode="single" selected={customFrom} onSelect={setCustomFrom} initialFocus className={cn("p-3 pointer-events-auto")} />
+                            </PopoverContent>
+                          </Popover>
+                          <span className="text-muted-foreground text-sm">→</span>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button variant="outline" size="sm" className={cn("justify-start text-left font-normal", !customTo && "text-muted-foreground")}>
+                                <CalendarIcon className="h-4 w-4 mr-2" />
+                                {customTo ? format(customTo, "dd.MM.yyyy") : "To"}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <Calendar mode="single" selected={customTo} onSelect={setCustomTo} initialFocus className={cn("p-3 pointer-events-auto")} />
+                            </PopoverContent>
+                          </Popover>
+                          {(customFrom || customTo) && (
+                            <Button variant="ghost" size="sm" onClick={() => { setCustomFrom(undefined); setCustomTo(undefined); }}>
+                              Clear dates
+                            </Button>
+                          )}
+                        </div>
+                      )}
+
+                      <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                        <span>
+                          Showing {sortedInvoices.length} of {invoices.length} invoices · Total €{visibleTotal.toFixed(2)}
+                        </span>
+                        {filtersActive && (
+                          <Button variant="ghost" size="sm" onClick={clearFilters}>
+                            Clear filters
+                          </Button>
+                        )}
                       </div>
                     </div>
                   </CardHeader>
