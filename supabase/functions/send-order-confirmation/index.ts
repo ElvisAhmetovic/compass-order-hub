@@ -1,6 +1,7 @@
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
+import { isTeamEmail } from "../_shared/teamEmails.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -333,7 +334,7 @@ const handler = async (req: Request): Promise<Response> => {
           from: "AB Media Team <noreply@abm-team.com>",
           to: [email],
           subject: emailSubject,
-          html: emailHtml,
+          html: buildEmailHtml(isTeamEmail(email)),
         });
 
         console.log(`Email sent successfully to ${email}:`, emailResponse);
