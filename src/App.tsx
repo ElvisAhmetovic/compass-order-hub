@@ -323,12 +323,16 @@ function App() {
                   } />
                   <Route path="/admin/work-hours" element={
                     <RequireAuth>
-                      <WorkHoursAdmin />
+                      <AdminGuard>
+                        <WorkHoursAdmin />
+                      </AdminGuard>
                     </RequireAuth>
                   } />
                   <Route path="/admin/invoice-audit" element={
                     <RequireAuth>
-                      <InvoiceAuditLogPage />
+                      <AdminGuard>
+                        <InvoiceAuditLogPage />
+                      </AdminGuard>
                     </RequireAuth>
                   } />
                   <Route path="/monthly-packages" element={

@@ -13,11 +13,11 @@ const Header = ({ userRole = "user" }: HeaderProps) => {
   const { user } = useAuth();
 
   return (
-    <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 shadow-sm">
+    <header className="border-b border-border bg-card text-card-foreground shadow-soft-sm">
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <h1 className="text-xl font-bold text-gray-900 dark:text-white">
+            <h1 className="font-heading text-xl font-bold text-foreground">
               Order Management System
             </h1>
           </div>
@@ -27,7 +27,7 @@ const Header = ({ userRole = "user" }: HeaderProps) => {
             {user && (
               <div className="flex items-center space-x-3">
                 <NotificationCenter />
-                <span className="text-sm text-gray-700 dark:text-gray-300">
+                <span className="text-sm text-muted-foreground">
                   Welcome, {user.full_name || user.email}
                 </span>
                 <LogoutButton />

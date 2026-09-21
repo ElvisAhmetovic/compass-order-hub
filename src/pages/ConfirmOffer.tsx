@@ -44,7 +44,8 @@ const ConfirmOffer = () => {
         }
         setOffer(data.offer);
       } catch (err: any) {
-        setError(err.message || "Could not load offer details.");
+        console.error("Could not load offer:", err);
+        setError("This offer link is invalid or no longer available. Please contact AB Media Team for help.");
       } finally {
         setLoading(false);
       }
@@ -73,7 +74,8 @@ const ConfirmOffer = () => {
         window.location.href = 'https://gmail.com';
       }, 5000);
     } catch (err: any) {
-      setError(err.message || "Failed to confirm offer.");
+      console.error("Could not confirm offer:", err);
+      setError("We could not confirm this offer right now. Please try again or contact AB Media Team.");
     } finally {
       setConfirming(false);
     }

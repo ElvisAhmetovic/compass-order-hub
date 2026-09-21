@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { Navigate, useSearchParams, useNavigate } from "react-router-dom";
 import { Loader2, LifeBuoy } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -29,8 +29,7 @@ const TicketLoading = () => {
   const [submitting, setSubmitting] = useState(false);
 
   if (!orderId || !email) {
-    navigate("/ticket-submitted?status=error", { replace: true });
-    return null;
+    return <Navigate to="/ticket-submitted?status=invalid" replace />;
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
