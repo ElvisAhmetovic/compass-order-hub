@@ -85,6 +85,88 @@ const Offers = () => {
     description: "",
   });
 
+  // Same period logic as Invoices: quick ranges, specific months, custom range
+  const dateRange = useMemo(() => {
+    const now = new Date();
+    const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    const endOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999);
+
+    switch (periodFilter) {
+      case 'today':
+        return { from: startOfDay(now), to: endOfDay(now) };
+      case 'this-week': {
+        const day = (now.getDay() + 6) % 7; // Monday = 0
+        const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day);
+        const sunday = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 6);
+        return { from: startOfDay(monday), to: endOfDay(sunday) };
+      }
+      case 'this-month':
+        return {
+          from: new Date(now.getFullYear(), now.getMonth(), 1),
+          to: endOfDay(new Date(now.getFullYear(), now.getMonth() + 1, 0)),
+        };
+      case 'last-month':
+        return {
+          from: new Date(now.getFullYear(), now.getMonth() - 1, 1),
+          to: endOfDay(new Date(now.getFullYear(), now.getMonth(), 0)),
+        };
+      case 'this-year':
+        return { from: new Date(now.getFullYear(), 0, 1), to: endOfDay(new Date(now.getFullYear(), 11, 31)) };
+      case 'last-year':
+        return { from: new Date(now.getFullYear() - 1, 0, 1), to: endOfDay(new Date(now.getFullYear() - 1, 11, 31)) };
+      case 'custom':
+        return {
+          from: customFrom ? startOfDay(customFrom) : null,
+          to: customTo ? endOfDay(customTo) : null,
+        };
+      default: {
+        if (periodFilter.startsWith('month:')) {
+          const [year, month] = periodFilter.slice(6).split('-').map(Number);
+          if (year && month) {
+            return {
+              from: new Date(year, month - 1, 1),
+              to: endOfDay(new Date(year, month, 0)),
+            };
+          }
+        }
+        return { from: null as Date | null, to: null as Date | null };
+      }
+    }
+  }, [periodFilter, customFrom, customTo]);
+
+  // Last 24 months for the "Specific month" section
+  const monthOptions = useMemo(() => {
+    const opts: { value: string; label: string }[] = [];
+    const now = new Date();
+    for (let i = 0; i < 24; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      const label = d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+      opts.push({ value, label });
+    }
+    return opts;
+  }, []);
+
+  const activeRangeLabel = useMemo(() => {
+    if (periodFilter.startsWith('month:')) {
+      return monthOptions.find(o => o.value === periodFilter.slice(6))?.label || null;
+    }
+    if (periodFilter === 'custom' && (customFrom || customTo)) {
+      return `${customFrom ? format(customFrom, 'dd.MM.yyyy') : '…'} → ${customTo ? format(customTo, 'dd.MM.yyyy') : '…'}`;
+    }
+    return null;
+  }, [periodFilter, monthOptions, customFrom, customTo]);
+
+  const filtersActive = statusFilter !== "all" || periodFilter !== "all" || sentByFilter !== "all";
+
+  const clearFilters = () => {
+    setStatusFilter("all");
+    setPeriodFilter("all");
+    setCustomFrom(undefined);
+    setCustomTo(undefined);
+    setSentByFilter("all");
+  };
+
   useEffect(() => {
     fetchOffers();
 
