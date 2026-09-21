@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from '@/components/ui/table';
 import { fetchWorkHours, upsertWorkHour, WorkHourEntry } from '@/services/workHoursService';
 import {
