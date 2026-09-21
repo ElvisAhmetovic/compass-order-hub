@@ -142,25 +142,25 @@ const TechSupportDetail = () => {
 
   if (loading) {
     return (
-      <Layout userRole={userRole}>
-        <div className="flex min-h-screen">
-          <Sidebar />
+      <div className="flex min-h-screen">
+        <Sidebar />
+        <Layout userRole={userRole}>
           <div className="flex-1 flex p-6">
             <div className="animate-pulse space-y-6">
               <div className="h-8 bg-muted rounded w-1/3"></div>
               <div className="h-64 bg-muted rounded"></div>
             </div>
           </div>
-        </div>
-      </Layout>
+        </Layout>
+      </div>
     );
   }
 
   if (!ticket) {
     return (
-      <Layout userRole={userRole}>
-        <div className="flex min-h-screen">
-          <Sidebar />
+      <div className="flex min-h-screen">
+        <Sidebar />
+        <Layout userRole={userRole}>
           <div className="flex-1 flex p-6">
             <div className="text-center py-12">
               <h2 className="text-2xl font-semibold text-foreground mb-2">Ticket Not Found</h2>
@@ -170,15 +170,15 @@ const TechSupportDetail = () => {
               </Button>
             </div>
           </div>
-        </div>
-      </Layout>
+        </Layout>
+      </div>
     );
   }
 
   return (
-    <Layout userRole={userRole}>
-      <div className="flex min-h-screen">
-        <Sidebar />
+    <div className="flex min-h-screen">
+      <Sidebar />
+      <Layout userRole={userRole}>
         <div className="flex-1 flex p-6 space-y-6">
           {/* Header */}
           <div className="flex items-center gap-4">
@@ -322,8 +322,8 @@ const TechSupportDetail = () => {
             </CardContent>
           </Card>
         </div>
-      </div>
-    </Layout>
+      </Layout>
+    </div>
   );
 };
 
