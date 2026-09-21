@@ -1,0 +1,1 @@
+ALTER TABLE public.invoices ADD COLUMN IF NOT EXISTS auto_cancelled_by_order boolean NOT NULL DEFAULT false;

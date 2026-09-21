@@ -956,6 +956,7 @@ export type Database = {
       }
       invoices: {
         Row: {
+          auto_cancelled_by_order: boolean
           bill_to_address: string | null
           bill_to_city: string | null
           bill_to_country: string | null
@@ -988,6 +989,7 @@ export type Database = {
           vat_amount: number
         }
         Insert: {
+          auto_cancelled_by_order?: boolean
           bill_to_address?: string | null
           bill_to_city?: string | null
           bill_to_country?: string | null
@@ -1020,6 +1022,7 @@ export type Database = {
           vat_amount?: number
         }
         Update: {
+          auto_cancelled_by_order?: boolean
           bill_to_address?: string | null
           bill_to_city?: string | null
           bill_to_country?: string | null
