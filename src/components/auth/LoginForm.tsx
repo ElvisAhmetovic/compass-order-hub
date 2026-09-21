@@ -122,7 +122,7 @@ const LoginForm = () => {
             Don't have an account?{" "}
             <a
               href="/register"
-              className="text-blue-600 hover:text-blue-800 hover:underline"
+              className="text-primary hover:text-primary/80 hover:underline"
               onClick={(e) => {
                 e.preventDefault();
                 navigate("/register");

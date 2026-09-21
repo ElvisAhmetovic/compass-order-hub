@@ -1,6 +1,6 @@
 
 import React, { useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import LoginForm from '@/components/auth/LoginForm';
 import { Loader2 } from 'lucide-react';
@@ -37,18 +37,12 @@ const Login = () => {
             className="h-16 w-auto"
           />
           <div>
-            <h1 className="text-3xl font-bold text-primary">Order Flow Compass</h1>
+            <h1 className="font-heading text-3xl font-bold text-primary">AB Media Team CRM</h1>
             <p className="text-muted-foreground">Sign in to continue</p>
           </div>
         </div>
       </div>
       <LoginForm />
-      <div className="mt-4 text-sm text-center">
-        Don't have an account?{" "}
-        <Link to="/register" className="text-primary hover:text-primary/80 hover:underline">
-          Register
-        </Link>
-      </div>
     </div>
   );
 };
