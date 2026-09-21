@@ -1,8 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from '@/components/ui/table';
-import { fetchWorkHours, upsertWorkHour, bulkUpsertWorkHours, WorkHourEntry } from '@/services/workHoursService';
+import { fetchWorkHours, upsertWorkHour, WorkHourEntry } from '@/services/workHoursService';
 import {
   fetchMyEntries,
   submitMyHours,
@@ -15,7 +14,7 @@ import {
 import { useAuth } from '@/context/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { Wand2, UserCheck, UserX, Lock, Unlock, CheckCircle2 } from 'lucide-react';
+import { UserCheck, UserX, Lock, Unlock, CheckCircle2 } from 'lucide-react';
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -74,7 +73,6 @@ const WorkHoursTable = ({ userId, month, year }: WorkHoursTableProps) => {
   const [rows, setRows] = useState<Record<string, WorkHourEntry>>({});
   const [v2Map, setV2Map] = useState<Record<string, WorkHourV2>>({});
   const [loading, setLoading] = useState(true);
-  const [filling, setFilling] = useState(false);
   const [busyDay, setBusyDay] = useState<string | null>(null);
 
   const weekdays = getWeekdays(year, month);
@@ -187,7 +185,18 @@ const WorkHoursTable = ({ userId, month, year }: WorkHoursTableProps) => {
 
   const handleSubmitDay = async (iso: string) => {
     const entry = getEntry(iso);
-    if (entry.working_hours == null) {
+    const noteText = (entry.note || '').trim();
+    if (noteText.length < 3) {
+      toast({
+        title: entry.absent ? 'Reason required' : 'Write what you did today',
+        description: entry.absent
+          ? 'Enter the reason for the absence before locking the day.'
+          : 'Describe your work for this day before locking it in.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    if (!entry.absent && entry.working_hours == null) {
       toast({ title: 'Fill hours first', description: 'Enter start, break, hours, end before submitting.', variant: 'destructive' });
       return;
     }
@@ -205,7 +214,7 @@ const WorkHoursTable = ({ userId, month, year }: WorkHoursTableProps) => {
           break_minutes: parseBreakMinutes(entry.break_time),
           status: 'admin_override',
           locked: true,
-          admin_note: v2Map[iso]?.admin_note ?? null,
+          admin_note: entry.note || v2Map[iso]?.admin_note || null,
           reason: 'Admin submit & lock from Work Hours sheet',
         });
         setV2Map(prev => ({ ...prev, [iso]: row }));
@@ -256,165 +265,6 @@ const WorkHoursTable = ({ userId, month, year }: WorkHoursTableProps) => {
     }
   };
 
-  const [fillProgress, setFillProgress] = useState<{ done: number; total: number } | null>(null);
-
-  // Per-day auto-fill: writes defaults (09:00 / 12:00–13:00h / 6.5h / 17:00) AND submits & locks that single day.
-  const handleAutoFillDay = async (iso: string) => {
-    setBusyDay(iso);
-    try {
-      const entry: WorkHourEntry = {
-        user_id: userId,
-        date: iso,
-        start_time: '09:00',
-        break_time: '12:00-13:00h',
-        working_hours: 6.5,
-        end_time: '17:00',
-        note: null,
-        absent: false,
-      };
-      await upsertWorkHour(entry);
-      setRows(prev => ({ ...prev, [iso]: entry }));
-
-      if (isSuper) {
-        const row = await adminUpsert({
-          user_id: userId,
-          work_date: iso,
-          total_hours: 6.5,
-          start_time: '09:00:00',
-          end_time: '17:00:00',
-          break_minutes: 60,
-          status: 'admin_override',
-          locked: true,
-          admin_note: v2Map[iso]?.admin_note ?? null,
-          reason: 'Auto-fill day from Work Hours sheet',
-        });
-        setV2Map(prev => ({ ...prev, [iso]: row }));
-        toast({ title: 'Day filled & locked', description: iso });
-      } else if (isOwnSheet && iso === today) {
-        const row = await submitMyHours({
-          total_hours: 6.5,
-          start_time: '09:00:00',
-          end_time: '17:00:00',
-          break_minutes: 60,
-          worker_note: null,
-        });
-        setV2Map(prev => ({ ...prev, [iso]: row }));
-        toast({ title: 'Day filled & locked', description: iso });
-      } else {
-        toast({
-          title: 'Filled but not locked',
-          description: 'Only today can be submitted by workers. Contact admin to lock past days.',
-        });
-      }
-    } catch (e: any) {
-      toast({ title: 'Auto-fill failed', description: e.message, variant: 'destructive' });
-    } finally {
-      setBusyDay(null);
-    }
-  };
-
-  const handleAutoFill = async () => {
-    setFilling(true);
-    setFillProgress(null);
-    try {
-      // Candidate weekdays: not future, not already submitted/locked.
-      const candidates = weekdays
-        .map(d => toIso(d))
-        .filter(iso => {
-          if (iso > today) return false;
-          const v2 = v2Map[iso];
-          if (!v2) return true;
-          if (v2.locked) return false;
-          if (v2.status === 'admin_override' || v2.status === 'submitted' || v2.status === 'not_worked') return false;
-          return true; // 'not_submitted' (missed) eligible for super-admin override
-        });
-
-      if (candidates.length === 0) {
-        toast({ title: 'Nothing to fill', description: 'All weekdays already submitted, locked, or in the future.' });
-        return;
-      }
-
-      // 1. Fill legacy work_hours (preserves break-text display).
-      const legacyEntries: WorkHourEntry[] = candidates.map(iso => ({
-        user_id: userId,
-        date: iso,
-        start_time: '09:00',
-        break_time: '12:00-13:00h',
-        working_hours: 6.5,
-        end_time: '17:00',
-        note: null,
-        absent: false,
-      }));
-      await bulkUpsertWorkHours(legacyEntries);
-      const newRows = { ...rows };
-      legacyEntries.forEach(e => { newRows[e.date] = e; });
-      setRows(newRows);
-
-      // 2. Submit & lock in V2 sequentially.
-      const newV2: Record<string, WorkHourV2> = {};
-      let lockedCount = 0;
-      let failedCount = 0;
-      let skippedWorkerPast = 0;
-
-      setFillProgress({ done: 0, total: candidates.length });
-
-      for (let i = 0; i < candidates.length; i++) {
-        const iso = candidates[i];
-        try {
-          if (isSuper) {
-            const row = await adminUpsert({
-              user_id: userId,
-              work_date: iso,
-              total_hours: 6.5,
-              start_time: '09:00:00',
-              end_time: '17:00:00',
-              break_minutes: 60,
-              status: 'admin_override',
-              locked: true,
-              admin_note: v2Map[iso]?.admin_note ?? null,
-              reason: 'Auto-fill month from Work Hours sheet',
-            });
-            newV2[iso] = row;
-            lockedCount++;
-          } else if (isOwnSheet && iso === today) {
-            const row = await submitMyHours({
-              total_hours: 6.5,
-              start_time: '09:00:00',
-              end_time: '17:00:00',
-              break_minutes: 60,
-              worker_note: null,
-            });
-            newV2[iso] = row;
-            lockedCount++;
-          } else {
-            skippedWorkerPast++;
-          }
-        } catch {
-          failedCount++;
-        }
-        setFillProgress({ done: i + 1, total: candidates.length });
-      }
-
-      if (Object.keys(newV2).length) {
-        setV2Map(prev => ({ ...prev, ...newV2 }));
-      }
-
-      const parts = [`Filled ${candidates.length} day${candidates.length === 1 ? '' : 's'}`];
-      if (lockedCount) parts.push(`locked ${lockedCount}`);
-      if (skippedWorkerPast) parts.push(`${skippedWorkerPast} past day${skippedWorkerPast === 1 ? '' : 's'} need admin to lock`);
-      if (failedCount) parts.push(`${failedCount} failed`);
-      toast({
-        title: 'Auto-fill complete',
-        description: parts.join(' · '),
-        variant: failedCount ? 'destructive' : 'default',
-      });
-    } catch (e: any) {
-      toast({ title: 'Auto-fill error', description: e.message, variant: 'destructive' });
-    } finally {
-      setFilling(false);
-      setFillProgress(null);
-    }
-  };
 
   const totalHours = weekdays.reduce((sum, d) => {
     const iso = toIso(d);
@@ -425,28 +275,13 @@ const WorkHoursTable = ({ userId, month, year }: WorkHoursTableProps) => {
     return sum + (e.absent ? 0 : (Number(e.working_hours) || 0));
   }, 0);
 
-  const canAutoFill = isOwnSheet || isSuper;
-
   if (loading) return <div className="py-8 text-center text-muted-foreground">Loading...</div>;
 
   return (
     <div>
-      <div className="flex justify-end mb-3">
-        {canAutoFill && (
-          <Button
-            onClick={handleAutoFill}
-            disabled={filling}
-            variant="outline"
-            size="sm"
-            title="Fill weekdays with 09:00 / 12:00–13:00h / 6.5h / 17:00 and submit & lock each day"
-          >
-            <Wand2 className="h-4 w-4 mr-1" />
-            {filling
-              ? (fillProgress ? `Filling ${fillProgress.done}/${fillProgress.total}…` : 'Filling…')
-              : 'Auto-Fill Month'}
-          </Button>
-        )}
-      </div>
+      <p className="mb-3 text-sm text-muted-foreground">
+        Write what you did each day (or the reason you were absent) before locking the day in.
+      </p>
       <div className="border rounded-lg overflow-auto">
       <Table>
         <TableHeader>
@@ -459,7 +294,7 @@ const WorkHoursTable = ({ userId, month, year }: WorkHoursTableProps) => {
             <TableHead className="w-[140px]">Break</TableHead>
             <TableHead className="w-[100px]">Hours</TableHead>
             <TableHead className="w-[100px]">End</TableHead>
-            <TableHead>Note</TableHead>
+            <TableHead>What did you do today?</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -551,22 +386,9 @@ const WorkHoursTable = ({ userId, month, year }: WorkHoursTableProps) => {
                   </button>
                 </TableCell>
                 <TableCell className="text-sm font-medium">
-                  <div className="flex items-center gap-2">
-                    <span>{formatDate(day)}</span>
-                    {!isLocked && !isMissed && !isFuture && (isSuper || isOwnSheet) && (
-                      <button
-                        type="button"
-                        disabled={busy}
-                        onClick={() => handleAutoFillDay(iso)}
-                        className="inline-flex items-center gap-1 rounded-md border border-primary/30 bg-primary/5 px-2 py-1 text-xs font-medium text-primary hover:bg-primary/10 disabled:opacity-50"
-                        title="Auto-fill 09:00 / 12:00–13:00h / 6.5h / 17:00 and submit & lock"
-                      >
-                        <Wand2 className="h-4 w-4" />
-                        Fill
-                      </button>
-                    )}
-                  </div>
+                  <span>{formatDate(day)}</span>
                 </TableCell>
+
 
                 <TableCell>
                   <Input
@@ -617,8 +439,11 @@ const WorkHoursTable = ({ userId, month, year }: WorkHoursTableProps) => {
                 <TableCell>
                   <Input
                     key={`note-${iso}-${entry.note ?? ''}`}
-                    className="h-8 text-sm"
-                    placeholder="e.g. VACATION"
+                    className={cn(
+                      'h-8 text-sm',
+                      !fieldsDisabled && !isLocked && (entry.note || '').trim().length < 3 && 'border-amber-400 focus-visible:ring-amber-400',
+                    )}
+                    placeholder={isAbsent ? 'Reason for absence (e.g. VACATION, SICK)' : 'e.g. Edited 3 client videos, answered support tickets'}
                     defaultValue={entry.note || ''}
                     disabled={fieldsDisabled}
                     title={lockedTitle}
