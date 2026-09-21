@@ -62,7 +62,7 @@ const buildHtml = () => {
             <strong>Selmina</strong> ili <strong>Elvisa</strong> kako bi unos bio odobren naknadno.
           </p>
           <p style="margin:0 0 28px;">
-            <a href="${link}" style="display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;padding:12px 22px;border-radius:8px;font-weight:600;font-size:15px;">Unesi radne sate</a>
+            <a href="${link}" style="display:inline-block;background:#1e3a5f;color:#ffffff;text-decoration:none;padding:12px 22px;border-radius:8px;font-weight:600;font-size:15px;">Unesi radne sate</a>
           </p>
           <p style="margin:0;font-size:13px;color:#64748b;line-height:1.6;">
             Hvala na saradnji,<br/>AB Media Team

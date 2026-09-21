@@ -106,7 +106,7 @@ serve(async (req) => {
         </div>
         <div style="background: #ffffff; padding: 24px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 12px 12px;">
           <div style="background: ${toggleType === "paid" ? (newValue ? "#ecfdf5" : "#fef2f2") : (newValue ? "#eff6ff" : "#fef2f2")}; padding: 16px; border-radius: 8px; margin-bottom: 20px; text-align: center;">
-            <p style="font-size: 18px; font-weight: bold; margin: 0; color: ${toggleType === "paid" ? (newValue ? "#059669" : "#dc2626") : (newValue ? "#2563eb" : "#dc2626")};">
+            <p style="font-size: 18px; font-weight: bold; margin: 0; color: ${toggleType === "paid" ? (newValue ? "#059669" : "#dc2626") : (newValue ? "#1e3a5f" : "#dc2626")};">
               ${toggleLabel}
             </p>
           </div>

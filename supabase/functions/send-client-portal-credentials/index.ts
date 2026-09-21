@@ -79,7 +79,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     const htmlBody = `
       <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
-        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; padding: 30px; margin-bottom: 30px;">
+        <div style="background: linear-gradient(135deg, #1e3a5f 0%, #3b6fa0 100%); border-radius: 12px; padding: 30px; margin-bottom: 30px;">
           <h1 style="color: white; margin: 0; font-size: 24px;">
             ${isResend ? "🔑 Updated Credentials" : "🎉 Welcome to Your Client Portal"}
           </h1>
@@ -100,7 +100,7 @@ const handler = async (req: Request): Promise<Response> => {
           <table style="width: 100%; border-collapse: collapse;">
             <tr>
               <td style="padding: 8px 0; color: #666; font-weight: 600;">Portal URL:</td>
-              <td style="padding: 8px 0;"><a href="${portalUrl}" style="color: #667eea; text-decoration: none;">${portalUrl}</a></td>
+              <td style="padding: 8px 0;"><a href="${portalUrl}" style="color: #1e3a5f; text-decoration: none;">${portalUrl}</a></td>
             </tr>
             <tr>
               <td style="padding: 8px 0; color: #666; font-weight: 600;">Email:</td>
@@ -114,7 +114,7 @@ const handler = async (req: Request): Promise<Response> => {
         </div>
         
         <div style="text-align: center; margin: 30px 0;">
-          <a href="${portalUrl}" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; display: inline-block;">
+          <a href="${portalUrl}" style="background: linear-gradient(135deg, #1e3a5f 0%, #3b6fa0 100%); color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; display: inline-block;">
             Go to Portal →
           </a>
         </div>
