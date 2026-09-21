@@ -355,27 +355,43 @@ const Invoices = () => {
     ].join(' ').toLowerCase();
   };
 
-  const filteredInvoices = invoices.filter(invoice => {
-    const search = filterText.toLowerCase();
-    const linkedOrder = (invoice as any).order;
-    return (
-      invoice.invoice_number.toLowerCase().includes(search) ||
-      (invoice.bill_to_name || invoice.client?.name)?.toLowerCase().includes(search) ||
-      (invoice.bill_to_email || invoice.client?.email)?.toLowerCase().includes(search) ||
-      invoice.client?.contact_person?.toLowerCase().includes(search) ||
-      invoice.status.toLowerCase().includes(search) ||
-      invoice.currency?.toLowerCase().includes(search) ||
-      invoice.total_amount?.toString().includes(search) ||
-      invoice.notes?.toLowerCase().includes(search) ||
-      (invoice as any).order_id?.toLowerCase().includes(search) ||
-      linkedOrder?.company_name?.toLowerCase().includes(search) ||
-      linkedOrder?.contact_email?.toLowerCase().includes(search) ||
-      linkedOrder?.assigned_to_name?.toLowerCase().includes(search) ||
-      getDateSearchText(linkedOrder?.created_at).includes(search) ||
-      getDateSearchText(invoice.issue_date).includes(search) ||
-      getDateSearchText(invoice.created_at).includes(search)
-    );
-  });
+  // Build a searchable text blob per invoice once, instead of on every keystroke
+  const searchIndex = useMemo(() => {
+    const map = new Map<string, string>();
+    invoices.forEach(invoice => {
+      const linkedOrder = (invoice as any).order;
+      map.set(
+        invoice.id,
+        [
+          invoice.invoice_number,
+          invoice.bill_to_name || invoice.client?.name,
+          invoice.bill_to_email || invoice.client?.email,
+          invoice.client?.contact_person,
+          invoice.status,
+          invoice.currency,
+          invoice.total_amount?.toString(),
+          invoice.notes,
+          (invoice as any).order_id,
+          linkedOrder?.company_name,
+          linkedOrder?.contact_email,
+          linkedOrder?.assigned_to_name,
+          getDateSearchText(linkedOrder?.created_at),
+          getDateSearchText(invoice.issue_date),
+          getDateSearchText(invoice.created_at),
+        ]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase()
+      );
+    });
+    return map;
+  }, [invoices]);
+
+  const filteredInvoices = useMemo(() => {
+    const search = debouncedFilter.trim().toLowerCase();
+    if (!search) return invoices;
+    return invoices.filter(invoice => (searchIndex.get(invoice.id) || '').includes(search));
+  }, [invoices, searchIndex, debouncedFilter]);
 
   const getInvoiceCreatedTime = (invoice: Invoice) => {
     const createdTime = new Date(invoice.created_at).getTime();
