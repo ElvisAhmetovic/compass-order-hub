@@ -60,6 +60,15 @@ const Invoices = () => {
   const [loading, setLoading] = useState(true);
   const [filterText, setFilterText] = useState("");
   const [sortOption, setSortOption] = useState<string>("newest");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [periodFilter, setPeriodFilter] = useState<string>("all");
+  const [customFrom, setCustomFrom] = useState<Date | undefined>(undefined);
+  const [customTo, setCustomTo] = useState<Date | undefined>(undefined);
+  // Selected month for "Paid" card (format: YYYY-MM, default = current month)
+  const [selectedPaidMonth, setSelectedPaidMonth] = useState<string>(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  });
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   // Calculate overdue invoices
   const overdueInvoices = invoices.filter(invoice => {
