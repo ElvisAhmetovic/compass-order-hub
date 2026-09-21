@@ -46,6 +46,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { nextReminderForInvoice } from "@/utils/reminderInterval";
 import { getOutstandingAmount, getPaidAmount } from "@/utils/invoiceBalance";
 
+const PAGE_SIZE = 25;
+
 const INVOICE_STATUSES = [
   "draft",
   "sent", 
@@ -63,6 +65,13 @@ const Invoices = () => {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterText, setFilterText] = useState("");
+  const [debouncedFilter, setDebouncedFilter] = useState("");
+  const [page, setPage] = useState(1);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedFilter(filterText), 250);
+    return () => clearTimeout(timer);
+  }, [filterText]);
   const [sortOption, setSortOption] = useState<string>("newest");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [periodFilter, setPeriodFilter] = useState<string>("all");
@@ -355,27 +364,43 @@ const Invoices = () => {
     ].join(' ').toLowerCase();
   };
 
-  const filteredInvoices = invoices.filter(invoice => {
-    const search = filterText.toLowerCase();
-    const linkedOrder = (invoice as any).order;
-    return (
-      invoice.invoice_number.toLowerCase().includes(search) ||
-      (invoice.bill_to_name || invoice.client?.name)?.toLowerCase().includes(search) ||
-      (invoice.bill_to_email || invoice.client?.email)?.toLowerCase().includes(search) ||
-      invoice.client?.contact_person?.toLowerCase().includes(search) ||
-      invoice.status.toLowerCase().includes(search) ||
-      invoice.currency?.toLowerCase().includes(search) ||
-      invoice.total_amount?.toString().includes(search) ||
-      invoice.notes?.toLowerCase().includes(search) ||
-      (invoice as any).order_id?.toLowerCase().includes(search) ||
-      linkedOrder?.company_name?.toLowerCase().includes(search) ||
-      linkedOrder?.contact_email?.toLowerCase().includes(search) ||
-      linkedOrder?.assigned_to_name?.toLowerCase().includes(search) ||
-      getDateSearchText(linkedOrder?.created_at).includes(search) ||
-      getDateSearchText(invoice.issue_date).includes(search) ||
-      getDateSearchText(invoice.created_at).includes(search)
-    );
-  });
+  // Build a searchable text blob per invoice once, instead of on every keystroke
+  const searchIndex = useMemo(() => {
+    const map = new Map<string, string>();
+    invoices.forEach(invoice => {
+      const linkedOrder = (invoice as any).order;
+      map.set(
+        invoice.id,
+        [
+          invoice.invoice_number,
+          invoice.bill_to_name || invoice.client?.name,
+          invoice.bill_to_email || invoice.client?.email,
+          invoice.client?.contact_person,
+          invoice.status,
+          invoice.currency,
+          invoice.total_amount?.toString(),
+          invoice.notes,
+          (invoice as any).order_id,
+          linkedOrder?.company_name,
+          linkedOrder?.contact_email,
+          linkedOrder?.assigned_to_name,
+          getDateSearchText(linkedOrder?.created_at),
+          getDateSearchText(invoice.issue_date),
+          getDateSearchText(invoice.created_at),
+        ]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase()
+      );
+    });
+    return map;
+  }, [invoices]);
+
+  const filteredInvoices = useMemo(() => {
+    const search = debouncedFilter.trim().toLowerCase();
+    if (!search) return invoices;
+    return invoices.filter(invoice => (searchIndex.get(invoice.id) || '').includes(search));
+  }, [invoices, searchIndex, debouncedFilter]);
 
   const getInvoiceCreatedTime = (invoice: Invoice) => {
     const createdTime = new Date(invoice.created_at).getTime();
@@ -463,6 +488,17 @@ const Invoices = () => {
     () => sortedInvoices.reduce((sum, inv) => sum + (inv.total_amount || 0), 0),
     [sortedInvoices]
   );
+
+  const totalPages = Math.max(1, Math.ceil(sortedInvoices.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const pagedInvoices = useMemo(
+    () => sortedInvoices.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE),
+    [sortedInvoices, currentPage]
+  );
+
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedFilter, statusFilter, periodFilter, customFrom, customTo, sortOption]);
 
   const filtersActive = statusFilter !== 'all' || periodFilter !== 'all';
 
@@ -661,8 +697,10 @@ const Invoices = () => {
                                 {customFrom ? format(customFrom, "dd.MM.yyyy") : "From"}
                               </Button>
                             </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
-                              <Calendar mode="single" selected={customFrom} onSelect={setCustomFrom} initialFocus className={cn("p-3 pointer-events-auto")} />
+                            <PopoverContent className="w-auto p-0 overflow-hidden" align="start" side="bottom" sideOffset={4} avoidCollisions={false}>
+                              <div className="h-[350px]">
+                                <Calendar mode="single" selected={customFrom} onSelect={setCustomFrom} showOutsideDays fixedWeeks initialFocus className={cn("p-3 pointer-events-auto")} />
+                              </div>
                             </PopoverContent>
                           </Popover>
                           <span className="text-muted-foreground text-sm">→</span>
@@ -673,8 +711,10 @@ const Invoices = () => {
                                 {customTo ? format(customTo, "dd.MM.yyyy") : "To"}
                               </Button>
                             </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
-                              <Calendar mode="single" selected={customTo} onSelect={setCustomTo} initialFocus className={cn("p-3 pointer-events-auto")} />
+                            <PopoverContent className="w-auto p-0 overflow-hidden" align="start" side="bottom" sideOffset={4} avoidCollisions={false}>
+                              <div className="h-[350px]">
+                                <Calendar mode="single" selected={customTo} onSelect={setCustomTo} showOutsideDays fixedWeeks initialFocus className={cn("p-3 pointer-events-auto")} />
+                              </div>
                             </PopoverContent>
                           </Popover>
                           {(customFrom || customTo) && (
@@ -731,7 +771,7 @@ const Invoices = () => {
                             <TableCell colSpan={9} className="text-center py-8">No invoices found</TableCell>
                           </TableRow>
                         ) : (
-                          sortedInvoices.map((invoice) => (
+                          pagedInvoices.map((invoice) => (
                             <TableRow key={invoice.id}>
                               <TableCell>
                                 <div className="flex items-center gap-2">
@@ -970,6 +1010,31 @@ const Invoices = () => {
                         )}
                       </TableBody>
                     </Table>
+                    {totalPages > 1 && (
+                      <div className="flex items-center justify-between pt-4">
+                        <span className="text-sm text-muted-foreground">
+                          Page {currentPage} of {totalPages}
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setPage(p => Math.max(1, p - 1))}
+                            disabled={currentPage === 1}
+                          >
+                            Previous
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                            disabled={currentPage === totalPages}
+                          >
+                            Next
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </TabsContent>
