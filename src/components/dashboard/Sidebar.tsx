@@ -243,7 +243,7 @@ const Sidebar = () => {
           key={`${item.href}-${item.label}`}
           title="Restricted to authorized admins"
           aria-disabled="true"
-          className="flex items-center justify-between px-6 py-3 text-foreground/40 cursor-not-allowed select-none"
+          className="flex items-center justify-between px-6 py-3 text-sidebar-foreground/40 cursor-not-allowed select-none"
         >
           <div className="flex items-center">
             <Icon className="w-5 h-5 mr-3" />
@@ -259,8 +259,8 @@ const Sidebar = () => {
         key={`${item.href}-${item.label}`}
         to={item.href}
         className={cn(
-          "flex items-center justify-between px-6 py-3 text-foreground/70 hover:bg-accent hover:text-foreground transition-colors",
-          isActive && "bg-primary/10 text-primary border-r-2 border-primary"
+          "flex items-center justify-between px-6 py-3 text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors",
+          isActive && "bg-sidebar-accent text-sidebar-foreground border-r-2 border-sidebar-primary"
         )}
       >
         <div className="flex items-center">
@@ -291,18 +291,18 @@ const Sidebar = () => {
   };
 
   return (
-    <div className="w-64 bg-card border-r border-border min-h-screen">
+    <div className="w-64 bg-sidebar border-r border-sidebar-border min-h-screen">
       <div className="p-6">
         <a
           href="https://www.abm-team.com/en"
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-block text-xl font-semibold text-foreground hover:text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded transition-colors"
+          className="inline-block text-xl font-bold font-heading text-sidebar-foreground hover:text-sidebar-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring rounded transition-colors"
         >
           AB Media Team CRM
         </a>
-        <div className="mt-2 text-muted-foreground">
-          <div className="font-mono text-lg font-semibold text-foreground">
+        <div className="mt-2 text-sidebar-foreground/60">
+          <div className="font-mono text-lg font-semibold text-sidebar-foreground">
             {currentTime.toLocaleTimeString('de-DE', { timeZone: 'Europe/Berlin' })}
           </div>
           <div className="text-xs">
@@ -313,7 +313,7 @@ const Sidebar = () => {
       </div>
       <nav className="mt-6">
         {roleFilteredItems.length === 0 ? (
-          <div className="px-6 py-3 text-muted-foreground text-sm">
+          <div className="px-6 py-3 text-sidebar-foreground/60 text-sm">
             No menu items available
             <br />
             Role: {user?.role || 'No role'}
@@ -323,12 +323,12 @@ const Sidebar = () => {
             {mainItems.map(renderItem)}
 
             {showSocialGroup && (
-              <div className="border-t border-border mt-2">
+              <div className="border-t border-sidebar-border mt-2">
                 <button
                   onClick={() => setSocialOpen(!socialOpen)}
                   className={cn(
-                    "flex items-center justify-between w-full px-6 py-3 text-foreground/70 hover:bg-accent hover:text-foreground transition-colors",
-                    socialActive && "text-primary"
+                    "flex items-center justify-between w-full px-6 py-3 text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors",
+                    socialActive && "text-sidebar-foreground"
                   )}
                 >
                   <div className="flex items-center">
@@ -338,7 +338,7 @@ const Sidebar = () => {
                   <ChevronDown className={cn("w-4 h-4 transition-transform", socialOpen && "rotate-180")} />
                 </button>
                 {socialOpen && (
-                  <div className="bg-muted/30">
+                  <div className="bg-sidebar-accent/40">
                     {socialItems.map((item) => {
                       const Icon = item.icon;
                       const isActive = location.pathname === item.href;
@@ -347,8 +347,8 @@ const Sidebar = () => {
                           key={item.href}
                           to={item.href}
                           className={cn(
-                            "flex items-center px-10 py-2.5 text-sm text-foreground/70 hover:bg-accent hover:text-foreground transition-colors",
-                            isActive && "bg-primary/10 text-primary border-r-2 border-primary"
+                            "flex items-center px-10 py-2.5 text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors",
+                            isActive && "bg-sidebar-accent text-sidebar-foreground border-r-2 border-sidebar-primary"
                           )}
                         >
                           <Icon className="w-4 h-4 mr-3" />
@@ -362,10 +362,10 @@ const Sidebar = () => {
             )}
 
             {moreItems.length > 0 && (
-              <div className="border-t border-border mt-2">
+              <div className="border-t border-sidebar-border mt-2">
                 <button
                   onClick={() => setMoreOpen(!moreOpen)}
-                  className="flex items-center justify-between w-full px-6 py-3 text-foreground/70 hover:bg-accent hover:text-foreground transition-colors"
+                  className="flex items-center justify-between w-full px-6 py-3 text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors"
                 >
                   <div className="flex items-center">
                     <MoreHorizontal className="w-5 h-5 mr-3" />
@@ -374,7 +374,7 @@ const Sidebar = () => {
                   <ChevronDown className={cn("w-4 h-4 transition-transform", moreOpen && "rotate-180")} />
                 </button>
                 {moreOpen && (
-                  <div className="bg-muted/30">
+                  <div className="bg-sidebar-accent/40">
                     {moreItems.map(renderItem)}
                   </div>
                 )}
