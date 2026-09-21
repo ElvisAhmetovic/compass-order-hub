@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { ChevronDown, Info, Send } from "lucide-react";
+import { CheckCircle2, ChevronDown, Info, Loader2, Send } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { 
   Dialog,
@@ -89,6 +89,20 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
   const [vatPercentage, setVatPercentage] = useState(20);
   const [offerLanguage, setOfferLanguage] = useState("en");
   const [additionalEmailsOpen, setAdditionalEmailsOpen] = useState(false);
+  const [actionFeedback, setActionFeedback] = useState<{
+    action: "order" | "offer";
+    status: "working" | "success";
+  } | null>(null);
+
+  const isProcessing = isSubmitting || isSendingOffer;
+
+  const waitForSuccessMessage = () => new Promise((resolve) => window.setTimeout(resolve, 1100));
+
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (!nextOpen && !isProcessing) {
+      onClose();
+    }
+  };
 
   const OFFER_LANGUAGES: { code: string; label: string }[] = [
     { code: "en", label: "English" },
@@ -163,6 +177,11 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
       setSelectedInventoryItems([]);
       setNotificationEmails(['']);
       setAdditionalEmailsOpen(false);
+      setActionFeedback(null);
+    }
+
+    if (!open) {
+      setActionFeedback(null);
     }
   }, [open, user, form]);
 
@@ -216,6 +235,7 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
     }
 
     setIsSubmitting(true);
+    setActionFeedback({ action: "order", status: "working" });
     
     try {
       // Format and validate the company link
@@ -413,11 +433,6 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
         }
 
         console.log('Order confirmation emails sent successfully:', emailResult);
-        
-        toast({
-          title: "Order created and emails sent",
-          description: `Created order for ${values.companyName} and sent notifications to ${uniqueEmails.length} email(s) including default team addresses.`,
-        });
 
       } catch (emailError: any) {
         console.error('Exception while sending notification emails:', emailError);
@@ -461,6 +476,9 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
         }
       }
       
+      setActionFeedback({ action: "order", status: "success" });
+      await waitForSuccessMessage();
+
       form.reset();
       setSelectedInventoryItems([]);
       setNotificationEmails(['']);
@@ -473,6 +491,7 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
       window.dispatchEvent(new CustomEvent('orderStatusChanged'));
     } catch (error: any) {
       console.error("Error creating order:", error);
+      setActionFeedback(null);
       toast({
         variant: "destructive",
         title: "Error creating order",
@@ -486,8 +505,37 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
   const priorities: OrderPriority[] = ["low", "medium", "high", "urgent"];
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent allowOutsideClose className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent allowOutsideClose={!isProcessing} className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
+        {actionFeedback && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/95 px-6 backdrop-blur-sm">
+            <div className="flex max-w-sm flex-col items-center text-center">
+              {actionFeedback.status === "working" ? (
+                <Loader2 className="mb-4 h-10 w-10 animate-spin text-primary" aria-hidden="true" />
+              ) : (
+                <CheckCircle2 className="mb-4 h-12 w-12 text-primary" aria-hidden="true" />
+              )}
+              <h3 className="text-lg font-semibold text-foreground">
+                {actionFeedback.status === "working"
+                  ? actionFeedback.action === "order"
+                    ? "Creating order..."
+                    : "Sending offer..."
+                  : actionFeedback.action === "order"
+                    ? "Order created successfully"
+                    : "Offer sent successfully"}
+              </h3>
+              <p className="mt-2 text-sm text-muted-foreground">
+                {actionFeedback.status === "working"
+                  ? actionFeedback.action === "order"
+                    ? "Please wait while the order is saved and notifications are prepared."
+                    : "Please wait while the offer is saved and sent to the client."
+                  : actionFeedback.action === "order"
+                    ? "The new order is ready and this window will close automatically."
+                    : "The client offer was sent and this window will close automatically."}
+              </p>
+            </div>
+          </div>
+        )}
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold">Create New Order</DialogTitle>
         </DialogHeader>
@@ -977,6 +1025,7 @@ Additional internal comments...`}
                      ? Math.round((grossPrice / (1 + vatPercentage / 100)) * 100) / 100
                      : grossPrice;
                    setIsSendingOffer(true);
+                   setActionFeedback({ action: "offer", status: "working" });
                    // Offers stay valid for 30 days from the moment they are sent
                    const offerExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
                   try {
@@ -1042,13 +1091,16 @@ Additional internal comments...`}
                       console.error('Failed to sync offer company for autofill:', syncErr);
                     }
 
-                    toast({ title: "✅ Offer Sent", description: `Offer sent to ${values.contactEmail}` });
+                    setActionFeedback({ action: "offer", status: "success" });
+                    await waitForSuccessMessage();
+
                     form.reset();
                     setSelectedInventoryItems([]);
                     setNotificationEmails(['']);
                     onClose();
                   } catch (err: any) {
                     console.error('Error sending offer:', err);
+                    setActionFeedback(null);
                     toast({ variant: "destructive", title: "Failed to send offer", description: err.message });
                   } finally {
                     setIsSendingOffer(false);
