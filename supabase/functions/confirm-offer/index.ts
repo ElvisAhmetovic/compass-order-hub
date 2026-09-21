@@ -22,11 +22,12 @@ serve(async (req) => {
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
-    // If action is 'fetch', just return the offer details
+    // If action is 'fetch', return ONLY client-safe fields.
+    // Never expose order_data (contains internal notes) or internal metadata.
     if (action === 'fetch') {
       const { data: offer, error } = await supabase
         .from('offers')
-        .select('*')
+        .select('id, client_name, client_email, client_phone, client_address, company_name, description, price, currency, confirmed_at, expires_at, order_data')
         .eq('id', offerId)
         .single();
 
@@ -34,7 +35,25 @@ serve(async (req) => {
         throw new Error('Offer not found');
       }
 
-      return new Response(JSON.stringify({ success: true, offer }), {
+      const od = (offer.order_data || {}) as Record<string, unknown>;
+      const safeOffer = {
+        id: offer.id,
+        client_name: offer.client_name,
+        client_email: offer.client_email,
+        client_phone: offer.client_phone,
+        client_address: offer.client_address,
+        company_name: offer.company_name,
+        description: offer.description,
+        price: offer.price,
+        currency: offer.currency,
+        confirmed_at: offer.confirmed_at,
+        expires_at: offer.expires_at,
+        vatEnabled: od.vatEnabled ?? false,
+        vatPercentage: od.vatPercentage ?? 0,
+        netPrice: od.netPrice ?? null,
+      };
+
+      return new Response(JSON.stringify({ success: true, offer: safeOffer }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }

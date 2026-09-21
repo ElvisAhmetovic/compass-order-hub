@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.8";
 import { Resend } from "npm:resend@2.0.0";
+import { isTeamEmail } from "../_shared/teamEmails.ts";
 
 const resend = new Resend((Deno.env.get("RESEND_API_KEY_ABMEDIA") ?? Deno.env.get("RESEND_API_KEY")));
 
@@ -107,7 +108,8 @@ const handler = async (req: Request): Promise<Response> => {
       timeStyle: "short",
     });
 
-    const emailHtml = `
+    // Internal notes must only reach internal team recipients.
+    const buildEmailHtml = (includeInternalNotes: boolean) => `
 <!DOCTYPE html>
 <html>
 <head>
@@ -176,7 +178,7 @@ const handler = async (req: Request): Promise<Response> => {
     </p>
   </div>
 
-  ${order.internal_notes ? `
+  ${includeInternalNotes && order.internal_notes ? `
   <!-- Internal Notes -->
   <div style="background: #fee2e2; padding: 20px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #dc2626;">
     <h3 style="margin: 0 0 10px 0; color: #7f1d1d; font-size: 16px;">🔒 Internal Notes:</h3>
@@ -211,7 +213,7 @@ const handler = async (req: Request): Promise<Response> => {
           from: "AB Media Team <noreply@abm-team.com>",
           to: [email],
           subject: emailSubject,
-          html: emailHtml,
+          html: buildEmailHtml(isTeamEmail(email)),
         });
 
         console.log(`Email sent to ${email}:`, emailResponse);

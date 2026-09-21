@@ -1,6 +1,7 @@
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
+import { isTeamEmail } from "../_shared/teamEmails.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -142,7 +143,8 @@ const handler = async (req: Request): Promise<Response> => {
       `Order Update${updateDateStr} - ${orderData.company_name}` : 
       `New Order Received - ${orderData.company_name}`;
     
-    const emailHtml = `
+    // Internal notes must only reach internal team recipients.
+    const buildEmailHtml = (includeInternalNotes: boolean) => `
       <!DOCTYPE html>
       <html lang="en">
       <head>
@@ -295,7 +297,7 @@ const handler = async (req: Request): Promise<Response> => {
           </div>
         </div>` : ''}
 
-        ${orderData.internal_notes ? `
+        ${includeInternalNotes && orderData.internal_notes ? `
         <!-- Internal Notes Section -->
         <div style="background-color: #fef3c7; padding: 25px; border-radius: 8px; border: 1px solid #f59e0b; margin-bottom: 25px;">
           <h3 style="color: #92400e; margin-top: 0; margin-bottom: 20px; font-size: 18px; border-bottom: 2px solid #f59e0b; padding-bottom: 10px; display: flex; align-items: center;">
@@ -332,7 +334,7 @@ const handler = async (req: Request): Promise<Response> => {
           from: "AB Media Team <noreply@abm-team.com>",
           to: [email],
           subject: emailSubject,
-          html: emailHtml,
+          html: buildEmailHtml(isTeamEmail(email)),
         });
 
         console.log(`Email sent successfully to ${email}:`, emailResponse);
