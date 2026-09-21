@@ -756,6 +756,19 @@ const Invoices = () => {
                         <span>
                           Showing {sortedInvoices.length} of {invoices.length} invoices · Total €{visibleTotal.toFixed(2)}
                         </span>
+                        {activeRangeLabel && (
+                          <Badge variant="secondary" className="gap-1 font-normal">
+                            {activeRangeLabel}
+                            <button
+                              type="button"
+                              aria-label="Clear date range"
+                              className="ml-1 opacity-70 hover:opacity-100"
+                              onClick={() => { setPeriodFilter('all'); setCustomFrom(undefined); setCustomTo(undefined); }}
+                            >
+                              ×
+                            </button>
+                          </Badge>
+                        )}
                         {filtersActive && (
                           <Button variant="ghost" size="sm" onClick={clearFilters}>
                             Clear filters
