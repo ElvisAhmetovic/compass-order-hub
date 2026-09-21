@@ -46,6 +46,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { nextReminderForInvoice } from "@/utils/reminderInterval";
 import { getOutstandingAmount, getPaidAmount } from "@/utils/invoiceBalance";
 
+const PAGE_SIZE = 25;
+
 const INVOICE_STATUSES = [
   "draft",
   "sent", 
