@@ -29,10 +29,10 @@ const Index = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+      <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
         <div className="text-center">
-          <h1 className="text-4xl font-bold mb-4">Order Flow Compass</h1>
-          <p className="text-xl text-gray-600 mb-4">Loading your application...</p>
+          <h1 className="mb-4 font-heading text-4xl font-bold text-primary">AB Media Team CRM</h1>
+          <p className="mb-4 text-xl text-muted-foreground">Loading your application...</p>
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
         </div>
       </div>
