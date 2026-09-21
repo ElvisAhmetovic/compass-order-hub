@@ -1025,6 +1025,7 @@ Additional internal comments...`}
                      ? Math.round((grossPrice / (1 + vatPercentage / 100)) * 100) / 100
                      : grossPrice;
                    setIsSendingOffer(true);
+                   setActionFeedback({ action: "offer", status: "working" });
                    // Offers stay valid for 30 days from the moment they are sent
                    const offerExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
                   try {
