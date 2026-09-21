@@ -731,7 +731,7 @@ const Invoices = () => {
                             <TableCell colSpan={9} className="text-center py-8">No invoices found</TableCell>
                           </TableRow>
                         ) : (
-                          sortedInvoices.map((invoice) => (
+                          pagedInvoices.map((invoice) => (
                             <TableRow key={invoice.id}>
                               <TableCell>
                                 <div className="flex items-center gap-2">
