@@ -27,7 +27,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectSeparator, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { useNotificationSound } from "@/hooks/useNotificationSound";
@@ -440,8 +440,18 @@ const Invoices = () => {
           from: customFrom ? startOfDay(customFrom) : null,
           to: customTo ? endOfDay(customTo) : null,
         };
-      default:
+      default: {
+        if (periodFilter.startsWith('month:')) {
+          const [year, month] = periodFilter.slice(6).split('-').map(Number);
+          if (year && month) {
+            return {
+              from: new Date(year, month - 1, 1),
+              to: endOfDay(new Date(year, month, 0)),
+            };
+          }
+        }
         return { from: null as Date | null, to: null as Date | null };
+      }
     }
   }, [periodFilter, customFrom, customTo]);
 
@@ -537,12 +547,21 @@ const Invoices = () => {
   // Picking a month on the Paid card also drives the list below
   const handlePaidMonthChange = (value: string) => {
     setSelectedPaidMonth(value);
-    const [year, month] = value.split('-').map(Number);
-    setCustomFrom(new Date(year, month - 1, 1));
-    setCustomTo(new Date(year, month, 0));
-    setPeriodFilter('custom');
+    setCustomFrom(undefined);
+    setCustomTo(undefined);
+    setPeriodFilter(`month:${value}`);
     setStatusFilter('paid');
   };
+
+  const activeRangeLabel = useMemo(() => {
+    if (periodFilter.startsWith('month:')) {
+      return monthOptions.find(o => o.value === periodFilter.slice(6))?.label || null;
+    }
+    if (periodFilter === 'custom' && (customFrom || customTo)) {
+      return `${customFrom ? format(customFrom, 'dd.MM.yyyy') : '…'} → ${customTo ? format(customTo, 'dd.MM.yyyy') : '…'}`;
+    }
+    return null;
+  }, [periodFilter, monthOptions, customFrom, customTo]);
 
   return (
     <div className="flex min-h-screen">
@@ -642,15 +661,16 @@ const Invoices = () => {
                               <SelectItem value="partially_paid">Partially paid</SelectItem>
                               <SelectItem value="overdue">Overdue</SelectItem>
                               <SelectItem value="cancelled">Cancelled</SelectItem>
+                              <SelectItem value="refunded">Refunded</SelectItem>
                             </SelectContent>
                           </Select>
 
                           <Select value={periodFilter} onValueChange={setPeriodFilter}>
-                            <SelectTrigger className="w-[170px]">
+                            <SelectTrigger className="w-[190px]">
                               <CalendarIcon className="h-4 w-4 mr-2 opacity-50" />
                               <SelectValue placeholder="Period" />
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent className="max-h-[320px]">
                               <SelectItem value="all">All time</SelectItem>
                               <SelectItem value="today">Today</SelectItem>
                               <SelectItem value="this-week">This week</SelectItem>
@@ -659,6 +679,13 @@ const Invoices = () => {
                               <SelectItem value="this-year">This year</SelectItem>
                               <SelectItem value="last-year">Last year</SelectItem>
                               <SelectItem value="custom">Custom range</SelectItem>
+                              <SelectSeparator />
+                              <SelectGroup>
+                                <SelectLabel>Specific month</SelectLabel>
+                                {monthOptions.map(opt => (
+                                  <SelectItem key={opt.value} value={`month:${opt.value}`}>{opt.label}</SelectItem>
+                                ))}
+                              </SelectGroup>
                             </SelectContent>
                           </Select>
 
@@ -729,6 +756,19 @@ const Invoices = () => {
                         <span>
                           Showing {sortedInvoices.length} of {invoices.length} invoices · Total €{visibleTotal.toFixed(2)}
                         </span>
+                        {activeRangeLabel && (
+                          <Badge variant="secondary" className="gap-1 font-normal">
+                            {activeRangeLabel}
+                            <button
+                              type="button"
+                              aria-label="Clear date range"
+                              className="ml-1 opacity-70 hover:opacity-100"
+                              onClick={() => { setPeriodFilter('all'); setCustomFrom(undefined); setCustomTo(undefined); }}
+                            >
+                              ×
+                            </button>
+                          </Badge>
+                        )}
                         {filtersActive && (
                           <Button variant="ghost" size="sm" onClick={clearFilters}>
                             Clear filters
@@ -768,7 +808,22 @@ const Invoices = () => {
                           </TableRow>
                         ) : sortedInvoices.length === 0 ? (
                           <TableRow>
-                            <TableCell colSpan={9} className="text-center py-8">No invoices found</TableCell>
+                            <TableCell colSpan={9} className="text-center py-8">
+                              {filtersActive || debouncedFilter ? (
+                                <div className="flex flex-col items-center gap-2">
+                                  <span className="text-muted-foreground">No invoices match these filters.</span>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => { clearFilters(); setFilterText(''); }}
+                                  >
+                                    Clear filters
+                                  </Button>
+                                </div>
+                              ) : (
+                                "No invoices found"
+                              )}
+                            </TableCell>
                           </TableRow>
                         ) : (
                           pagedInvoices.map((invoice) => (
