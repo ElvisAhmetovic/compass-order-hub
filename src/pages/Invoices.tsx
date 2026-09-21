@@ -369,22 +369,65 @@ const Invoices = () => {
     return Number.isNaN(createdTime) ? new Date(invoice.issue_date).getTime() : createdTime;
   };
 
+  const dateRange = useMemo(() => {
+    const now = new Date();
+    const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    const endOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999);
+
+    switch (periodFilter) {
+      case 'today':
+        return { from: startOfDay(now), to: endOfDay(now) };
+      case 'this-week': {
+        const day = (now.getDay() + 6) % 7; // Monday = 0
+        const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day);
+        const sunday = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 6);
+        return { from: startOfDay(monday), to: endOfDay(sunday) };
+      }
+      case 'this-month':
+        return {
+          from: new Date(now.getFullYear(), now.getMonth(), 1),
+          to: endOfDay(new Date(now.getFullYear(), now.getMonth() + 1, 0)),
+        };
+      case 'last-month':
+        return {
+          from: new Date(now.getFullYear(), now.getMonth() - 1, 1),
+          to: endOfDay(new Date(now.getFullYear(), now.getMonth(), 0)),
+        };
+      case 'this-year':
+        return { from: new Date(now.getFullYear(), 0, 1), to: endOfDay(new Date(now.getFullYear(), 11, 31)) };
+      case 'last-year':
+        return { from: new Date(now.getFullYear() - 1, 0, 1), to: endOfDay(new Date(now.getFullYear() - 1, 11, 31)) };
+      case 'custom':
+        return {
+          from: customFrom ? startOfDay(customFrom) : null,
+          to: customTo ? endOfDay(customTo) : null,
+        };
+      default:
+        return { from: null as Date | null, to: null as Date | null };
+    }
+  }, [periodFilter, customFrom, customTo]);
+
   const sortedInvoices = useMemo(() => {
     let result = [...filteredInvoices];
 
-    // Status filters
-    if (['sent', 'draft', 'paid'].includes(sortOption)) {
-      result = result.filter(inv => inv.status === sortOption);
+    if (statusFilter !== 'all') {
+      result = result.filter(inv => inv.status === statusFilter);
+    }
+
+    if (dateRange.from || dateRange.to) {
+      result = result.filter(inv => {
+        const issued = new Date(inv.issue_date).getTime();
+        if (Number.isNaN(issued)) return false;
+        if (dateRange.from && issued < dateRange.from.getTime()) return false;
+        if (dateRange.to && issued > dateRange.to.getTime()) return false;
+        return true;
+      });
     }
 
     result.sort((a, b) => {
       switch (sortOption) {
         case 'newest':
           return getInvoiceCreatedTime(b) - getInvoiceCreatedTime(a);
-        case 'sent':
-        case 'draft':
-        case 'paid':
-          return new Date(b.issue_date).getTime() - new Date(a.issue_date).getTime();
         case 'oldest':
           return new Date(a.issue_date).getTime() - new Date(b.issue_date).getTime();
         case 'inv-low':
@@ -401,17 +444,25 @@ const Invoices = () => {
     });
 
     return result;
-  }, [filteredInvoices, sortOption]);
+  }, [filteredInvoices, sortOption, statusFilter, dateRange]);
+
+  const visibleTotal = useMemo(
+    () => sortedInvoices.reduce((sum, inv) => sum + (inv.total_amount || 0), 0),
+    [sortedInvoices]
+  );
+
+  const filtersActive = statusFilter !== 'all' || periodFilter !== 'all';
+
+  const clearFilters = () => {
+    setStatusFilter('all');
+    setPeriodFilter('all');
+    setCustomFrom(undefined);
+    setCustomTo(undefined);
+  };
 
   const totalOutstanding = invoices
     .filter(inv => inv.status === 'sent' || inv.status === 'partially_paid' || inv.status === 'overdue')
     .reduce((sum, inv) => sum + getOutstandingAmount(inv), 0);
-
-  // Selected month for "Paid" card (format: YYYY-MM, default = current month)
-  const [selectedPaidMonth, setSelectedPaidMonth] = useState<string>(() => {
-    const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  });
 
   // Build last 24 months options
   const monthOptions = useMemo(() => {
@@ -433,6 +484,16 @@ const Invoices = () => {
       return inv.status === 'paid' && key === selectedPaidMonth;
     })
     .reduce((sum, inv) => sum + inv.total_amount, 0);
+
+  // Picking a month on the Paid card also drives the list below
+  const handlePaidMonthChange = (value: string) => {
+    setSelectedPaidMonth(value);
+    const [year, month] = value.split('-').map(Number);
+    setCustomFrom(new Date(year, month - 1, 1));
+    setCustomTo(new Date(year, month, 0));
+    setPeriodFilter('custom');
+    setStatusFilter('paid');
+  };
 
   return (
     <div className="flex min-h-screen">
