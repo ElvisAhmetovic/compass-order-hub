@@ -118,13 +118,13 @@ const handler = async (req: Request): Promise<Response> => {
 <body style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto; background-color: #f8f9fa; padding: 20px;">
   
   <!-- Header -->
-  <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px; text-align: center; color: white;">
+  <div style="background: linear-gradient(135deg, #1e3a5f 0%, #3b6fa0 100%); padding: 30px; border-radius: 10px; text-align: center; color: white;">
     <h1 style="margin: 0; font-size: 24px;">🔔 Order Status Changed</h1>
     <p style="margin: 10px 0 0 0; opacity: 0.9;">CSM Notification Alert</p>
   </div>
 
   <!-- Status Change Box -->
-  <div style="background: white; margin: 20px 0; padding: 25px; border-radius: 8px; border-left: 5px solid #667eea;">
+  <div style="background: white; margin: 20px 0; padding: 25px; border-radius: 8px; border-left: 5px solid #1e3a5f;">
     <div style="text-align: center;">
       <span style="background: #e0e7ff; color: #4338ca; padding: 8px 16px; border-radius: 20px; font-size: 14px; font-weight: 600;">
         ${oldStatus || "New"}
@@ -186,7 +186,7 @@ const handler = async (req: Request): Promise<Response> => {
 
   <!-- Action Button -->
   <div style="text-align: center; margin: 30px 0;">
-    <a href="${dashboardLink}" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; padding: 15px 40px; border-radius: 8px; font-weight: 600; font-size: 16px;">
+    <a href="${dashboardLink}" style="display: inline-block; background: linear-gradient(135deg, #1e3a5f 0%, #3b6fa0 100%); color: white; text-decoration: none; padding: 15px 40px; border-radius: 8px; font-weight: 600; font-size: 16px;">
       View Order in Dashboard →
     </a>
   </div>

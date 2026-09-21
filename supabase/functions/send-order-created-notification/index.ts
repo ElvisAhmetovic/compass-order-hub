@@ -35,7 +35,7 @@ const buildOrderCreatedEmailHtml = (data: {
         <tr><td style="padding:22px 32px;">
           <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"><tr>
             <td align="left" style="font-family:Roboto,Arial,sans-serif; font-size:13px; color:#606368;">Order Confirmation</td>
-            <td align="right" style="font-family:Roboto,Arial,sans-serif; font-size:18px; font-weight:bold; color:#1a73e8;">AB Media Team</td>
+            <td align="right" style="font-family:Roboto,Arial,sans-serif; font-size:18px; font-weight:bold; color:#1e3a5f;">AB Media Team</td>
           </tr></table>
         </td></tr>
 
@@ -59,13 +59,13 @@ const buildOrderCreatedEmailHtml = (data: {
           <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color:#f8f9fa; border:1px solid #dadce0; border-radius:12px; padding:24px;">
             <tr>
               <td style="vertical-align:top; width:56px;">
-                <div style="width:40px; height:40px; background-color:#1a73e8; color:#ffffff; border-radius:50%; font-size:20px; font-weight:bold; line-height:40px; text-align:center;">${initial}</div>
+                <div style="width:40px; height:40px; background-color:#1e3a5f; color:#ffffff; border-radius:50%; font-size:20px; font-weight:bold; line-height:40px; text-align:center;">${initial}</div>
               </td>
               <td style="padding-left:16px; vertical-align:top;">
-                <div style="font-weight:bold; color:#202124; font-size:16px;">${data.companyName}</div>
+                <div style="font-weight:bold; color:#0f1b3d; font-size:16px;">${data.companyName}</div>
                 <div style="color:#5f6368; font-size:13px; margin-top:4px;">📧 ${data.clientEmail}</div>
                 ${data.clientPhone ? `<div style="color:#5f6368; font-size:13px; margin-top:2px;">📞 ${data.clientPhone}</div>` : ''}
-                <div style="color:#1a73e8; font-size:18px; font-weight:bold; margin-top:8px;">Price: ${formattedPrice}</div>
+                <div style="color:#1e3a5f; font-size:18px; font-weight:bold; margin-top:8px;">Price: ${formattedPrice}</div>
                 ${data.description ? `<div style="color:#5f6368; font-size:13px; line-height:1.6; margin-top:8px;">${data.description.replace(/\n/g, '<br>')}</div>` : ''}
               </td>
             </tr>
@@ -74,7 +74,7 @@ const buildOrderCreatedEmailHtml = (data: {
 
         <!-- Portal button -->
         <tr><td style="text-align:center; padding:16px 32px 32px;">
-          <a href="${data.portalUrl}" style="display:inline-block; height:48px; padding:0 28px; border-radius:8px; background:#1a73e8; color:#ffffff; font-family:Roboto,Arial,sans-serif; font-size:16px; font-weight:700; line-height:48px; text-decoration:none; white-space:nowrap; box-shadow:0 1px 2px rgba(60,64,67,.15),0 2px 6px rgba(60,64,67,.10);">Go to Client Portal</a>
+          <a href="${data.portalUrl}" style="display:inline-block; height:48px; padding:0 28px; border-radius:8px; background:#1e3a5f; color:#ffffff; font-family:Roboto,Arial,sans-serif; font-size:16px; font-weight:700; line-height:48px; text-decoration:none; white-space:nowrap; box-shadow:0 1px 2px rgba(60,64,67,.15),0 2px 6px rgba(60,64,67,.10);">Go to Client Portal</a>
         </td></tr>
 
         <!-- Greeting -->
@@ -104,10 +104,10 @@ const buildOrderCreatedEmailHtml = (data: {
             <td style="font-family:Roboto,Arial,sans-serif; font-size:10px; color:#515354; line-height:16px;">
               Best regards,<br>
               AB Media Team<br><br>
-              <a href="https://abmedia-team.com" style="color:#1967d2; text-decoration:none;">abmedia-team.com</a>
+              <a href="https://abmedia-team.com" style="color:#1e3a5f; text-decoration:none;">abmedia-team.com</a>
             </td>
             <td align="right" style="padding-left:20px; vertical-align:top;">
-              <div style="font-family:Roboto,Arial,sans-serif; font-size:14px; font-weight:bold; color:#1a73e8;">AB Media Team</div>
+              <div style="font-family:Roboto,Arial,sans-serif; font-size:14px; font-weight:bold; color:#1e3a5f;">AB Media Team</div>
               <div style="font-family:Roboto,Arial,sans-serif; font-size:10px; color:#515354; margin-top:6px;">&copy; ${new Date().getFullYear()} AB Media Team</div>
             </td>
           </tr></table>

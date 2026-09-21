@@ -142,8 +142,8 @@ serve(async (req: Request) => {
 <html lang="de">
 <head><meta charset="UTF-8"></head>
 <body style="font-family: Arial, Helvetica, sans-serif; color: #222; line-height: 1.6; max-width: 600px; margin: 0 auto; padding: 20px;">
-  <div style="border-bottom: 3px solid #2563eb; padding-bottom: 16px; margin-bottom: 24px;">
-    <h2 style="margin: 0; color: #2563eb;">AB MEDIA TEAM</h2>
+  <div style="border-bottom: 3px solid #1e3a5f; padding-bottom: 16px; margin-bottom: 24px;">
+    <h2 style="margin: 0; color: #1e3a5f;">AB MEDIA TEAM</h2>
   </div>
 
   <p>Sehr geehrte/r <strong>${contactPerson}</strong>,</p>
@@ -154,7 +154,7 @@ serve(async (req: Request) => {
   ${serviceLiveLink ? `
   <p>Sie können unser Ergebnis hier live überprüfen:</p>
   <p style="margin: 16px 0;">
-    <a href="${serviceLiveLink}" style="background-color: #2563eb; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+    <a href="${serviceLiveLink}" style="background-color: #1e3a5f; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
       Ergebnis ansehen
     </a>
   </p>
@@ -171,7 +171,7 @@ serve(async (req: Request) => {
 
   ${invoiceLink ? `
   <p>Rechnungslink / Download:<br>
-  <a href="${invoiceLink}" style="color: #2563eb;">${invoiceLink}</a></p>
+  <a href="${invoiceLink}" style="color: #1e3a5f;">${invoiceLink}</a></p>
   ` : ""}
 
   <div style="margin: 32px 0; display: flex; gap: 12px; flex-wrap: wrap;">

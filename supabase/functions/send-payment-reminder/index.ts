@@ -85,7 +85,7 @@ const handler = async (req: Request): Promise<Response> => {
         </head>
         <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-            <h1 style="color: #2563eb; margin: 0; font-size: 24px;">AB Media Team</h1>
+            <h1 style="color: #1e3a5f; margin: 0; font-size: 24px;">AB Media Team</h1>
             <p style="margin: 5px 0 0 0; color: #6b7280;">Payment Reminder</p>
           </div>
           
@@ -95,25 +95,25 @@ const handler = async (req: Request): Promise<Response> => {
             </div>
           </div>
           
-          <div style="background:#f0f7ff; padding:20px; border-radius:12px; border:1px solid #d2e3fc; margin:20px 0;">
-            <h3 style="margin:0 0 15px; color:#1a73e8; font-size:16px;">🏦 Payment Information</h3>
+          <div style="background:#f0f7ff; padding:20px; border-radius:12px; border:1px solid #e8edf3; margin:20px 0;">
+            <h3 style="margin:0 0 15px; color:#1e3a5f; font-size:16px;">🏦 Payment Information</h3>
             <table style="width:100%; border-collapse:collapse;">
-              <tr><td colspan="2" style="font-weight:bold; padding:8px 0 4px; color:#202124;"><tr><td colspan="2" style="font-weight:bold; padding:8px 0 4px; color:#202124;">Belgian Bank Account</td></tr></td></tr>
-              <tr><td style="color:#5f6368; padding:3px 0; width:80px;">IBAN:</td><td style="color:#202124;">BE79967023897833</td></tr>
-              <tr><td style="color:#5f6368; padding:3px 0;">BIC:</td><td style="color:#202124;">TRWIBEB1XXX</td></tr>
-              <tr><td style="color:#5f6368; padding:3px 0;">BLZ:</td><td style="color:#202124;">967</td></tr>
-              <tr><td style="color:#5f6368; padding:3px 0;">Konto:</td><td style="color:#202124;">967023897833</td></tr>
-              <tr><td colspan="2" style="padding:10px 0 0;"><hr style="border:none; border-top:1px solid #d2e3fc;"></td></tr>
-              <tr><td colspan="2" style="font-weight:bold; padding:8px 0 4px; color:#202124;">German Bank Account</td></tr>
-              <tr><td style="color:#5f6368; padding:3px 0;">IBAN:</td><td style="color:#202124;">DE91240703680071572200</td></tr>
-              <tr><td style="color:#5f6368; padding:3px 0;">BIC:</td><td style="color:#202124;">DEUTDE2HP22</td></tr>
-              <tr><td style="color:#5f6368; padding:3px 0;">Bank:</td><td style="color:#202124;">Postbank/DSL Ndl of Deutsche Bank</td></tr>
-              <tr><td colspan="2" style="padding:10px 0 0;"><hr style="border:none; border-top:1px solid #d2e3fc;"></td></tr>
-              <tr><td colspan="2" style="font-weight:bold; padding:8px 0 4px; color:#202124;">UK Bank Account (Wise)</td></tr>
-              <tr><td style="color:#5f6368; padding:3px 0;">IBAN:</td><td style="color:#202124;">GB73 TRWI 2314 7059 8496 33</td></tr>
-              <tr><td style="color:#5f6368; padding:3px 0;">Sort Code:</td><td style="color:#202124;">23-14-70</td></tr>
-              <tr><td style="color:#5f6368; padding:3px 0;">Account Number:</td><td style="color:#202124;">59849633</td></tr>
-              <tr><td style="color:#5f6368; padding:3px 0;">Address:</td><td style="color:#202124;">56 Shoreditch High Street, London</td></tr>
+              <tr><td colspan="2" style="font-weight:bold; padding:8px 0 4px; color:#0f1b3d;"><tr><td colspan="2" style="font-weight:bold; padding:8px 0 4px; color:#0f1b3d;">Belgian Bank Account</td></tr></td></tr>
+              <tr><td style="color:#5f6368; padding:3px 0; width:80px;">IBAN:</td><td style="color:#0f1b3d;">BE79967023897833</td></tr>
+              <tr><td style="color:#5f6368; padding:3px 0;">BIC:</td><td style="color:#0f1b3d;">TRWIBEB1XXX</td></tr>
+              <tr><td style="color:#5f6368; padding:3px 0;">BLZ:</td><td style="color:#0f1b3d;">967</td></tr>
+              <tr><td style="color:#5f6368; padding:3px 0;">Konto:</td><td style="color:#0f1b3d;">967023897833</td></tr>
+              <tr><td colspan="2" style="padding:10px 0 0;"><hr style="border:none; border-top:1px solid #e8edf3;"></td></tr>
+              <tr><td colspan="2" style="font-weight:bold; padding:8px 0 4px; color:#0f1b3d;">German Bank Account</td></tr>
+              <tr><td style="color:#5f6368; padding:3px 0;">IBAN:</td><td style="color:#0f1b3d;">DE91240703680071572200</td></tr>
+              <tr><td style="color:#5f6368; padding:3px 0;">BIC:</td><td style="color:#0f1b3d;">DEUTDE2HP22</td></tr>
+              <tr><td style="color:#5f6368; padding:3px 0;">Bank:</td><td style="color:#0f1b3d;">Postbank/DSL Ndl of Deutsche Bank</td></tr>
+              <tr><td colspan="2" style="padding:10px 0 0;"><hr style="border:none; border-top:1px solid #e8edf3;"></td></tr>
+              <tr><td colspan="2" style="font-weight:bold; padding:8px 0 4px; color:#0f1b3d;">UK Bank Account (Wise)</td></tr>
+              <tr><td style="color:#5f6368; padding:3px 0;">IBAN:</td><td style="color:#0f1b3d;">GB73 TRWI 2314 7059 8496 33</td></tr>
+              <tr><td style="color:#5f6368; padding:3px 0;">Sort Code:</td><td style="color:#0f1b3d;">23-14-70</td></tr>
+              <tr><td style="color:#5f6368; padding:3px 0;">Account Number:</td><td style="color:#0f1b3d;">59849633</td></tr>
+              <tr><td style="color:#5f6368; padding:3px 0;">Address:</td><td style="color:#0f1b3d;">56 Shoreditch High Street, London</td></tr>
             </table>
           </div>
           

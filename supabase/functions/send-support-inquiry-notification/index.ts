@@ -56,7 +56,7 @@ const generateEmailHtml = (data: SupportInquiryNotificationRequest["inquiryData"
             <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
               <!-- Header -->
               <tr>
-                <td style="background-color: #2563eb; padding: 30px; border-radius: 8px 8px 0 0;">
+                <td style="background-color: #1e3a5f; padding: 30px; border-radius: 8px 8px 0 0;">
                   <h1 style="color: #ffffff; margin: 0; font-size: 24px;">New Support Inquiry</h1>
                 </td>
               </tr>
@@ -83,7 +83,7 @@ const generateEmailHtml = (data: SupportInquiryNotificationRequest["inquiryData"
                         <strong style="color: #666;">Client Email:</strong>
                       </td>
                       <td style="padding: 10px 0; border-bottom: 1px solid #eee;">
-                        <a href="mailto:${data.clientEmail}" style="color: #2563eb;">${data.clientEmail}</a>
+                        <a href="mailto:${data.clientEmail}" style="color: #1e3a5f;">${data.clientEmail}</a>
                       </td>
                     </tr>
                     ${orderSection}
@@ -98,7 +98,7 @@ const generateEmailHtml = (data: SupportInquiryNotificationRequest["inquiryData"
                   </table>
                   
                   <!-- Subject -->
-                  <div style="background-color: #f8fafc; border-left: 4px solid #2563eb; padding: 15px; margin-bottom: 20px;">
+                  <div style="background-color: #f8fafc; border-left: 4px solid #1e3a5f; padding: 15px; margin-bottom: 20px;">
                     <strong style="color: #333; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">Subject</strong>
                     <p style="color: #1e40af; font-size: 18px; font-weight: bold; margin: 10px 0 0 0;">
                       ${data.subject}
@@ -118,7 +118,7 @@ ${data.message}
                     <tr>
                       <td align="center">
                         <a href="${appUrl}/support/${data.id}" 
-                           style="display: inline-block; background-color: #2563eb; color: #ffffff; padding: 14px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">
+                           style="display: inline-block; background-color: #1e3a5f; color: #ffffff; padding: 14px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">
                           View Inquiry in Dashboard
                         </a>
                       </td>

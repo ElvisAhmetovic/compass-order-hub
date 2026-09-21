@@ -202,12 +202,12 @@ const handler = async (req: Request): Promise<Response> => {
             <div style="space-y: 15px;">
               <div style="margin-bottom: 15px;">
                 <strong style="color: #374151; display: block; margin-bottom: 5px;">🔗 Dashboard Link:</strong>
-                <a href="${appUrl}/tech-support?ticketId=${ticketData.id}" style="color: #2563eb; text-decoration: none; font-weight: 500;" target="_blank">View in Dashboard</a>
+                <a href="${appUrl}/tech-support?ticketId=${ticketData.id}" style="color: #1e3a5f; text-decoration: none; font-weight: 500;" target="_blank">View in Dashboard</a>
               </div>
               
               <div style="margin-bottom: 15px;">
                 <strong style="color: #374151; display: block; margin-bottom: 5px;">📧 Reply To:</strong>
-                <a href="mailto:tech-support@abmedia-team.com" style="color: #2563eb; text-decoration: none;">tech-support@abmedia-team.com</a>
+                <a href="mailto:tech-support@abmedia-team.com" style="color: #1e3a5f; text-decoration: none;">tech-support@abmedia-team.com</a>
               </div>
             </div>
           </div>
@@ -228,7 +228,7 @@ const handler = async (req: Request): Promise<Response> => {
           <h3 style="color: #1f2937; margin-top: 0; margin-bottom: 20px; font-size: 18px; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px; display: flex; align-items: center;">
             <span style="margin-right: 8px;">🔧</span> Action Needed
           </h3>
-          <div style="background-color: #f0f9ff; padding: 15px; border-radius: 6px; border-left: 4px solid #2563eb;">
+          <div style="background-color: #f0f9ff; padding: 15px; border-radius: 6px; border-left: 4px solid #1e3a5f;">
             <p style="margin: 0; white-space: pre-wrap; color: #374151; line-height: 1.6;">${ticketData.action_needed}</p>
           </div>
         </div>
@@ -255,7 +255,7 @@ const handler = async (req: Request): Promise<Response> => {
                   <div style="font-size: 14px; color: #6b7280; margin-bottom: 8px;">
                     ${attachment.mime_type} • ${Math.round(attachment.size_bytes / 1024)}KB
                   </div>
-                  <a href="${attachment.signedUrl}" target="_blank" style="color: #2563eb; text-decoration: none; font-weight: 500; font-size: 14px;">
+                  <a href="${attachment.signedUrl}" target="_blank" style="color: #1e3a5f; text-decoration: none; font-weight: 500; font-size: 14px;">
                     ${attachment.mime_type?.startsWith('image/') ? '🖼️ View Image' : '📥 Download File'}
                   </a>
                 </div>
@@ -271,7 +271,7 @@ const handler = async (req: Request): Promise<Response> => {
             <span style="margin-right: 8px;">📎</span> Attachment
           </h3>
           <div style="background-color: #f9fafb; padding: 15px; border-radius: 6px; border: 1px solid #e5e7eb;">
-            <a href="${ticketData.attachment_url}" target="_blank" style="color: #2563eb; text-decoration: none; font-weight: 500;">
+            <a href="${ticketData.attachment_url}" target="_blank" style="color: #1e3a5f; text-decoration: none; font-weight: 500;">
               📄 ${ticketData.attachment_name || 'View Attachment'}
             </a>
           </div>
@@ -283,7 +283,7 @@ const handler = async (req: Request): Promise<Response> => {
             Diese E-Mail wurde automatisch vom ABMedia Tech Support System generiert.
           </p>
           <p style="margin: 0; color: #6b7280; font-size: 14px;">
-            Für weitere Informationen besuchen Sie das <a href="${appUrl}/tech-support" style="color: #2563eb; text-decoration: none; font-weight: 500;" target="_blank">Tech Support Dashboard</a>
+            Für weitere Informationen besuchen Sie das <a href="${appUrl}/tech-support" style="color: #1e3a5f; text-decoration: none; font-weight: 500;" target="_blank">Tech Support Dashboard</a>
           </p>
         </div>
       </body>

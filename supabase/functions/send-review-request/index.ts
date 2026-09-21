@@ -176,7 +176,7 @@ serve(async (req: Request) => {
           <p style="margin:0 0 20px 0;">${t.ask}</p>
         </td></tr>
         <tr><td align="center" style="padding:16px 36px 8px 36px;">
-          <a href="${reviewUrl}" target="_blank" style="display:inline-block;background:#1a73e8;color:#ffffff;text-decoration:none;padding:14px 26px;border-radius:10px;font-weight:600;font-size:16px;">
+          <a href="${reviewUrl}" target="_blank" style="display:inline-block;background:#1e3a5f;color:#ffffff;text-decoration:none;padding:14px 26px;border-radius:10px;font-weight:600;font-size:16px;">
             ${t.cta}
           </a>
         </td></tr>
