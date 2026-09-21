@@ -177,7 +177,7 @@ const buildReminderEmailHtml = (data: {
 }) => {
   const t = getTranslations(data.isClientEmail ? data.language : 'en');
   const initial = (data.clientName || 'C').charAt(0).toUpperCase();
-  const urgencyColor = data.reminderNumber >= 3 ? '#dc2626' : data.reminderNumber >= 2 ? '#f59e0b' : '#1a73e8';
+  const urgencyColor = data.reminderNumber >= 3 ? '#dc2626' : data.reminderNumber >= 2 ? '#f59e0b' : '#1e3a5f';
   const urgencyIdx = data.reminderNumber >= 3 ? 2 : data.reminderNumber >= 2 ? 1 : 0;
   const urgencyLabel = t.urgency[urgencyIdx];
 
@@ -196,7 +196,7 @@ const buildReminderEmailHtml = (data: {
         <tr><td style="padding:22px 32px;">
           <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"><tr>
             <td align="left" style="font-family:Roboto,Arial,sans-serif; font-size:13px; color:${urgencyColor}; font-weight:bold;">${urgencyLabel} #${data.reminderNumber}</td>
-            <td align="right" style="font-family:Roboto,Arial,sans-serif; font-size:18px; font-weight:bold; color:#1a73e8;">AB Media Team</td>
+            <td align="right" style="font-family:Roboto,Arial,sans-serif; font-size:18px; font-weight:bold; color:#1e3a5f;">AB Media Team</td>
           </tr></table>
         </td></tr>
 
@@ -212,7 +212,7 @@ const buildReminderEmailHtml = (data: {
 
         <!-- Title -->
         <tr><td style="text-align:center; padding:20px 32px 8px;">
-          <h1 style="font-family:Roboto,Arial,sans-serif; font-size:22px; font-weight:700; color:#202124; margin:0;">
+          <h1 style="font-family:Roboto,Arial,sans-serif; font-size:22px; font-weight:700; color:#0f1b3d; margin:0;">
             💰 ${urgencyLabel}
           </h1>
           <p style="font-family:Roboto,Arial,sans-serif; font-size:14px; color:#5f6368; margin:8px 0 0;">
@@ -226,7 +226,7 @@ const buildReminderEmailHtml = (data: {
             <tr><td style="padding:20px 24px;">
               <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
                 <tr><td colspan="2" style="padding-bottom:12px; border-bottom:1px solid #e8eaed;">
-                  <span style="font-family:Roboto,Arial,sans-serif; font-size:16px; font-weight:700; color:#202124;">${t.invoiceLabel} ${data.invoiceNumber}</span>
+                  <span style="font-family:Roboto,Arial,sans-serif; font-size:16px; font-weight:700; color:#0f1b3d;">${t.invoiceLabel} ${data.invoiceNumber}</span>
                 </td></tr>
                 <tr><td style="padding-top:12px; font-family:Roboto,Arial,sans-serif; font-size:13px; color:#5f6368;">${t.amountDue}</td>
                     <td style="padding-top:12px; font-family:Roboto,Arial,sans-serif; font-size:16px; font-weight:700; color:${urgencyColor}; text-align:right;">${data.amount}</td></tr>
@@ -242,10 +242,10 @@ const buildReminderEmailHtml = (data: {
               <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
                 <tr>
                   <td width="44" valign="top">
-                    <div style="width:40px; height:40px; border-radius:50%; background-color:#1a73e8; color:#ffffff; font-family:Roboto,Arial,sans-serif; font-size:18px; font-weight:700; text-align:center; line-height:40px;">${initial}</div>
+                    <div style="width:40px; height:40px; border-radius:50%; background-color:#1e3a5f; color:#ffffff; font-family:Roboto,Arial,sans-serif; font-size:18px; font-weight:700; text-align:center; line-height:40px;">${initial}</div>
                   </td>
                   <td style="padding-left:12px; vertical-align:top;">
-                    <div style="font-family:Roboto,Arial,sans-serif; font-size:15px; font-weight:700; color:#202124;">${data.companyName}</div>
+                    <div style="font-family:Roboto,Arial,sans-serif; font-size:15px; font-weight:700; color:#0f1b3d;">${data.companyName}</div>
                     <div style="font-family:Roboto,Arial,sans-serif; font-size:13px; color:#5f6368; margin-top:2px;">${data.clientName}</div>
                   </td>
                 </tr>
@@ -260,10 +260,10 @@ const buildReminderEmailHtml = (data: {
         <!-- Order Description -->
         ${data.description ? `
         <tr><td style="padding:0 32px 16px;">
-          <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color:#e8f0fe; border-radius:12px; border:1px solid #d2e3fc;">
+          <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color:#e8f0fe; border-radius:12px; border:1px solid #e8edf3;">
             <tr><td style="padding:16px 24px;">
-              <div style="font-family:Roboto,Arial,sans-serif; font-size:12px; color:#1a73e8; font-weight:700; text-transform:uppercase; margin-bottom:6px;">${t.orderDescription}</div>
-              <div style="font-family:Roboto,Arial,sans-serif; font-size:14px; color:#202124;">${data.description}</div>
+              <div style="font-family:Roboto,Arial,sans-serif; font-size:12px; color:#1e3a5f; font-weight:700; text-transform:uppercase; margin-bottom:6px;">${t.orderDescription}</div>
+              <div style="font-family:Roboto,Arial,sans-serif; font-size:14px; color:#0f1b3d;">${data.description}</div>
             </td></tr>
           </table>
         </td></tr>
@@ -271,26 +271,26 @@ const buildReminderEmailHtml = (data: {
 
         <!-- Bank Payment Details -->
         <tr><td style="padding:0 32px 16px;">
-          <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color:#f0f7ff; border-radius:12px; border:1px solid #d2e3fc;">
+          <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color:#f0f7ff; border-radius:12px; border:1px solid #e8edf3;">
             <tr><td style="padding:20px 24px;">
-              <div style="font-family:Roboto,Arial,sans-serif; font-size:16px; font-weight:700; color:#1a73e8; margin-bottom:15px;">🏦 Payment Information</div>
+              <div style="font-family:Roboto,Arial,sans-serif; font-size:16px; font-weight:700; color:#1e3a5f; margin-bottom:15px;">🏦 Payment Information</div>
               <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="border-collapse:collapse;">
-                <tr><td colspan="2" style="font-weight:bold; padding:8px 0 4px; color:#202124; font-family:Roboto,Arial,sans-serif; font-size:14px;"><tr><td colspan="2" style="font-weight:bold; padding:8px 0 4px; color:#202124; font-family:Roboto,Arial,sans-serif; font-size:14px;">Belgian Bank Account</td></tr></td></tr>
-                <tr><td style="color:#5f6368; padding:3px 0; font-family:Roboto,Arial,sans-serif; font-size:13px; width:80px;">IBAN:</td><td style="color:#202124; font-family:Roboto,Arial,sans-serif; font-size:13px;">BE79967023897833</td></tr>
-                <tr><td style="color:#5f6368; padding:3px 0; font-family:Roboto,Arial,sans-serif; font-size:13px;">BIC:</td><td style="color:#202124; font-family:Roboto,Arial,sans-serif; font-size:13px;">TRWIBEB1XXX</td></tr>
-                <tr><td style="color:#5f6368; padding:3px 0; font-family:Roboto,Arial,sans-serif; font-size:13px;">BLZ:</td><td style="color:#202124; font-family:Roboto,Arial,sans-serif; font-size:13px;">967</td></tr>
-                <tr><td style="color:#5f6368; padding:3px 0; font-family:Roboto,Arial,sans-serif; font-size:13px;">Konto:</td><td style="color:#202124; font-family:Roboto,Arial,sans-serif; font-size:13px;">967023897833</td></tr>
-                <tr><td colspan="2" style="padding:10px 0 0;"><hr style="border:none; border-top:1px solid #d2e3fc;"></td></tr>
-                <tr><td colspan="2" style="font-weight:bold; padding:8px 0 4px; color:#202124; font-family:Roboto,Arial,sans-serif; font-size:14px;">German Bank Account</td></tr>
-                <tr><td style="color:#5f6368; padding:3px 0; font-family:Roboto,Arial,sans-serif; font-size:13px;">IBAN:</td><td style="color:#202124; font-family:Roboto,Arial,sans-serif; font-size:13px;">DE91240703680071572200</td></tr>
-                <tr><td style="color:#5f6368; padding:3px 0; font-family:Roboto,Arial,sans-serif; font-size:13px;">BIC:</td><td style="color:#202124; font-family:Roboto,Arial,sans-serif; font-size:13px;">DEUTDE2HP22</td></tr>
-                <tr><td style="color:#5f6368; padding:3px 0; font-family:Roboto,Arial,sans-serif; font-size:13px;">Bank:</td><td style="color:#202124; font-family:Roboto,Arial,sans-serif; font-size:13px;">Postbank/DSL Ndl of Deutsche Bank</td></tr>
-                <tr><td colspan="2" style="padding:10px 0 0;"><hr style="border:none; border-top:1px solid #d2e3fc;"></td></tr>
-                <tr><td colspan="2" style="font-weight:bold; padding:8px 0 4px; color:#202124; font-family:Roboto,Arial,sans-serif; font-size:14px;">UK Bank Account (Wise)</td></tr>
-                <tr><td style="color:#5f6368; padding:3px 0; font-family:Roboto,Arial,sans-serif; font-size:13px;">IBAN:</td><td style="color:#202124; font-family:Roboto,Arial,sans-serif; font-size:13px;">GB73 TRWI 2314 7059 8496 33</td></tr>
-                <tr><td style="color:#5f6368; padding:3px 0; font-family:Roboto,Arial,sans-serif; font-size:13px;">Sort Code:</td><td style="color:#202124; font-family:Roboto,Arial,sans-serif; font-size:13px;">23-14-70</td></tr>
-                <tr><td style="color:#5f6368; padding:3px 0; font-family:Roboto,Arial,sans-serif; font-size:13px;">Account Number:</td><td style="color:#202124; font-family:Roboto,Arial,sans-serif; font-size:13px;">59849633</td></tr>
-                <tr><td style="color:#5f6368; padding:3px 0; font-family:Roboto,Arial,sans-serif; font-size:13px;">Address:</td><td style="color:#202124; font-family:Roboto,Arial,sans-serif; font-size:13px;">56 Shoreditch High Street, London</td></tr>
+                <tr><td colspan="2" style="font-weight:bold; padding:8px 0 4px; color:#0f1b3d; font-family:Roboto,Arial,sans-serif; font-size:14px;"><tr><td colspan="2" style="font-weight:bold; padding:8px 0 4px; color:#0f1b3d; font-family:Roboto,Arial,sans-serif; font-size:14px;">Belgian Bank Account</td></tr></td></tr>
+                <tr><td style="color:#5f6368; padding:3px 0; font-family:Roboto,Arial,sans-serif; font-size:13px; width:80px;">IBAN:</td><td style="color:#0f1b3d; font-family:Roboto,Arial,sans-serif; font-size:13px;">BE79967023897833</td></tr>
+                <tr><td style="color:#5f6368; padding:3px 0; font-family:Roboto,Arial,sans-serif; font-size:13px;">BIC:</td><td style="color:#0f1b3d; font-family:Roboto,Arial,sans-serif; font-size:13px;">TRWIBEB1XXX</td></tr>
+                <tr><td style="color:#5f6368; padding:3px 0; font-family:Roboto,Arial,sans-serif; font-size:13px;">BLZ:</td><td style="color:#0f1b3d; font-family:Roboto,Arial,sans-serif; font-size:13px;">967</td></tr>
+                <tr><td style="color:#5f6368; padding:3px 0; font-family:Roboto,Arial,sans-serif; font-size:13px;">Konto:</td><td style="color:#0f1b3d; font-family:Roboto,Arial,sans-serif; font-size:13px;">967023897833</td></tr>
+                <tr><td colspan="2" style="padding:10px 0 0;"><hr style="border:none; border-top:1px solid #e8edf3;"></td></tr>
+                <tr><td colspan="2" style="font-weight:bold; padding:8px 0 4px; color:#0f1b3d; font-family:Roboto,Arial,sans-serif; font-size:14px;">German Bank Account</td></tr>
+                <tr><td style="color:#5f6368; padding:3px 0; font-family:Roboto,Arial,sans-serif; font-size:13px;">IBAN:</td><td style="color:#0f1b3d; font-family:Roboto,Arial,sans-serif; font-size:13px;">DE91240703680071572200</td></tr>
+                <tr><td style="color:#5f6368; padding:3px 0; font-family:Roboto,Arial,sans-serif; font-size:13px;">BIC:</td><td style="color:#0f1b3d; font-family:Roboto,Arial,sans-serif; font-size:13px;">DEUTDE2HP22</td></tr>
+                <tr><td style="color:#5f6368; padding:3px 0; font-family:Roboto,Arial,sans-serif; font-size:13px;">Bank:</td><td style="color:#0f1b3d; font-family:Roboto,Arial,sans-serif; font-size:13px;">Postbank/DSL Ndl of Deutsche Bank</td></tr>
+                <tr><td colspan="2" style="padding:10px 0 0;"><hr style="border:none; border-top:1px solid #e8edf3;"></td></tr>
+                <tr><td colspan="2" style="font-weight:bold; padding:8px 0 4px; color:#0f1b3d; font-family:Roboto,Arial,sans-serif; font-size:14px;">UK Bank Account (Wise)</td></tr>
+                <tr><td style="color:#5f6368; padding:3px 0; font-family:Roboto,Arial,sans-serif; font-size:13px;">IBAN:</td><td style="color:#0f1b3d; font-family:Roboto,Arial,sans-serif; font-size:13px;">GB73 TRWI 2314 7059 8496 33</td></tr>
+                <tr><td style="color:#5f6368; padding:3px 0; font-family:Roboto,Arial,sans-serif; font-size:13px;">Sort Code:</td><td style="color:#0f1b3d; font-family:Roboto,Arial,sans-serif; font-size:13px;">23-14-70</td></tr>
+                <tr><td style="color:#5f6368; padding:3px 0; font-family:Roboto,Arial,sans-serif; font-size:13px;">Account Number:</td><td style="color:#0f1b3d; font-family:Roboto,Arial,sans-serif; font-size:13px;">59849633</td></tr>
+                <tr><td style="color:#5f6368; padding:3px 0; font-family:Roboto,Arial,sans-serif; font-size:13px;">Address:</td><td style="color:#0f1b3d; font-family:Roboto,Arial,sans-serif; font-size:13px;">56 Shoreditch High Street, London</td></tr>
               </table>
             </td></tr>
           </table>

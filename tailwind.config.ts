@@ -19,6 +19,10 @@ export default {
 			}
 		},
 		extend: {
+			fontFamily: {
+				sans: ['Epilogue', 'system-ui', '-apple-system', 'Segoe UI', 'sans-serif'],
+				heading: ['Urbanist', 'Epilogue', 'system-ui', 'sans-serif'],
+			},
 			colors: {
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',

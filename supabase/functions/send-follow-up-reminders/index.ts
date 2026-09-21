@@ -82,7 +82,7 @@ const handler = async (req: Request): Promise<Response> => {
           .eq("reminder_id", reminder.id);
 
         const phoneLink = reminder.contact_phone
-          ? `<a href="tel:${reminder.contact_phone.replace(/\s/g, '')}" style="color: #2563eb; font-weight: bold; font-size: 18px; text-decoration: none;">📞 ${reminder.contact_phone}</a>`
+          ? `<a href="tel:${reminder.contact_phone.replace(/\s/g, '')}" style="color: #1e3a5f; font-weight: bold; font-size: 18px; text-decoration: none;">📞 ${reminder.contact_phone}</a>`
           : "";
 
         const phoneRow = reminder.contact_phone
@@ -101,7 +101,7 @@ const handler = async (req: Request): Promise<Response> => {
         let attachmentsHtml = "";
         if (attachments && attachments.length > 0) {
           const links = attachments
-            .map(a => `<li><a href="${a.file_url}" style="color: #2563eb;">${a.file_name}</a></li>`)
+            .map(a => `<li><a href="${a.file_url}" style="color: #1e3a5f;">${a.file_name}</a></li>`)
             .join("");
           attachmentsHtml = `
             <div style="background: #f9fafb; padding: 15px; border-radius: 8px; margin: 15px 0; border: 1px solid #e5e7eb;">

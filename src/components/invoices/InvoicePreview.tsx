@@ -143,7 +143,7 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
   return (
     <Card className="w-full max-w-4xl mx-auto">
       <CardContent className="p-8">
-        <div className="bg-white min-h-[800px] space-y-6" style={{ fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif" }}>
+        <div className="bg-white min-h-[800px] space-y-6" style={{ fontFamily: "'Epilogue', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif" }}>
           {/* Header */}
           <div className="flex justify-between items-start border-b-2 border-gray-200 pb-6">
             <div className="flex items-center gap-6">
@@ -228,7 +228,7 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
           <div className="mt-8">
             <table className="w-full shadow-sm">
               <thead>
-                <tr className="bg-gray-700 text-white">
+                <tr className="text-white" style={{ backgroundColor: '#1e3a5f' }}>
                   <th className="text-left py-4 px-4 font-semibold border-r border-gray-600">{getTranslatedText('item')}</th>
                   <th className="text-center py-4 px-4 font-semibold border-r border-gray-600">{getTranslatedText('quantity')}</th>
                   <th className="text-right py-4 px-4 font-semibold border-r border-gray-600">{getTranslatedText('rate')}</th>

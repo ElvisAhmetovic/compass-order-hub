@@ -705,7 +705,7 @@ async function sendInvoiceEmail(
         <table style="width: 100%; border-collapse: collapse;">
           <tr><td style="padding: 8px 0; color: #666;">${E.invoiceNumberLabel}</td><td style="padding: 8px 0; font-weight: bold;">${invoiceNumber}</td></tr>
           <tr><td style="padding: 8px 0; color: #666;">${E.periodLabel}</td><td style="padding: 8px 0; font-weight: bold;">${monthLabel}</td></tr>
-          <tr><td style="padding: 8px 0; color: #666;">${E.amountLabel}</td><td style="padding: 8px 0; font-weight: bold; font-size: 18px; color: #2563eb;">${formattedPrice}</td></tr>
+          <tr><td style="padding: 8px 0; color: #666;">${E.amountLabel}</td><td style="padding: 8px 0; font-weight: bold; font-size: 18px; color: #1e3a5f;">${formattedPrice}</td></tr>
         </table>
       </div>
       <p>${E.attachmentNote}</p>
@@ -756,7 +756,7 @@ async function sendTeamNotifications(
           <tr><td style="padding: 8px 0; color: #666;">Kunde:</td><td style="padding: 8px 0; font-weight: bold;">${clientName}</td></tr>
           <tr><td style="padding: 8px 0; color: #666;">Rechnung Nr.:</td><td style="padding: 8px 0; font-weight: bold;">${invoiceNumber}</td></tr>
           <tr><td style="padding: 8px 0; color: #666;">Zeitraum:</td><td style="padding: 8px 0; font-weight: bold;">${monthLabel}</td></tr>
-          <tr><td style="padding: 8px 0; color: #666;">Betrag:</td><td style="padding: 8px 0; font-weight: bold; font-size: 18px; color: #2563eb;">${formattedPrice}</td></tr>
+          <tr><td style="padding: 8px 0; color: #666;">Betrag:</td><td style="padding: 8px 0; font-weight: bold; font-size: 18px; color: #1e3a5f;">${formattedPrice}</td></tr>
         </table>
       </div>
       <p style="color: #666; font-size: 14px;">Dies ist eine automatische Benachrichtigung des Monatspakete-Systems.</p>

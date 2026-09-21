@@ -66,7 +66,7 @@ const buildContractEmailHtml = (data: {
         <tr><td style="padding:22px 32px;">
           <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"><tr>
             <td align="left" style="font-family:Roboto,Arial,sans-serif; font-size:13px; color:#606368;">New Monthly Contract</td>
-            <td align="right" style="font-family:Roboto,Arial,sans-serif; font-size:18px; font-weight:bold; color:#1a73e8;">AB Media Team</td>
+            <td align="right" style="font-family:Roboto,Arial,sans-serif; font-size:18px; font-weight:bold; color:#1e3a5f;">AB Media Team</td>
           </tr></table>
         </td></tr>
 
@@ -85,10 +85,10 @@ const buildContractEmailHtml = (data: {
           <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color:#f8f9fa; border:1px solid #dadce0; border-radius:12px; padding:24px;">
             <tr>
               <td style="vertical-align:top; width:56px;">
-                <div style="width:40px; height:40px; background-color:#1a73e8; color:#ffffff; border-radius:50%; font-size:20px; font-weight:bold; line-height:40px; text-align:center;">${initial}</div>
+                <div style="width:40px; height:40px; background-color:#1e3a5f; color:#ffffff; border-radius:50%; font-size:20px; font-weight:bold; line-height:40px; text-align:center;">${initial}</div>
               </td>
               <td style="padding-left:16px; vertical-align:top;">
-                <div style="font-weight:bold; color:#202124; font-size:16px;">${data.clientName}</div>
+                <div style="font-weight:bold; color:#0f1b3d; font-size:16px;">${data.clientName}</div>
                 <div style="color:#5f6368; font-size:13px; margin-top:4px;">📧 ${data.clientEmail}</div>
                 ${data.clientPhone ? `<div style="color:#5f6368; font-size:13px; margin-top:2px;">📞 ${data.clientPhone}</div>` : ''}
               </td>
@@ -100,31 +100,31 @@ const buildContractEmailHtml = (data: {
         <tr><td style="padding:0 32px 16px;">
           <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color:#e8f0fe; border:1px solid #c6dafc; border-radius:12px; padding:24px;">
             <tr><td>
-              <div style="font-weight:bold; color:#1a73e8; font-size:16px; margin-bottom:12px;">Contract Details</div>
+              <div style="font-weight:bold; color:#1e3a5f; font-size:16px; margin-bottom:12px;">Contract Details</div>
               <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
                 <tr>
                   <td style="color:#5f6368; font-size:13px; padding:4px 0; width:50%;">Total Value:</td>
-                  <td style="color:#202124; font-size:13px; font-weight:bold; padding:4px 0;">${formattedTotal}</td>
+                  <td style="color:#0f1b3d; font-size:13px; font-weight:bold; padding:4px 0;">${formattedTotal}</td>
                 </tr>
                 <tr>
                   <td style="color:#5f6368; font-size:13px; padding:4px 0;">Duration:</td>
-                  <td style="color:#202124; font-size:13px; font-weight:bold; padding:4px 0;">${data.durationMonths} months</td>
+                  <td style="color:#0f1b3d; font-size:13px; font-weight:bold; padding:4px 0;">${data.durationMonths} months</td>
                 </tr>
                 <tr>
                   <td style="color:#5f6368; font-size:13px; padding:4px 0;">Billing Frequency:</td>
-                  <td style="color:#202124; font-size:13px; font-weight:bold; padding:4px 0;">Every ${data.billingFrequency} month${data.billingFrequency > 1 ? 's' : ''}</td>
+                  <td style="color:#0f1b3d; font-size:13px; font-weight:bold; padding:4px 0;">Every ${data.billingFrequency} month${data.billingFrequency > 1 ? 's' : ''}</td>
                 </tr>
                 <tr>
                   <td style="color:#5f6368; font-size:13px; padding:4px 0;">Installment Amount:</td>
-                  <td style="color:#1a73e8; font-size:15px; font-weight:bold; padding:4px 0;">${formattedInstallment}</td>
+                  <td style="color:#1e3a5f; font-size:15px; font-weight:bold; padding:4px 0;">${formattedInstallment}</td>
                 </tr>
                 <tr>
                   <td style="color:#5f6368; font-size:13px; padding:4px 0;">Number of Installments:</td>
-                  <td style="color:#202124; font-size:13px; font-weight:bold; padding:4px 0;">${data.numberOfInstallments}</td>
+                  <td style="color:#0f1b3d; font-size:13px; font-weight:bold; padding:4px 0;">${data.numberOfInstallments}</td>
                 </tr>
                 <tr>
                   <td style="color:#5f6368; font-size:13px; padding:4px 0;">Start Date:</td>
-                  <td style="color:#202124; font-size:13px; font-weight:bold; padding:4px 0;">${data.startDate}</td>
+                  <td style="color:#0f1b3d; font-size:13px; font-weight:bold; padding:4px 0;">${data.startDate}</td>
                 </tr>
                 <tr>
                   <td style="color:#5f6368; font-size:13px; padding:4px 0;">Priority:</td>
@@ -132,12 +132,12 @@ const buildContractEmailHtml = (data: {
                 </tr>
                 ${data.assignedTo ? `<tr>
                   <td style="color:#5f6368; font-size:13px; padding:4px 0;">Assigned To:</td>
-                  <td style="color:#202124; font-size:13px; font-weight:bold; padding:4px 0;">${data.assignedTo}</td>
+                  <td style="color:#0f1b3d; font-size:13px; font-weight:bold; padding:4px 0;">${data.assignedTo}</td>
                 </tr>` : ''}
               </table>
               ${data.description ? `<div style="margin-top:12px; padding-top:12px; border-top:1px solid #c6dafc;">
                 <div style="color:#5f6368; font-size:12px; margin-bottom:4px;">Description:</div>
-                <div style="color:#202124; font-size:13px; line-height:1.5;">${data.description.replace(/\n/g, '<br>')}</div>
+                <div style="color:#0f1b3d; font-size:13px; line-height:1.5;">${data.description.replace(/\n/g, '<br>')}</div>
               </div>` : ''}
             </td></tr>
           </table>
@@ -149,10 +149,10 @@ const buildContractEmailHtml = (data: {
             <td style="font-family:Roboto,Arial,sans-serif; font-size:10px; color:#515354; line-height:16px;">
               Best regards,<br>
               AB Media Team<br><br>
-              <a href="https://abmedia-team.com" style="color:#1967d2; text-decoration:none;">abmedia-team.com</a>
+              <a href="https://abmedia-team.com" style="color:#1e3a5f; text-decoration:none;">abmedia-team.com</a>
             </td>
             <td align="right" style="padding-left:20px; vertical-align:top;">
-              <div style="font-family:Roboto,Arial,sans-serif; font-size:14px; font-weight:bold; color:#1a73e8;">AB Media Team</div>
+              <div style="font-family:Roboto,Arial,sans-serif; font-size:14px; font-weight:bold; color:#1e3a5f;">AB Media Team</div>
               <div style="font-family:Roboto,Arial,sans-serif; font-size:10px; color:#515354; margin-top:6px;">&copy; ${new Date().getFullYear()} AB Media Team</div>
             </td>
           </tr></table>
