@@ -661,8 +661,10 @@ const Invoices = () => {
                                 {customFrom ? format(customFrom, "dd.MM.yyyy") : "From"}
                               </Button>
                             </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
-                              <Calendar mode="single" selected={customFrom} onSelect={setCustomFrom} initialFocus className={cn("p-3 pointer-events-auto")} />
+                            <PopoverContent className="w-auto p-0 overflow-hidden" align="start" side="bottom" sideOffset={4} avoidCollisions={false}>
+                              <div className="h-[350px]">
+                                <Calendar mode="single" selected={customFrom} onSelect={setCustomFrom} showOutsideDays fixedWeeks initialFocus className={cn("p-3 pointer-events-auto")} />
+                              </div>
                             </PopoverContent>
                           </Popover>
                           <span className="text-muted-foreground text-sm">→</span>
@@ -673,8 +675,10 @@ const Invoices = () => {
                                 {customTo ? format(customTo, "dd.MM.yyyy") : "To"}
                               </Button>
                             </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
-                              <Calendar mode="single" selected={customTo} onSelect={setCustomTo} initialFocus className={cn("p-3 pointer-events-auto")} />
+                            <PopoverContent className="w-auto p-0 overflow-hidden" align="start" side="bottom" sideOffset={4} avoidCollisions={false}>
+                              <div className="h-[350px]">
+                                <Calendar mode="single" selected={customTo} onSelect={setCustomTo} showOutsideDays fixedWeeks initialFocus className={cn("p-3 pointer-events-auto")} />
+                              </div>
                             </PopoverContent>
                           </Popover>
                           {(customFrom || customTo) && (
