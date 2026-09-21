@@ -561,7 +561,7 @@ const Invoices = () => {
                     <CardHeader className="pb-2">
                       <div className="flex items-center justify-between gap-2">
                         <CardTitle className="text-sm font-medium text-gray-600">Paid</CardTitle>
-                        <Select value={selectedPaidMonth} onValueChange={setSelectedPaidMonth}>
+                        <Select value={selectedPaidMonth} onValueChange={handlePaidMonthChange}>
                           <SelectTrigger className="h-7 w-[150px] text-xs">
                             <SelectValue />
                           </SelectTrigger>
