@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Info, Send } from "lucide-react";
+import { ChevronDown, Info, Send } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { 
   Dialog,
@@ -40,6 +40,11 @@ import { achievementsService } from "@/services/achievementsService";
 import { streaksService } from "@/services/streaksService";
 import { activityService } from "@/services/activityService";
 import { getCurrencySymbol } from "@/utils/currencyUtils";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 const formSchema = z.object({
   companyName: z.string().min(1, "Company name is required"),
@@ -83,6 +88,7 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
   const [vatEnabled, setVatEnabled] = useState(false);
   const [vatPercentage, setVatPercentage] = useState(20);
   const [offerLanguage, setOfferLanguage] = useState("en");
+  const [additionalEmailsOpen, setAdditionalEmailsOpen] = useState(false);
 
   const OFFER_LANGUAGES: { code: string; label: string }[] = [
     { code: "en", label: "English" },
@@ -156,6 +162,7 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
       form.setValue('assignedTo', user.id);
       setSelectedInventoryItems([]);
       setNotificationEmails(['']);
+      setAdditionalEmailsOpen(false);
     }
   }, [open, user, form]);
 
@@ -480,7 +487,7 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto" onFocusOutside={(e) => e.preventDefault()} onPointerDownOutside={(e) => e.preventDefault()}>
+      <DialogContent allowOutsideClose className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold">Create New Order</DialogTitle>
         </DialogHeader>
@@ -874,71 +881,75 @@ Additional internal comments...`}
                 />
 
                 {/* Email Notifications */}
-                <div>
-                  <div className="flex items-center gap-1 mb-2">
-                    <FormLabel className="text-sm">Additional Email Notifications</FormLabel>
-                    <div className="ml-1 tooltip" title="Send order confirmation to additional email addresses">
-                      <Info className="h-4 w-4 text-muted-foreground" />
+                <Collapsible open={additionalEmailsOpen} onOpenChange={setAdditionalEmailsOpen}>
+                  <CollapsibleTrigger asChild>
+                    <Button type="button" variant="outline" className="w-full justify-between">
+                      <span className="flex items-center gap-2">
+                        Additional Email Notifications
+                        <Info className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                      </span>
+                      <ChevronDown
+                        className={`h-4 w-4 transition-transform ${additionalEmailsOpen ? "rotate-180" : ""}`}
+                        aria-hidden="true"
+                      />
+                    </Button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="space-y-3 pt-3">
+                    <div className="rounded-md bg-muted p-3">
+                      <p className="mb-2 text-xs font-medium text-muted-foreground">Default team emails (always included):</p>
+                      <div className="space-y-1">
+                        {NOTIFICATION_EMAIL_LIST.map((email) => (
+                          <p key={email} className="text-xs text-muted-foreground">• {email}</p>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                  
-                  {/* Show hardcoded emails */}
-                  <div className="mb-3 p-3 bg-muted rounded-md">
-                    <p className="text-xs font-medium text-muted-foreground mb-2">Default team emails (always included):</p>
-                    <div className="space-y-1">
-                      {NOTIFICATION_EMAIL_LIST.map((email, index) => (
-                        <p key={index} className="text-xs text-muted-foreground">• {email}</p>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    {notificationEmails.map((email, index) => (
-                      <div key={index} className="flex gap-2">
-                        <Input
-                          type="email"
-                          placeholder="additional-email@example.com"
-                          value={email}
-                          onChange={(e) => {
-                            const newEmails = [...notificationEmails];
-                            newEmails[index] = e.target.value;
-                            setNotificationEmails(newEmails);
-                          }}
-                          className="flex-1"
-                        />
-                        {notificationEmails.length > 1 && (
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              const newEmails = notificationEmails.filter((_, i) => i !== index);
+
+                    <div className="space-y-2">
+                      {notificationEmails.map((email, index) => (
+                        <div key={index} className="flex gap-2">
+                          <Input
+                            type="email"
+                            aria-label={`Additional email ${index + 1}`}
+                            placeholder="additional-email@example.com"
+                            value={email}
+                            onChange={(event) => {
+                              const newEmails = [...notificationEmails];
+                              newEmails[index] = event.target.value;
                               setNotificationEmails(newEmails);
                             }}
-                          >
-                            Remove
-                          </Button>
-                        )}
-                      </div>
-                    ))}
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setNotificationEmails([...notificationEmails, ''])}
-                      className="w-full"
-                    >
-                      Add Additional Email
-                    </Button>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Order confirmation will always be sent to the default team emails above, plus any additional emails you specify
-                  </p>
-                </div>
+                            className="flex-1"
+                          />
+                          {notificationEmails.length > 1 && (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setNotificationEmails(notificationEmails.filter((_, emailIndex) => emailIndex !== index))}
+                            >
+                              Remove
+                            </Button>
+                          )}
+                        </div>
+                      ))}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setNotificationEmails([...notificationEmails, ""])}
+                        className="w-full"
+                      >
+                        Add Additional Email
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Order confirmation always goes to the default team emails, plus any additional addresses entered here.
+                    </p>
+                  </CollapsibleContent>
+                </Collapsible>
               </div>
             </div>
 
-            <div className="flex justify-end gap-2 pt-4">
+            <div className="flex flex-wrap items-start justify-end gap-2 pt-4">
               <DialogClose asChild>
                 <Button type="button" variant="outline" disabled={isSubmitting || isSendingOffer}>Cancel</Button>
               </DialogClose>
@@ -1044,8 +1055,7 @@ Additional internal comments...`}
                 <Send className="h-4 w-4 mr-2" />
                 {isSendingOffer ? "Sending..." : "Send Offer"}
               </Button>
-              <div className="flex flex-col gap-1">
-                <label className="text-xs text-muted-foreground px-1">Offer language</label>
+              <div className="flex flex-col items-center gap-1">
                 <Select value={offerLanguage} onValueChange={setOfferLanguage} disabled={isSendingOffer}>
                   <SelectTrigger className="h-9 w-[160px]">
                     <SelectValue placeholder="Language" />
@@ -1056,6 +1066,7 @@ Additional internal comments...`}
                     ))}
                   </SelectContent>
                 </Select>
+                <span className="text-xs text-muted-foreground">Offer language</span>
               </div>
               <Button type="submit" disabled={isSubmitting || isSendingOffer}>
                 {isSubmitting ? "Creating..." : "Create Order"}
