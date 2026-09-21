@@ -81,7 +81,7 @@ const WorkBreakBanner = () => {
 
   return (
     <div
-      className={`relative z-40 overflow-hidden border-b border-primary/20 bg-primary text-primary-foreground shadow-soft-md transition-all duration-300 motion-reduce:transition-none ${
+      className={`sticky top-0 z-40 overflow-hidden border-b border-primary/20 bg-primary text-primary-foreground shadow-soft-md transition-all duration-300 motion-reduce:transition-none ${
         isVisible ? "max-h-24 translate-y-0 opacity-100" : "max-h-0 -translate-y-full opacity-0"
       }`}
       role="status"
