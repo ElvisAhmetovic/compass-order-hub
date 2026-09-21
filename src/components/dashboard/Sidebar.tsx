@@ -367,7 +367,10 @@ const Sidebar = () => {
                             isActive && "bg-sidebar-accent text-sidebar-foreground border-r-2 border-sidebar-primary"
                           )}
                         >
-                          <Icon className="w-4 h-4 mr-3" />
+                          <Icon
+                            className={cn("w-4 h-4 mr-3 transition-colors", isActive ? "text-sidebar-primary" : "text-sidebar-foreground/60")}
+                            strokeWidth={1.75}
+                          />
                           <span className="relative inline-block">
                             {item.label}
                             <span
