@@ -895,6 +895,9 @@ Additional internal comments...`}
                     </Button>
                   </CollapsibleTrigger>
                   <CollapsibleContent className="space-y-3 pt-3">
+                    <p className="text-xs text-muted-foreground">
+                      Anyone added here receives the order confirmation email. Internal notes are only included for internal team addresses.
+                    </p>
                     <div className="rounded-md bg-muted p-3">
                       <p className="mb-2 text-xs font-medium text-muted-foreground">Default team emails (always included):</p>
                       <div className="space-y-1">
