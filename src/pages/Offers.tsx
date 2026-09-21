@@ -1,5 +1,5 @@
 import { getOfferConfirmUrl } from "@/config/appUrl";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import Layout from "@/components/layout/Layout";
 import Sidebar from "@/components/dashboard/Sidebar";
@@ -36,10 +36,11 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { format } from "date-fns";
-import { Search, Filter, X } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DateRangeFilter } from "@/components/user-statistics/DateRangeFilter";
-import { DateRange } from "@/utils/dateRangeHelpers";
+import { Search, Filter, X, Calendar as CalendarIcon } from "lucide-react";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectSeparator, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
 
 interface Offer {
   id: string;
@@ -70,7 +71,9 @@ const Offers = () => {
   const [sendToClientOnConfirm, setSendToClientOnConfirm] = useState(false);
   const [savingOffer, setSavingOffer] = useState(false);
   const [statusFilter, setStatusFilter] = useState("all");
-  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+  const [periodFilter, setPeriodFilter] = useState<string>("all");
+  const [customFrom, setCustomFrom] = useState<Date | undefined>(undefined);
+  const [customTo, setCustomTo] = useState<Date | undefined>(undefined);
   const [sentByFilter, setSentByFilter] = useState("all");
   const [editForm, setEditForm] = useState({
     client_name: "",
@@ -81,6 +84,116 @@ const Offers = () => {
     price: "",
     description: "",
   });
+
+  // Same period logic as Invoices: quick ranges, specific months, custom range
+  const dateRange = useMemo(() => {
+    const now = new Date();
+    const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    const endOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999);
+
+    switch (periodFilter) {
+      case 'today':
+        return { from: startOfDay(now), to: endOfDay(now) };
+      case 'this-week': {
+        const day = (now.getDay() + 6) % 7; // Monday = 0
+        const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day);
+        const sunday = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 6);
+        return { from: startOfDay(monday), to: endOfDay(sunday) };
+      }
+      case 'this-month':
+        return {
+          from: new Date(now.getFullYear(), now.getMonth(), 1),
+          to: endOfDay(new Date(now.getFullYear(), now.getMonth() + 1, 0)),
+        };
+      case 'last-month':
+        return {
+          from: new Date(now.getFullYear(), now.getMonth() - 1, 1),
+          to: endOfDay(new Date(now.getFullYear(), now.getMonth(), 0)),
+        };
+      case 'this-year':
+        return { from: new Date(now.getFullYear(), 0, 1), to: endOfDay(new Date(now.getFullYear(), 11, 31)) };
+      case 'last-year':
+        return { from: new Date(now.getFullYear() - 1, 0, 1), to: endOfDay(new Date(now.getFullYear() - 1, 11, 31)) };
+      case 'custom':
+        return {
+          from: customFrom ? startOfDay(customFrom) : null,
+          to: customTo ? endOfDay(customTo) : null,
+        };
+      default: {
+        if (periodFilter.startsWith('month:')) {
+          const [year, month] = periodFilter.slice(6).split('-').map(Number);
+          if (year && month) {
+            return {
+              from: new Date(year, month - 1, 1),
+              to: endOfDay(new Date(year, month, 0)),
+            };
+          }
+        }
+        return { from: null as Date | null, to: null as Date | null };
+      }
+    }
+  }, [periodFilter, customFrom, customTo]);
+
+  // Last 24 months for the "Specific month" section
+  const monthOptions = useMemo(() => {
+    const opts: { value: string; label: string }[] = [];
+    const now = new Date();
+    for (let i = 0; i < 24; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      const label = d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+      opts.push({ value, label });
+    }
+    return opts;
+  }, []);
+
+  const activeRangeLabel = useMemo(() => {
+    if (periodFilter.startsWith('month:')) {
+      return monthOptions.find(o => o.value === periodFilter.slice(6))?.label || null;
+    }
+    if (periodFilter === 'custom' && (customFrom || customTo)) {
+      return `${customFrom ? format(customFrom, 'dd.MM.yyyy') : '…'} → ${customTo ? format(customTo, 'dd.MM.yyyy') : '…'}`;
+    }
+    return null;
+  }, [periodFilter, monthOptions, customFrom, customTo]);
+
+  const filtersActive = statusFilter !== "all" || periodFilter !== "all" || sentByFilter !== "all";
+
+  const clearFilters = () => {
+    setStatusFilter("all");
+    setPeriodFilter("all");
+    setCustomFrom(undefined);
+    setCustomTo(undefined);
+    setSentByFilter("all");
+  };
+
+  const filteredOffers = useMemo(() => {
+    const term = searchTerm.toLowerCase();
+    let filtered = offers;
+    if (term) {
+      filtered = filtered.filter(o =>
+        o.client_name.toLowerCase().includes(term) ||
+        o.company_name.toLowerCase().includes(term) ||
+        o.client_email.toLowerCase().includes(term)
+      );
+    }
+    if (statusFilter !== "all") {
+      filtered = filtered.filter(o => o.status === statusFilter);
+    }
+    if (dateRange.from || dateRange.to) {
+      filtered = filtered.filter(o => {
+        const t = new Date(o.created_at).getTime();
+        if (Number.isNaN(t)) return false;
+        if (dateRange.from && t < dateRange.from.getTime()) return false;
+        if (dateRange.to && t > dateRange.to.getTime()) return false;
+        return true;
+      });
+    }
+    if (sentByFilter !== "all") {
+      filtered = filtered.filter(o => o.sent_by_name === sentByFilter);
+    }
+    return filtered;
+  }, [offers, searchTerm, statusFilter, dateRange, sentByFilter]);
 
   useEffect(() => {
     fetchOffers();
@@ -315,7 +428,29 @@ const Offers = () => {
                 </SelectContent>
               </Select>
 
-              <DateRangeFilter dateRange={dateRange} onDateRangeChange={setDateRange} />
+              <Select value={periodFilter} onValueChange={setPeriodFilter}>
+                <SelectTrigger className="w-[190px]">
+                  <CalendarIcon className="h-4 w-4 mr-2 opacity-50" />
+                  <SelectValue placeholder="Period" />
+                </SelectTrigger>
+                <SelectContent className="max-h-[320px]">
+                  <SelectItem value="all">All time</SelectItem>
+                  <SelectItem value="today">Today</SelectItem>
+                  <SelectItem value="this-week">This week</SelectItem>
+                  <SelectItem value="this-month">This month</SelectItem>
+                  <SelectItem value="last-month">Last month</SelectItem>
+                  <SelectItem value="this-year">This year</SelectItem>
+                  <SelectItem value="last-year">Last year</SelectItem>
+                  <SelectItem value="custom">Custom range</SelectItem>
+                  <SelectSeparator />
+                  <SelectGroup>
+                    <SelectLabel>Specific month</SelectLabel>
+                    {monthOptions.map(opt => (
+                      <SelectItem key={opt.value} value={`month:${opt.value}`}>{opt.label}</SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
 
               <Select value={sentByFilter} onValueChange={setSentByFilter}>
                 <SelectTrigger className="w-[160px]">
@@ -329,35 +464,69 @@ const Offers = () => {
                 </SelectContent>
               </Select>
 
-              {(statusFilter !== "all" || dateRange || sentByFilter !== "all") && (
-                <Button variant="ghost" size="sm" onClick={() => { setStatusFilter("all"); setDateRange(undefined); setSentByFilter("all"); }}>
+              {filtersActive && (
+                <Button variant="ghost" size="sm" onClick={clearFilters}>
                   <X className="h-4 w-4 mr-1" /> Clear Filters
                 </Button>
               )}
             </div>
 
+            {periodFilter === 'custom' && (
+              <div className="flex flex-wrap items-center gap-2">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="sm" className={cn("justify-start text-left font-normal", !customFrom && "text-muted-foreground")}>
+                      <CalendarIcon className="h-4 w-4 mr-2" />
+                      {customFrom ? format(customFrom, "dd.MM.yyyy") : "From"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0 overflow-hidden" align="start" side="bottom" sideOffset={4} avoidCollisions={false}>
+                    <div className="h-[350px]">
+                      <Calendar mode="single" selected={customFrom} onSelect={setCustomFrom} showOutsideDays fixedWeeks initialFocus className={cn("p-3 pointer-events-auto")} />
+                    </div>
+                  </PopoverContent>
+                </Popover>
+                <span className="text-muted-foreground text-sm">→</span>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="sm" className={cn("justify-start text-left font-normal", !customTo && "text-muted-foreground")}>
+                      <CalendarIcon className="h-4 w-4 mr-2" />
+                      {customTo ? format(customTo, "dd.MM.yyyy") : "To"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0 overflow-hidden" align="start" side="bottom" sideOffset={4} avoidCollisions={false}>
+                    <div className="h-[350px]">
+                      <Calendar mode="single" selected={customTo} onSelect={setCustomTo} showOutsideDays fixedWeeks initialFocus className={cn("p-3 pointer-events-auto")} />
+                    </div>
+                  </PopoverContent>
+                </Popover>
+                {(customFrom || customTo) && (
+                  <Button variant="ghost" size="sm" onClick={() => { setCustomFrom(undefined); setCustomTo(undefined); }}>
+                    Clear dates
+                  </Button>
+                )}
+              </div>
+            )}
+
+            <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+              <span>Showing {filteredOffers.length} of {offers.length} offers</span>
+              {activeRangeLabel && (
+                <Badge variant="secondary" className="gap-1 font-normal">
+                  {activeRangeLabel}
+                  <button
+                    type="button"
+                    aria-label="Clear date range"
+                    className="ml-1 opacity-70 hover:opacity-100"
+                    onClick={() => { setPeriodFilter('all'); setCustomFrom(undefined); setCustomTo(undefined); }}
+                  >
+                    ×
+                  </button>
+                </Badge>
+              )}
+            </div>
+
             {(() => {
-              const term = searchTerm.toLowerCase();
-              let filtered = offers;
-              if (term) {
-                filtered = filtered.filter(o =>
-                  o.client_name.toLowerCase().includes(term) ||
-                  o.company_name.toLowerCase().includes(term) ||
-                  o.client_email.toLowerCase().includes(term)
-                );
-              }
-              if (statusFilter !== "all") {
-                filtered = filtered.filter(o => o.status === statusFilter);
-              }
-              if (dateRange) {
-                filtered = filtered.filter(o => {
-                  const d = new Date(o.created_at);
-                  return d >= dateRange.from && d <= dateRange.to;
-                });
-              }
-              if (sentByFilter !== "all") {
-                filtered = filtered.filter(o => o.sent_by_name === sentByFilter);
-              }
+              const filtered = filteredOffers;
               return loading ? (
                 <div className="text-center py-12 text-muted-foreground">Loading offers...</div>
               ) : offers.length === 0 ? (
