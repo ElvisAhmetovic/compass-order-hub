@@ -12,7 +12,7 @@ interface LayoutProps {
 
 const Layout = ({ children, userRole = "admin" }: LayoutProps) => {
   return (
-    <div className="flex-1 min-w-0 bg-gray-50 dark:bg-gray-900">
+    <div className="flex-1 min-w-0 bg-background text-foreground">
       <GlobalNotifications />
       <WorkBreakBanner />
       <Header userRole={userRole} />

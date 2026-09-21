@@ -43,7 +43,7 @@ export const getActiveWorkBreak = (date: Date): BreakPeriod | null => {
   return null;
 };
 
-const formatCountdown = (seconds: number) => {
+export const formatCountdown = (seconds: number) => {
   const safeSeconds = Math.max(0, seconds);
   const minutes = Math.floor(safeSeconds / 60);
   const remainingSeconds = safeSeconds % 60;
@@ -84,14 +84,18 @@ const WorkBreakBanner = () => {
       className={`sticky top-0 z-40 overflow-hidden border-b border-primary/20 bg-primary text-primary-foreground shadow-soft-md transition-all duration-300 motion-reduce:transition-none ${
         isVisible ? "max-h-24 translate-y-0 opacity-100" : "max-h-0 -translate-y-full opacity-0"
       }`}
-      role="status"
-      aria-live="polite"
     >
+      <span className="sr-only" role="status" aria-live="polite">
+        {renderedBreak.label} has started.
+      </span>
       <div className="mx-auto flex min-h-14 max-w-screen-2xl items-center justify-center gap-4 px-4 py-3">
         <Coffee className="h-5 w-5 shrink-0" aria-hidden="true" />
         <span className="font-heading text-sm font-semibold sm:text-base">{renderedBreak.label}</span>
         <span className="h-5 w-px bg-primary-foreground/30" aria-hidden="true" />
-        <span className="inline-flex min-w-[5.5rem] items-center gap-2 font-mono text-sm font-semibold tabular-nums sm:text-base">
+        <span
+          className="inline-flex min-w-[5.5rem] items-center gap-2 font-mono text-sm font-semibold tabular-nums sm:text-base"
+          aria-hidden="true"
+        >
           <Timer className="h-4 w-4" aria-hidden="true" />
           {countdown}
         </span>
