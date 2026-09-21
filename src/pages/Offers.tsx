@@ -509,7 +509,7 @@ const Offers = () => {
             )}
 
             <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-              <span>Showing {filtered.length} of {offers.length} offers</span>
+              <span>Showing {filteredOffers.length} of {offers.length} offers</span>
               {activeRangeLabel && (
                 <Badge variant="secondary" className="gap-1 font-normal">
                   {activeRangeLabel}
