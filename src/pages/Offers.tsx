@@ -1,5 +1,5 @@
 import { getOfferConfirmUrl } from "@/config/appUrl";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import Layout from "@/components/layout/Layout";
 import Sidebar from "@/components/dashboard/Sidebar";
@@ -36,10 +36,11 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { format } from "date-fns";
-import { Search, Filter, X } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DateRangeFilter } from "@/components/user-statistics/DateRangeFilter";
-import { DateRange } from "@/utils/dateRangeHelpers";
+import { Search, Filter, X, Calendar as CalendarIcon } from "lucide-react";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectSeparator, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
 
 interface Offer {
   id: string;
@@ -70,7 +71,9 @@ const Offers = () => {
   const [sendToClientOnConfirm, setSendToClientOnConfirm] = useState(false);
   const [savingOffer, setSavingOffer] = useState(false);
   const [statusFilter, setStatusFilter] = useState("all");
-  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+  const [periodFilter, setPeriodFilter] = useState<string>("all");
+  const [customFrom, setCustomFrom] = useState<Date | undefined>(undefined);
+  const [customTo, setCustomTo] = useState<Date | undefined>(undefined);
   const [sentByFilter, setSentByFilter] = useState("all");
   const [editForm, setEditForm] = useState({
     client_name: "",
