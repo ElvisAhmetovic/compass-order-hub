@@ -1,38 +1,42 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { 
-  Home, 
-  Building2, 
-  Users, 
-  Package, 
-  Trash2, 
-  Star, 
-  HelpCircle,
-  Send,
-  FileText,
+import {
+  LayoutDashboard,
+  Building2,
+  UsersRound,
+  Boxes,
+  Trash2,
+  Star,
+  LifeBuoy,
+  HandCoins,
+  FileSignature,
   Receipt,
-  UserCheck,
-  BarChart3,
+  ReceiptEuro,
+  ReceiptText,
+  Contact,
+  ChartNoAxesColumn,
+  ChartPie,
   MessageSquare,
-  AlertTriangle,
-  CheckCircle,
-  XCircle,
-  Clock,
-  Eye,
-  
+  TriangleAlert,
+  CircleCheckBig,
+  CircleX,
+  ListChecks,
+  ClipboardList,
+  FileSearch,
+  CalendarClock,
+  CalendarRange,
+  CalendarDays,
   Instagram,
-  UserX,
+  UserRoundX,
   Wrench,
   Trophy,
-  BarChart2,
-  Settings,
-  Ticket,
-  Clock as ClockIcon,
-  AlarmClock,
+  Settings2,
+  TicketCheck,
+  Clock,
+  BellRing,
   ChevronDown,
   MoreHorizontal,
   Lock,
-  ShieldCheck,
   Facebook as FacebookIcon,
   Globe,
   Music2,
@@ -148,39 +152,39 @@ const Sidebar = () => {
 
   // Define sidebar items with role restrictions
   const menuItems = [
-    { href: '/dashboard', icon: Home, label: 'Dashboard', roles: ['admin', 'agent', 'user'] },
-    { href: '/work-hours', icon: ClockIcon, label: 'Work Hours', roles: ['admin', 'agent'] },
-    { href: '/admin/work-hours', icon: ShieldCheck, label: 'Work Hours Admin', roles: ['admin', 'agent', 'user'], superAdminOnly: true, showWhAdminBadge: true },
-    { href: '/monthly-packages', icon: ClockIcon, label: 'Monthly Packages', roles: ['admin', 'agent'] },
-    { href: '/monthly-invoice-status', icon: Receipt, label: 'Invoice Status', roles: ['admin', 'agent'] },
-    { href: '/reminders', icon: AlarmClock, label: 'Reminders', roles: ['admin', 'agent'] },
-    { href: '/user-management', icon: Users, label: 'User Management', roles: ['admin'] },
-    { href: '/support', icon: HelpCircle, label: 'Support', roles: ['admin', 'agent', 'user'], showBadge: true },
-    { href: '/customer-tickets', icon: Ticket, label: 'Customer Tickets', roles: ['admin', 'agent'], showTicketBadge: true },
+    { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', roles: ['admin', 'agent', 'user'] },
+    { href: '/work-hours', icon: Clock, label: 'Work Hours', roles: ['admin', 'agent'] },
+    { href: '/admin/work-hours', icon: CalendarClock, label: 'Work Hours Admin', roles: ['admin', 'agent', 'user'], superAdminOnly: true, showWhAdminBadge: true },
+    { href: '/monthly-packages', icon: CalendarRange, label: 'Monthly Packages', roles: ['admin', 'agent'] },
+    { href: '/monthly-invoice-status', icon: ClipboardList, label: 'Invoice Status', roles: ['admin', 'agent'] },
+    { href: '/reminders', icon: BellRing, label: 'Reminders', roles: ['admin', 'agent'] },
+    { href: '/user-management', icon: UsersRound, label: 'User Management', roles: ['admin'] },
+    { href: '/support', icon: LifeBuoy, label: 'Support', roles: ['admin', 'agent', 'user'], showBadge: true },
+    { href: '/customer-tickets', icon: TicketCheck, label: 'Customer Tickets', roles: ['admin', 'agent'], showTicketBadge: true },
     { href: '/tech-support', icon: Wrench, label: 'Tech Support', roles: ['admin', 'agent'] },
-    { href: '/active-orders', icon: FileText, label: 'My Orders', roles: ['user'] },
-    { href: '/active-orders', icon: Clock, label: 'Active Orders', roles: ['admin', 'agent'] },
-    { href: '/invoice-sent', icon: Receipt, label: 'Invoice Sent', roles: ['admin', 'agent'] },
-    { href: '/invoice-paid', icon: Receipt, label: 'Invoice Paid', roles: ['admin', 'agent'] },
+    { href: '/active-orders', icon: ListChecks, label: 'My Orders', roles: ['user'] },
+    { href: '/active-orders', icon: ListChecks, label: 'Active Orders', roles: ['admin', 'agent'] },
+    { href: '/invoice-sent', icon: ReceiptText, label: 'Invoice Sent', roles: ['admin', 'agent'] },
+    { href: '/invoice-paid', icon: ReceiptEuro, label: 'Invoice Paid', roles: ['admin', 'agent'] },
     { href: '/invoices', icon: Receipt, label: 'Invoices', roles: ['admin', 'agent'] },
-    { href: '/admin/invoice-audit', icon: ShieldCheck, label: 'Invoice Audit Log', roles: ['admin', 'agent', 'user'], superAdminOnly: true },
-    { href: '/proposals', icon: FileText, label: 'Proposals', roles: ['admin', 'agent'] },
-    { href: '/offers', icon: Send, label: 'Offers', roles: ['admin', 'agent'] },
+    { href: '/admin/invoice-audit', icon: FileSearch, label: 'Invoice Audit Log', roles: ['admin', 'agent', 'user'], superAdminOnly: true },
+    { href: '/proposals', icon: FileSignature, label: 'Proposals', roles: ['admin', 'agent'] },
+    { href: '/offers', icon: HandCoins, label: 'Offers', roles: ['admin', 'agent'] },
     
-    { href: '/google-deletion', icon: UserX, label: 'Google Deletion', roles: ['admin', 'agent'] },
-    { href: '/complaints', icon: AlertTriangle, label: 'Complaints', roles: ['admin', 'agent'] },
-    { href: '/completed', icon: CheckCircle, label: 'Completed', roles: ['admin', 'agent'] },
-    { href: '/cancelled', icon: XCircle, label: 'Cancelled', roles: ['admin', 'agent'] },
-    { href: '/reviews', icon: Eye, label: 'Reviews', roles: ['admin', 'agent', 'user'] },
+    { href: '/google-deletion', icon: UserRoundX, label: 'Google Deletion', roles: ['admin', 'agent'] },
+    { href: '/complaints', icon: TriangleAlert, label: 'Complaints', roles: ['admin', 'agent'] },
+    { href: '/completed', icon: CircleCheckBig, label: 'Completed', roles: ['admin', 'agent'] },
+    { href: '/cancelled', icon: CircleX, label: 'Cancelled', roles: ['admin', 'agent'] },
+    { href: '/reviews', icon: Star, label: 'Reviews', roles: ['admin', 'agent', 'user'] },
     { href: '/companies', icon: Building2, label: 'Companies', roles: ['admin', 'agent'] },
-    { href: '/clients', icon: UserCheck, label: 'Clients', roles: ['admin', 'agent'] },
-    { href: '/inventory', icon: Package, label: 'Inventory', roles: ['admin', 'agent'] },
+    { href: '/clients', icon: Contact, label: 'Clients', roles: ['admin', 'agent'] },
+    { href: '/inventory', icon: Boxes, label: 'Inventory', roles: ['admin', 'agent'] },
     { href: '/rankings', icon: Trophy, label: 'Rankings', roles: ['admin', 'agent'] },
-    { href: '/analytics', icon: BarChart3, label: 'Analytics', roles: ['admin', 'agent'] },
-    { href: '/user-statistics', icon: BarChart2, label: 'User Statistics', roles: ['admin', 'agent'] },
-    { href: '/settings', icon: Settings, label: 'Settings', roles: ['admin'] },
+    { href: '/analytics', icon: ChartNoAxesColumn, label: 'Analytics', roles: ['admin', 'agent'] },
+    { href: '/user-statistics', icon: ChartPie, label: 'User Statistics', roles: ['admin', 'agent'] },
+    { href: '/settings', icon: Settings2, label: 'Settings', roles: ['admin'] },
     { href: '/deleted', icon: Trash2, label: 'Deleted', roles: ['admin'] },
-    { href: '/yearly-packages', icon: Package, label: 'Yearly Packages', roles: ['admin', 'agent'] },
+    { href: '/yearly-packages', icon: CalendarDays, label: 'Yearly Packages', roles: ['admin', 'agent'] },
     {
       href: "/team-collaboration",
       icon: MessageSquare,
@@ -246,7 +250,7 @@ const Sidebar = () => {
           className="flex items-center justify-between px-6 py-3 text-sidebar-foreground/40 cursor-not-allowed select-none"
         >
           <div className="flex items-center">
-            <Icon className="w-5 h-5 mr-3" />
+            <Icon className="w-5 h-5 mr-3" strokeWidth={1.75} />
             {item.label}
           </div>
           <Lock className="w-4 h-4" />
@@ -264,7 +268,10 @@ const Sidebar = () => {
         )}
       >
         <div className="flex items-center">
-          <Icon className="w-5 h-5 mr-3" />
+          <Icon
+            className={cn("w-5 h-5 mr-3 transition-colors", isActive ? "text-sidebar-primary" : "text-sidebar-foreground/60")}
+            strokeWidth={1.75}
+          />
           <span className="relative inline-block">
             {item.label}
             <span
@@ -360,7 +367,10 @@ const Sidebar = () => {
                             isActive && "bg-sidebar-accent text-sidebar-foreground border-r-2 border-sidebar-primary"
                           )}
                         >
-                          <Icon className="w-4 h-4 mr-3" />
+                          <Icon
+                            className={cn("w-4 h-4 mr-3 transition-colors", isActive ? "text-sidebar-primary" : "text-sidebar-foreground/60")}
+                            strokeWidth={1.75}
+                          />
                           <span className="relative inline-block">
                             {item.label}
                             <span
