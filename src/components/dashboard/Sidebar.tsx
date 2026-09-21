@@ -265,7 +265,16 @@ const Sidebar = () => {
       >
         <div className="flex items-center">
           <Icon className="w-5 h-5 mr-3" />
-          {item.label}
+          <span className="relative inline-block">
+            {item.label}
+            <span
+              className={cn(
+                "absolute left-0 -bottom-1 h-0.5 rounded-full bg-sidebar-primary transition-all duration-200",
+                isActive ? "w-full opacity-100" : "w-0 opacity-0"
+              )}
+              aria-hidden="true"
+            />
+          </span>
         </div>
         {showSupportBadge && (
           <Badge variant="destructive" className="h-5 min-w-[20px] px-1.5 flex items-center justify-center text-xs">
@@ -352,7 +361,16 @@ const Sidebar = () => {
                           )}
                         >
                           <Icon className="w-4 h-4 mr-3" />
-                          {item.label}
+                          <span className="relative inline-block">
+                            {item.label}
+                            <span
+                              className={cn(
+                                "absolute left-0 -bottom-1 h-0.5 rounded-full bg-sidebar-primary transition-all duration-200",
+                                isActive ? "w-full opacity-100" : "w-0 opacity-0"
+                              )}
+                              aria-hidden="true"
+                            />
+                          </span>
                         </Link>
                       );
                     })}
