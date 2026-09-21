@@ -400,7 +400,29 @@ const Offers = () => {
                 </SelectContent>
               </Select>
 
-              <DateRangeFilter dateRange={dateRange} onDateRangeChange={setDateRange} />
+              <Select value={periodFilter} onValueChange={setPeriodFilter}>
+                <SelectTrigger className="w-[190px]">
+                  <CalendarIcon className="h-4 w-4 mr-2 opacity-50" />
+                  <SelectValue placeholder="Period" />
+                </SelectTrigger>
+                <SelectContent className="max-h-[320px]">
+                  <SelectItem value="all">All time</SelectItem>
+                  <SelectItem value="today">Today</SelectItem>
+                  <SelectItem value="this-week">This week</SelectItem>
+                  <SelectItem value="this-month">This month</SelectItem>
+                  <SelectItem value="last-month">Last month</SelectItem>
+                  <SelectItem value="this-year">This year</SelectItem>
+                  <SelectItem value="last-year">Last year</SelectItem>
+                  <SelectItem value="custom">Custom range</SelectItem>
+                  <SelectSeparator />
+                  <SelectGroup>
+                    <SelectLabel>Specific month</SelectLabel>
+                    {monthOptions.map(opt => (
+                      <SelectItem key={opt.value} value={`month:${opt.value}`}>{opt.label}</SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
 
               <Select value={sentByFilter} onValueChange={setSentByFilter}>
                 <SelectTrigger className="w-[160px]">
@@ -414,10 +436,64 @@ const Offers = () => {
                 </SelectContent>
               </Select>
 
-              {(statusFilter !== "all" || dateRange || sentByFilter !== "all") && (
-                <Button variant="ghost" size="sm" onClick={() => { setStatusFilter("all"); setDateRange(undefined); setSentByFilter("all"); }}>
+              {filtersActive && (
+                <Button variant="ghost" size="sm" onClick={clearFilters}>
                   <X className="h-4 w-4 mr-1" /> Clear Filters
                 </Button>
+              )}
+            </div>
+
+            {periodFilter === 'custom' && (
+              <div className="flex flex-wrap items-center gap-2">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="sm" className={cn("justify-start text-left font-normal", !customFrom && "text-muted-foreground")}>
+                      <CalendarIcon className="h-4 w-4 mr-2" />
+                      {customFrom ? format(customFrom, "dd.MM.yyyy") : "From"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0 overflow-hidden" align="start" side="bottom" sideOffset={4} avoidCollisions={false}>
+                    <div className="h-[350px]">
+                      <Calendar mode="single" selected={customFrom} onSelect={setCustomFrom} showOutsideDays fixedWeeks initialFocus className={cn("p-3 pointer-events-auto")} />
+                    </div>
+                  </PopoverContent>
+                </Popover>
+                <span className="text-muted-foreground text-sm">→</span>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="sm" className={cn("justify-start text-left font-normal", !customTo && "text-muted-foreground")}>
+                      <CalendarIcon className="h-4 w-4 mr-2" />
+                      {customTo ? format(customTo, "dd.MM.yyyy") : "To"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0 overflow-hidden" align="start" side="bottom" sideOffset={4} avoidCollisions={false}>
+                    <div className="h-[350px]">
+                      <Calendar mode="single" selected={customTo} onSelect={setCustomTo} showOutsideDays fixedWeeks initialFocus className={cn("p-3 pointer-events-auto")} />
+                    </div>
+                  </PopoverContent>
+                </Popover>
+                {(customFrom || customTo) && (
+                  <Button variant="ghost" size="sm" onClick={() => { setCustomFrom(undefined); setCustomTo(undefined); }}>
+                    Clear dates
+                  </Button>
+                )}
+              </div>
+            )}
+
+            <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+              <span>Showing {filtered.length} of {offers.length} offers</span>
+              {activeRangeLabel && (
+                <Badge variant="secondary" className="gap-1 font-normal">
+                  {activeRangeLabel}
+                  <button
+                    type="button"
+                    aria-label="Clear date range"
+                    className="ml-1 opacity-70 hover:opacity-100"
+                    onClick={() => { setPeriodFilter('all'); setCustomFrom(undefined); setCustomTo(undefined); }}
+                  >
+                    ×
+                  </button>
+                </Badge>
               )}
             </div>
 
