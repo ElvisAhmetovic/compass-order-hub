@@ -9,7 +9,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { PlusCircle, FileEdit, Trash2, Download, File, CheckCircle2, XCircle, Send, Eye, Receipt, ArrowUpDown, Bell, Timer, TimerOff, Loader2 } from "lucide-react";
+import { PlusCircle, FileEdit, Trash2, Download, File, CheckCircle2, XCircle, Send, Eye, Receipt, ArrowUpDown, Bell, Timer, TimerOff, Loader2, CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { generateInvoicePDF } from "@/utils/invoicePdfGenerator";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
@@ -60,6 +64,15 @@ const Invoices = () => {
   const [loading, setLoading] = useState(true);
   const [filterText, setFilterText] = useState("");
   const [sortOption, setSortOption] = useState<string>("newest");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [periodFilter, setPeriodFilter] = useState<string>("all");
+  const [customFrom, setCustomFrom] = useState<Date | undefined>(undefined);
+  const [customTo, setCustomTo] = useState<Date | undefined>(undefined);
+  // Selected month for "Paid" card (format: YYYY-MM, default = current month)
+  const [selectedPaidMonth, setSelectedPaidMonth] = useState<string>(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  });
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   // Calculate overdue invoices
   const overdueInvoices = invoices.filter(invoice => {
@@ -369,22 +382,65 @@ const Invoices = () => {
     return Number.isNaN(createdTime) ? new Date(invoice.issue_date).getTime() : createdTime;
   };
 
+  const dateRange = useMemo(() => {
+    const now = new Date();
+    const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    const endOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999);
+
+    switch (periodFilter) {
+      case 'today':
+        return { from: startOfDay(now), to: endOfDay(now) };
+      case 'this-week': {
+        const day = (now.getDay() + 6) % 7; // Monday = 0
+        const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day);
+        const sunday = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 6);
+        return { from: startOfDay(monday), to: endOfDay(sunday) };
+      }
+      case 'this-month':
+        return {
+          from: new Date(now.getFullYear(), now.getMonth(), 1),
+          to: endOfDay(new Date(now.getFullYear(), now.getMonth() + 1, 0)),
+        };
+      case 'last-month':
+        return {
+          from: new Date(now.getFullYear(), now.getMonth() - 1, 1),
+          to: endOfDay(new Date(now.getFullYear(), now.getMonth(), 0)),
+        };
+      case 'this-year':
+        return { from: new Date(now.getFullYear(), 0, 1), to: endOfDay(new Date(now.getFullYear(), 11, 31)) };
+      case 'last-year':
+        return { from: new Date(now.getFullYear() - 1, 0, 1), to: endOfDay(new Date(now.getFullYear() - 1, 11, 31)) };
+      case 'custom':
+        return {
+          from: customFrom ? startOfDay(customFrom) : null,
+          to: customTo ? endOfDay(customTo) : null,
+        };
+      default:
+        return { from: null as Date | null, to: null as Date | null };
+    }
+  }, [periodFilter, customFrom, customTo]);
+
   const sortedInvoices = useMemo(() => {
     let result = [...filteredInvoices];
 
-    // Status filters
-    if (['sent', 'draft', 'paid'].includes(sortOption)) {
-      result = result.filter(inv => inv.status === sortOption);
+    if (statusFilter !== 'all') {
+      result = result.filter(inv => inv.status === statusFilter);
+    }
+
+    if (dateRange.from || dateRange.to) {
+      result = result.filter(inv => {
+        const issued = new Date(inv.issue_date).getTime();
+        if (Number.isNaN(issued)) return false;
+        if (dateRange.from && issued < dateRange.from.getTime()) return false;
+        if (dateRange.to && issued > dateRange.to.getTime()) return false;
+        return true;
+      });
     }
 
     result.sort((a, b) => {
       switch (sortOption) {
         case 'newest':
           return getInvoiceCreatedTime(b) - getInvoiceCreatedTime(a);
-        case 'sent':
-        case 'draft':
-        case 'paid':
-          return new Date(b.issue_date).getTime() - new Date(a.issue_date).getTime();
         case 'oldest':
           return new Date(a.issue_date).getTime() - new Date(b.issue_date).getTime();
         case 'inv-low':
@@ -401,17 +457,25 @@ const Invoices = () => {
     });
 
     return result;
-  }, [filteredInvoices, sortOption]);
+  }, [filteredInvoices, sortOption, statusFilter, dateRange]);
+
+  const visibleTotal = useMemo(
+    () => sortedInvoices.reduce((sum, inv) => sum + (inv.total_amount || 0), 0),
+    [sortedInvoices]
+  );
+
+  const filtersActive = statusFilter !== 'all' || periodFilter !== 'all';
+
+  const clearFilters = () => {
+    setStatusFilter('all');
+    setPeriodFilter('all');
+    setCustomFrom(undefined);
+    setCustomTo(undefined);
+  };
 
   const totalOutstanding = invoices
     .filter(inv => inv.status === 'sent' || inv.status === 'partially_paid' || inv.status === 'overdue')
     .reduce((sum, inv) => sum + getOutstandingAmount(inv), 0);
-
-  // Selected month for "Paid" card (format: YYYY-MM, default = current month)
-  const [selectedPaidMonth, setSelectedPaidMonth] = useState<string>(() => {
-    const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  });
 
   // Build last 24 months options
   const monthOptions = useMemo(() => {
@@ -433,6 +497,16 @@ const Invoices = () => {
       return inv.status === 'paid' && key === selectedPaidMonth;
     })
     .reduce((sum, inv) => sum + inv.total_amount, 0);
+
+  // Picking a month on the Paid card also drives the list below
+  const handlePaidMonthChange = (value: string) => {
+    setSelectedPaidMonth(value);
+    const [year, month] = value.split('-').map(Number);
+    setCustomFrom(new Date(year, month - 1, 1));
+    setCustomTo(new Date(year, month, 0));
+    setPeriodFilter('custom');
+    setStatusFilter('paid');
+  };
 
   return (
     <div className="flex min-h-screen">
@@ -487,7 +561,7 @@ const Invoices = () => {
                     <CardHeader className="pb-2">
                       <div className="flex items-center justify-between gap-2">
                         <CardTitle className="text-sm font-medium text-gray-600">Paid</CardTitle>
-                        <Select value={selectedPaidMonth} onValueChange={setSelectedPaidMonth}>
+                        <Select value={selectedPaidMonth} onValueChange={handlePaidMonthChange}>
                           <SelectTrigger className="h-7 w-[150px] text-xs">
                             <SelectValue />
                           </SelectTrigger>
@@ -516,34 +590,110 @@ const Invoices = () => {
 
                 <Card>
                   <CardHeader className="pb-3">
-                     <div className="flex items-center justify-between">
-                      <CardTitle>Manage Invoices</CardTitle>
-                      <div className="flex items-center gap-3">
-                        <Select value={sortOption} onValueChange={setSortOption}>
-                          <SelectTrigger className="w-[180px]">
-                            <ArrowUpDown className="h-4 w-4 mr-2 opacity-50" />
-                            <SelectValue placeholder="Sort by..." />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="newest">Newest</SelectItem>
-                            <SelectItem value="oldest">Oldest</SelectItem>
-                            <SelectItem value="sent">Sent</SelectItem>
-                            <SelectItem value="draft">Draft</SelectItem>
-                            <SelectItem value="paid">Paid</SelectItem>
-                            <SelectItem value="inv-low">Lowest INV #</SelectItem>
-                            <SelectItem value="inv-high">Highest INV #</SelectItem>
-                            <SelectItem value="a-z">A → Z</SelectItem>
-                            <SelectItem value="z-a">Z → A</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <div className="w-72">
-                          <Input
-                            placeholder="Search invoice #, client, order date, worker, amount..."
-                            value={filterText}
-                            onChange={(e) => setFilterText(e.target.value)}
-                            className="max-w-sm"
-                          />
+                    <div className="flex flex-col gap-3">
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <CardTitle>Manage Invoices</CardTitle>
+                        <div className="flex flex-wrap items-center gap-3">
+                          <Select value={statusFilter} onValueChange={setStatusFilter}>
+                            <SelectTrigger className="w-[160px]">
+                              <SelectValue placeholder="Status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">All statuses</SelectItem>
+                              <SelectItem value="draft">Draft</SelectItem>
+                              <SelectItem value="sent">Sent</SelectItem>
+                              <SelectItem value="paid">Paid</SelectItem>
+                              <SelectItem value="partially_paid">Partially paid</SelectItem>
+                              <SelectItem value="overdue">Overdue</SelectItem>
+                              <SelectItem value="cancelled">Cancelled</SelectItem>
+                            </SelectContent>
+                          </Select>
+
+                          <Select value={periodFilter} onValueChange={setPeriodFilter}>
+                            <SelectTrigger className="w-[170px]">
+                              <CalendarIcon className="h-4 w-4 mr-2 opacity-50" />
+                              <SelectValue placeholder="Period" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">All time</SelectItem>
+                              <SelectItem value="today">Today</SelectItem>
+                              <SelectItem value="this-week">This week</SelectItem>
+                              <SelectItem value="this-month">This month</SelectItem>
+                              <SelectItem value="last-month">Last month</SelectItem>
+                              <SelectItem value="this-year">This year</SelectItem>
+                              <SelectItem value="last-year">Last year</SelectItem>
+                              <SelectItem value="custom">Custom range</SelectItem>
+                            </SelectContent>
+                          </Select>
+
+                          <Select value={sortOption} onValueChange={setSortOption}>
+                            <SelectTrigger className="w-[170px]">
+                              <ArrowUpDown className="h-4 w-4 mr-2 opacity-50" />
+                              <SelectValue placeholder="Sort by..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="newest">Newest</SelectItem>
+                              <SelectItem value="oldest">Oldest</SelectItem>
+                              <SelectItem value="inv-low">Lowest INV #</SelectItem>
+                              <SelectItem value="inv-high">Highest INV #</SelectItem>
+                              <SelectItem value="a-z">A → Z</SelectItem>
+                              <SelectItem value="z-a">Z → A</SelectItem>
+                            </SelectContent>
+                          </Select>
+
+                          <div className="w-72">
+                            <Input
+                              placeholder="Search invoice #, client, order date, worker, amount..."
+                              value={filterText}
+                              onChange={(e) => setFilterText(e.target.value)}
+                              className="max-w-sm"
+                            />
+                          </div>
                         </div>
+                      </div>
+
+                      {periodFilter === 'custom' && (
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button variant="outline" size="sm" className={cn("justify-start text-left font-normal", !customFrom && "text-muted-foreground")}>
+                                <CalendarIcon className="h-4 w-4 mr-2" />
+                                {customFrom ? format(customFrom, "dd.MM.yyyy") : "From"}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <Calendar mode="single" selected={customFrom} onSelect={setCustomFrom} initialFocus className={cn("p-3 pointer-events-auto")} />
+                            </PopoverContent>
+                          </Popover>
+                          <span className="text-muted-foreground text-sm">→</span>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button variant="outline" size="sm" className={cn("justify-start text-left font-normal", !customTo && "text-muted-foreground")}>
+                                <CalendarIcon className="h-4 w-4 mr-2" />
+                                {customTo ? format(customTo, "dd.MM.yyyy") : "To"}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <Calendar mode="single" selected={customTo} onSelect={setCustomTo} initialFocus className={cn("p-3 pointer-events-auto")} />
+                            </PopoverContent>
+                          </Popover>
+                          {(customFrom || customTo) && (
+                            <Button variant="ghost" size="sm" onClick={() => { setCustomFrom(undefined); setCustomTo(undefined); }}>
+                              Clear dates
+                            </Button>
+                          )}
+                        </div>
+                      )}
+
+                      <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                        <span>
+                          Showing {sortedInvoices.length} of {invoices.length} invoices · Total €{visibleTotal.toFixed(2)}
+                        </span>
+                        {filtersActive && (
+                          <Button variant="ghost" size="sm" onClick={clearFilters}>
+                            Clear filters
+                          </Button>
+                        )}
                       </div>
                     </div>
                   </CardHeader>
