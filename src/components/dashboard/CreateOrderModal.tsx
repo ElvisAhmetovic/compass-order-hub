@@ -7,6 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { 
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogClose,
@@ -96,7 +97,7 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
 
   const isProcessing = isSubmitting || isSendingOffer;
 
-  const waitForSuccessMessage = () => new Promise((resolve) => window.setTimeout(resolve, 1100));
+  const waitForSuccessMessage = () => new Promise((resolve) => window.setTimeout(resolve, 1400));
 
   const handleOpenChange = (nextOpen: boolean) => {
     if (!nextOpen && !isProcessing) {
@@ -507,15 +508,15 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent allowOutsideClose={!isProcessing} className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
-        {actionFeedback && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/95 px-6 backdrop-blur-sm">
-            <div className="flex max-w-sm flex-col items-center text-center">
+        {actionFeedback ? (
+          <div className="flex min-h-[320px] flex-col items-center justify-center px-6 py-10 text-center">
+            <DialogHeader className="items-center text-center">
               {actionFeedback.status === "working" ? (
                 <Loader2 className="mb-4 h-10 w-10 animate-spin text-primary" aria-hidden="true" />
               ) : (
                 <CheckCircle2 className="mb-4 h-12 w-12 text-primary" aria-hidden="true" />
               )}
-              <h3 className="text-lg font-semibold text-foreground">
+              <DialogTitle className="text-xl font-semibold text-foreground">
                 {actionFeedback.status === "working"
                   ? actionFeedback.action === "order"
                     ? "Creating order..."
@@ -523,8 +524,8 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
                   : actionFeedback.action === "order"
                     ? "Order created successfully"
                     : "Offer sent successfully"}
-              </h3>
-              <p className="mt-2 text-sm text-muted-foreground">
+              </DialogTitle>
+              <DialogDescription className="mt-2 max-w-sm text-sm text-muted-foreground">
                 {actionFeedback.status === "working"
                   ? actionFeedback.action === "order"
                     ? "Please wait while the order is saved and notifications are prepared."
@@ -532,28 +533,29 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
                   : actionFeedback.action === "order"
                     ? "The new order is ready and this window will close automatically."
                     : "The client offer was sent and this window will close automatically."}
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+        ) : (
+          <>
+            <DialogHeader>
+              <DialogTitle className="text-xl font-semibold">Create New Order</DialogTitle>
+              <DialogDescription>Fill in the details below to create a new order</DialogDescription>
+            </DialogHeader>
+            
+            {/* Order Search Dropdown */}
+            <div className="mb-4">
+              <OrderSearchDropdown 
+                onOrderSelect={handleOrderAutofill}
+                className="w-full"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Select an existing order to autofill the form with its information
               </p>
             </div>
-          </div>
-        )}
-        <DialogHeader>
-          <DialogTitle className="text-xl font-semibold">Create New Order</DialogTitle>
-        </DialogHeader>
-        <p className="text-sm text-muted-foreground">Fill in the details below to create a new order</p>
-        
-        {/* Order Search Dropdown */}
-        <div className="mb-4">
-          <OrderSearchDropdown 
-            onOrderSelect={handleOrderAutofill}
-            className="w-full"
-          />
-          <p className="text-xs text-muted-foreground mt-1">
-            Select an existing order to autofill the form with its information
-          </p>
-        </div>
-        
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Left Column - Company Information */}
               <div>
@@ -1143,8 +1145,10 @@ Additional internal comments...`}
                 onCheckedChange={setSendToClient}
               />
             </div>
-          </form>
-        </Form>
+              </form>
+            </Form>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   );
