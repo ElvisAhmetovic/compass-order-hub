@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import Sidebar from "@/components/dashboard/Sidebar";
 import { useAuth } from "@/context/AuthContext";
@@ -22,7 +23,8 @@ const Clients = () => {
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [isMigrating, setIsMigrating] = useState(false);
-  const [filterText, setFilterText] = useState("");
+  const [searchParams] = useSearchParams();
+  const [filterText, setFilterText] = useState(searchParams.get("q") || "");
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   
