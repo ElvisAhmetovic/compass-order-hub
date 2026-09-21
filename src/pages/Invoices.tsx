@@ -661,15 +661,16 @@ const Invoices = () => {
                               <SelectItem value="partially_paid">Partially paid</SelectItem>
                               <SelectItem value="overdue">Overdue</SelectItem>
                               <SelectItem value="cancelled">Cancelled</SelectItem>
+                              <SelectItem value="refunded">Refunded</SelectItem>
                             </SelectContent>
                           </Select>
 
                           <Select value={periodFilter} onValueChange={setPeriodFilter}>
-                            <SelectTrigger className="w-[170px]">
+                            <SelectTrigger className="w-[190px]">
                               <CalendarIcon className="h-4 w-4 mr-2 opacity-50" />
                               <SelectValue placeholder="Period" />
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent className="max-h-[320px]">
                               <SelectItem value="all">All time</SelectItem>
                               <SelectItem value="today">Today</SelectItem>
                               <SelectItem value="this-week">This week</SelectItem>
@@ -678,6 +679,13 @@ const Invoices = () => {
                               <SelectItem value="this-year">This year</SelectItem>
                               <SelectItem value="last-year">Last year</SelectItem>
                               <SelectItem value="custom">Custom range</SelectItem>
+                              <SelectSeparator />
+                              <SelectGroup>
+                                <SelectLabel>Specific month</SelectLabel>
+                                {monthOptions.map(opt => (
+                                  <SelectItem key={opt.value} value={`month:${opt.value}`}>{opt.label}</SelectItem>
+                                ))}
+                              </SelectGroup>
                             </SelectContent>
                           </Select>
 
