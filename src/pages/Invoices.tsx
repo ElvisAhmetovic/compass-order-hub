@@ -547,12 +547,21 @@ const Invoices = () => {
   // Picking a month on the Paid card also drives the list below
   const handlePaidMonthChange = (value: string) => {
     setSelectedPaidMonth(value);
-    const [year, month] = value.split('-').map(Number);
-    setCustomFrom(new Date(year, month - 1, 1));
-    setCustomTo(new Date(year, month, 0));
-    setPeriodFilter('custom');
+    setCustomFrom(undefined);
+    setCustomTo(undefined);
+    setPeriodFilter(`month:${value}`);
     setStatusFilter('paid');
   };
+
+  const activeRangeLabel = useMemo(() => {
+    if (periodFilter.startsWith('month:')) {
+      return monthOptions.find(o => o.value === periodFilter.slice(6))?.label || null;
+    }
+    if (periodFilter === 'custom' && (customFrom || customTo)) {
+      return `${customFrom ? format(customFrom, 'dd.MM.yyyy') : '…'} → ${customTo ? format(customTo, 'dd.MM.yyyy') : '…'}`;
+    }
+    return null;
+  }, [periodFilter, monthOptions, customFrom, customTo]);
 
   return (
     <div className="flex min-h-screen">
