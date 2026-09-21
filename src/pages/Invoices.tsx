@@ -464,6 +464,17 @@ const Invoices = () => {
     [sortedInvoices]
   );
 
+  const totalPages = Math.max(1, Math.ceil(sortedInvoices.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const pagedInvoices = useMemo(
+    () => sortedInvoices.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE),
+    [sortedInvoices, currentPage]
+  );
+
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedFilter, statusFilter, periodFilter, customFrom, customTo, sortOption]);
+
   const filtersActive = statusFilter !== 'all' || periodFilter !== 'all';
 
   const clearFilters = () => {
