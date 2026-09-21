@@ -6,7 +6,6 @@ import CreateOrderModal from "@/components/dashboard/CreateOrderModal";
 import { DashboardCards } from "@/components/dashboard/DashboardCards";
 import { PaymentReminderCard } from "@/components/dashboard/PaymentReminderCard";
 import { FinanceSummaryCards } from "@/components/dashboard/FinanceSummaryCards";
-import { DataHealthWarnings } from "@/components/dashboard/DataHealthWarnings";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import { Order, UserRole, OrderStatus } from "@/types";
 import ActiveOrdersTabs from "@/components/dashboard/ActiveOrdersTabs";
@@ -298,7 +297,6 @@ const Dashboard = () => {
             {isDashboardHome && (
               <div className="space-y-4">
                 {isAdmin && <FinanceSummaryCards />}
-                {isAdmin && <DataHealthWarnings />}
                 <PaymentReminderCard />
                 <DashboardCards />
               </div>
