@@ -732,25 +732,107 @@ export class OrderService {
       // Don't block status update if email fails
     }
 
-    // Clear linked invoice reminders when order is cancelled
-    if (status === "Cancelled" && enabled) {
+    // Cancel / restore the invoice(s) attached to THIS order when the order is cancelled
+    if (status === "Cancelled") {
       try {
         const { data: linkedInvoices } = await supabase
           .from('invoices')
-          .select('id')
+          .select('id, invoice_number, status, auto_cancelled_by_order')
           .eq('order_id', orderId);
-        
-        if (linkedInvoices?.length) {
+
+        const { InvoiceAuditService } = await import('./invoiceAuditService');
+
+        if (enabled) {
+          const cancellable = (linkedInvoices || []).filter(inv =>
+            ['draft', 'sent', 'overdue', 'partially_paid'].includes(inv.status || '')
+          );
+
+          for (const inv of cancellable) {
+            const { error: rpcErr } = await supabase.rpc('sync_invoice_status', {
+              p_invoice_id: inv.id,
+              p_status: 'cancelled',
+              p_next_reminder_at: null,
+            });
+            if (rpcErr) {
+              console.error(`Failed to cancel invoice ${inv.invoice_number}:`, rpcErr);
+              continue;
+            }
+            await supabase
+              .from('invoices')
+              .update({ auto_cancelled_by_order: true })
+              .eq('id', inv.id);
+
+            void InvoiceAuditService.log({
+              outcome: 'success',
+              source: 'order_status_toggle',
+              order_id: orderId,
+              order_company_name: currentOrder.company_name,
+              invoice_id: inv.id,
+              invoice_number: inv.invoice_number,
+              metadata: { phase: 'auto_cancel_on_order_cancel', previous_status: inv.status },
+            });
+          }
+
+          // Stop any reminders that are still scheduled for this order
           await supabase
             .from('invoices')
             .update({ next_reminder_at: null })
             .eq('order_id', orderId);
-          console.log(`Cleared reminders for ${linkedInvoices.length} linked invoice(s) on cancel`);
+
+          await supabase
+            .from('payment_reminders')
+            .update({ status: 'cancelled' })
+            .eq('order_id', orderId)
+            .eq('status', 'scheduled');
+
+          console.log(`Cancelled ${cancellable.length} linked invoice(s) for cancelled order ${orderId}`);
+        } else {
+          // Order un-cancelled: restore only invoices that WE cancelled automatically
+          const restorable = (linkedInvoices || []).filter(
+            inv => inv.status === 'cancelled' && inv.auto_cancelled_by_order === true
+          );
+
+          if (restorable.length) {
+            const orderAfter = await this.getOrder(orderId);
+            const targetStatus = orderAfter?.status_invoice_sent ? 'sent' : 'draft';
+
+            for (const inv of restorable) {
+              const nextReminder = targetStatus === 'sent'
+                ? await nextReminderForInvoice(inv.id)
+                : null;
+
+              const { error: rpcErr } = await supabase.rpc('sync_invoice_status', {
+                p_invoice_id: inv.id,
+                p_status: targetStatus,
+                p_next_reminder_at: nextReminder,
+              });
+              if (rpcErr) {
+                console.error(`Failed to restore invoice ${inv.invoice_number}:`, rpcErr);
+                continue;
+              }
+              await supabase
+                .from('invoices')
+                .update({ auto_cancelled_by_order: false })
+                .eq('id', inv.id);
+
+              void InvoiceAuditService.log({
+                outcome: 'success',
+                source: 'order_status_toggle',
+                order_id: orderId,
+                order_company_name: currentOrder.company_name,
+                invoice_id: inv.id,
+                invoice_number: inv.invoice_number,
+                metadata: { phase: 'auto_restore_on_order_uncancel', restored_status: targetStatus },
+              });
+            }
+            console.log(`Restored ${restorable.length} invoice(s) for un-cancelled order ${orderId}`);
+          }
         }
-      } catch (reminderErr) {
-        console.error('Failed to clear invoice reminders on cancel:', reminderErr);
+      } catch (cancelErr) {
+        console.error('Failed to sync invoices on order cancel toggle:', cancelErr);
       }
     }
+
 
     // Sync linked invoice status when Invoice Paid/Sent changes, or auto-create if missing
     let invoiceSyncResult: { invoiceSynced: boolean; invoiceAction: 'updated' | 'created' | null; invoiceNumber?: string } = {
