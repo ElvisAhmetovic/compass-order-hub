@@ -808,7 +808,22 @@ const Invoices = () => {
                           </TableRow>
                         ) : sortedInvoices.length === 0 ? (
                           <TableRow>
-                            <TableCell colSpan={9} className="text-center py-8">No invoices found</TableCell>
+                            <TableCell colSpan={9} className="text-center py-8">
+                              {filtersActive || debouncedFilter ? (
+                                <div className="flex flex-col items-center gap-2">
+                                  <span className="text-muted-foreground">No invoices match these filters.</span>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => { clearFilters(); setFilterText(''); }}
+                                  >
+                                    Clear filters
+                                  </Button>
+                                </div>
+                              ) : (
+                                "No invoices found"
+                              )}
+                            </TableCell>
                           </TableRow>
                         ) : (
                           pagedInvoices.map((invoice) => (
