@@ -440,8 +440,18 @@ const Invoices = () => {
           from: customFrom ? startOfDay(customFrom) : null,
           to: customTo ? endOfDay(customTo) : null,
         };
-      default:
+      default: {
+        if (periodFilter.startsWith('month:')) {
+          const [year, month] = periodFilter.slice(6).split('-').map(Number);
+          if (year && month) {
+            return {
+              from: new Date(year, month - 1, 1),
+              to: endOfDay(new Date(year, month, 0)),
+            };
+          }
+        }
         return { from: null as Date | null, to: null as Date | null };
+      }
     }
   }, [periodFilter, customFrom, customTo]);
 
