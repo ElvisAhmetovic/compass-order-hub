@@ -140,19 +140,19 @@ const TechSupport = () => {
 
   if (loading) {
     return (
-      <Layout userRole={userRole}>
-        <div className="flex min-h-screen">
-          <Sidebar />
+      <div className="flex min-h-screen">
+        <Sidebar />
+        <Layout userRole={userRole}>
           <div className="flex-1 flex flex-col p-6">Loading tech support tickets...</div>
-        </div>
-      </Layout>
+        </Layout>
+      </div>
     );
   }
 
   return (
-    <Layout userRole={userRole}>
-      <div className="flex min-h-screen">
-        <Sidebar />
+    <div className="flex min-h-screen">
+      <Sidebar />
+      <Layout userRole={userRole}>
         <div className="flex-1 flex flex-col p-6 space-y-6">
           <div className="flex justify-between items-center">
             <div>
@@ -308,8 +308,8 @@ const TechSupport = () => {
             }}
           />
         </div>
-      </div>
-    </Layout>
+      </Layout>
+    </div>
   );
 };
 
