@@ -433,11 +433,6 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
         }
 
         console.log('Order confirmation emails sent successfully:', emailResult);
-        
-        toast({
-          title: "Order created and emails sent",
-          description: `Created order for ${values.companyName} and sent notifications to ${uniqueEmails.length} email(s) including default team addresses.`,
-        });
 
       } catch (emailError: any) {
         console.error('Exception while sending notification emails:', emailError);
