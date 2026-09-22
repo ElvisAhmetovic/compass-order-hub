@@ -767,24 +767,11 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
                   {message.content}
                   {message.file_url && (
                     <div className="mt-2 p-2 bg-background rounded border">
-                      {message.file_type?.startsWith('image/') ? (
-                        <img 
-                          src={message.file_url} 
-                          alt={message.file_name} 
-                          className="max-w-full h-auto rounded cursor-pointer"
-                          onClick={() => window.open(message.file_url, '_blank')}
-                        />
-                      ) : (
-                        <a 
-                          href={message.file_url} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:underline flex items-center gap-2"
-                        >
-                          <Paperclip className="h-4 w-4" />
-                          {message.file_name}
-                        </a>
-                      )}
+                      <TeamFileAttachment
+                        fileRef={message.file_url}
+                        fileName={message.file_name}
+                        fileType={message.file_type}
+                      />
                     </div>
                   )}
                 </div>
