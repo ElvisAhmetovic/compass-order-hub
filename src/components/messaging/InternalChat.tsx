@@ -335,7 +335,7 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
     const fileExt = file.name.split('.').pop();
     const fileName = `${user?.id}/${Date.now()}.${fileExt}`;
 
-    const { data, error } = await supabase.storage
+    const { error } = await supabase.storage
       .from('team-files')
       .upload(fileName, file);
 
@@ -344,15 +344,18 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
       return null;
     }
 
-    const { data: { publicUrl } } = supabase.storage
-      .from('team-files')
-      .getPublicUrl(fileName);
-
+    // Bucket is private: store the object path, links are signed on demand
     return {
-      url: publicUrl,
+      url: fileName,
       name: file.name,
       type: file.type
     };
+  };
+
+  const openTeamFile = async (fileRef?: string | null) => {
+    if (!fileRef) return;
+    const signedUrl = await getTeamFileSignedUrl(fileRef);
+    if (signedUrl) window.open(signedUrl, '_blank', 'noopener,noreferrer');
   };
 
   // Enhanced purge function with better error handling and RLS support
