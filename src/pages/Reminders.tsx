@@ -168,16 +168,13 @@ const Reminders = () => {
             continue;
           }
 
-          const { data: urlData } = supabase.storage
-            .from('team-files')
-            .getPublicUrl(filePath);
-
+          // Bucket is private: store the object path, links are signed on demand
           await supabase.from('file_attachments').insert({
             reminder_id: reminderId,
             file_name: attachmentFile.file.name,
             file_type: attachmentFile.file.type,
             file_size: attachmentFile.file.size,
-            file_url: urlData.publicUrl,
+            file_url: filePath,
             uploaded_by: user?.id || '',
             uploaded_by_name: user?.full_name || user?.email || 'Unknown',
           });
