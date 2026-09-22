@@ -23,7 +23,20 @@ Deno.serve(async (req) => {
     const { data: { user }, error: authError } = await anonClient.auth.getUser(authHeader.replace("Bearer ", ""));
     if (authError || !user) throw new Error("Unauthorized");
 
-    // Any authenticated team member may assign tickets
+    // Only staff (admin/agent) may assign tickets
+    const { data: callerProfile, error: profileError } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (profileError) throw new Error("Unable to verify permissions");
+    if (!callerProfile || !["admin", "agent"].includes(callerProfile.role)) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     const { ticketId, clientId, clientName, clientEmail, orderId, subject } = await req.json();
 

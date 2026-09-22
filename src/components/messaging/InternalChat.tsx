@@ -15,6 +15,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { Plus, Paperclip, Bell, Users, Volume2, Trash2 } from 'lucide-react';
 import { NotificationService } from '@/services/notificationService';
 import { playNotificationSound } from '@/hooks/useGlobalChatNotifications';
+import { getTeamFileSignedUrl } from '@/utils/teamFiles';
+import TeamFileAttachment from '@/components/attachments/TeamFileAttachment';
 
 interface InternalChatProps {
   orderId?: string;
@@ -335,7 +337,7 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
     const fileExt = file.name.split('.').pop();
     const fileName = `${user?.id}/${Date.now()}.${fileExt}`;
 
-    const { data, error } = await supabase.storage
+    const { error } = await supabase.storage
       .from('team-files')
       .upload(fileName, file);
 
@@ -344,15 +346,18 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
       return null;
     }
 
-    const { data: { publicUrl } } = supabase.storage
-      .from('team-files')
-      .getPublicUrl(fileName);
-
+    // Bucket is private: store the object path, links are signed on demand
     return {
-      url: publicUrl,
+      url: fileName,
       name: file.name,
       type: file.type
     };
+  };
+
+  const openTeamFile = async (fileRef?: string | null) => {
+    if (!fileRef) return;
+    const signedUrl = await getTeamFileSignedUrl(fileRef);
+    if (signedUrl) window.open(signedUrl, '_blank', 'noopener,noreferrer');
   };
 
   // Enhanced purge function with better error handling and RLS support
@@ -763,24 +768,11 @@ const InternalChat = ({ orderId, channelId }: InternalChatProps) => {
                   {message.content}
                   {message.file_url && (
                     <div className="mt-2 p-2 bg-background rounded border">
-                      {message.file_type?.startsWith('image/') ? (
-                        <img 
-                          src={message.file_url} 
-                          alt={message.file_name} 
-                          className="max-w-full h-auto rounded cursor-pointer"
-                          onClick={() => window.open(message.file_url, '_blank')}
-                        />
-                      ) : (
-                        <a 
-                          href={message.file_url} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:underline flex items-center gap-2"
-                        >
-                          <Paperclip className="h-4 w-4" />
-                          {message.file_name}
-                        </a>
-                      )}
+                      <TeamFileAttachment
+                        fileRef={message.file_url}
+                        fileName={message.file_name}
+                        fileType={message.file_type}
+                      />
                     </div>
                   )}
                 </div>
