@@ -16,6 +16,7 @@ import { Plus, Paperclip, Bell, Users, Volume2, Trash2 } from 'lucide-react';
 import { NotificationService } from '@/services/notificationService';
 import { playNotificationSound } from '@/hooks/useGlobalChatNotifications';
 import { getTeamFileSignedUrl } from '@/utils/teamFiles';
+import TeamFileAttachment from '@/components/attachments/TeamFileAttachment';
 
 interface InternalChatProps {
   orderId?: string;
