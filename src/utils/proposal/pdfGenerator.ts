@@ -398,6 +398,7 @@ const createSecondPageContent = (proposalData: any, language: string = "en") => 
   const paymentIban = proposalData.iban || companyInfo.iban || 'BE54905997867497';
   const paymentBic = proposalData.bic || companyInfo.bic || 'TRWIBEB1XXX';
   const paymentBlzKonto = proposalData.blzKonto || companyInfo.bankCode || '905 KONTO: 905997867497';
+  const paymentBank = 'Wise Europe SA';
 
   return `
     <style>
@@ -461,6 +462,9 @@ const createSecondPageContent = (proposalData: any, language: string = "en") => 
           ${t.paymentData || 'Payment Data'}
         </div>
         <div style="color: #2d6b4f;">
+          <div style="margin-bottom: 8px;">
+            <strong>Bank:</strong> ${paymentBank}
+          </div>
           <div style="margin-bottom: 8px;">
             <strong>IBAN:</strong> ${paymentIban}
           </div>
