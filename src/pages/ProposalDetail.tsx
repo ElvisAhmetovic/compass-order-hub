@@ -149,9 +149,9 @@ const ProposalDetail = () => {
     termsAndConditions: "",
     
     // Payment data - updated with new fields
-    iban: "BE79967023897833",
+    iban: "BE54905997867497",
     bic: "TRWIBEB1XXX",
-    blzKonto: "967 KONTO: 967023897833",
+    blzKonto: "905 KONTO: 905997867497",
     
     // Footer and company info
     footerContent: "",
@@ -253,9 +253,9 @@ const ProposalDetail = () => {
             deliveryTerms: proposal.delivery_terms || '7 days after receipt of invoice',
             paymentTerms: proposal.payment_terms || 'By placing your order you agree to pay for the services included in this offer within 7 days of receipt of the invoice.',
             termsAndConditions: proposal.terms_and_conditions || '',
-            iban: proposal.iban || 'BE79967023897833',
+            iban: proposal.iban || 'BE54905997867497',
             bic: proposal.bic || 'TRWIBEB1XXX',
-            blzKonto: proposal.blz_konto || '967 KONTO: 967023897833',
+            blzKonto: proposal.blz_konto || '905 KONTO: 905997867497',
             footerContent: proposal.footer_content || '',
             logo: proposal.logo,
             logoSize: proposal.logo_size ?? 33,
@@ -1303,7 +1303,7 @@ const ProposalDetail = () => {
                         id="iban"
                         value={proposalData.iban}
                         onChange={(e) => setProposalData(prev => ({ ...prev, iban: e.target.value }))}
-                        placeholder="BE79967023897833"
+                        placeholder="BE54905997867497"
                       />
                     </div>
                     
@@ -1323,7 +1323,7 @@ const ProposalDetail = () => {
                         id="blzKonto"
                         value={proposalData.blzKonto}
                         onChange={(e) => setProposalData(prev => ({ ...prev, blzKonto: e.target.value }))}
-                        placeholder="967 KONTO: 967023897833"
+                        placeholder="905 KONTO: 905997867497"
                       />
                     </div>
                   </div>

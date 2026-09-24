@@ -332,7 +332,7 @@ const COMPANY = {
 };
 
 const BANK_ACCOUNTS = [
-  { label: "Belgian Bank Account", iban: "BE79967023897833", bic: "TRWIBEB1XXX", blz: "967", account: "967023897833" },
+  { label: "Wise Europe SA", iban: "BE54905997867497", bic: "TRWIBEB1XXX", blz: "905", account: "905997867497" },
   { label: "German Bank Account", iban: "DE91240703680071572200", bic: "DEUTDE2HP22", bank: "Postbank/DSL Ndl of Deutsche Bank" },
   { label: "UK Bank Account (Wise)", iban: "GB73 TRWI 2314 7059 8496 33", sortCode: "23-14-70", accountNumber: "59849633", address: "56 Shoreditch High Street, London" },
 ];

@@ -72,12 +72,12 @@ const DEFAULT_COMPANY_INFO: CompanySettingsInput = {
   tax_number: "13426 27369",
   director: "Andreas Berger",
   wise: true,
-  account_number: "12345678901234567",
+  account_number: "905997867497",
   account_holder: "YOUR NAME",
   payment_method: "CREDIT CARD",
-  bank_code: "967",
-  iban: "BE79967023897833",
-  bic: "TRWIBEB1"
+  bank_code: "905",
+  iban: "BE54905997867497",
+  bic: "TRWIBEB1XXX"
 };
 
 export const companySettingsService = {

@@ -67,11 +67,11 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
   const belgiumAccount = {
     id: "belgium" as const,
     name: getAccountTranslations(templateSettings.language, "belgium"),
-    iban: "BE79967023897833",
+    iban: "BE54905997867497",
     bic: "TRWIBEB1XXX",
-    blz: "967",
-    account: "967023897833",
-    bank: undefined as string | undefined,
+    blz: "905",
+    account: "905997867497",
+    bank: "Wise Europe SA",
     sortCode: undefined as string | undefined,
     accountNumber: undefined as string | undefined,
     address: undefined as string | undefined
