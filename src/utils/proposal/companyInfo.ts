@@ -18,7 +18,7 @@ const DEFAULT_COMPANY_INFO = {
   taxNumber: "13426 27369",
   director: "Andreas Berger",
   wise: true,
-  accountNumber: "12345678901234567",
+  accountNumber: "905997867497",
   accountHolder: "YOUR NAME",
   paymentMethod: "CREDIT CARD",
   bankCode: "905",
