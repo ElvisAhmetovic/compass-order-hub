@@ -395,9 +395,9 @@ const createSecondPageContent = (proposalData: any, language: string = "en") => 
   const textDirection = getTextDirection(language);
 
   // Payment data (only if enabled) - UPDATED TO USE NEW FIELD NAMES
-  const paymentIban = proposalData.iban || companyInfo.iban || 'BE79967023897833';
+  const paymentIban = proposalData.iban || companyInfo.iban || 'BE54905997867497';
   const paymentBic = proposalData.bic || companyInfo.bic || 'TRWIBEB1XXX';
-  const paymentBlzKonto = proposalData.blzKonto || companyInfo.bankCode || '967 KONTO: 967023897833';
+  const paymentBlzKonto = proposalData.blzKonto || companyInfo.bankCode || '905 KONTO: 905997867497';
 
   return `
     <style>

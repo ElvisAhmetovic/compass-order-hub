@@ -17,11 +17,12 @@ export const PAYMENT_ACCOUNTS: PaymentAccount[] = [
   {
     id: "belgium",
     country: "Belgium",
-    name: "Belgian Bank Account",
-    iban: "BE79967023897833",
+    name: "Wise Europe SA",
+    iban: "BE54905997867497",
     bic: "TRWIBEB1XXX",
-    blz: "967",
-    account: "967023897833"
+    bank: "Wise Europe SA",
+    blz: "905",
+    account: "905997867497"
   },
   {
     id: "germany", 

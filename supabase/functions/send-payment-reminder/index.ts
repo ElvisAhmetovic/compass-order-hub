@@ -98,11 +98,11 @@ const handler = async (req: Request): Promise<Response> => {
           <div style="background:#f0f7ff; padding:20px; border-radius:12px; border:1px solid #e8edf3; margin:20px 0;">
             <h3 style="margin:0 0 15px; color:#1e3a5f; font-size:16px;">🏦 Payment Information</h3>
             <table style="width:100%; border-collapse:collapse;">
-              <tr><td colspan="2" style="font-weight:bold; padding:8px 0 4px; color:#0f1b3d;"><tr><td colspan="2" style="font-weight:bold; padding:8px 0 4px; color:#0f1b3d;">Belgian Bank Account</td></tr></td></tr>
-              <tr><td style="color:#5f6368; padding:3px 0; width:80px;">IBAN:</td><td style="color:#0f1b3d;">BE79967023897833</td></tr>
+              <tr><td colspan="2" style="font-weight:bold; padding:8px 0 4px; color:#0f1b3d;"><tr><td colspan="2" style="font-weight:bold; padding:8px 0 4px; color:#0f1b3d;">Wise Europe SA</td></tr></td></tr>
+              <tr><td style="color:#5f6368; padding:3px 0; width:80px;">IBAN:</td><td style="color:#0f1b3d;">BE54905997867497</td></tr>
               <tr><td style="color:#5f6368; padding:3px 0;">BIC:</td><td style="color:#0f1b3d;">TRWIBEB1XXX</td></tr>
-              <tr><td style="color:#5f6368; padding:3px 0;">BLZ:</td><td style="color:#0f1b3d;">967</td></tr>
-              <tr><td style="color:#5f6368; padding:3px 0;">Konto:</td><td style="color:#0f1b3d;">967023897833</td></tr>
+              <tr><td style="color:#5f6368; padding:3px 0;">BLZ:</td><td style="color:#0f1b3d;">905</td></tr>
+              <tr><td style="color:#5f6368; padding:3px 0;">Konto:</td><td style="color:#0f1b3d;">905997867497</td></tr>
               <tr><td colspan="2" style="padding:10px 0 0;"><hr style="border:none; border-top:1px solid #e8edf3;"></td></tr>
               <tr><td colspan="2" style="font-weight:bold; padding:8px 0 4px; color:#0f1b3d;">German Bank Account</td></tr>
               <tr><td style="color:#5f6368; padding:3px 0;">IBAN:</td><td style="color:#0f1b3d;">DE91240703680071572200</td></tr>

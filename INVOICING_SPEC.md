@@ -279,11 +279,11 @@ Three hard-coded accounts in `constants.ts`:
 
 | id | Account | Details |
 |---|---|---|
-| `belgium` | Belgian Bank Account | IBAN BE79967023897833, BIC TRWIBEB1XXX, BLZ 967, account 967023897833 |
+| `belgium` | Wise Europe SA | IBAN BE54905997867497, BIC TRWIBEB1XXX, Wise Europe SA, BLZ 905, account 905997867497 |
 | `germany` | German Bank Account | IBAN DE91240703680071572200, BIC DEUTDE2HP22, Postbank/DSL |
 | `uk` | UK Bank Account (Wise) | IBAN GB73 TRWI 2314 7059 8496 33, sort 23-14-70, acct 59849633 |
 
-`selectedPaymentAccount` accepts `belgium | germany | uk | both`. **`both` renders Belgium + Germany only** (not the UK account) in both the preview and the PDF. Account names are translated per language; the numbers are not.
+`selectedPaymentAccount` accepts `belgium | germany | uk | both`. **`both` renders Wise Europe SA + Germany only** (not the UK account) in both the preview and the PDF. Account names are translated per language; the numbers are not.
 
 ### 6.5 Invoice settings (`InvoiceSettings.tsx`)
 
