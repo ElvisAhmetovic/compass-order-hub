@@ -8,6 +8,7 @@ import {
 
 const NEW_IBAN = "IBAN: BE54 90 59 97 86 7497";
 const NEW_BIC = "SWIFT/BIC: TRWIBEB1XXX";
+const RETIRED_IBAN = "BE79967023897833";
 
 describe("invoice email templates", () => {
   it("uses the exact approved German subject and message", () => {
@@ -55,8 +56,10 @@ Weseler Str. 73
       expect(SUBJECT_TEMPLATES[value]).toContain("AB MEDIA TEAM");
       expect(MESSAGE_TEMPLATES[value]).toContain(NEW_IBAN);
       expect(MESSAGE_TEMPLATES[value]).toContain(NEW_BIC);
+      expect(MESSAGE_TEMPLATES[value]).toMatch(/3 (days|Tagen|dagen|jours|días|dage|dnů|dni)/i);
       expect(MESSAGE_TEMPLATES[value]).toContain("Annalena Klein");
       expect(MESSAGE_TEMPLATES[value]).toContain("+49 203 7090 7262");
+      expect(MESSAGE_TEMPLATES[value]).not.toContain(RETIRED_IBAN);
     }
   });
 
