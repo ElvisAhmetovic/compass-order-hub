@@ -24,7 +24,6 @@ import CurrencySelector from "@/components/invoices/CurrencySelector";
 import { formatCurrency } from "@/utils/currencyUtils";
 import { getOutstandingAmount, getPaidAmount } from "@/utils/invoiceBalance";
 import LineItemRow from "@/components/invoices/LineItemRow";
-import SendInvoiceDialog from "@/components/invoices/SendInvoiceDialog";
 
 import InvoiceTemplateSettings from "@/components/invoices/InvoiceTemplateSettings";
 import InvoicePreview from "@/components/invoices/InvoicePreview";
@@ -45,7 +44,6 @@ const InvoiceDetail = () => {
   const [lineItems, setLineItems] = useState<InvoiceLineItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [sendDialogOpen, setSendDialogOpen] = useState(false);
   const [sendPDFDialogOpen, setSendPDFDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("edit");
   const [clientPopoverOpen, setClientPopoverOpen] = useState(false);
@@ -859,7 +857,12 @@ const InvoiceDetail = () => {
                       {!isNewInvoice && (
                         <>
                           <Button
-                            onClick={() => setSendDialogOpen(true)}
+                            onClick={async () => {
+                              // Save pending edits first so the emailed PDF matches the saved invoice
+                              if (isDirty.current) await handleSave();
+                              setSendPDFDialogOpen(true);
+                            }}
+                            disabled={saving}
                             variant="outline"
                             className="w-full"
                           >
@@ -975,14 +978,6 @@ const InvoiceDetail = () => {
                 </div>
               </TabsContent>
             </Tabs>
-
-            {invoice && selectedClient && (
-              <SendInvoiceDialog
-                open={sendDialogOpen}
-                onOpenChange={setSendDialogOpen}
-                invoice={invoice}
-              />
-            )}
 
             <SendInvoicePDFDialog
               open={sendPDFDialogOpen}
