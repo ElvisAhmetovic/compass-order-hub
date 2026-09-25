@@ -19,7 +19,8 @@ const InvoiceTemplateSettings: React.FC<InvoiceTemplateSettingsProps> = ({
     settings,
     updateSettings,
     updateCompanyInfo,
-    isLoading
+    isLoading,
+    saveStatus
   } = useInvoiceSettings(initialSettings);
 
   useEffect(() => {
@@ -51,6 +52,7 @@ const InvoiceTemplateSettings: React.FC<InvoiceTemplateSettingsProps> = ({
       <CompanyInformation
         companyInfo={settings.companyInfo}
         onUpdateCompanyInfo={updateCompanyInfo}
+        saveStatus={saveStatus}
       />
 
       <PaymentInformation
