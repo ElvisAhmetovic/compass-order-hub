@@ -47,6 +47,8 @@ const SendInvoicePDFDialog: React.FC<SendInvoicePDFDialogProps> = ({
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
   const [language, setLanguage] = useState("en");
+  const [subjectTpl, setSubjectTpl] = useState("en");
+  const [messageTpl, setMessageTpl] = useState("en");
 
   useEffect(() => {
     if (open) {
@@ -59,12 +61,22 @@ const SendInvoicePDFDialog: React.FC<SendInvoicePDFDialogProps> = ({
       setSubject(emailTemplate.subject);
       setMessage(emailTemplate.message);
       setLanguage(lang);
+      const tplLang = TEMPLATE_LANGUAGES.some(l => l.value === lang) ? lang : "en";
+      setSubjectTpl(tplLang);
+      setMessageTpl(tplLang);
     }
-  }, [open, client, invoice, templateSettings]);
+    // Only re-initialise when the dialog opens, so typed edits aren't wiped by parent re-renders.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   const handleSend = async () => {
-    if (!clientEmail) {
-      toast({ title: "Error", description: "Client email is required.", variant: "destructive" });
+    const email = clientEmail.trim();
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast({ title: "Error", description: "A valid client email is required.", variant: "destructive" });
+      return;
+    }
+    if (!subject.trim() || !message.trim()) {
+      toast({ title: "Error", description: "Subject and message are required.", variant: "destructive" });
       return;
     }
 
@@ -74,16 +86,20 @@ const SendInvoicePDFDialog: React.FC<SendInvoicePDFDialogProps> = ({
         invoice, lineItems, client, templateSettings, formData,
       });
 
-      // Fire-and-forget: send email in background
-      supabase.functions.invoke("send-invoice-pdf", {
+      const { data: sendResult, error: sendError } = await supabase.functions.invoke("send-invoice-pdf", {
         body: {
-          client_email: clientEmail,
+          client_email: email,
           subject,
           message,
           pdf_base64: pdfBase64,
           invoice_number: invoice?.invoice_number || "new",
         },
-      }).catch(err => console.error("Background invoice email error:", err));
+      });
+      if (sendError || (sendResult && sendResult.success === false)) {
+        console.error("Invoice email failed:", sendError || sendResult);
+        toast({ title: "Email not sent", description: "The invoice email could not be delivered. Nothing was changed — please try again.", variant: "destructive" });
+        return;
+      }
 
       // Schedule payment reminder and mark as sent if invoice exists in DB
       if (invoice?.id) {
@@ -112,7 +128,8 @@ const SendInvoicePDFDialog: React.FC<SendInvoicePDFDialogProps> = ({
         }
       }
 
-      toast({ title: "Invoice sent", description: `Invoice has been sent to ${clientEmail}` });
+      toast({ title: "Invoice sent", description: `Invoice has been sent to ${email}` });
+      onSent?.();
       onOpenChange(false);
     } catch (error) {
       console.error("Error generating invoice PDF:", error);
@@ -154,11 +171,11 @@ const SendInvoicePDFDialog: React.FC<SendInvoicePDFDialogProps> = ({
 
           <div>
             <Label>Subject Template</Label>
-            <Select onValueChange={(val) => setSubject(SUBJECT_TEMPLATES[val] || "")}>
+            <Select value={subjectTpl} onValueChange={(val) => { setSubjectTpl(val); setSubject(SUBJECT_TEMPLATES[val] || ""); }} disabled={sending}>
               <SelectTrigger>
                 <SelectValue placeholder="Select language template..." />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="z-[200]">
                 {TEMPLATE_LANGUAGES.map(l => (
                   <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>
                 ))}
@@ -181,13 +198,15 @@ const SendInvoicePDFDialog: React.FC<SendInvoicePDFDialogProps> = ({
             <Select value={language} onValueChange={(lang) => {
               const emailTemplate = getInvoiceEmailTemplate(lang);
               setLanguage(lang);
+              setSubjectTpl(lang);
+              setMessageTpl(lang);
               setSubject(emailTemplate.subject);
               setMessage(emailTemplate.message);
-            }}>
+            }} disabled={sending}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="z-[200]">
                 {LANGUAGES.map(l => (
                   <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>
                 ))}
@@ -197,11 +216,11 @@ const SendInvoicePDFDialog: React.FC<SendInvoicePDFDialogProps> = ({
 
           <div>
             <Label>Message Template</Label>
-            <Select onValueChange={(val) => setMessage(MESSAGE_TEMPLATES[val] || "")}>
+            <Select value={messageTpl} onValueChange={(val) => { setMessageTpl(val); setMessage(MESSAGE_TEMPLATES[val] || ""); }} disabled={sending}>
               <SelectTrigger>
                 <SelectValue placeholder="Select language template..." />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="z-[200]">
                 {TEMPLATE_LANGUAGES.map(l => (
                   <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>
                 ))}
