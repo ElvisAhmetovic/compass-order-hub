@@ -36,10 +36,11 @@ interface SendInvoicePDFDialogProps {
   client?: Client;
   templateSettings: any;
   formData?: any;
+  onSent?: () => void;
 }
 
 const SendInvoicePDFDialog: React.FC<SendInvoicePDFDialogProps> = ({
-  open, onOpenChange, invoice, lineItems, client, templateSettings, formData,
+  open, onOpenChange, invoice, lineItems, client, templateSettings, formData, onSent,
 }) => {
   const { toast } = useToast();
   const [sending, setSending] = useState(false);
