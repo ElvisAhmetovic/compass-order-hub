@@ -110,6 +110,8 @@ const Invoices = () => {
     if (selectedPaidMonth !== currentMonth) next.set("paidMonth", selectedPaidMonth);
     if (page > 1) next.set("page", String(page));
     setSearchParams(next, { replace: true });
+    // Remember the filtered address so the detail page's back button can restore it
+    sessionStorage.setItem("invoicesListQuery", next.toString());
   }, [debouncedFilter, statusFilter, periodFilter, customFrom, customTo, sortOption, selectedPaidMonth, page, setSearchParams]);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   // Calculate overdue invoices
