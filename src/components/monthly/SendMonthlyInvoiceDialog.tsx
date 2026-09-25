@@ -15,7 +15,7 @@ import { Invoice, InvoiceLineItem, Client } from "@/types/invoice";
 
 import { Mail, Send } from "lucide-react";
 import { MonthlyContract, MonthlyInstallment } from "@/services/monthlyContractService";
-import { SUBJECT_TEMPLATES, MESSAGE_TEMPLATES, TEMPLATE_LANGUAGES } from "./monthlyInvoiceTemplates";
+import { SUBJECT_TEMPLATES, MESSAGE_TEMPLATES, TEMPLATE_LANGUAGES, getInvoiceEmailTemplate } from "./monthlyInvoiceTemplates";
 import { nextReminderForInvoice } from "@/utils/reminderInterval";
 
 const LANGUAGES = [
@@ -54,9 +54,10 @@ const SendMonthlyInvoiceDialog: React.FC<SendMonthlyInvoiceDialogProps> = ({
 
   React.useEffect(() => {
     if (open) {
+      const emailTemplate = getInvoiceEmailTemplate(detectedLanguage);
       setClientEmail(contract.client_email);
-      setSubject(SUBJECT_TEMPLATES[detectedLanguage] || `Invoice ${invoice?.invoice_number || ""} — ${installment.month_label}`);
-      setMessage(MESSAGE_TEMPLATES[detectedLanguage] || "");
+      setSubject(emailTemplate.subject);
+      setMessage(emailTemplate.message);
       setLanguage(detectedLanguage);
     }
   }, [open, contract, installment, invoice, detectedLanguage]);
@@ -292,9 +293,10 @@ const SendMonthlyInvoiceDialog: React.FC<SendMonthlyInvoiceDialogProps> = ({
           <div>
             <Label>Invoice Language</Label>
             <Select value={language} onValueChange={(lang) => {
+              const emailTemplate = getInvoiceEmailTemplate(lang);
               setLanguage(lang);
-              setSubject(SUBJECT_TEMPLATES[lang] || "");
-              setMessage(MESSAGE_TEMPLATES[lang] || "");
+              setSubject(emailTemplate.subject);
+              setMessage(emailTemplate.message);
             }}>
               <SelectTrigger>
                 <SelectValue />
