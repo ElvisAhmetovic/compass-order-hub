@@ -537,8 +537,20 @@ const Invoices = () => {
     [sortedInvoices, currentPage]
   );
 
+  // Reset to page 1 only when filters actually change after mount — not when
+  // the page is restored from the URL (e.g. coming back from an invoice).
+  const prevFiltersRef = useRef({ debouncedFilter, statusFilter, periodFilter, customFrom, customTo, sortOption });
   useEffect(() => {
-    setPage(1);
+    const prev = prevFiltersRef.current;
+    const changed =
+      prev.debouncedFilter !== debouncedFilter ||
+      prev.statusFilter !== statusFilter ||
+      prev.periodFilter !== periodFilter ||
+      prev.customFrom?.getTime() !== customFrom?.getTime() ||
+      prev.customTo?.getTime() !== customTo?.getTime() ||
+      prev.sortOption !== sortOption;
+    prevFiltersRef.current = { debouncedFilter, statusFilter, periodFilter, customFrom, customTo, sortOption };
+    if (changed) setPage(1);
   }, [debouncedFilter, statusFilter, periodFilter, customFrom, customTo, sortOption]);
 
   const filtersActive = statusFilter !== 'all' || periodFilter !== 'all';
