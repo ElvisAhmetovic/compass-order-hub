@@ -63,29 +63,6 @@ export class EmailService {
     }
   }
 
-  // Send invoice email
-  static async sendInvoiceEmail(invoiceId: string, clientEmail: string, customMessage?: string): Promise<EmailLog> {
-    try {
-      const { data, error } = await supabase.functions.invoke('send-invoice-email', {
-        body: {
-          invoice_id: invoiceId,
-          client_email: clientEmail,
-          custom_message: customMessage
-        }
-      });
-
-      if (error) {
-        console.error('Error sending invoice email:', error);
-        throw error;
-      }
-
-      return data;
-    } catch (error) {
-      console.error('Failed to send invoice email:', error);
-      throw error;
-    }
-  }
-
   // Send payment reminder
   static async sendPaymentReminder(invoiceId: string, templateId?: string): Promise<EmailLog> {
     try {
