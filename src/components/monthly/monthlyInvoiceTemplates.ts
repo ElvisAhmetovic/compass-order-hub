@@ -105,9 +105,9 @@ Information importante concernant le paiement :
 
 Nous utilisons désormais un nouveau compte bancaire belge. Pour ce paiement et tous les paiements futurs, veuillez utiliser exclusivement les nouvelles coordonnées bancaires suivantes :
 
-IBAN : BE54 90 59 97 86 7497
+IBAN: BE54 90 59 97 86 7497
 
-SWIFT/BIC : TRWIBEB1XXX
+SWIFT/BIC: TRWIBEB1XXX
 
 Veuillez ne pas virer le montant de la facture sur notre ancien compte bancaire, même si celui-ci est déjà enregistré comme bénéficiaire dans votre système.
 
