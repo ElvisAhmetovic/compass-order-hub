@@ -12,7 +12,7 @@ import { generateInvoicePDFBase64 } from "@/utils/invoicePdfGenerator";
 import { supabase } from "@/integrations/supabase/client";
 import { Invoice, InvoiceLineItem, Client } from "@/types/invoice";
 import { Mail, Send } from "lucide-react";
-import { SUBJECT_TEMPLATES, MESSAGE_TEMPLATES, TEMPLATE_LANGUAGES } from "@/components/monthly/monthlyInvoiceTemplates";
+import { SUBJECT_TEMPLATES, MESSAGE_TEMPLATES, TEMPLATE_LANGUAGES, getInvoiceEmailTemplate } from "@/components/monthly/monthlyInvoiceTemplates";
 import { nextReminderFromHours } from "@/utils/reminderInterval";
 
 const LANGUAGES = [
@@ -54,9 +54,10 @@ const SendInvoicePDFDialog: React.FC<SendInvoicePDFDialogProps> = ({
       // Prefer the invoice's Bill-To override email over the linked client's email,
       // so PDF cover email goes to the address that was saved on this invoice.
       const preferredEmail = (invoice as any)?.bill_to_email || client?.email || "";
+      const emailTemplate = getInvoiceEmailTemplate(lang);
       setClientEmail(preferredEmail);
-      setSubject(SUBJECT_TEMPLATES[lang] || SUBJECT_TEMPLATES["en"]);
-      setMessage(MESSAGE_TEMPLATES[lang] || MESSAGE_TEMPLATES["en"]);
+      setSubject(emailTemplate.subject);
+      setMessage(emailTemplate.message);
       setLanguage(lang);
     }
   }, [open, client, invoice, templateSettings]);
@@ -178,9 +179,10 @@ const SendInvoicePDFDialog: React.FC<SendInvoicePDFDialogProps> = ({
           <div>
             <Label>Invoice Language</Label>
             <Select value={language} onValueChange={(lang) => {
+              const emailTemplate = getInvoiceEmailTemplate(lang);
               setLanguage(lang);
-              setSubject(SUBJECT_TEMPLATES[lang] || "");
-              setMessage(MESSAGE_TEMPLATES[lang] || "");
+              setSubject(emailTemplate.subject);
+              setMessage(emailTemplate.message);
             }}>
               <SelectTrigger>
                 <SelectValue />
