@@ -620,7 +620,9 @@ const InvoiceDetail = () => {
                 if (!isNewInvoice && id && isDirty.current) {
                   await handleSave();
                 }
-                navigate('/invoices');
+                // Restore the list's search/filters the user came from
+                const savedQuery = sessionStorage.getItem("invoicesListQuery");
+                navigate('/invoices' + (savedQuery ? `?${savedQuery}` : ''));
               }}>
                 <ArrowLeft size={16} className="mr-2" />
                 Back to Invoices

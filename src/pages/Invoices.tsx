@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectSeparator, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useNotificationSound } from "@/hooks/useNotificationSound";
 import { 
   DropdownMenu,
@@ -64,24 +64,55 @@ const Invoices = () => {
   const navigate = useNavigate();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filterText, setFilterText] = useState("");
-  const [debouncedFilter, setDebouncedFilter] = useState("");
-  const [page, setPage] = useState(1);
+  // List state (search, filters, sort, page) lives in the URL so it survives
+  // navigating to an invoice and pressing "Back to Invoices".
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [filterText, setFilterText] = useState(() => searchParams.get("q") || "");
+  const [debouncedFilter, setDebouncedFilter] = useState(() => searchParams.get("q") || "");
+  const [page, setPage] = useState(() => Math.max(1, parseInt(searchParams.get("page") || "1", 10) || 1));
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedFilter(filterText), 250);
     return () => clearTimeout(timer);
   }, [filterText]);
-  const [sortOption, setSortOption] = useState<string>("newest");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [periodFilter, setPeriodFilter] = useState<string>("all");
-  const [customFrom, setCustomFrom] = useState<Date | undefined>(undefined);
-  const [customTo, setCustomTo] = useState<Date | undefined>(undefined);
+  const [sortOption, setSortOption] = useState<string>(() => searchParams.get("sort") || "newest");
+  const [statusFilter, setStatusFilter] = useState<string>(() => searchParams.get("status") || "all");
+  const [periodFilter, setPeriodFilter] = useState<string>(() => searchParams.get("period") || "all");
+  const [customFrom, setCustomFrom] = useState<Date | undefined>(() => {
+    const v = searchParams.get("from");
+    const d = v ? new Date(v + "T00:00:00") : undefined;
+    return d && !isNaN(d.getTime()) ? d : undefined;
+  });
+  const [customTo, setCustomTo] = useState<Date | undefined>(() => {
+    const v = searchParams.get("to");
+    const d = v ? new Date(v + "T00:00:00") : undefined;
+    return d && !isNaN(d.getTime()) ? d : undefined;
+  });
   // Selected month for "Paid" card (format: YYYY-MM, default = current month)
   const [selectedPaidMonth, setSelectedPaidMonth] = useState<string>(() => {
+    const v = searchParams.get("paidMonth");
+    if (v && /^\d{4}-\d{2}$/.test(v)) return v;
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   });
+
+  // Sync list state into the URL (replace, so Back doesn't step through every keystroke)
+  useEffect(() => {
+    const next = new URLSearchParams();
+    if (debouncedFilter) next.set("q", debouncedFilter);
+    if (statusFilter !== "all") next.set("status", statusFilter);
+    if (periodFilter !== "all") next.set("period", periodFilter);
+    if (customFrom) next.set("from", format(customFrom, "yyyy-MM-dd"));
+    if (customTo) next.set("to", format(customTo, "yyyy-MM-dd"));
+    if (sortOption !== "newest") next.set("sort", sortOption);
+    const now = new Date();
+    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    if (selectedPaidMonth !== currentMonth) next.set("paidMonth", selectedPaidMonth);
+    if (page > 1) next.set("page", String(page));
+    setSearchParams(next, { replace: true });
+    // Remember the filtered address so the detail page's back button can restore it
+    sessionStorage.setItem("invoicesListQuery", next.toString());
+  }, [debouncedFilter, statusFilter, periodFilter, customFrom, customTo, sortOption, selectedPaidMonth, page, setSearchParams]);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   // Calculate overdue invoices
   const overdueInvoices = invoices.filter(invoice => {
