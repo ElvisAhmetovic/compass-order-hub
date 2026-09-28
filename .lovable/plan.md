@@ -21,12 +21,26 @@ At the registrar for `abm-team.com`:
    `p=none` means "monitor only" — nothing gets rejected, we just get reports.
 3. Wait for DNS to propagate (usually under an hour).
 
+## Important finding from the live check (Sep 28)
+
+The domain's name servers are **Cloudflare** (alexia/otto.ns.cloudflare.com), not IONOS. The SPF record added in the IONOS panel did not appear in DNS — IONOS is not the active DNS for `abm-team.com`, so changes there have no effect.
+
+**The records must be added in the Cloudflare dashboard** (dash.cloudflare.com → abm-team.com → DNS → Records):
+
+1. **Edit the existing TXT record** that starts with `v=spf1...` — append ` include:amazonses.com` before `~all`:
+   `v=spf1 include:_spf-eu.ionos.com include:_spf.google.com include:amazonses.com ~all`
+   (Edit the existing record; never create a second SPF record.)
+2. **Add a new TXT record** — Name `_dmarc`, content:
+   `v=DMARC1; p=none; rua=mailto:invoice@team-abmedia.com`
+3. Cloudflare changes go live within seconds to minutes.
+
 ## Verification after the change
 
 - I re-check the DNS records to confirm they are live.
 - Send a test email to mail-tester.com (free) and aim for a score of 9+/10 — it shows exactly which checks pass or fail.
 - You send one invoice and one offer to a Gmail address you own and confirm it reaches the inbox.
 - After 2–4 weeks of clean DMARC reports, DMARC can be tightened later if wanted (optional).
+
 
 ## Optional follow-ups if spam complaints continue after this
 
