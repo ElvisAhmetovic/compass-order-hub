@@ -43,6 +43,7 @@ interface ClientReminderRequest {
   emailBodyHtml?: string;
   templateId?: string;
   templateName?: string;
+  language?: string;
   // Invoice attachment fields
   invoicePdfBase64?: string;
   invoiceNumber?: string;
@@ -74,7 +75,8 @@ const getDefaultEmailHtml = (
   formattedDate: string,
   orderDescription: string | null,
   formattedPrice: string,
-  customMessage: string | null
+  customMessage: string | null,
+  language: string
 ): string => {
   return `
     <!DOCTYPE html>
@@ -93,7 +95,9 @@ const getDefaultEmailHtml = (
       <div style="background: #ffffff; padding: 30px; border: 1px solid #e0e0e0; border-top: none;">
         <p style="font-size: 16px; margin-bottom: 20px;">Dear <strong>${companyName}</strong>,</p>
         
-        <p>Hello,</p><p>We would like to kindly remind you that we have not yet received your payment!</p><p>Your payment means a lot to us as motivation for continuing our work on your project, and it also covers our costs, as we have substantial investments that compel us to remind you about payments.</p><p>It would be nice if you could let us know when you were planning to pay our invoice.</p>
+        ${language === 'de'
+          ? '<p>Hallo,</p><p>Wir möchten Sie freundlich daran erinnern, dass wir Ihre Zahlung noch nicht erhalten haben!</p><p>Ihre Zahlung bedeutet uns viel als Motivation für die weitere Arbeit an Ihrem Projekt, und sie deckt auch unsere Kosten, da wir hohe Investitionen haben, aufgrund derer wir gezwungen sind, Sie an die Zahlungen zu erinnern.</p><p>Es wäre schön, wenn Sie uns mitteilen würden, wann Sie vorhatten, unsere Rechnung zu bezahlen.</p>'
+          : '<p>Hello,</p><p>We would like to kindly remind you that we have not yet received your payment!</p><p>Your payment means a lot to us as motivation for continuing our work on your project, and it also covers our costs, as we have substantial investments that compel us to remind you about payments.</p><p>It would be nice if you could let us know when you were planning to pay our invoice.</p>'}
         
         <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ffc107;">
           <h3 style="margin: 0 0 15px 0; color: #1a1a2e;">Order Details</h3>
@@ -170,7 +174,7 @@ const getDefaultEmailHtml = (
         </div>
         
         <p style="margin-top: 20px;">
-          Kind regards,<br>Annalena Klein<br>AB MEDIA TEAM<br>+49 203 7090 7262
+          ${language === 'de' ? 'Herzliche Grüße' : 'Kind regards'},<br>Annalena Klein<br>AB MEDIA TEAM<br>+49 203 7090 7262
         </p>
       </div>
       
@@ -277,6 +281,7 @@ const handler = async (req: Request): Promise<Response> => {
       emailBodyHtml,
       templateId,
       templateName,
+      language,
       invoicePdfBase64,
       invoiceNumber,
     }: ClientReminderRequest = await req.json();
@@ -321,7 +326,8 @@ const handler = async (req: Request): Promise<Response> => {
         formattedDate,
         orderDescription,
         formattedPrice,
-        customMessage
+        customMessage,
+        language || 'en'
       );
       finalSubject = `💰 Payment Reminder - AB Media Team - ${formattedPrice}`;
       console.log("Using default email template");
