@@ -1,4 +1,5 @@
 // Email Translation Service - Provides translated email templates for 8 languages
+import { getPaymentReminderHtml } from './paymentReminderCopy';
 
 export type SupportedLanguage = 'en' | 'de' | 'de-CH' | 'nl' | 'cs' | 'sv' | 'it' | 'fr';
 
@@ -1021,7 +1022,13 @@ export const emailTranslationService = {
       return null;
     }
     
-    return translations[language]?.[templateType] || null;
+    const template = translations[language]?.[templateType];
+    if (!template) return null;
+    if (language !== 'en' && language !== 'de') return template;
+    return {
+      subject: template.subject,
+      body: `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">${getPaymentReminderHtml(language)}<p><strong>${language === 'de' ? 'Auftrag' : 'Order'}:</strong> {companyName}<br><strong>${language === 'de' ? 'Offener Betrag' : 'Amount Due'}:</strong> {amount}</p>{customMessage}</div>`,
+    };
   },
 
   /**

@@ -93,7 +93,7 @@ const getDefaultEmailHtml = (
       <div style="background: #ffffff; padding: 30px; border: 1px solid #e0e0e0; border-top: none;">
         <p style="font-size: 16px; margin-bottom: 20px;">Dear <strong>${companyName}</strong>,</p>
         
-        <p style="margin-bottom: 20px;">We hope this message finds you well. This is a friendly reminder regarding your outstanding payment for the services we provided.</p>
+        <p>Hello,</p><p>We would like to kindly remind you that we have not yet received your payment!</p><p>Your payment means a lot to us as motivation for continuing our work on your project, and it also covers our costs, as we have substantial investments that compel us to remind you about payments.</p><p>It would be nice if you could let us know when you were planning to pay our invoice.</p>
         
         <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ffc107;">
           <h3 style="margin: 0 0 15px 0; color: #1a1a2e;">Order Details</h3>
@@ -141,7 +141,6 @@ const getDefaultEmailHtml = (
         </div>
         ` : ''}
         
-        <p style="margin: 20px 0;">We kindly request that you complete your payment at your earliest convenience. If you have any questions or concerns regarding this invoice, please don't hesitate to reach out to us.</p>
         
         <div style="background: #fff3e0; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ff9800;">
           <p style="margin: 0; font-weight: bold;">📞 Need assistance?</p>
@@ -170,11 +169,8 @@ const getDefaultEmailHtml = (
           </table>
         </div>
         
-        <p style="margin-top: 30px;">Thank you for your business and continued partnership.</p>
-        
         <p style="margin-top: 20px;">
-          Best regards,<br>
-          <strong>AB Media Team</strong>
+          Kind regards,<br>Annalena Klein<br>AB MEDIA TEAM<br>+49 203 7090 7262
         </p>
       </div>
       
