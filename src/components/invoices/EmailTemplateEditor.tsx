@@ -20,6 +20,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { emailTemplateService, EmailTemplate } from "@/services/emailTemplateService";
 import { useToast } from "@/hooks/use-toast";
 import { Eye, Save, Plus, Loader2 } from "lucide-react";
+import { PAYMENT_REMINDER_COPY, PaymentReminderLanguage } from "@/services/paymentReminderCopy";
 
 interface EmailTemplateVariables {
   clientName: string;
@@ -70,6 +71,7 @@ const EmailTemplateEditor: React.FC<EmailTemplateEditorProps> = ({
   const [isDefault, setIsDefault] = useState(false);
   const [sending, setSending] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [language, setLanguage] = useState<PaymentReminderLanguage>("en");
   const { toast } = useToast();
 
   const templateVariables: EmailTemplateVariables = {
@@ -116,7 +118,16 @@ const EmailTemplateEditor: React.FC<EmailTemplateEditorProps> = ({
     if (template) {
       setSelectedTemplate(template);
       setSubject(template.subject);
-      setBody(template.body);
+      setBody(language === "de" && template.user_id === null
+        ? PAYMENT_REMINDER_COPY.de
+        : template.body);
+    }
+  };
+
+  const handleLanguageChange = (value: PaymentReminderLanguage) => {
+    setLanguage(value);
+    if (selectedTemplate?.user_id === null) {
+      setBody(value === "de" ? PAYMENT_REMINDER_COPY.de : selectedTemplate.body);
     }
   };
 
@@ -306,6 +317,17 @@ const EmailTemplateEditor: React.FC<EmailTemplateEditorProps> = ({
                   </div>
                 </SelectItem>
               ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="reminderLanguage">Email Language</Label>
+          <Select value={language} onValueChange={(value) => handleLanguageChange(value as PaymentReminderLanguage)}>
+            <SelectTrigger id="reminderLanguage"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="en">English</SelectItem>
+              <SelectItem value="de">Deutsch</SelectItem>
             </SelectContent>
           </Select>
         </div>
