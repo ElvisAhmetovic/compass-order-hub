@@ -99,7 +99,7 @@ const EmailTemplateEditor: React.FC<EmailTemplateEditorProps> = ({
       if (defaultTemplate) {
         setSelectedTemplate(defaultTemplate);
         setSubject(defaultTemplate.subject);
-        setBody(defaultTemplate.body);
+        setBody(defaultTemplate.user_id === null ? getBuiltInInvoiceBody("en") : defaultTemplate.body);
       }
     } catch (error) {
       console.error("Error loading templates:", error);
@@ -118,21 +118,21 @@ const EmailTemplateEditor: React.FC<EmailTemplateEditorProps> = ({
     if (template) {
       setSelectedTemplate(template);
       setSubject(template.subject);
-      setBody(language === "de" && template.user_id === null
-        ? getGermanInvoiceReminderBody()
-        : template.body);
+      setBody(template.user_id === null ? getBuiltInInvoiceBody(language) : template.body);
     }
   };
 
-  const getGermanInvoiceReminderBody = () => PAYMENT_REMINDER_COPY.de.replace(
-    '\n\nHerzliche Grüße',
-    '\n\nRechnung: {invoiceNumber}\nOffener Betrag: {amount}\n\nHerzliche Grüße'
+  const getBuiltInInvoiceBody = (selectedLanguage: PaymentReminderLanguage) => PAYMENT_REMINDER_COPY[selectedLanguage].replace(
+    selectedLanguage === 'de' ? '\n\nHerzliche Grüße' : '\n\nKind regards,',
+    selectedLanguage === 'de'
+      ? '\n\nRechnung: {invoiceNumber}\nOffener Betrag: {amount}\n\nHerzliche Grüße'
+      : '\n\nInvoice: {invoiceNumber}\nAmount Due: {amount}\n\nKind regards,'
   );
 
   const handleLanguageChange = (value: PaymentReminderLanguage) => {
     setLanguage(value);
     if (selectedTemplate?.user_id === null) {
-      setBody(value === "de" ? getGermanInvoiceReminderBody() : selectedTemplate.body);
+      setBody(getBuiltInInvoiceBody(value));
     }
   };
 
