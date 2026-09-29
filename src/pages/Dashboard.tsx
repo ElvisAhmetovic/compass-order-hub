@@ -13,6 +13,7 @@ import Sidebar from "@/components/dashboard/Sidebar";
 import { useLocation, useSearchParams } from "react-router-dom";
 import { useOrderModal } from "@/hooks/useOrderModal";
 import { useAuth } from "@/context/AuthContext";
+import { canViewFinanceTotals } from "@/config/financeAccess";
 import { Button } from "@/components/ui/button";
 import { MigrationService } from "@/services/migrationService";
 import { toast } from "@/hooks/use-toast";
@@ -296,7 +297,7 @@ const Dashboard = () => {
             
             {isDashboardHome && (
               <div className="space-y-4">
-                {isAdmin && <FinanceSummaryCards />}
+                {canViewFinanceTotals(user?.email) && <FinanceSummaryCards />}
                 <PaymentReminderCard />
                 <DashboardCards />
               </div>
