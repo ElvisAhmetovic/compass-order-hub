@@ -12,6 +12,7 @@ import {
 import { OrderStatus } from "@/types";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { canViewFinanceTotals } from "@/config/financeAccess";
 import { Order } from "@/types";
 import { OrderService } from "@/services/orderService";
 
@@ -36,6 +37,8 @@ const SummaryCard = ({
   value,
   colorClass = "text-primary"
 }: SummaryCardProps) => {
+  const { user } = useAuth();
+  const showMoney = canViewFinanceTotals(user?.email);
   return (
     <Card className="border shadow-sm">
       <CardContent className="p-6">
@@ -46,7 +49,7 @@ const SummaryCard = ({
           <div>
             <h3 className="font-medium text-lg">{title}</h3>
             <div className="text-muted-foreground text-sm">
-              {count} {count === 1 ? 'order' : 'orders'} — €{value.toFixed(2)}
+              {count} {count === 1 ? 'order' : 'orders'}{showMoney && <> — €{value.toFixed(2)}</>}
             </div>
           </div>
         </div>
