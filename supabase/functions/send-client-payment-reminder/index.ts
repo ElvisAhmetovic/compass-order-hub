@@ -174,7 +174,7 @@ const getDefaultEmailHtml = (
         </div>
         
         <p style="margin-top: 20px;">
-          ${language === 'de' ? 'Herzliche Grüße' : 'Kind regards'},<br>Annalena Klein<br>AB MEDIA TEAM<br>+49 203 7090 7262
+          ${language === 'de' ? 'Herzliche Grüße' : 'Kind regards,'}<br>Annalena Klein<br>AB MEDIA TEAM<br>+49 203 7090 7262
         </p>
       </div>
       
