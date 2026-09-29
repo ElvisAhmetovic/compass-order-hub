@@ -81,7 +81,7 @@ const SendClientReminderModal = ({ open, onOpenChange, order, onEmailSent }: Sen
       const formattedPrice = formatCurrency(order.price || 0, order.currency || "EUR");
       
       // Check if this template has translations available
-      if (emailTranslationService.hasTranslations(selectedTemplate.name)) {
+      if (selectedTemplate.user_id === null && emailTranslationService.hasTranslations(selectedTemplate.name)) {
         const translated = emailTranslationService.getTranslatedTemplate(
           selectedTemplate.name,
           selectedLanguage
@@ -267,7 +267,7 @@ const SendClientReminderModal = ({ open, onOpenChange, order, onEmailSent }: Sen
     }
   };
 
-  const hasTranslations = selectedTemplate ? emailTranslationService.hasTranslations(selectedTemplate.name) : false;
+  const hasTranslations = selectedTemplate?.user_id === null && emailTranslationService.hasTranslations(selectedTemplate.name);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
