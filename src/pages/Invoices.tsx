@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from "react";
 import Layout from "@/components/layout/Layout";
 import Sidebar from "@/components/dashboard/Sidebar";
 import { useAuth } from "@/context/AuthContext";
+import { canViewFinanceTotals } from "@/config/financeAccess";
 import { Invoice } from "@/types/invoice";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -645,7 +646,8 @@ const Invoices = () => {
 
               <TabsContent value="overview" className="space-y-6">
                 {/* Summary Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className={`grid grid-cols-1 gap-6 ${canViewFinanceTotals(user?.email) ? "md:grid-cols-3" : "md:grid-cols-1"}`}>
+                  {canViewFinanceTotals(user?.email) && (<>
                   <Card>
                     <CardHeader className="pb-2">
                       <CardTitle className="text-sm font-medium text-gray-600">Total Outstanding</CardTitle>
@@ -675,6 +677,7 @@ const Invoices = () => {
                       <div className="text-2xl font-bold text-green-600">€{totalPaidThisMonth.toFixed(2)}</div>
                     </CardContent>
                   </Card>
+                  </>)}
                   
                   <Card>
                     <CardHeader className="pb-2">

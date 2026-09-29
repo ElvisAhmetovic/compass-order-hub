@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus, CalendarRange, Search } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { canViewFinanceTotals } from "@/config/financeAccess";
 import CreateMonthlyContractModal from "@/components/monthly/CreateMonthlyContractModal";
 import MonthlyInstallmentsTable from "@/components/monthly/MonthlyInstallmentsTable";
 import CronRunStatusPanel from "@/components/monthly/CronRunStatusPanel";
@@ -92,7 +93,7 @@ const MonthlyPackages: React.FC = () => {
               )}
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className={`grid grid-cols-1 gap-4 ${canViewFinanceTotals(user?.email) ? "md:grid-cols-4" : "md:grid-cols-3"}`}>
               <div className="bg-card border rounded-lg p-4">
                 <p className="text-sm text-muted-foreground">Active Contracts</p>
                 <p className="text-2xl font-bold text-foreground">{totalContracts}</p>
@@ -105,6 +106,7 @@ const MonthlyPackages: React.FC = () => {
                 <p className="text-sm text-muted-foreground">Open Installments</p>
                 <p className="text-2xl font-bold text-red-600">{totalUnpaid}</p>
               </div>
+              {canViewFinanceTotals(user?.email) && (
               <div className="bg-card border rounded-lg p-4">
                 <p className="text-sm text-muted-foreground">Revenue (paid)</p>
                 <p className="text-2xl font-bold text-primary">
@@ -113,6 +115,7 @@ const MonthlyPackages: React.FC = () => {
                   )}
                 </p>
               </div>
+              )}
             </div>
 
             <CronRunStatusPanel isAdmin={isAdmin} onRefresh={fetchData} />
