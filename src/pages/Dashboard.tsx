@@ -21,7 +21,8 @@ import { toast } from "@/hooks/use-toast";
 import TemporaryNotificationBanner from "@/components/notifications/TemporaryNotificationBanner";
 import { supabase } from "@/integrations/supabase/client";
 import PaymentReminderActivityPanel from "@/components/dashboard/PaymentReminderActivityPanel";
-import { Clock } from "lucide-react";
+import { Clock, FileArchive, Loader2 } from "lucide-react";
+import { exportUnpaidInvoiceSentOrders } from "@/services/unpaidOrdersExport";
 import { usePaymentReminderDueNotifications } from "@/hooks/usePaymentReminderDueNotifications";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -32,6 +33,21 @@ const Dashboard = () => {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [showMigrationButton, setShowMigrationButton] = useState(false);
   const [activityPanelOpen, setActivityPanelOpen] = useState(false);
+  const [zipping, setZipping] = useState(false);
+  const handleZipIt = async () => {
+    setZipping(true);
+    try {
+      const count = await exportUnpaidInvoiceSentOrders();
+      toast({
+        title: count ? "Download ready" : "Nothing to export",
+        description: count ? `${count} unpaid "Invoice Sent" orders exported.` : 'No orders are currently only "Invoice Sent".',
+      });
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "Export failed", description: e?.message || "Please try again." });
+    } finally {
+      setZipping(false);
+    }
+  };
   
   // Payment reminder due notifications
   const { dueCount, clearDueCount } = usePaymentReminderDueNotifications();
@@ -244,6 +260,12 @@ const Dashboard = () => {
                     : `Manage and track all ${getPageTitle().toLowerCase()} in the system`
                 }
                 onCreateOrder={isAdmin ? () => setCreateModalOpen(true) : undefined}
+                extraActions={userRole !== 'client' ? (
+                  <Button variant="outline" disabled={zipping} onClick={handleZipIt}>
+                    {zipping ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileArchive className="mr-2 h-4 w-4" />}
+                    Zip It
+                  </Button>
+                ) : undefined}
               />
               {/* Activity Log Toggle Button - Hidden from clients */}
               {userRole !== 'client' && (
