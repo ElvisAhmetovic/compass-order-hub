@@ -1,3 +1,4 @@
+import { computeDueDate } from "@/utils/monthlyDueDate";
 import React, { useState, useEffect } from "react";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -156,7 +157,7 @@ const MonthlyInstallmentsTable: React.FC<Props> = ({ contracts, installments, on
       const invoice = await InvoiceService.createInvoice({
         client_id: matched.id,
         issue_date: new Date().toISOString().split("T")[0],
-        due_date: inst.due_date,
+        due_date: computeDueDate(new Date().toISOString().split("T")[0], inst.due_date),
         currency: contract.currency || "EUR",
         payment_terms: "Net 3",
         notes: `Monthly package: ${inst.month_label}`,

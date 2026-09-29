@@ -382,6 +382,14 @@ async function findOrCreateClient(supabase: any, contract: any): Promise<string>
   return newClient.id;
 }
 
+// Due date is never before the issue date: max(issue + 7 days, installment due)
+function computeDueDate(issueDate: string, installmentDue?: string | null): string {
+  const d = new Date(issueDate + "T00:00:00Z");
+  d.setUTCDate(d.getUTCDate() + 7);
+  const min = d.toISOString().split("T")[0];
+  return installmentDue && installmentDue > min ? installmentDue : min;
+}
+
 // ── Create invoice + line item ─────────────────────────────────────
 async function createInvoice(
   supabase: any,
@@ -912,7 +920,7 @@ Deno.serve(async (req) => {
           let invoiceId = existing.invoice_id;
           if (!invoiceId) {
             const clientId = await findOrCreateClient(supabase, contract);
-            const dueDate = `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-15`;
+            const dueDate = computeDueDate(new Date().toISOString().split("T")[0], `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-15`);
             const inv = await createInvoice(supabase, clientId, contract, monthLabel, dueDate, lang);
             invoiceId = inv.invoiceId;
             invoiceNumber = inv.invoiceNumber;
@@ -928,7 +936,7 @@ Deno.serve(async (req) => {
           const netAmount = contractVatRate > 0 ? Math.round((totalAmount / (1 + contractVatRate)) * 100) / 100 : totalAmount;
           const vatAmount = contractVatRate > 0 ? Math.round((totalAmount - netAmount) * 100) / 100 : 0;
           const description = INVOICE_DB_TEXT[lang].lineDescription(contract.description, monthLabel);
-          const dueDate = `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-15`;
+          const dueDate = computeDueDate(new Date().toISOString().split("T")[0], `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-15`);
 
           const pdfBytes = generateInvoicePDF(
             invoiceNumber, new Date().toISOString().split("T")[0], dueDate,
@@ -987,7 +995,7 @@ Deno.serve(async (req) => {
         }
 
         const clientId = await findOrCreateClient(supabase, contract);
-        const dueDate = `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-15`;
+        const dueDate = computeDueDate(new Date().toISOString().split("T")[0], `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-15`);
         const { invoiceId, invoiceNumber, issueDate } = await createInvoice(supabase, clientId, contract, monthLabel, dueDate, lang);
         invoicesCreated++;
 
