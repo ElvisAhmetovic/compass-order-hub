@@ -119,15 +119,20 @@ const EmailTemplateEditor: React.FC<EmailTemplateEditorProps> = ({
       setSelectedTemplate(template);
       setSubject(template.subject);
       setBody(language === "de" && template.user_id === null
-        ? PAYMENT_REMINDER_COPY.de
+        ? getGermanInvoiceReminderBody()
         : template.body);
     }
   };
 
+  const getGermanInvoiceReminderBody = () => PAYMENT_REMINDER_COPY.de.replace(
+    '\n\nHerzliche Grüße',
+    '\n\nRechnung: {invoiceNumber}\nOffener Betrag: {amount}\n\nHerzliche Grüße'
+  );
+
   const handleLanguageChange = (value: PaymentReminderLanguage) => {
     setLanguage(value);
     if (selectedTemplate?.user_id === null) {
-      setBody(value === "de" ? PAYMENT_REMINDER_COPY.de : selectedTemplate.body);
+      setBody(value === "de" ? getGermanInvoiceReminderBody() : selectedTemplate.body);
     }
   };
 
