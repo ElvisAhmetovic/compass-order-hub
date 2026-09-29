@@ -1,3 +1,4 @@
+import { computeDueDate } from "@/utils/monthlyDueDate";
 import React, { useState } from "react";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
@@ -115,7 +116,7 @@ const SendMonthlyInvoiceDialog: React.FC<SendMonthlyInvoiceDialogProps> = ({
           currentInvoice = await InvoiceService.createInvoice({
             client_id: currentClient.id,
             issue_date: new Date().toISOString().split("T")[0],
-            due_date: installment.due_date,
+            due_date: computeDueDate(new Date().toISOString().split("T")[0], installment.due_date),
             currency: contract.currency || "EUR",
             payment_terms: "",
             notes: "",
@@ -183,7 +184,7 @@ const SendMonthlyInvoiceDialog: React.FC<SendMonthlyInvoiceDialogProps> = ({
       const formData = {
         currency: contract.currency || "EUR",
         issue_date: new Date().toISOString().split("T")[0],
-        due_date: installment.due_date,
+        due_date: computeDueDate(new Date().toISOString().split("T")[0], installment.due_date),
       };
 
       const pdfBase64 = await generateInvoicePDFBase64({
