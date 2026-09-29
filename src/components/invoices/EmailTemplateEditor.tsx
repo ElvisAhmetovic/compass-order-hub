@@ -20,6 +20,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { emailTemplateService, EmailTemplate } from "@/services/emailTemplateService";
 import { useToast } from "@/hooks/use-toast";
 import { Eye, Save, Plus, Loader2 } from "lucide-react";
+import { PAYMENT_REMINDER_COPY, PaymentReminderLanguage } from "@/services/paymentReminderCopy";
 
 interface EmailTemplateVariables {
   clientName: string;
@@ -70,6 +71,7 @@ const EmailTemplateEditor: React.FC<EmailTemplateEditorProps> = ({
   const [isDefault, setIsDefault] = useState(false);
   const [sending, setSending] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [language, setLanguage] = useState<PaymentReminderLanguage>("en");
   const { toast } = useToast();
 
   const templateVariables: EmailTemplateVariables = {
@@ -97,7 +99,7 @@ const EmailTemplateEditor: React.FC<EmailTemplateEditorProps> = ({
       if (defaultTemplate) {
         setSelectedTemplate(defaultTemplate);
         setSubject(defaultTemplate.subject);
-        setBody(defaultTemplate.body);
+        setBody(defaultTemplate.user_id === null ? getBuiltInInvoiceBody("en") : defaultTemplate.body);
       }
     } catch (error) {
       console.error("Error loading templates:", error);
@@ -116,7 +118,21 @@ const EmailTemplateEditor: React.FC<EmailTemplateEditorProps> = ({
     if (template) {
       setSelectedTemplate(template);
       setSubject(template.subject);
-      setBody(template.body);
+      setBody(template.user_id === null ? getBuiltInInvoiceBody(language) : template.body);
+    }
+  };
+
+  const getBuiltInInvoiceBody = (selectedLanguage: PaymentReminderLanguage) => PAYMENT_REMINDER_COPY[selectedLanguage].replace(
+    selectedLanguage === 'de' ? '\n\nHerzliche Grüße' : '\n\nKind regards,',
+    selectedLanguage === 'de'
+      ? '\n\nRechnung: {invoiceNumber}\nOffener Betrag: {amount}\n\nHerzliche Grüße'
+      : '\n\nInvoice: {invoiceNumber}\nAmount Due: {amount}\n\nKind regards,'
+  );
+
+  const handleLanguageChange = (value: PaymentReminderLanguage) => {
+    setLanguage(value);
+    if (selectedTemplate?.user_id === null) {
+      setBody(getBuiltInInvoiceBody(value));
     }
   };
 
@@ -306,6 +322,17 @@ const EmailTemplateEditor: React.FC<EmailTemplateEditorProps> = ({
                   </div>
                 </SelectItem>
               ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="reminderLanguage">Email Language</Label>
+          <Select value={language} onValueChange={(value) => handleLanguageChange(value as PaymentReminderLanguage)}>
+            <SelectTrigger id="reminderLanguage"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="en">English</SelectItem>
+              <SelectItem value="de">Deutsch</SelectItem>
             </SelectContent>
           </Select>
         </div>
