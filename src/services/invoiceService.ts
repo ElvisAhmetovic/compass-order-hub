@@ -719,7 +719,7 @@ export class InvoiceService {
         client_id: clientId,
         proposal_id: proposalId,
         due_date: dueDate.toISOString(),
-        currency: 'EUR',
+        currency: (proposal as any).currency || 'EUR',
         payment_terms: 'Net 30',
         notes: `Generated from proposal ${proposal.number}`,
         user_id: user.id,
