@@ -65,7 +65,8 @@ export const useInvoiceSettings = (initialSettings?: any) => {
     let cancelled = false;
     loadCompanyInfo()
       .then((info) => {
-        if (!cancelled) setSettings(initializeSettings(info));
+        // Keep the currency already set (e.g. from the loaded invoice) so it is not reset to the default
+        if (!cancelled) setSettings(prev => ({ ...initializeSettings(info), currency: prev.currency }));
       })
       .finally(() => {
         if (!cancelled) setIsLoading(false);
