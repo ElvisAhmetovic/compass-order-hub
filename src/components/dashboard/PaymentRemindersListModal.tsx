@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { getCurrencySymbol } from "@/utils/currencyUtils";
 import {
   Dialog,
   DialogContent,
