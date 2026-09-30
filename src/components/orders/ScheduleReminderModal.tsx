@@ -1,3 +1,4 @@
+import { getCurrencySymbol } from "@/utils/currencyUtils";
 import { useState, useEffect } from "react";
 import {
   Dialog,
@@ -250,7 +251,7 @@ const ScheduleReminderModal = ({
             <div className="font-medium mb-1">Order Details</div>
             <div className="text-muted-foreground space-y-1">
               <p>Company: {order.company_name}</p>
-              {order.price && <p>Amount: €{order.price.toLocaleString()}</p>}
+              {order.price && <p>Amount: {getCurrencySymbol(order.currency || "EUR")}{order.price.toLocaleString("de-DE", { minimumFractionDigits: 2 })}</p>}
               {order.contact_email && <p>Contact: {order.contact_email}</p>}
             </div>
           </div>

@@ -99,9 +99,9 @@ export const PaymentRemindersListModal = ({
     return new Date(remindAt) < new Date();
   };
 
-  const formatPrice = (price: number | null) => {
+  const formatPrice = (price: number | null, currency?: string | null) => {
     if (price === null) return "N/A";
-    return `€${Number(price).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    return `${getCurrencySymbol(currency || 'EUR')}${Number(price).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
   return (
@@ -153,7 +153,7 @@ export const PaymentRemindersListModal = ({
                         </span>
                       </div>
                       <div className="text-sm mt-1">
-                        <span className="font-medium">{formatPrice(reminder.order.price)}</span>
+                        <span className="font-medium">{formatPrice(reminder.order.price, (reminder.order as any).currency)}</span>
                       </div>
                       {reminder.note && (
                         <p className="text-sm text-muted-foreground mt-2 line-clamp-2">

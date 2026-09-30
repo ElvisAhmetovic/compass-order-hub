@@ -203,7 +203,7 @@ export const PaymentReminderService = {
     };
   },
 
-  async getAllActiveRemindersWithOrders(): Promise<Array<PaymentReminder & { order: { id: string; company_name: string; price: number | null; contact_email: string | null } }>> {
+  async getAllActiveRemindersWithOrders(): Promise<Array<PaymentReminder & { order: { id: string; company_name: string; price: number | null; currency?: string | null; contact_email: string | null } }>> {
     const { data: reminders, error: remindersError } = await supabase
       .from('payment_reminders')
       .select('*')
@@ -217,7 +217,7 @@ export const PaymentReminderService = {
 
     const { data: orders, error: ordersError } = await supabase
       .from('orders')
-      .select('id, company_name, price, contact_email')
+      .select('id, company_name, price, currency, contact_email')
       .in('id', orderIds);
 
     if (ordersError) throw ordersError;
@@ -230,6 +230,7 @@ export const PaymentReminderService = {
         id: reminder.order_id, 
         company_name: 'Unknown', 
         price: null, 
+        currency: null,
         contact_email: null 
       }
     }));

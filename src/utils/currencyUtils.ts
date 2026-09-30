@@ -15,7 +15,7 @@ export const getCurrencySymbol = (currencyCode: string = 'EUR'): string => {
     'DKK': 'kr'
   };
   
-  return currencyMap[currencyCode] || '€';
+  return currencyMap[currencyCode] || (currencyCode ? `${currencyCode} ` : '€');
 };
 
 export const formatCurrency = (amount: number, currencyCode: string = 'EUR'): string => {
