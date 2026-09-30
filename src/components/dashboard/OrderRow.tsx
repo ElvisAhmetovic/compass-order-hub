@@ -179,7 +179,7 @@ const OrderRow = ({
         client_id: clientId,
         issue_date: new Date().toISOString().split('T')[0],
         due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days from now
-        currency: 'EUR',
+        currency: orderData.currency || 'EUR',
         payment_terms: 'Net 30',
         notes: `Invoice created from order. Order ID: ${orderId}`,
         internal_notes: `Automatically generated from order ${orderId}`,
