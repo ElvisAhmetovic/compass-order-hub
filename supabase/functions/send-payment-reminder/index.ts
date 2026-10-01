@@ -110,10 +110,13 @@ const handler = async (req: Request): Promise<Response> => {
               <tr><td style="color:#5f6368; padding:3px 0;">Bank:</td><td style="color:#0f1b3d;">Postbank/DSL Ndl of Deutsche Bank</td></tr>
               <tr><td colspan="2" style="padding:10px 0 0;"><hr style="border:none; border-top:1px solid #e8edf3;"></td></tr>
               <tr><td colspan="2" style="font-weight:bold; padding:8px 0 4px; color:#0f1b3d;">UK Bank Account (Wise)</td></tr>
-              <tr><td style="color:#5f6368; padding:3px 0;">IBAN:</td><td style="color:#0f1b3d;">GB73 TRWI 2314 7059 8496 33</td></tr>
-              <tr><td style="color:#5f6368; padding:3px 0;">Sort Code:</td><td style="color:#0f1b3d;">23-14-70</td></tr>
-              <tr><td style="color:#5f6368; padding:3px 0;">Account Number:</td><td style="color:#0f1b3d;">59849633</td></tr>
-              <tr><td style="color:#5f6368; padding:3px 0;">Address:</td><td style="color:#0f1b3d;">56 Shoreditch High Street, London</td></tr>
+              <tr><td style="color:#5f6368; padding:3px 0;">Account Holder:</td><td style="color:#0f1b3d;">Ab Media Team Ltd</td></tr>
+              <tr><td style="color:#5f6368; padding:3px 0;">IBAN:</td><td style="color:#0f1b3d;">GB61 TRWI 6084 6495 8547 53</td></tr>
+              <tr><td style="color:#5f6368; padding:3px 0;">BIC:</td><td style="color:#0f1b3d;">TRWIGB2LXXX</td></tr>
+              <tr><td style="color:#5f6368; padding:3px 0;">Bank:</td><td style="color:#0f1b3d;">Wise Payments Limited</td></tr>
+              <tr><td style="color:#5f6368; padding:3px 0;">Sort Code:</td><td style="color:#0f1b3d;">60-84-64</td></tr>
+              <tr><td style="color:#5f6368; padding:3px 0;">Account Number:</td><td style="color:#0f1b3d;">95854753</td></tr>
+              <tr><td style="color:#5f6368; padding:3px 0;">Address:</td><td style="color:#0f1b3d;">Worship Square, 65 Clifton Street, London, EC2A 4JE, United Kingdom</td></tr>
             </table>
           </div>
           

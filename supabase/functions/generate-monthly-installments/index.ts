@@ -334,7 +334,7 @@ const COMPANY = {
 const BANK_ACCOUNTS = [
   { label: "Wise Europe SA", iban: "BE54905997867497", bic: "TRWIBEB1XXX", blz: "905", account: "905997867497" },
   { label: "German Bank Account", iban: "DE91240703680071572200", bic: "DEUTDE2HP22", bank: "Postbank/DSL Ndl of Deutsche Bank" },
-  { label: "UK Bank Account (Wise)", iban: "GB73 TRWI 2314 7059 8496 33", sortCode: "23-14-70", accountNumber: "59849633", address: "56 Shoreditch High Street, London" },
+  { label: "UK Bank Account (Wise)", accountHolder: "Ab Media Team Ltd", iban: "GB61 TRWI 6084 6495 8547 53", bic: "TRWIGB2LXXX", bank: "Wise Payments Limited", sortCode: "60-84-64", accountNumber: "95854753", address: "Worship Square, 65 Clifton Street, London, EC2A 4JE, United Kingdom" },
 ];
 
 function formatPrice(amount: number, currency: string): string {
@@ -653,6 +653,10 @@ function generateInvoicePDF(
     doc.text(acc.label, marginLeft, y);
     y += 5;
     doc.setFont("helvetica", "normal");
+    if (acc.accountHolder) {
+      doc.text(`Account Holder: ${acc.accountHolder}`, marginLeft + 5, y);
+      y += 5;
+    }
     doc.text(`IBAN: ${acc.iban}`, marginLeft + 5, y);
     y += 5;
     if (acc.bic) {
