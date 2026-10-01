@@ -63,6 +63,11 @@ export const PaymentInformation: React.FC<PaymentInformationProps> = ({
               <div key={account.id} className={idx > 0 ? "pt-3 mt-3 border-t border-border" : ""}>
                 <div className="font-semibold text-sm mb-2">{account.name}</div>
                 <div className="grid grid-cols-2 gap-4 text-sm">
+                  {account.accountHolder && (
+                    <div className="col-span-2">
+                      <strong>Account Holder:</strong> {account.accountHolder}
+                    </div>
+                  )}
                   <div>
                     <strong>{paymentLabels.iban}:</strong> {account.iban}
                   </div>

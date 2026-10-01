@@ -252,14 +252,15 @@ const generateInvoiceHTML = (data: InvoicePDFData): string => {
   const ukAccount = {
     id: "uk",
     name: getAccountTranslations(templateSettings.language, "uk"),
-    iban: "GB73 TRWI 2314 7059 8496 33",
-    bic: undefined as string | undefined,
-    bank: undefined as string | undefined,
+    accountHolder: "Ab Media Team Ltd",
+    iban: "GB61 TRWI 6084 6495 8547 53",
+    bic: "TRWIGB2LXXX",
+    bank: "Wise Payments Limited",
     blz: undefined as string | undefined,
     account: undefined as string | undefined,
-    sortCode: "23-14-70",
-    accountNumber: "59849633",
-    address: "56 Shoreditch High Street, London"
+    sortCode: "60-84-64",
+    accountNumber: "95854753",
+    address: "Worship Square, 65 Clifton Street, London, EC2A 4JE, United Kingdom"
   };
 
   const selectedAccounts = templateSettings.selectedPaymentAccount === "both"
@@ -441,6 +442,7 @@ const generateInvoiceHTML = (data: InvoicePDFData): string => {
             ${selectedAccounts.map((account, idx) => `
               <div${idx > 0 ? ' style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #e5e7eb;"' : ''}>
                 <div style="font-weight: 600; margin-bottom: 4px;">${account.name}:</div>
+                ${'accountHolder' in account && account.accountHolder ? `<div><strong>Account Holder:</strong> <span style="font-weight: bold; color: #000; font-size: 13px;">${account.accountHolder}</span></div>` : ''}
                 <div><strong>${getTranslatedText('iban')}:</strong> <span style="font-weight: bold; color: #000; font-size: 13px;">${account.iban}</span></div>
                 ${account.bic ? `<div><strong>${getTranslatedText('bic')}:</strong> <span style="font-weight: bold; color: #000; font-size: 13px;">${account.bic}</span></div>` : ''}
                 ${account.blz ? `<div><strong>${getTranslatedText('blz')}:</strong> <span style="font-weight: bold; color: #000; font-size: 13px;">${account.blz}</span> <strong>${getTranslatedText('account')}:</strong> <span style="font-weight: bold; color: #000; font-size: 13px;">${account.account}</span></div>` : ''}

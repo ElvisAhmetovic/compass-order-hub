@@ -93,14 +93,15 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
   const ukAccount = {
     id: "uk" as const,
     name: getAccountTranslations(templateSettings.language, "uk"),
-    iban: "GB73 TRWI 2314 7059 8496 33",
-    bic: undefined as string | undefined,
-    bank: undefined as string | undefined,
+    accountHolder: "Ab Media Team Ltd",
+    iban: "GB61 TRWI 6084 6495 8547 53",
+    bic: "TRWIGB2LXXX",
+    bank: "Wise Payments Limited",
     blz: undefined as string | undefined,
     account: undefined as string | undefined,
-    sortCode: "23-14-70",
-    accountNumber: "59849633",
-    address: "56 Shoreditch High Street, London"
+    sortCode: "60-84-64",
+    accountNumber: "95854753",
+    address: "Worship Square, 65 Clifton Street, London, EC2A 4JE, United Kingdom"
   };
 
   const selectedAccounts = templateSettings.selectedPaymentAccount === "both"
@@ -294,6 +295,7 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
                 {selectedAccounts.map((account, idx) => (
                   <div key={account.id} className={idx > 0 ? "mt-3 pt-3 border-t border-gray-200" : ""}>
                     <div className="font-semibold mb-2">{account.name}:</div>
+                    {'accountHolder' in account && account.accountHolder && <div><strong>Account Holder:</strong> <span className="text-black font-bold text-base">{account.accountHolder}</span></div>}
                     <div><strong>{getTranslatedText('iban')}:</strong> <span className="text-black font-bold text-base">{account.iban}</span></div>
                     {account.bic && <div><strong>{getTranslatedText('bic')}:</strong> <span className="text-black font-bold text-base">{account.bic}</span></div>}
                     {account.blz && <div><strong>{getTranslatedText('blz')}:</strong> <span className="text-black font-bold text-base">{account.blz}</span> <strong>{getTranslatedText('account')}:</strong> <span className="text-black font-bold text-base">{account.account}</span></div>}

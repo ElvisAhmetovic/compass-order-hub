@@ -11,6 +11,7 @@ export interface PaymentAccount {
   sortCode?: string;
   accountNumber?: string;
   address?: string;
+  accountHolder?: string;
 }
 
 export const PAYMENT_ACCOUNTS: PaymentAccount[] = [
@@ -36,10 +37,13 @@ export const PAYMENT_ACCOUNTS: PaymentAccount[] = [
     id: "uk",
     country: "United Kingdom",
     name: "UK Bank Account (Wise)",
-    iban: "GB73 TRWI 2314 7059 8496 33",
-    sortCode: "23-14-70",
-    accountNumber: "59849633",
-    address: "56 Shoreditch High Street, London"
+    accountHolder: "Ab Media Team Ltd",
+    iban: "GB61 TRWI 6084 6495 8547 53",
+    bic: "TRWIGB2LXXX",
+    bank: "Wise Payments Limited",
+    sortCode: "60-84-64",
+    accountNumber: "95854753",
+    address: "Worship Square, 65 Clifton Street, London, EC2A 4JE, United Kingdom"
   }
 ];
 

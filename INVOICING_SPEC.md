@@ -281,7 +281,7 @@ Three hard-coded accounts in `constants.ts`:
 |---|---|---|
 | `belgium` | Wise Europe SA | IBAN BE54905997867497, BIC TRWIBEB1XXX, Wise Europe SA, BLZ 905, account 905997867497 |
 | `germany` | German Bank Account | IBAN DE91240703680071572200, BIC DEUTDE2HP22, Postbank/DSL |
-| `uk` | UK Bank Account (Wise) | IBAN GB73 TRWI 2314 7059 8496 33, sort 23-14-70, acct 59849633 |
+| `uk` | UK Bank Account (Wise) | Ab Media Team Ltd; IBAN GB61 TRWI 6084 6495 8547 53; BIC TRWIGB2LXXX; sort 60-84-64; acct 95854753; Wise Payments Limited, Worship Square, 65 Clifton Street, London, EC2A 4JE, United Kingdom |
 
 `selectedPaymentAccount` accepts `belgium | germany | uk | both`. **`both` renders Wise Europe SA + Germany only** (not the UK account) in both the preview and the PDF. Account names are translated per language; the numbers are not.
 
