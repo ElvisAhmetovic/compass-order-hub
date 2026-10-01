@@ -5,6 +5,7 @@ import { formatCurrency } from '@/utils/currencyUtils';
 import { sanitizeHtml } from '@/utils/sanitize';
 import { getDefaultTerms } from '@/components/invoices/constants';
 import { translateLineItem, getAccountName, getInvoiceLabel } from '@/components/invoices/invoiceTranslations';
+import { formatInvoiceNumber } from '@/utils/invoiceNumber';
 
 interface InvoicePDFData {
   invoice?: Invoice;
@@ -288,6 +289,10 @@ const generateInvoiceHTML = (data: InvoicePDFData): string => {
     issue_date: formData?.issue_date || new Date().toISOString(),
     due_date: formData?.due_date || new Date(Date.now() + 30*24*60*60*1000).toISOString()
   };
+  const displayInvoiceNumber = formatInvoiceNumber(
+    currentInvoiceData.invoice_number,
+    templateSettings.invoiceNumberPrefix ?? ''
+  );
 
   const companyInfo = templateSettings.companyInfo || {
     name: "Company Name",
@@ -332,10 +337,10 @@ const generateInvoiceHTML = (data: InvoicePDFData): string => {
         
         <div style="text-align: right;">
           <h2 style="font-size: 28px; font-weight: bold; color: #374151; margin: 0; margin-bottom: 4px;">
-            ${templateSettings.invoiceNumberPrefix ?? ''}${currentInvoiceData.invoice_number}
+            ${displayInvoiceNumber}
           </h2>
           <p style="font-size: 12px; color: #6b7280; margin: 0;">
-            # ${templateSettings.invoiceNumberPrefix ?? ''}${currentInvoiceData.invoice_number}
+            # ${displayInvoiceNumber}
           </p>
         </div>
       </div>

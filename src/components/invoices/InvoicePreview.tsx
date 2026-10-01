@@ -6,6 +6,7 @@ import { formatCurrency } from "@/utils/currencyUtils";
 import { Invoice, InvoiceLineItem, Client } from "@/types/invoice";
 import { getDefaultTerms } from "@/components/invoices/constants";
 import { translateLineItem, getAccountName, getInvoiceLabel } from "@/components/invoices/invoiceTranslations";
+import { formatInvoiceNumber } from "@/utils/invoiceNumber";
 
 interface InvoicePreviewProps {
   invoice?: Invoice;
@@ -140,6 +141,10 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
     city: "City",
     email: "info@company.com"
   };
+  const displayInvoiceNumber = formatInvoiceNumber(
+    invoice?.invoice_number || "784/25",
+    templateSettings.invoiceNumberPrefix ?? ""
+  );
 
   return (
     <Card className="w-full max-w-4xl mx-auto">
@@ -177,10 +182,10 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
             
             <div className="text-right">
               <h2 className="text-4xl font-bold text-gray-700 mb-2">
-                {templateSettings.invoiceNumberPrefix ?? ""}{invoice?.invoice_number || "784/25"}
+                {displayInvoiceNumber}
               </h2>
               <p className="text-sm text-gray-500">
-                # {templateSettings.invoiceNumberPrefix ?? ""}{invoice?.invoice_number || "784/25"}
+                # {displayInvoiceNumber}
               </p>
             </div>
           </div>
