@@ -658,7 +658,7 @@ export const generateProposalPDF = async (
     }
     
     // Generate PDF with separate pages
-    const pdf = await generateMultiPagePDF(firstPageHtml, secondPageHtml, proposalData?.previewMode ? 1 : 2);
+    const pdf = await generateMultiPagePDF(firstPageHtml, secondPageHtml, proposalData?.previewMode ? 1 : 1.5);
     
     // For preview mode, return the PDF document
     if (proposalData.previewMode) {
