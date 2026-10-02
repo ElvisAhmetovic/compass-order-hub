@@ -60,7 +60,7 @@ export const generateInvoicePDF = async (data: InvoicePDFData): Promise<void> =>
 
     // Generate canvas from HTML
     const canvas = await html2canvas(container, {
-      scale: 2,
+      scale: 1.5,
       useCORS: true,
       allowTaint: true,
       backgroundColor: '#ffffff'
@@ -68,7 +68,7 @@ export const generateInvoicePDF = async (data: InvoicePDFData): Promise<void> =>
 
     // Create PDF
     const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4', compress: true });
-    const imgData = canvas.toDataURL('image/jpeg', 0.85);
+    const imgData = canvas.toDataURL('image/jpeg', 0.75);
     const imgWidth = 210; // A4 width in mm
     const pageHeight = 297; // A4 height in mm
     const imgHeight = (canvas.height * imgWidth) / canvas.width;
@@ -128,11 +128,11 @@ export const generateInvoicePDFBase64 = async (data: InvoicePDFData): Promise<st
     ));
 
     const canvas = await html2canvas(container, {
-      scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff'
+      scale: 1.5, useCORS: true, allowTaint: true, backgroundColor: '#ffffff'
     });
 
     const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4', compress: true });
-    const imgData = canvas.toDataURL('image/jpeg', 0.85);
+    const imgData = canvas.toDataURL('image/jpeg', 0.75);
     const imgWidth = 210;
     const pageHeight = 297;
     const imgHeight = (canvas.height * imgWidth) / canvas.width;
