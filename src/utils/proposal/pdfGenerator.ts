@@ -576,7 +576,8 @@ const generateMultiPagePDF = async (firstPageHtml: string, secondPageHtml: strin
     const pdf = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',
-      format: 'a4'
+      format: 'a4',
+      compress: true
     });
     
     const pdfWidth = pdf.internal.pageSize.getWidth();
@@ -595,11 +596,11 @@ const generateMultiPagePDF = async (firstPageHtml: string, secondPageHtml: strin
       height: 1100
     });
     
-    const imgData1 = canvas1.toDataURL('image/png');
+    const imgData1 = canvas1.toDataURL('image/jpeg', 0.85);
     const imgWidth1 = pdfWidth;
     const imgHeight1 = (canvas1.height * pdfWidth) / canvas1.width;
     
-    pdf.addImage(imgData1, 'PNG', 0, 0, imgWidth1, imgHeight1);
+    pdf.addImage(imgData1, 'JPEG', 0, 0, imgWidth1, imgHeight1, undefined, 'FAST');
     
     // Generate second page
     console.log('Converting second page to canvas');
@@ -614,12 +615,12 @@ const generateMultiPagePDF = async (firstPageHtml: string, secondPageHtml: strin
       height: 1100
     });
     
-    const imgData2 = canvas2.toDataURL('image/png');
+    const imgData2 = canvas2.toDataURL('image/jpeg', 0.85);
     const imgWidth2 = pdfWidth;
     const imgHeight2 = (canvas2.height * pdfWidth) / canvas2.width;
     
     pdf.addPage();
-    pdf.addImage(imgData2, 'PNG', 0, 0, imgWidth2, imgHeight2);
+    pdf.addImage(imgData2, 'JPEG', 0, 0, imgWidth2, imgHeight2, undefined, 'FAST');
     
     console.log('Multi-page PDF generation completed successfully');
     return pdf;
