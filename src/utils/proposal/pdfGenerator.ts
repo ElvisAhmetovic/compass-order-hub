@@ -550,7 +550,7 @@ const createSecondPageContent = (proposalData: any, language: string = "en") => 
 };
 
 // Generate PDF with separate pages
-const generateMultiPagePDF = async (firstPageHtml: string, secondPageHtml: string, scale: number = 2): Promise<jsPDF> => {
+const generateMultiPagePDF = async (firstPageHtml: string, secondPageHtml: string, scale: number = 1.5): Promise<jsPDF> => {
   console.log('Starting multi-page PDF generation');
   
   // Create temporary divs for both pages with sanitized HTML
@@ -596,7 +596,7 @@ const generateMultiPagePDF = async (firstPageHtml: string, secondPageHtml: strin
       height: 1100
     });
     
-    const imgData1 = canvas1.toDataURL('image/jpeg', 0.85);
+    const imgData1 = canvas1.toDataURL('image/jpeg', 0.75);
     const imgWidth1 = pdfWidth;
     const imgHeight1 = (canvas1.height * pdfWidth) / canvas1.width;
     
@@ -615,7 +615,7 @@ const generateMultiPagePDF = async (firstPageHtml: string, secondPageHtml: strin
       height: 1100
     });
     
-    const imgData2 = canvas2.toDataURL('image/jpeg', 0.85);
+    const imgData2 = canvas2.toDataURL('image/jpeg', 0.75);
     const imgWidth2 = pdfWidth;
     const imgHeight2 = (canvas2.height * pdfWidth) / canvas2.width;
     
@@ -658,7 +658,7 @@ export const generateProposalPDF = async (
     }
     
     // Generate PDF with separate pages
-    const pdf = await generateMultiPagePDF(firstPageHtml, secondPageHtml, proposalData?.previewMode ? 1 : 2);
+    const pdf = await generateMultiPagePDF(firstPageHtml, secondPageHtml, proposalData?.previewMode ? 1 : 1.5);
     
     // For preview mode, return the PDF document
     if (proposalData.previewMode) {
