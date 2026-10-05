@@ -8,8 +8,8 @@ export const contactInfo = {
   legalName: "AB TEAM LTD",
   phone: "",
   address: {
-    de: "",
-    en: "",
+    de: "Düsseldorfer Str. 32, 47051 Duisburg, Deutschland",
+    en: "Düsseldorfer Str. 32, 47051 Duisburg, Germany",
   } as Record<HomepageLanguage, string>,
   social: [] as { label: string; url: string }[],
 };

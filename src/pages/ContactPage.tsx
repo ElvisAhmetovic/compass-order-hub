@@ -116,6 +116,7 @@ const ContactPage = () => {
                     </select></div>
                   <div className="sm:col-span-2"><Label htmlFor="message">{t.message}</Label><Textarea id="message" rows={6} className={field} value={form.message} onChange={update("message")} maxLength={3000} />{err("message")}</div>
                   <input type="text" name="website" tabIndex={-1} autoComplete="off" aria-hidden="true" className="hidden" value={form.website} onChange={update("website")} />
+                  <p className="text-xs text-muted-foreground">{language === "de" ? <>Mit dem Absenden werden Ihre Angaben zur Bearbeitung Ihrer Anfrage verwendet. Mehr in der <Link to="/datenschutz" className="underline hover:text-primary">Datenschutzerklärung</Link>.</> : <>By submitting, your details are used to handle your enquiry. See our <Link to="/datenschutz" className="underline hover:text-primary">privacy policy</Link>.</>}</p>
                   <div className="sm:col-span-2">
                     {status === "error" && <p className="mb-3 text-sm text-destructive">{t.error}</p>}
                     <Button type="submit" size="lg" disabled={status === "sending"}>{status === "sending" ? t.sending : t.send}</Button>
