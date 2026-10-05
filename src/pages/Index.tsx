@@ -10,6 +10,7 @@ import webImage from "@/assets/empria-webdesign-studio.jpg";
 import seoImage from "@/assets/empria-seo-analysis.jpg";
 import strategyImage from "@/assets/empria-strategy-process.jpg";
 import marketingImage from "@/assets/empria-digital-marketing.jpg";
+import appImage from "@/assets/empria-app-development.jpg";
 import { ArrowRight, Check, ChevronDown } from "lucide-react";
 
 const Index = () => {
@@ -57,6 +58,7 @@ const Index = () => {
           <ServiceBlock section={copy.web} image={webImage} path="/webdesign" linkLabel={language === "de" ? "Webdesign entdecken" : "Explore web design"} imageFirst />
           <ServiceBlock section={copy.seo} image={seoImage} path="/google-seo" linkLabel={language === "de" ? "Google SEO entdecken" : "Explore Google SEO"} />
           <ServiceBlock section={copy.marketing} image={marketingImage} path="/digital-marketing" linkLabel={language === "de" ? "Digital Marketing entdecken" : "Explore digital marketing"} imageFirst />
+          <ServiceBlock section={copy.app} image={appImage} path="/app-entwicklung" linkLabel={language === "de" ? "App-Entwicklung entdecken" : "Explore app development"} />
         </div>
 
         <section className="border-y border-border bg-secondary/55 px-5 py-24 sm:py-32 lg:px-8">

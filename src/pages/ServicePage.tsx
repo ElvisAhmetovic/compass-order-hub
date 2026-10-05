@@ -8,7 +8,7 @@ import { usePublicLanguage } from "@/hooks/usePublicLanguage";
 
 const ServicePage = ({ serviceKey }: { serviceKey: ServiceKey }) => {
   const { language, setLanguage } = usePublicLanguage();
-  const service = servicePages[serviceKey];
+  const service = servicePages[serviceKey] ?? servicePages.webdesign;
   const copy = service.copy[language];
   const canonical = `https://empriatech.com${service.path}`;
   const schema = { "@context": "https://schema.org", "@type": "Service", name: serviceNames[serviceKey][language], serviceType: serviceNames[serviceKey][language], url: canonical, description: copy.metaDescription, provider: { "@type": "Organization", "@id": "https://empriatech.com/#organization", name: "Empria Tech", url: "https://empriatech.com/" } };

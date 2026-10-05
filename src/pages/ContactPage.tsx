@@ -128,7 +128,7 @@ const ContactPage = () => {
               <h2 className="font-heading text-2xl font-bold">{t.direct}</h2>
               <Info icon={Mail} label={t.email}><a className="hover:text-primary" href={`mailto:${contactInfo.email}`}>{contactInfo.email}</a></Info>
               {contactInfo.phone && <Info icon={Phone} label={t.phone}><a className="hover:text-primary" href={`tel:${contactInfo.phone.replace(/\s/g, "")}`}>{contactInfo.phone}</a></Info>}
-              <Info icon={MapPin} label={t.address}><span className="whitespace-pre-line">{publicAddress(language)}</span></Info>
+              {publicAddress(language) && <Info icon={MapPin} label={t.address}><span className="whitespace-pre-line">{publicAddress(language)}</span></Info>}
               {contactInfo.social.length > 0 && <Info icon={Share2} label={t.social}><div className="flex flex-wrap gap-3">{contactInfo.social.map((s) => <a key={s.url} href={s.url} target="_blank" rel="noopener noreferrer" className="hover:text-primary">{s.label}</a>)}</div></Info>}
               <Info icon={Clock} label={t.response}>{t.responseText}</Info>
             </aside>

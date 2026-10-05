@@ -6,10 +6,10 @@ import type { HomepageLanguage } from "@/content/homepage";
 export const contactInfo = {
   email: "kontakt@empriatech.com",
   legalName: "AB TEAM LTD",
-  phone: "+49 203 70907262",
+  phone: "",
   address: {
-    de: "Weseler Str. 73, 47169 Duisburg, Deutschland",
-    en: "Weseler Str. 73, 47169 Duisburg, Germany",
+    de: "",
+    en: "",
   } as Record<HomepageLanguage, string>,
   social: [] as { label: string; url: string }[],
 };
