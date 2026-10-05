@@ -18,8 +18,7 @@ export const PaymentInformation: React.FC<PaymentInformationProps> = ({
   language,
   onPaymentAccountChange
 }) => {
-  const allAccounts = PAYMENT_ACCOUNTS;
-  const selectedAccounts = allAccounts.filter(acc => acc.id === "germany");
+  const selectedAccounts = PAYMENT_ACCOUNTS;
 
   const paymentLabels = getPaymentPanelLabels(language);
 
@@ -32,7 +31,7 @@ export const PaymentInformation: React.FC<PaymentInformationProps> = ({
       <CardContent className="space-y-4">
         <div>
           <Label>{paymentLabels.paymentAccount}</Label>
-          <Select value={selectedPaymentAccount} onValueChange={onPaymentAccountChange}>
+          <Select value="germany" onValueChange={onPaymentAccountChange}>
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
@@ -45,8 +44,9 @@ export const PaymentInformation: React.FC<PaymentInformationProps> = ({
                   </div>
                 </SelectItem>
               ))}
-              <SelectItem value="both">
-                <div className="flex items-center gap-2">
+            </SelectContent>
+          </Select>
+        </div>
 
         {selectedAccounts.length > 0 && (
           <div className="p-4 bg-muted rounded-lg space-y-2">
