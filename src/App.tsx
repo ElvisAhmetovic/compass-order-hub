@@ -10,6 +10,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "next-themes";
 import Index from "./pages/Index";
 import ServicePage from "./pages/ServicePage";
+import LegalPage from "./pages/LegalPage";
 import ContactPage from "./pages/ContactPage";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -129,6 +130,8 @@ function App() {
                   <Route path="/digital-marketing" element={<ServicePage serviceKey="digitalMarketing" />} />
                   <Route path="/app-entwicklung" element={<ServicePage serviceKey="appDevelopment" />} />
                   <Route path="/kontakt" element={<ContactPage />} />
+                  <Route path="/impressum" element={<LegalPage pageKey="impressum" />} />
+                  <Route path="/datenschutz" element={<LegalPage pageKey="datenschutz" />} />
                   <Route path="/ticket-loading" element={<TicketLoading />} />
                   <Route path="/ticket-submitted" element={<TicketSubmitted />} />
                   <Route path="/confirm-offer/:offerId" element={<ConfirmOffer />} />
