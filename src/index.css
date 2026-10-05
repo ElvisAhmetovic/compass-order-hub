@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&family=Epilogue:wght@400;500;600;700&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -114,7 +112,7 @@ html {
 
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Urbanist', 'Epilogue', system-ui, sans-serif;
-    letter-spacing: -0.01em;
+    letter-spacing: 0;
   }
 }
 
@@ -125,4 +123,22 @@ html {
   .shadow-soft-sm { box-shadow: var(--shadow-sm); }
   .shadow-soft-md { box-shadow: var(--shadow-md); }
   .shadow-soft-lg { box-shadow: var(--shadow-lg); }
+
+  .homepage-hero-overlay {
+    background: linear-gradient(90deg, hsl(var(--primary) / 0.98) 0%, hsl(var(--primary) / 0.9) 44%, hsl(var(--primary) / 0.28) 78%, hsl(var(--primary) / 0.12) 100%);
+  }
+}
+
+@media (max-width: 767px) {
+  .homepage-hero-overlay {
+    background: linear-gradient(90deg, hsl(var(--primary) / 0.97) 0%, hsl(var(--primary) / 0.84) 72%, hsl(var(--primary) / 0.62) 100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
 }
