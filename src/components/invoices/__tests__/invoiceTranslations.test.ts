@@ -14,9 +14,9 @@ const requiredLabelKeys = [
   "subtotal","tax","total","notes","bankDetails","iban","bic","blz","account",
   "bank","contactPerson","companyRegistrationNumber","uidNumber",
 ];
-const requiredAccountKeys = ["belgium","germany","uk"];
+const requiredAccountKeys = ["germany"];
 const requiredPaymentKeys = [
-  "paymentAccount","iban","bic","blz","account","bank","bothAccounts",
+  "paymentAccount","iban","bic","blz","account","bank",
   "sortCode","accountNumber","address",
 ];
 
@@ -39,6 +39,7 @@ describe("invoice i18n completeness", () => {
     for (const k of requiredAccountKeys) {
       expect(nonEmpty((entry as any)[k]), `ACCOUNT_NAME_TRANSLATIONS["${code}"].${k} missing`).toBe(true);
     }
+    expect(Object.keys(entry)).toEqual(["germany"]);
   });
 
   it.each(codes)("PAYMENT_PANEL contains all keys for [%s]", (code) => {

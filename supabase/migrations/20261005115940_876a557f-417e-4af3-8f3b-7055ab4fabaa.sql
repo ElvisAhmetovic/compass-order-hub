@@ -1,0 +1,1 @@
+UPDATE public.company_settings SET iban = 'DE91240703680071572200', bic = 'DEUTDE2HP22', account_number = NULL, bank_code = NULL WHERE id = 'd458b65b-7138-4b91-943b-dd1619353029' AND iban = 'BE54905997867497' AND bic = 'TRWIBEB1XXX';

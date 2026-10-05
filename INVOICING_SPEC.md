@@ -254,7 +254,7 @@ base defaults  →  localStorage['invoiceTemplateSettings']  →  initialSetting
 companyInfo:  getCompanyInfo()  →  saved.companyInfo  →  initialSettings.companyInfo
 ```
 
-Defaults: `logo = DEFAULT_COMPANY_LOGO`, `logoSize = "large"`, `language = "en"`, `selectedPaymentAccount = "both"`, `customTerms = ""`, `vatEnabled = true`, `vatRate = 0`, `currency = "EUR"`, `invoiceNumberPrefix = "INV-"`.
+Defaults: `logo = DEFAULT_COMPANY_LOGO`, `logoSize = "large"`, `language = "en"`, `selectedPaymentAccount = "germany"`, `customTerms = ""`, `vatEnabled = true`, `vatRate = 0`, `currency = "EUR"`, `invoiceNumberPrefix = "INV-"`.
 
 The whole settings object is written back to `localStorage` on every change and again when the invoice is saved. **These settings are per browser, not per company record** — see §10.
 
@@ -275,15 +275,13 @@ Defaults (`companyInfo.ts`): **AB MEDIA TEAM LTD**, Andreas Berger, Weseler Str.
 
 ### 6.4 Payment information (`PaymentInformation.tsx`)
 
-Three hard-coded accounts in `constants.ts`:
+One active account in `constants.ts` (German-only while the other accounts are withdrawn):
 
 | id | Account | Details |
 |---|---|---|
-| `belgium` | Wise Europe SA | IBAN BE54905997867497, BIC TRWIBEB1XXX, Wise Europe SA, BLZ 905, account 905997867497 |
 | `germany` | German Bank Account | IBAN DE91240703680071572200, BIC DEUTDE2HP22, Postbank/DSL |
-| `uk` | UK Bank Account (Wise) | Ab Media Team Ltd; IBAN GB61 TRWI 6084 6495 8547 53; BIC TRWIGB2LXXX; sort 60-84-64; acct 95854753; Wise Payments Limited, Worship Square, 65 Clifton Street, London, EC2A 4JE, United Kingdom |
 
-`selectedPaymentAccount` accepts `belgium | germany | uk | both`. **`both` renders Wise Europe SA + Germany only** (not the UK account) in both the preview and the PDF. Account names are translated per language; the numbers are not.
+Previously saved `selectedPaymentAccount` values resolve to `germany`. The account name is translated per language; the numbers are not.
 
 ### 6.5 Invoice settings (`InvoiceSettings.tsx`)
 

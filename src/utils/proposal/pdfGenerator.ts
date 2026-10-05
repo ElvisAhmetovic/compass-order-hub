@@ -397,8 +397,7 @@ const createSecondPageContent = (proposalData: any, language: string = "en") => 
   // Payment data (only if enabled) - UPDATED TO USE NEW FIELD NAMES
   const paymentIban = proposalData.iban || companyInfo.iban || 'DE91240703680071572200';
   const paymentBic = proposalData.bic || companyInfo.bic || 'DEUTDE2HP22';
-  const paymentBlzKonto = proposalData.blzKonto || companyInfo.bankCode || '905 KONTO: 905997867497';
-  const paymentBank = 'Wise Europe SA';
+  const paymentBank = 'Postbank/DSL Ndl of Deutsche Bank';
 
   return `
     <style>
@@ -470,9 +469,6 @@ const createSecondPageContent = (proposalData: any, language: string = "en") => 
           </div>
           <div style="margin-bottom: 8px;">
             <strong>BIC:</strong> ${paymentBic}
-          </div>
-          <div>
-            <strong>BLZ KONTO:</strong> ${paymentBlzKonto}
           </div>
         </div>
       </div>

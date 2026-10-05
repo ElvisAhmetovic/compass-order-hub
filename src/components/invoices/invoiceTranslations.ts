@@ -3,36 +3,35 @@
 
 export type LangCode = string;
 
-const EN_ACCOUNTS = { belgium: "Wise Europe SA", germany: "German Bank Account", uk: "UK Bank Account (Wise)" };
-export const ACCOUNT_NAME_TRANSLATIONS: Record<string, { belgium: string; germany: string; uk: string }> = {
+const EN_ACCOUNTS = { germany: "German Bank Account" };
+export const ACCOUNT_NAME_TRANSLATIONS: Record<string, { germany: string }> = {
   en: EN_ACCOUNTS,
-  de: { belgium: "Wise Europe SA", germany: "Deutsches Bankkonto", uk: "Britisches Bankkonto (Wise)" },
-  fr: { belgium: "Wise Europe SA", germany: "Compte bancaire allemand", uk: "Compte bancaire britannique (Wise)" },
-  nl: { belgium: "Wise Europe SA", germany: "Duitse Bankrekening", uk: "Britse Bankrekening (Wise)" },
-  es: { belgium: "Wise Europe SA", germany: "Cuenta bancaria alemana", uk: "Cuenta bancaria británica (Wise)" },
-  da: { belgium: "Wise Europe SA", germany: "Tysk bankkonto", uk: "Britisk bankkonto (Wise)" },
-  no: { belgium: "Wise Europe SA", germany: "Tysk bankkonto", uk: "Britisk bankkonto (Wise)" },
-  cs: { belgium: "Wise Europe SA", germany: "Německý bankovní účet", uk: "Britský bankovní účet (Wise)" },
-  pl: { belgium: "Wise Europe SA", germany: "Niemieckie konto bankowe", uk: "Brytyjskie konto bankowe (Wise)" },
-  sv: { belgium: "Wise Europe SA", germany: "Tyskt bankkonto", uk: "Brittiskt bankkonto (Wise)" },
-  ru: { belgium: "Wise Europe SA", germany: "Немецкий банковский счёт", uk: "Британский банковский счёт (Wise)" },
-  it: { belgium: "Wise Europe SA", germany: "Conto bancario tedesco", uk: "Conto bancario britannico (Wise)" },
-  uk: { belgium: "Wise Europe SA", germany: "Німецький банківський рахунок", uk: "Британський банківський рахунок (Wise)" },
-  ro: { belgium: "Wise Europe SA", germany: "Cont bancar german", uk: "Cont bancar britanic (Wise)" },
-  tr: { belgium: "Wise Europe SA", germany: "Almanya Banka Hesabı", uk: "Birleşik Krallık Banka Hesabı (Wise)" },
-  pt: { belgium: "Wise Europe SA", germany: "Conta bancária alemã", uk: "Conta bancária britânica (Wise)" },
-  hu: { belgium: "Wise Europe SA", germany: "Német bankszámla", uk: "Brit bankszámla (Wise)" },
-  el: { belgium: "Wise Europe SA", germany: "Γερμανικός τραπεζικός λογαριασμός", uk: "Βρετανικός τραπεζικός λογαριασμός (Wise)" },
-  bg: { belgium: "Wise Europe SA", germany: "Германска банкова сметка", uk: "Британска банкова сметка (Wise)" },
-  fi: { belgium: "Wise Europe SA", germany: "Saksalainen pankkitili", uk: "Brittiläinen pankkitili (Wise)" },
-  sk: { belgium: "Wise Europe SA", germany: "Nemecký bankový účet", uk: "Britský bankový účet (Wise)" },
-  sl: { belgium: "Wise Europe SA", germany: "Nemški bančni račun", uk: "Britanski bančni račun (Wise)" },
-  mk: { belgium: "Wise Europe SA", germany: "Германска банкарска сметка", uk: "Британска банкарска сметка (Wise)" },
+  de: { germany: "Deutsches Bankkonto" },
+  fr: { germany: "Compte bancaire allemand" },
+  nl: { germany: "Duitse Bankrekening" },
+  es: { germany: "Cuenta bancaria alemana" },
+  da: { germany: "Tysk bankkonto" },
+  no: { germany: "Tysk bankkonto" },
+  cs: { germany: "Německý bankovní účet" },
+  pl: { germany: "Niemieckie konto bankowe" },
+  sv: { germany: "Tyskt bankkonto" },
+  ru: { germany: "Немецкий банковский счёт" },
+  it: { germany: "Conto bancario tedesco" },
+  uk: { germany: "Німецький банківський рахунок" },
+  ro: { germany: "Cont bancar german" },
+  tr: { germany: "Almanya Banka Hesabı" },
+  pt: { germany: "Conta bancária alemã" },
+  hu: { germany: "Német bankszámla" },
+  el: { germany: "Γερμανικός τραπεζικός λογαριασμός" },
+  bg: { germany: "Германска банкова сметка" },
+  fi: { germany: "Saksalainen pankkitili" },
+  sk: { germany: "Nemecký bankový účet" },
+  sl: { germany: "Nemški bančni račun" },
+  mk: { germany: "Германска банкарска сметка" },
 };
 
-export function getAccountName(language: string, accountId: string): string {
-  const lang = language || "en";
-  return ACCOUNT_NAME_TRANSLATIONS[lang]?.[accountId] || EN_ACCOUNTS[accountId];
+export function getAccountName(language: string, _accountId: string): string {
+  return ACCOUNT_NAME_TRANSLATIONS[language]?.germany || EN_ACCOUNTS.germany;
 }
 
 type LineItemKey =
@@ -97,33 +96,33 @@ export function getInvoiceLabel(language: string, key: InvoiceLabelKey): string 
   return INVOICE_LABELS[lang]?.[key] || INVOICE_LABELS.en[key];
 }
 
-type PaymentPanelKey = "paymentAccount" | "iban" | "bic" | "blz" | "account" | "bank" | "bothAccounts" | "sortCode" | "accountNumber" | "address";
+type PaymentPanelKey = "paymentAccount" | "iban" | "bic" | "blz" | "account" | "bank" | "sortCode" | "accountNumber" | "address";
 type PaymentPanelMap = Record<PaymentPanelKey, string>;
 
 export const PAYMENT_PANEL: Record<string, PaymentPanelMap> = {
-  en: { paymentAccount: "Payment Account", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Account", bank: "Bank", bothAccounts: "All Accounts", sortCode: "Sort Code", accountNumber: "Account Number", address: "Address" },
-  de: { paymentAccount: "Zahlungskonto", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Konto", bank: "Bank", bothAccounts: "Alle Konten", sortCode: "Bankleitzahl", accountNumber: "Kontonummer", address: "Adresse" },
-  fr: { paymentAccount: "Compte de paiement", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Compte", bank: "Banque", bothAccounts: "Tous les comptes", sortCode: "Code guichet", accountNumber: "Numéro de compte", address: "Adresse" },
-  nl: { paymentAccount: "Betaalrekening", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Rekening", bank: "Bank", bothAccounts: "Alle rekeningen", sortCode: "Sorteercode", accountNumber: "Rekeningnummer", address: "Adres" },
-  es: { paymentAccount: "Cuenta de pago", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Cuenta", bank: "Banco", bothAccounts: "Todas las cuentas", sortCode: "Código de clasificación", accountNumber: "Número de cuenta", address: "Dirección" },
-  da: { paymentAccount: "Betalingskonto", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Konto", bank: "Bank", bothAccounts: "Alle konti", sortCode: "Sorteringskode", accountNumber: "Kontonummer", address: "Adresse" },
-  no: { paymentAccount: "Betalingskonto", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Konto", bank: "Bank", bothAccounts: "Alle kontoer", sortCode: "Sorteringskode", accountNumber: "Kontonummer", address: "Adresse" },
-  cs: { paymentAccount: "Platební účet", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Účet", bank: "Banka", bothAccounts: "Všechny účty", sortCode: "Kód pobočky", accountNumber: "Číslo účtu", address: "Adresa" },
-  pl: { paymentAccount: "Konto płatnicze", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Konto", bank: "Bank", bothAccounts: "Wszystkie konta", sortCode: "Kod oddziału", accountNumber: "Numer konta", address: "Adres" },
-  sv: { paymentAccount: "Betalningskonto", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Konto", bank: "Bank", bothAccounts: "Alla konton", sortCode: "Clearingnummer", accountNumber: "Kontonummer", address: "Adress" },
-  ru: { paymentAccount: "Платёжный счёт", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Счёт", bank: "Банк", bothAccounts: "Все счета", sortCode: "Sort Code", accountNumber: "Номер счёта", address: "Адрес" },
-  it: { paymentAccount: "Conto di pagamento", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Conto", bank: "Banca", bothAccounts: "Tutti i conti", sortCode: "Sort Code", accountNumber: "Numero di conto", address: "Indirizzo" },
-  uk: { paymentAccount: "Платіжний рахунок", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Рахунок", bank: "Банк", bothAccounts: "Усі рахунки", sortCode: "Sort Code", accountNumber: "Номер рахунку", address: "Адреса" },
-  ro: { paymentAccount: "Cont de plată", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Cont", bank: "Bancă", bothAccounts: "Toate conturile", sortCode: "Sort Code", accountNumber: "Număr de cont", address: "Adresă" },
-  tr: { paymentAccount: "Ödeme Hesabı", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Hesap", bank: "Banka", bothAccounts: "Tüm Hesaplar", sortCode: "Sort Code", accountNumber: "Hesap Numarası", address: "Adres" },
-  pt: { paymentAccount: "Conta de pagamento", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Conta", bank: "Banco", bothAccounts: "Todas as contas", sortCode: "Sort Code", accountNumber: "Número de conta", address: "Endereço" },
-  hu: { paymentAccount: "Fizetési számla", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Számla", bank: "Bank", bothAccounts: "Összes számla", sortCode: "Sort Code", accountNumber: "Számlaszám", address: "Cím" },
-  el: { paymentAccount: "Λογαριασμός πληρωμής", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Λογαριασμός", bank: "Τράπεζα", bothAccounts: "Όλοι οι λογαριασμοί", sortCode: "Sort Code", accountNumber: "Αριθμός λογαριασμού", address: "Διεύθυνση" },
-  bg: { paymentAccount: "Платежна сметка", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Сметка", bank: "Банка", bothAccounts: "Всички сметки", sortCode: "Sort Code", accountNumber: "Номер на сметка", address: "Адрес" },
-  fi: { paymentAccount: "Maksutili", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Tili", bank: "Pankki", bothAccounts: "Kaikki tilit", sortCode: "Sort Code", accountNumber: "Tilinumero", address: "Osoite" },
-  sk: { paymentAccount: "Platobný účet", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Účet", bank: "Banka", bothAccounts: "Všetky účty", sortCode: "Sort Code", accountNumber: "Číslo účtu", address: "Adresa" },
-  sl: { paymentAccount: "Plačilni račun", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Račun", bank: "Banka", bothAccounts: "Vsi računi", sortCode: "Sort Code", accountNumber: "Številka računa", address: "Naslov" },
-  mk: { paymentAccount: "Платежна сметка", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Сметка", bank: "Банка", bothAccounts: "Сите сметки", sortCode: "Sort Code", accountNumber: "Број на сметка", address: "Адреса" },
+  en: { paymentAccount: "Payment Account", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Account", bank: "Bank", sortCode: "Sort Code", accountNumber: "Account Number", address: "Address" },
+  de: { paymentAccount: "Zahlungskonto", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Konto", bank: "Bank", sortCode: "Bankleitzahl", accountNumber: "Kontonummer", address: "Adresse" },
+  fr: { paymentAccount: "Compte de paiement", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Compte", bank: "Banque", sortCode: "Code guichet", accountNumber: "Numéro de compte", address: "Adresse" },
+  nl: { paymentAccount: "Betaalrekening", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Rekening", bank: "Bank", sortCode: "Sorteercode", accountNumber: "Rekeningnummer", address: "Adres" },
+  es: { paymentAccount: "Cuenta de pago", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Cuenta", bank: "Banco", sortCode: "Código de clasificación", accountNumber: "Número de cuenta", address: "Dirección" },
+  da: { paymentAccount: "Betalingskonto", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Konto", bank: "Bank", sortCode: "Sorteringskode", accountNumber: "Kontonummer", address: "Adresse" },
+  no: { paymentAccount: "Betalingskonto", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Konto", bank: "Bank", sortCode: "Sorteringskode", accountNumber: "Kontonummer", address: "Adresse" },
+  cs: { paymentAccount: "Platební účet", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Účet", bank: "Banka", sortCode: "Kód pobočky", accountNumber: "Číslo účtu", address: "Adresa" },
+  pl: { paymentAccount: "Konto płatnicze", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Konto", bank: "Bank", sortCode: "Kod oddziału", accountNumber: "Numer konta", address: "Adres" },
+  sv: { paymentAccount: "Betalningskonto", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Konto", bank: "Bank", sortCode: "Clearingnummer", accountNumber: "Kontonummer", address: "Adress" },
+  ru: { paymentAccount: "Платёжный счёт", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Счёт", bank: "Банк", sortCode: "Sort Code", accountNumber: "Номер счёта", address: "Адрес" },
+  it: { paymentAccount: "Conto di pagamento", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Conto", bank: "Banca", sortCode: "Sort Code", accountNumber: "Numero di conto", address: "Indirizzo" },
+  uk: { paymentAccount: "Платіжний рахунок", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Рахунок", bank: "Банк", sortCode: "Sort Code", accountNumber: "Номер рахунку", address: "Адреса" },
+  ro: { paymentAccount: "Cont de plată", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Cont", bank: "Bancă", sortCode: "Sort Code", accountNumber: "Număr de cont", address: "Adresă" },
+  tr: { paymentAccount: "Ödeme Hesabı", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Hesap", bank: "Banka", sortCode: "Sort Code", accountNumber: "Hesap Numarası", address: "Adres" },
+  pt: { paymentAccount: "Conta de pagamento", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Conta", bank: "Banco", sortCode: "Sort Code", accountNumber: "Número de conta", address: "Endereço" },
+  hu: { paymentAccount: "Fizetési számla", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Számla", bank: "Bank", sortCode: "Sort Code", accountNumber: "Számlaszám", address: "Cím" },
+  el: { paymentAccount: "Λογαριασμός πληρωμής", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Λογαριασμός", bank: "Τράπεζα", sortCode: "Sort Code", accountNumber: "Αριθμός λογαριασμού", address: "Διεύθυνση" },
+  bg: { paymentAccount: "Платежна сметка", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Сметка", bank: "Банка", sortCode: "Sort Code", accountNumber: "Номер на сметка", address: "Адрес" },
+  fi: { paymentAccount: "Maksutili", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Tili", bank: "Pankki", sortCode: "Sort Code", accountNumber: "Tilinumero", address: "Osoite" },
+  sk: { paymentAccount: "Platobný účet", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Účet", bank: "Banka", sortCode: "Sort Code", accountNumber: "Číslo účtu", address: "Adresa" },
+  sl: { paymentAccount: "Plačilni račun", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Račun", bank: "Banka", sortCode: "Sort Code", accountNumber: "Številka računa", address: "Naslov" },
+  mk: { paymentAccount: "Платежна сметка", iban: "IBAN", bic: "BIC", blz: "BLZ", account: "Сметка", bank: "Банка", sortCode: "Sort Code", accountNumber: "Број на сметка", address: "Адреса" },
 };
 
 export function getPaymentPanelLabels(language: string): PaymentPanelMap {

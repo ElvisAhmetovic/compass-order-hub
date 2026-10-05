@@ -281,25 +281,10 @@ const buildReminderEmailHtml = (data: {
             <tr><td style="padding:20px 24px;">
               <div style="font-family:Roboto,Arial,sans-serif; font-size:16px; font-weight:700; color:#1e3a5f; margin-bottom:15px;">🏦 Payment Information</div>
               <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="border-collapse:collapse;">
-                <tr><td colspan="2" style="font-weight:bold; padding:8px 0 4px; color:#0f1b3d; font-family:Roboto,Arial,sans-serif; font-size:14px;"><tr><td colspan="2" style="font-weight:bold; padding:8px 0 4px; color:#0f1b3d; font-family:Roboto,Arial,sans-serif; font-size:14px;">Wise Europe SA</td></tr></td></tr>
-                <tr><td style="color:#5f6368; padding:3px 0; font-family:Roboto,Arial,sans-serif; font-size:13px; width:80px;">IBAN:</td><td style="color:#0f1b3d; font-family:Roboto,Arial,sans-serif; font-size:13px;">BE54905997867497</td></tr>
-                <tr><td style="color:#5f6368; padding:3px 0; font-family:Roboto,Arial,sans-serif; font-size:13px;">BIC:</td><td style="color:#0f1b3d; font-family:Roboto,Arial,sans-serif; font-size:13px;">TRWIBEB1XXX</td></tr>
-                <tr><td style="color:#5f6368; padding:3px 0; font-family:Roboto,Arial,sans-serif; font-size:13px;">BLZ:</td><td style="color:#0f1b3d; font-family:Roboto,Arial,sans-serif; font-size:13px;">905</td></tr>
-                <tr><td style="color:#5f6368; padding:3px 0; font-family:Roboto,Arial,sans-serif; font-size:13px;">Konto:</td><td style="color:#0f1b3d; font-family:Roboto,Arial,sans-serif; font-size:13px;">905997867497</td></tr>
-                <tr><td colspan="2" style="padding:10px 0 0;"><hr style="border:none; border-top:1px solid #e8edf3;"></td></tr>
                 <tr><td colspan="2" style="font-weight:bold; padding:8px 0 4px; color:#0f1b3d; font-family:Roboto,Arial,sans-serif; font-size:14px;">German Bank Account</td></tr>
                 <tr><td style="color:#5f6368; padding:3px 0; font-family:Roboto,Arial,sans-serif; font-size:13px;">IBAN:</td><td style="color:#0f1b3d; font-family:Roboto,Arial,sans-serif; font-size:13px;">DE91240703680071572200</td></tr>
                 <tr><td style="color:#5f6368; padding:3px 0; font-family:Roboto,Arial,sans-serif; font-size:13px;">BIC:</td><td style="color:#0f1b3d; font-family:Roboto,Arial,sans-serif; font-size:13px;">DEUTDE2HP22</td></tr>
                 <tr><td style="color:#5f6368; padding:3px 0; font-family:Roboto,Arial,sans-serif; font-size:13px;">Bank:</td><td style="color:#0f1b3d; font-family:Roboto,Arial,sans-serif; font-size:13px;">Postbank/DSL Ndl of Deutsche Bank</td></tr>
-                <tr><td colspan="2" style="padding:10px 0 0;"><hr style="border:none; border-top:1px solid #e8edf3;"></td></tr>
-                <tr><td colspan="2" style="font-weight:bold; padding:8px 0 4px; color:#0f1b3d; font-family:Roboto,Arial,sans-serif; font-size:14px;">UK Bank Account (Wise)</td></tr>
-                <tr><td style="color:#5f6368; padding:3px 0; font-family:Roboto,Arial,sans-serif; font-size:13px;">Account Holder:</td><td style="color:#0f1b3d; font-family:Roboto,Arial,sans-serif; font-size:13px;">Ab Media Team Ltd</td></tr>
-                <tr><td style="color:#5f6368; padding:3px 0; font-family:Roboto,Arial,sans-serif; font-size:13px;">IBAN:</td><td style="color:#0f1b3d; font-family:Roboto,Arial,sans-serif; font-size:13px;">GB61 TRWI 6084 6495 8547 53</td></tr>
-                <tr><td style="color:#5f6368; padding:3px 0; font-family:Roboto,Arial,sans-serif; font-size:13px;">BIC:</td><td style="color:#0f1b3d; font-family:Roboto,Arial,sans-serif; font-size:13px;">TRWIGB2LXXX</td></tr>
-                <tr><td style="color:#5f6368; padding:3px 0; font-family:Roboto,Arial,sans-serif; font-size:13px;">Bank:</td><td style="color:#0f1b3d; font-family:Roboto,Arial,sans-serif; font-size:13px;">Wise Payments Limited</td></tr>
-                <tr><td style="color:#5f6368; padding:3px 0; font-family:Roboto,Arial,sans-serif; font-size:13px;">Sort Code:</td><td style="color:#0f1b3d; font-family:Roboto,Arial,sans-serif; font-size:13px;">60-84-64</td></tr>
-                <tr><td style="color:#5f6368; padding:3px 0; font-family:Roboto,Arial,sans-serif; font-size:13px;">Account Number:</td><td style="color:#0f1b3d; font-family:Roboto,Arial,sans-serif; font-size:13px;">95854753</td></tr>
-                <tr><td style="color:#5f6368; padding:3px 0; font-family:Roboto,Arial,sans-serif; font-size:13px;">Address:</td><td style="color:#0f1b3d; font-family:Roboto,Arial,sans-serif; font-size:13px;">Worship Square, 65 Clifton Street, London, EC2A 4JE, United Kingdom</td></tr>
               </table>
             </td></tr>
           </table>
