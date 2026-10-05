@@ -267,7 +267,6 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
                 {selectedAccounts.map((account, idx) => (
                   <div key={account.id} className={idx > 0 ? "mt-3 pt-3 border-t border-gray-200" : ""}>
                     <div className="font-semibold mb-2">{account.name}:</div>
-                    {'accountHolder' in account && account.accountHolder && <div><strong>Account Holder:</strong> <span className="text-black font-bold text-base">{account.accountHolder}</span></div>}
                     <div><strong>{getTranslatedText('iban')}:</strong> <span className="text-black font-bold text-base">{account.iban}</span></div>
                     {account.bic && <div><strong>{getTranslatedText('bic')}:</strong> <span className="text-black font-bold text-base">{account.bic}</span></div>}
                     {account.blz && <div><strong>{getTranslatedText('blz')}:</strong> <span className="text-black font-bold text-base">{account.blz}</span> <strong>{getTranslatedText('account')}:</strong> <span className="text-black font-bold text-base">{account.account}</span></div>}
