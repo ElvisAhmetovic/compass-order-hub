@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Menu, Search, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { HomepageLanguage } from "@/content/homepage";
 import { contactInfo, publicAddress } from "@/config/contactInfo";
