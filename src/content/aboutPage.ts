@@ -19,17 +19,17 @@ export const aboutPage = {
   copy: {
     de: {
       metaTitle: "Über uns — Empria Tech",
-      metaDescription: "Empria Tech (AB TEAM LTD) aus Duisburg: Webdesign, Google SEO, Digital Marketing und App-Entwicklung aus einer Hand. Unsere Geschichte, unsere Werte und unser Team.",
+      metaDescription: "Empria Tech (MEDIA MARKETING LTD) aus Duisburg: Webdesign, Google SEO, Digital Marketing und App-Entwicklung aus einer Hand. Unsere Geschichte, unsere Werte und unser Team.",
       eyebrow: "Über Empria Tech",
       title: "Digitale Arbeit mit",
       accent: "Klarheit und Substanz.",
-      intro: "Empria Tech ist die Digitalmarke der AB TEAM LTD mit Standort in Duisburg. Wir entwickeln Websites, Google-SEO-Strategien, Digital-Marketing und Apps für Unternehmen, die online professionell auftreten und nachhaltig wachsen wollen.",
+      intro: "Empria Tech ist die Digitalmarke der MEDIA MARKETING LTD mit Standort in Duisburg. Wir entwickeln Websites, Google-SEO-Strategien, Digital-Marketing und Apps für Unternehmen, die online professionell auftreten und nachhaltig wachsen wollen.",
       imageAlt: "Team der Digitalagentur arbeitet gemeinsam an Website-Layouts und SEO-Auswertungen an einem großen Bildschirm",
       story: {
         eyebrow: "Unsere Geschichte",
         title: "Eine Agentur, die Disziplinen verbindet, statt sie zu trennen.",
         paragraphs: [
-          "Empria Tech ist in Duisburg zu Hause und arbeitet für Unternehmen, die ihre digitale Präsenz ernst nehmen. Hinter Empria Tech steht die AB TEAM LTD – ein Unternehmen, das digitale Projekte von der ersten Idee bis zur laufenden Betreuung begleitet.",
+          "Empria Tech ist in Duisburg zu Hause und arbeitet für Unternehmen, die ihre digitale Präsenz ernst nehmen. Hinter Empria Tech steht die MEDIA MARKETING LTD – ein Unternehmen, das digitale Projekte von der ersten Idee bis zur laufenden Betreuung begleitet.",
           "Unser Ansatz entstand aus einer einfachen Beobachtung: Websites, Suchmaschinenoptimierung und Marketing werden oft von unterschiedlichen Stellen getrennt voneinander behandelt. Das Ergebnis sind Auftritte, die gut aussehen, aber nicht gefunden werden – oder gefunden werden, aber nicht überzeugen.",
           "Deshalb verbinden wir bei Empria Tech Gestaltung, Technik und Marketing zu einem zusammenhängenden Prozess. Eine Website wird bei uns von Anfang an so geplant, dass sie von Menschen geschätzt und von Suchmaschinen verstanden wird. Kampagnen und Inhalte bauen auf dieser Grundlage auf, statt dagegen zu arbeiten.",
           "Dieselbe Logik führt unsere Arbeit in der App-Entwicklung: Digitale Produkte sollen eine klare Aufgabe erfüllen, stabil laufen und über die Zeit hinweg weiterwachsen können.",
@@ -66,17 +66,17 @@ export const aboutPage = {
     },
     en: {
       metaTitle: "About us — Empria Tech",
-      metaDescription: "Empria Tech (AB TEAM LTD) from Duisburg: web design, Google SEO, digital marketing and app development from one team. Our story, our values and our team.",
+      metaDescription: "Empria Tech (MEDIA MARKETING LTD) from Duisburg: web design, Google SEO, digital marketing and app development from one team. Our story, our values and our team.",
       eyebrow: "About Empria Tech",
       title: "Digital work with",
       accent: "clarity and substance.",
-      intro: "Empria Tech is the digital brand of AB TEAM LTD, based in Duisburg. We build websites, Google SEO strategies, digital marketing and apps for companies that want a professional online presence and sustainable growth.",
+      intro: "Empria Tech is the digital brand of MEDIA MARKETING LTD, based in Duisburg. We build websites, Google SEO strategies, digital marketing and apps for companies that want a professional online presence and sustainable growth.",
       imageAlt: "Digital agency team collaborating on website layouts and SEO dashboards on a large screen",
       story: {
         eyebrow: "Our story",
         title: "One agency that connects disciplines instead of separating them.",
         paragraphs: [
-          "Empria Tech is based in Duisburg and works with companies that take their digital presence seriously. Behind Empria Tech stands AB TEAM LTD — a company that accompanies digital projects from the first idea through to ongoing support.",
+          "Empria Tech is based in Duisburg and works with companies that take their digital presence seriously. Behind Empria Tech stands MEDIA MARKETING LTD — a company that accompanies digital projects from the first idea through to ongoing support.",
           "Our approach grew out of a simple observation: websites, search engine optimization and marketing are often handled separately by different providers. The result is presences that look good but are never found — or are found but fail to convince.",
           "That is why at Empria Tech we combine design, technology and marketing into one connected process. From the very start, a website is planned so that people appreciate it and search engines understand it. Campaigns and content build on that foundation instead of working against it.",
           "The same logic drives our app development work: digital products should serve a clear purpose, run reliably and keep growing over time.",
