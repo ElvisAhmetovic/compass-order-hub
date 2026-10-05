@@ -18,7 +18,7 @@ export const legalPages: Record<LegalKey, { path: string; copy: Record<HomepageL
         sections: [
           { heading: "Angaben gemäß § 5 DDG", paragraphs: [company("de"), "Empria Tech ist eine Marke der AB TEAM LTD."] },
           { heading: "Vertreten durch", paragraphs: [soon.de] },
-          { heading: "Kontakt", paragraphs: [`E-Mail: ${contactInfo.email}`, `Telefon: ${soon.de}`] },
+          { heading: "Kontakt", paragraphs: [`E-Mail: ${contactInfo.email}`, `Telefon: ${contactInfo.phone}`] },
           { heading: "Registereintrag", paragraphs: [`Registergericht / Registerbehörde: ${soon.de}`, `Registernummer: ${soon.de}`] },
           { heading: "Umsatzsteuer-ID", paragraphs: [`Umsatzsteuer-Identifikationsnummer gemäß § 27a UStG: ${soon.de}`] },
           { heading: "Tätigkeitsbereich", paragraphs: ["Webdesign, Google SEO (Suchmaschinenoptimierung), Digital Marketing und App-Entwicklung für Unternehmen."] },
@@ -35,7 +35,7 @@ export const legalPages: Record<LegalKey, { path: string; copy: Record<HomepageL
         sections: [
           { heading: "Information pursuant to § 5 DDG", paragraphs: [company("en"), "Empria Tech is a brand of AB TEAM LTD."] },
           { heading: "Represented by", paragraphs: [soon.en] },
-          { heading: "Contact", paragraphs: [`Email: ${contactInfo.email}`, `Phone: ${soon.en}`] },
+          { heading: "Contact", paragraphs: [`Email: ${contactInfo.email}`, `Phone: ${contactInfo.phone}`] },
           { heading: "Register entry", paragraphs: [`Register court / authority: ${soon.en}`, `Registration number: ${soon.en}`] },
           { heading: "VAT ID", paragraphs: [`VAT identification number pursuant to § 27a UStG: ${soon.en}`] },
           { heading: "Business activities", paragraphs: ["Web design, Google SEO (search engine optimization), digital marketing and app development for businesses."] },
@@ -55,7 +55,7 @@ export const legalPages: Record<LegalKey, { path: string; copy: Record<HomepageL
       de: {
         metaTitle: "Datenschutzerklärung — Empria Tech", metaDescription: "Datenschutzerklärung von Empria Tech (AB TEAM LTD): Informationen zur Verarbeitung personenbezogener Daten gemäß DSGVO.", title: "Datenschutzerklärung", updated: "Stand: Oktober 2026",
         sections: [
-          { heading: "1. Verantwortlicher", paragraphs: [company("de"), `E-Mail: ${contactInfo.email}`, `Datenschutzbeauftragter: ${soon.de}`] },
+          { heading: "1. Verantwortlicher", paragraphs: [company("de"), `Telefon: ${contactInfo.phone}`, `E-Mail: ${contactInfo.email}`, `Datenschutzbeauftragter: ${soon.de}`] },
           { heading: "2. Allgemeines", paragraphs: ["Wir nehmen den Schutz Ihrer personenbezogenen Daten ernst und verarbeiten diese ausschließlich im Rahmen der gesetzlichen Bestimmungen, insbesondere der Datenschutz-Grundverordnung (DSGVO) und des Bundesdatenschutzgesetzes (BDSG)."] },
           { heading: "3. Hosting und Server-Logfiles", paragraphs: ["Beim Aufruf unserer Website werden durch den Hosting-Anbieter automatisch Informationen erfasst, die Ihr Browser übermittelt: IP-Adresse, Datum und Uhrzeit, aufgerufene Seite, Referrer-URL, Browsertyp und Betriebssystem. Diese Daten dienen der sicheren und stabilen Bereitstellung der Website. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO.", `Hosting-Anbieter: ${soon.de}`] },
           { heading: "4. Kontaktformular und E-Mail", paragraphs: ["Wenn Sie uns über das Kontaktformular oder per E-Mail kontaktieren, verarbeiten wir die angegebenen Daten (z. B. Name, E-Mail-Adresse, Unternehmen, Nachricht) ausschließlich zur Bearbeitung Ihrer Anfrage. Die Anfrage wird per E-Mail an uns übermittelt. Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO (vorvertragliche Maßnahmen) bzw. lit. f DSGVO (berechtigtes Interesse an der Beantwortung). Die Daten werden gelöscht, sobald sie nicht mehr erforderlich sind und keine gesetzlichen Aufbewahrungspflichten bestehen."] },
@@ -72,7 +72,7 @@ export const legalPages: Record<LegalKey, { path: string; copy: Record<HomepageL
       en: {
         metaTitle: "Privacy policy — Empria Tech", metaDescription: "Privacy policy of Empria Tech (AB TEAM LTD): information on the processing of personal data under the GDPR.", title: "Privacy policy", updated: "Last updated: October 2026",
         sections: [
-          { heading: "1. Controller", paragraphs: [company("en"), `Email: ${contactInfo.email}`, `Data protection officer: ${soon.en}`] },
+          { heading: "1. Controller", paragraphs: [company("en"), `Phone: ${contactInfo.phone}`, `Email: ${contactInfo.email}`, `Data protection officer: ${soon.en}`] },
           { heading: "2. General", paragraphs: ["We take the protection of your personal data seriously and process it only in accordance with legal requirements, in particular the General Data Protection Regulation (GDPR) and the German Federal Data Protection Act (BDSG)."] },
           { heading: "3. Hosting and server log files", paragraphs: ["When you visit our website, the hosting provider automatically records information sent by your browser: IP address, date and time, page visited, referrer URL, browser type and operating system. This data is used to provide the website securely and reliably. The legal basis is Art. 6(1)(f) GDPR.", `Hosting provider: ${soon.en}`] },
           { heading: "4. Contact form and email", paragraphs: ["If you contact us via the contact form or by email, we process the data you provide (e.g. name, email address, company, message) solely to handle your enquiry. The enquiry is forwarded to us by email. The legal basis is Art. 6(1)(b) GDPR (pre-contractual measures) or Art. 6(1)(f) GDPR (legitimate interest in responding). The data is deleted once it is no longer needed and no statutory retention obligations apply."] },
