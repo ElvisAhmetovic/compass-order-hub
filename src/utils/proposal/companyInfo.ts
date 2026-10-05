@@ -18,12 +18,12 @@ const DEFAULT_COMPANY_INFO = {
   taxNumber: "13426 27369",
   director: "Andreas Berger",
   wise: true,
-  accountNumber: "905997867497",
+  accountNumber: undefined,
   accountHolder: "YOUR NAME",
   paymentMethod: "CREDIT CARD",
-  bankCode: "905",
-  iban: "BE54905997867497",
-  bic: "TRWIBEB1XXX"
+  bankCode: undefined,
+  iban: "DE91240703680071572200",
+  bic: "DEUTDE2HP22"
 };
 
 // Cache for company info to avoid repeated async calls

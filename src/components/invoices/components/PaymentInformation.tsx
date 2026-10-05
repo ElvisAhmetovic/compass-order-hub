@@ -19,9 +19,7 @@ export const PaymentInformation: React.FC<PaymentInformationProps> = ({
   onPaymentAccountChange
 }) => {
   const allAccounts = PAYMENT_ACCOUNTS;
-  const selectedAccounts = selectedPaymentAccount === "both"
-    ? allAccounts.filter(acc => acc.id !== "uk")
-    : allAccounts.filter(acc => acc.id === selectedPaymentAccount);
+  const selectedAccounts = allAccounts.filter(acc => acc.id === "germany");
 
   const paymentLabels = getPaymentPanelLabels(language);
 
@@ -49,13 +47,6 @@ export const PaymentInformation: React.FC<PaymentInformationProps> = ({
               ))}
               <SelectItem value="both">
                 <div className="flex items-center gap-2">
-                  <Badge variant="outline">🌍</Badge>
-                  {paymentLabels.bothAccounts}
-                </div>
-              </SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
 
         {selectedAccounts.length > 0 && (
           <div className="p-4 bg-muted rounded-lg space-y-2">

@@ -43,7 +43,7 @@ export const useInvoiceSettings = (initialSettings?: any) => {
       logo: DEFAULT_COMPANY_LOGO,
       logoSize: "large",
       language: "en",
-      selectedPaymentAccount: "both",
+      selectedPaymentAccount: "germany",
       customTerms: "",
       vatEnabled: true,
       vatRate: 0,

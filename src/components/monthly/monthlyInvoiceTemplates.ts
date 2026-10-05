@@ -31,11 +31,11 @@ Please find our current invoice attached.
 
 Important payment information:
 
-We are now using a new Belgian bank account. Please use only the following new bank details for this and all future payments:
+We are now using a new German bank account. Please use only the following new bank details for this and all future payments:
 
-IBAN: BE54 90 59 97 86 7497
+IBAN: DE91 2407 0368 0071 5722 00
 
-SWIFT/BIC: TRWIBEB1XXX
+SWIFT/BIC: DEUTDE2HP22
 
 Please do not transfer the invoice amount to our previous bank account, even if it is already saved as a payee in your records.
 
@@ -55,11 +55,11 @@ Anbei finden Sie unsere aktuelle Rechnung.
 
 Wichtiger Hinweis zur Zahlung:
 
-Wir verwenden ab sofort eine neue belgische Bankverbindung. Bitte verwenden Sie für diese und alle zukünftigen Zahlungen ausschließlich die folgende neue Bankverbindung:
+Wir verwenden ab sofort eine neue deutsche Bankverbindung. Bitte verwenden Sie für diese und alle zukünftigen Zahlungen ausschließlich die folgende neue Bankverbindung:
 
-IBAN: BE54 90 59 97 86 7497
+IBAN: DE91 2407 0368 0071 5722 00
 
-SWIFT/BIC: TRWIBEB1XXX
+SWIFT/BIC: DEUTDE2HP22
 
 Bitte überweisen Sie den Rechnungsbetrag nicht auf unsere bisherige Bankverbindung, auch wenn diese bei Ihnen bereits als Zahlungsempfänger gespeichert ist.
 
@@ -79,11 +79,11 @@ Bijgevoegd vindt u onze actuele factuur.
 
 Belangrijke informatie over de betaling:
 
-Vanaf nu gebruiken wij een nieuwe Belgische bankrekening. Gebruik voor deze en alle toekomstige betalingen uitsluitend de volgende nieuwe bankgegevens:
+Vanaf nu gebruiken wij een nieuwe Duitse bankrekening. Gebruik voor deze en alle toekomstige betalingen uitsluitend de volgende nieuwe bankgegevens:
 
-IBAN: BE54 90 59 97 86 7497
+IBAN: DE91 2407 0368 0071 5722 00
 
-SWIFT/BIC: TRWIBEB1XXX
+SWIFT/BIC: DEUTDE2HP22
 
 Maak het factuurbedrag niet over naar onze vorige bankrekening, ook niet als deze al als begunstigde bij u is opgeslagen.
 
@@ -103,11 +103,11 @@ Veuillez trouver ci-joint notre facture actuelle.
 
 Information importante concernant le paiement :
 
-Nous utilisons désormais un nouveau compte bancaire belge. Pour ce paiement et tous les paiements futurs, veuillez utiliser exclusivement les nouvelles coordonnées bancaires suivantes :
+Nous utilisons désormais un nouveau compte bancaire allemand. Pour ce paiement et tous les paiements futurs, veuillez utiliser exclusivement les nouvelles coordonnées bancaires suivantes :
 
-IBAN: BE54 90 59 97 86 7497
+IBAN: DE91 2407 0368 0071 5722 00
 
-SWIFT/BIC: TRWIBEB1XXX
+SWIFT/BIC: DEUTDE2HP22
 
 Veuillez ne pas virer le montant de la facture sur notre ancien compte bancaire, même si celui-ci est déjà enregistré comme bénéficiaire dans votre système.
 
@@ -127,11 +127,11 @@ Adjunto encontrará nuestra factura actual.
 
 Información importante sobre el pago:
 
-A partir de ahora utilizamos una nueva cuenta bancaria belga. Para este y todos los pagos futuros, utilice exclusivamente los siguientes datos bancarios nuevos:
+A partir de ahora utilizamos una nueva cuenta bancaria alemana. Para este y todos los pagos futuros, utilice exclusivamente los siguientes datos bancarios nuevos:
 
-IBAN: BE54 90 59 97 86 7497
+IBAN: DE91 2407 0368 0071 5722 00
 
-SWIFT/BIC: TRWIBEB1XXX
+SWIFT/BIC: DEUTDE2HP22
 
 No transfiera el importe de la factura a nuestra cuenta bancaria anterior, aunque ya la tenga guardada como beneficiario.
 
@@ -151,11 +151,11 @@ Vedlagt finder du vores aktuelle faktura.
 
 Vigtig information om betalingen:
 
-Vi bruger fra nu af en ny belgisk bankkonto. Brug udelukkende følgende nye bankoplysninger til denne og alle fremtidige betalinger:
+Vi bruger fra nu af en bankkonto. Brug udelukkende følgende nye bankoplysninger til denne og alle fremtidige betalinger:
 
-IBAN: BE54 90 59 97 86 7497
+IBAN: DE91 2407 0368 0071 5722 00
 
-SWIFT/BIC: TRWIBEB1XXX
+SWIFT/BIC: DEUTDE2HP22
 
 Overfør venligst ikke fakturabeløbet til vores tidligere bankkonto, selv om den allerede er gemt som betalingsmodtager hos jer.
 
@@ -175,11 +175,11 @@ Vedlagt finner du vår aktuelle faktura.
 
 Viktig informasjon om betalingen:
 
-Fra nå av bruker vi en ny belgisk bankkonto. Bruk kun følgende nye bankopplysninger for denne og alle fremtidige betalinger:
+Fra nå av bruker vi en bankkonto. Bruk kun følgende nye bankopplysninger for denne og alle fremtidige betalinger:
 
-IBAN: BE54 90 59 97 86 7497
+IBAN: DE91 2407 0368 0071 5722 00
 
-SWIFT/BIC: TRWIBEB1XXX
+SWIFT/BIC: DEUTDE2HP22
 
 Ikke overfør fakturabeløpet til vår tidligere bankkonto, selv om den allerede er lagret som betalingsmottaker hos dere.
 
@@ -199,11 +199,11 @@ V příloze naleznete naši aktuální fakturu.
 
 Důležité informace k platbě:
 
-Od této chvíle používáme nový belgický bankovní účet. Pro tuto a všechny budoucí platby používejte výhradně následující nové bankovní údaje:
+Od této chvíle používáme bankovní účet. Pro tuto a všechny budoucí platby používejte výhradně následující nové bankovní údaje:
 
-IBAN: BE54 90 59 97 86 7497
+IBAN: DE91 2407 0368 0071 5722 00
 
-SWIFT/BIC: TRWIBEB1XXX
+SWIFT/BIC: DEUTDE2HP22
 
 Částku faktury prosím neposílejte na náš předchozí bankovní účet, i když jej již máte uložený jako příjemce platby.
 
@@ -223,11 +223,11 @@ W załączeniu przesyłamy naszą aktualną fakturę.
 
 Ważna informacja dotycząca płatności:
 
-Od teraz korzystamy z nowego belgijskiego rachunku bankowego. Do tej oraz wszystkich przyszłych płatności prosimy używać wyłącznie następujących nowych danych bankowych:
+Od teraz korzystamy z rachunku bankowego. Do tej oraz wszystkich przyszłych płatności prosimy używać wyłącznie następujących nowych danych bankowych:
 
-IBAN: BE54 90 59 97 86 7497
+IBAN: DE91 2407 0368 0071 5722 00
 
-SWIFT/BIC: TRWIBEB1XXX
+SWIFT/BIC: DEUTDE2HP22
 
 Prosimy nie przelewać kwoty faktury na nasz dotychczasowy rachunek bankowy, nawet jeśli jest on już zapisany u Państwa jako odbiorca płatności.
 
@@ -249,9 +249,9 @@ Viktig information om betalningen:
 
 Från och med nu använder vi ett nytt belgiskt bankkonto. Använd endast följande nya bankuppgifter för denna och alla framtida betalningar:
 
-IBAN: BE54 90 59 97 86 7497
+IBAN: DE91 2407 0368 0071 5722 00
 
-SWIFT/BIC: TRWIBEB1XXX
+SWIFT/BIC: DEUTDE2HP22
 
 Överför inte fakturabeloppet till vårt tidigare bankkonto, även om det redan finns sparat som betalningsmottagare hos er.
 

@@ -61,22 +61,9 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
   const formattedVatRate = formatRate(effectiveVatRate);
   
   // Get translated account names and payment info
-  const getAccountTranslations = (language: string, accountId: "belgium" | "germany" | "uk") =>
+  const getAccountTranslations = (language: string, accountId: string) =>
     getAccountName(language, accountId);
 
-
-  const belgiumAccount = {
-    id: "belgium" as const,
-    name: getAccountTranslations(templateSettings.language, "belgium"),
-    iban: "BE54905997867497",
-    bic: "TRWIBEB1XXX",
-    blz: "905",
-    account: "905997867497",
-    bank: "Wise Europe SA",
-    sortCode: undefined as string | undefined,
-    accountNumber: undefined as string | undefined,
-    address: undefined as string | undefined
-  };
 
   const germanyAccount = {
     id: "germany" as const,
@@ -91,27 +78,7 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
     address: undefined as string | undefined
   };
 
-  const ukAccount = {
-    id: "uk" as const,
-    name: getAccountTranslations(templateSettings.language, "uk"),
-    accountHolder: "Ab Media Team Ltd",
-    iban: "GB61 TRWI 6084 6495 8547 53",
-    bic: "TRWIGB2LXXX",
-    bank: "Wise Payments Limited",
-    blz: undefined as string | undefined,
-    account: undefined as string | undefined,
-    sortCode: "60-84-64",
-    accountNumber: "95854753",
-    address: "Worship Square, 65 Clifton Street, London, EC2A 4JE, United Kingdom"
-  };
-
-  const selectedAccounts = templateSettings.selectedPaymentAccount === "both"
-    ? [belgiumAccount, germanyAccount]
-    : templateSettings.selectedPaymentAccount === "belgium"
-      ? [belgiumAccount]
-      : templateSettings.selectedPaymentAccount === "uk"
-        ? [ukAccount]
-        : [germanyAccount];
+  const selectedAccounts = [germanyAccount];
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-GB', {

@@ -395,8 +395,8 @@ const createSecondPageContent = (proposalData: any, language: string = "en") => 
   const textDirection = getTextDirection(language);
 
   // Payment data (only if enabled) - UPDATED TO USE NEW FIELD NAMES
-  const paymentIban = proposalData.iban || companyInfo.iban || 'BE54905997867497';
-  const paymentBic = proposalData.bic || companyInfo.bic || 'TRWIBEB1XXX';
+  const paymentIban = proposalData.iban || companyInfo.iban || 'DE91240703680071572200';
+  const paymentBic = proposalData.bic || companyInfo.bic || 'DEUTDE2HP22';
   const paymentBlzKonto = proposalData.blzKonto || companyInfo.bankCode || '905 KONTO: 905997867497';
   const paymentBank = 'Wise Europe SA';
 

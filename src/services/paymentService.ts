@@ -196,9 +196,9 @@ export class PaymentService {
           enabled: true,
           config: {
             account_details: {
-              iban: 'DE89 3704 0044 0532 0130 00',
-              bic: 'COBADEFFXXX',
-              bank_name: 'Commerzbank'
+              iban: 'DE91 2407 0368 0071 5722 00',
+              bic: 'DEUTDE2HP22',
+              bank_name: 'Postbank/DSL Ndl of Deutsche Bank'
             },
             fee_percentage: 0,
             fee_fixed: 0
