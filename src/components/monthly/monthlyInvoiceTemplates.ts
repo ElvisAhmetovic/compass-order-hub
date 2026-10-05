@@ -1,14 +1,14 @@
 export const SUBJECT_TEMPLATES: Record<string, string> = {
-  en: "AB MEDIA TEAM Invoice – Please note our new bank details",
-  de: "AB MEDIA TEAM Rechnung – Bitte neue Bankverbindung beachten",
-  nl: "AB MEDIA TEAM Factuur – Let op onze nieuwe bankgegevens",
-  fr: "Facture AB MEDIA TEAM – Veuillez noter nos nouvelles coordonnées bancaires",
-  es: "Factura de AB MEDIA TEAM – Tenga en cuenta nuestros nuevos datos bancarios",
-  da: "AB MEDIA TEAM-faktura – Bemærk venligst vores nye bankoplysninger",
-  no: "AB MEDIA TEAM-faktura – Vennligst merk våre nye bankopplysninger",
-  cs: "Faktura AB MEDIA TEAM – Věnujte prosím pozornost našim novým bankovním údajům",
-  pl: "Faktura AB MEDIA TEAM – Prosimy zwrócić uwagę na nowe dane bankowe",
-  sv: "AB MEDIA TEAM-faktura – Observera våra nya bankuppgifter",
+  en: "AB MEDIA TEAM Invoice",
+  de: "AB MEDIA TEAM Rechnung",
+  nl: "AB MEDIA TEAM Factuur",
+  fr: "Facture AB MEDIA TEAM",
+  es: "Factura de AB MEDIA TEAM",
+  da: "AB MEDIA TEAM-faktura",
+  no: "AB MEDIA TEAM-faktura",
+  cs: "Faktura AB MEDIA TEAM",
+  pl: "Faktura AB MEDIA TEAM",
+  sv: "AB MEDIA TEAM-faktura",
 };
 
 const SIGNATURE = `Annalena Klein
@@ -31,13 +31,13 @@ Please find our current invoice attached.
 
 Important payment information:
 
-We are now using a new German bank account. Please use only the following new bank details for this and all future payments:
+Please use the following bank details for payment:
 
 IBAN: DE91 2407 0368 0071 5722 00
 
 SWIFT/BIC: DEUTDE2HP22
 
-Please do not transfer the invoice amount to our previous bank account, even if it is already saved as a payee in your records.
+Bank: Postbank/DSL Ndl of Deutsche Bank
 
 We kindly request that you settle the invoice amount within 3 days to ensure smooth and uninterrupted processing of your services.
 
@@ -55,13 +55,13 @@ Anbei finden Sie unsere aktuelle Rechnung.
 
 Wichtiger Hinweis zur Zahlung:
 
-Wir verwenden ab sofort eine neue deutsche Bankverbindung. Bitte verwenden Sie für diese und alle zukünftigen Zahlungen ausschließlich die folgende neue Bankverbindung:
+Bitte verwenden Sie für Ihre Zahlung die folgende Bankverbindung:
 
 IBAN: DE91 2407 0368 0071 5722 00
 
 SWIFT/BIC: DEUTDE2HP22
 
-Bitte überweisen Sie den Rechnungsbetrag nicht auf unsere bisherige Bankverbindung, auch wenn diese bei Ihnen bereits als Zahlungsempfänger gespeichert ist.
+Bank: Postbank/DSL Ndl of Deutsche Bank
 
 Wir bitten Sie, den Rechnungsbetrag innerhalb von 3 Tagen zu begleichen, um eine reibungslose und ununterbrochene Bearbeitung Ihrer Dienstleistungen sicherzustellen.
 
@@ -79,13 +79,13 @@ Bijgevoegd vindt u onze actuele factuur.
 
 Belangrijke informatie over de betaling:
 
-Vanaf nu gebruiken wij een nieuwe Duitse bankrekening. Gebruik voor deze en alle toekomstige betalingen uitsluitend de volgende nieuwe bankgegevens:
+Gebruik voor uw betaling de volgende bankgegevens:
 
 IBAN: DE91 2407 0368 0071 5722 00
 
 SWIFT/BIC: DEUTDE2HP22
 
-Maak het factuurbedrag niet over naar onze vorige bankrekening, ook niet als deze al als begunstigde bij u is opgeslagen.
+Bank: Postbank/DSL Ndl of Deutsche Bank
 
 Wij verzoeken u vriendelijk het factuurbedrag binnen 3 dagen te voldoen om een vlotte en ononderbroken verwerking van uw diensten te garanderen.
 
@@ -103,13 +103,13 @@ Veuillez trouver ci-joint notre facture actuelle.
 
 Information importante concernant le paiement :
 
-Nous utilisons désormais un nouveau compte bancaire allemand. Pour ce paiement et tous les paiements futurs, veuillez utiliser exclusivement les nouvelles coordonnées bancaires suivantes :
+Veuillez utiliser les coordonnées bancaires suivantes pour votre paiement :
 
 IBAN: DE91 2407 0368 0071 5722 00
 
 SWIFT/BIC: DEUTDE2HP22
 
-Veuillez ne pas virer le montant de la facture sur notre ancien compte bancaire, même si celui-ci est déjà enregistré comme bénéficiaire dans votre système.
+Bank: Postbank/DSL Ndl of Deutsche Bank
 
 Nous vous prions de bien vouloir régler le montant de la facture dans un délai de 3 jours afin d'assurer un traitement fluide et ininterrompu de vos services.
 
@@ -127,13 +127,13 @@ Adjunto encontrará nuestra factura actual.
 
 Información importante sobre el pago:
 
-A partir de ahora utilizamos una nueva cuenta bancaria alemana. Para este y todos los pagos futuros, utilice exclusivamente los siguientes datos bancarios nuevos:
+Utilice los siguientes datos bancarios para su pago:
 
 IBAN: DE91 2407 0368 0071 5722 00
 
 SWIFT/BIC: DEUTDE2HP22
 
-No transfiera el importe de la factura a nuestra cuenta bancaria anterior, aunque ya la tenga guardada como beneficiario.
+Bank: Postbank/DSL Ndl of Deutsche Bank
 
 Le rogamos que liquide el importe de la factura en un plazo de 3 días para garantizar un procesamiento fluido e ininterrumpido de sus servicios.
 
@@ -151,13 +151,13 @@ Vedlagt finder du vores aktuelle faktura.
 
 Vigtig information om betalingen:
 
-Vi bruger fra nu af en bankkonto. Brug udelukkende følgende nye bankoplysninger til denne og alle fremtidige betalinger:
+Brug følgende bankoplysninger til din betaling:
 
 IBAN: DE91 2407 0368 0071 5722 00
 
 SWIFT/BIC: DEUTDE2HP22
 
-Overfør venligst ikke fakturabeløbet til vores tidligere bankkonto, selv om den allerede er gemt som betalingsmodtager hos jer.
+Bank: Postbank/DSL Ndl of Deutsche Bank
 
 Vi beder dig venligst om at betale fakturabeløbet inden for 3 dage for at sikre en problemfri og uafbrudt behandling af dine tjenester.
 
@@ -175,13 +175,13 @@ Vedlagt finner du vår aktuelle faktura.
 
 Viktig informasjon om betalingen:
 
-Fra nå av bruker vi en bankkonto. Bruk kun følgende nye bankopplysninger for denne og alle fremtidige betalinger:
+Bruk følgende bankopplysninger for betalingen:
 
 IBAN: DE91 2407 0368 0071 5722 00
 
 SWIFT/BIC: DEUTDE2HP22
 
-Ikke overfør fakturabeløpet til vår tidligere bankkonto, selv om den allerede er lagret som betalingsmottaker hos dere.
+Bank: Postbank/DSL Ndl of Deutsche Bank
 
 Vi ber deg vennligst om å betale fakturabeløpet innen 3 dager for å sikre en smidig og uavbrutt behandling av dine tjenester.
 
@@ -199,13 +199,13 @@ V příloze naleznete naši aktuální fakturu.
 
 Důležité informace k platbě:
 
-Od této chvíle používáme bankovní účet. Pro tuto a všechny budoucí platby používejte výhradně následující nové bankovní údaje:
+Pro platbu použijte následující bankovní údaje:
 
 IBAN: DE91 2407 0368 0071 5722 00
 
 SWIFT/BIC: DEUTDE2HP22
 
-Částku faktury prosím neposílejte na náš předchozí bankovní účet, i když jej již máte uložený jako příjemce platby.
+Bank: Postbank/DSL Ndl of Deutsche Bank
 
 Žádáme Vás o uhrazení částky faktury do 3 dnů, aby bylo zajištěno plynulé a nepřerušené zpracování Vašich služeb.
 
@@ -223,13 +223,13 @@ W załączeniu przesyłamy naszą aktualną fakturę.
 
 Ważna informacja dotycząca płatności:
 
-Od teraz korzystamy z rachunku bankowego. Do tej oraz wszystkich przyszłych płatności prosimy używać wyłącznie następujących nowych danych bankowych:
+Do płatności prosimy użyć następujących danych bankowych:
 
 IBAN: DE91 2407 0368 0071 5722 00
 
 SWIFT/BIC: DEUTDE2HP22
 
-Prosimy nie przelewać kwoty faktury na nasz dotychczasowy rachunek bankowy, nawet jeśli jest on już zapisany u Państwa jako odbiorca płatności.
+Bank: Postbank/DSL Ndl of Deutsche Bank
 
 Uprzejmie prosimy o uregulowanie kwoty faktury w ciągu 3 dni w celu zapewnienia sprawnego i nieprzerwanego przetwarzania Państwa usług.
 
@@ -247,13 +247,13 @@ Bifogat finner du vår aktuella faktura.
 
 Viktig information om betalningen:
 
-Från och med nu använder vi ett nytt belgiskt bankkonto. Använd endast följande nya bankuppgifter för denna och alla framtida betalningar:
+Använd följande bankuppgifter för betalningen:
 
 IBAN: DE91 2407 0368 0071 5722 00
 
 SWIFT/BIC: DEUTDE2HP22
 
-Överför inte fakturabeloppet till vårt tidigare bankkonto, även om det redan finns sparat som betalningsmottagare hos er.
+Bank: Postbank/DSL Ndl of Deutsche Bank
 
 Vi ber dig vänligen att betala fakturabeloppet inom 3 dagar för att säkerställa en smidig och oavbruten hantering av dina tjänster.
 

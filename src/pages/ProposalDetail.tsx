@@ -151,7 +151,7 @@ const ProposalDetail = () => {
     // Payment data - updated with new fields
     iban: "DE91240703680071572200",
     bic: "DEUTDE2HP22",
-    blzKonto: "905 KONTO: 905997867497",
+    blzKonto: "",
     
     // Footer and company info
     footerContent: "",
@@ -255,7 +255,7 @@ const ProposalDetail = () => {
             termsAndConditions: proposal.terms_and_conditions || '',
             iban: proposal.iban || 'DE91240703680071572200',
             bic: proposal.bic || 'DEUTDE2HP22',
-            blzKonto: proposal.blz_konto || '905 KONTO: 905997867497',
+            blzKonto: proposal.blz_konto || '',
             footerContent: proposal.footer_content || '',
             logo: proposal.logo,
             logoSize: proposal.logo_size ?? 33,
@@ -1313,7 +1313,7 @@ const ProposalDetail = () => {
                         id="bic"
                         value={proposalData.bic}
                         onChange={(e) => setProposalData(prev => ({ ...prev, bic: e.target.value }))}
-                        placeholder="TRWIBEB1XXX"
+                        placeholder="DEUTDE2HP22"
                       />
                     </div>
                     
@@ -1323,7 +1323,7 @@ const ProposalDetail = () => {
                         id="blzKonto"
                         value={proposalData.blzKonto}
                         onChange={(e) => setProposalData(prev => ({ ...prev, blzKonto: e.target.value }))}
-                        placeholder="905 KONTO: 905997867497"
+                        placeholder="Optional"
                       />
                     </div>
                   </div>
