@@ -1303,7 +1303,7 @@ const ProposalDetail = () => {
                         id="iban"
                         value={proposalData.iban}
                         onChange={(e) => setProposalData(prev => ({ ...prev, iban: e.target.value }))}
-                        placeholder="BE54905997867497"
+                        placeholder="DE91240703680071572200"
                       />
                     </div>
                     

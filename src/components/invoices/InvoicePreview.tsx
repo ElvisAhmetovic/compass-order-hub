@@ -61,7 +61,7 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
   const formattedVatRate = formatRate(effectiveVatRate);
   
   // Get translated account names and payment info
-  const getAccountTranslations = (language: string, accountId: "belgium" | "germany" | "uk") =>
+  const getAccountTranslations = (language: string, accountId: string) =>
     getAccountName(language, accountId);
 
 

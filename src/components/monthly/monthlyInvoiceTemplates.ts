@@ -31,7 +31,7 @@ Please find our current invoice attached.
 
 Important payment information:
 
-We are now using a bank account. Please use only the following new bank details for this and all future payments:
+We are now using a new German bank account. Please use only the following new bank details for this and all future payments:
 
 IBAN: DE91 2407 0368 0071 5722 00
 
@@ -55,7 +55,7 @@ Anbei finden Sie unsere aktuelle Rechnung.
 
 Wichtiger Hinweis zur Zahlung:
 
-Wir verwenden ab sofort eine Bankverbindung. Bitte verwenden Sie für diese und alle zukünftigen Zahlungen ausschließlich die folgende neue Bankverbindung:
+Wir verwenden ab sofort eine neue deutsche Bankverbindung. Bitte verwenden Sie für diese und alle zukünftigen Zahlungen ausschließlich die folgende neue Bankverbindung:
 
 IBAN: DE91 2407 0368 0071 5722 00
 
@@ -79,7 +79,7 @@ Bijgevoegd vindt u onze actuele factuur.
 
 Belangrijke informatie over de betaling:
 
-Vanaf nu gebruiken wij een bankrekening. Gebruik voor deze en alle toekomstige betalingen uitsluitend de volgende nieuwe bankgegevens:
+Vanaf nu gebruiken wij een nieuwe Duitse bankrekening. Gebruik voor deze en alle toekomstige betalingen uitsluitend de volgende nieuwe bankgegevens:
 
 IBAN: DE91 2407 0368 0071 5722 00
 
@@ -103,7 +103,7 @@ Veuillez trouver ci-joint notre facture actuelle.
 
 Information importante concernant le paiement :
 
-Nous utilisons désormais un compte bancaire. Pour ce paiement et tous les paiements futurs, veuillez utiliser exclusivement les nouvelles coordonnées bancaires suivantes :
+Nous utilisons désormais un nouveau compte bancaire allemand. Pour ce paiement et tous les paiements futurs, veuillez utiliser exclusivement les nouvelles coordonnées bancaires suivantes :
 
 IBAN: DE91 2407 0368 0071 5722 00
 
@@ -127,7 +127,7 @@ Adjunto encontrará nuestra factura actual.
 
 Información importante sobre el pago:
 
-A partir de ahora utilizamos una cuenta bancaria. Para este y todos los pagos futuros, utilice exclusivamente los siguientes datos bancarios nuevos:
+A partir de ahora utilizamos una nueva cuenta bancaria alemana. Para este y todos los pagos futuros, utilice exclusivamente los siguientes datos bancarios nuevos:
 
 IBAN: DE91 2407 0368 0071 5722 00
 

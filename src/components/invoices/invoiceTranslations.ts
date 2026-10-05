@@ -30,7 +30,7 @@ export const ACCOUNT_NAME_TRANSLATIONS: Record<string, { belgium: string; german
   mk: { belgium: "Wise Europe SA", germany: "Германска банкарска сметка", uk: "Британска банкарска сметка (Wise)" },
 };
 
-export function getAccountName(language: string, accountId: "belgium" | "germany" | "uk"): string {
+export function getAccountName(language: string, accountId: string): string {
   const lang = language || "en";
   return ACCOUNT_NAME_TRANSLATIONS[lang]?.[accountId] || EN_ACCOUNTS[accountId];
 }

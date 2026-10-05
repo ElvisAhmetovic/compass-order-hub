@@ -220,7 +220,7 @@ const generateInvoiceHTML = (data: InvoicePDFData): string => {
   const translateLineItemDescription = (description: string, language: string) =>
     translateLineItem(description, language);
 
-  const getAccountTranslations = (language: string, accountId: "belgium" | "germany" | "uk") =>
+  const getAccountTranslations = (language: string, accountId: string) =>
     getAccountName(language, accountId);
 
 
