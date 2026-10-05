@@ -43,7 +43,7 @@ const copy = {
 };
 
 const ContactPage = () => {
-  const [language, setLanguage] = usePublicLanguage();
+  const { language, setLanguage } = usePublicLanguage();
   const t = copy[language];
   const [form, setForm] = useState({ name: "", email: "", company: "", service: "", message: "", website: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
