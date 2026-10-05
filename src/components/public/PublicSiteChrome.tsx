@@ -6,14 +6,15 @@ import type { HomepageLanguage } from "@/content/homepage";
 import { contactInfo, publicAddress } from "@/config/contactInfo";
 
 const labels = {
-  de: { web: "Webdesign", seo: "Google SEO", marketing: "Digital Marketing", contact: "Kontakt", login: "Anmelden", register: "Registrieren", menu: "Menü öffnen", tagline: "Webdesign, Google SEO und Digital Marketing mit klarer Strategie.", legal: "Alle Rechte vorbehalten." },
-  en: { web: "Web design", seo: "Google SEO", marketing: "Digital marketing", contact: "Contact", login: "Log in", register: "Register", menu: "Open menu", tagline: "Web design, Google SEO and digital marketing with a clear strategy.", legal: "All rights reserved." },
+  de: { web: "Webdesign", seo: "Google SEO", marketing: "Digital Marketing", app: "App-Entwicklung", contact: "Kontakt", login: "Anmelden", register: "Registrieren", menu: "Menü öffnen", tagline: "Webdesign, Google SEO, Digital Marketing und App-Entwicklung mit klarer Strategie.", legal: "Alle Rechte vorbehalten." },
+  en: { web: "Web design", seo: "Google SEO", marketing: "Digital marketing", app: "App development", contact: "Contact", login: "Log in", register: "Register", menu: "Open menu", tagline: "Web design, Google SEO, digital marketing and app development with a clear strategy.", legal: "All rights reserved." },
 };
 
 const serviceLinks = [
   { to: "/webdesign", key: "web" as const },
   { to: "/google-seo", key: "seo" as const },
   { to: "/digital-marketing", key: "marketing" as const },
+  { to: "/app-entwicklung", key: "app" as const },
   { to: "/kontakt", key: "contact" as const },
 ];
 

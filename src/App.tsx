@@ -127,6 +127,7 @@ function App() {
                   <Route path="/webdesign" element={<ServicePage serviceKey="webdesign" />} />
                   <Route path="/google-seo" element={<ServicePage serviceKey="googleSeo" />} />
                   <Route path="/digital-marketing" element={<ServicePage serviceKey="digitalMarketing" />} />
+                  <Route path="/app-entwicklung" element={<ServicePage serviceKey="appDevelopment" />} />
                   <Route path="/kontakt" element={<ContactPage />} />
                   <Route path="/ticket-loading" element={<TicketLoading />} />
                   <Route path="/ticket-submitted" element={<TicketSubmitted />} />

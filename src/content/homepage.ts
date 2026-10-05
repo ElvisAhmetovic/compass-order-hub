@@ -16,6 +16,7 @@ type HomepageCopy = {
   web: ServiceSection;
   seo: ServiceSection;
   marketing: ServiceSection;
+  app: ServiceSection;
   synergy: { eyebrow: string; title: string; body: string; imageAlt: string; points: Array<{ title: string; body: string }> };
   expertise: { eyebrow: string; title: string; body: string; items: Array<{ title: string; body: string }> };
   process: { eyebrow: string; title: string; body: string; steps: Array<{ number: string; title: string; body: string }> };
@@ -81,6 +82,19 @@ export const homepageCopy: Record<HomepageLanguage, HomepageCopy> = {
         { title: "Analyse", body: "Ergebnisse auswerten und nächste Maßnahmen gezielt verbessern." },
       ],
       outcome: "Das Ergebnis: digitales Marketing als verständliches System statt unverbundener Einzelmaßnahmen.",
+    },
+    app: {
+      eyebrow: "04 · App-Entwicklung",
+      title: "Web- und Mobile-Apps, die Abläufe vereinfachen.",
+      body: "Wir konzipieren und entwickeln individuelle Anwendungen – von Kundenportalen über interne Tools bis zu iOS- und Android-Apps – mit klarer Bedienung und solider Technik.",
+      imageAlt: "Laptop mit Web-App-Dashboard und Smartphone mit mobiler App",
+      items: [
+        { title: "Web-Apps", body: "Browserbasierte Anwendungen für Kunden, Teams und Prozesse." },
+        { title: "Mobile Apps", body: "Apps für iOS und Android mit durchdachter Nutzerführung." },
+        { title: "Portale & Tools", body: "Kundenbereiche, Dashboards und interne Werkzeuge." },
+        { title: "Schnittstellen", body: "Anbindung bestehender Systeme, Zahlungen und Daten." },
+      ],
+      outcome: "Das Ziel: Software, die echte Aufgaben löst und mit Ihrem Unternehmen wachsen kann.",
     },
     synergy: {
       eyebrow: "Ein gemeinsames Fundament",
@@ -196,6 +210,19 @@ export const homepageCopy: Record<HomepageLanguage, HomepageCopy> = {
         { title: "Analysis", body: "Evaluate results and improve the next actions deliberately." },
       ],
       outcome: "The result: digital marketing as an understandable system rather than disconnected tactics.",
+    },
+    app: {
+      eyebrow: "04 · App development",
+      title: "Web and mobile apps that simplify how you work.",
+      body: "We design and build custom applications — from customer portals and internal tools to iOS and Android apps — with clear usability and solid engineering.",
+      imageAlt: "Laptop showing a web app dashboard and a smartphone showing a mobile app",
+      items: [
+        { title: "Web apps", body: "Browser-based applications for customers, teams and processes." },
+        { title: "Mobile apps", body: "iOS and Android apps with thoughtful user journeys." },
+        { title: "Portals & tools", body: "Customer areas, dashboards and internal tools." },
+        { title: "Integrations", body: "Connecting existing systems, payments and data." },
+      ],
+      outcome: "The result: software that solves real tasks and grows with your business.",
     },
     synergy: {
       eyebrow: "One shared foundation",
