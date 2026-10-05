@@ -103,7 +103,7 @@ const Index = () => {
             <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">{copy.cta.eyebrow}</p>
             <h2 className="mt-5 font-heading text-4xl font-bold leading-tight tracking-normal sm:text-6xl">{copy.cta.title}</h2>
             <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-muted-foreground">{copy.cta.body}</p>
-            <div className="mt-9 flex flex-col justify-center gap-3 sm:flex-row"><Button size="lg" asChild><Link to="/register">{copy.cta.primary}<ArrowRight /></Link></Button><Button size="lg" variant="outline" asChild><Link to="/login">{copy.cta.secondary}</Link></Button></div>
+            <div className="mt-9 flex flex-col justify-center gap-3 sm:flex-row"><Button size="lg" asChild><Link to="/register">{copy.cta.primary}<ArrowRight /></Link></Button><Button size="lg" variant="outline" asChild><Link to="/kontakt">{language === "de" ? "Kontakt aufnehmen" : "Contact us"}</Link></Button></div>
           </div>
         </section>
       </main>
