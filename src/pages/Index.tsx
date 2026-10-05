@@ -1,36 +1,21 @@
-import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
-import { homepageCopy, type HomepageLanguage, type ServiceSection } from "@/content/homepage";
+import { homepageCopy, type ServiceSection } from "@/content/homepage";
+import { PublicFooter, PublicHeader } from "@/components/public/PublicSiteChrome";
+import { usePublicLanguage } from "@/hooks/usePublicLanguage";
 import heroImage from "@/assets/empria-digital-studio.jpg";
 import webImage from "@/assets/empria-webdesign-studio.jpg";
 import seoImage from "@/assets/empria-seo-analysis.jpg";
 import strategyImage from "@/assets/empria-strategy-process.jpg";
-import { ArrowRight, Check, ChevronDown, Menu, Search, X } from "lucide-react";
+import marketingImage from "@/assets/empria-digital-marketing.jpg";
+import { ArrowRight, Check, ChevronDown } from "lucide-react";
 
 const Index = () => {
   const { isLoading } = useAuth();
-  const [language, setLanguage] = useState<HomepageLanguage>(() => window.localStorage.getItem("empria-home-language") === "en" ? "en" : "de");
-  const [menuOpen, setMenuOpen] = useState(false);
+  const { language, setLanguage } = usePublicLanguage();
   const copy = homepageCopy[language];
-
-  useEffect(() => {
-    window.localStorage.setItem("empria-home-language", language);
-    document.documentElement.lang = language;
-  }, [language]);
-
-  const changeLanguage = (nextLanguage: HomepageLanguage) => {
-    setLanguage(nextLanguage);
-    setMenuOpen(false);
-  };
-
-  const navItems = [
-    { href: "#services", label: copy.nav.services },
-    { href: "#expertise", label: copy.nav.expertise },
-    { href: "#process", label: copy.nav.process },
-    { href: "#faq", label: copy.nav.faq },
-  ];
 
   if (isLoading) {
     return <div className="flex min-h-screen items-center justify-center bg-primary"><div className="h-9 w-9 animate-spin rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground" aria-label="Loading" /></div>;
@@ -38,35 +23,8 @@ const Index = () => {
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-background text-foreground">
-      <header className="fixed inset-x-0 top-0 z-50 border-b border-primary-foreground/10 bg-primary/95 text-primary-foreground backdrop-blur-md">
-        <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-5 lg:px-8">
-          <Link to="/" className="group flex items-center gap-3" aria-label="Empria Tech home">
-            <span className="flex h-9 w-9 items-center justify-center rounded-md border border-primary-foreground/25 bg-primary-foreground/10 transition-colors group-hover:bg-primary-foreground/15"><Search className="h-5 w-5" /></span>
-            <span className="font-heading text-xl font-bold tracking-normal">EMPRIA TECH<span className="text-primary-foreground/55">.</span></span>
-          </Link>
-          <nav className="hidden items-center gap-7 text-sm font-medium lg:flex" aria-label="Main navigation">
-            {navItems.map((item) => <a key={item.href} href={item.href} className="text-primary-foreground/75 transition-colors hover:text-primary-foreground">{item.label}</a>)}
-          </nav>
-          <div className="hidden items-center gap-3 lg:flex">
-            <LanguageSwitch language={language} onChange={changeLanguage} />
-            <Button variant="ghost" asChild className="text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground"><Link to="/login">{copy.nav.login}</Link></Button>
-            <Button asChild className="bg-primary-foreground text-primary hover:bg-primary-foreground/90"><Link to="/register">{copy.nav.register}</Link></Button>
-          </div>
-          <Button type="button" variant="ghost" size="icon" className="text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground lg:hidden" onClick={() => setMenuOpen((open) => !open)} aria-label={copy.nav.menu} aria-expanded={menuOpen}>{menuOpen ? <X /> : <Menu />}</Button>
-        </div>
-        {menuOpen && (
-          <div className="border-t border-primary-foreground/10 bg-primary px-5 py-5 lg:hidden">
-            <nav className="mx-auto flex max-w-7xl flex-col gap-1" aria-label="Mobile navigation">
-              {navItems.map((item) => <a key={item.href} href={item.href} onClick={() => setMenuOpen(false)} className="border-b border-primary-foreground/10 py-3 text-primary-foreground/80">{item.label}</a>)}
-              <div className="mt-4"><LanguageSwitch language={language} onChange={changeLanguage} /></div>
-              <div className="mt-4 grid grid-cols-2 gap-3">
-                <Button variant="outline" asChild className="border-primary-foreground/30 bg-transparent text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground"><Link to="/login">{copy.nav.login}</Link></Button>
-                <Button asChild className="bg-primary-foreground text-primary hover:bg-primary-foreground/90"><Link to="/register">{copy.nav.register}</Link></Button>
-              </div>
-            </nav>
-          </div>
-        )}
-      </header>
+      <Helmet><html lang={language} /><link rel="canonical" href="https://empriatech.com/" /></Helmet>
+      <PublicHeader language={language} onLanguageChange={setLanguage} />
 
       <main>
         <section className="relative min-h-[92svh] overflow-hidden bg-primary pt-20 text-primary-foreground">
@@ -96,8 +54,9 @@ const Index = () => {
         </section>
 
         <div id="services" className="scroll-mt-20">
-          <ServiceBlock section={copy.web} image={webImage} imageFirst />
-          <ServiceBlock section={copy.seo} image={seoImage} />
+          <ServiceBlock section={copy.web} image={webImage} path="/webdesign" linkLabel={language === "de" ? "Webdesign entdecken" : "Explore web design"} imageFirst />
+          <ServiceBlock section={copy.seo} image={seoImage} path="/google-seo" linkLabel={language === "de" ? "Google SEO entdecken" : "Explore Google SEO"} />
+          <ServiceBlock section={copy.marketing} image={marketingImage} path="/digital-marketing" linkLabel={language === "de" ? "Digital Marketing entdecken" : "Explore digital marketing"} imageFirst />
         </div>
 
         <section className="border-y border-border bg-secondary/55 px-5 py-24 sm:py-32 lg:px-8">
@@ -149,30 +108,18 @@ const Index = () => {
         </section>
       </main>
 
-      <footer className="bg-primary px-5 py-10 text-primary-foreground lg:px-8">
-        <div className="mx-auto flex max-w-7xl flex-col gap-7 border-b border-primary-foreground/15 pb-8 sm:flex-row sm:items-center sm:justify-between">
-          <div><p className="font-heading text-xl font-bold">EMPRIA TECH.</p><p className="mt-2 text-sm text-primary-foreground/55">{copy.footer.tagline}</p></div>
-          <div className="flex gap-5 text-sm"><Link to="/login" className="text-primary-foreground/70 hover:text-primary-foreground">{copy.nav.login}</Link><Link to="/register" className="text-primary-foreground/70 hover:text-primary-foreground">{copy.nav.register}</Link></div>
-        </div>
-        <div className="mx-auto flex max-w-7xl justify-between gap-4 pt-7 text-xs text-primary-foreground/45"><span>© {new Date().getFullYear()} Empria Tech</span><span>{copy.footer.legal}</span></div>
-      </footer>
+      <PublicFooter language={language} />
     </div>
   );
 };
 
-const LanguageSwitch = ({ language, onChange }: { language: HomepageLanguage; onChange: (language: HomepageLanguage) => void }) => (
-  <div className="flex w-fit items-center rounded-md border border-primary-foreground/20 p-1" aria-label="Language">
-    {(["de", "en"] as const).map((code) => <Button key={code} type="button" size="sm" variant="ghost" onClick={() => onChange(code)} className={language === code ? "h-7 bg-primary-foreground text-primary hover:bg-primary-foreground/90" : "h-7 text-primary-foreground/70 hover:bg-primary-foreground/10 hover:text-primary-foreground"} aria-pressed={language === code}>{code.toUpperCase()}</Button>)}
-  </div>
-);
-
 const SectionHeading = ({ eyebrow, title, body }: { eyebrow: string; title: string; body?: string }) => <div><p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">{eyebrow}</p><h2 className="mt-5 font-heading text-4xl font-bold leading-tight tracking-normal sm:text-5xl">{title}</h2>{body && <p className="mt-6 text-base leading-7 text-muted-foreground">{body}</p>}</div>;
 
-const ServiceBlock = ({ section, image, imageFirst = false }: { section: ServiceSection; image: string; imageFirst?: boolean }) => (
+const ServiceBlock = ({ section, image, path, linkLabel, imageFirst = false }: { section: ServiceSection; image: string; path: string; linkLabel: string; imageFirst?: boolean }) => (
   <section className={imageFirst ? "border-y border-border bg-secondary/55 px-5 py-24 sm:py-32 lg:px-8" : "bg-background px-5 py-24 sm:py-32 lg:px-8"}>
     <div className="mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-2 lg:gap-20">
       <div className={imageFirst ? "overflow-hidden rounded-md" : "order-first overflow-hidden rounded-md lg:order-last"}><img src={image} alt={section.imageAlt} loading="lazy" width={1408} height={992} className="aspect-[7/5] h-full w-full object-cover" /></div>
-      <div><p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">{section.eyebrow}</p><h2 className="mt-5 font-heading text-4xl font-bold leading-tight tracking-normal sm:text-5xl">{section.title}</h2><p className="mt-6 text-base leading-7 text-muted-foreground">{section.body}</p><div className="mt-8 grid gap-5 sm:grid-cols-2">{section.items.map((item) => <article key={item.title} className="border-t border-border pt-4"><h3 className="flex items-center gap-2 font-heading text-base font-bold"><Check className="h-4 w-4 shrink-0 text-primary" />{item.title}</h3><p className="mt-2 text-sm leading-6 text-muted-foreground">{item.body}</p></article>)}</div><p className="mt-8 border-l-2 border-primary pl-5 text-sm font-medium leading-6">{section.outcome}</p></div>
+      <div><p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">{section.eyebrow}</p><h2 className="mt-5 font-heading text-4xl font-bold leading-tight tracking-normal sm:text-5xl">{section.title}</h2><p className="mt-6 text-base leading-7 text-muted-foreground">{section.body}</p><div className="mt-8 grid gap-5 sm:grid-cols-2">{section.items.map((item) => <article key={item.title} className="border-t border-border pt-4"><h3 className="flex items-center gap-2 font-heading text-base font-bold"><Check className="h-4 w-4 shrink-0 text-primary" />{item.title}</h3><p className="mt-2 text-sm leading-6 text-muted-foreground">{item.body}</p></article>)}</div><p className="mt-8 border-l-2 border-primary pl-5 text-sm font-medium leading-6">{section.outcome}</p><Button variant="outline" asChild className="mt-7"><Link to={path}>{linkLabel}<ArrowRight /></Link></Button></div>
     </div>
   </section>
 );

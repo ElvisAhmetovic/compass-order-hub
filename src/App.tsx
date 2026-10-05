@@ -9,6 +9,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "next-themes";
 import Index from "./pages/Index";
+import ServicePage from "./pages/ServicePage";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
@@ -122,6 +123,9 @@ function App() {
               <div className="min-h-screen bg-background">
                 <Routes>
                   <Route path="/" element={<Index />} />
+                  <Route path="/webdesign" element={<ServicePage serviceKey="webdesign" />} />
+                  <Route path="/google-seo" element={<ServicePage serviceKey="googleSeo" />} />
+                  <Route path="/digital-marketing" element={<ServicePage serviceKey="digitalMarketing" />} />
                   <Route path="/ticket-loading" element={<TicketLoading />} />
                   <Route path="/ticket-submitted" element={<TicketSubmitted />} />
                   <Route path="/confirm-offer/:offerId" element={<ConfirmOffer />} />
