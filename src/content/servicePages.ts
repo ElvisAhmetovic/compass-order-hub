@@ -1,9 +1,10 @@
 import webImage from "@/assets/empria-webdesign-studio.jpg";
 import seoImage from "@/assets/empria-seo-analysis.jpg";
 import marketingImage from "@/assets/empria-digital-marketing.jpg";
+import appImage from "@/assets/empria-app-development.jpg";
 import type { HomepageLanguage } from "@/content/homepage";
 
-export type ServiceKey = "webdesign" | "googleSeo" | "digitalMarketing";
+export type ServiceKey = "webdesign" | "googleSeo" | "digitalMarketing" | "appDevelopment";
 
 type LocalizedService = {
   metaTitle: string; metaDescription: string; eyebrow: string; title: string; accent: string; intro: string; imageAlt: string;
@@ -74,7 +75,7 @@ export const servicePages: Record<ServiceKey, ServiceDefinition> = {
     },
   },
   digitalMarketing: {
-    path: "/digital-marketing", image: marketingImage, related: ["webdesign", "googleSeo"],
+    path: "/digital-marketing", image: marketingImage, related: ["webdesign", "appDevelopment"],
     copy: {
       de: {
         metaTitle: "Digital Marketing für Unternehmen — Empria Tech", metaDescription: "Digital Marketing von Empria Tech: Kanalstrategie, Kampagnen, Content, Social Media, Landingpages und messbare Optimierung.",
@@ -100,10 +101,38 @@ export const servicePages: Record<ServiceKey, ServiceDefinition> = {
       },
     },
   },
+  appDevelopment: {
+    path: "/app-entwicklung", image: appImage, related: ["webdesign", "digitalMarketing"],
+    copy: {
+      de: {
+        metaTitle: "App-Entwicklung für Unternehmen — Empria Tech", metaDescription: "Individuelle App-Entwicklung von Empria Tech: Web-Apps, iOS- und Android-Apps, Kundenportale, Dashboards und Schnittstellen.",
+        eyebrow: "Empria Tech · App-Entwicklung", title: "App-Entwicklung", accent: "für Web und Mobile.", intro: "Wir entwickeln individuelle Anwendungen, die Abläufe vereinfachen, Kunden besser einbinden und mit Ihrem Unternehmen wachsen.", imageAlt: "Laptop mit Web-App-Dashboard und Smartphone mit mobiler App", primary: "App-Projekt starten",
+        overviewEyebrow: "Software mit klarem Zweck", overviewTitle: "Anwendungen, die echte Aufgaben lösen.", overviewBody: "Ob Kundenportal, internes Tool oder mobile App: Wir beginnen mit den Abläufen und Menschen, die die Anwendung nutzen werden, und entwickeln daraus eine verständliche, stabile Lösung.",
+        capabilities: [{ title: "Web-Apps", body: "Browserbasierte Anwendungen, die ohne Installation auf allen Geräten laufen." }, { title: "iOS- & Android-Apps", body: "Mobile Apps mit durchdachter Bedienung für Smartphone und Tablet." }, { title: "Kundenportale", body: "Sichere Bereiche, in denen Kunden Daten, Dokumente und Aufträge einsehen." }, { title: "Dashboards & interne Tools", body: "Übersichtliche Werkzeuge für Teams, Auswertungen und Verwaltung." }, { title: "Schnittstellen & Integrationen", body: "Anbindung bestehender Systeme, Zahlungsanbieter und Datenquellen." }, { title: "Wartung & Weiterentwicklung", body: "Updates, Verbesserungen und neue Funktionen nach dem Start." }],
+        deliverablesEyebrow: "Leistungsumfang", deliverablesTitle: "Bausteine für eine belastbare Anwendung.", deliverables: ["Anforderungsanalyse und Funktionsplanung", "UX-Konzept und klickbare Entwürfe", "UI-Design für Web und Mobile", "Entwicklung von Oberfläche und Datenlogik", "Benutzerkonten, Rollen und Datenschutz", "Tests, Veröffentlichung und Betreuung"],
+        processEyebrow: "Unser Entwicklungsprozess", processTitle: "Von der Idee zur laufenden Anwendung.", process: [{ number: "01", title: "Analyse", body: "Wir klären Ziele, Nutzer, Abläufe und den sinnvollen Funktionsumfang." }, { number: "02", title: "Konzept & Design", body: "Nutzerwege und Oberflächen werden geplant und gemeinsam abgestimmt." }, { number: "03", title: "Entwicklung", body: "Die Anwendung entsteht in überprüfbaren Schritten mit regelmäßigem Feedback." }, { number: "04", title: "Start & Betreuung", body: "Nach Tests geht die App live und wird gezielt weiterentwickelt." }],
+        outcomesEyebrow: "Wirkung", outcomesTitle: "Weniger Handarbeit, bessere Erfahrung.", outcomesBody: "Der Fokus liegt auf praktischem Nutzen und solider Technik – ohne überladene Funktionen oder unrealistische Versprechen.", outcomes: [{ title: "Effizientere Abläufe", body: "Wiederkehrende Aufgaben werden vereinfacht oder automatisiert." }, { title: "Bessere Kundenbindung", body: "Kunden erhalten einen klaren, digitalen Zugang zu Ihren Leistungen." }, { title: "Skalierbare Basis", body: "Die Anwendung kann mit neuen Anforderungen sauber wachsen." }],
+        relatedEyebrow: "Sinnvolle Ergänzungen", relatedTitle: "Eine starke App profitiert von Website und Reichweite.", faqEyebrow: "App-Entwicklung FAQ", faqTitle: "Häufige Fragen zur App-Entwicklung.", faqs: [{ question: "Web-App oder native App – was ist sinnvoller?", answer: "Das hängt von Zielgruppe, Funktionen und Budget ab. Web-Apps sind schnell überall verfügbar, native Apps bieten tiefere Geräteintegration. Wir beraten dazu in der Analysephase." }, { question: "Kann eine bestehende Software erweitert werden?", answer: "Ja. Nach einer technischen Prüfung können bestehende Anwendungen gezielt erweitert oder angebunden werden." }, { question: "Wer betreut die App nach dem Start?", answer: "Auf Wunsch übernimmt Empria Tech Wartung, Updates und Weiterentwicklung." }],
+        ctaTitle: "Bereit für Ihre eigene Anwendung?", ctaBody: "Registrieren Sie sich und starten Sie Ihr App-Projekt mit Empria Tech.", ctaPrimary: "App-Projekt starten", ctaSecondary: "Anmelden",
+      },
+      en: {
+        metaTitle: "App Development for Businesses — Empria Tech", metaDescription: "Custom app development by Empria Tech: web apps, iOS and Android apps, customer portals, dashboards and integrations.",
+        eyebrow: "Empria Tech · App development", title: "App development", accent: "for web and mobile.", intro: "We build custom applications that simplify operations, engage customers and grow with your business.", imageAlt: "Laptop showing a web app dashboard and a smartphone showing a mobile app", primary: "Start an app project",
+        overviewEyebrow: "Software with a clear purpose", overviewTitle: "Applications that solve real tasks.", overviewBody: "Whether a customer portal, internal tool or mobile app, we start with the workflows and people who will use it and turn them into a clear, reliable solution.",
+        capabilities: [{ title: "Web apps", body: "Browser-based applications that run on every device without installation." }, { title: "iOS & Android apps", body: "Mobile apps with thoughtful usability for phones and tablets." }, { title: "Customer portals", body: "Secure areas where customers view data, documents and orders." }, { title: "Dashboards & internal tools", body: "Clear tools for teams, reporting and administration." }, { title: "APIs & integrations", body: "Connecting existing systems, payment providers and data sources." }, { title: "Maintenance & growth", body: "Updates, improvements and new features after launch." }],
+        deliverablesEyebrow: "Scope", deliverablesTitle: "Building blocks for a dependable application.", deliverables: ["Requirements analysis and feature planning", "UX concept and clickable prototypes", "UI design for web and mobile", "Front-end and data logic development", "User accounts, roles and data protection", "Testing, launch and ongoing support"],
+        processEyebrow: "Our development process", processTitle: "From idea to running application.", process: [{ number: "01", title: "Analysis", body: "We clarify goals, users, workflows and a sensible feature scope." }, { number: "02", title: "Concept & design", body: "User journeys and screens are planned and agreed together." }, { number: "03", title: "Development", body: "The application is built in reviewable steps with regular feedback." }, { number: "04", title: "Launch & support", body: "After testing the app goes live and keeps improving." }],
+        outcomesEyebrow: "Impact", outcomesTitle: "Less manual work, a better experience.", outcomesBody: "The focus is practical value and solid engineering, without bloated features or unrealistic promises.", outcomes: [{ title: "More efficient workflows", body: "Recurring tasks are simplified or automated." }, { title: "Stronger customer relationships", body: "Customers get clear digital access to your services." }, { title: "Scalable foundation", body: "The application can grow cleanly with new requirements." }],
+        relatedEyebrow: "Related services", relatedTitle: "A strong app benefits from a website and reach.", faqEyebrow: "App development FAQ", faqTitle: "Common questions about app development.", faqs: [{ question: "Web app or native app — which is better?", answer: "It depends on audience, features and budget. Web apps are quickly available everywhere; native apps offer deeper device integration. We advise during analysis." }, { question: "Can existing software be extended?", answer: "Yes. After a technical review, existing applications can be extended or integrated." }, { question: "Who looks after the app after launch?", answer: "On request, Empria Tech handles maintenance, updates and further development." }],
+        ctaTitle: "Ready for your own application?", ctaBody: "Register and start your app project with Empria Tech.", ctaPrimary: "Start an app project", ctaSecondary: "Log in",
+      },
+    },
+  },
 };
 
 export const serviceNames: Record<ServiceKey, Record<HomepageLanguage, string>> = {
   webdesign: { de: "Webdesign", en: "Web design" },
   googleSeo: { de: "Google SEO", en: "Google SEO" },
   digitalMarketing: { de: "Digital Marketing", en: "Digital marketing" },
+  appDevelopment: { de: "App-Entwicklung", en: "App development" },
 };
