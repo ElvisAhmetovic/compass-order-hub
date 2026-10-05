@@ -70,7 +70,7 @@ const Index = () => {
 
       <main>
         <section className="relative min-h-[92svh] overflow-hidden bg-primary pt-20 text-primary-foreground">
-          <img src={heroImage} alt={copy.hero.imageAlt} width={1600} height={1008} fetchPriority="high" className="absolute inset-0 h-full w-full object-cover object-center" />
+          <img src={heroImage} alt={copy.hero.imageAlt} width={1600} height={1008} className="absolute inset-0 h-full w-full object-cover object-center" />
           <div className="homepage-hero-overlay absolute inset-0" />
           <div className="relative mx-auto flex min-h-[calc(92svh-5rem)] max-w-7xl items-center px-5 py-16 lg:px-8">
             <div className="max-w-4xl animate-slide-in">
