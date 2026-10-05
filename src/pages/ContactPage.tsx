@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { PublicFooter, PublicHeader } from "@/components/public/PublicSiteChrome";
 import { usePublicLanguage } from "@/hooks/usePublicLanguage";
 import { supabase } from "@/integrations/supabase/client";
-import { contactInfo } from "@/config/contactInfo";
+import { contactInfo, publicAddress } from "@/config/contactInfo";
 
 const copy = {
   de: {
@@ -89,7 +89,7 @@ const ContactPage = () => {
         <meta property="og:description" content={t.description} />
         <meta property="og:url" content="https://empriatech.com/kontakt" />
         <meta property="og:type" content="website" />
-        <script type="application/ld+json">{JSON.stringify({ "@context": "https://schema.org", "@type": "ContactPage", name: t.title, url: "https://empriatech.com/kontakt", about: { "@type": "Organization", name: "Empria Tech", email: contactInfo.email, ...(contactInfo.phone && { telephone: contactInfo.phone }), ...(contactInfo.social.length && { sameAs: contactInfo.social.map((s) => s.url) }) } })}</script>
+        <script type="application/ld+json">{JSON.stringify({ "@context": "https://schema.org", "@type": "ContactPage", name: t.title, url: "https://empriatech.com/kontakt", about: { "@type": "Organization", name: "Empria Tech", legalName: contactInfo.legalName, email: contactInfo.email, ...(contactInfo.phone && { telephone: contactInfo.phone }), ...(contactInfo.social.length && { sameAs: contactInfo.social.map((s) => s.url) }) } })}</script>
       </Helmet>
       <PublicHeader language={language} onLanguageChange={setLanguage} />
       <main className="pt-20">
@@ -128,7 +128,7 @@ const ContactPage = () => {
               <h2 className="font-heading text-2xl font-bold">{t.direct}</h2>
               <Info icon={Mail} label={t.email}><a className="hover:text-primary" href={`mailto:${contactInfo.email}`}>{contactInfo.email}</a></Info>
               {contactInfo.phone && <Info icon={Phone} label={t.phone}><a className="hover:text-primary" href={`tel:${contactInfo.phone.replace(/\s/g, "")}`}>{contactInfo.phone}</a></Info>}
-              {contactInfo.address && <Info icon={MapPin} label={t.address}><span className="whitespace-pre-line">{contactInfo.address}</span></Info>}
+              <Info icon={MapPin} label={t.address}><span className="whitespace-pre-line">{publicAddress(language)}</span></Info>
               {contactInfo.social.length > 0 && <Info icon={Share2} label={t.social}><div className="flex flex-wrap gap-3">{contactInfo.social.map((s) => <a key={s.url} href={s.url} target="_blank" rel="noopener noreferrer" className="hover:text-primary">{s.label}</a>)}</div></Info>}
               <Info icon={Clock} label={t.response}>{t.responseText}</Info>
             </aside>

@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Menu, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { HomepageLanguage } from "@/content/homepage";
+import { contactInfo, publicAddress } from "@/config/contactInfo";
 
 const labels = {
   de: { web: "Webdesign", seo: "Google SEO", marketing: "Digital Marketing", contact: "Kontakt", login: "Anmelden", register: "Registrieren", menu: "Menü öffnen", tagline: "Webdesign, Google SEO und Digital Marketing mit klarer Strategie.", legal: "Alle Rechte vorbehalten." },
@@ -44,5 +45,11 @@ export const PublicHeader = ({ language, onLanguageChange }: { language: Homepag
 
 export const PublicFooter = ({ language }: { language: HomepageLanguage }) => {
   const copy = labels[language];
-  return <footer className="bg-primary px-5 py-10 text-primary-foreground lg:px-8"><div className="mx-auto grid max-w-7xl gap-8 border-b border-primary-foreground/15 pb-8 md:grid-cols-[1fr_auto_auto]"><div><Link to="/" className="font-heading text-xl font-bold">EMPRIA TECH.</Link><p className="mt-2 max-w-sm text-sm text-primary-foreground/55">{copy.tagline}</p></div><nav className="grid gap-3 text-sm" aria-label="Services">{serviceLinks.map((item) => <Link key={item.to} to={item.to} className="text-primary-foreground/70 hover:text-primary-foreground">{copy[item.key]}</Link>)}</nav><div className="flex items-start gap-5 text-sm"><Link to="/login" className="text-primary-foreground/70 hover:text-primary-foreground">{copy.login}</Link><Link to="/register" className="text-primary-foreground/70 hover:text-primary-foreground">{copy.register}</Link></div></div><div className="mx-auto flex max-w-7xl justify-between gap-4 pt-7 text-xs text-primary-foreground/45"><span>© {new Date().getFullYear()} Empria Tech</span><span>{copy.legal}</span></div></footer>;
+  const legal = [
+    contactInfo.legalName,
+    publicAddress(language),
+    contactInfo.phone && <a key="phone" href={`tel:${contactInfo.phone.replace(/\s/g, "")}`} className="hover:text-primary-foreground">{contactInfo.phone}</a>,
+    <a key="email" href={`mailto:${contactInfo.email}`} className="hover:text-primary-foreground">{contactInfo.email}</a>,
+  ].filter(Boolean);
+  return <footer className="bg-primary px-5 py-10 text-primary-foreground lg:px-8"><div className="mx-auto grid max-w-7xl gap-8 border-b border-primary-foreground/15 pb-8 md:grid-cols-[1fr_auto_auto]"><div><Link to="/" className="font-heading text-xl font-bold">EMPRIA TECH.</Link><p className="mt-2 max-w-sm text-sm text-primary-foreground/55">{copy.tagline}</p></div><nav className="grid gap-3 text-sm" aria-label="Services">{serviceLinks.map((item) => <Link key={item.to} to={item.to} className="text-primary-foreground/70 hover:text-primary-foreground">{copy[item.key]}</Link>)}</nav><div className="flex items-start gap-5 text-sm"><Link to="/login" className="text-primary-foreground/70 hover:text-primary-foreground">{copy.login}</Link><Link to="/register" className="text-primary-foreground/70 hover:text-primary-foreground">{copy.register}</Link></div></div><div className="mx-auto flex max-w-7xl flex-col gap-4 pt-7 text-xs text-primary-foreground/45 sm:flex-row sm:items-start sm:justify-between sm:gap-8"><p className="max-w-md leading-6">{legal.map((line, index) => <span key={index} className="not-last:after:mr-2 not-last:after:text-primary-foreground/30 not-last:after:content-['·']">{line}</span>)}</p><span className="shrink-0 sm:text-right">© {new Date().getFullYear()} Empria Tech · {copy.legal}</span></div></footer>;
 };
