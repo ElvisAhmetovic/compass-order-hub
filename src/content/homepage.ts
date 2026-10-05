@@ -29,10 +29,10 @@ export const homepageCopy: Record<HomepageLanguage, HomepageCopy> = {
   de: {
     nav: { services: "Leistungen", expertise: "Expertise", process: "Prozess", faq: "FAQ", login: "Anmelden", register: "Registrieren", menu: "Menü öffnen" },
     hero: {
-      eyebrow: "Empria Tech · Webdesign & Google SEO",
-      title: "Webdesign und Google SEO",
+      eyebrow: "Empria Tech · Webdesign · Google SEO · Digital Marketing",
+      title: "Digitale Präsenz und Marketing",
       accent: "für nachhaltige Sichtbarkeit.",
-      body: "Empria Tech entwickelt professionelle Websites und verbindet sie von Anfang an mit einer fundierten SEO-Strategie – klar gestaltet, technisch sauber und auf organisches Wachstum ausgerichtet.",
+      body: "Empria Tech verbindet professionelle Websites, fundierte Google-SEO-Strategien und koordiniertes Digital Marketing – klar gestaltet, technisch sauber und auf nachhaltiges Wachstum ausgerichtet.",
       primary: "Projekt starten",
       secondary: "Leistungen ansehen",
       imageAlt: "Moderner Arbeitsplatz mit Website und Analyse-Dashboard auf einem großen Bildschirm",
@@ -144,10 +144,10 @@ export const homepageCopy: Record<HomepageLanguage, HomepageCopy> = {
   en: {
     nav: { services: "Services", expertise: "Expertise", process: "Process", faq: "FAQ", login: "Log in", register: "Register", menu: "Open menu" },
     hero: {
-      eyebrow: "Empria Tech · Web design & Google SEO",
-      title: "Web design and Google SEO",
+      eyebrow: "Empria Tech · Web design · Google SEO · Digital marketing",
+      title: "Digital presence and marketing",
       accent: "for lasting visibility.",
-      body: "Empria Tech creates professional websites and connects them with a sound SEO strategy from day one — clearly designed, technically solid and built for organic growth.",
+      body: "Empria Tech connects professional websites, sound Google SEO strategies and coordinated digital marketing — clearly designed, technically solid and built for sustainable growth.",
       primary: "Start a project",
       secondary: "View services",
       imageAlt: "Modern workspace with a website and analytics dashboard on a large screen",
