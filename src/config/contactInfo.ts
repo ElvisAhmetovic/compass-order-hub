@@ -5,7 +5,7 @@ import type { HomepageLanguage } from "@/content/homepage";
 
 export const contactInfo = {
   email: "kontakt@empriatech.com",
-  legalName: "AB TEAM LTD",
+  legalName: "MEDIA MARKETING LTD",
   phone: "+49 203 70907342",
   address: {
     de: "Düsseldorfer Str. 32, 47051 Duisburg, Deutschland",

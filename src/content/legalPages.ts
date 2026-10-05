@@ -14,9 +14,9 @@ export const legalPages: Record<LegalKey, { path: string; copy: Record<HomepageL
     path: "/impressum",
     copy: {
       de: {
-        metaTitle: "Impressum — Empria Tech", metaDescription: "Impressum und Anbieterkennzeichnung von Empria Tech (AB TEAM LTD), Duisburg.", title: "Impressum", updated: "Stand: Oktober 2026",
+        metaTitle: "Impressum — Empria Tech", metaDescription: "Impressum und Anbieterkennzeichnung von Empria Tech (MEDIA MARKETING LTD), Duisburg.", title: "Impressum", updated: "Stand: Oktober 2026",
         sections: [
-          { heading: "Angaben gemäß § 5 DDG", paragraphs: [company("de"), "Empria Tech ist eine Marke der AB TEAM LTD."] },
+          { heading: "Angaben gemäß § 5 DDG", paragraphs: [company("de"), "Empria Tech ist eine Marke der MEDIA MARKETING LTD."] },
           { heading: "Vertreten durch", paragraphs: [soon.de] },
           { heading: "Kontakt", paragraphs: [`E-Mail: ${contactInfo.email}`, `Telefon: ${contactInfo.phone}`] },
           { heading: "Registereintrag", paragraphs: [`Registergericht / Registerbehörde: ${soon.de}`, `Registernummer: ${soon.de}`] },
@@ -31,9 +31,9 @@ export const legalPages: Record<LegalKey, { path: string; copy: Record<HomepageL
         ],
       },
       en: {
-        metaTitle: "Legal notice — Empria Tech", metaDescription: "Legal notice (Impressum) of Empria Tech (AB TEAM LTD), Duisburg.", title: "Legal notice (Impressum)", updated: "Last updated: October 2026",
+        metaTitle: "Legal notice — Empria Tech", metaDescription: "Legal notice (Impressum) of Empria Tech (MEDIA MARKETING LTD), Duisburg.", title: "Legal notice (Impressum)", updated: "Last updated: October 2026",
         sections: [
-          { heading: "Information pursuant to § 5 DDG", paragraphs: [company("en"), "Empria Tech is a brand of AB TEAM LTD."] },
+          { heading: "Information pursuant to § 5 DDG", paragraphs: [company("en"), "Empria Tech is a brand of MEDIA MARKETING LTD."] },
           { heading: "Represented by", paragraphs: [soon.en] },
           { heading: "Contact", paragraphs: [`Email: ${contactInfo.email}`, `Phone: ${contactInfo.phone}`] },
           { heading: "Register entry", paragraphs: [`Register court / authority: ${soon.en}`, `Registration number: ${soon.en}`] },
@@ -53,7 +53,7 @@ export const legalPages: Record<LegalKey, { path: string; copy: Record<HomepageL
     path: "/datenschutz",
     copy: {
       de: {
-        metaTitle: "Datenschutzerklärung — Empria Tech", metaDescription: "Datenschutzerklärung von Empria Tech (AB TEAM LTD): Informationen zur Verarbeitung personenbezogener Daten gemäß DSGVO.", title: "Datenschutzerklärung", updated: "Stand: Oktober 2026",
+        metaTitle: "Datenschutzerklärung — Empria Tech", metaDescription: "Datenschutzerklärung von Empria Tech (MEDIA MARKETING LTD): Informationen zur Verarbeitung personenbezogener Daten gemäß DSGVO.", title: "Datenschutzerklärung", updated: "Stand: Oktober 2026",
         sections: [
           { heading: "1. Verantwortlicher", paragraphs: [company("de"), `Telefon: ${contactInfo.phone}`, `E-Mail: ${contactInfo.email}`, `Datenschutzbeauftragter: ${soon.de}`] },
           { heading: "2. Allgemeines", paragraphs: ["Wir nehmen den Schutz Ihrer personenbezogenen Daten ernst und verarbeiten diese ausschließlich im Rahmen der gesetzlichen Bestimmungen, insbesondere der Datenschutz-Grundverordnung (DSGVO) und des Bundesdatenschutzgesetzes (BDSG)."] },
@@ -70,7 +70,7 @@ export const legalPages: Record<LegalKey, { path: string; copy: Record<HomepageL
         ],
       },
       en: {
-        metaTitle: "Privacy policy — Empria Tech", metaDescription: "Privacy policy of Empria Tech (AB TEAM LTD): information on the processing of personal data under the GDPR.", title: "Privacy policy", updated: "Last updated: October 2026",
+        metaTitle: "Privacy policy — Empria Tech", metaDescription: "Privacy policy of Empria Tech (MEDIA MARKETING LTD): information on the processing of personal data under the GDPR.", title: "Privacy policy", updated: "Last updated: October 2026",
         sections: [
           { heading: "1. Controller", paragraphs: [company("en"), `Phone: ${contactInfo.phone}`, `Email: ${contactInfo.email}`, `Data protection officer: ${soon.en}`] },
           { heading: "2. General", paragraphs: ["We take the protection of your personal data seriously and process it only in accordance with legal requirements, in particular the General Data Protection Regulation (GDPR) and the German Federal Data Protection Act (BDSG)."] },
