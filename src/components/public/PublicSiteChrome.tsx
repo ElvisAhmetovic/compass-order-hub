@@ -5,14 +5,15 @@ import { Button } from "@/components/ui/button";
 import type { HomepageLanguage } from "@/content/homepage";
 
 const labels = {
-  de: { web: "Webdesign", seo: "Google SEO", marketing: "Digital Marketing", login: "Anmelden", register: "Registrieren", menu: "Menü öffnen", tagline: "Webdesign, Google SEO und Digital Marketing mit klarer Strategie.", legal: "Alle Rechte vorbehalten." },
-  en: { web: "Web design", seo: "Google SEO", marketing: "Digital marketing", login: "Log in", register: "Register", menu: "Open menu", tagline: "Web design, Google SEO and digital marketing with a clear strategy.", legal: "All rights reserved." },
+  de: { web: "Webdesign", seo: "Google SEO", marketing: "Digital Marketing", contact: "Kontakt", login: "Anmelden", register: "Registrieren", menu: "Menü öffnen", tagline: "Webdesign, Google SEO und Digital Marketing mit klarer Strategie.", legal: "Alle Rechte vorbehalten." },
+  en: { web: "Web design", seo: "Google SEO", marketing: "Digital marketing", contact: "Contact", login: "Log in", register: "Register", menu: "Open menu", tagline: "Web design, Google SEO and digital marketing with a clear strategy.", legal: "All rights reserved." },
 };
 
 const serviceLinks = [
   { to: "/webdesign", key: "web" as const },
   { to: "/google-seo", key: "seo" as const },
   { to: "/digital-marketing", key: "marketing" as const },
+  { to: "/kontakt", key: "contact" as const },
 ];
 
 export const PublicLanguageSwitch = ({ language, onChange }: { language: HomepageLanguage; onChange: (language: HomepageLanguage) => void }) => (

@@ -131,3 +131,6 @@ verify_jwt = false
 
 [functions.wh-auto-lock]
 verify_jwt = false
+
+[functions.send-contact-inquiry]
+verify_jwt = false
