@@ -12,6 +12,7 @@ import Index from "./pages/Index";
 import ServicePage from "./pages/ServicePage";
 import LegalPage from "./pages/LegalPage";
 import ContactPage from "./pages/ContactPage";
+import AboutPage from "./pages/AboutPage";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
@@ -130,6 +131,7 @@ function App() {
                   <Route path="/digital-marketing" element={<ServicePage serviceKey="digitalMarketing" />} />
                   <Route path="/app-entwicklung" element={<ServicePage serviceKey="appDevelopment" />} />
                   <Route path="/kontakt" element={<ContactPage />} />
+                  <Route path="/ueber-uns" element={<AboutPage />} />
                   <Route path="/impressum" element={<LegalPage pageKey="impressum" />} />
                   <Route path="/datenschutz" element={<LegalPage pageKey="datenschutz" />} />
                   <Route path="/ticket-loading" element={<TicketLoading />} />
