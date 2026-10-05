@@ -254,7 +254,7 @@ base defaults  →  localStorage['invoiceTemplateSettings']  →  initialSetting
 companyInfo:  getCompanyInfo()  →  saved.companyInfo  →  initialSettings.companyInfo
 ```
 
-Defaults: `logo = DEFAULT_COMPANY_LOGO`, `logoSize = "large"`, `language = "en"`, `selectedPaymentAccount = "both"`, `customTerms = ""`, `vatEnabled = true`, `vatRate = 0`, `currency = "EUR"`, `invoiceNumberPrefix = "INV-"`.
+Defaults: `logo = DEFAULT_COMPANY_LOGO`, `logoSize = "large"`, `language = "en"`, `selectedPaymentAccount = "germany"`, `customTerms = ""`, `vatEnabled = true`, `vatRate = 0`, `currency = "EUR"`, `invoiceNumberPrefix = "INV-"`.
 
 The whole settings object is written back to `localStorage` on every change and again when the invoice is saved. **These settings are per browser, not per company record** — see §10.
 
