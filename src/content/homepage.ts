@@ -15,6 +15,7 @@ type HomepageCopy = {
   intro: { eyebrow: string; title: string; body: string };
   web: ServiceSection;
   seo: ServiceSection;
+  marketing: ServiceSection;
   synergy: { eyebrow: string; title: string; body: string; imageAlt: string; points: Array<{ title: string; body: string }> };
   expertise: { eyebrow: string; title: string; body: string; items: Array<{ title: string; body: string }> };
   process: { eyebrow: string; title: string; body: string; steps: Array<{ number: string; title: string; body: string }> };
@@ -67,6 +68,19 @@ export const homepageCopy: Record<HomepageLanguage, HomepageCopy> = {
         { title: "Lokale Sichtbarkeit", body: "Standortbezogene Suchanfragen und lokale Relevanz gezielt berücksichtigen." },
       ],
       outcome: "Der Fokus liegt auf belastbarer, organischer Entwicklung – nicht auf kurzfristigen Versprechen oder unklaren Maßnahmen.",
+    },
+    marketing: {
+      eyebrow: "03 · Digital Marketing",
+      title: "Kampagnen und Inhalte mit klarer Richtung.",
+      body: "Wir verbinden Kanäle, Botschaften, Inhalte und Zielseiten zu einer koordinierten digitalen Präsenz, die Ihre Marke konsistent vermittelt.",
+      imageAlt: "Digital-Marketing-Arbeitsplatz mit Kampagnenplanung, Content-Kalender und Leistungsdaten",
+      items: [
+        { title: "Kanalstrategie", body: "Relevante Kanäle nach Zielgruppe, Aufgabe und Potenzial auswählen." },
+        { title: "Kampagnenplanung", body: "Botschaft, Zeitplan, Formate und Zielseiten gemeinsam entwickeln." },
+        { title: "Content & Social", body: "Nützliche Inhalte für eine konsistente und relevante Präsenz planen." },
+        { title: "Analyse", body: "Ergebnisse auswerten und nächste Maßnahmen gezielt verbessern." },
+      ],
+      outcome: "Das Ergebnis: digitales Marketing als verständliches System statt unverbundener Einzelmaßnahmen.",
     },
     synergy: {
       eyebrow: "Ein gemeinsames Fundament",
@@ -169,6 +183,19 @@ export const homepageCopy: Record<HomepageLanguage, HomepageCopy> = {
         { title: "Local visibility", body: "Account for location-based searches and local relevance." },
       ],
       outcome: "The focus is dependable organic progress, not short-term promises or opaque tactics.",
+    },
+    marketing: {
+      eyebrow: "03 · Digital marketing",
+      title: "Campaigns and content with clear direction.",
+      body: "We connect channels, messaging, content and landing pages in a coordinated digital presence that communicates your brand consistently.",
+      imageAlt: "Digital marketing workspace showing campaign planning, a content calendar and performance data",
+      items: [
+        { title: "Channel strategy", body: "Select relevant channels by audience, purpose and potential." },
+        { title: "Campaign planning", body: "Develop messaging, timing, formats and landing pages together." },
+        { title: "Content & social", body: "Plan useful content for a consistent and relevant presence." },
+        { title: "Analysis", body: "Evaluate results and improve the next actions deliberately." },
+      ],
+      outcome: "The result: digital marketing as an understandable system rather than disconnected tactics.",
     },
     synergy: {
       eyebrow: "One shared foundation",
