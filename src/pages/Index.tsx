@@ -1,6 +1,6 @@
 
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { homepageCopy, type HomepageLanguage } from "@/content/homepage";
@@ -8,26 +8,13 @@ import heroImage from "@/assets/empria-digital-studio.jpg";
 import { ArrowRight, Check, Code2, Globe2, Menu, Search, X } from "lucide-react";
 
 const Index = () => {
-  const navigate = useNavigate();
-  const { user, isLoading } = useAuth();
+  const { isLoading } = useAuth();
   const [language, setLanguage] = useState<HomepageLanguage>(() => {
     const saved = window.localStorage.getItem("empria-home-language");
     return saved === "en" ? "en" : "de";
   });
   const [menuOpen, setMenuOpen] = useState(false);
   const copy = homepageCopy[language];
-
-  useEffect(() => {
-    if (!isLoading) {
-      if (user) {
-        if (user.role === 'client') {
-          navigate("/client/dashboard", { replace: true });
-        } else {
-          navigate("/dashboard", { replace: true });
-        }
-      }
-    }
-  }, [navigate, user, isLoading]);
 
   useEffect(() => {
     window.localStorage.setItem("empria-home-language", language);
@@ -46,8 +33,6 @@ const Index = () => {
       </div>
     );
   }
-
-  if (user) return null;
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-background text-foreground">
