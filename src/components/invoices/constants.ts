@@ -16,34 +16,12 @@ export interface PaymentAccount {
 
 export const PAYMENT_ACCOUNTS: PaymentAccount[] = [
   {
-    id: "belgium",
-    country: "Belgium",
-    name: "Wise Europe SA",
-    iban: "BE54905997867497",
-    bic: "TRWIBEB1XXX",
-    bank: "Wise Europe SA",
-    blz: "905",
-    account: "905997867497"
-  },
-  {
-    id: "germany", 
+    id: "germany",
     country: "Germany",
     name: "German Bank Account",
     iban: "DE91240703680071572200",
     bic: "DEUTDE2HP22",
     bank: "Postbank/DSL Ndl of Deutsche Bank"
-  },
-  {
-    id: "uk",
-    country: "United Kingdom",
-    name: "UK Bank Account (Wise)",
-    accountHolder: "Ab Media Team Ltd",
-    iban: "GB61 TRWI 6084 6495 8547 53",
-    bic: "TRWIGB2LXXX",
-    bank: "Wise Payments Limited",
-    sortCode: "60-84-64",
-    accountNumber: "95854753",
-    address: "Worship Square, 65 Clifton Street, London, EC2A 4JE, United Kingdom"
   }
 ];
 

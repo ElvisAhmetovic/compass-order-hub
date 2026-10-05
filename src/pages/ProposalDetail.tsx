@@ -149,8 +149,8 @@ const ProposalDetail = () => {
     termsAndConditions: "",
     
     // Payment data - updated with new fields
-    iban: "BE54905997867497",
-    bic: "TRWIBEB1XXX",
+    iban: "DE91240703680071572200",
+    bic: "DEUTDE2HP22",
     blzKonto: "905 KONTO: 905997867497",
     
     // Footer and company info
@@ -253,8 +253,8 @@ const ProposalDetail = () => {
             deliveryTerms: proposal.delivery_terms || '7 days after receipt of invoice',
             paymentTerms: proposal.payment_terms || 'By placing your order you agree to pay for the services included in this offer within 7 days of receipt of the invoice.',
             termsAndConditions: proposal.terms_and_conditions || '',
-            iban: proposal.iban || 'BE54905997867497',
-            bic: proposal.bic || 'TRWIBEB1XXX',
+            iban: proposal.iban || 'DE91240703680071572200',
+            bic: proposal.bic || 'DEUTDE2HP22',
             blzKonto: proposal.blz_konto || '905 KONTO: 905997867497',
             footerContent: proposal.footer_content || '',
             logo: proposal.logo,
