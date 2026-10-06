@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
-import { homepageCopy, type ServiceSection } from "@/content/homepage";
+import { homepageCopy, type HomepageLanguage, type ServiceSection } from "@/content/homepage";
 import { PublicFooter, PublicHeader } from "@/components/public/PublicSiteChrome";
 import { usePublicLanguage } from "@/hooks/usePublicLanguage";
 import heroImage from "@/assets/empria-digital-studio.jpg";
