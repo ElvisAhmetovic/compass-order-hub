@@ -17,6 +17,16 @@ type HomepageCopy = {
   seo: ServiceSection;
   marketing: ServiceSection;
   app: ServiceSection;
+  webApp: {
+    eyebrow: string;
+    title: string;
+    body: string;
+    imageAlts: [string, string];
+    items: Array<{ title: string; body: string }>;
+    outcome: string;
+    webLink: string;
+    appLink: string;
+  };
   synergy: { eyebrow: string; title: string; body: string; imageAlt: string; points: Array<{ title: string; body: string }> };
   expertise: { eyebrow: string; title: string; body: string; items: Array<{ title: string; body: string }> };
   process: { eyebrow: string; title: string; body: string; steps: Array<{ number: string; title: string; body: string }> };
@@ -95,6 +105,26 @@ export const homepageCopy: Record<HomepageLanguage, HomepageCopy> = {
         { title: "Schnittstellen", body: "Anbindung bestehender Systeme, Zahlungen und Daten." },
       ],
       outcome: "Das Ziel: Software, die echte Aufgaben löst und mit Ihrem Unternehmen wachsen kann.",
+    },
+    webApp: {
+      eyebrow: "01 · Web & App Development Services",
+      title: "Digitale Produkte, die professionell auftreten und zuverlässig arbeiten.",
+      body: "Von der Unternehmenswebsite bis zur individuellen Anwendung entwickeln wir digitale Lösungen als zusammenhängendes System – klar gestaltet, responsiv umgesetzt und auf Ihre tatsächlichen Abläufe ausgerichtet.",
+      imageAlts: [
+        "Desktop- und mobile Ansicht einer professionell gestalteten Unternehmenswebsite",
+        "Laptop mit Web-App-Dashboard und Smartphone mit mobiler App",
+      ],
+      items: [
+        { title: "Unternehmenswebsites", body: "Individuelle Websites mit klarer Struktur, glaubwürdigem Design und verständlicher Nutzerführung." },
+        { title: "Onlineshops & Landingpages", body: "Fokussierte digitale Verkaufsflächen, die Angebote übersichtlich präsentieren und Anfragen erleichtern." },
+        { title: "Web-Anwendungen", body: "Browserbasierte Anwendungen für Kunden, Teams und wiederkehrende Geschäftsprozesse." },
+        { title: "iOS- & Android-Apps", body: "Mobile Anwendungen mit durchdachten Abläufen und einer konsistenten Bedienung auf beiden Plattformen." },
+        { title: "Kundenportale & interne Tools", body: "Geschützte Bereiche, Dashboards und Werkzeuge, die Informationen und Aufgaben an einem Ort bündeln." },
+        { title: "Integrationen & individuelle Software", body: "Passende Verbindungen zu bestehenden Systemen, Zahlungen und Daten statt isolierter Einzellösungen." },
+      ],
+      outcome: "Das Ergebnis ist eine digitale Lösung, die zu Ihrem Unternehmen passt, konkrete Aufgaben löst und langfristig erweitert werden kann.",
+      webLink: "Webdesign entdecken",
+      appLink: "App-Entwicklung entdecken",
     },
     synergy: {
       eyebrow: "Ein gemeinsames Fundament",
@@ -223,6 +253,26 @@ export const homepageCopy: Record<HomepageLanguage, HomepageCopy> = {
         { title: "Integrations", body: "Connecting existing systems, payments and data." },
       ],
       outcome: "The result: software that solves real tasks and grows with your business.",
+    },
+    webApp: {
+      eyebrow: "01 · Web & App Development Services",
+      title: "Digital products that look professional and work reliably.",
+      body: "From corporate websites to custom applications, we develop digital solutions as connected systems — clearly designed, responsively built and aligned with the way your business actually works.",
+      imageAlts: [
+        "Desktop and mobile views of a professionally designed business website",
+        "Laptop showing a web app dashboard and a smartphone showing a mobile app",
+      ],
+      items: [
+        { title: "Corporate websites", body: "Custom websites with clear structure, credible design and straightforward user journeys." },
+        { title: "E-commerce & landing pages", body: "Focused digital sales experiences that present offers clearly and make enquiries easier." },
+        { title: "Web applications", body: "Browser-based applications for customers, teams and recurring business processes." },
+        { title: "iOS & Android apps", body: "Mobile applications with thoughtful flows and consistent usability across both platforms." },
+        { title: "Customer portals & internal tools", body: "Secure areas, dashboards and tools that bring information and tasks together in one place." },
+        { title: "Integrations & custom software", body: "Purposeful connections to existing systems, payments and data instead of isolated solutions." },
+      ],
+      outcome: "The result is a digital solution that fits your business, solves practical tasks and can evolve over time.",
+      webLink: "Explore web design",
+      appLink: "Explore app development",
     },
     synergy: {
       eyebrow: "One shared foundation",

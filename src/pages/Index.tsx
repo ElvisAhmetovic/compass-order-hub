@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
-import { homepageCopy, type ServiceSection } from "@/content/homepage";
+import { homepageCopy, type HomepageLanguage, type ServiceSection } from "@/content/homepage";
 import { PublicFooter, PublicHeader } from "@/components/public/PublicSiteChrome";
 import { usePublicLanguage } from "@/hooks/usePublicLanguage";
 import heroImage from "@/assets/empria-digital-studio.jpg";
@@ -55,10 +55,9 @@ const Index = () => {
         </section>
 
         <div id="services" className="scroll-mt-20">
-          <ServiceBlock section={copy.web} image={webImage} path="/webdesign" linkLabel={language === "de" ? "Webdesign entdecken" : "Explore web design"} imageFirst />
+          <WebAppServices section={copy.webApp} webImage={webImage} appImage={appImage} />
           <ServiceBlock section={copy.seo} image={seoImage} path="/google-seo" linkLabel={language === "de" ? "Google SEO entdecken" : "Explore Google SEO"} />
           <ServiceBlock section={copy.marketing} image={marketingImage} path="/digital-marketing" linkLabel={language === "de" ? "Digital Marketing entdecken" : "Explore digital marketing"} imageFirst />
-          <ServiceBlock section={copy.app} image={appImage} path="/app-entwicklung" linkLabel={language === "de" ? "App-Entwicklung entdecken" : "Explore app development"} />
         </div>
 
         <section className="border-y border-border bg-secondary/55 px-5 py-24 sm:py-32 lg:px-8">
@@ -116,6 +115,27 @@ const Index = () => {
 };
 
 const SectionHeading = ({ eyebrow, title, body }: { eyebrow: string; title: string; body?: string }) => <div><p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">{eyebrow}</p><h2 className="mt-5 font-heading text-4xl font-bold leading-tight tracking-normal sm:text-5xl">{title}</h2>{body && <p className="mt-6 text-base leading-7 text-muted-foreground">{body}</p>}</div>;
+
+const WebAppServices = ({ section, webImage, appImage }: { section: (typeof homepageCopy)[HomepageLanguage]["webApp"]; webImage: string; appImage: string }) => (
+  <section className="border-y border-border bg-secondary/55 px-5 py-24 sm:py-32 lg:px-8">
+    <div className="mx-auto max-w-7xl">
+      <div className="grid items-end gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:gap-20">
+        <SectionHeading eyebrow={section.eyebrow} title={section.title} body={section.body} />
+        <div className="grid grid-cols-2 gap-3">
+          <img src={webImage} alt={section.imageAlts[0]} loading="lazy" width={1408} height={992} className="aspect-[4/5] h-full w-full rounded-md object-cover" />
+          <img src={appImage} alt={section.imageAlts[1]} loading="lazy" width={1408} height={992} className="aspect-[4/5] h-full w-full rounded-md object-cover" />
+        </div>
+      </div>
+      <div className="mt-16 grid border-y border-border md:grid-cols-2 lg:grid-cols-3">
+        {section.items.map((item, index) => <article key={item.title} className="border-b border-border py-7 md:px-7 md:[&:nth-child(odd)]:border-r lg:border-r lg:[&:nth-child(3n)]:border-r-0 lg:[&:nth-last-child(-n+3)]:border-b-0"><span className="text-xs font-bold text-primary">{String(index + 1).padStart(2, "0")}</span><h3 className="mt-5 font-heading text-xl font-bold">{item.title}</h3><p className="mt-3 text-sm leading-6 text-muted-foreground">{item.body}</p></article>)}
+      </div>
+      <div className="mt-10 flex flex-col justify-between gap-7 lg:flex-row lg:items-center">
+        <p className="max-w-2xl border-l-2 border-primary pl-5 text-sm font-medium leading-6">{section.outcome}</p>
+        <div className="flex flex-col gap-3 sm:flex-row"><Button variant="outline" asChild><Link to="/webdesign">{section.webLink}<ArrowRight /></Link></Button><Button asChild><Link to="/app-entwicklung">{section.appLink}<ArrowRight /></Link></Button></div>
+      </div>
+    </div>
+  </section>
+);
 
 const ServiceBlock = ({ section, image, path, linkLabel, imageFirst = false }: { section: ServiceSection; image: string; path: string; linkLabel: string; imageFirst?: boolean }) => (
   <section className={imageFirst ? "border-y border-border bg-secondary/55 px-5 py-24 sm:py-32 lg:px-8" : "bg-background px-5 py-24 sm:py-32 lg:px-8"}>
