@@ -307,7 +307,7 @@ const Sidebar = () => {
   };
 
   return (
-    <aside className="flex w-64 shrink-0 flex-col bg-sidebar border-r border-sidebar-border">
+    <aside className="sticky top-0 flex min-h-screen w-64 shrink-0 self-start flex-col bg-sidebar border-r border-sidebar-border">
       <div className="p-6">
         <a
           href="https://www.abm-team.com/en"
