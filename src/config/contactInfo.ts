@@ -6,13 +6,13 @@ import type { HomepageLanguage } from "@/content/homepage";
 export const contactInfo = {
   email: "kontakt@empriatech.com",
   legalName: "MEDIA MARKETING LTD",
-  phone: "+49 203 70907342",
+  companyNumber: "17507679",
+  phone: "+49 203 7090 1754",
   address: {
-    de: "Düsseldorfer Str. 32, 47051 Duisburg, Deutschland",
-    en: "Düsseldorfer Str. 32, 47051 Duisburg, Germany",
+    de: "Monomark House, 27 Old Gloucester Street, London, England, WC1N 3AX",
+    en: "Monomark House, 27 Old Gloucester Street, London, England, WC1N 3AX",
   } as Record<HomepageLanguage, string>,
   social: [] as { label: string; url: string }[],
 };
 
-// The street and postal code are identical in both languages; only the country name changes.
 export const publicAddress = (language: HomepageLanguage) => contactInfo.address[language];
