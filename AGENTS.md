@@ -5,3 +5,4 @@
 - Keep active payment-account instructions consistent across browser PDFs, offer PDFs, monthly PDFs, and reminder functions — why: customers must never receive conflicting bank details from different sending paths.
 - Keep the root route as the public Empria homepage for every visitor, including authenticated users — why: opening empriatech.com must never redirect away from the company homepage.
 - Keep public marketing routes and shared public-site navigation separate from authenticated CRM and client areas — why: service pages must remain indexable and accessible without a session.
+- Keep public legal content in the shared bilingual legal-page system and link every public legal page from the footer — why: company disclosures must stay consistent across the marketing site.

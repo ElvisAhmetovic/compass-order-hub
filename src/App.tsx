@@ -134,6 +134,7 @@ function App() {
                   <Route path="/ueber-uns" element={<AboutPage />} />
                   <Route path="/impressum" element={<LegalPage pageKey="impressum" />} />
                   <Route path="/datenschutz" element={<LegalPage pageKey="datenschutz" />} />
+                  <Route path="/terms" element={<LegalPage pageKey="terms" />} />
                   <Route path="/ticket-loading" element={<TicketLoading />} />
                   <Route path="/ticket-submitted" element={<TicketSubmitted />} />
                   <Route path="/confirm-offer/:offerId" element={<ConfirmOffer />} />
