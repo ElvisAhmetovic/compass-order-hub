@@ -11,14 +11,14 @@ const copy = {
     description: "Kontaktieren Sie Empria Tech für Webdesign, Google SEO und Digital Marketing. Wir antworten in der Regel innerhalb eines Werktags.",
     eyebrow: "Kontakt", h1: "Lassen Sie uns über Ihr Projekt sprechen",
     intro: "Erzählen Sie uns kurz, worum es geht – neue Website, bessere Google-Sichtbarkeit oder mehr Anfragen über digitale Kanäle. Wir melden uns persönlich bei Ihnen.",
-    direct: "Direkter Kontakt", address: "Adresse", phone: "Telefon", companyNumber: "Unternehmensnummer", social: "Social Media", response: "Antwortzeit", responseText: "In der Regel innerhalb eines Werktags",
+    direct: "Direkter Kontakt", email: "E-Mail", address: "Adresse", phone: "Telefon", companyNumber: "Unternehmensnummer", social: "Social Media", response: "Antwortzeit", responseText: "In der Regel innerhalb eines Werktags",
   },
   en: {
     title: "Contact — Empria Tech",
     description: "Contact Empria Tech for web design, Google SEO and digital marketing. We usually reply within one business day.",
     eyebrow: "Contact", h1: "Let's talk about your project",
     intro: "Tell us briefly what you need – a new website, better Google visibility or more leads from digital channels. We will get back to you personally.",
-    direct: "Direct contact", address: "Address", phone: "Phone", companyNumber: "Company number", social: "Social media", response: "Response time", responseText: "Usually within one business day",
+    direct: "Direct contact", email: "Email", address: "Address", phone: "Phone", companyNumber: "Company number", social: "Social media", response: "Response time", responseText: "Usually within one business day",
   },
 };
 
