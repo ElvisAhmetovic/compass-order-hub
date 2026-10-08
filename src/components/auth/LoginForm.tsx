@@ -6,6 +6,7 @@ import { AlertTriangle } from "lucide-react";
 import FormInput from "./FormInput";
 import { useAuth } from "@/context/AuthContext";
 import { validateEmail, validatePassword } from "@/utils/formValidation";
+import abTeamSymbol from "@/assets/ab-team-symbol.png";
 
 const LoginForm = () => {
   const [email, setEmail] = useState("");
@@ -68,10 +69,10 @@ const LoginForm = () => {
     <Card className="w-[350px] mx-auto">
       <CardHeader className="text-center">
         <div className="flex justify-center mb-2">
-          <img 
-            src="/lovable-uploads/2d4259f4-7fb1-4221-9e23-4bec4378d055.png" 
-            alt="AB Media Team Logo" 
-            className="h-14 w-auto"
+          <img
+            src={abTeamSymbol}
+            alt="Empria Tech"
+            className="h-14 w-14 object-contain"
           />
         </div>
         <CardTitle>Login</CardTitle>

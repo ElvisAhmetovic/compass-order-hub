@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import LoginForm from '@/components/auth/LoginForm';
 import { Loader2 } from 'lucide-react';
+import abTeamSymbol from '@/assets/ab-team-symbol.png';
 
 const Login = () => {
   const { user, isLoading } = useAuth();
@@ -30,14 +31,14 @@ const Login = () => {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background text-foreground">
       <div className="mb-6 text-center">
-        <div className="flex items-center justify-center gap-4 mb-4">
-          <img 
-            src="/lovable-uploads/2d4259f4-7fb1-4221-9e23-4bec4378d055.png" 
-            alt="AB Media Team Logo" 
-            className="h-16 w-auto"
+        <div className="flex flex-col items-center gap-4 mb-4">
+          <img
+            src={abTeamSymbol}
+            alt="Empria Tech"
+            className="h-16 w-16 object-contain"
           />
           <div>
-            <h1 className="font-heading text-3xl font-bold text-primary">AB Media Team CRM</h1>
+            <h1 className="font-heading text-3xl font-bold text-primary">Empria Tech CRM</h1>
             <p className="text-muted-foreground">Sign in to continue</p>
           </div>
         </div>
