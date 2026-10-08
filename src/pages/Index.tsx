@@ -4,6 +4,7 @@ import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { homepageCopy, type HomepageLanguage, type ServiceSection } from "@/content/homepage";
 import { PublicFooter, PublicHeader } from "@/components/public/PublicSiteChrome";
+import { PublicContactForm } from "@/components/public/PublicContactForm";
 import { usePublicLanguage } from "@/hooks/usePublicLanguage";
 import heroImage from "@/assets/empria-digital-studio.jpg";
 import webImage from "@/assets/empria-webdesign-studio.jpg";
@@ -99,12 +100,14 @@ const Index = () => {
           </div>
         </section>
 
-        <section className="bg-background px-5 py-24 sm:py-32 lg:px-8">
-          <div className="mx-auto max-w-4xl text-center">
-            <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">{copy.cta.eyebrow}</p>
-            <h2 className="mt-5 font-heading text-4xl font-bold leading-tight tracking-normal sm:text-6xl">{copy.cta.title}</h2>
-            <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-muted-foreground">{copy.cta.body}</p>
-            <div className="mt-9 flex flex-col justify-center gap-3 sm:flex-row"><Button size="lg" asChild><Link to="/register">{copy.cta.primary}<ArrowRight /></Link></Button><Button size="lg" variant="outline" asChild><Link to="/kontakt">{language === "de" ? "Kontakt aufnehmen" : "Contact us"}</Link></Button></div>
+        <section id="contact" className="scroll-mt-20 bg-background px-5 py-24 sm:py-32 lg:px-8">
+          <div className="mx-auto grid max-w-7xl gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:gap-20">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">{copy.cta.eyebrow}</p>
+              <h2 className="mt-5 font-heading text-4xl font-bold leading-tight tracking-normal sm:text-6xl">{copy.cta.title}</h2>
+              <p className="mt-6 max-w-2xl text-lg leading-8 text-muted-foreground">{copy.cta.body}</p>
+            </div>
+            <PublicContactForm language={language} className="rounded-lg border bg-card p-6 shadow-sm sm:p-8" />
           </div>
         </section>
       </main>
