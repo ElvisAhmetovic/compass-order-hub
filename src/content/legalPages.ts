@@ -1,25 +1,24 @@
 import type { HomepageLanguage } from "@/content/homepage";
-import { contactInfo } from "@/config/contactInfo";
+import { contactInfo, publicAddress } from "@/config/contactInfo";
 
 export type LegalKey = "impressum" | "datenschutz";
 type Section = { heading: string; paragraphs: string[] };
 type LegalCopy = { metaTitle: string; metaDescription: string; title: string; updated: string; sections: Section[] };
 
 const soon = { de: "Angaben folgen in Kürze.", en: "Information coming soon." };
-const addr = { de: "Düsseldorfer Str. 32\n47051 Duisburg\nDeutschland", en: "Düsseldorfer Str. 32\n47051 Duisburg\nGermany" };
-const company = (l: HomepageLanguage) => `${contactInfo.legalName}\n${addr[l]}`;
+const company = (l: HomepageLanguage) => `${contactInfo.legalName}\n${publicAddress(l)}`;
 
 export const legalPages: Record<LegalKey, { path: string; copy: Record<HomepageLanguage, LegalCopy> }> = {
   impressum: {
     path: "/impressum",
     copy: {
       de: {
-        metaTitle: "Impressum — Empria Tech", metaDescription: "Impressum und Anbieterkennzeichnung von Empria Tech (MEDIA MARKETING LTD), Duisburg.", title: "Impressum", updated: "Stand: Oktober 2026",
+        metaTitle: "Impressum — Empria Tech", metaDescription: "Impressum und Anbieterkennzeichnung von Empria Tech (MEDIA MARKETING LTD), London.", title: "Impressum", updated: "Stand: Oktober 2026",
         sections: [
           { heading: "Angaben gemäß § 5 DDG", paragraphs: [company("de"), "Empria Tech ist eine Marke der MEDIA MARKETING LTD."] },
           { heading: "Vertreten durch", paragraphs: [soon.de] },
           { heading: "Kontakt", paragraphs: [`E-Mail: ${contactInfo.email}`, `Telefon: ${contactInfo.phone}`] },
-          { heading: "Registereintrag", paragraphs: [`Registergericht / Registerbehörde: ${soon.de}`, `Registernummer: ${soon.de}`] },
+          { heading: "Registereintrag", paragraphs: ["Registerbehörde: Companies House, Vereinigtes Königreich", `Unternehmensnummer: ${contactInfo.companyNumber}`] },
           { heading: "Umsatzsteuer-ID", paragraphs: [`Umsatzsteuer-Identifikationsnummer gemäß § 27a UStG: ${soon.de}`] },
           { heading: "Tätigkeitsbereich", paragraphs: ["Webdesign, Google SEO (Suchmaschinenoptimierung), Digital Marketing und App-Entwicklung für Unternehmen."] },
           { heading: "Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV", paragraphs: [soon.de] },
@@ -31,12 +30,12 @@ export const legalPages: Record<LegalKey, { path: string; copy: Record<HomepageL
         ],
       },
       en: {
-        metaTitle: "Legal notice — Empria Tech", metaDescription: "Legal notice (Impressum) of Empria Tech (MEDIA MARKETING LTD), Duisburg.", title: "Legal notice (Impressum)", updated: "Last updated: October 2026",
+        metaTitle: "Legal notice — Empria Tech", metaDescription: "Legal notice (Impressum) of Empria Tech (MEDIA MARKETING LTD), London.", title: "Legal notice (Impressum)", updated: "Last updated: October 2026",
         sections: [
           { heading: "Information pursuant to § 5 DDG", paragraphs: [company("en"), "Empria Tech is a brand of MEDIA MARKETING LTD."] },
           { heading: "Represented by", paragraphs: [soon.en] },
           { heading: "Contact", paragraphs: [`Email: ${contactInfo.email}`, `Phone: ${contactInfo.phone}`] },
-          { heading: "Register entry", paragraphs: [`Register court / authority: ${soon.en}`, `Registration number: ${soon.en}`] },
+          { heading: "Register entry", paragraphs: ["Register authority: Companies House, United Kingdom", `Company number: ${contactInfo.companyNumber}`] },
           { heading: "VAT ID", paragraphs: [`VAT identification number pursuant to § 27a UStG: ${soon.en}`] },
           { heading: "Business activities", paragraphs: ["Web design, Google SEO (search engine optimization), digital marketing and app development for businesses."] },
           { heading: "Responsible for content pursuant to § 18 (2) MStV", paragraphs: [soon.en] },
@@ -65,7 +64,7 @@ export const legalPages: Record<LegalKey, { path: string; copy: Record<HomepageL
           { heading: "8. Weitere eingesetzte Dienste", paragraphs: [soon.de] },
           { heading: "9. SSL- bzw. TLS-Verschlüsselung", paragraphs: ["Diese Seite nutzt aus Sicherheitsgründen eine SSL- bzw. TLS-Verschlüsselung. Eine verschlüsselte Verbindung erkennen Sie an „https://“ in der Adresszeile Ihres Browsers."] },
           { heading: "10. Speicherdauer", paragraphs: ["Personenbezogene Daten werden nur so lange gespeichert, wie es für den jeweiligen Zweck erforderlich ist oder gesetzliche Aufbewahrungsfristen (z. B. handels- und steuerrechtlich) bestehen."] },
-          { heading: "11. Ihre Rechte", paragraphs: ["Sie haben das Recht auf Auskunft (Art. 15 DSGVO), Berichtigung (Art. 16), Löschung (Art. 17), Einschränkung der Verarbeitung (Art. 18), Datenübertragbarkeit (Art. 20) sowie Widerspruch gegen die Verarbeitung (Art. 21). Erteilte Einwilligungen können Sie jederzeit mit Wirkung für die Zukunft widerrufen.", "Sie haben außerdem das Recht, sich bei einer Datenschutz-Aufsichtsbehörde zu beschweren, z. B. bei der Landesbeauftragten für Datenschutz und Informationsfreiheit Nordrhein-Westfalen.", `Zur Ausübung Ihrer Rechte genügt eine E-Mail an ${contactInfo.email}.`] },
+          { heading: "11. Ihre Rechte", paragraphs: ["Sie haben das Recht auf Auskunft (Art. 15 DSGVO), Berichtigung (Art. 16), Löschung (Art. 17), Einschränkung der Verarbeitung (Art. 18), Datenübertragbarkeit (Art. 20) sowie Widerspruch gegen die Verarbeitung (Art. 21). Erteilte Einwilligungen können Sie jederzeit mit Wirkung für die Zukunft widerrufen.", "Sie haben außerdem das Recht, sich bei einer zuständigen Datenschutz-Aufsichtsbehörde zu beschweren.", `Zur Ausübung Ihrer Rechte genügt eine E-Mail an ${contactInfo.email}.`] },
           { heading: "12. Änderungen", paragraphs: ["Wir behalten uns vor, diese Datenschutzerklärung anzupassen, damit sie stets den aktuellen rechtlichen Anforderungen entspricht oder Änderungen unserer Leistungen abbildet."] },
         ],
       },
@@ -82,7 +81,7 @@ export const legalPages: Record<LegalKey, { path: string; copy: Record<HomepageL
           { heading: "8. Other services used", paragraphs: [soon.en] },
           { heading: "9. SSL/TLS encryption", paragraphs: ["For security reasons this site uses SSL/TLS encryption. You can recognise an encrypted connection by “https://” in your browser's address bar."] },
           { heading: "10. Retention period", paragraphs: ["Personal data is stored only as long as required for the relevant purpose or as long as statutory retention periods (e.g. commercial and tax law) apply."] },
-          { heading: "11. Your rights", paragraphs: ["You have the right of access (Art. 15 GDPR), rectification (Art. 16), erasure (Art. 17), restriction of processing (Art. 18), data portability (Art. 20) and objection (Art. 21). You may withdraw any consent at any time with effect for the future.", "You also have the right to lodge a complaint with a data protection supervisory authority, e.g. the State Commissioner for Data Protection and Freedom of Information of North Rhine-Westphalia.", `To exercise your rights, simply email ${contactInfo.email}.`] },
+          { heading: "11. Your rights", paragraphs: ["You have the right of access (Art. 15 GDPR), rectification (Art. 16), erasure (Art. 17), restriction of processing (Art. 18), data portability (Art. 20) and objection (Art. 21). You may withdraw any consent at any time with effect for the future.", "You also have the right to lodge a complaint with a competent data protection supervisory authority.", `To exercise your rights, simply email ${contactInfo.email}.`] },
           { heading: "12. Changes", paragraphs: ["We may update this privacy policy so that it always meets current legal requirements or reflects changes to our services."] },
         ],
       },

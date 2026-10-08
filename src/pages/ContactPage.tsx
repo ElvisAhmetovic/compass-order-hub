@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { z } from "zod";
-import { CheckCircle2, Clock, Mail, MapPin, Phone, Share2 } from "lucide-react";
+import { Building2, CheckCircle2, Clock, Mail, MapPin, Phone, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -25,7 +25,7 @@ const copy = {
     error: "Die Anfrage konnte nicht gesendet werden. Bitte versuchen Sie es erneut oder schreiben Sie uns direkt per E-Mail.",
     errName: "Bitte geben Sie Ihren Namen ein.", errEmail: "Bitte geben Sie eine gültige E-Mail-Adresse ein.", errMessage: "Bitte schreiben Sie mindestens 10 Zeichen.",
     privacy: "Ihre Angaben verwenden wir ausschließlich zur Bearbeitung Ihrer Anfrage.",
-    direct: "Direkter Kontakt", address: "Adresse", phone: "Telefon", social: "Social Media", response: "Antwortzeit", responseText: "In der Regel innerhalb eines Werktags",
+    direct: "Direkter Kontakt", address: "Adresse", phone: "Telefon", companyNumber: "Unternehmensnummer", social: "Social Media", response: "Antwortzeit", responseText: "In der Regel innerhalb eines Werktags",
   },
   en: {
     title: "Contact — Empria Tech",
@@ -39,7 +39,7 @@ const copy = {
     error: "Your inquiry could not be sent. Please try again or email us directly.",
     errName: "Please enter your name.", errEmail: "Please enter a valid email address.", errMessage: "Please write at least 10 characters.",
     privacy: "We use your details only to handle your inquiry.",
-    direct: "Direct contact", address: "Address", phone: "Phone", social: "Social media", response: "Response time", responseText: "Usually within one business day",
+    direct: "Direct contact", address: "Address", phone: "Phone", companyNumber: "Company number", social: "Social media", response: "Response time", responseText: "Usually within one business day",
   },
 };
 
@@ -90,7 +90,7 @@ const ContactPage = () => {
         <meta property="og:description" content={t.description} />
         <meta property="og:url" content="https://empriatech.com/kontakt" />
         <meta property="og:type" content="website" />
-        <script type="application/ld+json">{JSON.stringify({ "@context": "https://schema.org", "@type": "ContactPage", name: t.title, url: "https://empriatech.com/kontakt", about: { "@type": "Organization", name: "Empria Tech", legalName: contactInfo.legalName, email: contactInfo.email, ...(contactInfo.phone && { telephone: contactInfo.phone }), ...(contactInfo.social.length && { sameAs: contactInfo.social.map((s) => s.url) }) } })}</script>
+        <script type="application/ld+json">{JSON.stringify({ "@context": "https://schema.org", "@type": "ContactPage", name: t.title, url: "https://empriatech.com/kontakt", about: { "@type": "Organization", name: "Empria Tech", legalName: contactInfo.legalName, identifier: contactInfo.companyNumber, email: contactInfo.email, address: { "@type": "PostalAddress", streetAddress: "Monomark House, 27 Old Gloucester Street", addressLocality: "London", postalCode: "WC1N 3AX", addressCountry: "GB" }, ...(contactInfo.phone && { telephone: contactInfo.phone }), ...(contactInfo.social.length && { sameAs: contactInfo.social.map((s) => s.url) }) } })}</script>
       </Helmet>
       <PublicHeader language={language} onLanguageChange={setLanguage} />
       <main className="pt-20">
@@ -130,6 +130,7 @@ const ContactPage = () => {
               <h2 className="font-heading text-2xl font-bold">{t.direct}</h2>
               <Info icon={Mail} label={t.email}><a className="hover:text-primary" href={`mailto:${contactInfo.email}`}>{contactInfo.email}</a></Info>
               {contactInfo.phone && <Info icon={Phone} label={t.phone}><a className="hover:text-primary" href={`tel:${contactInfo.phone.replace(/\s/g, "")}`}>{contactInfo.phone}</a></Info>}
+              <Info icon={Building2} label={t.companyNumber}>{contactInfo.companyNumber}</Info>
               {publicAddress(language) && <Info icon={MapPin} label={t.address}><span className="whitespace-pre-line">{publicAddress(language)}</span></Info>}
               {contactInfo.social.length > 0 && <Info icon={Share2} label={t.social}><div className="flex flex-wrap gap-3">{contactInfo.social.map((s) => <a key={s.url} href={s.url} target="_blank" rel="noopener noreferrer" className="hover:text-primary">{s.label}</a>)}</div></Info>}
               <Info icon={Clock} label={t.response}>{t.responseText}</Info>
