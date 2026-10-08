@@ -12,6 +12,10 @@ export const contactInfo = {
     de: "Monomark House, 27 Old Gloucester Street, London, England, WC1N 3AX",
     en: "Monomark House, 27 Old Gloucester Street, London, England, WC1N 3AX",
   } as Record<HomepageLanguage, string>,
+  officeAddress: {
+    de: "Düsseldorfer Str. 32, 47051 Duisburg",
+    en: "Düsseldorfer Str. 32, 47051 Duisburg",
+  } as Record<HomepageLanguage, string>,
   social: [] as { label: string; url: string }[],
 };
 
