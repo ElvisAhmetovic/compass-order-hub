@@ -51,6 +51,7 @@ export const PublicFooter = ({ language }: { language: HomepageLanguage }) => {
     contactInfo.legalName,
     `${language === "de" ? "Unternehmensnummer" : "Company number"}: ${contactInfo.companyNumber}`,
     publicAddress(language),
+    `${language === "de" ? "Büroadresse" : "Office address"}: ${contactInfo.officeAddress[language]}`,
     contactInfo.phone && <a key="phone" href={`tel:${contactInfo.phone.replace(/\s/g, "")}`} className="whitespace-nowrap hover:text-primary-foreground">{contactInfo.phone}</a>,
     <a key="email" href={`mailto:${contactInfo.email}`} className="whitespace-nowrap hover:text-primary-foreground">{contactInfo.email}</a>,
   ].filter(Boolean);
