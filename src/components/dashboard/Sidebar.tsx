@@ -307,8 +307,8 @@ const Sidebar = () => {
   };
 
   return (
-    <aside className="sticky top-0 flex h-screen w-64 shrink-0 flex-col overflow-hidden bg-sidebar border-r border-sidebar-border">
-      <div className="shrink-0 p-6">
+    <aside className="flex w-64 shrink-0 flex-col bg-sidebar border-r border-sidebar-border">
+      <div className="p-6">
         <a
           href="https://www.abm-team.com/en"
           target="_blank"
@@ -327,7 +327,7 @@ const Sidebar = () => {
           </div>
         </div>
       </div>
-      <nav className="mt-6 min-h-0 flex-1 overflow-y-auto overscroll-contain">
+      <nav className="mt-6 flex-1">
         {roleFilteredItems.length === 0 ? (
           <div className="px-6 py-3 text-sidebar-foreground/60 text-sm">
             No menu items available
