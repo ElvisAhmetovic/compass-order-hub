@@ -22,3 +22,13 @@ describe("automatic monthly invoices", () => {
     expect(source).not.toMatch(/within 3 days|innerhalb von 3 Tagen/);
   });
 });
+
+import { MONTHLY_PAYMENT_ACCOUNT_IDS, filterAccountsByChoice } from "../constants";
+
+describe("manually sent monthly invoices", () => {
+  it("show German and Revolut only, even when Wise is ticked in settings", () => {
+    const accounts = [{ id: "germany" }, { id: "revolut" }, { id: "wise" }];
+    const ids = filterAccountsByChoice(accounts, [...MONTHLY_PAYMENT_ACCOUNT_IDS]).map((a) => a.id);
+    expect(ids).toEqual(["germany", "revolut"]);
+  });
+});
