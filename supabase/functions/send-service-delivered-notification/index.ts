@@ -135,7 +135,7 @@ serve(async (req: Request) => {
       ticketReplyLink = `mailto:service@team-abmedia.com?subject=Einwand%20zu%20Auftrag%20${ticketId}`;
     }
 
-    const subject = `Dienstleistung abgeschlossen – Bitte prüfen & Rechnung begleichen (AB MEDIA TEAM)`;
+    const subject = `Dienstleistung abgeschlossen – Bitte prüfen & Rechnung begleichen (Media Marketing Limited)`;
 
     const htmlBody = `
 <!DOCTYPE html>
@@ -143,7 +143,7 @@ serve(async (req: Request) => {
 <head><meta charset="UTF-8"></head>
 <body style="font-family: Arial, Helvetica, sans-serif; color: #222; line-height: 1.6; max-width: 600px; margin: 0 auto; padding: 20px;">
   <div style="border-bottom: 3px solid #1e3a5f; padding-bottom: 16px; margin-bottom: 24px;">
-    <h2 style="margin: 0; color: #1e3a5f;">AB MEDIA TEAM</h2>
+    <h2 style="margin: 0; color: #1e3a5f;">Media Marketing Limited</h2>
   </div>
 
   <p>Sehr geehrte/r <strong>${contactPerson}</strong>,</p>
@@ -183,7 +183,7 @@ serve(async (req: Request) => {
   <p>Vielen Dank für Ihr Vertrauen und die Zusammenarbeit.</p>
 
   <p>Mit freundlichen Grüßen,<br>
-  <strong>AB MEDIA TEAM</strong></p>
+  <strong>Media Marketing Limited</strong></p>
 
   <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 32px 0 16px;" />
   <p style="font-size: 12px; color: #6b7280;">

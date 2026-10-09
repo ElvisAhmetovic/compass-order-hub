@@ -315,17 +315,17 @@ const INVOICE_DB_TEXT: Record<Lang, {
 
 // Company info (matches frontend defaults)
 const COMPANY = {
-  name: "AB MEDIA TEAM LTD",
+  name: "Media Marketing Limited",
   contactPerson: "Andreas Berger",
-  street: "Weseler Str.73",
-  postal: "47169",
+  street: "Düsseldorfer Str. 32",
+  postal: "47051",
   city: "Duisburg",
   country: "Germany",
   phone: "+4920370907262",
   fax: "+49 203 70 90 73 53",
   email: "kontakt.abmedia@gmail.com",
   website: "www.abmedia-team.com",
-  registrationNumber: "15746871",
+  registrationNumber: "17507679",
   vatId: "13426 27369",
   taxNumber: "13426 27369",
   director: "Andreas Berger",
@@ -333,6 +333,7 @@ const COMPANY = {
 
 const BANK_ACCOUNTS = [
   { label: "German Bank Account", iban: "DE91240703680071572200", bic: "DEUTDE2HP22", bank: "Postbank/DSL Ndl of Deutsche Bank" },
+  { label: "Revolut Account", iban: "GB40REVO23012083344414", bic: "REVOGB21", bank: "Revolut Ltd" },
 ];
 
 function formatPrice(amount: number, currency: string): string {
@@ -472,7 +473,7 @@ function generateInvoicePDF(
   // ── Header ──
   doc.setFontSize(22);
   doc.setFont("helvetica", "bold");
-  doc.text("AB MEDIA TEAM LTD", marginLeft, y);
+  doc.text("Media Marketing Limited", marginLeft, y);
   y += 8;
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");

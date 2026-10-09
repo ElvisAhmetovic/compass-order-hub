@@ -12,7 +12,7 @@ const GERMAN_BIC = "SWIFT/BIC: DEUTDE2HP22";
 describe("invoice email templates", () => {
   it("uses the German account in the German invoice message", () => {
     expect(SUBJECT_TEMPLATES.de).toBe(
-      "AB MEDIA TEAM Rechnung",
+      "Media Marketing Limited Rechnung",
     );
     expect(MESSAGE_TEMPLATES.de).toBe(`Hallo,
 
@@ -30,6 +30,12 @@ SWIFT/BIC: DEUTDE2HP22
 
 Bank: Postbank/DSL Ndl of Deutsche Bank
 
+IBAN: GB40 REVO 2301 2083 3444 14
+
+SWIFT/BIC: REVOGB21
+
+Bank: Revolut Ltd
+
 Wir bitten Sie, den Rechnungsbetrag innerhalb von 3 Tagen zu begleichen, um eine reibungslose und ununterbrochene Bearbeitung Ihrer Dienstleistungen sicherzustellen.
 
 Vielen Dank für Ihre Beachtung.
@@ -43,16 +49,16 @@ AB MEDIA
 +49 203 7090 7262
 
 
-Weseler Str. 73
+Düsseldorfer Str. 32
 
-47169 Duisburg`);
+47051 Duisburg`);
   });
 
   it("provides only the German account in every selectable language", () => {
     expect(TEMPLATE_LANGUAGES).toHaveLength(10);
 
     for (const { value } of TEMPLATE_LANGUAGES) {
-      expect(SUBJECT_TEMPLATES[value]).toContain("AB MEDIA TEAM");
+      expect(SUBJECT_TEMPLATES[value]).toContain("Media Marketing Limited");
       expect(MESSAGE_TEMPLATES[value]).toContain(GERMAN_IBAN);
       expect(MESSAGE_TEMPLATES[value]).toContain(GERMAN_BIC);
       expect(MESSAGE_TEMPLATES[value]).toContain("Bank: Postbank/DSL Ndl of Deutsche Bank");

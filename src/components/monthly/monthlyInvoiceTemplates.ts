@@ -1,14 +1,14 @@
 export const SUBJECT_TEMPLATES: Record<string, string> = {
-  en: "AB MEDIA TEAM Invoice",
-  de: "AB MEDIA TEAM Rechnung",
-  nl: "AB MEDIA TEAM Factuur",
-  fr: "Facture AB MEDIA TEAM",
-  es: "Factura de AB MEDIA TEAM",
-  da: "AB MEDIA TEAM-faktura",
-  no: "AB MEDIA TEAM-faktura",
-  cs: "Faktura AB MEDIA TEAM",
-  pl: "Faktura AB MEDIA TEAM",
-  sv: "AB MEDIA TEAM-faktura",
+  en: "Media Marketing Limited Invoice",
+  de: "Media Marketing Limited Rechnung",
+  nl: "Media Marketing Limited Factuur",
+  fr: "Facture Media Marketing Limited",
+  es: "Factura de Media Marketing Limited",
+  da: "Media Marketing Limited-faktura",
+  no: "Media Marketing Limited-faktura",
+  cs: "Faktura Media Marketing Limited",
+  pl: "Faktura Media Marketing Limited",
+  sv: "Media Marketing Limited-faktura",
 };
 
 const SIGNATURE = `Annalena Klein
@@ -18,9 +18,9 @@ AB MEDIA
 +49 203 7090 7262
 
 
-Weseler Str. 73
+Düsseldorfer Str. 32
 
-47169 Duisburg`;
+47051 Duisburg`;
 
 export const MESSAGE_TEMPLATES: Record<string, string> = {
   en: `Hello,
@@ -38,6 +38,12 @@ IBAN: DE91 2407 0368 0071 5722 00
 SWIFT/BIC: DEUTDE2HP22
 
 Bank: Postbank/DSL Ndl of Deutsche Bank
+
+IBAN: GB40 REVO 2301 2083 3444 14
+
+SWIFT/BIC: REVOGB21
+
+Bank: Revolut Ltd
 
 We kindly request that you settle the invoice amount within 3 days to ensure smooth and uninterrupted processing of your services.
 
@@ -63,6 +69,12 @@ SWIFT/BIC: DEUTDE2HP22
 
 Bank: Postbank/DSL Ndl of Deutsche Bank
 
+IBAN: GB40 REVO 2301 2083 3444 14
+
+SWIFT/BIC: REVOGB21
+
+Bank: Revolut Ltd
+
 Wir bitten Sie, den Rechnungsbetrag innerhalb von 3 Tagen zu begleichen, um eine reibungslose und ununterbrochene Bearbeitung Ihrer Dienstleistungen sicherzustellen.
 
 Vielen Dank für Ihre Beachtung.
@@ -86,6 +98,12 @@ IBAN: DE91 2407 0368 0071 5722 00
 SWIFT/BIC: DEUTDE2HP22
 
 Bank: Postbank/DSL Ndl of Deutsche Bank
+
+IBAN: GB40 REVO 2301 2083 3444 14
+
+SWIFT/BIC: REVOGB21
+
+Bank: Revolut Ltd
 
 Wij verzoeken u vriendelijk het factuurbedrag binnen 3 dagen te voldoen om een vlotte en ononderbroken verwerking van uw diensten te garanderen.
 
@@ -111,6 +129,12 @@ SWIFT/BIC: DEUTDE2HP22
 
 Bank: Postbank/DSL Ndl of Deutsche Bank
 
+IBAN: GB40 REVO 2301 2083 3444 14
+
+SWIFT/BIC: REVOGB21
+
+Bank: Revolut Ltd
+
 Nous vous prions de bien vouloir régler le montant de la facture dans un délai de 3 jours afin d'assurer un traitement fluide et ininterrompu de vos services.
 
 Nous vous remercions de votre attention.
@@ -134,6 +158,12 @@ IBAN: DE91 2407 0368 0071 5722 00
 SWIFT/BIC: DEUTDE2HP22
 
 Bank: Postbank/DSL Ndl of Deutsche Bank
+
+IBAN: GB40 REVO 2301 2083 3444 14
+
+SWIFT/BIC: REVOGB21
+
+Bank: Revolut Ltd
 
 Le rogamos que liquide el importe de la factura en un plazo de 3 días para garantizar un procesamiento fluido e ininterrumpido de sus servicios.
 
@@ -159,6 +189,12 @@ SWIFT/BIC: DEUTDE2HP22
 
 Bank: Postbank/DSL Ndl of Deutsche Bank
 
+IBAN: GB40 REVO 2301 2083 3444 14
+
+SWIFT/BIC: REVOGB21
+
+Bank: Revolut Ltd
+
 Vi beder dig venligst om at betale fakturabeløbet inden for 3 dage for at sikre en problemfri og uafbrudt behandling af dine tjenester.
 
 Tak for din opmærksomhed.
@@ -182,6 +218,12 @@ IBAN: DE91 2407 0368 0071 5722 00
 SWIFT/BIC: DEUTDE2HP22
 
 Bank: Postbank/DSL Ndl of Deutsche Bank
+
+IBAN: GB40 REVO 2301 2083 3444 14
+
+SWIFT/BIC: REVOGB21
+
+Bank: Revolut Ltd
 
 Vi ber deg vennligst om å betale fakturabeløpet innen 3 dager for å sikre en smidig og uavbrutt behandling av dine tjenester.
 
@@ -207,6 +249,12 @@ SWIFT/BIC: DEUTDE2HP22
 
 Bank: Postbank/DSL Ndl of Deutsche Bank
 
+IBAN: GB40 REVO 2301 2083 3444 14
+
+SWIFT/BIC: REVOGB21
+
+Bank: Revolut Ltd
+
 Žádáme Vás o uhrazení částky faktury do 3 dnů, aby bylo zajištěno plynulé a nepřerušené zpracování Vašich služeb.
 
 Děkujeme, že této změně věnujete pozornost.
@@ -231,6 +279,12 @@ SWIFT/BIC: DEUTDE2HP22
 
 Bank: Postbank/DSL Ndl of Deutsche Bank
 
+IBAN: GB40 REVO 2301 2083 3444 14
+
+SWIFT/BIC: REVOGB21
+
+Bank: Revolut Ltd
+
 Uprzejmie prosimy o uregulowanie kwoty faktury w ciągu 3 dni w celu zapewnienia sprawnego i nieprzerwanego przetwarzania Państwa usług.
 
 Dziękujemy za zwrócenie uwagi na tę zmianę.
@@ -254,6 +308,12 @@ IBAN: DE91 2407 0368 0071 5722 00
 SWIFT/BIC: DEUTDE2HP22
 
 Bank: Postbank/DSL Ndl of Deutsche Bank
+
+IBAN: GB40 REVO 2301 2083 3444 14
+
+SWIFT/BIC: REVOGB21
+
+Bank: Revolut Ltd
 
 Vi ber dig vänligen att betala fakturabeloppet inom 3 dagar för att säkerställa en smidig och oavbruten hantering av dina tjänster.
 

@@ -26,9 +26,9 @@ type OfferStrings = {
 
 const TRANSLATIONS: Record<string, OfferStrings> = {
   en: {
-    subject: 'Your Offer from AB Media Team',
+    subject: 'Your Offer from Media Marketing Limited',
     headerTag: 'Service Offer',
-    headline: 'You have received an offer from AB Media Team',
+    headline: 'You have received an offer from Media Marketing Limited',
     priceLabel: 'Price',
     cta: 'Confirm Your Order',
     greeting: (n) => `Dear ${n},`,
@@ -38,9 +38,9 @@ const TRANSLATIONS: Record<string, OfferStrings> = {
     bestRegards: 'Best regards,',
   },
   de: {
-    subject: 'Ihr Angebot vom AB Media Team',
+    subject: 'Ihr Angebot von Media Marketing Limited',
     headerTag: 'Dienstleistungsangebot',
-    headline: 'Sie haben ein Angebot vom AB Media Team erhalten',
+    headline: 'Sie haben ein Angebot von Media Marketing Limited erhalten',
     priceLabel: 'Preis',
     cta: 'Bestellung bestätigen',
     greeting: (n) => `Sehr geehrte/r ${n},`,
@@ -50,9 +50,9 @@ const TRANSLATIONS: Record<string, OfferStrings> = {
     bestRegards: 'Mit freundlichen Grüßen,',
   },
   nl: {
-    subject: 'Uw offerte van AB Media Team',
+    subject: 'Uw offerte van Media Marketing Limited',
     headerTag: 'Dienstenofferte',
-    headline: 'U heeft een offerte ontvangen van AB Media Team',
+    headline: 'U heeft een offerte ontvangen van Media Marketing Limited',
     priceLabel: 'Prijs',
     cta: 'Bestelling bevestigen',
     greeting: (n) => `Beste ${n},`,
@@ -62,9 +62,9 @@ const TRANSLATIONS: Record<string, OfferStrings> = {
     bestRegards: 'Met vriendelijke groet,',
   },
   fr: {
-    subject: 'Votre offre de AB Media Team',
+    subject: 'Votre offre de Media Marketing Limited',
     headerTag: 'Offre de service',
-    headline: 'Vous avez reçu une offre de AB Media Team',
+    headline: 'Vous avez reçu une offre de Media Marketing Limited',
     priceLabel: 'Prix',
     cta: 'Confirmer votre commande',
     greeting: (n) => `Cher/Chère ${n},`,
@@ -74,9 +74,9 @@ const TRANSLATIONS: Record<string, OfferStrings> = {
     bestRegards: 'Cordialement,',
   },
   es: {
-    subject: 'Su oferta de AB Media Team',
+    subject: 'Su oferta de Media Marketing Limited',
     headerTag: 'Oferta de servicio',
-    headline: 'Ha recibido una oferta de AB Media Team',
+    headline: 'Ha recibido una oferta de Media Marketing Limited',
     priceLabel: 'Precio',
     cta: 'Confirmar su pedido',
     greeting: (n) => `Estimado/a ${n},`,
@@ -86,9 +86,9 @@ const TRANSLATIONS: Record<string, OfferStrings> = {
     bestRegards: 'Atentamente,',
   },
   it: {
-    subject: 'La sua offerta da AB Media Team',
+    subject: 'La sua offerta da Media Marketing Limited',
     headerTag: 'Offerta di servizio',
-    headline: 'Ha ricevuto un\'offerta da AB Media Team',
+    headline: 'Ha ricevuto un\'offerta da Media Marketing Limited',
     priceLabel: 'Prezzo',
     cta: 'Conferma il tuo ordine',
     greeting: (n) => `Gentile ${n},`,
@@ -98,9 +98,9 @@ const TRANSLATIONS: Record<string, OfferStrings> = {
     bestRegards: 'Cordiali saluti,',
   },
   cs: {
-    subject: 'Vaše nabídka od AB Media Team',
+    subject: 'Vaše nabídka od Media Marketing Limited',
     headerTag: 'Nabídka služeb',
-    headline: 'Obdrželi jste nabídku od AB Media Team',
+    headline: 'Obdrželi jste nabídku od Media Marketing Limited',
     priceLabel: 'Cena',
     cta: 'Potvrdit objednávku',
     greeting: (n) => `Vážený/á ${n},`,
@@ -110,9 +110,9 @@ const TRANSLATIONS: Record<string, OfferStrings> = {
     bestRegards: 'S pozdravem,',
   },
   pl: {
-    subject: 'Twoja oferta od AB Media Team',
+    subject: 'Twoja oferta od Media Marketing Limited',
     headerTag: 'Oferta usług',
-    headline: 'Otrzymałeś ofertę od AB Media Team',
+    headline: 'Otrzymałeś ofertę od Media Marketing Limited',
     priceLabel: 'Cena',
     cta: 'Potwierdź zamówienie',
     greeting: (n) => `Szanowny/a ${n},`,
@@ -122,9 +122,9 @@ const TRANSLATIONS: Record<string, OfferStrings> = {
     bestRegards: 'Z poważaniem,',
   },
   sv: {
-    subject: 'Ditt erbjudande från AB Media Team',
+    subject: 'Ditt erbjudande från Media Marketing Limited',
     headerTag: 'Tjänsteerbjudande',
-    headline: 'Du har fått ett erbjudande från AB Media Team',
+    headline: 'Du har fått ett erbjudande från Media Marketing Limited',
     priceLabel: 'Pris',
     cta: 'Bekräfta din beställning',
     greeting: (n) => `Hej ${n},`,
@@ -134,9 +134,9 @@ const TRANSLATIONS: Record<string, OfferStrings> = {
     bestRegards: 'Med vänliga hälsningar,',
   },
   no: {
-    subject: 'Ditt tilbud fra AB Media Team',
+    subject: 'Ditt tilbud fra Media Marketing Limited',
     headerTag: 'Tjenestetilbud',
-    headline: 'Du har mottatt et tilbud fra AB Media Team',
+    headline: 'Du har mottatt et tilbud fra Media Marketing Limited',
     priceLabel: 'Pris',
     cta: 'Bekreft bestillingen',
     greeting: (n) => `Hei ${n},`,
@@ -146,9 +146,9 @@ const TRANSLATIONS: Record<string, OfferStrings> = {
     bestRegards: 'Med vennlig hilsen,',
   },
   da: {
-    subject: 'Dit tilbud fra AB Media Team',
+    subject: 'Dit tilbud fra Media Marketing Limited',
     headerTag: 'Servicetilbud',
-    headline: 'Du har modtaget et tilbud fra AB Media Team',
+    headline: 'Du har modtaget et tilbud fra Media Marketing Limited',
     priceLabel: 'Pris',
     cta: 'Bekræft din bestilling',
     greeting: (n) => `Kære ${n},`,
@@ -199,7 +199,7 @@ const buildOfferEmailHtml = (data: {
         <tr><td style="padding:22px 32px;">
           <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"><tr>
             <td align="left" style="font-family:Roboto,Arial,sans-serif; font-size:13px; color:#606368;">${t.headerTag}</td>
-            <td align="right" style="font-family:Roboto,Arial,sans-serif; font-size:18px; font-weight:bold; color:#1e3a5f;">AB Media Team</td>
+            <td align="right" style="font-family:Roboto,Arial,sans-serif; font-size:18px; font-weight:bold; color:#1e3a5f;">Media Marketing Limited</td>
           </tr></table>
         </td></tr>
 
@@ -271,12 +271,12 @@ const buildOfferEmailHtml = (data: {
           <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"><tr>
             <td style="font-family:Roboto,Arial,sans-serif; font-size:10px; color:#515354; line-height:16px;">
               ${t.bestRegards}<br>
-              ${data.senderName}, AB Media Team<br><br>
+              ${data.senderName}, Media Marketing Limited<br><br>
               <a href="https://abmedia-team.com" style="color:#1e3a5f; text-decoration:none;">abmedia-team.com</a>
             </td>
             <td align="right" style="padding-left:20px; vertical-align:top;">
-              <div style="font-family:Roboto,Arial,sans-serif; font-size:14px; font-weight:bold; color:#1e3a5f;">AB Media Team</div>
-              <div style="font-family:Roboto,Arial,sans-serif; font-size:10px; color:#515354; margin-top:6px;">&copy; ${new Date().getFullYear()} AB Media Team</div>
+              <div style="font-family:Roboto,Arial,sans-serif; font-size:14px; font-weight:bold; color:#1e3a5f;">Media Marketing Limited</div>
+              <div style="font-family:Roboto,Arial,sans-serif; font-size:10px; color:#515354; margin-top:6px;">&copy; ${new Date().getFullYear()} Media Marketing Limited</div>
             </td>
           </tr></table>
         </td></tr>
@@ -321,7 +321,7 @@ serve(async (req) => {
       description: description || '',
       price: price || 0,
       currency: currency || 'EUR',
-      senderName: senderName || 'AB Media Team',
+      senderName: senderName || 'Media Marketing Limited',
       confirmUrl,
       language: lang,
       vatRate: typeof vatRate === 'number' ? vatRate : undefined,
@@ -371,7 +371,7 @@ serve(async (req) => {
     ];
 
     // Team copy keeps English prefix for internal consistency
-    const teamSubject = `[Team Copy] Your Offer from AB Media Team – ${companyName} (${lang.toUpperCase()})`;
+    const teamSubject = `[Team Copy] Your Offer from Media Marketing Limited – ${companyName} (${lang.toUpperCase()})`;
 
     (async () => {
       try {

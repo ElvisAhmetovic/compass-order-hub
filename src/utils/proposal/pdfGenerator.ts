@@ -110,11 +110,11 @@ const createFirstPageContent = (proposalData: any, language: string = "en") => {
             margin-bottom: 6px; 
             color: #1a202c;
           ">
-            ${companyInfo.name || 'AB MEDIA TEAM LTD'}
+            ${companyInfo.name || 'Media Marketing Limited'}
           </div>
           <div style="line-height: 1.4; color: #4a5568; font-size: 13px;">
-            <div>${companyInfo.street || 'Weseler Str.73'}</div>
-            <div>${companyInfo.postal || '47169'} ${companyInfo.city || 'Duisburg'}</div>
+            <div>${companyInfo.street || 'Düsseldorfer Str. 32'}</div>
+            <div>${companyInfo.postal || '47051'} ${companyInfo.city || 'Duisburg'}</div>
             <div>${companyInfo.country || 'Germany'}</div>
             <div>${companyInfo.phone || '+4920370907262'}</div>
           </div>
@@ -470,6 +470,15 @@ const createSecondPageContent = (proposalData: any, language: string = "en") => 
           <div style="margin-bottom: 8px;">
             <strong>BIC:</strong> ${paymentBic}
           </div>
+          <div style="margin: 12px 0 8px;">
+            <strong>Bank:</strong> Revolut Ltd
+          </div>
+          <div style="margin-bottom: 8px;">
+            <strong>IBAN:</strong> GB40REVO23012083344414
+          </div>
+          <div style="margin-bottom: 8px;">
+            <strong>BIC:</strong> REVOGB21
+          </div>
         </div>
       </div>
       ` : ''}
@@ -498,7 +507,7 @@ const createSecondPageContent = (proposalData: any, language: string = "en") => 
           text-align: center; 
           font-weight: 600;
         ">
-          ${companyInfo.name || 'AB MEDIA TEAM LTD'}
+          ${companyInfo.name || 'Media Marketing Limited'}
         </div>
         
         <div style="padding: 12px 15px; font-size: 12px;">
@@ -516,8 +525,8 @@ const createSecondPageContent = (proposalData: any, language: string = "en") => 
                 ${companyInfo.contactPerson || 'Andreas Berger'}
               </div>
               <div style="font-size: 11px;">
-                ${companyInfo.street || 'Weseler Str.73'}<br/>
-                ${companyInfo.postal || '47169'} ${companyInfo.city || 'Duisburg'}<br/>
+                ${companyInfo.street || 'Düsseldorfer Str. 32'}<br/>
+                ${companyInfo.postal || '47051'} ${companyInfo.city || 'Duisburg'}<br/>
                 ${companyInfo.country || 'Germany'}
               </div>
             </div>
@@ -531,7 +540,7 @@ const createSecondPageContent = (proposalData: any, language: string = "en") => 
           color: #cbd5e0;
         ">
           <div style="display: inline-block; width: 70%;">
-            REG: ${companyInfo.registrationNumber || '15746871'} | 
+            REG: ${companyInfo.registrationNumber || '17507679'} | 
             VAT: ${companyInfo.vatId || '13426 27369'} | 
             TAX: ${companyInfo.taxNumber || '13426 27369'}
           </div>

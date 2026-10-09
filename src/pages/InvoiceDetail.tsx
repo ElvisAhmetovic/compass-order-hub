@@ -63,7 +63,7 @@ const InvoiceDetail = () => {
       invoiceNumberPrefix: 'INV-',
       companyInfo: {
         name: "Company Name",
-        registrationNumber: "15746871",
+        registrationNumber: "17507679",
         vatId: "13426 27369",
         street: "Street Address",
         postal: "12345",

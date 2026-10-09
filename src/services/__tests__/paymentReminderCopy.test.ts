@@ -7,8 +7,8 @@ describe('approved payment reminder copy', () => {
     expect(PAYMENT_REMINDER_COPY.en).toContain('It would be nice if you could let us know when you were planning to pay our invoice.');
     expect(PAYMENT_REMINDER_COPY.de).toContain('Es wäre schön, wenn Sie uns mitteilen würden, wann Sie vorhatten, unsere Rechnung zu bezahlen.');
     for (const language of ['en', 'de'] as const) {
-      expect(PAYMENT_REMINDER_COPY[language]).toContain('Annalena Klein\nAB MEDIA TEAM\n+49 203 7090 7262');
-      expect(getPaymentReminderHtml(language)).toContain('Annalena Klein<br>AB MEDIA TEAM<br>+49 203 7090 7262');
+      expect(PAYMENT_REMINDER_COPY[language]).toContain('Annalena Klein\nMedia Marketing Limited\n+49 203 7090 7262');
+      expect(getPaymentReminderHtml(language)).toContain('Annalena Klein<br>Media Marketing Limited<br>+49 203 7090 7262');
     }
   });
 

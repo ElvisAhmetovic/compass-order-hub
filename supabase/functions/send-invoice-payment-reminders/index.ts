@@ -157,8 +157,8 @@ const translations: Record<string, ReminderTranslations> = {
 const getTranslations = (lang: string): ReminderTranslations => translations[lang] || translations.en;
 
 const approvedClientCopy: Record<string, string> = {
-  en: `<p>Hello,</p><p>We would like to kindly remind you that we have not yet received your payment!</p><p>Your payment means a lot to us as motivation for continuing our work on your project, and it also covers our costs, as we have substantial investments that compel us to remind you about payments.</p><p>It would be nice if you could let us know when you were planning to pay our invoice.</p><p>Kind regards,<br>Annalena Klein<br>AB MEDIA TEAM<br>+49 203 7090 7262</p>`,
-  de: `<p>Hallo,</p><p>Wir möchten Sie freundlich daran erinnern, dass wir Ihre Zahlung noch nicht erhalten haben!</p><p>Ihre Zahlung bedeutet uns viel als Motivation für die weitere Arbeit an Ihrem Projekt, und sie deckt auch unsere Kosten, da wir hohe Investitionen haben, aufgrund derer wir gezwungen sind, Sie an die Zahlungen zu erinnern.</p><p>Es wäre schön, wenn Sie uns mitteilen würden, wann Sie vorhatten, unsere Rechnung zu bezahlen.</p><p>Herzliche Grüße<br>Annalena Klein<br>AB MEDIA TEAM<br>+49 203 7090 7262</p>`,
+  en: `<p>Hello,</p><p>We would like to kindly remind you that we have not yet received your payment!</p><p>Your payment means a lot to us as motivation for continuing our work on your project, and it also covers our costs, as we have substantial investments that compel us to remind you about payments.</p><p>It would be nice if you could let us know when you were planning to pay our invoice.</p><p>Kind regards,<br>Annalena Klein<br>Media Marketing Limited<br>+49 203 7090 7262</p>`,
+  de: `<p>Hallo,</p><p>Wir möchten Sie freundlich daran erinnern, dass wir Ihre Zahlung noch nicht erhalten haben!</p><p>Ihre Zahlung bedeutet uns viel als Motivation für die weitere Arbeit an Ihrem Projekt, und sie deckt auch unsere Kosten, da wir hohe Investitionen haben, aufgrund derer wir gezwungen sind, Sie an die Zahlungen zu erinnern.</p><p>Es wäre schön, wenn Sie uns mitteilen würden, wann Sie vorhatten, unsere Rechnung zu bezahlen.</p><p>Herzliche Grüße<br>Annalena Klein<br>Media Marketing Limited<br>+49 203 7090 7262</p>`,
 };
 
 const formatPrice = (amount: number, currency: string) => {
@@ -285,6 +285,9 @@ const buildReminderEmailHtml = (data: {
                 <tr><td style="color:#5f6368; padding:3px 0; font-family:Roboto,Arial,sans-serif; font-size:13px;">IBAN:</td><td style="color:#0f1b3d; font-family:Roboto,Arial,sans-serif; font-size:13px;">DE91240703680071572200</td></tr>
                 <tr><td style="color:#5f6368; padding:3px 0; font-family:Roboto,Arial,sans-serif; font-size:13px;">BIC:</td><td style="color:#0f1b3d; font-family:Roboto,Arial,sans-serif; font-size:13px;">DEUTDE2HP22</td></tr>
                 <tr><td style="color:#5f6368; padding:3px 0; font-family:Roboto,Arial,sans-serif; font-size:13px;">Bank:</td><td style="color:#0f1b3d; font-family:Roboto,Arial,sans-serif; font-size:13px;">Postbank/DSL Ndl of Deutsche Bank</td></tr>
+                <tr><td style="color:#5f6368; padding:3px 0; font-family:Roboto,Arial,sans-serif; font-size:13px;">IBAN:</td><td style="color:#0f1b3d; font-family:Roboto,Arial,sans-serif; font-size:13px;">GB40REVO23012083344414</td></tr>
+                <tr><td style="color:#5f6368; padding:3px 0; font-family:Roboto,Arial,sans-serif; font-size:13px;">BIC:</td><td style="color:#0f1b3d; font-family:Roboto,Arial,sans-serif; font-size:13px;">REVOGB21</td></tr>
+                <tr><td style="color:#5f6368; padding:3px 0; font-family:Roboto,Arial,sans-serif; font-size:13px;">Bank:</td><td style="color:#0f1b3d; font-family:Roboto,Arial,sans-serif; font-size:13px;">Revolut Ltd</td></tr>
               </table>
             </td></tr>
           </table>

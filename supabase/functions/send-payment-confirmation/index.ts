@@ -105,11 +105,11 @@ serve(async (req) => {
           </p>
           <p style="color: #374151; font-size: 16px; line-height: 1.6; margin-top: 30px;">
             Best regards,<br/>
-            <strong>AB Media Team</strong>
+            <strong>Media Marketing Limited</strong>
           </p>
         </div>
         <div style="text-align: center; padding: 20px; color: #9ca3af; font-size: 12px;">
-          <p>AB Media Team | noreply@abm-team.com</p>
+          <p>Media Marketing Limited | noreply@abm-team.com</p>
         </div>
       </div>
     `;
