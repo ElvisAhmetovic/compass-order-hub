@@ -82,6 +82,8 @@ const InvoiceDetail = () => {
     issue_date: new Date().toISOString().split('T')[0],
     due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     currency: 'EUR',
+    service_date: '',
+    service_period_end: '',
     payment_terms: 'Net 30',
     notes: '',
     internal_notes: '',
@@ -136,6 +138,8 @@ const InvoiceDetail = () => {
           client_id: data.client_id,
           issue_date: data.issue_date,
           due_date: data.due_date,
+          service_date: data.service_date || null,
+          service_period_end: data.service_period_end || null,
           currency: data.currency,
           payment_terms: data.payment_terms,
           notes: data.notes,
@@ -214,6 +218,8 @@ const InvoiceDetail = () => {
             client_id: invoiceData.client_id,
             issue_date: invoiceData.issue_date.split('T')[0],
             due_date: invoiceData.due_date.split('T')[0],
+            service_date: (invoiceData as any).service_date || '',
+            service_period_end: (invoiceData as any).service_period_end || '',
             currency: invoiceData.currency,
             payment_terms: invoiceData.payment_terms || 'Net 30',
             notes: invoiceData.notes || '',
@@ -449,6 +455,8 @@ const InvoiceDetail = () => {
           client_id: formData.client_id,
           issue_date: formData.issue_date,
           due_date: formData.due_date,
+          service_date: formData.service_date || '',
+          service_period_end: formData.service_period_end || '',
           currency: formData.currency,
           payment_terms: formData.payment_terms,
           notes: formData.notes,
@@ -564,6 +572,8 @@ const InvoiceDetail = () => {
         due_date: formData.due_date || new Date(Date.now() + 4*24*60*60*1000).toISOString(),
         status: 'draft'
       } as any;
+      pdfInvoice.service_date = formData.service_date || null;
+      pdfInvoice.service_period_end = formData.service_period_end || null;
       
       await generateInvoicePDF({
         invoice: pdfInvoice,
@@ -779,6 +789,26 @@ const InvoiceDetail = () => {
                               value={formData.due_date}
                               onChange={(e) => handleFormDataChange('due_date', e.target.value)}
                             />
+                          </div>
+
+                          <div>
+                            <Label htmlFor="service_date">Service Date (Leistungsdatum)</Label>
+                            <Input
+                              type="date"
+                              value={formData.service_date || ''}
+                              onChange={(e) => handleFormDataChange('service_date', e.target.value)}
+                            />
+                            <p className="mt-1 text-xs text-muted-foreground">Empty = invoice date is printed as service date.</p>
+                          </div>
+
+                          <div>
+                            <Label htmlFor="service_period_end">Service Period End (optional)</Label>
+                            <Input
+                              type="date"
+                              value={formData.service_period_end || ''}
+                              onChange={(e) => handleFormDataChange('service_period_end', e.target.value)}
+                            />
+                            <p className="mt-1 text-xs text-muted-foreground">Set to print a service period instead of a single date.</p>
                           </div>
 
                           <div>
