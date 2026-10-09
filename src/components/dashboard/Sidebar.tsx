@@ -315,7 +315,7 @@ const Sidebar = () => {
           rel="noopener noreferrer"
           className="inline-block text-xl font-bold font-heading text-sidebar-foreground hover:text-sidebar-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring rounded transition-colors"
         >
-          AB Media Team CRM
+          Media Marketing LTD - CRM
         </a>
         <div className="mt-2 text-sidebar-foreground/60">
           <div className="font-mono text-lg font-semibold text-sidebar-foreground">
