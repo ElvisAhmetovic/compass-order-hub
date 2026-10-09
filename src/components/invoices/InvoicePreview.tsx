@@ -67,7 +67,7 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
 
 
   const germanyAccount = {
-    id: "germany" as "germany" | "revolut",
+    id: "germany" as string,
     name: getAccountTranslations(templateSettings.language, "germany"),
     iban: "DE91240703680071572200",
     bic: "DEUTDE2HP22",
@@ -81,14 +81,23 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
 
   const revolutAccount = {
     ...germanyAccount,
-    id: "revolut" as const,
+    id: "revolut",
     name: "Revolut Ltd",
     iban: "GB40REVO23012083344414",
     bic: "REVOGB21",
     bank: "Revolut Ltd",
   };
 
-  const selectedAccounts = filterAccountsByChoice([germanyAccount, revolutAccount], templateSettings.selectedPaymentAccount);
+  const wiseAccount = {
+    ...germanyAccount,
+    id: "wise",
+    name: "Media Marketing LTD WISE",
+    iban: "BE75903030215751",
+    bic: "TRWIBEB1XXX",
+    bank: "Wise",
+  };
+
+  const selectedAccounts = filterAccountsByChoice([germanyAccount, revolutAccount, wiseAccount], templateSettings.selectedPaymentAccount);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-GB', {

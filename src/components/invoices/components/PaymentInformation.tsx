@@ -2,15 +2,14 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { PAYMENT_ACCOUNTS, PAYMENT_ACCOUNT_CHOICES, filterAccountsByChoice } from "../constants";
+import { Checkbox } from "@/components/ui/checkbox";
+import { PAYMENT_ACCOUNTS, PAYMENT_ACCOUNT_OPTIONS, filterAccountsByChoice, normalizePaymentAccountIds } from "../constants";
 import { getPaymentPanelLabels } from "../invoiceTranslations";
 
 interface PaymentInformationProps {
-  selectedPaymentAccount: string;
+  selectedPaymentAccount: unknown;
   language: string;
-  onPaymentAccountChange: (accountId: string) => void;
+  onPaymentAccountChange: (accountIds: string[]) => void;
 }
 
 export const PaymentInformation: React.FC<PaymentInformationProps> = ({
@@ -18,8 +17,13 @@ export const PaymentInformation: React.FC<PaymentInformationProps> = ({
   language,
   onPaymentAccountChange
 }) => {
-  const choice = selectedPaymentAccount === "germany_only" || selectedPaymentAccount === "revolut_only" ? selectedPaymentAccount : "all";
-  const selectedAccounts = filterAccountsByChoice(PAYMENT_ACCOUNTS, choice);
+  const selectedIds = normalizePaymentAccountIds(selectedPaymentAccount);
+  const selectedAccounts = filterAccountsByChoice(PAYMENT_ACCOUNTS, selectedIds);
+  const toggle = (id: string, checked: boolean) => {
+    const next = checked ? [...selectedIds, id] : selectedIds.filter((x) => x !== id);
+    if (next.length === 0) return; // at least one account must stay selected
+    onPaymentAccountChange(PAYMENT_ACCOUNT_OPTIONS.map((o) => o.id).filter((x) => next.includes(x)));
+  };
 
   const paymentLabels = getPaymentPanelLabels(language);
 
@@ -32,18 +36,21 @@ export const PaymentInformation: React.FC<PaymentInformationProps> = ({
       <CardContent className="space-y-4">
         <div>
           <Label>{paymentLabels.paymentAccount}</Label>
-          <Select value={choice} onValueChange={onPaymentAccountChange}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {PAYMENT_ACCOUNT_CHOICES.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
+          <div className="mt-2 space-y-2">
+            {PAYMENT_ACCOUNT_OPTIONS.map((option) => {
+              const checked = selectedIds.includes(option.id);
+              return (
+                <label key={option.id} className="flex items-center gap-2 text-sm cursor-pointer">
+                  <Checkbox
+                    checked={checked}
+                    disabled={checked && selectedIds.length === 1}
+                    onCheckedChange={(v) => toggle(option.id, v === true)}
+                  />
                   {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+                </label>
+              );
+            })}
+          </div>
         </div>
 
         {selectedAccounts.length > 0 && (
