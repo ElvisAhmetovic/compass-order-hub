@@ -31,6 +31,14 @@ export const PAYMENT_ACCOUNTS: PaymentAccount[] = [
     iban: "GB40REVO23012083344414",
     bic: "REVOGB21",
     bank: "Revolut Ltd"
+  },
+  {
+    id: "wise",
+    country: "Belgium",
+    name: "Media Marketing LTD WISE",
+    iban: "BE75903030215751",
+    bic: "TRWIBEB1XXX",
+    bank: "Wise"
   }
 ];
 
@@ -76,23 +84,32 @@ export const CURRENCIES = [
 export const DEFAULT_COMPANY_LOGO = abTeamLogo;
 export const LEGACY_COMPANY_LOGOS = ["/lovable-uploads/f7433a5f-4a36-45f5-a9c0-0609818523fe.png"];
 
-// Older saved settings stored "germany" for every invoice, so it means "all" now.
-export type PaymentAccountChoice = "germany_only" | "revolut_only" | "all";
+export const DEFAULT_PAYMENT_ACCOUNT_IDS = ["germany", "revolut"];
 
-export const PAYMENT_ACCOUNT_CHOICES: { value: PaymentAccountChoice; label: string }[] = [
-  { value: "all", label: "Both accounts" },
-  { value: "germany_only", label: "German Bank Account only" },
-  { value: "revolut_only", label: "Revolut Account only" },
+/** Checkbox labels only (owner in brackets) — never printed on invoices. */
+export const PAYMENT_ACCOUNT_OPTIONS = [
+  { id: "germany", label: "German Bank Account (Media Marketing LTD)" },
+  { id: "revolut", label: "Revolut Account (Media Marketing LTD)" },
+  { id: "wise", label: "Wise Account (Web Workers LTD)" },
 ];
 
-/** Returns the accounts to show for a template choice; unknown values fall back to both. */
-export const filterAccountsByChoice = <T extends { id: string }>(accounts: T[], choice?: string): T[] => {
-  if (choice === "germany_only" || choice === "revolut_only") {
-    const id = choice.replace("_only", "");
-    const picked = accounts.filter((a) => a.id === id);
-    if (picked.length) return picked;
+/** Turns saved settings (array, or older single-choice strings) into a list of account ids. */
+export const normalizePaymentAccountIds = (choice?: unknown): string[] => {
+  const valid = PAYMENT_ACCOUNT_OPTIONS.map((o) => o.id);
+  if (Array.isArray(choice)) {
+    const ids = valid.filter((id) => choice.includes(id));
+    return ids.length ? ids : [...DEFAULT_PAYMENT_ACCOUNT_IDS];
   }
-  return accounts;
+  if (choice === "germany_only") return ["germany"];
+  if (choice === "revolut_only") return ["revolut"];
+  return [...DEFAULT_PAYMENT_ACCOUNT_IDS];
+};
+
+/** Returns the accounts to show for the saved selection. */
+export const filterAccountsByChoice = <T extends { id: string }>(accounts: T[], choice?: unknown): T[] => {
+  const ids = normalizePaymentAccountIds(choice);
+  const picked = accounts.filter((a) => ids.includes(a.id));
+  return picked.length ? picked : accounts.filter((a) => DEFAULT_PAYMENT_ACCOUNT_IDS.includes(a.id));
 };
 
 export const DEFAULT_TERMS: Record<string, string> = {

@@ -1,13 +1,13 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { getCompanyInfo, saveCompanyInfo, loadCompanyInfo } from "@/utils/proposal/companyInfo";
-import { DEFAULT_COMPANY_LOGO, LEGACY_COMPANY_LOGOS } from "../constants";
+import { DEFAULT_COMPANY_LOGO, LEGACY_COMPANY_LOGOS, normalizePaymentAccountIds } from "../constants";
 
 export interface InvoiceSettings {
   logo: string;
   logoSize: string;
   language: string;
-  selectedPaymentAccount: string;
+  selectedPaymentAccount: string[];
   customTerms: string;
   vatEnabled: boolean;
   vatRate: number;
@@ -43,17 +43,17 @@ export const useInvoiceSettings = (initialSettings?: any) => {
       logo: DEFAULT_COMPANY_LOGO,
       logoSize: "large",
       language: "en",
-      selectedPaymentAccount: "all",
+      selectedPaymentAccount: ["germany", "revolut"],
       customTerms: "",
       vatEnabled: true,
       vatRate: 0,
       currency: "EUR",
       invoiceNumberPrefix: "INV-",
     };
+    const merged = { ...baseSettings, ...savedSettings, ...initialSettings };
     return {
-      ...baseSettings,
-      ...savedSettings,
-      ...initialSettings,
+      ...merged,
+      selectedPaymentAccount: normalizePaymentAccountIds(merged.selectedPaymentAccount),
       // Database company info is the source of truth
       companyInfo: { ...companyInfo },
     };
