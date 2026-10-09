@@ -242,6 +242,8 @@ export class InvoiceService {
           client_id: invoiceData.client_id,
           issue_date: invoiceData.issue_date,
           due_date: invoiceData.due_date,
+          service_date: invoiceData.service_date || null,
+          service_period_end: invoiceData.service_period_end || null,
           currency: invoiceData.currency,
           payment_terms: invoiceData.payment_terms,
           notes: invoiceData.notes,

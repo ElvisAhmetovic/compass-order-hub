@@ -1,3 +1,4 @@
+import { getComplianceLabels, getServiceDateLine, REGISTERED_OFFICE, OFFICE_ADDRESS } from '@/components/invoices/invoiceCompliance';
 import { filterAccountsByChoice } from "@/components/invoices/constants";
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -275,6 +276,8 @@ const generateInvoiceHTML = (data: InvoicePDFData): string => {
     issue_date: formData?.issue_date || new Date().toISOString(),
     due_date: formData?.due_date || new Date(Date.now() + 30*24*60*60*1000).toISOString()
   };
+  const compliance = getComplianceLabels(templateSettings.language);
+  const serviceLine = getServiceDateLine(templateSettings.language, currentInvoiceData as any, formatDate);
   const displayInvoiceNumber = formatInvoiceNumber(
     currentInvoiceData.invoice_number,
     templateSettings.invoiceNumberPrefix ?? ''
@@ -315,7 +318,8 @@ const generateInvoiceHTML = (data: InvoicePDFData): string => {
               ${companyInfo.contactPerson ? `${getTranslatedText('contactPerson')} ${companyInfo.contactPerson}<br>` : ''}
               ${getTranslatedText('companyRegistrationNumber')} ${companyInfo.registrationNumber}<br>
               ${companyInfo.vatId ? `${getTranslatedText('uidNumber')} ${companyInfo.vatId}<br>` : ''}
-              ${companyInfo.street} ${companyInfo.postal} ${companyInfo.city}<br>
+              ${compliance.registeredOffice} ${REGISTERED_OFFICE}<br>
+              ${compliance.officeAddress} ${OFFICE_ADDRESS}<br>
               ${companyInfo.email || ''}
             </div>
           </div>
@@ -359,6 +363,10 @@ const generateInvoiceHTML = (data: InvoicePDFData): string => {
           <div style="margin-bottom: 8px; display: flex; justify-content: space-between;">
             <span style="font-weight: 600;">${getTranslatedText('dueDate')}</span>
             <span>${formatDate(currentInvoiceData.due_date)}</span>
+          </div>
+          <div style="margin-bottom: 8px; display: flex; justify-content: space-between; gap: 12px;">
+            <span style="font-weight: 600;">${serviceLine.label}</span>
+            <span>${serviceLine.value}</span>
           </div>
           <div style="font-weight: bold; font-size: 16px; display: flex; justify-content: space-between; border-top: 1px solid #e5e7eb; padding-top: 8px;">
             <span>${getTranslatedText('balanceDue')}</span>
@@ -405,7 +413,12 @@ const generateInvoiceHTML = (data: InvoicePDFData): string => {
             <span>${getTranslatedText('subtotal')}</span>
             <span style="font-weight: 600;">${formatCurrency(subtotal || 750, currentCurrency)}</span>
           </div>
-          ${templateSettings.vatEnabled ? `
+          ${templateSettings.reverseCharge ? `
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px;">
+              <span>${compliance.reverseChargeTax}</span>
+              <span style="font-weight: 600;">${formatCurrency(0, currentCurrency)}</span>
+            </div>
+          ` : templateSettings.vatEnabled ? `
             <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px;">
               <span>${getTranslatedText('tax')} (${formattedVatRate}%):</span>
               <span style="font-weight: 600;">${formatCurrency(vatAmount, currentCurrency)}</span>
@@ -417,6 +430,8 @@ const generateInvoiceHTML = (data: InvoicePDFData): string => {
           </div>
         </div>
       </div>
+
+      ${templateSettings.reverseCharge ? `<div style="margin-top: 10px; font-size: 12px; color: #374151; border-left: 3px solid #d1d5db; padding-left: 10px;">${compliance.reverseChargeNote}</div>` : ''}
 
       <!-- Notes and Terms -->
       <div style="margin-top: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
