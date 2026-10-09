@@ -95,6 +95,9 @@ export const PAYMENT_ACCOUNT_OPTIONS = [
 ];
 
 /** Turns saved settings (array, or older single-choice strings) into a list of account ids. */
+/** Monthly package invoices always list German + Revolut, never Wise. */
+export const MONTHLY_PAYMENT_ACCOUNT_IDS = ["germany", "revolut"] as const;
+
 export const normalizePaymentAccountIds = (choice?: unknown): string[] => {
   const valid = PAYMENT_ACCOUNT_OPTIONS.map((o) => o.id);
   if (Array.isArray(choice)) {

@@ -1,4 +1,5 @@
 import { computeDueDate } from "@/utils/monthlyDueDate";
+import { isLegacyDefaultTerms, MONTHLY_PAYMENT_ACCOUNT_IDS } from "@/components/invoices/constants";
 import React, { useState } from "react";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
@@ -174,9 +175,11 @@ const SendMonthlyInvoiceDialog: React.FC<SendMonthlyInvoiceDialogProps> = ({
 
       const templateSettings = {
         ...savedSettings,
+        customTerms: isLegacyDefaultTerms(savedSettings.customTerms) ? "" : savedSettings.customTerms,
+        reverseCharge: false,
         currency: contract.currency || "EUR",
         language,
-        selectedPaymentAccount: "all",
+        selectedPaymentAccount: [...MONTHLY_PAYMENT_ACCOUNT_IDS],
         vatEnabled: contractVatEnabled,
         vatRate: contractVatRate,
       };
