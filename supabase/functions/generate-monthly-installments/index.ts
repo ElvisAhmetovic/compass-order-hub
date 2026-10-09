@@ -107,8 +107,8 @@ const PDF_LABELS: Record<Lang, {
     invoiceTitle: "INVOICE", description: "Description", quantity: "Qty", unitPrice: "Unit Price", total: "Total",
     netAmount: "Net Amount:", vat: "VAT:", totalAmount: "Total Amount:",
     paymentTermsTitle: "Payment Terms",
-    paymentTermsLine1: "We kindly request that the invoiced amount be credited/transferred within 3 days.",
-    paymentTermsLine2: "All taxes and social contributions are reported and paid by us to the authorities.",
+    paymentTermsLine1: "Please pay the invoice amount by the due date stated above, without deduction.",
+    paymentTermsLine2: "",
     bankDetails: "Bank Details:", unit: "Month",
     vatId: "VAT ID:", taxNumber: "Tax Number:", director: "Director:", regNumber: "Reg. No.:",
   },
@@ -117,8 +117,8 @@ const PDF_LABELS: Record<Lang, {
     invoiceTitle: "RECHNUNG", description: "Beschreibung", quantity: "Menge", unitPrice: "Einzelpreis", total: "Gesamt",
     netAmount: "Nettobetrag:", vat: "MwSt.:", totalAmount: "Gesamtbetrag:",
     paymentTermsTitle: "Zahlungsbedingungen",
-    paymentTermsLine1: "Wir bitten darum, dass unsere in Rechnung gestellten Leistungen innerhalb von 3 Tagen",
-    paymentTermsLine2: "gutgeschrieben/überwiesen werden. Alle Steuern und Sozialabgaben werden von uns bei den Behörden angemeldet und abgeführt.",
+    paymentTermsLine1: "Bitte überweisen Sie den Rechnungsbetrag ohne Abzug bis zum oben genannten Fälligkeitsdatum.",
+    paymentTermsLine2: "",
     bankDetails: "Bankverbindungen:", unit: "Monat",
     vatId: "USt-IdNr:", taxNumber: "Steuernummer:", director: "Geschäftsführer:", regNumber: "Handelsregisternr:",
   },
@@ -127,8 +127,8 @@ const PDF_LABELS: Record<Lang, {
     invoiceTitle: "FACTUUR", description: "Omschrijving", quantity: "Aantal", unitPrice: "Prijs per eenheid", total: "Totaal",
     netAmount: "Nettobedrag:", vat: "BTW:", totalAmount: "Totaalbedrag:",
     paymentTermsTitle: "Betalingsvoorwaarden",
-    paymentTermsLine1: "Wij verzoeken u vriendelijk het gefactureerde bedrag binnen 3 dagen over te maken.",
-    paymentTermsLine2: "Alle belastingen en sociale premies worden door ons bij de autoriteiten aangegeven en afgedragen.",
+    paymentTermsLine1: "Gelieve het factuurbedrag zonder aftrek vóór de hierboven vermelde vervaldatum te betalen.",
+    paymentTermsLine2: "",
     bankDetails: "Bankgegevens:", unit: "Maand",
     vatId: "BTW-nr:", taxNumber: "Belastingnummer:", director: "Directeur:", regNumber: "KvK-nr:",
   },
@@ -137,8 +137,8 @@ const PDF_LABELS: Record<Lang, {
     invoiceTitle: "FACTURE", description: "Description", quantity: "Quantité", unitPrice: "Prix unitaire", total: "Total",
     netAmount: "Montant net:", vat: "TVA:", totalAmount: "Montant total:",
     paymentTermsTitle: "Conditions de paiement",
-    paymentTermsLine1: "Nous vous prions de bien vouloir régler le montant facturé dans un délai de 3 jours.",
-    paymentTermsLine2: "Toutes les taxes et cotisations sociales sont déclarées et versées par nos soins aux autorités.",
+    paymentTermsLine1: "Veuillez régler le montant de la facture sans déduction avant la date d'échéance indiquée ci-dessus.",
+    paymentTermsLine2: "",
     bankDetails: "Coordonnées bancaires:", unit: "Mois",
     vatId: "N° TVA:", taxNumber: "N° fiscal:", director: "Directeur:", regNumber: "N° registre:",
   },
@@ -147,8 +147,8 @@ const PDF_LABELS: Record<Lang, {
     invoiceTitle: "FACTURA", description: "Descripción", quantity: "Cantidad", unitPrice: "Precio unitario", total: "Total",
     netAmount: "Importe neto:", vat: "IVA:", totalAmount: "Importe total:",
     paymentTermsTitle: "Condiciones de pago",
-    paymentTermsLine1: "Le rogamos que abone el importe facturado en un plazo de 3 días.",
-    paymentTermsLine2: "Todos los impuestos y cotizaciones sociales son declarados y abonados por nosotros ante las autoridades.",
+    paymentTermsLine1: "Por favor, pague el importe de la factura sin deducciones antes de la fecha de vencimiento indicada arriba.",
+    paymentTermsLine2: "",
     bankDetails: "Datos bancarios:", unit: "Mes",
     vatId: "NIF/IVA:", taxNumber: "N° fiscal:", director: "Director:", regNumber: "N° registro:",
   },
@@ -157,8 +157,8 @@ const PDF_LABELS: Record<Lang, {
     invoiceTitle: "FAKTURA", description: "Beskrivelse", quantity: "Antal", unitPrice: "Enhedspris", total: "Total",
     netAmount: "Nettobeløb:", vat: "Moms:", totalAmount: "Totalbeløb:",
     paymentTermsTitle: "Betalingsbetingelser",
-    paymentTermsLine1: "Vi beder venligst om, at det fakturerede beløb overføres inden for 3 dage.",
-    paymentTermsLine2: "Alle skatter og sociale bidrag indberettes og betales af os til myndighederne.",
+    paymentTermsLine1: "Betal venligst fakturabeløbet uden fradrag senest på den ovenfor angivne forfaldsdato.",
+    paymentTermsLine2: "",
     bankDetails: "Bankoplysninger:", unit: "Måned",
     vatId: "Moms-nr:", taxNumber: "Skattenummer:", director: "Direktør:", regNumber: "Reg.nr:",
   },
@@ -167,8 +167,8 @@ const PDF_LABELS: Record<Lang, {
     invoiceTitle: "FAKTURA", description: "Beskrivelse", quantity: "Antall", unitPrice: "Enhetspris", total: "Total",
     netAmount: "Nettobeløp:", vat: "MVA:", totalAmount: "Totalbeløp:",
     paymentTermsTitle: "Betalingsbetingelser",
-    paymentTermsLine1: "Vi ber vennligst om at det fakturerte beløpet overføres innen 3 dager.",
-    paymentTermsLine2: "Alle skatter og sosiale avgifter rapporteres og betales av oss til myndighetene.",
+    paymentTermsLine1: "Vennligst betal fakturabeløpet uten fradrag innen forfallsdatoen angitt ovenfor.",
+    paymentTermsLine2: "",
     bankDetails: "Bankdetaljer:", unit: "Måned",
     vatId: "MVA-nr:", taxNumber: "Skattenummer:", director: "Direktør:", regNumber: "Reg.nr:",
   },
@@ -177,8 +177,8 @@ const PDF_LABELS: Record<Lang, {
     invoiceTitle: "FAKTURA", description: "Popis", quantity: "Množství", unitPrice: "Jednotková cena", total: "Celkem",
     netAmount: "Částka bez DPH:", vat: "DPH:", totalAmount: "Celková částka:",
     paymentTermsTitle: "Platební podmínky",
-    paymentTermsLine1: "Žádáme Vás o uhrazení fakturované částky do 3 dnů.",
-    paymentTermsLine2: "Všechny daně a sociální odvody jsou námi přiznány a odvedeny příslušným úřadům.",
+    paymentTermsLine1: "Uhraďte prosím částku faktury bez srážek do výše uvedeného data splatnosti.",
+    paymentTermsLine2: "",
     bankDetails: "Bankovní spojení:", unit: "Měsíc",
     vatId: "DIČ:", taxNumber: "IČO:", director: "Jednatel:", regNumber: "Reg. č.:",
   },
@@ -187,8 +187,8 @@ const PDF_LABELS: Record<Lang, {
     invoiceTitle: "FAKTURA", description: "Opis", quantity: "Ilość", unitPrice: "Cena jednostkowa", total: "Razem",
     netAmount: "Kwota netto:", vat: "VAT:", totalAmount: "Kwota brutto:",
     paymentTermsTitle: "Warunki płatności",
-    paymentTermsLine1: "Uprzejmie prosimy o uregulowanie kwoty faktury w ciągu 3 dni.",
-    paymentTermsLine2: "Wszystkie podatki i składki socjalne są przez nas zgłaszane i odprowadzane do odpowiednich urzędów.",
+    paymentTermsLine1: "Prosimy o zapłatę kwoty faktury bez potrąceń do podanego powyżej terminu płatności.",
+    paymentTermsLine2: "",
     bankDetails: "Dane bankowe:", unit: "Miesiąc",
     vatId: "NIP:", taxNumber: "Nr podatkowy:", director: "Dyrektor:", regNumber: "Nr rejestrowy:",
   },
@@ -197,8 +197,8 @@ const PDF_LABELS: Record<Lang, {
     invoiceTitle: "FAKTURA", description: "Beskrivning", quantity: "Antal", unitPrice: "Enhetspris", total: "Totalt",
     netAmount: "Nettobelopp:", vat: "Moms:", totalAmount: "Totalbelopp:",
     paymentTermsTitle: "Betalningsvillkor",
-    paymentTermsLine1: "Vi ber vänligen att det fakturerade beloppet överförs inom 3 dagar.",
-    paymentTermsLine2: "Alla skatter och sociala avgifter rapporteras och betalas av oss till myndigheterna.",
+    paymentTermsLine1: "Vänligen betala fakturabeloppet utan avdrag senast på det förfallodatum som anges ovan.",
+    paymentTermsLine2: "",
     bankDetails: "Bankuppgifter:", unit: "Månad",
     vatId: "Moms-nr:", taxNumber: "Skattenummer:", director: "Direktör:", regNumber: "Reg.nr:",
   },
@@ -218,7 +218,7 @@ const EMAIL_TRANSLATIONS: Record<Lang, {
     greeting: (name) => `Hello ${name},`,
     body: (month) => `Please find attached your invoice for <strong>${month}</strong>.`,
     invoiceNumberLabel: "Invoice Number:", periodLabel: "Period:", amountLabel: "Amount:",
-    attachmentNote: "The invoice is attached as a PDF.", paymentRequest: "Please arrange payment within 3 days.",
+    attachmentNote: "The invoice is attached as a PDF.", paymentRequest: "Please pay the amount by the due date stated on the invoice.",
     questionsNote: "If you have any questions, please don't hesitate to contact us.", closing: "Kind regards,",
   },
   de: {
@@ -226,7 +226,7 @@ const EMAIL_TRANSLATIONS: Record<Lang, {
     greeting: (name) => `Hallo ${name},`,
     body: (month) => `anbei erhalten Sie Ihre Rechnung für <strong>${month}</strong>.`,
     invoiceNumberLabel: "Rechnungsnummer:", periodLabel: "Zeitraum:", amountLabel: "Betrag:",
-    attachmentNote: "Die Rechnung finden Sie als PDF im Anhang.", paymentRequest: "Bitte veranlassen Sie die Zahlung innerhalb von 3 Tagen.",
+    attachmentNote: "Die Rechnung finden Sie als PDF im Anhang.", paymentRequest: "Bitte überweisen Sie den Betrag bis zum auf der Rechnung angegebenen Fälligkeitsdatum.",
     questionsNote: "Bei Fragen stehen wir Ihnen gerne zur Verfügung.", closing: "Mit freundlichen Grüßen,",
   },
   nl: {
@@ -234,7 +234,7 @@ const EMAIL_TRANSLATIONS: Record<Lang, {
     greeting: (name) => `Hallo ${name},`,
     body: (month) => `bijgevoegd vindt u uw factuur voor <strong>${month}</strong>.`,
     invoiceNumberLabel: "Factuurnummer:", periodLabel: "Periode:", amountLabel: "Bedrag:",
-    attachmentNote: "De factuur is als PDF bijgevoegd.", paymentRequest: "Gelieve de betaling binnen 3 dagen te regelen.",
+    attachmentNote: "De factuur is als PDF bijgevoegd.", paymentRequest: "Gelieve het bedrag te betalen vóór de vervaldatum op de factuur.",
     questionsNote: "Heeft u vragen? Neem gerust contact met ons op.", closing: "Met vriendelijke groet,",
   },
   fr: {
@@ -242,7 +242,7 @@ const EMAIL_TRANSLATIONS: Record<Lang, {
     greeting: (name) => `Bonjour ${name},`,
     body: (month) => `veuillez trouver ci-joint votre facture pour <strong>${month}</strong>.`,
     invoiceNumberLabel: "Numéro de facture:", periodLabel: "Période:", amountLabel: "Montant:",
-    attachmentNote: "La facture est jointe en PDF.", paymentRequest: "Merci de procéder au paiement dans un délai de 3 jours.",
+    attachmentNote: "La facture est jointe en PDF.", paymentRequest: "Veuillez régler le montant avant la date d'échéance indiquée sur la facture.",
     questionsNote: "Pour toute question, n'hésitez pas à nous contacter.", closing: "Cordialement,",
   },
   es: {
@@ -250,7 +250,7 @@ const EMAIL_TRANSLATIONS: Record<Lang, {
     greeting: (name) => `Hola ${name},`,
     body: (month) => `adjunto encontrará su factura para <strong>${month}</strong>.`,
     invoiceNumberLabel: "Número de factura:", periodLabel: "Período:", amountLabel: "Importe:",
-    attachmentNote: "La factura se adjunta en formato PDF.", paymentRequest: "Le rogamos que realice el pago en un plazo de 3 días.",
+    attachmentNote: "La factura se adjunta en formato PDF.", paymentRequest: "Por favor, pague el importe antes de la fecha de vencimiento indicada en la factura.",
     questionsNote: "Si tiene alguna pregunta, no dude en contactarnos.", closing: "Un cordial saludo,",
   },
   da: {
@@ -258,7 +258,7 @@ const EMAIL_TRANSLATIONS: Record<Lang, {
     greeting: (name) => `Hej ${name},`,
     body: (month) => `vedlagt finder du din faktura for <strong>${month}</strong>.`,
     invoiceNumberLabel: "Fakturanummer:", periodLabel: "Periode:", amountLabel: "Beløb:",
-    attachmentNote: "Fakturaen er vedhæftet som PDF.", paymentRequest: "Vi beder dig venligst om at betale inden for 3 dage.",
+    attachmentNote: "Fakturaen er vedhæftet som PDF.", paymentRequest: "Betal venligst beløbet senest på forfaldsdatoen på fakturaen.",
     questionsNote: "Har du spørgsmål, er du velkommen til at kontakte os.", closing: "Med venlig hilsen,",
   },
   no: {
@@ -266,7 +266,7 @@ const EMAIL_TRANSLATIONS: Record<Lang, {
     greeting: (name) => `Hei ${name},`,
     body: (month) => `vedlagt finner du din faktura for <strong>${month}</strong>.`,
     invoiceNumberLabel: "Fakturanummer:", periodLabel: "Periode:", amountLabel: "Beløp:",
-    attachmentNote: "Fakturaen er vedlagt som PDF.", paymentRequest: "Vi ber deg vennligst om å betale innen 3 dager.",
+    attachmentNote: "Fakturaen er vedlagt som PDF.", paymentRequest: "Vennligst betal beløpet innen forfallsdatoen på fakturaen.",
     questionsNote: "Har du spørsmål, er du velkommen til å kontakte oss.", closing: "Med vennlig hilsen,",
   },
   cs: {
@@ -274,7 +274,7 @@ const EMAIL_TRANSLATIONS: Record<Lang, {
     greeting: (name) => `Dobrý den ${name},`,
     body: (month) => `v příloze naleznete svou fakturu za <strong>${month}</strong>.`,
     invoiceNumberLabel: "Číslo faktury:", periodLabel: "Období:", amountLabel: "Částka:",
-    attachmentNote: "Faktura je přiložena ve formátu PDF.", paymentRequest: "Žádáme Vás o uhrazení do 3 dnů.",
+    attachmentNote: "Faktura je přiložena ve formátu PDF.", paymentRequest: "Uhraďte prosím částku do data splatnosti uvedeného na faktuře.",
     questionsNote: "V případě dotazů nás neváhejte kontaktovat.", closing: "S pozdravem,",
   },
   pl: {
@@ -282,7 +282,7 @@ const EMAIL_TRANSLATIONS: Record<Lang, {
     greeting: (name) => `Dzień dobry ${name},`,
     body: (month) => `w załączeniu przesyłamy fakturę za <strong>${month}</strong>.`,
     invoiceNumberLabel: "Numer faktury:", periodLabel: "Okres:", amountLabel: "Kwota:",
-    attachmentNote: "Faktura jest załączona w formacie PDF.", paymentRequest: "Uprzejmie prosimy o dokonanie płatności w ciągu 3 dni.",
+    attachmentNote: "Faktura jest załączona w formacie PDF.", paymentRequest: "Prosimy o zapłatę kwoty do terminu płatności podanego na fakturze.",
     questionsNote: "W razie pytań prosimy o kontakt.", closing: "Z poważaniem,",
   },
   sv: {
@@ -290,7 +290,7 @@ const EMAIL_TRANSLATIONS: Record<Lang, {
     greeting: (name) => `Hej ${name},`,
     body: (month) => `bifogat finner du din faktura för <strong>${month}</strong>.`,
     invoiceNumberLabel: "Fakturanummer:", periodLabel: "Period:", amountLabel: "Belopp:",
-    attachmentNote: "Fakturan bifogas som PDF.", paymentRequest: "Vänligen betala inom 3 dagar.",
+    attachmentNote: "Fakturan bifogas som PDF.", paymentRequest: "Vänligen betala beloppet senast på förfallodatumet på fakturan.",
     questionsNote: "Har du frågor är du välkommen att kontakta oss.", closing: "Med vänliga hälsningar,",
   },
 };
@@ -301,16 +301,16 @@ const INVOICE_DB_TEXT: Record<Lang, {
   paymentTerms: string;
   lineDescription: (desc: string | null, monthLabel: string) => string;
 }> = {
-  en: { notes: (m) => `Automatically generated invoice for ${m}`, paymentTerms: "Payable within 3 days", lineDescription: (d, m) => d ? `${d} – ${m}` : `Monthly Service – ${m}` },
-  de: { notes: (m) => `Automatisch generierte Rechnung für ${m}`, paymentTerms: "Zahlbar innerhalb von 3 Tagen", lineDescription: (d, m) => d ? `${d} – ${m}` : `Monatliche Dienstleistung – ${m}` },
-  nl: { notes: (m) => `Automatisch gegenereerde factuur voor ${m}`, paymentTerms: "Betaalbaar binnen 3 dagen", lineDescription: (d, m) => d ? `${d} – ${m}` : `Maandelijkse dienst – ${m}` },
-  fr: { notes: (m) => `Facture générée automatiquement pour ${m}`, paymentTerms: "Payable sous 3 jours", lineDescription: (d, m) => d ? `${d} – ${m}` : `Service mensuel – ${m}` },
-  es: { notes: (m) => `Factura generada automáticamente para ${m}`, paymentTerms: "Pagadero en 3 días", lineDescription: (d, m) => d ? `${d} – ${m}` : `Servicio mensual – ${m}` },
-  da: { notes: (m) => `Automatisk genereret faktura for ${m}`, paymentTerms: "Betales inden 3 dage", lineDescription: (d, m) => d ? `${d} – ${m}` : `Månedlig service – ${m}` },
-  no: { notes: (m) => `Automatisk generert faktura for ${m}`, paymentTerms: "Betales innen 3 dager", lineDescription: (d, m) => d ? `${d} – ${m}` : `Månedlig tjeneste – ${m}` },
-  cs: { notes: (m) => `Automaticky vygenerovaná faktura za ${m}`, paymentTerms: "Splatné do 3 dnů", lineDescription: (d, m) => d ? `${d} – ${m}` : `Měsíční služba – ${m}` },
-  pl: { notes: (m) => `Automatycznie wygenerowana faktura za ${m}`, paymentTerms: "Płatne w ciągu 3 dni", lineDescription: (d, m) => d ? `${d} – ${m}` : `Usługa miesięczna – ${m}` },
-  sv: { notes: (m) => `Automatiskt genererad faktura för ${m}`, paymentTerms: "Betalas inom 3 dagar", lineDescription: (d, m) => d ? `${d} – ${m}` : `Månadstjänst – ${m}` },
+  en: { notes: (m) => `Automatically generated invoice for ${m}`, paymentTerms: "Please pay the invoice amount by the due date stated above, without deduction.", lineDescription: (d, m) => d ? `${d} – ${m}` : `Monthly Service – ${m}` },
+  de: { notes: (m) => `Automatisch generierte Rechnung für ${m}`, paymentTerms: "Bitte überweisen Sie den Rechnungsbetrag ohne Abzug bis zum oben genannten Fälligkeitsdatum.", lineDescription: (d, m) => d ? `${d} – ${m}` : `Monatliche Dienstleistung – ${m}` },
+  nl: { notes: (m) => `Automatisch gegenereerde factuur voor ${m}`, paymentTerms: "Gelieve het factuurbedrag zonder aftrek vóór de hierboven vermelde vervaldatum te betalen.", lineDescription: (d, m) => d ? `${d} – ${m}` : `Maandelijkse dienst – ${m}` },
+  fr: { notes: (m) => `Facture générée automatiquement pour ${m}`, paymentTerms: "Veuillez régler le montant de la facture sans déduction avant la date d'échéance indiquée ci-dessus.", lineDescription: (d, m) => d ? `${d} – ${m}` : `Service mensuel – ${m}` },
+  es: { notes: (m) => `Factura generada automáticamente para ${m}`, paymentTerms: "Por favor, pague el importe de la factura sin deducciones antes de la fecha de vencimiento indicada arriba.", lineDescription: (d, m) => d ? `${d} – ${m}` : `Servicio mensual – ${m}` },
+  da: { notes: (m) => `Automatisk genereret faktura for ${m}`, paymentTerms: "Betal venligst fakturabeløbet uden fradrag senest på den ovenfor angivne forfaldsdato.", lineDescription: (d, m) => d ? `${d} – ${m}` : `Månedlig service – ${m}` },
+  no: { notes: (m) => `Automatisk generert faktura for ${m}`, paymentTerms: "Vennligst betal fakturabeløpet uten fradrag innen forfallsdatoen angitt ovenfor.", lineDescription: (d, m) => d ? `${d} – ${m}` : `Månedlig tjeneste – ${m}` },
+  cs: { notes: (m) => `Automaticky vygenerovaná faktura za ${m}`, paymentTerms: "Uhraďte prosím částku faktury bez srážek do výše uvedeného data splatnosti.", lineDescription: (d, m) => d ? `${d} – ${m}` : `Měsíční služba – ${m}` },
+  pl: { notes: (m) => `Automatycznie wygenerowana faktura za ${m}`, paymentTerms: "Prosimy o zapłatę kwoty faktury bez potrąceń do podanego powyżej terminu płatności.", lineDescription: (d, m) => d ? `${d} – ${m}` : `Usługa miesięczna – ${m}` },
+  sv: { notes: (m) => `Automatiskt genererad faktura för ${m}`, paymentTerms: "Vänligen betala fakturabeloppet utan avdrag senast på det förfallodatum som anges ovan.", lineDescription: (d, m) => d ? `${d} – ${m}` : `Månadstjänst – ${m}` },
 };
 
 // Company info (matches frontend defaults)
@@ -330,6 +330,8 @@ const COMPANY = {
   taxNumber: "",
   director: "Annalena Klein",
 };
+
+const REGISTERED_OFFICE = "Monomark House, 27 Old Gloucester Street, London WC1N 3AX, United Kingdom";
 
 const BANK_ACCOUNTS = [
   { label: "German Bank Account", iban: "DE91240703680071572200", bic: "DEUTDE2HP22", bank: "Postbank/DSL Ndl of Deutsche Bank" },
@@ -477,7 +479,9 @@ function generateInvoicePDF(
   y += 8;
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
-  doc.text(`${COMPANY.street}, ${COMPANY.postal} ${COMPANY.city}, ${COMPANY.country}`, marginLeft, y);
+  doc.text(`${lang === "de" ? "Registrierter Sitz:" : "Registered office:"} ${REGISTERED_OFFICE}`, marginLeft, y);
+  y += 5;
+  doc.text(`${lang === "de" ? "Büroadresse:" : "Office address:"} ${COMPANY.street}, ${COMPANY.postal} ${COMPANY.city}, ${COMPANY.country}`, marginLeft, y);
   y += 5;
   doc.text(COMPANY.email ? `Tel: ${COMPANY.phone} | E-Mail: ${COMPANY.email}` : `Tel: ${COMPANY.phone}`, marginLeft, y);
   y += 5;
@@ -636,10 +640,13 @@ function generateInvoicePDF(
   // ── Payment terms ──
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
-  doc.text(L.paymentTermsLine1, marginLeft, y);
+  doc.text(doc.splitTextToSize(L.paymentTermsLine1, contentWidth), marginLeft, y);
   y += 5;
-  doc.text(L.paymentTermsLine2, marginLeft, y);
-  y += 12;
+  if (L.paymentTermsLine2) {
+    doc.text(L.paymentTermsLine2, marginLeft, y);
+    y += 5;
+  }
+  y += 7;
 
   // ── Bank details ──
   doc.setFontSize(10);
