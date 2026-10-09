@@ -22,6 +22,14 @@ export const PAYMENT_ACCOUNTS: PaymentAccount[] = [
     iban: "DE91240703680071572200",
     bic: "DEUTDE2HP22",
     bank: "Postbank/DSL Ndl of Deutsche Bank"
+  },
+  {
+    id: "revolut",
+    country: "United Kingdom",
+    name: "Revolut Account",
+    iban: "GB40REVO23012083344414",
+    bic: "REVOGB21",
+    bank: "Revolut Ltd"
   }
 ];
 

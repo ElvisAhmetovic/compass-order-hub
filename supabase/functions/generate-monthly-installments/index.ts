@@ -333,6 +333,7 @@ const COMPANY = {
 
 const BANK_ACCOUNTS = [
   { label: "German Bank Account", iban: "DE91240703680071572200", bic: "DEUTDE2HP22", bank: "Postbank/DSL Ndl of Deutsche Bank" },
+  { label: "Revolut Account", iban: "GB40REVO23012083344414", bic: "REVOGB21", bank: "Revolut Ltd" },
 ];
 
 function formatPrice(amount: number, currency: string): string {

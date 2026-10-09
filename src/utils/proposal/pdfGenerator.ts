@@ -470,6 +470,15 @@ const createSecondPageContent = (proposalData: any, language: string = "en") => 
           <div style="margin-bottom: 8px;">
             <strong>BIC:</strong> ${paymentBic}
           </div>
+          <div style="margin: 12px 0 8px;">
+            <strong>Bank:</strong> Revolut Ltd
+          </div>
+          <div style="margin-bottom: 8px;">
+            <strong>IBAN:</strong> GB40REVO23012083344414
+          </div>
+          <div style="margin-bottom: 8px;">
+            <strong>BIC:</strong> REVOGB21
+          </div>
         </div>
       </div>
       ` : ''}
