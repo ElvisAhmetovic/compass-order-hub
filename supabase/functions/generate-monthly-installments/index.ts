@@ -323,11 +323,11 @@ const COMPANY = {
   country: "Germany",
   phone: "+4920370907262",
   fax: "+49 203 70 90 73 53",
-  email: "kontakt.abmedia@gmail.com",
+  email: "",
   website: "https://www.abm-team.com",
   registrationNumber: "17507679",
-  vatId: "13426 27369",
-  taxNumber: "13426 27369",
+  vatId: "",
+  taxNumber: "",
   director: "Andreas Berger",
 };
 
@@ -479,10 +479,12 @@ function generateInvoicePDF(
   doc.setFont("helvetica", "normal");
   doc.text(`${COMPANY.street}, ${COMPANY.postal} ${COMPANY.city}, ${COMPANY.country}`, marginLeft, y);
   y += 5;
-  doc.text(`Tel: ${COMPANY.phone} | E-Mail: ${COMPANY.email}`, marginLeft, y);
+  doc.text(COMPANY.email ? `Tel: ${COMPANY.phone} | E-Mail: ${COMPANY.email}` : `Tel: ${COMPANY.phone}`, marginLeft, y);
   y += 5;
-  doc.text(`${L.vatId} ${COMPANY.vatId} | ${L.taxNumber} ${COMPANY.taxNumber}`, marginLeft, y);
-  y += 5;
+  if (COMPANY.vatId) {
+    doc.text(`${L.vatId} ${COMPANY.vatId} | ${L.taxNumber} ${COMPANY.taxNumber}`, marginLeft, y);
+    y += 5;
+  }
   doc.text(`${L.director} ${COMPANY.director} | ${L.regNumber} ${COMPANY.registrationNumber}`, marginLeft, y);
   y += 3;
 

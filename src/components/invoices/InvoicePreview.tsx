@@ -119,13 +119,13 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
   // Provide default company info if not available
   const companyInfo = templateSettings.companyInfo || {
     name: "Company Name",
-    contactPerson: "Contact Person",
+    contactPerson: "Annalena Klein",
     registrationNumber: "17507679",
-    vatId: "13426 27369",
+    vatId: "",
     street: "Street Address",
     postal: "12345",
     city: "City",
-    email: "info@company.com"
+    email: ""
   };
   const displayInvoiceNumber = formatInvoiceNumber(
     invoice?.invoice_number || "784/25",
@@ -159,9 +159,9 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
                     <div>{getTranslatedText('contactPerson')} {companyInfo.contactPerson}</div>
                   )}
                   <div>{getTranslatedText('companyRegistrationNumber')} {companyInfo.registrationNumber}</div>
-                  <div>{getTranslatedText('uidNumber')} {companyInfo.vatId}</div>
+                  {companyInfo.vatId && <div>{getTranslatedText('uidNumber')} {companyInfo.vatId}</div>}
                   <div>{companyInfo.street} {companyInfo.postal} {companyInfo.city}</div>
-                  <div>{companyInfo.email}</div>
+                  {companyInfo.email && <div>{companyInfo.email}</div>}
                 </div>
               </div>
             </div>

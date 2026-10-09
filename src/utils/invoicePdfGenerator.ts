@@ -282,13 +282,13 @@ const generateInvoiceHTML = (data: InvoicePDFData): string => {
 
   const companyInfo = templateSettings.companyInfo || {
     name: "Company Name",
-    contactPerson: "Contact Person",
+    contactPerson: "Annalena Klein",
     registrationNumber: "17507679",
-    vatId: "13426 27369",
+    vatId: "",
     street: "Street Address",
     postal: "12345",
     city: "City",
-    email: "info@company.com"
+    email: ""
   };
 
   return `
@@ -314,9 +314,9 @@ const generateInvoiceHTML = (data: InvoicePDFData): string => {
             <div style="font-size: 11px; color: #6b7280; line-height: 1.5;">
               ${companyInfo.contactPerson ? `${getTranslatedText('contactPerson')} ${companyInfo.contactPerson}<br>` : ''}
               ${getTranslatedText('companyRegistrationNumber')} ${companyInfo.registrationNumber}<br>
-              ${getTranslatedText('uidNumber')} ${companyInfo.vatId}<br>
+              ${companyInfo.vatId ? `${getTranslatedText('uidNumber')} ${companyInfo.vatId}<br>` : ''}
               ${companyInfo.street} ${companyInfo.postal} ${companyInfo.city}<br>
-              ${companyInfo.email}
+              ${companyInfo.email || ''}
             </div>
           </div>
         </div>
