@@ -45,7 +45,7 @@ const ConfirmOffer = () => {
         setOffer(data.offer);
       } catch (err: any) {
         console.error("Could not load offer:", err);
-        setError("This offer link is invalid or no longer available. Please contact AB Media Team for help.");
+        setError("This offer link is invalid or no longer available. Please contact Media Marketing LTD for help.");
       } finally {
         setLoading(false);
       }
@@ -75,7 +75,7 @@ const ConfirmOffer = () => {
       }, 5000);
     } catch (err: any) {
       console.error("Could not confirm offer:", err);
-      setError("We could not confirm this offer right now. Please try again or contact AB Media Team.");
+      setError("We could not confirm this offer right now. Please try again or contact Media Marketing LTD.");
     } finally {
       setConfirming(false);
     }
@@ -125,7 +125,7 @@ const ConfirmOffer = () => {
           <p className="text-muted-foreground">
             This offer is no longer valid. Please contact us and we will gladly send you an updated offer.
           </p>
-          <p className="text-muted-foreground text-sm">AB Media Team</p>
+          <p className="text-muted-foreground text-sm">Media Marketing LTD</p>
         </div>
       </div>
     );
@@ -152,7 +152,7 @@ const ConfirmOffer = () => {
       <div className="max-w-lg w-full space-y-6">
         {/* Header */}
         <div className="text-center space-y-2">
-          <h2 className="text-xl font-bold text-primary">AB Media Team</h2>
+          <h2 className="text-xl font-bold text-primary">Media Marketing LTD</h2>
           <div className="text-4xl text-yellow-400 tracking-widest">★★★★★</div>
           <h1 className="text-2xl font-semibold text-foreground">Confirm Your Order</h1>
         </div>
@@ -197,7 +197,7 @@ const ConfirmOffer = () => {
               Confirming…
             </>
           ) : (
-            "Confirm Your Order with AB Media Team"
+            "Confirm Your Order with Media Marketing LTD"
           )}
         </Button>
 

@@ -55,7 +55,7 @@ const translations: TranslationMap = {
   
   <p>Thank you for your business!</p>
   
-  <p>Best regards,<br>{teamMemberName}<br>AB Media Team</p>
+  <p>Best regards,<br>{teamMemberName}<br>Media Marketing LTD</p>
 </div>`,
     },
     professional: {
@@ -84,7 +84,7 @@ const translations: TranslationMap = {
   
   <p>For any inquiries, please contact our team.</p>
   
-  <p>Sincerely,<br>{teamMemberName}<br>AB Media Team</p>
+  <p>Sincerely,<br>{teamMemberName}<br>Media Marketing LTD</p>
 </div>`,
     },
     urgent: {
@@ -113,7 +113,7 @@ const translations: TranslationMap = {
     
     <p>Please process this payment immediately. If you are experiencing difficulties, contact us right away to discuss options.</p>
     
-    <p>Regards,<br>{teamMemberName}<br>AB Media Team</p>
+    <p>Regards,<br>{teamMemberName}<br>Media Marketing LTD</p>
   </div>
 </div>`,
     },
@@ -146,7 +146,7 @@ const translations: TranslationMap = {
     
     <p>Contact us immediately if there are extenuating circumstances.</p>
     
-    <p>{teamMemberName}<br>AB Media Team</p>
+    <p>{teamMemberName}<br>Media Marketing LTD</p>
   </div>
 </div>`,
     },
@@ -176,7 +176,7 @@ const translations: TranslationMap = {
   
   <p>Vielen Dank für Ihr Vertrauen!</p>
   
-  <p>Mit freundlichen Grüßen,<br>{teamMemberName}<br>AB Media Team</p>
+  <p>Mit freundlichen Grüßen,<br>{teamMemberName}<br>Media Marketing LTD</p>
 </div>`,
     },
     professional: {
@@ -205,7 +205,7 @@ const translations: TranslationMap = {
   
   <p>Bei Fragen wenden Sie sich bitte an unser Team.</p>
   
-  <p>Mit freundlichen Grüßen,<br>{teamMemberName}<br>AB Media Team</p>
+  <p>Mit freundlichen Grüßen,<br>{teamMemberName}<br>Media Marketing LTD</p>
 </div>`,
     },
     urgent: {
@@ -234,7 +234,7 @@ const translations: TranslationMap = {
     
     <p>Bitte veranlassen Sie die Zahlung umgehend. Bei Schwierigkeiten kontaktieren Sie uns sofort, um Optionen zu besprechen.</p>
     
-    <p>Mit freundlichen Grüßen,<br>{teamMemberName}<br>AB Media Team</p>
+    <p>Mit freundlichen Grüßen,<br>{teamMemberName}<br>Media Marketing LTD</p>
   </div>
 </div>`,
     },
@@ -267,7 +267,7 @@ const translations: TranslationMap = {
     
     <p>Kontaktieren Sie uns umgehend bei besonderen Umständen.</p>
     
-    <p>{teamMemberName}<br>AB Media Team</p>
+    <p>{teamMemberName}<br>Media Marketing LTD</p>
   </div>
 </div>`,
     },
@@ -297,7 +297,7 @@ const translations: TranslationMap = {
   
   <p>Merci vilmal für Ihres Vertraue!</p>
   
-  <p>Fründlichi Grüess,<br>{teamMemberName}<br>AB Media Team</p>
+  <p>Fründlichi Grüess,<br>{teamMemberName}<br>Media Marketing LTD</p>
 </div>`,
     },
     professional: {
@@ -326,7 +326,7 @@ const translations: TranslationMap = {
   
   <p>Bi Frage wänded Sie sich bitte a üses Team.</p>
   
-  <p>Fründlichi Grüess,<br>{teamMemberName}<br>AB Media Team</p>
+  <p>Fründlichi Grüess,<br>{teamMemberName}<br>Media Marketing LTD</p>
 </div>`,
     },
     urgent: {
@@ -355,7 +355,7 @@ const translations: TranslationMap = {
     
     <p>Bitte veranlassed Sie d'Zahlig sofort. Bi Schwierigkeite kontaktiereds üs sofort, zum Optione z'bespräche.</p>
     
-    <p>Fründlichi Grüess,<br>{teamMemberName}<br>AB Media Team</p>
+    <p>Fründlichi Grüess,<br>{teamMemberName}<br>Media Marketing LTD</p>
   </div>
 </div>`,
     },
@@ -388,7 +388,7 @@ const translations: TranslationMap = {
     
     <p>Kontaktiereds üs sofort bi bsondere Umständ.</p>
     
-    <p>{teamMemberName}<br>AB Media Team</p>
+    <p>{teamMemberName}<br>Media Marketing LTD</p>
   </div>
 </div>`,
     },
@@ -418,7 +418,7 @@ const translations: TranslationMap = {
   
   <p>Bedankt voor uw vertrouwen!</p>
   
-  <p>Met vriendelijke groet,<br>{teamMemberName}<br>AB Media Team</p>
+  <p>Met vriendelijke groet,<br>{teamMemberName}<br>Media Marketing LTD</p>
 </div>`,
     },
     professional: {
@@ -447,7 +447,7 @@ const translations: TranslationMap = {
   
   <p>Voor vragen kunt u contact opnemen met ons team.</p>
   
-  <p>Met vriendelijke groet,<br>{teamMemberName}<br>AB Media Team</p>
+  <p>Met vriendelijke groet,<br>{teamMemberName}<br>Media Marketing LTD</p>
 </div>`,
     },
     urgent: {
@@ -476,7 +476,7 @@ const translations: TranslationMap = {
     
     <p>Verwerk deze betaling onmiddellijk. Als u problemen ondervindt, neem dan direct contact met ons op om opties te bespreken.</p>
     
-    <p>Met vriendelijke groet,<br>{teamMemberName}<br>AB Media Team</p>
+    <p>Met vriendelijke groet,<br>{teamMemberName}<br>Media Marketing LTD</p>
   </div>
 </div>`,
     },
@@ -509,7 +509,7 @@ const translations: TranslationMap = {
     
     <p>Neem onmiddellijk contact met ons op als er verzachtende omstandigheden zijn.</p>
     
-    <p>{teamMemberName}<br>AB Media Team</p>
+    <p>{teamMemberName}<br>Media Marketing LTD</p>
   </div>
 </div>`,
     },
@@ -539,7 +539,7 @@ const translations: TranslationMap = {
   
   <p>Děkujeme za vaši důvěru!</p>
   
-  <p>S pozdravem,<br>{teamMemberName}<br>AB Media Team</p>
+  <p>S pozdravem,<br>{teamMemberName}<br>Media Marketing LTD</p>
 </div>`,
     },
     professional: {
@@ -568,7 +568,7 @@ const translations: TranslationMap = {
   
   <p>V případě dotazů kontaktujte náš tým.</p>
   
-  <p>S pozdravem,<br>{teamMemberName}<br>AB Media Team</p>
+  <p>S pozdravem,<br>{teamMemberName}<br>Media Marketing LTD</p>
 </div>`,
     },
     urgent: {
@@ -597,7 +597,7 @@ const translations: TranslationMap = {
     
     <p>Proveďte prosím tuto platbu okamžitě. Pokud máte potíže, kontaktujte nás ihned pro projednání možností.</p>
     
-    <p>S pozdravem,<br>{teamMemberName}<br>AB Media Team</p>
+    <p>S pozdravem,<br>{teamMemberName}<br>Media Marketing LTD</p>
   </div>
 </div>`,
     },
@@ -630,7 +630,7 @@ const translations: TranslationMap = {
     
     <p>Kontaktujte nás okamžitě, pokud existují polehčující okolnosti.</p>
     
-    <p>{teamMemberName}<br>AB Media Team</p>
+    <p>{teamMemberName}<br>Media Marketing LTD</p>
   </div>
 </div>`,
     },
@@ -660,7 +660,7 @@ const translations: TranslationMap = {
   
   <p>Tack för ert förtroende!</p>
   
-  <p>Med vänliga hälsningar,<br>{teamMemberName}<br>AB Media Team</p>
+  <p>Med vänliga hälsningar,<br>{teamMemberName}<br>Media Marketing LTD</p>
 </div>`,
     },
     professional: {
@@ -689,7 +689,7 @@ const translations: TranslationMap = {
   
   <p>Vid frågor, vänligen kontakta vårt team.</p>
   
-  <p>Med vänliga hälsningar,<br>{teamMemberName}<br>AB Media Team</p>
+  <p>Med vänliga hälsningar,<br>{teamMemberName}<br>Media Marketing LTD</p>
 </div>`,
     },
     urgent: {
@@ -718,7 +718,7 @@ const translations: TranslationMap = {
     
     <p>Vänligen behandla denna betalning omedelbart. Om ni har svårigheter, kontakta oss direkt för att diskutera alternativ.</p>
     
-    <p>Med vänliga hälsningar,<br>{teamMemberName}<br>AB Media Team</p>
+    <p>Med vänliga hälsningar,<br>{teamMemberName}<br>Media Marketing LTD</p>
   </div>
 </div>`,
     },
@@ -751,7 +751,7 @@ const translations: TranslationMap = {
     
     <p>Kontakta oss omedelbart om det finns förmildrande omständigheter.</p>
     
-    <p>{teamMemberName}<br>AB Media Team</p>
+    <p>{teamMemberName}<br>Media Marketing LTD</p>
   </div>
 </div>`,
     },
@@ -781,7 +781,7 @@ const translations: TranslationMap = {
   
   <p>Grazie per la vostra fiducia!</p>
   
-  <p>Cordiali saluti,<br>{teamMemberName}<br>AB Media Team</p>
+  <p>Cordiali saluti,<br>{teamMemberName}<br>Media Marketing LTD</p>
 </div>`,
     },
     professional: {
@@ -810,7 +810,7 @@ const translations: TranslationMap = {
   
   <p>Per qualsiasi domanda, contattate il nostro team.</p>
   
-  <p>Cordiali saluti,<br>{teamMemberName}<br>AB Media Team</p>
+  <p>Cordiali saluti,<br>{teamMemberName}<br>Media Marketing LTD</p>
 </div>`,
     },
     urgent: {
@@ -839,7 +839,7 @@ const translations: TranslationMap = {
     
     <p>Vi preghiamo di elaborare questo pagamento immediatamente. Se avete difficoltà, contattateci subito per discutere le opzioni.</p>
     
-    <p>Cordiali saluti,<br>{teamMemberName}<br>AB Media Team</p>
+    <p>Cordiali saluti,<br>{teamMemberName}<br>Media Marketing LTD</p>
   </div>
 </div>`,
     },
@@ -872,7 +872,7 @@ const translations: TranslationMap = {
     
     <p>Contattateci immediatamente se ci sono circostanze attenuanti.</p>
     
-    <p>{teamMemberName}<br>AB Media Team</p>
+    <p>{teamMemberName}<br>Media Marketing LTD</p>
   </div>
 </div>`,
     },
@@ -902,7 +902,7 @@ const translations: TranslationMap = {
   
   <p>Merci pour votre confiance!</p>
   
-  <p>Cordialement,<br>{teamMemberName}<br>AB Media Team</p>
+  <p>Cordialement,<br>{teamMemberName}<br>Media Marketing LTD</p>
 </div>`,
     },
     professional: {
@@ -931,7 +931,7 @@ const translations: TranslationMap = {
   
   <p>Pour toute question, veuillez contacter notre équipe.</p>
   
-  <p>Cordialement,<br>{teamMemberName}<br>AB Media Team</p>
+  <p>Cordialement,<br>{teamMemberName}<br>Media Marketing LTD</p>
 </div>`,
     },
     urgent: {
@@ -960,7 +960,7 @@ const translations: TranslationMap = {
     
     <p>Veuillez traiter ce paiement immédiatement. Si vous rencontrez des difficultés, contactez-nous immédiatement pour discuter des options.</p>
     
-    <p>Cordialement,<br>{teamMemberName}<br>AB Media Team</p>
+    <p>Cordialement,<br>{teamMemberName}<br>Media Marketing LTD</p>
   </div>
 </div>`,
     },
@@ -993,7 +993,7 @@ const translations: TranslationMap = {
     
     <p>Contactez-nous immédiatement s'il existe des circonstances atténuantes.</p>
     
-    <p>{teamMemberName}<br>AB Media Team</p>
+    <p>{teamMemberName}<br>Media Marketing LTD</p>
   </div>
 </div>`,
     },

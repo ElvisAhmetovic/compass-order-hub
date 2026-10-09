@@ -4,7 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import LoginForm from '@/components/auth/LoginForm';
 import { Loader2 } from 'lucide-react';
-import abTeamSymbol from '@/assets/ab-team-symbol.png';
+import mediaMarketingSymbol from '@/assets/media-marketing-symbol.png.asset.json';
+const abTeamSymbol = mediaMarketingSymbol.url;
 
 const Login = () => {
   const { user, isLoading } = useAuth();
@@ -34,11 +35,11 @@ const Login = () => {
         <div className="flex flex-col items-center gap-4 mb-4">
           <img
             src={abTeamSymbol}
-            alt="Empria Tech"
+            alt="Media Marketing LTD"
             className="h-16 w-16 object-contain"
           />
           <div>
-            <h1 className="font-heading text-3xl font-bold text-primary">Empria Tech CRM</h1>
+            <h1 className="font-heading text-3xl font-bold text-primary">Media Marketing LTD - CRM</h1>
             <p className="text-muted-foreground">Sign in to continue</p>
           </div>
         </div>

@@ -597,7 +597,7 @@ const Offers = () => {
               </DialogHeader>
               {selectedOffer && (() => {
                 const confirmLink = getOfferConfirmUrl(selectedOffer.id);
-                const shareMsg = `Hi ${selectedOffer.client_name || "there"}, here is your offer from AB Media Team: ${confirmLink}`;
+                const shareMsg = `Hi ${selectedOffer.client_name || "there"}, here is your offer from Media Marketing LTD: ${confirmLink}`;
                 const phoneDigits = (selectedOffer.client_phone || "").replace(/\D/g, "");
                 const waUrl = phoneDigits
                   ? `https://wa.me/${phoneDigits}?text=${encodeURIComponent(shareMsg)}`

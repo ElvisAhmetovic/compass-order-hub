@@ -6,7 +6,8 @@ import { AlertTriangle } from "lucide-react";
 import FormInput from "./FormInput";
 import { useAuth } from "@/context/AuthContext";
 import { validateEmail, validatePassword } from "@/utils/formValidation";
-import abTeamSymbol from "@/assets/ab-team-symbol.png";
+import mediaMarketingSymbol from '@/assets/media-marketing-symbol.png.asset.json';
+const abTeamSymbol = mediaMarketingSymbol.url;
 
 const LoginForm = () => {
   const [email, setEmail] = useState("");
@@ -71,7 +72,7 @@ const LoginForm = () => {
         <div className="flex justify-center mb-2">
           <img
             src={abTeamSymbol}
-            alt="Empria Tech"
+            alt="Media Marketing LTD"
             className="h-14 w-14 object-contain"
           />
         </div>

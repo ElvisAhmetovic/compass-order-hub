@@ -1,6 +1,7 @@
 
 import RegisterForm from "@/components/auth/RegisterForm";
-import abTeamSymbol from "@/assets/ab-team-symbol.png";
+import mediaMarketingSymbol from '@/assets/media-marketing-symbol.png.asset.json';
+const abTeamSymbol = mediaMarketingSymbol.url;
 
 const Register = () => {
   return (
@@ -9,11 +10,11 @@ const Register = () => {
         <div className="flex justify-center mb-4">
           <img
             src={abTeamSymbol}
-            alt="Empria Tech"
+            alt="Media Marketing LTD"
             className="h-16 w-16 object-contain"
           />
         </div>
-        <h1 className="text-center font-heading text-3xl font-bold text-primary">Empria Tech CRM</h1>
+        <h1 className="text-center font-heading text-3xl font-bold text-primary">Media Marketing LTD - CRM</h1>
         <p className="text-center text-muted-foreground">Create a new account</p>
       </div>
       <RegisterForm />
