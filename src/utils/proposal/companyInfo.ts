@@ -10,7 +10,7 @@ const DEFAULT_COMPANY_INFO = {
   city: "Duisburg",
   country: "Germany",
   phone: "+4920370907262",
-  fax: "+49 203 70 90 73 53",
+  fax: "",
   email: "",
   website: "https://www.abm-team.com",
   registrationNumber: "17507679",

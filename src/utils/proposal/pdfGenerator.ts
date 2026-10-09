@@ -116,7 +116,7 @@ const createFirstPageContent = (proposalData: any, language: string = "en") => {
             <div>${companyInfo.street || 'Düsseldorfer Str. 32'}</div>
             <div>${companyInfo.postal || '47051'} ${companyInfo.city || 'Duisburg'}</div>
             <div>${companyInfo.country || 'Germany'}</div>
-            <div>${companyInfo.phone || '+4920370907262'}</div>
+            <div>+49 203 7090 1754</div>
           </div>
         </div>
         <div style="
@@ -513,8 +513,8 @@ const createSecondPageContent = (proposalData: any, language: string = "en") => 
         <div style="padding: 12px 15px; font-size: 12px;">
           <div style="margin-bottom: 10px;">
             <div style="display: inline-block; width: 33%; vertical-align: top;">
-              <div><strong>Tel:</strong> ${companyInfo.phone || '+49 203 70 90 72 62'}</div>
-              <div><strong>Fax:</strong> ${companyInfo.fax || '+49 203 70 90 73 53'}</div>
+              <div><strong>Tel:</strong> +49 203 7090 1754</div>
+              
             </div>
             <div style="display: inline-block; width: 33%; vertical-align: top;">
               ${companyInfo.email ? `<div><strong>Email:</strong> ${companyInfo.email}</div>` : ''}

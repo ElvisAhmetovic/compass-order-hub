@@ -80,7 +80,7 @@ const EmailTemplateEditor: React.FC<EmailTemplateEditorProps> = ({
     amount: invoiceData.amount,
     dueDate: invoiceData.dueDate,
     daysOverdue: invoiceData.daysOverdue,
-    companyName: "AB Media Team",
+    companyName: "Media Marketing LTD",
     paymentInstructions: "Please transfer the amount to our bank account or contact us for alternative payment methods."
   };
 
