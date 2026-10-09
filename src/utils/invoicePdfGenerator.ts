@@ -1,3 +1,4 @@
+import { filterAccountsByChoice } from "@/components/invoices/constants";
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { Invoice, InvoiceLineItem, Client } from '@/types/invoice';
@@ -246,7 +247,7 @@ const generateInvoiceHTML = (data: InvoicePDFData): string => {
     bank: "Revolut Ltd",
   };
 
-  const selectedAccounts = [germanyAccount, revolutAccount];
+  const selectedAccounts = filterAccountsByChoice([germanyAccount, revolutAccount], templateSettings.selectedPaymentAccount);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-GB', {

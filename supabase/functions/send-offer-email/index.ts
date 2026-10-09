@@ -272,7 +272,7 @@ const buildOfferEmailHtml = (data: {
             <td style="font-family:Roboto,Arial,sans-serif; font-size:10px; color:#515354; line-height:16px;">
               ${t.bestRegards}<br>
               ${data.senderName}, Media Marketing Limited<br><br>
-              <a href="https://abmedia-team.com" style="color:#1e3a5f; text-decoration:none;">abmedia-team.com</a>
+              <a href="https://www.abm-team.com" style="color:#1e3a5f; text-decoration:none;">www.abm-team.com</a>
             </td>
             <td align="right" style="padding-left:20px; vertical-align:top;">
               <div style="font-family:Roboto,Arial,sans-serif; font-size:14px; font-weight:bold; color:#1e3a5f;">Media Marketing Limited</div>

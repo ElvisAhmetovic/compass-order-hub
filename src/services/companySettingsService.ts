@@ -66,7 +66,7 @@ const DEFAULT_COMPANY_INFO: CompanySettingsInput = {
   phone: "+4920370907262",
   fax: "+49 203 70 90 73 53",
   email: "kontakt.abmedia@gmail.com",
-  website: "www.abmedia-team.com",
+  website: "https://www.abm-team.com",
   registration_number: "17507679",
   vat_id: "13426 27369",
   tax_number: "13426 27369",

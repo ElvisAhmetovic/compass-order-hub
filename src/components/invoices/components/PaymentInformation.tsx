@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { PAYMENT_ACCOUNTS } from "../constants";
+import { PAYMENT_ACCOUNTS, PAYMENT_ACCOUNT_CHOICES, filterAccountsByChoice } from "../constants";
 import { getPaymentPanelLabels } from "../invoiceTranslations";
 
 interface PaymentInformationProps {
@@ -18,7 +18,8 @@ export const PaymentInformation: React.FC<PaymentInformationProps> = ({
   language,
   onPaymentAccountChange
 }) => {
-  const selectedAccounts = PAYMENT_ACCOUNTS;
+  const choice = selectedPaymentAccount === "germany" || selectedPaymentAccount === "revolut" ? selectedPaymentAccount : "all";
+  const selectedAccounts = filterAccountsByChoice(PAYMENT_ACCOUNTS, choice);
 
   const paymentLabels = getPaymentPanelLabels(language);
 
@@ -31,17 +32,14 @@ export const PaymentInformation: React.FC<PaymentInformationProps> = ({
       <CardContent className="space-y-4">
         <div>
           <Label>{paymentLabels.paymentAccount}</Label>
-          <Select value="germany" onValueChange={onPaymentAccountChange}>
+          <Select value={choice} onValueChange={onPaymentAccountChange}>
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {PAYMENT_ACCOUNTS.map((account) => (
-                <SelectItem key={account.id} value={account.id}>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline">{account.country}</Badge>
-                    {account.name}
-                  </div>
+              {PAYMENT_ACCOUNT_CHOICES.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
                 </SelectItem>
               ))}
             </SelectContent>

@@ -12,7 +12,7 @@ const DEFAULT_COMPANY_INFO = {
   phone: "+4920370907262",
   fax: "+49 203 70 90 73 53",
   email: "kontakt.abmedia@gmail.com",
-  website: "www.abmedia-team.com",
+  website: "https://www.abm-team.com",
   registrationNumber: "17507679",
   vatId: "13426 27369",
   taxNumber: "13426 27369",

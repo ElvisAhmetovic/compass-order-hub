@@ -518,7 +518,7 @@ const createSecondPageContent = (proposalData: any, language: string = "en") => 
             </div>
             <div style="display: inline-block; width: 33%; vertical-align: top;">
               <div><strong>Email:</strong> ${companyInfo.email || 'kontakt.abmedia@gmail.com'}</div>
-              <div><strong>Web:</strong> ${companyInfo.website || 'www.abmedia-team.com'}</div>
+              <div><strong>Web:</strong> ${companyInfo.website || 'https://www.abm-team.com'}</div>
             </div>
             <div style="display: inline-block; width: 33%; vertical-align: top; text-align: right;">
               <div style="font-weight: 500; margin-bottom: 3px;">
