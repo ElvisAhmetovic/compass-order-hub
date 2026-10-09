@@ -74,7 +74,7 @@ serve(async (req) => {
         ${message ? `<div style="margin: 20px 0; white-space: pre-wrap;">${message}</div>` : ''}
         <p style="color: #666; margin-top: 20px;">Please find the invoice PDF attached to this email.</p>
         <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
-        <p style="color: #999; font-size: 12px;">AB Media Team</p>
+        <p style="color: #999; font-size: 12px;">Media Marketing Limited</p>
       </div>
     `;
 
@@ -91,7 +91,7 @@ serve(async (req) => {
       body: JSON.stringify({
         from: 'AB Media Team <noreply@abm-team.com>',
         to: [client_email],
-        subject: subject || `Invoice ${invoice_number} from AB Media Team`,
+        subject: subject || `Invoice ${invoice_number} from Media Marketing Limited`,
         html: htmlBody,
         attachments: [
           {
