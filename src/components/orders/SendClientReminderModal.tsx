@@ -162,7 +162,7 @@ const SendClientReminderModal = ({ open, onOpenChange, order, onEmailSent }: Sen
       const templateSettings = savedSettings ? JSON.parse(savedSettings) : {
         logo: "",
         language: "en",
-        selectedPaymentAccount: "germany",
+        selectedPaymentAccount: "all",
         vatEnabled: true,
         vatRate: 0,
         currency: invoice.currency || "EUR",

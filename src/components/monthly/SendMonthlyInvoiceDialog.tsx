@@ -176,7 +176,7 @@ const SendMonthlyInvoiceDialog: React.FC<SendMonthlyInvoiceDialogProps> = ({
         ...savedSettings,
         currency: contract.currency || "EUR",
         language,
-        selectedPaymentAccount: "germany",
+        selectedPaymentAccount: "all",
         vatEnabled: contractVatEnabled,
         vatRate: contractVatRate,
       };

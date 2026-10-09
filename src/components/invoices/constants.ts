@@ -1,3 +1,4 @@
+import abTeamLogo from "@/assets/ab-team-symbol.png";
 
 export interface PaymentAccount {
   id: string;
@@ -72,7 +73,27 @@ export const CURRENCIES = [
   { code: 'DKK', name: 'DKK (kr)', symbol: 'kr' }
 ];
 
-export const DEFAULT_COMPANY_LOGO = "/lovable-uploads/f7433a5f-4a36-45f5-a9c0-0609818523fe.png";
+export const DEFAULT_COMPANY_LOGO = abTeamLogo;
+export const LEGACY_COMPANY_LOGOS = ["/lovable-uploads/f7433a5f-4a36-45f5-a9c0-0609818523fe.png"];
+
+// Older saved settings stored "germany" for every invoice, so it means "all" now.
+export type PaymentAccountChoice = "germany_only" | "revolut_only" | "all";
+
+export const PAYMENT_ACCOUNT_CHOICES: { value: PaymentAccountChoice; label: string }[] = [
+  { value: "all", label: "Both accounts" },
+  { value: "germany_only", label: "German Bank Account only" },
+  { value: "revolut_only", label: "Revolut Account only" },
+];
+
+/** Returns the accounts to show for a template choice; unknown values fall back to both. */
+export const filterAccountsByChoice = <T extends { id: string }>(accounts: T[], choice?: string): T[] => {
+  if (choice === "germany_only" || choice === "revolut_only") {
+    const id = choice.replace("_only", "");
+    const picked = accounts.filter((a) => a.id === id);
+    if (picked.length) return picked;
+  }
+  return accounts;
+};
 
 export const DEFAULT_TERMS: Record<string, string> = {
   en: "We request that our invoiced services are credited/transferred within 3 days. All taxes and social contributions are declared and paid by us to the authorities.",

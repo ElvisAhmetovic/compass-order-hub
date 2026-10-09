@@ -1,7 +1,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { getCompanyInfo, saveCompanyInfo, loadCompanyInfo } from "@/utils/proposal/companyInfo";
-import { DEFAULT_COMPANY_LOGO } from "../constants";
+import { DEFAULT_COMPANY_LOGO, LEGACY_COMPANY_LOGOS } from "../constants";
 
 export interface InvoiceSettings {
   logo: string;
@@ -28,7 +28,7 @@ export const useInvoiceSettings = (initialSettings?: any) => {
       const saved = localStorage.getItem('invoiceTemplateSettings');
       if (saved) {
         const parsedSettings = JSON.parse(saved);
-        if (!parsedSettings.logo) parsedSettings.logo = DEFAULT_COMPANY_LOGO;
+        if (!parsedSettings.logo || LEGACY_COMPANY_LOGOS.includes(parsedSettings.logo)) parsedSettings.logo = DEFAULT_COMPANY_LOGO;
         return parsedSettings;
       }
     } catch (error) {
@@ -43,7 +43,7 @@ export const useInvoiceSettings = (initialSettings?: any) => {
       logo: DEFAULT_COMPANY_LOGO,
       logoSize: "large",
       language: "en",
-      selectedPaymentAccount: "germany",
+      selectedPaymentAccount: "all",
       customTerms: "",
       vatEnabled: true,
       vatRate: 0,
@@ -54,7 +54,6 @@ export const useInvoiceSettings = (initialSettings?: any) => {
       ...baseSettings,
       ...savedSettings,
       ...initialSettings,
-      selectedPaymentAccount: "germany",
       // Database company info is the source of truth
       companyInfo: { ...companyInfo },
     };

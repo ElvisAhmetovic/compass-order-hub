@@ -1,3 +1,4 @@
+import { filterAccountsByChoice } from "@/components/invoices/constants";
 
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -87,7 +88,7 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
     bank: "Revolut Ltd",
   };
 
-  const selectedAccounts = [germanyAccount, revolutAccount];
+  const selectedAccounts = filterAccountsByChoice([germanyAccount, revolutAccount], templateSettings.selectedPaymentAccount);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-GB', {
