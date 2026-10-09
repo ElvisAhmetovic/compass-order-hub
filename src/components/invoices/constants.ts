@@ -76,18 +76,20 @@ export const CURRENCIES = [
 export const DEFAULT_COMPANY_LOGO = abTeamLogo;
 export const LEGACY_COMPANY_LOGOS = ["/lovable-uploads/f7433a5f-4a36-45f5-a9c0-0609818523fe.png"];
 
-export type PaymentAccountChoice = "germany" | "revolut" | "all";
+// Older saved settings stored "germany" for every invoice, so it means "all" now.
+export type PaymentAccountChoice = "germany_only" | "revolut_only" | "all";
 
 export const PAYMENT_ACCOUNT_CHOICES: { value: PaymentAccountChoice; label: string }[] = [
   { value: "all", label: "Both accounts" },
-  { value: "germany", label: "German Bank Account only" },
-  { value: "revolut", label: "Revolut Account only" },
+  { value: "germany_only", label: "German Bank Account only" },
+  { value: "revolut_only", label: "Revolut Account only" },
 ];
 
 /** Returns the accounts to show for a template choice; unknown values fall back to both. */
 export const filterAccountsByChoice = <T extends { id: string }>(accounts: T[], choice?: string): T[] => {
-  if (choice === "germany" || choice === "revolut") {
-    const picked = accounts.filter((a) => a.id === choice);
+  if (choice === "germany_only" || choice === "revolut_only") {
+    const id = choice.replace("_only", "");
+    const picked = accounts.filter((a) => a.id === id);
     if (picked.length) return picked;
   }
   return accounts;

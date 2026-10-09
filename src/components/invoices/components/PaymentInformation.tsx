@@ -18,7 +18,7 @@ export const PaymentInformation: React.FC<PaymentInformationProps> = ({
   language,
   onPaymentAccountChange
 }) => {
-  const choice = selectedPaymentAccount === "germany" || selectedPaymentAccount === "revolut" ? selectedPaymentAccount : "all";
+  const choice = selectedPaymentAccount === "germany_only" || selectedPaymentAccount === "revolut_only" ? selectedPaymentAccount : "all";
   const selectedAccounts = filterAccountsByChoice(PAYMENT_ACCOUNTS, choice);
 
   const paymentLabels = getPaymentPanelLabels(language);
