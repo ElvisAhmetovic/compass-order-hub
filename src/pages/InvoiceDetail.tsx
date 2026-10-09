@@ -987,7 +987,7 @@ const InvoiceDetail = () => {
                     </Button>
                   </div>
                   <InvoicePreview
-                    invoice={invoice ? {
+                    invoice={{ ...(invoice ? {
                       ...invoice,
                       invoice_number: invoiceYear && invoiceSeqNumber
                         ? `INV-${invoiceYear}-${invoiceSeqNumber.padStart(3, '0')}`
@@ -999,7 +999,7 @@ const InvoiceDetail = () => {
                       issue_date: formData.issue_date || new Date().toISOString(),
                       due_date: formData.due_date || new Date(Date.now() + 4*24*60*60*1000).toISOString(),
                       status: 'draft'
-                    } as any}
+                    } as any), service_date: formData.service_date || null, service_period_end: formData.service_period_end || null } as any}
                     lineItems={lineItems}
                     client={billToClient}
                     templateSettings={{
