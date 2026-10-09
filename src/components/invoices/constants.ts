@@ -113,7 +113,8 @@ export const filterAccountsByChoice = <T extends { id: string }>(accounts: T[], 
   return picked.length ? picked : accounts.filter((a) => DEFAULT_PAYMENT_ACCOUNT_IDS.includes(a.id));
 };
 
-export const DEFAULT_TERMS: Record<string, string> = {
+/** Previous default notes (contradictory 3-day term + tax claim); saved copies are reset on load. */
+export const LEGACY_DEFAULT_TERMS: Record<string, string> = {
   en: "We request that our invoiced services are credited/transferred within 3 days. All taxes and social contributions are declared and paid by us to the authorities.",
   nl: "Wij verzoeken dat de door ons gefactureerde diensten binnen 3 dagen worden gecrediteerd/overgemaakt. Alle belastingen en sociale premies worden door ons aangegeven en afgedragen aan de autoriteiten.",
   de: "Wir bitten darum, dass unsere in Rechnung gestellten Leistungen innerhalb von 3 Tagen gutgeschrieben/überwiesen werden. Alle Steuern und Sozialabgaben werden von uns bei den Behörden angemeldet und abgeführt.",
@@ -139,6 +140,36 @@ export const DEFAULT_TERMS: Record<string, string> = {
   mk: "Ве молиме нашите фактурирани услуги да бидат уплатени/префрлени во рок од 3 дена. Сите даноци и социјални придонеси ги пријавуваме и ги плаќаме ние на соодветните органи.",
 };
 
+export const DEFAULT_TERMS: Record<string, string> = {
+  en: "Please pay the invoice amount by the due date stated above, without deduction.",
+  de: "Bitte überweisen Sie den Rechnungsbetrag ohne Abzug bis zum oben genannten Fälligkeitsdatum.",
+  nl: "Gelieve het factuurbedrag zonder aftrek vóór de hierboven vermelde vervaldatum te betalen.",
+  fr: "Veuillez régler le montant de la facture sans déduction avant la date d'échéance indiquée ci-dessus.",
+  es: "Por favor, pague el importe de la factura sin deducciones antes de la fecha de vencimiento indicada arriba.",
+  da: "Betal venligst fakturabeløbet uden fradrag senest på den ovenfor angivne forfaldsdato.",
+  no: "Vennligst betal fakturabeløpet uten fradrag innen forfallsdatoen angitt ovenfor.",
+  cs: "Uhraďte prosím částku faktury bez srážek do výše uvedeného data splatnosti.",
+  pl: "Prosimy o zapłatę kwoty faktury bez potrąceń do podanego powyżej terminu płatności.",
+  sv: "Vänligen betala fakturabeloppet utan avdrag senast på det förfallodatum som anges ovan.",
+  ru: "Просим оплатить сумму счёта без вычетов до указанной выше даты оплаты.",
+  it: "Si prega di pagare l'importo della fattura senza detrazioni entro la data di scadenza sopra indicata.",
+  uk: "Просимо сплатити суму рахунку без вирахувань до зазначеної вище дати оплати.",
+  ro: "Vă rugăm să achitați suma facturii fără deduceri până la data scadentă menționată mai sus.",
+  tr: "Lütfen fatura tutarını kesinti yapmadan yukarıda belirtilen vade tarihine kadar ödeyiniz.",
+  pt: "Por favor, pague o valor da fatura sem deduções até à data de vencimento indicada acima.",
+  hu: "Kérjük, a számla összegét levonás nélkül a fent megadott fizetési határidőig fizesse meg.",
+  el: "Παρακαλούμε να εξοφλήσετε το ποσό του τιμολογίου χωρίς έκπτωση έως την ανωτέρω ημερομηνία λήξης.",
+  bg: "Моля, платете сумата по фактурата без удръжки до посочения по-горе падеж.",
+  fi: "Maksathan laskun summan ilman vähennyksiä yllä mainittuun eräpäivään mennessä.",
+  sk: "Uhraďte prosím sumu faktúry bez zrážok do vyššie uvedeného dátumu splatnosti.",
+  sl: "Prosimo, poravnajte znesek računa brez odbitkov do zgoraj navedenega datuma zapadlosti.",
+  mk: "Ве молиме платете го износот на фактурата без одбивања до погоре наведениот датум на доспевање.",
+};
+
 export const getDefaultTerms = (language: string): string => {
   return DEFAULT_TERMS[language] || DEFAULT_TERMS.en;
 };
+
+/** True when saved custom notes are just an old default text (so the new default should be used). */
+export const isLegacyDefaultTerms = (text?: string): boolean =>
+  !!text && Object.values(LEGACY_DEFAULT_TERMS).some((t) => t.trim() === text.trim());

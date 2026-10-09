@@ -1,3 +1,4 @@
+import { getComplianceLabels, getServiceDateLine, REGISTERED_OFFICE, OFFICE_ADDRESS } from "@/components/invoices/invoiceCompliance";
 import { filterAccountsByChoice } from "@/components/invoices/constants";
 
 import React from "react";
@@ -127,6 +128,8 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
     city: "City",
     email: ""
   };
+  const compliance = getComplianceLabels(templateSettings.language);
+  const serviceLine = getServiceDateLine(templateSettings.language, invoice as any, formatDate);
   const displayInvoiceNumber = formatInvoiceNumber(
     invoice?.invoice_number || "784/25",
     templateSettings.invoiceNumberPrefix ?? ""
@@ -160,7 +163,8 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
                   )}
                   <div>{getTranslatedText('companyRegistrationNumber')} {companyInfo.registrationNumber}</div>
                   {companyInfo.vatId && <div>{getTranslatedText('uidNumber')} {companyInfo.vatId}</div>}
-                  <div>{companyInfo.street} {companyInfo.postal} {companyInfo.city}</div>
+                  <div>{compliance.registeredOffice} {REGISTERED_OFFICE}</div>
+                  <div>{compliance.officeAddress} {OFFICE_ADDRESS}</div>
                   {companyInfo.email && <div>{companyInfo.email}</div>}
                 </div>
               </div>
@@ -208,6 +212,10 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
               <div className="flex justify-between">
                 <span className="font-semibold">{getTranslatedText('dueDate')}</span>
                 <span>{invoice?.due_date ? formatDate(invoice.due_date) : formatDate(new Date(Date.now() + 4*24*60*60*1000).toISOString())}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="font-semibold">{serviceLine.label}</span>
+                <span>{serviceLine.value}</span>
               </div>
               <div className="flex justify-between font-bold text-xl border-t pt-3">
                 <span>{getTranslatedText('balanceDue')}</span>
@@ -258,7 +266,12 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
                 <span>{getTranslatedText('subtotal')}</span>
                 <span className="font-semibold">{formatCurrency(subtotal || 750, currentCurrency)}</span>
               </div>
-              {templateSettings.vatEnabled && (
+              {templateSettings.reverseCharge ? (
+                <div className="flex justify-between text-sm">
+                  <span>{compliance.reverseChargeTax}</span>
+                  <span className="font-semibold">{formatCurrency(0, currentCurrency)}</span>
+                </div>
+              ) : templateSettings.vatEnabled && (
                 <div className="flex justify-between text-sm">
                   <span>{getTranslatedText('tax')} ({formattedVatRate}%):</span>
                   <span className="font-semibold">{formatCurrency(vatAmount, currentCurrency)}</span>
@@ -270,6 +283,10 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
               </div>
             </div>
           </div>
+
+          {templateSettings.reverseCharge && (
+            <div className="mt-6 text-sm text-gray-700 border-l-4 border-gray-300 pl-4">{compliance.reverseChargeNote}</div>
+          )}
 
           {/* Notes and Terms */}
           <div className="mt-10 grid grid-cols-2 gap-8">

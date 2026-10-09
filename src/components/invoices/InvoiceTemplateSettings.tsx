@@ -68,6 +68,8 @@ const InvoiceTemplateSettings: React.FC<InvoiceTemplateSettingsProps> = ({
         vatRate={settings.vatRate}
         vatEnabled={settings.vatEnabled}
         customTerms={settings.customTerms}
+        reverseCharge={settings.reverseCharge}
+        onReverseChargeChange={(reverseCharge) => updateSettings({ reverseCharge })}
         onLanguageChange={(language) => updateSettings({ language })}
         onCurrencyChange={(currency) => updateSettings({ currency })}
         onInvoiceNumberPrefixChange={(invoiceNumberPrefix) => updateSettings({ invoiceNumberPrefix })}

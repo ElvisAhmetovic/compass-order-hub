@@ -1,7 +1,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { getCompanyInfo, saveCompanyInfo, loadCompanyInfo } from "@/utils/proposal/companyInfo";
-import { DEFAULT_COMPANY_LOGO, LEGACY_COMPANY_LOGOS, normalizePaymentAccountIds } from "../constants";
+import { DEFAULT_COMPANY_LOGO, LEGACY_COMPANY_LOGOS, normalizePaymentAccountIds, isLegacyDefaultTerms } from "../constants";
 
 export interface InvoiceSettings {
   logo: string;
@@ -13,6 +13,7 @@ export interface InvoiceSettings {
   vatRate: number;
   currency: string;
   invoiceNumberPrefix: string;
+  reverseCharge: boolean;
   companyInfo: any;
 }
 
@@ -49,11 +50,14 @@ export const useInvoiceSettings = (initialSettings?: any) => {
       vatRate: 0,
       currency: "EUR",
       invoiceNumberPrefix: "INV-",
+      reverseCharge: false,
     };
     const merged = { ...baseSettings, ...savedSettings, ...initialSettings };
     return {
       ...merged,
       selectedPaymentAccount: normalizePaymentAccountIds(merged.selectedPaymentAccount),
+      customTerms: isLegacyDefaultTerms(merged.customTerms) ? "" : merged.customTerms,
+      reverseCharge: merged.reverseCharge === true,
       // Database company info is the source of truth
       companyInfo: { ...companyInfo },
     };

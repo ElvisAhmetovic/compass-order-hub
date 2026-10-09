@@ -80,6 +80,8 @@ export interface InvoiceFormData {
   client_id: string;
   issue_date: string;
   due_date: string;
+  service_date?: string;
+  service_period_end?: string;
   currency: string;
   payment_terms: string;
   notes: string;

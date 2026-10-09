@@ -15,6 +15,8 @@ interface InvoiceSettingsProps {
   vatRate: number;
   vatEnabled: boolean;
   customTerms: string;
+  reverseCharge?: boolean;
+  onReverseChargeChange?: (value: boolean) => void;
   onLanguageChange: (language: string) => void;
   onCurrencyChange: (currency: string) => void;
   onInvoiceNumberPrefixChange: (prefix: string) => void;
@@ -35,7 +37,9 @@ export const InvoiceSettings: React.FC<InvoiceSettingsProps> = ({
   onInvoiceNumberPrefixChange,
   onVatRateChange,
   onVatEnabledChange,
-  onCustomTermsChange
+  onCustomTermsChange,
+  reverseCharge,
+  onReverseChargeChange
 }) => {
   return (
     <Card>
@@ -101,6 +105,17 @@ export const InvoiceSettings: React.FC<InvoiceSettingsProps> = ({
             onCheckedChange={onVatEnabledChange}
           />
           <Label>Enable VAT</Label>
+        </div>
+
+        <div className="flex items-start space-x-2">
+          <Switch
+            checked={!!reverseCharge}
+            onCheckedChange={(v) => onReverseChargeChange?.(v)}
+          />
+          <div>
+            <Label>Reverse charge note</Label>
+            <p className="text-xs text-muted-foreground">Prints the German reverse-charge VAT note on the invoice. Only use it after your tax adviser confirms it applies.</p>
+          </div>
         </div>
 
         <div>
