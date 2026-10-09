@@ -1,4 +1,5 @@
 import abTeamLogo from "@/assets/ab-team-symbol.png";
+import mediaMarketingSymbol from "@/assets/media-marketing-symbol.png.asset.json";
 
 export interface PaymentAccount {
   id: string;
@@ -81,8 +82,8 @@ export const CURRENCIES = [
   { code: 'DKK', name: 'DKK (kr)', symbol: 'kr' }
 ];
 
-export const DEFAULT_COMPANY_LOGO = abTeamLogo;
-export const LEGACY_COMPANY_LOGOS = ["/lovable-uploads/f7433a5f-4a36-45f5-a9c0-0609818523fe.png"];
+export const DEFAULT_COMPANY_LOGO = mediaMarketingSymbol.url;
+export const LEGACY_COMPANY_LOGOS = ["/lovable-uploads/f7433a5f-4a36-45f5-a9c0-0609818523fe.png", abTeamLogo];
 
 export const DEFAULT_PAYMENT_ACCOUNT_IDS = ["germany", "revolut"];
 
