@@ -543,7 +543,7 @@ const createSecondPageContent = (proposalData: any, language: string = "en") => 
             REG: ${companyInfo.registrationNumber || '17507679'}${companyInfo.vatId ? ` | VAT: ${companyInfo.vatId}` : ''}${companyInfo.taxNumber ? ` | TAX: ${companyInfo.taxNumber}` : ''}
           </div>
           <div style="display: inline-block; width: 30%; text-align: right;">
-            Director: ${companyInfo.director || 'Andreas Berger'}
+            Director: ${companyInfo.director || 'Annalena Klein'}
           </div>
         </div>
       </div>

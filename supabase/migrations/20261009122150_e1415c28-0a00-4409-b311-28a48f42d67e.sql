@@ -1,0 +1,1 @@
+UPDATE public.company_settings SET director = 'Annalena Klein' WHERE id IS NOT NULL;

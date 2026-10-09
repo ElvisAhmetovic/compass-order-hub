@@ -316,7 +316,7 @@ const INVOICE_DB_TEXT: Record<Lang, {
 // Company info (matches frontend defaults)
 const COMPANY = {
   name: "Media Marketing Limited",
-  contactPerson: "Andreas Berger",
+  contactPerson: "Annalena Klein",
   street: "Düsseldorfer Str. 32",
   postal: "47051",
   city: "Duisburg",
@@ -328,7 +328,7 @@ const COMPANY = {
   registrationNumber: "17507679",
   vatId: "",
   taxNumber: "",
-  director: "Andreas Berger",
+  director: "Annalena Klein",
 };
 
 const BANK_ACCOUNTS = [

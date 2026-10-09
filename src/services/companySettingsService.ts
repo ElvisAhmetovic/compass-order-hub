@@ -70,7 +70,7 @@ const DEFAULT_COMPANY_INFO: CompanySettingsInput = {
   registration_number: "17507679",
   vat_id: "",
   tax_number: "",
-  director: "Andreas Berger",
+  director: "Annalena Klein",
   wise: true,
   account_number: undefined,
   account_holder: "YOUR NAME",
