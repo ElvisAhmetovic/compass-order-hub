@@ -142,3 +142,10 @@ html {
     animation-iteration-count: 1 !important;
   }
 }
+
+/* Keep layout (incl. sticky sidebar) steady while Radix dropdowns lock scrolling */
+html body[data-scroll-locked] {
+  overflow: visible !important;
+  margin-right: 0 !important;
+  position: static !important;
+}

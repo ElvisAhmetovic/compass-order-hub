@@ -79,7 +79,7 @@ export const useInvoiceSettings = (initialSettings?: any) => {
   }, []);
 
   const updateSettings = (newSettings: Partial<InvoiceSettings>) => {
-    setSettings(prev => ({ ...prev, ...newSettings, selectedPaymentAccount: "germany" }));
+    setSettings(prev => ({ ...prev, ...newSettings }));
   };
 
   const scheduleSave = useCallback((info: any) => {
