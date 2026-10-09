@@ -158,11 +158,14 @@ const getDefaultEmailHtml = (
             <tr><td style="color:#5f6368; padding:3px 0;">IBAN:</td><td style="color:#0f1b3d;">DE91240703680071572200</td></tr>
             <tr><td style="color:#5f6368; padding:3px 0;">BIC:</td><td style="color:#0f1b3d;">DEUTDE2HP22</td></tr>
             <tr><td style="color:#5f6368; padding:3px 0;">Bank:</td><td style="color:#0f1b3d;">Postbank/DSL Ndl of Deutsche Bank</td></tr>
+            <tr><td style="color:#5f6368; padding:3px 0;">IBAN:</td><td style="color:#0f1b3d;">GB40REVO23012083344414</td></tr>
+            <tr><td style="color:#5f6368; padding:3px 0;">BIC:</td><td style="color:#0f1b3d;">REVOGB21</td></tr>
+            <tr><td style="color:#5f6368; padding:3px 0;">Bank:</td><td style="color:#0f1b3d;">Revolut Ltd</td></tr>
           </table>
         </div>
         
         <p style="margin-top: 20px;">
-          ${language === 'de' ? 'Herzliche Grüße' : 'Kind regards,'}<br>Annalena Klein<br>AB MEDIA TEAM<br>+49 203 7090 7262
+          ${language === 'de' ? 'Herzliche Grüße' : 'Kind regards,'}<br>Annalena Klein<br>Media Marketing Limited<br>+49 203 7090 7262
         </p>
       </div>
       
@@ -201,6 +204,9 @@ const wrapTemplateInEmailWrapper = (bodyHtml: string): string => {
             <tr><td style="color:#5f6368; padding:3px 0;">IBAN:</td><td style="color:#0f1b3d;">DE91240703680071572200</td></tr>
             <tr><td style="color:#5f6368; padding:3px 0;">BIC:</td><td style="color:#0f1b3d;">DEUTDE2HP22</td></tr>
             <tr><td style="color:#5f6368; padding:3px 0;">Bank:</td><td style="color:#0f1b3d;">Postbank/DSL Ndl of Deutsche Bank</td></tr>
+            <tr><td style="color:#5f6368; padding:3px 0;">IBAN:</td><td style="color:#0f1b3d;">GB40REVO23012083344414</td></tr>
+            <tr><td style="color:#5f6368; padding:3px 0;">BIC:</td><td style="color:#0f1b3d;">REVOGB21</td></tr>
+            <tr><td style="color:#5f6368; padding:3px 0;">Bank:</td><td style="color:#0f1b3d;">Revolut Ltd</td></tr>
           </table>
         </div>
       </div>

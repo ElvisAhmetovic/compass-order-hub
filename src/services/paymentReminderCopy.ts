@@ -11,7 +11,7 @@ It would be nice if you could let us know when you were planning to pay our invo
 
 Kind regards,
 Annalena Klein
-AB MEDIA TEAM
+Media Marketing Limited
 +49 203 7090 7262`,
   de: `Hallo,
 
@@ -23,7 +23,7 @@ Es wäre schön, wenn Sie uns mitteilen würden, wann Sie vorhatten, unsere Rech
 
 Herzliche Grüße
 Annalena Klein
-AB MEDIA TEAM
+Media Marketing Limited
 +49 203 7090 7262`,
 };
 

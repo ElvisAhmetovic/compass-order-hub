@@ -182,6 +182,9 @@ const handler = async (req: Request): Promise<Response> => {
                     <tr><td style="color:#5f6368; padding:3px 0;">IBAN:</td><td style="color:#0f1b3d;">DE91240703680071572200</td></tr>
                     <tr><td style="color:#5f6368; padding:3px 0;">BIC:</td><td style="color:#0f1b3d;">DEUTDE2HP22</td></tr>
                     <tr><td style="color:#5f6368; padding:3px 0;">Bank:</td><td style="color:#0f1b3d;">Postbank/DSL Ndl of Deutsche Bank</td></tr>
+                    <tr><td style="color:#5f6368; padding:3px 0;">IBAN:</td><td style="color:#0f1b3d;">GB40REVO23012083344414</td></tr>
+                    <tr><td style="color:#5f6368; padding:3px 0;">BIC:</td><td style="color:#0f1b3d;">REVOGB21</td></tr>
+                    <tr><td style="color:#5f6368; padding:3px 0;">Bank:</td><td style="color:#0f1b3d;">Revolut Ltd</td></tr>
                   </table>
                 </div>
 
