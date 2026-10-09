@@ -53,8 +53,7 @@ const MultiStatusBadges = ({ order, onRefresh, compact = false }: MultiStatusBad
   const activeStatuses = OrderService.getActiveStatuses(order);
   const allStatuses: OrderStatus[] = [
     "Created", "In Progress", "Complaint", "Invoice Sent", 
-    "Invoice Paid", "Resolved", "Cancelled", "Deleted", "Review",
-    "Facebook", "Instagram", "Trustpilot", "Trustpilot Deletion", "Google Deletion"
+    "Invoice Paid", "Resolved", "Cancelled", "Deleted", "Review"
   ];
 
   const openDialog = (status: OrderStatus, enabled: boolean) => {
