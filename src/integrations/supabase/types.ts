@@ -982,6 +982,8 @@ export type Database = {
           reminder_count: number
           reminder_interval_hours: number | null
           reminders_paused: boolean
+          service_date: string | null
+          service_period_end: string | null
           status: string
           total_amount: number
           updated_at: string
@@ -1015,6 +1017,8 @@ export type Database = {
           reminder_count?: number
           reminder_interval_hours?: number | null
           reminders_paused?: boolean
+          service_date?: string | null
+          service_period_end?: string | null
           status?: string
           total_amount?: number
           updated_at?: string
@@ -1048,6 +1052,8 @@ export type Database = {
           reminder_count?: number
           reminder_interval_hours?: number | null
           reminders_paused?: boolean
+          service_date?: string | null
+          service_period_end?: string | null
           status?: string
           total_amount?: number
           updated_at?: string
