@@ -64,11 +64,11 @@ const InvoiceDetail = () => {
       companyInfo: {
         name: "Company Name",
         registrationNumber: "17507679",
-        vatId: "13426 27369",
+        vatId: "",
         street: "Street Address",
         postal: "12345",
         city: "City",
-        email: "info@company.com"
+        email: ""
       }
     };
   });

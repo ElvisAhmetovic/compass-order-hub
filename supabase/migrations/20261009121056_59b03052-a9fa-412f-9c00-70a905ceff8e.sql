@@ -1,0 +1,1 @@
+UPDATE public.company_settings SET contact_person = 'Annalena Klein', vat_id = NULL, tax_number = NULL, email = NULL WHERE id IS NOT NULL;

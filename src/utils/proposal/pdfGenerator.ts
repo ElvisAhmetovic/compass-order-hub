@@ -517,12 +517,12 @@ const createSecondPageContent = (proposalData: any, language: string = "en") => 
               <div><strong>Fax:</strong> ${companyInfo.fax || '+49 203 70 90 73 53'}</div>
             </div>
             <div style="display: inline-block; width: 33%; vertical-align: top;">
-              <div><strong>Email:</strong> ${companyInfo.email || 'kontakt.abmedia@gmail.com'}</div>
+              ${companyInfo.email ? `<div><strong>Email:</strong> ${companyInfo.email}</div>` : ''}
               <div><strong>Web:</strong> ${companyInfo.website || 'https://www.abm-team.com'}</div>
             </div>
             <div style="display: inline-block; width: 33%; vertical-align: top; text-align: right;">
               <div style="font-weight: 500; margin-bottom: 3px;">
-                ${companyInfo.contactPerson || 'Andreas Berger'}
+                ${companyInfo.contactPerson || 'Annalena Klein'}
               </div>
               <div style="font-size: 11px;">
                 ${companyInfo.street || 'Düsseldorfer Str. 32'}<br/>
@@ -540,9 +540,7 @@ const createSecondPageContent = (proposalData: any, language: string = "en") => 
           color: #cbd5e0;
         ">
           <div style="display: inline-block; width: 70%;">
-            REG: ${companyInfo.registrationNumber || '17507679'} | 
-            VAT: ${companyInfo.vatId || '13426 27369'} | 
-            TAX: ${companyInfo.taxNumber || '13426 27369'}
+            REG: ${companyInfo.registrationNumber || '17507679'}${companyInfo.vatId ? ` | VAT: ${companyInfo.vatId}` : ''}${companyInfo.taxNumber ? ` | TAX: ${companyInfo.taxNumber}` : ''}
           </div>
           <div style="display: inline-block; width: 30%; text-align: right;">
             Director: ${companyInfo.director || 'Andreas Berger'}
