@@ -30,6 +30,12 @@ SWIFT/BIC: DEUTDE2HP22
 
 Bank: Postbank/DSL Ndl of Deutsche Bank
 
+IBAN: GB40 REVO 2301 2083 3444 14
+
+SWIFT/BIC: REVOGB21
+
+Bank: Revolut Ltd
+
 Wir bitten Sie, den Rechnungsbetrag innerhalb von 3 Tagen zu begleichen, um eine reibungslose und ununterbrochene Bearbeitung Ihrer Dienstleistungen sicherzustellen.
 
 Vielen Dank für Ihre Beachtung.
