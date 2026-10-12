@@ -29,4 +29,18 @@ describe("normalizeTemplateSettings", () => {
   it("defaults to German and Revolut", () => {
     expect(normalizeTemplateSettings({}, dbInfo).selectedPaymentAccount).toEqual(["germany", "revolut"]);
   });
+
+  it("cleans the screenshot case: old contact, UID, Gmail and magnifier logo", () => {
+    const r = normalizeTemplateSettings(
+      {
+        logo: "https://www.empriatech.com/lovable-uploads/2d4259f4-7fb1-4221-9e23-4bec4378d055.png",
+        companyInfo: { contactPerson: "Andreas Berger", vatId: "13426 27369", email: "kontakt.abmedia@gmail.com" },
+      },
+      { name: "Media Marketing Limited", contactPerson: "Annalena Klein", vatId: "", email: "" },
+    );
+    expect(r.logo).toBe(DEFAULT_COMPANY_LOGO);
+    expect(r.companyInfo.contactPerson).toBe("Annalena Klein");
+    expect(r.companyInfo.vatId).toBe("");
+    expect(r.companyInfo.email).toBe("");
+  });
 });

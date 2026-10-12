@@ -1,7 +1,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { getCompanyInfo, saveCompanyInfo, loadCompanyInfo } from "@/utils/proposal/companyInfo";
-import { DEFAULT_COMPANY_LOGO, LEGACY_COMPANY_LOGOS, normalizePaymentAccountIds, isLegacyDefaultTerms } from "../constants";
+import { DEFAULT_COMPANY_LOGO, isLegacyLogo, normalizePaymentAccountIds, isLegacyDefaultTerms } from "../constants";
 
 export interface InvoiceSettings {
   logo: string;
@@ -29,7 +29,7 @@ export const useInvoiceSettings = (initialSettings?: any) => {
       const saved = localStorage.getItem('invoiceTemplateSettings');
       if (saved) {
         const parsedSettings = JSON.parse(saved);
-        if (!parsedSettings.logo || LEGACY_COMPANY_LOGOS.includes(parsedSettings.logo)) parsedSettings.logo = DEFAULT_COMPANY_LOGO;
+        if (!parsedSettings.logo || isLegacyLogo(parsedSettings.logo)) parsedSettings.logo = DEFAULT_COMPANY_LOGO;
         return parsedSettings;
       }
     } catch (error) {

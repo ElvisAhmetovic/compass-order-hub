@@ -1,7 +1,7 @@
 import { loadCompanyInfo, getCompanyInfo } from "@/utils/proposal/companyInfo";
 import {
   DEFAULT_COMPANY_LOGO,
-  LEGACY_COMPANY_LOGOS,
+  isLegacyLogo,
   normalizePaymentAccountIds,
   isLegacyDefaultTerms,
 } from "./constants";
@@ -35,7 +35,7 @@ export const normalizeTemplateSettings = (stored: Record<string, any> = {}, comp
   const merged = { ...BASE_TEMPLATE_SETTINGS, ...stored };
   return {
     ...merged,
-    logo: !merged.logo || LEGACY_COMPANY_LOGOS.includes(merged.logo) ? DEFAULT_COMPANY_LOGO : merged.logo,
+    logo: !merged.logo || isLegacyLogo(merged.logo) ? DEFAULT_COMPANY_LOGO : merged.logo,
     selectedPaymentAccount: normalizePaymentAccountIds(merged.selectedPaymentAccount),
     customTerms: isLegacyDefaultTerms(merged.customTerms) ? "" : merged.customTerms || "",
     reverseCharge: merged.reverseCharge === true,
