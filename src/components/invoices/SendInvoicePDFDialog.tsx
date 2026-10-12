@@ -12,7 +12,7 @@ import { generateInvoicePDFBase64 } from "@/utils/invoicePdfGenerator";
 import { supabase } from "@/integrations/supabase/client";
 import { Invoice, InvoiceLineItem, Client } from "@/types/invoice";
 import { Mail, Send } from "lucide-react";
-import { SUBJECT_TEMPLATES, MESSAGE_TEMPLATES, TEMPLATE_LANGUAGES, getInvoiceEmailTemplate } from "@/components/monthly/monthlyInvoiceTemplates";
+import { SUBJECT_TEMPLATES, CLIENT_MESSAGE_TEMPLATES, TEMPLATE_LANGUAGES, getClientInvoiceEmailTemplate } from "@/components/monthly/monthlyInvoiceTemplates";
 import { nextReminderFromHours } from "@/utils/reminderInterval";
 import { isValidPaymentLink, withStripeHint, getStripeEmailCopy } from "./stripePaymentLink";
 
@@ -60,7 +60,7 @@ const SendInvoicePDFDialog: React.FC<SendInvoicePDFDialogProps> = ({
       // Prefer the invoice's Bill-To override email over the linked client's email,
       // so PDF cover email goes to the address that was saved on this invoice.
       const preferredEmail = (invoice as any)?.bill_to_email || client?.email || "";
-      const emailTemplate = getInvoiceEmailTemplate(lang);
+      const emailTemplate = getClientInvoiceEmailTemplate(lang);
       setClientEmail(preferredEmail);
       setSubject(emailTemplate.subject);
       setMessage(withStripeHint(emailTemplate.message, stripeLink, lang));
@@ -202,7 +202,7 @@ const SendInvoicePDFDialog: React.FC<SendInvoicePDFDialogProps> = ({
           <div>
             <Label>Invoice Language</Label>
             <Select value={language} onValueChange={(lang) => {
-              const emailTemplate = getInvoiceEmailTemplate(lang);
+              const emailTemplate = getClientInvoiceEmailTemplate(lang);
               setLanguage(lang);
               setSubjectTpl(lang);
               setMessageTpl(lang);
@@ -222,7 +222,7 @@ const SendInvoicePDFDialog: React.FC<SendInvoicePDFDialogProps> = ({
 
           <div>
             <Label>Message Template</Label>
-            <Select value={messageTpl} onValueChange={(val) => { setMessageTpl(val); setMessage(withStripeHint(MESSAGE_TEMPLATES[val] || "", stripeLink, val)); }} disabled={sending}>
+            <Select value={messageTpl} onValueChange={(val) => { setMessageTpl(val); setMessage(withStripeHint(CLIENT_MESSAGE_TEMPLATES[val] || "", stripeLink, val)); }} disabled={sending}>
               <SelectTrigger>
                 <SelectValue placeholder="Select language template..." />
               </SelectTrigger>
