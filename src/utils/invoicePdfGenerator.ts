@@ -168,20 +168,7 @@ const generateInvoiceHTML = (data: InvoicePDFData): string => {
   console.log('PDF HTML Generator: Using currency:', currentCurrency);
   
   // Get saved logo from localStorage or use the one from template settings
-  const getSavedLogo = () => {
-    try {
-      const savedSettings = localStorage.getItem('invoiceTemplateSettings');
-      if (savedSettings) {
-        const parsed = JSON.parse(savedSettings);
-        return parsed.logo || templateSettings.logo;
-      }
-    } catch (error) {
-      console.log('No saved logo found, using template settings');
-    }
-    return templateSettings.logo;
-  };
-
-  const logoUrl = getSavedLogo();
+  const logoUrl = templateSettings.logo;
   
   const calculateTotals = () => {
     const subtotal = lineItems.reduce((sum, item) => {
@@ -438,7 +425,7 @@ const generateInvoiceHTML = (data: InvoicePDFData): string => {
         <div>
           <div style="font-weight: bold; color: #374151; margin-bottom: 8px; font-size: 14px;">${getTranslatedText('notes')}</div>
           <div style="font-size: 12px; color: #4b5563; line-height: 1.5; background: #f9fafb; padding: 10px; border-radius: 8px;">
-            ${templateSettings.customTerms || formData?.notes || getDefaultTerms(templateSettings.language)}
+            ${templateSettings.customTerms || getDefaultTerms(templateSettings.language)}
           </div>
         </div>
         

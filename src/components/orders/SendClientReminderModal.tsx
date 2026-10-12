@@ -158,15 +158,8 @@ const SendClientReminderModal = ({ open, onOpenChange, order, onEmailSent }: Sen
       if (invError) throw invError;
 
       // Load template settings from localStorage
-      const savedSettings = localStorage.getItem("invoiceTemplateSettings");
-      const templateSettings = savedSettings ? JSON.parse(savedSettings) : {
-        logo: "",
-        language: "en",
-        selectedPaymentAccount: "all",
-        vatEnabled: true,
-        vatRate: 0,
-        currency: invoice.currency || "EUR",
-      };
+      const { loadInvoiceTemplateSettings } = await import("@/components/invoices/loadTemplateSettings");
+      const templateSettings: any = await loadInvoiceTemplateSettings();
 
       const pdfBase64 = await generateInvoicePDFBase64({
         invoice: fullInvoice,
