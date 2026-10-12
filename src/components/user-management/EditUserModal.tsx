@@ -1,3 +1,4 @@
+import { clearOrdersCache } from "@/services/orderService";
 
 import { useState, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -182,6 +183,7 @@ export const EditUserModal: React.FC<EditUserModalProps> = ({
       // Update assigned_to_name in orders table if name changed
       if (values.fullName !== user.full_name) {
         console.log('Updating assigned_to_name in orders for user:', user.id);
+        clearOrdersCache();
         const { error: ordersError, data: updatedOrders } = await supabase
           .from('orders')
           .update({ 
