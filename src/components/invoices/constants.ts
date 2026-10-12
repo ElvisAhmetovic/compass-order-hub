@@ -83,7 +83,15 @@ export const CURRENCIES = [
 ];
 
 export const DEFAULT_COMPANY_LOGO = mediaMarketingSymbol.url;
-export const LEGACY_COMPANY_LOGOS = ["/lovable-uploads/f7433a5f-4a36-45f5-a9c0-0609818523fe.png", abTeamLogo];
+export const LEGACY_COMPANY_LOGOS = [
+  "/lovable-uploads/f7433a5f-4a36-45f5-a9c0-0609818523fe.png",
+  "/lovable-uploads/2d4259f4-7fb1-4221-9e23-4bec4378d055.png",
+  abTeamLogo,
+];
+const LEGACY_LOGO_FILES = ["f7433a5f-4a36-45f5-a9c0-0609818523fe.png", "2d4259f4-7fb1-4221-9e23-4bec4378d055.png", "ab-team-symbol"];
+/** True for any old AB Media Team logo, even when saved with a full web address. */
+export const isLegacyLogo = (url?: string): boolean =>
+  !!url && (LEGACY_COMPANY_LOGOS.includes(url) || LEGACY_LOGO_FILES.some((f) => url.includes(f)));
 
 export const DEFAULT_PAYMENT_ACCOUNT_IDS = ["germany", "revolut"];
 
