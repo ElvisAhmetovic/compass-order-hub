@@ -45,7 +45,7 @@ SWIFT/BIC: REVOGB21
 
 Bank: Revolut Ltd
 
-We kindly request that you settle the invoice amount within 3 days to ensure smooth and uninterrupted processing of your services.
+We kindly request that you settle the invoice amount by the due date stated on the invoice to ensure smooth and uninterrupted processing of your services.
 
 Thank you for your attention.
 
@@ -75,7 +75,7 @@ SWIFT/BIC: REVOGB21
 
 Bank: Revolut Ltd
 
-Wir bitten Sie, den Rechnungsbetrag innerhalb von 3 Tagen zu begleichen, um eine reibungslose und ununterbrochene Bearbeitung Ihrer Dienstleistungen sicherzustellen.
+Wir bitten Sie, den Rechnungsbetrag bis zu dem auf der Rechnung angegebenen Fälligkeitsdatum zu begleichen, um eine reibungslose und ununterbrochene Bearbeitung Ihrer Dienstleistungen sicherzustellen.
 
 Vielen Dank für Ihre Beachtung.
 
@@ -105,7 +105,7 @@ SWIFT/BIC: REVOGB21
 
 Bank: Revolut Ltd
 
-Wij verzoeken u vriendelijk het factuurbedrag binnen 3 dagen te voldoen om een vlotte en ononderbroken verwerking van uw diensten te garanderen.
+Wij verzoeken u vriendelijk het factuurbedrag uiterlijk op de op de factuur vermelde vervaldatum te voldoen om een vlotte en ononderbroken verwerking van uw diensten te garanderen.
 
 Hartelijk dank voor uw aandacht.
 
@@ -135,7 +135,7 @@ SWIFT/BIC: REVOGB21
 
 Bank: Revolut Ltd
 
-Nous vous prions de bien vouloir régler le montant de la facture dans un délai de 3 jours afin d'assurer un traitement fluide et ininterrompu de vos services.
+Nous vous prions de bien vouloir régler le montant de la facture au plus tard à la date d'échéance indiquée sur la facture afin d'assurer un traitement fluide et ininterrompu de vos services.
 
 Nous vous remercions de votre attention.
 
@@ -165,7 +165,7 @@ SWIFT/BIC: REVOGB21
 
 Bank: Revolut Ltd
 
-Le rogamos que liquide el importe de la factura en un plazo de 3 días para garantizar un procesamiento fluido e ininterrumpido de sus servicios.
+Le rogamos que liquide el importe de la factura a más tardar en la fecha de vencimiento indicada en la factura para garantizar un procesamiento fluido e ininterrumpido de sus servicios.
 
 Gracias por su atención.
 
@@ -195,7 +195,7 @@ SWIFT/BIC: REVOGB21
 
 Bank: Revolut Ltd
 
-Vi beder dig venligst om at betale fakturabeløbet inden for 3 dage for at sikre en problemfri og uafbrudt behandling af dine tjenester.
+Vi beder dig venligst om at betale fakturabeløbet senest på den forfaldsdato, der er angivet på fakturaen for at sikre en problemfri og uafbrudt behandling af dine tjenester.
 
 Tak for din opmærksomhed.
 
@@ -225,7 +225,7 @@ SWIFT/BIC: REVOGB21
 
 Bank: Revolut Ltd
 
-Vi ber deg vennligst om å betale fakturabeløpet innen 3 dager for å sikre en smidig og uavbrutt behandling av dine tjenester.
+Vi ber deg vennligst om å betale fakturabeløpet innen forfallsdatoen som er angitt på fakturaen for å sikre en smidig og uavbrutt behandling av dine tjenester.
 
 Takk for at du tar hensyn til dette.
 
@@ -255,7 +255,7 @@ SWIFT/BIC: REVOGB21
 
 Bank: Revolut Ltd
 
-Žádáme Vás o uhrazení částky faktury do 3 dnů, aby bylo zajištěno plynulé a nepřerušené zpracování Vašich služeb.
+Žádáme Vás o uhrazení částky faktury do data splatnosti uvedeného na faktuře, aby bylo zajištěno plynulé a nepřerušené zpracování Vašich služeb.
 
 Děkujeme, že této změně věnujete pozornost.
 
@@ -285,7 +285,7 @@ SWIFT/BIC: REVOGB21
 
 Bank: Revolut Ltd
 
-Uprzejmie prosimy o uregulowanie kwoty faktury w ciągu 3 dni w celu zapewnienia sprawnego i nieprzerwanego przetwarzania Państwa usług.
+Uprzejmie prosimy o uregulowanie kwoty faktury do terminu płatności wskazanego na fakturze w celu zapewnienia sprawnego i nieprzerwanego przetwarzania Państwa usług.
 
 Dziękujemy za zwrócenie uwagi na tę zmianę.
 
@@ -315,7 +315,7 @@ SWIFT/BIC: REVOGB21
 
 Bank: Revolut Ltd
 
-Vi ber dig vänligen att betala fakturabeloppet inom 3 dagar för att säkerställa en smidig och oavbruten hantering av dina tjänster.
+Vi ber dig vänligen att betala fakturabeloppet senast på det förfallodatum som anges på fakturan för att säkerställa en smidig och oavbruten hantering av dina tjänster.
 
 Tack för att ni uppmärksammar denna ändring.
 
