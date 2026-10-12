@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 
-const invoke = vi.fn(async () => ({ data: { success: true }, error: null }));
+const { invoke } = vi.hoisted(() => ({ invoke: vi.fn(async (..._a: any[]) => ({ data: { success: true }, error: null })) }));
 vi.mock("@/integrations/supabase/client", () => {
   const q: any = { select: () => q, eq: () => q, single: async () => ({ data: null }), update: () => q };
   return { supabase: { functions: { invoke }, from: () => q } };
