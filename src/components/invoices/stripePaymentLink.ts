@@ -18,7 +18,7 @@ export const STRIPE_BUTTON_CLASS = "stripe-pay-btn";
 
 export const stripeButtonHtml = (link: string | null | undefined, language?: string) =>
   isValidPaymentLink(link)
-    ? `<div style="margin-top: 12px;"><a class="${STRIPE_BUTTON_CLASS}" href="${escapeHtml(link!.trim())}" target="_blank" rel="noopener noreferrer" style="display: inline-block; background: #635bff; color: #ffffff; font-weight: bold; font-size: 13px; padding: 10px 18px; border-radius: 6px; text-decoration: none;">${escapeHtml(getStripeButtonLabel(language))}</a></div>`
+    ? `<div style="margin-top: 12px;"><a class="${STRIPE_BUTTON_CLASS}" href="${escapeHtml(link!.trim())}" target="_blank" rel="noopener noreferrer" style="display: inline-block; background: #635bff; color: #ffffff; font-weight: bold; font-size: 13px; line-height: 16px; padding: 10px 18px 12px; border-radius: 6px; text-decoration: none;">${escapeHtml(getStripeButtonLabel(language))}</a></div>`
     : "";
 
 // Email wording per template language (falls back to English).

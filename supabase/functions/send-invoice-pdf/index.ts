@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { buildStripeButton } from "./stripeButton.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -48,17 +49,7 @@ serve(async (req) => {
 
     const { client_email, subject, message, pdf_base64, invoice_number, stripe_payment_link, stripe_button_label } = await req.json();
 
-    const esc = (t: string) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[c]!));
-    let stripeButton = '';
-    if (typeof stripe_payment_link === 'string' && stripe_payment_link.trim()) {
-      try {
-        const u = new URL(stripe_payment_link.trim());
-        if (u.protocol === 'https:') {
-          const label = typeof stripe_button_label === 'string' && stripe_button_label.trim() ? stripe_button_label.trim().slice(0, 80) : 'Pay online with Stripe';
-          stripeButton = `<div style="margin: 24px 0;"><a href="${esc(u.toString())}" target="_blank" rel="noopener noreferrer" style="display: inline-block; background: #635bff; color: #ffffff; font-weight: bold; font-size: 15px; padding: 12px 24px; border-radius: 6px; text-decoration: none;">${esc(label)}</a></div>`;
-        }
-      } catch { /* invalid link: no button */ }
-    }
+    const stripeButton = buildStripeButton(stripe_payment_link, stripe_button_label);
 
     if (!client_email || !pdf_base64 || !invoice_number) {
       return new Response(
