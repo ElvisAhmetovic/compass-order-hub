@@ -36,7 +36,7 @@ SWIFT/BIC: REVOGB21
 
 Bank: Revolut Ltd
 
-Wir bitten Sie, den Rechnungsbetrag innerhalb von 3 Tagen zu begleichen, um eine reibungslose und ununterbrochene Bearbeitung Ihrer Dienstleistungen sicherzustellen.
+Wir bitten Sie, den Rechnungsbetrag bis zu dem auf der Rechnung angegebenen Fälligkeitsdatum zu begleichen, um eine reibungslose und ununterbrochene Bearbeitung Ihrer Dienstleistungen sicherzustellen.
 
 Vielen Dank für Ihre Beachtung.
 
@@ -62,7 +62,7 @@ Düsseldorfer Str. 32
       expect(MESSAGE_TEMPLATES[value]).toContain(GERMAN_IBAN);
       expect(MESSAGE_TEMPLATES[value]).toContain(GERMAN_BIC);
       expect(MESSAGE_TEMPLATES[value]).toContain("Bank: Postbank/DSL Ndl of Deutsche Bank");
-      expect(MESSAGE_TEMPLATES[value]).toMatch(/3 (days|Tagen|dagen|jours|días|dage|dnů|dni|dagar)/i);
+      expect(MESSAGE_TEMPLATES[value]).not.toMatch(/\b3 (days|Tagen|dagen|jours|días|dage|dager|dnů|dni|dagar)/i);
       expect(MESSAGE_TEMPLATES[value]).toContain("Annalena Klein");
       expect(MESSAGE_TEMPLATES[value]).toContain("+49 203 7090 7262");
       expect(MESSAGE_TEMPLATES[value]).not.toMatch(/BE54|GB61|TRWIBEB|TRWIGB|belgisch|belgian|belgiskt/i);
