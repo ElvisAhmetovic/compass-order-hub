@@ -1,3 +1,4 @@
+import { isValidPaymentLink, getStripeButtonLabel } from "./stripePaymentLink";
 import { getComplianceLabels, getServiceDateLine, REGISTERED_OFFICE, OFFICE_ADDRESS } from "@/components/invoices/invoiceCompliance";
 import { filterAccountsByChoice } from "@/components/invoices/constants";
 
@@ -313,6 +314,16 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
                   </div>
                 ))}
               </div>
+              {isValidPaymentLink((invoice as any)?.stripe_payment_link) && (
+                <a
+                  href={(invoice as any).stripe_payment_link.trim()}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-3 inline-block rounded-md bg-[#635bff] px-5 py-2.5 text-sm font-bold text-white no-underline hover:opacity-90"
+                >
+                  {getStripeButtonLabel(templateSettings.language)}
+                </a>
+              )}
             </div>
           </div>
         </div>

@@ -1,3 +1,4 @@
+import { isValidPaymentLink } from '@/components/invoices/stripePaymentLink';
 import { getInvoiceTemplateSettingsSync, loadInvoiceTemplateSettings } from '@/components/invoices/loadTemplateSettings';
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
@@ -70,6 +71,7 @@ const InvoiceDetail = () => {
     currency: 'EUR',
     service_date: '',
     service_period_end: '',
+    stripe_payment_link: '',
     payment_terms: 'Net 30',
     notes: '',
     internal_notes: '',
@@ -126,6 +128,7 @@ const InvoiceDetail = () => {
           due_date: data.due_date,
           service_date: data.service_date || null,
           service_period_end: data.service_period_end || null,
+          stripe_payment_link: (data as any).stripe_payment_link || '',
           currency: data.currency,
           payment_terms: data.payment_terms,
           notes: data.notes,
@@ -206,6 +209,7 @@ const InvoiceDetail = () => {
             due_date: invoiceData.due_date.split('T')[0],
             service_date: (invoiceData as any).service_date || '',
             service_period_end: (invoiceData as any).service_period_end || '',
+            stripe_payment_link: (invoiceData as any).stripe_payment_link || '',
             currency: invoiceData.currency,
             payment_terms: invoiceData.payment_terms || 'Net 30',
             notes: invoiceData.notes || '',
@@ -443,6 +447,7 @@ const InvoiceDetail = () => {
           due_date: formData.due_date,
           service_date: formData.service_date || '',
           service_period_end: formData.service_period_end || '',
+          stripe_payment_link: isValidPaymentLink(formData.stripe_payment_link) ? formData.stripe_payment_link!.trim() : '',
           currency: formData.currency,
           payment_terms: formData.payment_terms,
           notes: formData.notes,
@@ -560,6 +565,7 @@ const InvoiceDetail = () => {
       } as any;
       pdfInvoice.service_date = formData.service_date || null;
       pdfInvoice.service_period_end = formData.service_period_end || null;
+      pdfInvoice.stripe_payment_link = formData.stripe_payment_link || null;
       
       await generateInvoicePDF({
         invoice: pdfInvoice,
@@ -797,6 +803,22 @@ const InvoiceDetail = () => {
                             <p className="mt-1 text-xs text-muted-foreground">Set to print a service period instead of a single date.</p>
                           </div>
 
+                          <div className="md:col-span-2">
+                            <Label htmlFor="stripe_payment_link">Stripe payment link (optional)</Label>
+                            <Input
+                              id="stripe_payment_link"
+                              type="url"
+                              placeholder="https://buy.stripe.com/..."
+                              value={formData.stripe_payment_link || ''}
+                              onChange={(e) => handleFormDataChange('stripe_payment_link', e.target.value)}
+                            />
+                            {formData.stripe_payment_link && !isValidPaymentLink(formData.stripe_payment_link) ? (
+                              <p className="mt-1 text-xs text-destructive">Please enter a full link starting with https://</p>
+                            ) : (
+                              <p className="mt-1 text-xs text-muted-foreground">Shown as a "Pay online with Stripe" button on the preview and PDF.</p>
+                            )}
+                          </div>
+
                           <div>
                             <Label htmlFor="payment_terms">Payment Terms</Label>
                             <Input
@@ -985,7 +1007,7 @@ const InvoiceDetail = () => {
                       issue_date: formData.issue_date || new Date().toISOString(),
                       due_date: formData.due_date || new Date(Date.now() + 4*24*60*60*1000).toISOString(),
                       status: 'draft'
-                    } as any), service_date: formData.service_date || null, service_period_end: formData.service_period_end || null } as any}
+                    } as any), service_date: formData.service_date || null, service_period_end: formData.service_period_end || null, stripe_payment_link: formData.stripe_payment_link || null } as any}
                     lineItems={lineItems}
                     client={billToClient}
                     templateSettings={{

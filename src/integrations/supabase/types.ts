@@ -985,6 +985,7 @@ export type Database = {
           service_date: string | null
           service_period_end: string | null
           status: string
+          stripe_payment_link: string | null
           total_amount: number
           updated_at: string
           user_id: string
@@ -1020,6 +1021,7 @@ export type Database = {
           service_date?: string | null
           service_period_end?: string | null
           status?: string
+          stripe_payment_link?: string | null
           total_amount?: number
           updated_at?: string
           user_id: string
@@ -1055,6 +1057,7 @@ export type Database = {
           service_date?: string | null
           service_period_end?: string | null
           status?: string
+          stripe_payment_link?: string | null
           total_amount?: number
           updated_at?: string
           user_id?: string

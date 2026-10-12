@@ -1,3 +1,4 @@
+import { stripeButtonHtml, STRIPE_BUTTON_CLASS } from "@/components/invoices/stripePaymentLink";
 import { getComplianceLabels, getServiceDateLine, REGISTERED_OFFICE, OFFICE_ADDRESS } from '@/components/invoices/invoiceCompliance';
 import { filterAccountsByChoice } from "@/components/invoices/constants";
 import jsPDF from 'jspdf';
@@ -16,6 +17,25 @@ interface InvoicePDFData {
   templateSettings: any;
   formData?: any;
 }
+
+
+// The PDF is an image, so add a real clickable area over the Stripe button.
+const getStripeButtonRect = (container: HTMLElement) => {
+  const el = container.querySelector(`.${STRIPE_BUTTON_CLASS}`) as HTMLAnchorElement | null;
+  if (!el) return null;
+  const c = container.getBoundingClientRect();
+  const r = el.getBoundingClientRect();
+  return { url: el.href, x: r.left - c.left, y: r.top - c.top, w: r.width, h: r.height, total: c.width };
+};
+
+const addStripeLink = (pdf: jsPDF, rect: ReturnType<typeof getStripeButtonRect>, container: HTMLElement, imgWidth: number, pageHeight: number) => {
+  if (!rect) return;
+  const mm = imgWidth / (rect.total || container.offsetWidth);
+  const yAbs = rect.y * mm;
+  const page = Math.floor(yAbs / pageHeight) + 1;
+  pdf.setPage(Math.min(page, pdf.getNumberOfPages()));
+  pdf.link(rect.x * mm, yAbs - (page - 1) * pageHeight, rect.w * mm, rect.h * mm, { url: rect.url });
+};
 
 export const generateInvoicePDF = async (data: InvoicePDFData): Promise<void> => {
   const { invoice, lineItems, client, templateSettings, formData } = data;
@@ -61,6 +81,7 @@ export const generateInvoicePDF = async (data: InvoicePDFData): Promise<void> =>
     }));
 
     // Generate canvas from HTML
+    const linkRect = getStripeButtonRect(container);
     const canvas = await html2canvas(container, {
       scale: 1.5,
       useCORS: true,
@@ -90,6 +111,8 @@ export const generateInvoicePDF = async (data: InvoicePDFData): Promise<void> =>
       }
     }
     
+    addStripeLink(pdf, linkRect, container, imgWidth, pageHeight);
+
     // Download the PDF
     const invoiceNumber = invoice?.invoice_number || formData?.invoice_number || 'new';
     pdf.save(`invoice-${invoiceNumber}.pdf`);
@@ -129,6 +152,7 @@ export const generateInvoicePDFBase64 = async (data: InvoicePDFData): Promise<st
       })
     ));
 
+    const linkRect = getStripeButtonRect(container);
     const canvas = await html2canvas(container, {
       scale: 1.5, useCORS: true, allowTaint: true, backgroundColor: '#ffffff'
     });
@@ -154,6 +178,7 @@ export const generateInvoicePDFBase64 = async (data: InvoicePDFData): Promise<st
       }
     }
 
+    addStripeLink(pdf, linkRect, container, imgWidth, pageHeight);
     return pdf.output('datauristring');
   } finally {
     document.body.removeChild(container);
@@ -446,6 +471,7 @@ const generateInvoiceHTML = (data: InvoicePDFData): string => {
               </div>
             `).join('')}
           </div>
+          ${stripeButtonHtml((currentInvoiceData as any)?.stripe_payment_link, templateSettings.language)}
         </div>
       </div>
     </div>
