@@ -19,7 +19,8 @@ const Rankings = () => {
   const { data, isLoading, refetch, isFetching } = useQuery({
     queryKey: ['rankings', selectedPeriod],
     queryFn: () => getRankingsByPeriod(selectedPeriod),
-    refetchInterval: 60000, // Auto-refresh every 60 seconds
+    refetchInterval: 120000,
+    refetchIntervalInBackground: false,
   });
 
   const rankings = data?.rankings || [];

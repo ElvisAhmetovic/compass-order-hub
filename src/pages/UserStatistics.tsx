@@ -23,7 +23,8 @@ const UserStatistics = () => {
   const { data: statistics, isLoading, error } = useQuery({
     queryKey: ['user-statistics', dateRange],
     queryFn: () => getUserStatistics(dateRange?.from, dateRange?.to),
-    refetchInterval: 60000, // Refresh every minute
+    refetchInterval: 120000,
+    refetchIntervalInBackground: false,
   });
 
   const filteredData = useMemo(() => {
