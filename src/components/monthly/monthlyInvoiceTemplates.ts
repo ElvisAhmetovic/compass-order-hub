@@ -341,3 +341,29 @@ export const getInvoiceEmailTemplate = (language: string) => ({
   subject: SUBJECT_TEMPLATES[language] || SUBJECT_TEMPLATES.en,
   message: MESSAGE_TEMPLATES[language] || MESSAGE_TEMPLATES.en,
 });
+
+/** Removes the bank-details block (heading, intro and IBAN/BIC/Bank lines) from a message. */
+export const stripBankDetails = (message: string): string => {
+  const lines = message.split("\n");
+  const first = lines.findIndex((l) => l.trim().startsWith("IBAN:"));
+  if (first === -1) return message;
+  let last = first;
+  lines.forEach((l, i) => { if (/^(IBAN|SWIFT\/BIC|BIC|Bank|Banka|Banque|Banco|Bankas)\s*:/i.test(l.trim())) last = Math.max(last, i); });
+  // Walk back over the intro sentence and the "payment information" heading (two non-empty lines).
+  let start = first, found = 0;
+  for (let i = first - 1; i >= 0 && found < 2; i--) {
+    if (lines[i].trim()) { start = i; found++; }
+  }
+  const out = [...lines.slice(0, start), ...lines.slice(last + 1)].join("\n");
+  return out.replace(/\n{3,}/g, "\n\n");
+};
+
+/** Templates for the invoice "Send to Client" email: no bank details (the PDF carries them). */
+export const CLIENT_MESSAGE_TEMPLATES: Record<string, string> = Object.fromEntries(
+  Object.entries(MESSAGE_TEMPLATES).map(([k, v]) => [k, stripBankDetails(v)])
+);
+
+export const getClientInvoiceEmailTemplate = (language: string) => ({
+  subject: SUBJECT_TEMPLATES[language] || SUBJECT_TEMPLATES.en,
+  message: CLIENT_MESSAGE_TEMPLATES[language] || CLIENT_MESSAGE_TEMPLATES.en,
+});

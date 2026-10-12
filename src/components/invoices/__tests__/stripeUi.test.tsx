@@ -47,3 +47,12 @@ describe("Send to Client with a Stripe link", () => {
     expect((invoke.mock.calls[0] as any)[1].body.stripe_payment_link).toBeUndefined();
   });
 });
+
+describe("Send to Client message has no bank details", () => {
+  it("keeps the Stripe hint but no IBAN", () => {
+    render(<SendInvoicePDFDialog open onOpenChange={() => {}} invoice={{ ...base, stripe_payment_link: LINK, bill_to_email: "c@x.de" }} lineItems={[]} templateSettings={ts} />);
+    const m = (screen.getByLabelText("Message") as HTMLTextAreaElement).value;
+    expect(m).toContain("button below");
+    expect(m).not.toContain("IBAN");
+  });
+});
