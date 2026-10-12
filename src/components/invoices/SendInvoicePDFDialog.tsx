@@ -14,6 +14,7 @@ import { Invoice, InvoiceLineItem, Client } from "@/types/invoice";
 import { Mail, Send } from "lucide-react";
 import { SUBJECT_TEMPLATES, MESSAGE_TEMPLATES, TEMPLATE_LANGUAGES, getInvoiceEmailTemplate } from "@/components/monthly/monthlyInvoiceTemplates";
 import { nextReminderFromHours } from "@/utils/reminderInterval";
+import { isValidPaymentLink, withStripeHint, getStripeEmailCopy } from "./stripePaymentLink";
 
 const LANGUAGES = [
   { value: "en", label: "English" },
@@ -50,6 +51,8 @@ const SendInvoicePDFDialog: React.FC<SendInvoicePDFDialogProps> = ({
   const [language, setLanguage] = useState("en");
   const [subjectTpl, setSubjectTpl] = useState("en");
   const [messageTpl, setMessageTpl] = useState("en");
+  const stripeLinkRaw = (formData?.stripe_payment_link ?? (invoice as any)?.stripe_payment_link ?? "") as string;
+  const stripeLink = isValidPaymentLink(stripeLinkRaw) ? stripeLinkRaw.trim() : "";
 
   useEffect(() => {
     if (open) {
@@ -60,7 +63,7 @@ const SendInvoicePDFDialog: React.FC<SendInvoicePDFDialogProps> = ({
       const emailTemplate = getInvoiceEmailTemplate(lang);
       setClientEmail(preferredEmail);
       setSubject(emailTemplate.subject);
-      setMessage(emailTemplate.message);
+      setMessage(withStripeHint(emailTemplate.message, stripeLink, lang));
       setLanguage(lang);
       const tplLang = TEMPLATE_LANGUAGES.some(l => l.value === lang) ? lang : "en";
       setSubjectTpl(tplLang);
@@ -94,6 +97,8 @@ const SendInvoicePDFDialog: React.FC<SendInvoicePDFDialogProps> = ({
           message,
           pdf_base64: pdfBase64,
           invoice_number: invoice?.invoice_number || "new",
+          stripe_payment_link: stripeLink || undefined,
+          stripe_button_label: stripeLink ? getStripeEmailCopy(messageTpl).label : undefined,
         },
       });
       if (sendError || (sendResult && sendResult.success === false)) {
@@ -202,7 +207,7 @@ const SendInvoicePDFDialog: React.FC<SendInvoicePDFDialogProps> = ({
               setSubjectTpl(lang);
               setMessageTpl(lang);
               setSubject(emailTemplate.subject);
-              setMessage(emailTemplate.message);
+              setMessage(withStripeHint(emailTemplate.message, stripeLink, lang));
             }} disabled={sending}>
               <SelectTrigger>
                 <SelectValue />
@@ -217,7 +222,7 @@ const SendInvoicePDFDialog: React.FC<SendInvoicePDFDialogProps> = ({
 
           <div>
             <Label>Message Template</Label>
-            <Select value={messageTpl} onValueChange={(val) => { setMessageTpl(val); setMessage(MESSAGE_TEMPLATES[val] || ""); }} disabled={sending}>
+            <Select value={messageTpl} onValueChange={(val) => { setMessageTpl(val); setMessage(withStripeHint(MESSAGE_TEMPLATES[val] || "", stripeLink, val)); }} disabled={sending}>
               <SelectTrigger>
                 <SelectValue placeholder="Select language template..." />
               </SelectTrigger>
@@ -245,6 +250,11 @@ const SendInvoicePDFDialog: React.FC<SendInvoicePDFDialogProps> = ({
             <p className="text-blue-700 dark:text-blue-300">
               <strong>Note:</strong> The invoice PDF ({invoice?.invoice_number}) will be attached automatically.
             </p>
+            {stripeLink && (
+              <p className="mt-2 text-blue-700 dark:text-blue-300 break-all">
+                A "{getStripeEmailCopy(messageTpl).label}" button will be added to this email, linking to: {stripeLink}
+              </p>
+            )}
           </div>
         </div>
 

@@ -18,3 +18,17 @@ describe("Stripe payment link", () => {
     expect(stripeButtonHtml("", "en")).toBe("");
   });
 });
+
+import { getStripeEmailCopy, withStripeHint } from "../stripePaymentLink";
+describe("Stripe email copy", () => {
+  it("uses German button text for de", () => {
+    expect(getStripeEmailCopy("de").label).toBe("Jetzt online bezahlen mit Stripe");
+  });
+  it("uses English button text for en", () => {
+    expect(getStripeEmailCopy("en").label).toBe("Pay online with Stripe");
+  });
+  it("adds the hint only when a link exists", () => {
+    expect(withStripeHint("Hello", "", "en")).toBe("Hello");
+    expect(withStripeHint("Hello", "https://buy.stripe.com/x", "en")).toContain("button below");
+  });
+});

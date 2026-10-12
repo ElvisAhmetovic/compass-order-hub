@@ -46,7 +46,19 @@ serve(async (req) => {
       });
     }
 
-    const { client_email, subject, message, pdf_base64, invoice_number } = await req.json();
+    const { client_email, subject, message, pdf_base64, invoice_number, stripe_payment_link, stripe_button_label } = await req.json();
+
+    const esc = (t: string) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[c]!));
+    let stripeButton = '';
+    if (typeof stripe_payment_link === 'string' && stripe_payment_link.trim()) {
+      try {
+        const u = new URL(stripe_payment_link.trim());
+        if (u.protocol === 'https:') {
+          const label = typeof stripe_button_label === 'string' && stripe_button_label.trim() ? stripe_button_label.trim().slice(0, 80) : 'Pay online with Stripe';
+          stripeButton = `<div style="margin: 24px 0;"><a href="${esc(u.toString())}" target="_blank" rel="noopener noreferrer" style="display: inline-block; background: #635bff; color: #ffffff; font-weight: bold; font-size: 15px; padding: 12px 24px; border-radius: 6px; text-decoration: none;">${esc(label)}</a></div>`;
+        }
+      } catch { /* invalid link: no button */ }
+    }
 
     if (!client_email || !pdf_base64 || !invoice_number) {
       return new Response(
@@ -72,6 +84,7 @@ serve(async (req) => {
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <h2 style="color: #333;">Invoice ${invoice_number}</h2>
         ${message ? `<div style="margin: 20px 0; white-space: pre-wrap;">${message}</div>` : ''}
+        ${stripeButton}
         <p style="color: #666; margin-top: 20px;">Please find the invoice PDF attached to this email.</p>
         <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
         <p style="color: #999; font-size: 12px;">Media Marketing Limited</p>
