@@ -1,0 +1,1 @@
+GRANT EXECUTE ON FUNCTION public.get_auth_user_role(), public.get_user_role(), public.get_user_role(uuid), public.has_role(uuid, app_role), public.is_admin(), public.is_client(), public.is_client_of_company(uuid), public.wh_is_super_admin() TO anon;
