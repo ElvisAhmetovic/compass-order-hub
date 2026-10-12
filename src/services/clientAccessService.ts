@@ -1,3 +1,4 @@
+import { clearOrdersCache } from "@/services/orderService";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface ClientUser {
@@ -95,6 +96,7 @@ export async function linkClientToOrder(
   clientName: string,
   clientEmail: string
 ): Promise<{ success: boolean; error?: string }> {
+  clearOrdersCache();
   const { error } = await supabase
     .from("orders")
     .update({ client_id: clientId, updated_at: new Date().toISOString() })
@@ -125,6 +127,7 @@ export async function unlinkClientFromOrder(
   clientName: string,
   clientEmail: string
 ): Promise<{ success: boolean; error?: string }> {
+  clearOrdersCache();
   const { error } = await supabase
     .from("orders")
     .update({ client_id: null, updated_at: new Date().toISOString() })

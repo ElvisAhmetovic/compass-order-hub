@@ -1,3 +1,4 @@
+import { clearOrdersCache } from "@/services/orderService";
 import { useState, useEffect, useCallback } from "react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
@@ -122,6 +123,7 @@ const CreateClientPortalModal = ({ open, onOpenChange, entity, onSuccess }: Crea
 
   const linkEntityToClient = async (userId: string): Promise<number> => {
     if (entity.entityType === "order") {
+      clearOrdersCache();
       await supabase.from("orders").update({ client_id: userId }).eq("id", entity.id);
       if (entity.companyId) {
         await supabase.from("companies").update({ client_user_id: userId }).eq("id", entity.companyId);
@@ -131,6 +133,7 @@ const CreateClientPortalModal = ({ open, onOpenChange, entity, onSuccess }: Crea
     // Bulk-link all orders with matching contact_email that aren't already linked
     let additionalLinked = 0;
     if (clientEmail) {
+      clearOrdersCache();
       const { data: linkedOrders } = await supabase
         .from("orders")
         .update({ client_id: userId })

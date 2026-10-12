@@ -23,7 +23,8 @@ export const PersonalStats = () => {
     queryKey: ['personal-stats', user?.id],
     queryFn: () => user?.id ? personalStatsService.getPersonalStats(user.id) : null,
     enabled: !!user?.id,
-    refetchInterval: 30000,
+    refetchInterval: 120000,
+    refetchIntervalInBackground: false,
   });
 
   if (isLoading) {

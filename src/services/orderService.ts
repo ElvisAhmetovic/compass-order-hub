@@ -3,9 +3,24 @@ import { supabase } from "@/integrations/supabase/client";
 import { Order, OrderStatus } from "@/types";
 import { nextReminderForInvoice, nextReminderForOrder } from "@/utils/reminderInterval";
 
+// Short-lived shared cache so several widgets on one page share a single orders download.
+const ORDERS_CACHE_MS = 30_000;
+const ordersCache = new Map<string, { at: number; promise: Promise<Order[]> }>();
+export const clearOrdersCache = () => ordersCache.clear();
+
 export class OrderService {
+  static getOrders(includeYearlyPackages: boolean = false, includeDeleted: boolean = false): Promise<Order[]> {
+    const key = `${includeYearlyPackages}|${includeDeleted}`;
+    const hit = ordersCache.get(key);
+    if (hit && Date.now() - hit.at < ORDERS_CACHE_MS) return hit.promise;
+    const promise = OrderService.fetchOrders(includeYearlyPackages, includeDeleted);
+    ordersCache.set(key, { at: Date.now(), promise });
+    promise.catch(() => ordersCache.delete(key));
+    return promise;
+  }
+
   // Get all orders with proper error handling - now excludes soft deleted orders by default
-  static async getOrders(includeYearlyPackages: boolean = false, includeDeleted: boolean = false): Promise<Order[]> {
+  static async fetchOrders(includeYearlyPackages: boolean = false, includeDeleted: boolean = false): Promise<Order[]> {
     try {
       let query = supabase.from('orders').select('*');
       
@@ -78,6 +93,7 @@ export class OrderService {
 
   // Create new order with validation and activity logging - now includes auto company sync
   static async createOrder(orderData: Omit<Order, 'id' | 'created_at' | 'updated_at'>): Promise<Order> {
+    clearOrdersCache();
     try {
       // Validate required fields
       if (!orderData.company_name) {
@@ -170,6 +186,7 @@ export class OrderService {
 
   // Create new yearly package order
   static async createYearlyPackage(orderData: Omit<Order, 'id' | 'created_at' | 'updated_at'> & { is_yearly_package: boolean }): Promise<Order> {
+    clearOrdersCache();
     try {
       // Validate required fields
       if (!orderData.company_name) {
@@ -286,6 +303,7 @@ export class OrderService {
 
   // Update order with validation - now handles multiple statuses and logs activity
   static async updateOrder(id: string, orderData: Partial<Order>): Promise<Order> {
+    clearOrdersCache();
     try {
       // Get current order for comparison
       const { data: currentOrder } = await supabase
@@ -399,6 +417,7 @@ export class OrderService {
 
   // Soft delete order instead of permanent deletion
   static async deleteOrder(id: string): Promise<void> {
+    clearOrdersCache();
     try {
       console.log('Soft deleting order:', id);
 
@@ -449,6 +468,7 @@ export class OrderService {
 
   // Restore a soft deleted order
   static async restoreOrder(id: string): Promise<void> {
+    clearOrdersCache();
     try {
       console.log('Restoring order:', id);
 
@@ -481,6 +501,7 @@ export class OrderService {
 
   // Permanently delete an order (admin only)
   static async permanentlyDeleteOrder(id: string): Promise<void> {
+    clearOrdersCache();
     try {
       console.log('Permanently deleting order:', id);
 
@@ -565,6 +586,7 @@ export class OrderService {
 
   // Assign order to user
   static async assignOrder(orderId: string, userId: string, userName: string): Promise<Order> {
+    clearOrdersCache();
     try {
       console.log(`Assigning order ${orderId} to user ${userId} (${userName})`);
 
@@ -596,6 +618,7 @@ export class OrderService {
 
   // Unassign order
   static async unassignOrder(orderId: string): Promise<Order> {
+    clearOrdersCache();
     try {
       console.log(`Unassigning order ${orderId}`);
 
@@ -635,6 +658,7 @@ export class OrderService {
 
   // New method to toggle a specific status on an order
   static async toggleOrderStatus(orderId: string, status: OrderStatus, enabled: boolean, customMessage?: string, sendToClient?: boolean): Promise<{ invoiceSynced: boolean; invoiceAction: 'updated' | 'created' | null; invoiceNumber?: string }> {
+    clearOrdersCache();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
 

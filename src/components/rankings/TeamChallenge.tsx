@@ -14,7 +14,8 @@ export const TeamChallenge = () => {
   const { data: challenges, refetch } = useQuery({
     queryKey: ['team-challenges-progress'],
     queryFn: () => challengeService.getAllChallengeProgress(),
-    refetchInterval: 30000, // Refresh every 30 seconds
+    refetchInterval: 120000,
+    refetchIntervalInBackground: false,
   });
 
   useEffect(() => {

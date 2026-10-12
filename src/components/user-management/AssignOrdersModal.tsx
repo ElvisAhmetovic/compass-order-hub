@@ -1,3 +1,4 @@
+import { clearOrdersCache } from "@/services/orderService";
 
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -86,12 +87,14 @@ export function AssignOrdersModal({ user, open, onClose }: AssignOrdersModalProp
           // For clients: update client_id field
           if (isSelected && order.client_id !== user.id) {
             // Link client to order
+            clearOrdersCache();
             await supabase
               .from("orders")
               .update({ client_id: user.id, updated_at: new Date().toISOString() })
               .eq("id", order.id);
           } else if (!isSelected && order.client_id === user.id) {
             // Unlink client from order
+            clearOrdersCache();
             await supabase
               .from("orders")
               .update({ client_id: null, updated_at: new Date().toISOString() })

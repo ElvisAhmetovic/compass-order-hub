@@ -1,3 +1,4 @@
+import { clearOrdersCache } from "@/services/orderService";
 import { useState, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -272,6 +273,7 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
       console.log('Creating order with data:', orderData);
       
       // Save the new order to Supabase
+      clearOrdersCache();
       const { data: orderResult, error: orderError } = await supabase
         .from('orders')
         .insert([orderData])
