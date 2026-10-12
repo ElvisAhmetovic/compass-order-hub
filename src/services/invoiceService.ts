@@ -244,6 +244,7 @@ export class InvoiceService {
           due_date: invoiceData.due_date,
           service_date: invoiceData.service_date || null,
           service_period_end: invoiceData.service_period_end || null,
+          stripe_payment_link: (invoiceData as any).stripe_payment_link || null,
           currency: invoiceData.currency,
           payment_terms: invoiceData.payment_terms,
           notes: invoiceData.notes,

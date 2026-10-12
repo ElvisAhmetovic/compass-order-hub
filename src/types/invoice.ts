@@ -49,6 +49,7 @@ export interface Invoice {
   bill_to_city?: string | null;
   bill_to_zip_code?: string | null;
   bill_to_country?: string | null;
+  stripe_payment_link?: string | null;
 }
 
 export interface InvoiceLineItem {
@@ -82,6 +83,7 @@ export interface InvoiceFormData {
   due_date: string;
   service_date?: string;
   service_period_end?: string;
+  stripe_payment_link?: string;
   currency: string;
   payment_terms: string;
   notes: string;
