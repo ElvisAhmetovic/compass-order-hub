@@ -1,3 +1,4 @@
+import { getInvoiceTemplateSettingsSync, loadInvoiceTemplateSettings } from '@/components/invoices/loadTemplateSettings';
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
@@ -49,29 +50,14 @@ const InvoiceDetail = () => {
   const [clientPopoverOpen, setClientPopoverOpen] = useState(false);
   const [invoiceYear, setInvoiceYear] = useState<string>(new Date().getFullYear().toString());
   const [invoiceSeqNumber, setInvoiceSeqNumber] = useState<string>('');
-  const [templateSettings, setTemplateSettings] = useState(() => {
-    try {
-      const saved = localStorage.getItem('invoiceTemplateSettings');
-      if (saved) return JSON.parse(saved);
-    } catch (e) { /* ignore */ }
-    return {
-      currency: 'EUR',
-      vatEnabled: true,
-      vatRate: 0,
-      language: 'en',
-      selectedPaymentAccount: ['germany', 'revolut'],
-      invoiceNumberPrefix: 'INV-',
-      companyInfo: {
-        name: "Company Name",
-        registrationNumber: "17507679",
-        vatId: "",
-        street: "Street Address",
-        postal: "12345",
-        city: "City",
-        email: ""
-      }
-    };
-  });
+  const [templateSettings, setTemplateSettings] = useState<any>(() => getInvoiceTemplateSettingsSync());
+  useEffect(() => {
+    let cancelled = false;
+    loadInvoiceTemplateSettings().then((s) => {
+      if (!cancelled) setTemplateSettings((prev: any) => ({ ...s, currency: prev?.currency || s.currency }));
+    });
+    return () => { cancelled = true; };
+  }, []);
 
   const [billToOverride, setBillToOverride] = useState({
     name: '', email: '', address: '', city: '', zip_code: '', country: ''

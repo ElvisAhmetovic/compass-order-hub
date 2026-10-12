@@ -191,13 +191,8 @@ const Invoices = () => {
       ]);
 
       // Load template settings from localStorage (same source as InvoiceDetail)
-      let templateSettings: any = {};
-      try {
-        const saved = localStorage.getItem('invoiceTemplateSettings');
-        if (saved) templateSettings = JSON.parse(saved);
-      } catch (e) {
-        console.warn('Failed to parse invoiceTemplateSettings:', e);
-      }
+      const { loadInvoiceTemplateSettings } = await import('@/components/invoices/loadTemplateSettings');
+      const templateSettings: any = await loadInvoiceTemplateSettings();
 
       await generateInvoicePDF({
         invoice,
