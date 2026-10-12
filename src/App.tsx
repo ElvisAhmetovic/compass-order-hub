@@ -1,5 +1,5 @@
 // App entry
-import { useEffect } from "react";
+import { useEffect, lazy, Suspense } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "./context/AuthContext";
@@ -9,76 +9,76 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "next-themes";
 import Index from "./pages/Index";
-import ServicePage from "./pages/ServicePage";
-import LegalPage from "./pages/LegalPage";
-import ContactPage from "./pages/ContactPage";
-import AboutPage from "./pages/AboutPage";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
-import Dashboard from "./pages/Dashboard";
-import Analytics from "./pages/Analytics";
-import Rankings from "./pages/Rankings";
-import UserStatistics from "./pages/UserStatistics";
-import Companies from "./pages/Companies";
-import Inventory from "./pages/Inventory";
-import UserManagement from "./pages/UserManagement";
-import Invoices from "./pages/Invoices";
-import InvoiceDetail from "./pages/InvoiceDetail";
-import Clients from "./pages/Clients";
-import Proposals from "./pages/Proposals";
-import ProposalDetail from "./pages/ProposalDetail";
-import Support from "./pages/Support";
-import SupportDetail from "./pages/SupportDetail";
-import Settings from "./pages/Settings";
-import Profile from "./pages/Profile";
-import Security from "./pages/Security";
-import EmailManagement from "./pages/EmailManagement";
-import NotificationSettings from "./pages/NotificationSettings";
-import TeamCollaboration from "./pages/TeamCollaboration";
-import Deleted from "./pages/Deleted";
-import Reviews from "./pages/Reviews";
-import YearlyPackages from "./pages/YearlyPackages";
-import Facebook from "./pages/Facebook";
-import Instagram from "./pages/Instagram";
-import Trustpilot from "./pages/Trustpilot";
-import TrustpilotDeletion from "./pages/TrustpilotDeletion";
-import GoogleDeletion from "./pages/GoogleDeletion";
-import TechSupport from "./pages/TechSupport";
-import TechSupportDetail from "./pages/TechSupportDetail";
-import CustomerTickets from "./pages/CustomerTickets";
-import CustomerTicketDetail from "./pages/CustomerTicketDetail";
-import NotFound from "./pages/NotFound";
-import Reminders from "./pages/Reminders";
-import WorkHours from "./pages/WorkHours";
-import WorkHoursV2 from "./pages/WorkHoursV2";
-import WorkHoursAdmin from "./pages/WorkHoursAdmin";
-import InvoiceAuditLogPage from "./pages/admin/InvoiceAuditLogPage";
-import MonthlyPackages from "./pages/MonthlyPackages";
-import MonthlyInvoiceStatus from "./pages/MonthlyInvoiceStatus";
-import Offers from "./pages/Offers";
-import TicketSubmitted from "./pages/TicketSubmitted";
-import TicketLoading from "./pages/TicketLoading";
-import ConfirmOffer from "./pages/ConfirmOffer";
-import SocialFacebook from "./pages/social/Facebook";
-import SocialAbmWebsite from "./pages/social/AbmWebsite";
-import SocialInstagram from "./pages/social/Instagram";
-import SocialTikTok from "./pages/social/TikTok";
-import SocialTwitter from "./pages/social/Twitter";
-import SocialWeeklyReport from "./pages/social/WeeklyReportPage";
+const ServicePage = lazy(() => import("./pages/ServicePage"));
+const LegalPage = lazy(() => import("./pages/LegalPage"));
+const ContactPage = lazy(() => import("./pages/ContactPage"));
+const AboutPage = lazy(() => import("./pages/AboutPage"));
+const Login = lazy(() => import("./pages/Login"));
+const Register = lazy(() => import("./pages/Register"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Analytics = lazy(() => import("./pages/Analytics"));
+const Rankings = lazy(() => import("./pages/Rankings"));
+const UserStatistics = lazy(() => import("./pages/UserStatistics"));
+const Companies = lazy(() => import("./pages/Companies"));
+const Inventory = lazy(() => import("./pages/Inventory"));
+const UserManagement = lazy(() => import("./pages/UserManagement"));
+const Invoices = lazy(() => import("./pages/Invoices"));
+const InvoiceDetail = lazy(() => import("./pages/InvoiceDetail"));
+const Clients = lazy(() => import("./pages/Clients"));
+const Proposals = lazy(() => import("./pages/Proposals"));
+const ProposalDetail = lazy(() => import("./pages/ProposalDetail"));
+const Support = lazy(() => import("./pages/Support"));
+const SupportDetail = lazy(() => import("./pages/SupportDetail"));
+const Settings = lazy(() => import("./pages/Settings"));
+const Profile = lazy(() => import("./pages/Profile"));
+const Security = lazy(() => import("./pages/Security"));
+const EmailManagement = lazy(() => import("./pages/EmailManagement"));
+const NotificationSettings = lazy(() => import("./pages/NotificationSettings"));
+const TeamCollaboration = lazy(() => import("./pages/TeamCollaboration"));
+const Deleted = lazy(() => import("./pages/Deleted"));
+const Reviews = lazy(() => import("./pages/Reviews"));
+const YearlyPackages = lazy(() => import("./pages/YearlyPackages"));
+const Facebook = lazy(() => import("./pages/Facebook"));
+const Instagram = lazy(() => import("./pages/Instagram"));
+const Trustpilot = lazy(() => import("./pages/Trustpilot"));
+const TrustpilotDeletion = lazy(() => import("./pages/TrustpilotDeletion"));
+const GoogleDeletion = lazy(() => import("./pages/GoogleDeletion"));
+const TechSupport = lazy(() => import("./pages/TechSupport"));
+const TechSupportDetail = lazy(() => import("./pages/TechSupportDetail"));
+const CustomerTickets = lazy(() => import("./pages/CustomerTickets"));
+const CustomerTicketDetail = lazy(() => import("./pages/CustomerTicketDetail"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const Reminders = lazy(() => import("./pages/Reminders"));
+const WorkHours = lazy(() => import("./pages/WorkHours"));
+const WorkHoursV2 = lazy(() => import("./pages/WorkHoursV2"));
+const WorkHoursAdmin = lazy(() => import("./pages/WorkHoursAdmin"));
+const InvoiceAuditLogPage = lazy(() => import("./pages/admin/InvoiceAuditLogPage"));
+const MonthlyPackages = lazy(() => import("./pages/MonthlyPackages"));
+const MonthlyInvoiceStatus = lazy(() => import("./pages/MonthlyInvoiceStatus"));
+const Offers = lazy(() => import("./pages/Offers"));
+const TicketSubmitted = lazy(() => import("./pages/TicketSubmitted"));
+const TicketLoading = lazy(() => import("./pages/TicketLoading"));
+const ConfirmOffer = lazy(() => import("./pages/ConfirmOffer"));
+const SocialFacebook = lazy(() => import("./pages/social/Facebook"));
+const SocialAbmWebsite = lazy(() => import("./pages/social/AbmWebsite"));
+const SocialInstagram = lazy(() => import("./pages/social/Instagram"));
+const SocialTikTok = lazy(() => import("./pages/social/TikTok"));
+const SocialTwitter = lazy(() => import("./pages/social/Twitter"));
+const SocialWeeklyReport = lazy(() => import("./pages/social/WeeklyReportPage"));
 import { RequireAuth } from "./components/auth/RequireAuth";
 import AdminGuard from "./components/auth/AdminGuard";
 import ClientGuard from "./components/client-portal/ClientGuard";
 import NavigationProgress from "./components/layout/NavigationProgress";
 
 // Client Portal Pages
-import ClientDashboard from "./pages/client/ClientDashboard";
-import ClientOrders from "./pages/client/ClientOrders";
-import ClientOrderDetail from "./pages/client/ClientOrderDetail";
-import ClientInvoices from "./pages/client/ClientInvoices";
-import ClientSupport from "./pages/client/ClientSupport";
-import ClientSupportDetail from "./pages/client/ClientSupportDetail";
-import ClientSettings from "./pages/client/ClientSettings";
-import ClientLogin from "./pages/client/ClientLogin";
+const ClientDashboard = lazy(() => import("./pages/client/ClientDashboard"));
+const ClientOrders = lazy(() => import("./pages/client/ClientOrders"));
+const ClientOrderDetail = lazy(() => import("./pages/client/ClientOrderDetail"));
+const ClientInvoices = lazy(() => import("./pages/client/ClientInvoices"));
+const ClientSupport = lazy(() => import("./pages/client/ClientSupport"));
+const ClientSupportDetail = lazy(() => import("./pages/client/ClientSupportDetail"));
+const ClientSettings = lazy(() => import("./pages/client/ClientSettings"));
+const ClientLogin = lazy(() => import("./pages/client/ClientLogin"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -124,7 +124,8 @@ function App() {
             <Router>
               <NavigationProgress />
               <div className="min-h-screen bg-background">
-                <Routes>
+                <Suspense fallback={<div className="min-h-screen bg-background" />}>
+            <Routes>
                   <Route path="/" element={<Index />} />
                   <Route path="/webdesign" element={<ServicePage serviceKey="webdesign" />} />
                   <Route path="/google-seo" element={<ServicePage serviceKey="googleSeo" />} />
@@ -442,6 +443,7 @@ function App() {
                   
                   <Route path="*" element={<NotFound />} />
                 </Routes>
+            </Suspense>
               </div>
               <Toaster />
               <Sonner />

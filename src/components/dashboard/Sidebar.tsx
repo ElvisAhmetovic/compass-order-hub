@@ -50,6 +50,10 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useSidebarConfig } from '@/hooks/useSidebarConfig';
 
+
+// Shared across page changes so the counters aren't re-fetched on every click.
+const SIDEBAR_COUNT_TTL = 60_000;
+const sidebarCountCache: { tickets?: { at: number; value: number }; late?: { at: number; value: number } } = {};
 const Sidebar = () => {
   const location = useLocation();
   const { user } = useAuth();
@@ -117,13 +121,20 @@ const Sidebar = () => {
   useEffect(() => {
     if (!isAdminOrAgent) return;
 
-    const fetchOpenTickets = async () => {
+    const fetchOpenTickets = async (force = false) => {
+      if (!force && sidebarCountCache.tickets && Date.now() - sidebarCountCache.tickets.at < SIDEBAR_COUNT_TTL) {
+        setOpenTicketCount(sidebarCountCache.tickets.value);
+        return;
+      }
       const { count, error } = await supabase
         .from('customer_tickets')
-        .select('*', { count: 'exact', head: true })
+        .select('id', { count: 'exact', head: true })
         .eq('status', 'open');
 
-      if (!error) setOpenTicketCount(count ?? 0);
+      if (!error) {
+        sidebarCountCache.tickets = { at: Date.now(), value: count ?? 0 };
+        setOpenTicketCount(count ?? 0);
+      }
     };
 
     fetchOpenTickets();
@@ -131,7 +142,7 @@ const Sidebar = () => {
     const ticketChannel = supabase
       .channel('customer-tickets-sidebar')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'customer_tickets' }, () => {
-        fetchOpenTickets();
+        fetchOpenTickets(true);
       })
       .subscribe();
 
@@ -144,9 +155,13 @@ const Sidebar = () => {
   useEffect(() => {
     if (!isSuper) return;
     let cancelled = false;
-    const tick = () => fetchLateCountToday().then(c => { if (!cancelled) setLateWhCount(c); }).catch(() => {});
+    const tick = (force = false) => {
+      const hit = sidebarCountCache.late;
+      if (!force && hit && Date.now() - hit.at < SIDEBAR_COUNT_TTL) { setLateWhCount(hit.value); return; }
+      fetchLateCountToday().then(c => { sidebarCountCache.late = { at: Date.now(), value: c }; if (!cancelled) setLateWhCount(c); }).catch(() => {});
+    };
     tick();
-    const interval = setInterval(tick, 5 * 60 * 1000);
+    const interval = setInterval(() => tick(true), 5 * 60 * 1000);
     return () => { cancelled = true; clearInterval(interval); };
   }, [isSuper]);
 
