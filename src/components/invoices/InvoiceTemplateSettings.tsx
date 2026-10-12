@@ -9,11 +9,15 @@ import { useInvoiceSettings } from "./hooks/useInvoiceSettings";
 interface InvoiceTemplateSettingsProps {
   onSettingsChange: (settings: any) => void;
   initialSettings?: any;
+  stripePaymentLink?: string;
+  onStripePaymentLinkChange?: (value: string) => void;
 }
 
 const InvoiceTemplateSettings: React.FC<InvoiceTemplateSettingsProps> = ({
   onSettingsChange,
-  initialSettings
+  initialSettings,
+  stripePaymentLink,
+  onStripePaymentLinkChange
 }) => {
   const {
     settings,
@@ -59,6 +63,8 @@ const InvoiceTemplateSettings: React.FC<InvoiceTemplateSettingsProps> = ({
         selectedPaymentAccount={settings.selectedPaymentAccount}
         language={settings.language}
         onPaymentAccountChange={(selectedPaymentAccount) => updateSettings({ selectedPaymentAccount })}
+        stripePaymentLink={stripePaymentLink}
+        onStripePaymentLinkChange={onStripePaymentLinkChange}
       />
 
       <InvoiceSettings

@@ -3,6 +3,8 @@ import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { isValidPaymentLink } from "../stripePaymentLink";
 import { PAYMENT_ACCOUNTS, PAYMENT_ACCOUNT_OPTIONS, filterAccountsByChoice, normalizePaymentAccountIds } from "../constants";
 import { getPaymentPanelLabels } from "../invoiceTranslations";
 
@@ -10,12 +12,16 @@ interface PaymentInformationProps {
   selectedPaymentAccount: unknown;
   language: string;
   onPaymentAccountChange: (accountIds: string[]) => void;
+  stripePaymentLink?: string;
+  onStripePaymentLinkChange?: (value: string) => void;
 }
 
 export const PaymentInformation: React.FC<PaymentInformationProps> = ({
   selectedPaymentAccount,
   language,
-  onPaymentAccountChange
+  onPaymentAccountChange,
+  stripePaymentLink,
+  onStripePaymentLinkChange
 }) => {
   const selectedIds = normalizePaymentAccountIds(selectedPaymentAccount);
   const selectedAccounts = filterAccountsByChoice(PAYMENT_ACCOUNTS, selectedIds);
@@ -52,6 +58,25 @@ export const PaymentInformation: React.FC<PaymentInformationProps> = ({
             })}
           </div>
         </div>
+
+        {onStripePaymentLinkChange && (
+          <div>
+            <Label htmlFor="stripe_payment_link">Stripe payment link (optional, this invoice only)</Label>
+            <Input
+              id="stripe_payment_link"
+              type="url"
+              className="mt-2"
+              placeholder="https://buy.stripe.com/..."
+              value={stripePaymentLink || ''}
+              onChange={(e) => onStripePaymentLinkChange(e.target.value)}
+            />
+            {stripePaymentLink && !isValidPaymentLink(stripePaymentLink) ? (
+              <p className="mt-1 text-xs text-destructive">Please enter a full link starting with https://</p>
+            ) : (
+              <p className="mt-1 text-xs text-muted-foreground">Shown as a "Pay online with Stripe" button on the preview, PDF and email. Saved with Save Invoice.</p>
+            )}
+          </div>
+        )}
 
         {selectedAccounts.length > 0 && (
           <div className="p-4 bg-muted rounded-lg space-y-2">

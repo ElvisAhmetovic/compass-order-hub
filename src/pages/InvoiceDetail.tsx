@@ -803,22 +803,6 @@ const InvoiceDetail = () => {
                             <p className="mt-1 text-xs text-muted-foreground">Set to print a service period instead of a single date.</p>
                           </div>
 
-                          <div className="md:col-span-2">
-                            <Label htmlFor="stripe_payment_link">Stripe payment link (optional)</Label>
-                            <Input
-                              id="stripe_payment_link"
-                              type="url"
-                              placeholder="https://buy.stripe.com/..."
-                              value={formData.stripe_payment_link || ''}
-                              onChange={(e) => handleFormDataChange('stripe_payment_link', e.target.value)}
-                            />
-                            {formData.stripe_payment_link && !isValidPaymentLink(formData.stripe_payment_link) ? (
-                              <p className="mt-1 text-xs text-destructive">Please enter a full link starting with https://</p>
-                            ) : (
-                              <p className="mt-1 text-xs text-muted-foreground">Shown as a "Pay online with Stripe" button on the preview and PDF.</p>
-                            )}
-                          </div>
-
                           <div>
                             <Label htmlFor="payment_terms">Payment Terms</Label>
                             <Input
@@ -979,6 +963,8 @@ const InvoiceDetail = () => {
                 <InvoiceTemplateSettings
                   onSettingsChange={setTemplateSettings}
                   initialSettings={templateSettings}
+                  stripePaymentLink={formData.stripe_payment_link || ''}
+                  onStripePaymentLinkChange={(v) => handleFormDataChange('stripe_payment_link', v)}
                 />
               </TabsContent>
 
