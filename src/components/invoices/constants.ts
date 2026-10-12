@@ -40,6 +40,14 @@ export const PAYMENT_ACCOUNTS: PaymentAccount[] = [
     iban: "BE75903030215751",
     bic: "TRWIBEB1XXX",
     bank: "Wise"
+  },
+  {
+    id: "payoneer",
+    country: "Luxembourg",
+    name: "Payoneer",
+    iban: "LU574080000049188578",
+    bic: "BCIRLULL",
+    bank: "Payoneer"
   }
 ];
 
@@ -98,8 +106,9 @@ export const DEFAULT_PAYMENT_ACCOUNT_IDS = ["germany", "revolut"];
 /** Checkbox labels only (owner in brackets) — never printed on invoices. */
 export const PAYMENT_ACCOUNT_OPTIONS = [
   { id: "germany", label: "German Bank Account (Media Marketing LTD)" },
-  { id: "revolut", label: "Revolut Account (Media Marketing LTD)" },
-  { id: "wise", label: "Wise Account (Web Workers LTD)" },
+  { id: "revolut", label: "WEBS WORKERS LTD REVOLUT" },
+  { id: "wise", label: "MEDIA MARKETING LIMITED WISE" },
+  { id: "payoneer", label: "MEDIA MARKETING LIMITED PAYONEER" },
 ];
 
 /** Turns saved settings (array, or older single-choice strings) into a list of account ids. */
