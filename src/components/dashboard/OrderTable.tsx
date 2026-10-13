@@ -44,7 +44,10 @@ const OrderTable = ({
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
-  const [rowsPerPage] = useState(30);
+  const [rowsPerPage] = useState(25);
+  // Without a search, only the visible page is downloaded from the server.
+  const [serverTotal, setServerTotal] = useState(0);
+  const [pageLoading, setPageLoading] = useState(false);
   
   // Search and filter state
   const [searchFilters, setSearchFilters] = useState<SearchFilters>({});
@@ -54,7 +57,39 @@ const OrderTable = ({
   const isAdmin = user?.role === "admin";
 
   // Fetch orders with better error handling
+  const serverMode = Object.keys(searchFilters).length === 0;
+
+  // Server mode: fetch just the current page.
+  useEffect(() => {
+    if (!serverMode || !user) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        setPageLoading(true);
+        setError(null);
+        const { orders: pageOrders, total } = await OrderService.getOrdersPage({
+          page: currentPage, pageSize: rowsPerPage, isYearlyPackages, statusFilter,
+          assignedTo: isAdmin ? null : user.id, sortField, sortDirection,
+        });
+        if (cancelled) return;
+        setFilteredOrders(pageOrders);
+        setServerTotal(total);
+      } catch (e) {
+        if (cancelled) return;
+        console.error("OrderTable: Error fetching order page:", e);
+        setError("Failed to load orders. Please try again.");
+      } finally {
+        if (!cancelled) { setPageLoading(false); setLoading(false); }
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [serverMode, currentPage, rowsPerPage, isYearlyPackages, statusFilter, isAdmin, user?.id, sortField, sortDirection, refreshTrigger]);
+
+  // Back to page 1 when the view changes.
+  useEffect(() => { setCurrentPage(1); }, [statusFilter, sortField, sortDirection, isYearlyPackages, serverMode]);
+
   const fetchOrders = useCallback(async () => {
+    if (serverMode) return;
     if (!user) {
       console.log('OrderTable: No user found, skipping fetch');
       setLoading(false);
@@ -104,7 +139,7 @@ const OrderTable = ({
     } finally {
       setLoading(false);
     }
-  }, [statusFilter, isYearlyPackages, toast, user?.id, isAdmin]);
+  }, [statusFilter, isYearlyPackages, toast, user?.id, isAdmin, serverMode]);
 
   // Initial fetch and refresh trigger
   useEffect(() => {
@@ -115,6 +150,7 @@ const OrderTable = ({
   // Apply filters and sorting whenever orders or filter criteria change
   useEffect(() => {
     const applyFiltersAsync = async () => {
+      if (serverMode) return;
       console.log('OrderTable: Applying filters and sorting to orders...');
       let result = [...orders];
       
@@ -172,7 +208,7 @@ const OrderTable = ({
     };
 
     applyFiltersAsync();
-  }, [orders, statusFilter, searchFilters, sortField, sortDirection]);
+  }, [orders, statusFilter, searchFilters, sortField, sortDirection, serverMode]);
 
   const handlePageChange = (pageNumber: number) => {
     setCurrentPage(pageNumber);
@@ -282,8 +318,9 @@ const OrderTable = ({
   // Get current page of orders
   const indexOfLastOrder = currentPage * rowsPerPage;
   const indexOfFirstOrder = indexOfLastOrder - rowsPerPage;
-  const currentOrders = filteredOrders.slice(indexOfFirstOrder, indexOfLastOrder);
-  const totalPages = Math.ceil(filteredOrders.length / rowsPerPage);
+  const currentOrders = serverMode ? filteredOrders : filteredOrders.slice(indexOfFirstOrder, indexOfLastOrder);
+  const totalOrders = serverMode ? serverTotal : filteredOrders.length;
+  const totalPages = Math.ceil(totalOrders / rowsPerPage);
 
   return (
     <Card className="overflow-x-hidden w-full">
