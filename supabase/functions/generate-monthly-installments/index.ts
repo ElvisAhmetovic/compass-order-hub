@@ -43,7 +43,7 @@ const TEAM_EMAILS = [
   "angelina@abmedia-team.com",
   "service@team-abmedia.com",
   "thomas.thomasklein@gmail.com",
-  "invoice@team-abmedia.com",
+  "invoice@mediaamarketing.com",
   "jungabmedia@gmail.com",
   "wolfabmedia@gmail.com",
   "marcusabmedia@gmail.com",
@@ -786,8 +786,8 @@ async function sendTeamNotifications(
   try {
     const res = await resendFetchWithRetry({
       from: "Thomas Klein <noreply@mediaamarketing.com>",
-      to: ["invoice@team-abmedia.com"],
-      bcc: TEAM_EMAILS.filter((e) => e !== "invoice@team-abmedia.com"),
+      to: ["invoice@mediaamarketing.com"],
+      bcc: TEAM_EMAILS.filter((e) => e !== "invoice@mediaamarketing.com"),
       subject,
       html,
       ...(pdfBase64 ? { attachments: [{ filename: `${invoiceNumber}.pdf`, content: pdfBase64 }] } : {}),
