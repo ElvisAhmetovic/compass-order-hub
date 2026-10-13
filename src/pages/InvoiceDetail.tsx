@@ -267,6 +267,7 @@ const InvoiceDetail = () => {
           });
 
           // Update template settings with invoice currency (and its own language, when saved)
+          invoiceLanguageLoaded.current = true;
           setTemplateSettings(prev => ({
             ...prev,
             ...((invoiceData as any).language ? { language: (invoiceData as any).language } : {}),
