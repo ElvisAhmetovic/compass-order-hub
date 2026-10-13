@@ -97,7 +97,7 @@ Deno.serve(async (req) => {
 
     const html = buildHtml()
     const subject = 'Podsjetnik: Unesite radne sate do 12:00'
-    const from = 'AB Media Team <noreply@abm-team.com>'
+    const from = 'AB Media Team <noreply@mediaamarketing.com>'
 
     let sent = 0
     let failed = 0

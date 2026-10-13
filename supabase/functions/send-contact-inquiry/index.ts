@@ -33,7 +33,7 @@ serve(async (req) => {
     const rows = [["Name", d.name], ["E-Mail", d.email], ["Firma", d.company || "—"], ["Leistung", d.service || "—"], ["Sprache", d.language.toUpperCase()]]
       .map(([k, v]) => `<tr><td style="padding:4px 12px 4px 0;color:#64748b">${k}</td><td style="padding:4px 0"><strong>${esc(v)}</strong></td></tr>`).join("");
     const { error } = await resend.emails.send({
-      from: "Empria Tech Website <noreply@abm-team.com>",
+      from: "Empria Tech Website <noreply@mediaamarketing.com>",
       to: ["kontakt@empriatech.com"],
       reply_to: d.email,
       subject: `Neue Anfrage über empriatech.com – ${d.name}`,

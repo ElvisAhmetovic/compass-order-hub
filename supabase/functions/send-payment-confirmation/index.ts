@@ -109,7 +109,7 @@ serve(async (req) => {
           </p>
         </div>
         <div style="text-align: center; padding: 20px; color: #9ca3af; font-size: 12px;">
-          <p>Media Marketing Limited | noreply@abm-team.com</p>
+          <p>Media Marketing Limited | noreply@mediaamarketing.com</p>
         </div>
       </div>
     `;
@@ -137,7 +137,7 @@ serve(async (req) => {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        from: 'AB Media Team <noreply@abm-team.com>',
+        from: 'AB Media Team <noreply@mediaamarketing.com>',
         to: [client_email],
         subject: `Payment Received — Invoice ${invoice_number}`,
         html: clientEmailHtml,
@@ -162,7 +162,7 @@ serve(async (req) => {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              from: 'AB Media Team <noreply@abm-team.com>',
+              from: 'AB Media Team <noreply@mediaamarketing.com>',
               to: [email],
               subject: `💰 Payment Confirmed: ${invoice_number} — ${client_name}`,
               html: teamEmailHtml,

@@ -96,7 +96,7 @@ const sendBackgroundNotifications = async (
     }
     try {
       await resend.emails.send({
-        from: "Thomas Klein <ThomasKlein@abm-team.com>",
+        from: "Thomas Klein <ThomasKlein@mediaamarketing.com>",
         to: [NOTIFICATION_EMAILS[i]],
         subject: `🎫 New Customer Ticket: ${order.company_name} - ${clientName}`,
         html: teamEmailHtml,

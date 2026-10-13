@@ -136,7 +136,7 @@ const handler = async (req: Request): Promise<Response> => {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${resendApiKey}` },
       body: JSON.stringify({
-        from: "ABMedia Team <noreply@abm-team.com>",
+        from: "ABMedia Team <noreply@mediaamarketing.com>",
         to: [clientEmail],
         subject,
         html: htmlBody,
@@ -177,7 +177,7 @@ const handler = async (req: Request): Promise<Response> => {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${resendApiKey}` },
           body: JSON.stringify({
-            from: "ABMedia Team <noreply@abm-team.com>",
+            from: "ABMedia Team <noreply@mediaamarketing.com>",
             to: batch,
             subject: internalSubject,
             html: internalHtml,

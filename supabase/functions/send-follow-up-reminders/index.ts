@@ -152,7 +152,7 @@ const handler = async (req: Request): Promise<Response> => {
           const batch = NOTIFICATION_EMAIL_LIST.slice(i, i + 2);
           for (const email of batch) {
             await resend.emails.send({
-              from: "AB Media Team <noreply@abm-team.com>",
+              from: "AB Media Team <noreply@mediaamarketing.com>",
               to: [email],
               subject,
               html: emailHtml,

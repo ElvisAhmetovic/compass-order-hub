@@ -736,7 +736,7 @@ async function sendInvoiceEmail(
 
   try {
     const res = await resendFetchWithRetry({
-      from: "Thomas Klein <noreply@abm-team.com>",
+      from: "Thomas Klein <noreply@mediaamarketing.com>",
       to: [to],
       subject: E.subject(invoiceNumber, monthLabel, formattedPrice),
       html,
@@ -785,7 +785,7 @@ async function sendTeamNotifications(
   // Single Resend call with BCC list — 1 API call instead of 12
   try {
     const res = await resendFetchWithRetry({
-      from: "Thomas Klein <noreply@abm-team.com>",
+      from: "Thomas Klein <noreply@mediaamarketing.com>",
       to: ["invoice@team-abmedia.com"],
       bcc: TEAM_EMAILS.filter((e) => e !== "invoice@team-abmedia.com"),
       subject,
