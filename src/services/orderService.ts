@@ -947,7 +947,7 @@ export class OrderService {
             }];
           }
 
-          const invoiceData = {
+          const invoiceData: any = {
             client_id: clientId,
             issue_date: new Date().toISOString().split('T')[0],
             due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
@@ -955,6 +955,8 @@ export class OrderService {
             payment_terms: 'Net 30',
             notes: '',
             internal_notes: `Automatically generated from order ${orderId}`,
+            language: locale.language,
+            ...(locale.country ? { bill_to_country: locale.country } : {}),
             line_items: lineItems
           };
 

@@ -245,6 +245,8 @@ export class InvoiceService {
           service_date: invoiceData.service_date || null,
           service_period_end: invoiceData.service_period_end || null,
           stripe_payment_link: (invoiceData as any).stripe_payment_link || null,
+          ...((invoiceData as any).language ? { language: (invoiceData as any).language } : {}),
+          ...((invoiceData as any).bill_to_country ? { bill_to_country: (invoiceData as any).bill_to_country } : {}),
           currency: invoiceData.currency,
           payment_terms: invoiceData.payment_terms,
           notes: invoiceData.notes,
