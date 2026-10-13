@@ -10,6 +10,14 @@ const ORDERS_CACHE_MS = 30_000;
 const ordersCache = new Map<string, { at: number; promise: Promise<Order[]> }>();
 export const clearOrdersCache = () => ordersCache.clear();
 
+export const ORDER_STATUS_COLUMNS: Record<string, string> = {
+  'Created': 'status_created', 'In Progress': 'status_in_progress', 'Complaint': 'status_complaint',
+  'Invoice Sent': 'status_invoice_sent', 'Invoice Paid': 'status_invoice_paid', 'Resolved': 'status_resolved',
+  'Cancelled': 'status_cancelled', 'Deleted': 'status_deleted', 'Review': 'status_review',
+  'Facebook': 'status_facebook', 'Instagram': 'status_instagram', 'Trustpilot': 'status_trustpilot',
+  'Trustpilot Deletion': 'status_trustpilot_deletion', 'Google Deletion': 'status_google_deletion',
+};
+
 export class OrderService {
   static getOrders(includeYearlyPackages: boolean = false, includeDeleted: boolean = false): Promise<Order[]> {
     const key = `${includeYearlyPackages}|${includeDeleted}`;
@@ -47,6 +55,35 @@ export class OrderService {
       console.error('Failed to get orders:', error);
       throw error;
     }
+  }
+
+  /**
+   * One page of orders straight from the server (dashboard table without search).
+   * Mirrors getOrders / getOrdersByStatus filters plus the table's "All" and assignee rules.
+   */
+  static async getOrdersPage(opts: {
+    page: number; pageSize: number; isYearlyPackages?: boolean; statusFilter?: string | null;
+    assignedTo?: string | null; sortField?: 'created_at' | 'updated_at'; sortDirection?: 'asc' | 'desc';
+  }): Promise<{ orders: Order[]; total: number }> {
+    const { page, pageSize, isYearlyPackages = false, statusFilter, assignedTo, sortField = 'created_at', sortDirection = 'desc' } = opts;
+    let query: any = supabase.from('orders').select('*', { count: 'exact' });
+    query = isYearlyPackages ? query.eq('is_yearly_package', true) : query.neq('is_yearly_package', true);
+    const col = statusFilter && statusFilter !== 'All' ? ORDER_STATUS_COLUMNS[statusFilter] : undefined;
+    if (statusFilter && statusFilter !== 'All') {
+      query = col ? query.eq(col, true) : query.eq('status', statusFilter);
+    } else {
+      query = query.is('deleted_at', null).neq('status_deleted', true);
+    }
+    if (statusFilter === 'All') {
+      query = query.not('status_resolved', 'is', true).not('status_cancelled', 'is', true);
+    }
+    if (assignedTo) query = query.eq('assigned_to', assignedTo);
+    const from = (page - 1) * pageSize;
+    const { data, error, count } = await query
+      .order(sortField, { ascending: sortDirection === 'asc', nullsFirst: false })
+      .range(from, from + pageSize - 1);
+    if (error) throw error;
+    return { orders: data || [], total: count || 0 };
   }
 
   // Get only deleted orders - improved to catch all deleted orders
