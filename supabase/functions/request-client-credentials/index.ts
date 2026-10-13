@@ -163,7 +163,7 @@ serve(async (req) => {
         clientName,
         password,
         companyName,
-        senderName: 'AB Media Team',
+        senderName: 'Media Marketing LTD',
         senderId: null,
         orderId,
         isResend: !!existingProfile,

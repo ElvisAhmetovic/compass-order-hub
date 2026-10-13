@@ -66,7 +66,7 @@ const DEFAULT_COMPANY_INFO: CompanySettingsInput = {
   phone: "+4920370907262",
   fax: "+49 203 70 90 73 53",
   email: "",
-  website: "https://www.abm-team.com",
+  website: "https://www.mediaamarketing.com/de",
   registration_number: "17507679",
   vat_id: "",
   tax_number: "",

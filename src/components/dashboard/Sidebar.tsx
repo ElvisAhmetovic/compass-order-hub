@@ -325,7 +325,7 @@ const Sidebar = () => {
     <aside className="sticky top-0 flex min-h-screen w-64 shrink-0 self-start flex-col bg-sidebar border-r border-sidebar-border">
       <div className="p-6">
         <a
-          href="https://www.abm-team.com/en"
+          href="https://www.mediaamarketing.com/de"
           target="_blank"
           rel="noopener noreferrer"
           className="inline-block text-xl font-bold font-heading text-sidebar-foreground hover:text-sidebar-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring rounded transition-colors"

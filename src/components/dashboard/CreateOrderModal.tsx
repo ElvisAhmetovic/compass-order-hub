@@ -1071,7 +1071,7 @@ Additional internal comments...`}
                         description: values.description?.trim() || '',
                         price: grossPrice,
                         currency: values.currency,
-                        senderName: user.full_name || 'AB Media Team',
+                        senderName: user.full_name || 'Media Marketing LTD',
                         offerId: offerData.id,
                         language: offerLanguage,
                         vatRate: vatEnabled ? vatPercentage : 0,

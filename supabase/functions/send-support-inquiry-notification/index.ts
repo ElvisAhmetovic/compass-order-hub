@@ -131,7 +131,7 @@ ${data.message}
               <tr>
                 <td style="background-color: #f8fafc; padding: 20px; border-radius: 0 0 8px 8px; border-top: 1px solid #eee;">
                   <p style="color: #888; font-size: 12px; margin: 0; text-align: center;">
-                    This is an automated notification from the AB Media Team support system.
+                    This is an automated notification from the Media Marketing LTD support system.
                   </p>
                 </td>
               </tr>
@@ -202,7 +202,7 @@ const handler = async (req: Request): Promise<Response> => {
           console.log(`[Background] Sending email to: ${email}`);
           
           const { error } = await resend.emails.send({
-            from: "AB Media Team <noreply@mediaamarketing.com>",
+            from: "Media Marketing LTD <noreply@mediaamarketing.com>",
             to: [email],
             subject: `New Support Inquiry: ${inquiryData.subject}`,
             html: emailHtml,

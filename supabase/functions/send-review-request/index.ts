@@ -26,7 +26,7 @@ const COPY: Record<Lang, {
     ask: "If you have a moment, we'd really appreciate a quick Google review — it helps our small team a lot.",
     cta: "Leave a Google review ⭐",
     ps: "It only takes 30 seconds and means the world to us.",
-    footer: "AB Media Team",
+    footer: "Media Marketing LTD",
   },
   de: {
     subject: "Danke — wir freuen uns über Ihr Feedback ⭐",
@@ -35,7 +35,7 @@ const COPY: Record<Lang, {
     ask: "Wenn Sie kurz Zeit haben, würden wir uns sehr über eine Google-Bewertung freuen — es hilft unserem kleinen Team enorm.",
     cta: "Google-Bewertung abgeben ⭐",
     ps: "Es dauert nur 30 Sekunden und bedeutet uns sehr viel.",
-    footer: "AB Media Team",
+    footer: "Media Marketing LTD",
   },
   fr: {
     subject: "Merci — votre avis compte beaucoup ⭐",
@@ -44,7 +44,7 @@ const COPY: Record<Lang, {
     ask: "Si vous avez une minute, un avis Google nous aiderait énormément.",
     cta: "Laisser un avis Google ⭐",
     ps: "Cela ne prend que 30 secondes et compte beaucoup pour nous.",
-    footer: "AB Media Team",
+    footer: "Media Marketing LTD",
   },
   it: {
     subject: "Grazie — il suo feedback è prezioso ⭐",
@@ -53,7 +53,7 @@ const COPY: Record<Lang, {
     ask: "Se ha un minuto, una recensione su Google ci aiuterebbe molto.",
     cta: "Lascia una recensione Google ⭐",
     ps: "Bastano 30 secondi e per noi è importantissimo.",
-    footer: "AB Media Team",
+    footer: "Media Marketing LTD",
   },
   es: {
     subject: "Gracias — nos encantaría su opinión ⭐",
@@ -62,7 +62,7 @@ const COPY: Record<Lang, {
     ask: "Si tiene un momento, una reseña en Google nos ayudaría muchísimo.",
     cta: "Dejar una reseña en Google ⭐",
     ps: "Solo toma 30 segundos y significa mucho para nosotros.",
-    footer: "AB Media Team",
+    footer: "Media Marketing LTD",
   },
 };
 
@@ -193,7 +193,7 @@ serve(async (req: Request) => {
 
     const resend = new Resend(Deno.env.get("RESEND_API_KEY_ABMEDIA"));
     const sendResp = await resend.emails.send({
-      from: "AB Media Team <noreply@mediaamarketing.com>",
+      from: "Media Marketing LTD <noreply@mediaamarketing.com>",
       to: [recipientEmail],
       subject: t.subject,
       html,
