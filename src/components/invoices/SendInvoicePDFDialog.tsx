@@ -12,7 +12,7 @@ import { generateInvoicePDFBase64 } from "@/utils/invoicePdfGenerator";
 import { supabase } from "@/integrations/supabase/client";
 import { Invoice, InvoiceLineItem, Client } from "@/types/invoice";
 import { Mail, Send } from "lucide-react";
-import { SUBJECT_TEMPLATES, CLIENT_MESSAGE_TEMPLATES, TEMPLATE_LANGUAGES, getClientInvoiceEmailTemplate } from "@/components/monthly/monthlyInvoiceTemplates";
+import { CLIENT_SUBJECT_TEMPLATES as SUBJECT_TEMPLATES, CLIENT_MESSAGE_TEMPLATES, CLIENT_TEMPLATE_LANGUAGES as TEMPLATE_LANGUAGES, getClientInvoiceEmailTemplate } from "@/components/monthly/monthlyInvoiceTemplates";
 import { nextReminderFromHours } from "@/utils/reminderInterval";
 import { isValidPaymentLink, withStripeHint, getStripeEmailCopy } from "./stripePaymentLink";
 

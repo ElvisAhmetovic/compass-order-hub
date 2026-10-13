@@ -6,7 +6,7 @@ describe("Send to Client email templates", () => {
     const m = CLIENT_MESSAGE_TEMPLATES[lang];
     for (const bad of ["IBAN", "BIC", "DE91", "REVO"]) expect(m).not.toContain(bad);
   });
-  it.each(Object.keys(CLIENT_MESSAGE_TEMPLATES))("%s keeps greeting and signature", (lang) => {
+  it.each(Object.keys(MESSAGE_TEMPLATES))("%s keeps greeting and signature", (lang) => {
     const m = CLIENT_MESSAGE_TEMPLATES[lang];
     expect(m.split("\n")[0]).toBe(MESSAGE_TEMPLATES[lang].split("\n")[0]);
     expect(m).toContain("Annalena Klein");
