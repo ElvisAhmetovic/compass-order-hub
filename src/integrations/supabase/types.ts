@@ -972,6 +972,7 @@ export type Database = {
           internal_notes: string | null
           invoice_number: string
           issue_date: string
+          language: string | null
           last_reminder_sent_at: string | null
           net_amount: number
           next_reminder_at: string | null
@@ -1008,6 +1009,7 @@ export type Database = {
           internal_notes?: string | null
           invoice_number: string
           issue_date?: string
+          language?: string | null
           last_reminder_sent_at?: string | null
           net_amount?: number
           next_reminder_at?: string | null
@@ -1044,6 +1046,7 @@ export type Database = {
           internal_notes?: string | null
           invoice_number?: string
           issue_date?: string
+          language?: string | null
           last_reminder_sent_at?: string | null
           net_amount?: number
           next_reminder_at?: string | null
