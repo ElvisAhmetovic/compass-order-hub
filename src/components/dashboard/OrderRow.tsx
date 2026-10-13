@@ -1,3 +1,5 @@
+import { resolveOrderClient } from '@/services/orderClientResolver';
+import { orderLocale } from '@/utils/countryLanguage';
 import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { MoreHorizontal, FileText, Send, Receipt, ArrowLeft, X, Bell, Mail, AlertCircle, KeyRound, UserCheck, UserX } from "lucide-react";
@@ -137,21 +139,10 @@ const OrderRow = ({
         return;
       }
 
-      // First, create or find the client (match by name+email exact, then fallback to email)
+      // Find the client safely (a shared email never reuses a different company's client)
       const clients = await InvoiceService.getClients();
-      const orderEmail = (orderData.contact_email || '').toLowerCase().trim();
-      const orderName = (orderData.company_name || '').toLowerCase().trim();
-      let clientId = clients.find(c =>
-        (c.name || '').toLowerCase().trim() === orderName &&
-        (c.email || '').toLowerCase().trim() === orderEmail &&
-        orderEmail !== ''
-      )?.id;
-      if (!clientId && orderEmail) {
-        clientId = clients.find(c => (c.email || '').toLowerCase().trim() === orderEmail)?.id;
-      }
-      if (!clientId) {
-        clientId = clients.find(c => (c.name || '').toLowerCase().trim() === orderName)?.id;
-      }
+      const locale = orderLocale(orderData);
+      let clientId = resolveOrderClient(clients, orderData);
 
       if (!clientId) {
         try {
@@ -161,7 +152,8 @@ const OrderRow = ({
             email: orderData.contact_email || `${orderData.company_name.toLowerCase().replace(/\s+/g, '')}@company.com`,
             address: orderData.company_address || '',
             phone: orderData.contact_phone || '',
-          });
+            country: locale.country,
+          } as any);
           clientId = newClient.id;
         } catch (clientError) {
           console.error("Error creating client:", clientError);
@@ -195,10 +187,22 @@ const OrderRow = ({
         ]
       };
 
-      const newInvoice = await InvoiceService.createInvoice(invoiceData);
+      const newInvoice = await InvoiceService.createInvoice(invoiceData, undefined, undefined, {
+        source: 'order_row_button',
+        order_id: orderId,
+        order_company_name: orderData.company_name,
+        order_contact_email: orderData.contact_email,
+        order_price: orderData.price,
+        order_currency: orderData.currency,
+        client_name: clients.find(c => c.id === clientId)?.name || orderData.company_name,
+      });
 
-      // Link invoice to order via order_id column
-      await InvoiceService.updateInvoice(newInvoice.id, { order_id: orderId } as any);
+      // Link invoice to order and save the client's country/language
+      await InvoiceService.updateInvoice(newInvoice.id, {
+        order_id: orderId,
+        language: locale.language,
+        ...(locale.country ? { bill_to_country: locale.country } : {}),
+      } as any);
       
       // Update the invoice status to match the order status
       const invoiceStatus = status === "Invoice Sent" ? "sent" : "paid";
