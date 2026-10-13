@@ -19,8 +19,6 @@ Media Marketing LTD
 
 invoice@mediaamarketing.com
 
-
-
 Düsseldorfer Str. 32
 
 47051 Duisburg`;
