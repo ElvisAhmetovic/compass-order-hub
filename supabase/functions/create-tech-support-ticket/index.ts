@@ -25,7 +25,7 @@ interface TicketRequest {
     'angelina@abmedia-team.com',
     'service@team-abmedia.com',
     'thomas.thomasklein@gmail.com',
-    'invoice@team-abmedia.com',
+    'invoice@mediaamarketing.com',
     'jungabmedia@gmail.com',
     'wolfabmedia@gmail.com',
     'marcusabmedia@gmail.com',

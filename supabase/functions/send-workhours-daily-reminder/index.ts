@@ -10,7 +10,7 @@ const corsHeaders = {
 
 const RECIPIENTS = [
   'angelina@abmedia-team.com',
-  'invoice@team-abmedia.com',
+  'invoice@mediaamarketing.com',
   'jungabmedia@gmail.com',
   'wolfabmedia@gmail.com',
   'marcusabmedia@gmail.com',
