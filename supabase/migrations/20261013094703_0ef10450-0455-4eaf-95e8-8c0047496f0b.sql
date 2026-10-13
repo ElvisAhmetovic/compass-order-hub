@@ -1,0 +1,1 @@
+SELECT cron.schedule('cleanup-job-logs', '0 3 * * *', $c$DELETE FROM cron.job_run_details WHERE start_time < now() - interval '3 days'; DELETE FROM net._http_response WHERE created < now() - interval '3 days';$c$);
