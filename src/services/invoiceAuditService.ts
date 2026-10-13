@@ -10,6 +10,7 @@ export type InvoiceAuditOutcome =
 export type InvoiceAuditSource =
   | "manual_invoice_page"
   | "order_actions_button"
+  | "order_row_button"
   | "order_status_toggle"
   | "bulk_sync";
 

@@ -1,3 +1,5 @@
+import { resolveOrderClient } from '@/services/orderClientResolver';
+import { orderLocale } from '@/utils/countryLanguage';
 import { useState } from "react";
 import StatusChangeDialog from "./StatusChangeDialog";
 import { 
@@ -80,28 +82,8 @@ const OrderActions = ({ order, onOrderView, onRefresh }: OrderActionsProps) => {
 
     // Resolve / create client without letting a shared email hijack a different company.
     const clients = await InvoiceService.getClients();
-    const orderEmail = (orderData.contact_email || '').toLowerCase().trim();
-    const orderName = (orderData.company_name || '').toLowerCase().trim();
-    // 1. Exact match on name + email
-    let clientId = clients.find(c =>
-      (c.name || '').toLowerCase().trim() === orderName &&
-      (c.email || '').toLowerCase().trim() === orderEmail &&
-      orderEmail !== ''
-    )?.id;
-    // 2. Email match — ONLY reuse if the client name overlaps the order's company name.
-    // (Prevents Nousgerons → Investissement Locatif style hijacks.)
-    if (!clientId && orderEmail && orderName) {
-      const emailMatches = clients.filter(c => (c.email || '').toLowerCase().trim() === orderEmail);
-      const overlap = emailMatches.find(c => {
-        const n = (c.name || '').toLowerCase().trim();
-        return n && (n.includes(orderName) || orderName.includes(n));
-      });
-      if (overlap) clientId = overlap.id;
-    }
-    // 3. Fallback: name-only exact match
-    if (!clientId && orderName) {
-      clientId = clients.find(c => (c.name || '').toLowerCase().trim() === orderName)?.id;
-    }
+    const locale = orderLocale(orderData);
+    let clientId = resolveOrderClient(clients, orderData);
 
     if (!clientId) {
       const newClient = await InvoiceService.createClient({
@@ -109,7 +91,8 @@ const OrderActions = ({ order, onOrderView, onRefresh }: OrderActionsProps) => {
         email: orderData.contact_email || `${orderData.company_name.toLowerCase().replace(/\s+/g, '')}@company.com`,
         address: orderData.company_address || '',
         phone: orderData.contact_phone || '',
-      });
+        country: locale.country,
+      } as any);
       clientId = newClient.id;
     }
 
@@ -150,7 +133,7 @@ const OrderActions = ({ order, onOrderView, onRefresh }: OrderActionsProps) => {
     }
 
     // Create a new invoice from the order
-    const invoiceData = {
+    const invoiceData: any = {
       client_id: clientId,
       issue_date: new Date().toISOString().split('T')[0],
       due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
@@ -158,6 +141,8 @@ const OrderActions = ({ order, onOrderView, onRefresh }: OrderActionsProps) => {
       payment_terms: 'Net 30',
       notes: '',
       internal_notes: `Automatically generated from order ${orderId}`,
+      language: locale.language,
+      ...(locale.country ? { bill_to_country: locale.country } : {}),
       line_items: lineItems
     };
 

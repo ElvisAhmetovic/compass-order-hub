@@ -84,11 +84,18 @@ const InvoiceDetail = () => {
   const formDataRef = useRef(formData);
   const lineItemsRef = useRef(lineItems);
   const billToOverrideRef = useRef(billToOverride);
+  const languageRef = useRef<string | undefined>(undefined);
 
   // Keep refs in sync
   useEffect(() => { formDataRef.current = formData; }, [formData]);
   useEffect(() => { lineItemsRef.current = lineItems; }, [lineItems]);
   useEffect(() => { billToOverrideRef.current = billToOverride; }, [billToOverride]);
+  useEffect(() => {
+    if (initialLoadDone.current && languageRef.current !== undefined && languageRef.current !== templateSettings.language) {
+      isDirty.current = true;
+    }
+    languageRef.current = templateSettings.language;
+  }, [templateSettings.language]);
 
   // Mark dirty on changes (skip initial load)
   useEffect(() => {
@@ -139,6 +146,7 @@ const InvoiceDetail = () => {
           bill_to_city: bt.city || null,
           bill_to_zip_code: bt.zip_code || null,
           bill_to_country: bt.country || null,
+          ...(languageRef.current ? { language: languageRef.current } : {}),
         }).catch(err => console.error('Auto-save failed:', err));
       }
     };
@@ -179,6 +187,23 @@ const InvoiceDetail = () => {
       setClients(clientsData);
 
       if (isNewInvoice) {
+        // Always start a new invoice with an empty form (never carry over the previous invoice's client)
+        setInvoice(null);
+        setLineItems([]);
+        setBillToOverride({ name: '', email: '', address: '', city: '', zip_code: '', country: '' });
+        setFormData({
+          client_id: '',
+          issue_date: new Date().toISOString().split('T')[0],
+          due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          currency: 'EUR',
+          service_date: '',
+          service_period_end: '',
+          stripe_payment_link: '',
+          payment_terms: 'Net 30',
+          notes: '',
+          internal_notes: '',
+          line_items: []
+        });
         // Pre-fill next invoice number
         const currentYear = new Date().getFullYear();
         const nextSeq = await InvoiceService.getNextSequenceNumber(currentYear);
@@ -230,9 +255,10 @@ const InvoiceDetail = () => {
             country: (invoiceData as any).bill_to_country || linkedClient?.country || '',
           });
 
-          // Update template settings with invoice currency
+          // Update template settings with invoice currency (and its own language, when saved)
           setTemplateSettings(prev => ({
             ...prev,
+            ...((invoiceData as any).language ? { language: (invoiceData as any).language } : {}),
             currency: invoiceData.currency
           }));
         }
@@ -417,8 +443,9 @@ const InvoiceDetail = () => {
           discount_rate: item.discount_rate
         }));
 
-        const updatedFormData = {
+        const updatedFormData: any = {
           ...formData,
+          language: templateSettings.language || undefined,
           line_items: lineItemsForCreation
         };
 
@@ -458,6 +485,7 @@ const InvoiceDetail = () => {
           bill_to_city: billToOverride.city || null,
           bill_to_zip_code: billToOverride.zip_code || null,
           bill_to_country: billToOverride.country || null,
+          language: templateSettings.language || null,
           ...(customInvoiceNumber ? { invoice_number: customInvoiceNumber } : {})
         };
 
@@ -1021,4 +1049,10 @@ const InvoiceDetail = () => {
   );
 };
 
-export default InvoiceDetail;
+// Remount per invoice id so a new invoice never inherits the previous invoice's state.
+const InvoiceDetailKeyed = () => {
+  const { id } = useParams();
+  return <InvoiceDetail key={id || 'new'} />;
+};
+
+export default InvoiceDetailKeyed;

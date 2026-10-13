@@ -1,3 +1,5 @@
+import { resolveOrderClient } from './orderClientResolver';
+import { orderLocale } from '@/utils/countryLanguage';
 
 import { supabase } from "@/integrations/supabase/client";
 import { Order, OrderStatus } from "@/types";
@@ -902,29 +904,8 @@ export class OrderService {
           console.log(`📄 No linked invoice found for order ${orderId}, auto-creating...`);
           
           const clients = await InvoiceService.getClients();
-          const orderEmail = (currentOrder.contact_email || '').toLowerCase().trim();
-          const orderName = (currentOrder.company_name || '').toLowerCase().trim();
-
-          // 1. Exact match on name + email
-          let clientId = clients.find(c =>
-            (c.name || '').toLowerCase().trim() === orderName &&
-            (c.email || '').toLowerCase().trim() === orderEmail &&
-            orderEmail !== ''
-          )?.id;
-          // 2. Email match — ONLY reuse if the client name overlaps the order's company name.
-          // (Prevents Nousgerons → Investissement Locatif style hijacks.)
-          if (!clientId && orderEmail && orderName) {
-            const emailMatches = clients.filter(c => (c.email || '').toLowerCase().trim() === orderEmail);
-            const overlap = emailMatches.find(c => {
-              const n = (c.name || '').toLowerCase().trim();
-              return n && (n.includes(orderName) || orderName.includes(n));
-            });
-            if (overlap) clientId = overlap.id;
-          }
-          // 3. Fallback: name-only exact match
-          if (!clientId && orderName) {
-            clientId = clients.find(c => (c.name || '').toLowerCase().trim() === orderName)?.id;
-          }
+          const locale = orderLocale(currentOrder);
+          let clientId = resolveOrderClient(clients, currentOrder);
 
           if (!clientId) {
             const newClient = await InvoiceService.createClient({
@@ -932,7 +913,8 @@ export class OrderService {
               email: currentOrder.contact_email || `${currentOrder.company_name.toLowerCase().replace(/\s+/g, '')}@company.com`,
               address: currentOrder.company_address || '',
               phone: currentOrder.contact_phone || '',
-            });
+              country: locale.country,
+            } as any);
             clientId = newClient.id;
           }
 
@@ -967,7 +949,7 @@ export class OrderService {
             }];
           }
 
-          const invoiceData = {
+          const invoiceData: any = {
             client_id: clientId,
             issue_date: new Date().toISOString().split('T')[0],
             due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
@@ -975,6 +957,8 @@ export class OrderService {
             payment_terms: 'Net 30',
             notes: '',
             internal_notes: `Automatically generated from order ${orderId}`,
+            language: locale.language,
+            ...(locale.country ? { bill_to_country: locale.country } : {}),
             line_items: lineItems
           };
 
