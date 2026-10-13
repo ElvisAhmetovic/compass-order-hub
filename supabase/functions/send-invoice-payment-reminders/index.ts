@@ -352,7 +352,7 @@ const handler = async (req: Request): Promise<Response> => {
 
       const t = getTranslations(testLang);
       await resend.emails.send({
-        from: "AB Media Team <noreply@abm-team.com>",
+        from: "AB Media Team <noreply@mediaamarketing.com>",
         to: [testEmail],
         subject: `💰 ${t.urgency[0]} #1: ${t.invoiceLabel} INV-2026-TEST - ${formatPrice(1299, "EUR")}`,
         html: demoHtml,
@@ -553,7 +553,7 @@ const handler = async (req: Request): Promise<Response> => {
             const clientSubject = `💰 ${t.urgency[urgencyIdx]} #${newReminderCount}: ${t.invoiceLabel} ${invoice.invoice_number} - ${amount}`;
 
             await resend.emails.send({
-              from: "AB Media Team <noreply@abm-team.com>",
+              from: "AB Media Team <noreply@mediaamarketing.com>",
               to: [clientEmail],
               cc: ccList.length > 0 ? ccList : undefined,
               subject: clientSubject,

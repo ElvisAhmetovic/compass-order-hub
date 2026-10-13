@@ -205,7 +205,7 @@ const handler = async (req: Request): Promise<Response> => {
         for (const email of TEAM_EMAILS) {
           try {
             await resend.emails.send({
-              from: "AB Media Team <noreply@abm-team.com>",
+              from: "AB Media Team <noreply@mediaamarketing.com>",
               to: [email],
               subject: `💰 Payment Reminder: ${order.company_name} - ${price}`,
               html: emailHtml,

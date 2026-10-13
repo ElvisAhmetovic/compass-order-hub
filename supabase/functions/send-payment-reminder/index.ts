@@ -72,7 +72,7 @@ const handler = async (req: Request): Promise<Response> => {
       .replace(/•/g, '&bull;');
 
     const emailResponse = await resend.emails.send({
-      from: "AB Media Team <noreply@abm-team.com>",
+      from: "AB Media Team <noreply@mediaamarketing.com>",
       to: [to],
       subject: subject,
       html: `

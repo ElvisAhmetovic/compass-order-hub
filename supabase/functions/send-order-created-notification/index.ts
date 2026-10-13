@@ -157,7 +157,7 @@ serve(async (req) => {
         'Authorization': `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: 'AB Media Team <noreply@abm-team.com>',
+        from: 'AB Media Team <noreply@mediaamarketing.com>',
         to: [clientEmail],
         subject: `Order Confirmed – ${companyName} | AB Media Team`,
         html,

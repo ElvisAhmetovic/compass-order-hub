@@ -329,7 +329,7 @@ const handler = async (req: Request): Promise<Response> => {
     // Send email to client
     console.log(`Sending payment reminder email to client: ${clientEmail}`);
     const clientEmailResponse = await resend.emails.send({
-      from: "Thomas Klein <ThomasKlein@abm-team.com>",
+      from: "Thomas Klein <ThomasKlein@mediaamarketing.com>",
       to: [clientEmail],
       subject: finalSubject,
       html: finalEmailHtml,
@@ -429,7 +429,7 @@ const handler = async (req: Request): Promise<Response> => {
     for (const teamEmail of TEAM_EMAILS) {
       try {
         await resend.emails.send({
-          from: "Thomas Klein <ThomasKlein@abm-team.com>",
+          from: "Thomas Klein <ThomasKlein@mediaamarketing.com>",
           to: [teamEmail],
           subject: `✅ Client Reminder Sent: ${companyName} - ${formattedPrice}`,
           html: teamEmailHtml,
