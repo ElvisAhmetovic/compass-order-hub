@@ -416,7 +416,7 @@ const handler = async (req: Request): Promise<Response> => {
             </table>
           </div>
           
-          <p style="font-size: 12px; color: #666; margin-top: 15px;">This is an automated notification from the AB Media order management system.</p>
+          <p style="font-size: 12px; color: #666; margin-top: 15px;">This is an automated notification from the Media Marketing LTD order management system.</p>
         </div>
       </body>
       </html>

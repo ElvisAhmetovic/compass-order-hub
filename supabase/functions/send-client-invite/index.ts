@@ -42,7 +42,7 @@ const getInviteEmailHtml = (
       <div style="background: #ffffff; padding: 30px; border: 1px solid #e0e0e0; border-top: none;">
         <p style="font-size: 16px; margin-bottom: 20px;">Dear <strong>${clientName}</strong>,</p>
         
-        <p style="margin-bottom: 20px;">You have been granted access to the AB Media Client Portal where you can track your orders and view their progress.</p>
+        <p style="margin-bottom: 20px;">You have been granted access to the Media Marketing LTD Client Portal where you can track your orders and view their progress.</p>
         
         <div style="background: #e8f5e9; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #4caf50;">
           <h3 style="margin: 0 0 15px 0; color: #1a1a2e;">Your Order</h3>
@@ -71,7 +71,7 @@ const getInviteEmailHtml = (
           <p style="margin: 10px 0 0 0;">Contact us at <a href="mailto:service@team-abmedia.com" style="color: #1976d2;">service@team-abmedia.com</a></p>
         </div>
         
-        <p style="margin-top: 30px;">Thank you for choosing AB Media!</p>
+        <p style="margin-top: 30px;">Thank you for choosing Media Marketing LTD!</p>
         
         <p style="margin-top: 20px;">
           Best regards,<br>
