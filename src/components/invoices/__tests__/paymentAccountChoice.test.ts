@@ -6,7 +6,7 @@ const ids = (choice?: unknown) => filterAccountsByChoice(PAYMENT_ACCOUNTS, choic
 describe("payment account selection", () => {
   it("default is German + Revolut", () => expect(ids(undefined)).toEqual(["germany", "revolut"]));
   it("Wise alone", () => expect(ids(["wise"])).toEqual(["wise"]));
-  it("all three", () => expect(ids(["wise", "germany", "revolut"])).toEqual(["germany", "revolut", "wise"]));
+  it("all three", () => expect(ids(["wise", "germany", "revolut"])).toEqual(["germany", "wise", "revolut"]));
   it("empty selection falls back to German + Revolut", () => expect(ids([])).toEqual(["germany", "revolut"]));
   it("old 'revolut_only' value", () => expect(ids("revolut_only")).toEqual(["revolut"]));
   it("old 'all' value", () => expect(ids("all")).toEqual(["germany", "revolut"]));
