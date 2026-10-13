@@ -165,7 +165,7 @@ const SendClientReminderModal = ({ open, onOpenChange, order, onEmailSent }: Sen
         invoice: fullInvoice,
         lineItems: lineItems || [],
         client: fullInvoice.clients || undefined,
-        templateSettings: { ...templateSettings, currency: invoice.currency || "EUR" },
+        templateSettings: { ...templateSettings, ...((fullInvoice as any).language ? { language: (fullInvoice as any).language } : {}), customTerms: (fullInvoice as any).custom_terms || "", currency: invoice.currency || "EUR" },
       });
 
       setInvoicePdfBase64(pdfBase64);

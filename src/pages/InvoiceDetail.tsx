@@ -1,5 +1,5 @@
 import { isValidPaymentLink } from '@/components/invoices/stripePaymentLink';
-import { getInvoiceTemplateSettingsSync, loadInvoiceTemplateSettings } from '@/components/invoices/loadTemplateSettings';
+import { getInvoiceTemplateSettingsSync, loadInvoiceTemplateSettings, applyLanguageNoteReset } from '@/components/invoices/loadTemplateSettings';
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
@@ -52,10 +52,15 @@ const InvoiceDetail = () => {
   const [invoiceYear, setInvoiceYear] = useState<string>(new Date().getFullYear().toString());
   const [invoiceSeqNumber, setInvoiceSeqNumber] = useState<string>('');
   const [templateSettings, setTemplateSettings] = useState<any>(() => getInvoiceTemplateSettingsSync());
+  const invoiceLanguageLoaded = useRef(false);
+  // Template Settings changes: switching language swaps the note to that language's standard text.
+  const handleTemplateSettingsChange = (next: any) => {
+    setTemplateSettings((prev: any) => applyLanguageNoteReset(prev, next));
+  };
   useEffect(() => {
     let cancelled = false;
     loadInvoiceTemplateSettings().then((s) => {
-      if (!cancelled) setTemplateSettings((prev: any) => ({ ...s, currency: prev?.currency || s.currency }));
+      if (!cancelled) setTemplateSettings((prev: any) => ({ ...s, currency: prev?.currency || s.currency, language: prev?.language && invoiceLanguageLoaded.current ? prev.language : s.language, customTerms: prev?.customTerms || '' }));
     });
     return () => { cancelled = true; };
   }, []);
@@ -85,6 +90,7 @@ const InvoiceDetail = () => {
   const lineItemsRef = useRef(lineItems);
   const billToOverrideRef = useRef(billToOverride);
   const languageRef = useRef<string | undefined>(undefined);
+  const customTermsRef = useRef<string>('');
 
   // Keep refs in sync
   useEffect(() => { formDataRef.current = formData; }, [formData]);
@@ -96,6 +102,10 @@ const InvoiceDetail = () => {
     }
     languageRef.current = templateSettings.language;
   }, [templateSettings.language]);
+  useEffect(() => {
+    if (initialLoadDone.current && customTermsRef.current !== (templateSettings.customTerms || '')) isDirty.current = true;
+    customTermsRef.current = templateSettings.customTerms || '';
+  }, [templateSettings.customTerms]);
 
   // Mark dirty on changes (skip initial load)
   useEffect(() => {
@@ -147,6 +157,7 @@ const InvoiceDetail = () => {
           bill_to_zip_code: bt.zip_code || null,
           bill_to_country: bt.country || null,
           ...(languageRef.current ? { language: languageRef.current } : {}),
+          custom_terms: customTermsRef.current || null,
         }).catch(err => console.error('Auto-save failed:', err));
       }
     };
@@ -256,9 +267,11 @@ const InvoiceDetail = () => {
           });
 
           // Update template settings with invoice currency (and its own language, when saved)
+          invoiceLanguageLoaded.current = true;
           setTemplateSettings(prev => ({
             ...prev,
             ...((invoiceData as any).language ? { language: (invoiceData as any).language } : {}),
+            customTerms: (invoiceData as any).custom_terms || '',
             currency: invoiceData.currency
           }));
         }
@@ -446,6 +459,7 @@ const InvoiceDetail = () => {
         const updatedFormData: any = {
           ...formData,
           language: templateSettings.language || undefined,
+          custom_terms: templateSettings.customTerms || null,
           line_items: lineItemsForCreation
         };
 
@@ -486,6 +500,7 @@ const InvoiceDetail = () => {
           bill_to_zip_code: billToOverride.zip_code || null,
           bill_to_country: billToOverride.country || null,
           language: templateSettings.language || null,
+          custom_terms: templateSettings.customTerms || '',
           ...(customInvoiceNumber ? { invoice_number: customInvoiceNumber } : {})
         };
 
@@ -989,7 +1004,7 @@ const InvoiceDetail = () => {
 
               <TabsContent value="template">
                 <InvoiceTemplateSettings
-                  onSettingsChange={setTemplateSettings}
+                  onSettingsChange={handleTemplateSettingsChange}
                   initialSettings={templateSettings}
                   stripePaymentLink={formData.stripe_payment_link || ''}
                   onStripePaymentLinkChange={(v) => handleFormDataChange('stripe_payment_link', v)}
