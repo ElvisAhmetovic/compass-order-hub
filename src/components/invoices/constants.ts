@@ -129,7 +129,7 @@ export const normalizePaymentAccountIds = (choice?: unknown): string[] => {
 /** Returns the accounts to show for the saved selection. */
 export const filterAccountsByChoice = <T extends { id: string }>(accounts: T[], choice?: unknown): T[] => {
   const ids = normalizePaymentAccountIds(choice);
-  const picked = accounts.filter((a) => ids.includes(a.id));
+  const picked = accounts.filter((a) => ids.includes(a.id)).sort((x, y) => ids.indexOf(x.id) - ids.indexOf(y.id));
   return picked.length ? picked : accounts.filter((a) => DEFAULT_PAYMENT_ACCOUNT_IDS.includes(a.id));
 };
 

@@ -269,7 +269,16 @@ const generateInvoiceHTML = (data: InvoicePDFData): string => {
     bank: "Wise",
   };
 
-  const selectedAccounts = filterAccountsByChoice([germanyAccount, revolutAccount, wiseAccount], templateSettings.selectedPaymentAccount);
+  const payoneerAccount = {
+    ...germanyAccount,
+    id: "payoneer",
+    name: "MEDIA MARKETING LIMITED PAYONEER",
+    iban: "LU574080000049188578",
+    bic: "BCIRLULL",
+    bank: "Payoneer",
+  };
+
+  const selectedAccounts = filterAccountsByChoice([germanyAccount, revolutAccount, wiseAccount, payoneerAccount], templateSettings.selectedPaymentAccount);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-GB', {
