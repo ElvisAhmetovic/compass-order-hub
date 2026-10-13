@@ -44,10 +44,11 @@ Mit freundlichen Grüßen
 
 Annalena Klein
 
-AB MEDIA
+Media Marketing LTD
 
 +49 203 7090 7262
 
+invoice@mediaamarketing.com
 
 Düsseldorfer Str. 32
 
