@@ -200,6 +200,8 @@ const Invoices = () => {
         client: client || undefined,
         templateSettings: {
           ...templateSettings,
+          ...((invoice as any).language ? { language: (invoice as any).language } : {}),
+          customTerms: (invoice as any).custom_terms || '',
           currency: invoice.currency,
         },
         formData: { currency: invoice.currency },

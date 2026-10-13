@@ -56,7 +56,8 @@ export const useInvoiceSettings = (initialSettings?: any) => {
     return {
       ...merged,
       selectedPaymentAccount: normalizePaymentAccountIds(merged.selectedPaymentAccount),
-      customTerms: isLegacyDefaultTerms(merged.customTerms) ? "" : merged.customTerms,
+      // Notes are per invoice: only take them from the invoice passed in, never from saved settings.
+      customTerms: (initialSettings as any)?.customTerms && !isLegacyDefaultTerms((initialSettings as any).customTerms) ? (initialSettings as any).customTerms : "",
       reverseCharge: merged.reverseCharge === true,
       // Database company info is the source of truth
       companyInfo: { ...companyInfo },
