@@ -1,3 +1,5 @@
+import { resolveOrderClient } from './orderClientResolver';
+import { orderLocale } from '@/utils/countryLanguage';
 
 import { supabase } from "@/integrations/supabase/client";
 import { Order, OrderStatus } from "@/types";
