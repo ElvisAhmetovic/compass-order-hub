@@ -263,7 +263,7 @@ const buildOfferEmailHtml = (data: {
 
         <!-- WhatsApp circle button -->
         <tr><td style="text-align:center; padding:0 32px 40px;">
-          <a href="https://api.whatsapp.com/send/?phone=4920370907262&text=Hello+AB+Media+Team%2C+I+would+like+to+inquire+about+your+services.&type=phone_number&app_absent=0" style="display:inline-block; width:52px; height:52px; border-radius:50%; background:#25D366; color:#ffffff; font-size:26px; line-height:52px; text-align:center; text-decoration:none; box-shadow:0 1px 2px rgba(60,64,67,.15),0 2px 6px rgba(60,64,67,.10);">&#128172;</a>
+          <a href="https://api.whatsapp.com/send/?phone=4920370907262&text=Hello+Media+Marketing+LTD%2C+I+would+like+to+inquire+about+your+services.&type=phone_number&app_absent=0" style="display:inline-block; width:52px; height:52px; border-radius:50%; background:#25D366; color:#ffffff; font-size:26px; line-height:52px; text-align:center; text-decoration:none; box-shadow:0 1px 2px rgba(60,64,67,.15),0 2px 6px rgba(60,64,67,.10);">&#128172;</a>
         </td></tr>
 
         <!-- Footer -->
@@ -272,7 +272,7 @@ const buildOfferEmailHtml = (data: {
             <td style="font-family:Roboto,Arial,sans-serif; font-size:10px; color:#515354; line-height:16px;">
               ${t.bestRegards}<br>
               ${data.senderName}, Media Marketing Limited<br><br>
-              <a href="https://www.abm-team.com" style="color:#1e3a5f; text-decoration:none;">www.abm-team.com</a>
+              <a href="https://www.mediaamarketing.com/de" style="color:#1e3a5f; text-decoration:none;">www.mediaamarketing.com</a>
             </td>
             <td align="right" style="padding-left:20px; vertical-align:top;">
               <div style="font-family:Roboto,Arial,sans-serif; font-size:14px; font-weight:bold; color:#1e3a5f;">Media Marketing Limited</div>
@@ -338,7 +338,7 @@ serve(async (req) => {
         'Authorization': `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: 'AB Media Team <noreply@mediaamarketing.com>',
+        from: 'Media Marketing LTD <noreply@mediaamarketing.com>',
         to: [clientEmail],
         subject: clientSubject,
         html,
@@ -385,7 +385,7 @@ serve(async (req) => {
                 'Authorization': `Bearer ${RESEND_API_KEY}`,
               },
               body: JSON.stringify({
-                from: 'AB Media Team <noreply@mediaamarketing.com>',
+                from: 'Media Marketing LTD <noreply@mediaamarketing.com>',
                 to: [email],
                 subject: teamSubject,
                 html,

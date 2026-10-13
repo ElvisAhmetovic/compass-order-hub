@@ -57,7 +57,7 @@ const buildContractEmailHtml = (data: {
 
   return `<!DOCTYPE html>
 <html lang="en">
-<head><meta charset="UTF-8"><title>New Monthly Contract - AB Media Team</title></head>
+<head><meta charset="UTF-8"><title>New Monthly Contract - Media Marketing LTD</title></head>
 <body style="margin:0; padding:0; background-color:#ffffff; font-family:Arial,Helvetica,sans-serif;">
   <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color:#ffffff; padding:40px 0;">
     <tr><td align="center">
@@ -66,7 +66,7 @@ const buildContractEmailHtml = (data: {
         <tr><td style="padding:22px 32px;">
           <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"><tr>
             <td align="left" style="font-family:Roboto,Arial,sans-serif; font-size:13px; color:#606368;">New Monthly Contract</td>
-            <td align="right" style="font-family:Roboto,Arial,sans-serif; font-size:18px; font-weight:bold; color:#1e3a5f;">AB Media Team</td>
+            <td align="right" style="font-family:Roboto,Arial,sans-serif; font-size:18px; font-weight:bold; color:#1e3a5f;">Media Marketing LTD</td>
           </tr></table>
         </td></tr>
 
@@ -148,12 +148,12 @@ const buildContractEmailHtml = (data: {
           <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"><tr>
             <td style="font-family:Roboto,Arial,sans-serif; font-size:10px; color:#515354; line-height:16px;">
               Best regards,<br>
-              AB Media Team<br><br>
-              <a href="https://www.abm-team.com" style="color:#1e3a5f; text-decoration:none;">www.abm-team.com</a>
+              Media Marketing LTD<br><br>
+              <a href="https://www.mediaamarketing.com/de" style="color:#1e3a5f; text-decoration:none;">www.mediaamarketing.com</a>
             </td>
             <td align="right" style="padding-left:20px; vertical-align:top;">
-              <div style="font-family:Roboto,Arial,sans-serif; font-size:14px; font-weight:bold; color:#1e3a5f;">AB Media Team</div>
-              <div style="font-family:Roboto,Arial,sans-serif; font-size:10px; color:#515354; margin-top:6px;">&copy; ${new Date().getFullYear()} AB Media Team</div>
+              <div style="font-family:Roboto,Arial,sans-serif; font-size:14px; font-weight:bold; color:#1e3a5f;">Media Marketing LTD</div>
+              <div style="font-family:Roboto,Arial,sans-serif; font-size:10px; color:#515354; margin-top:6px;">&copy; ${new Date().getFullYear()} Media Marketing LTD</div>
             </td>
           </tr></table>
         </td></tr>
@@ -217,7 +217,7 @@ serve(async (req) => {
             'Authorization': `Bearer ${RESEND_API_KEY}`,
           },
           body: JSON.stringify({
-            from: 'AB Media Team <noreply@mediaamarketing.com>',
+            from: 'Media Marketing LTD <noreply@mediaamarketing.com>',
             to: [email],
             subject,
             html,

@@ -192,7 +192,7 @@ const buildReminderEmailHtml = (data: {
 
   return `<!DOCTYPE html>
 <html lang="${data.isClientEmail ? data.language : 'en'}">
-<head><meta charset="UTF-8"><title>${urgencyLabel} - AB Media Team</title></head>
+<head><meta charset="UTF-8"><title>${urgencyLabel} - Media Marketing LTD</title></head>
 <body style="margin:0; padding:0; background-color:#ffffff; font-family:Arial,Helvetica,sans-serif;">
   <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color:#ffffff; padding:40px 0;">
     <tr><td align="center">
@@ -201,7 +201,7 @@ const buildReminderEmailHtml = (data: {
         <tr><td style="padding:22px 32px;">
           <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"><tr>
             <td align="left" style="font-family:Roboto,Arial,sans-serif; font-size:13px; color:${urgencyColor}; font-weight:bold;">${urgencyLabel} #${data.reminderNumber}</td>
-            <td align="right" style="font-family:Roboto,Arial,sans-serif; font-size:18px; font-weight:bold; color:#1e3a5f;">AB Media Team</td>
+            <td align="right" style="font-family:Roboto,Arial,sans-serif; font-size:18px; font-weight:bold; color:#1e3a5f;">Media Marketing LTD</td>
           </tr></table>
         </td></tr>
 
@@ -297,7 +297,7 @@ const buildReminderEmailHtml = (data: {
         <tr><td style="padding:24px 32px; border-top:1px solid #e8eaed;">
           <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"><tr>
             <td style="font-family:Roboto,Arial,sans-serif; font-size:11px; color:#9aa0a6; text-align:center;">
-              ${t.footer} <strong>AB Media Team</strong><br>
+              ${t.footer} <strong>Media Marketing LTD</strong><br>
               ${data.isClientEmail ? `${urgencyLabel}` : `Reminder`} #${data.reminderNumber} • ${new Date().toLocaleDateString('de-DE')}
             </td>
           </tr></table>
@@ -352,7 +352,7 @@ const handler = async (req: Request): Promise<Response> => {
 
       const t = getTranslations(testLang);
       await resend.emails.send({
-        from: "AB Media Team <noreply@mediaamarketing.com>",
+        from: "Media Marketing LTD <noreply@mediaamarketing.com>",
         to: [testEmail],
         subject: `💰 ${t.urgency[0]} #1: ${t.invoiceLabel} INV-2026-TEST - ${formatPrice(1299, "EUR")}`,
         html: demoHtml,
@@ -553,7 +553,7 @@ const handler = async (req: Request): Promise<Response> => {
             const clientSubject = `💰 ${t.urgency[urgencyIdx]} #${newReminderCount}: ${t.invoiceLabel} ${invoice.invoice_number} - ${amount}`;
 
             await resend.emails.send({
-              from: "AB Media Team <noreply@mediaamarketing.com>",
+              from: "Media Marketing LTD <noreply@mediaamarketing.com>",
               to: [clientEmail],
               cc: ccList.length > 0 ? ccList : undefined,
               subject: clientSubject,

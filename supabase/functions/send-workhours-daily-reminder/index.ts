@@ -48,7 +48,7 @@ const buildHtml = () => {
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f6f8;padding:24px 0;">
     <tr><td align="center">
       <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:10px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
-        <tr><td style="background:#0f172a;padding:20px 28px;color:#ffffff;font-weight:700;font-size:18px;">AB Media Team — empriatech</td></tr>
+        <tr><td style="background:#0f172a;padding:20px 28px;color:#ffffff;font-weight:700;font-size:18px;">Media Marketing LTD — empriatech</td></tr>
         <tr><td style="padding:28px;">
           <h1 style="margin:0 0 16px;font-size:22px;color:#0f172a;">Dobro jutro!</h1>
           <p style="margin:0 0 14px;font-size:15px;line-height:1.6;">
@@ -65,7 +65,7 @@ const buildHtml = () => {
             <a href="${link}" style="display:inline-block;background:#1e3a5f;color:#ffffff;text-decoration:none;padding:12px 22px;border-radius:8px;font-weight:600;font-size:15px;">Unesi radne sate</a>
           </p>
           <p style="margin:0;font-size:13px;color:#64748b;line-height:1.6;">
-            Hvala na saradnji,<br/>AB Media Team
+            Hvala na saradnji,<br/>Media Marketing LTD
           </p>
         </td></tr>
       </table>
@@ -97,7 +97,7 @@ Deno.serve(async (req) => {
 
     const html = buildHtml()
     const subject = 'Podsjetnik: Unesite radne sate do 12:00'
-    const from = 'AB Media Team <noreply@mediaamarketing.com>'
+    const from = 'Media Marketing LTD <noreply@mediaamarketing.com>'
 
     let sent = 0
     let failed = 0

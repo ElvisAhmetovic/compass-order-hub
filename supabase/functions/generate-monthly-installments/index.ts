@@ -324,7 +324,7 @@ const COMPANY = {
   phone: "+4920370907262",
   fax: "+49 203 70 90 73 53",
   email: "",
-  website: "https://www.abm-team.com",
+  website: "https://www.mediaamarketing.com/de",
   registrationNumber: "17507679",
   vatId: "",
   taxNumber: "",
@@ -731,7 +731,7 @@ async function sendInvoiceEmail(
       <p>${E.attachmentNote}</p>
       <p>${E.paymentRequest}</p>
       <p>${E.questionsNote}</p>
-      <br/><p>${E.closing}<br/><strong>AB Media Team</strong></p>
+      <br/><p>${E.closing}<br/><strong>Media Marketing LTD</strong></p>
     </div>`;
 
   try {

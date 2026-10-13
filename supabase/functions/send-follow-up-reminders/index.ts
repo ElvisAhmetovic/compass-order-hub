@@ -139,7 +139,7 @@ const handler = async (req: Request): Promise<Response> => {
                 </p>
               </div>
               <div style="text-align: center; color: #9ca3af; font-size: 11px; padding: 15px;">
-                <p style="margin: 0;">Automated follow-up reminder from AB Media Team CRM</p>
+                <p style="margin: 0;">Automated follow-up reminder from Media Marketing LTD CRM</p>
               </div>
             </div>
           </body>
@@ -152,7 +152,7 @@ const handler = async (req: Request): Promise<Response> => {
           const batch = NOTIFICATION_EMAIL_LIST.slice(i, i + 2);
           for (const email of batch) {
             await resend.emails.send({
-              from: "AB Media Team <noreply@mediaamarketing.com>",
+              from: "Media Marketing LTD <noreply@mediaamarketing.com>",
               to: [email],
               subject,
               html: emailHtml,

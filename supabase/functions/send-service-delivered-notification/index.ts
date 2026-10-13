@@ -194,7 +194,7 @@ serve(async (req: Request) => {
 
     // Send email
     const emailResponse = await resend.emails.send({
-      from: "AB Media Team <noreply@mediaamarketing.com>",
+      from: "Media Marketing LTD <noreply@mediaamarketing.com>",
       to: [order.contact_email],
       subject: subject,
       html: htmlBody,

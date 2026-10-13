@@ -43,7 +43,7 @@ const getClientEmailHtml = (
     <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
       <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 30px; border-radius: 10px 10px 0 0;">
         <h1 style="color: #ffffff; margin: 0; font-size: 24px;">📦 Order Status Update</h1>
-        <p style="color: #a0a0a0; margin: 10px 0 0 0;">AB Media Team</p>
+        <p style="color: #a0a0a0; margin: 10px 0 0 0;">Media Marketing LTD</p>
       </div>
       
       <div style="background: #ffffff; padding: 30px; border: 1px solid #e0e0e0; border-top: none;">
@@ -90,12 +90,12 @@ const getClientEmailHtml = (
         
         <p style="margin-top: 20px;">
           Best regards,<br>
-          <strong>AB Media Team</strong>
+          <strong>Media Marketing LTD</strong>
         </p>
       </div>
       
       <div style="background: #f5f5f5; padding: 20px; border-radius: 0 0 10px 10px; text-align: center; font-size: 12px; color: #666;">
-        <p style="margin: 0;">This is an automated message from AB Media Team.</p>
+        <p style="margin: 0;">This is an automated message from Media Marketing LTD.</p>
       </div>
     </body>
     </html>
