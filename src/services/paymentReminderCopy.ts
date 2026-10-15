@@ -29,3 +29,8 @@ Media Marketing Limited
 
 export const getPaymentReminderHtml = (language: PaymentReminderLanguage) =>
   PAYMENT_REMINDER_COPY[language].split('\n\n').map(paragraph => `<p>${paragraph.replace(/\n/g, '<br>')}</p>`).join('\n');
+/** Extra paragraph for reminders of invoices whose order is Resolved. Mirrored in send-invoice-payment-reminders. */
+export const RESOLVED_SERVICE_NOTICE: Record<PaymentReminderLanguage, string> = {
+  en: "We are pleased to confirm that the service for this order has been fully completed and resolved. As all work has now been delivered, the outstanding invoice amount of {amount} is due for payment. We kindly ask you to settle it as soon as possible.",
+  de: "Wir freuen uns, Ihnen mitzuteilen, dass die Leistung zu diesem Auftrag vollständig erbracht und abgeschlossen wurde. Da alle Arbeiten nun geliefert sind, ist der offene Rechnungsbetrag von {amount} zur Zahlung fällig. Wir bitten Sie, diesen so bald wie möglich zu begleichen.",
+};
