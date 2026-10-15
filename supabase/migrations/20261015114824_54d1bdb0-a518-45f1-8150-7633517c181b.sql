@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.sync_reminder_interval_on_resolved() FROM PUBLIC, anon, authenticated;
