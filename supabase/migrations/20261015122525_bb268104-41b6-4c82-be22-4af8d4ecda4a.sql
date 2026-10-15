@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.track_invoice_cancellation() FROM PUBLIC, anon, authenticated;
