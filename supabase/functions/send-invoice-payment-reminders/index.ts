@@ -161,6 +161,20 @@ const approvedClientCopy: Record<string, string> = {
   de: `<p>Hallo,</p><p>Wir möchten Sie freundlich daran erinnern, dass wir Ihre Zahlung noch nicht erhalten haben!</p><p>Ihre Zahlung bedeutet uns viel als Motivation für die weitere Arbeit an Ihrem Projekt, und sie deckt auch unsere Kosten, da wir hohe Investitionen haben, aufgrund derer wir gezwungen sind, Sie an die Zahlungen zu erinnern.</p><p>Es wäre schön, wenn Sie uns mitteilen würden, wann Sie vorhatten, unsere Rechnung zu bezahlen.</p><p>Herzliche Grüße<br>Annalena Klein<br>Media Marketing Limited<br>+49 203 7090 7262</p>`,
 };
 
+// Mirrors RESOLVED_SERVICE_NOTICE in src/services/paymentReminderCopy.ts (en/de).
+const resolvedNotice: Record<string, string> = {
+  en: "We are pleased to confirm that the service for this order has been fully completed and resolved. As all work has now been delivered, the outstanding invoice amount of {amount} is due for payment. We kindly ask you to settle it as soon as possible.",
+  de: "Wir freuen uns, Ihnen mitzuteilen, dass die Leistung zu diesem Auftrag vollständig erbracht und abgeschlossen wurde. Da alle Arbeiten nun geliefert sind, ist der offene Rechnungsbetrag von {amount} zur Zahlung fällig. Wir bitten Sie, diesen so bald wie möglich zu begleichen.",
+  nl: "Wij bevestigen graag dat de dienstverlening voor deze opdracht volledig is afgerond. Aangezien alle werkzaamheden nu zijn geleverd, is het openstaande factuurbedrag van {amount} verschuldigd. Wij verzoeken u vriendelijk dit zo spoedig mogelijk te voldoen.",
+  fr: "Nous avons le plaisir de vous confirmer que la prestation pour cette commande a été entièrement réalisée et finalisée. L'ensemble des travaux ayant été livré, le montant restant dû de {amount} est désormais exigible. Nous vous prions de bien vouloir le régler dans les meilleurs délais.",
+  es: "Nos complace confirmarle que el servicio de este pedido se ha completado y finalizado en su totalidad. Dado que todo el trabajo ya ha sido entregado, el importe pendiente de la factura de {amount} es exigible. Le rogamos que lo abone lo antes posible.",
+  da: "Vi kan med glæde bekræfte, at ydelsen for denne ordre er fuldt udført og afsluttet. Da alt arbejde nu er leveret, forfalder det udestående fakturabeløb på {amount} til betaling. Vi beder Dem venligst betale det hurtigst muligt.",
+  no: "Vi bekrefter gjerne at tjenesten for denne ordren er fullført og avsluttet. Siden alt arbeid nå er levert, forfaller det utestående fakturabeløpet på {amount} til betaling. Vi ber deg vennligst betale så snart som mulig.",
+  cs: "S potěšením potvrzujeme, že služba k této objednávce byla zcela dokončena a uzavřena. Vzhledem k tomu, že veškerá práce byla dodána, je dlužná částka faktury {amount} nyní splatná. Prosíme o její úhradu co nejdříve.",
+  pl: "Z przyjemnością potwierdzamy, że usługa dla tego zamówienia została w pełni zrealizowana i zakończona. Ponieważ wszystkie prace zostały dostarczone, zaległa kwota faktury w wysokości {amount} jest teraz wymagalna. Uprzejmie prosimy o jej uregulowanie jak najszybciej.",
+  sv: "Vi bekräftar gärna att tjänsten för denna beställning är helt slutförd och avslutad. Eftersom allt arbete nu har levererats förfaller det utestående fakturabeloppet på {amount} till betalning. Vi ber er vänligen betala så snart som möjligt.",
+};
+
 const formatPrice = (amount: number, currency: string) => {
   const symbols: Record<string, string> = { EUR: '€', USD: '$', GBP: '£' };
   const symbol = symbols[currency] || currency;
@@ -179,6 +193,7 @@ const buildReminderEmailHtml = (data: {
   reminderNumber: number;
   isClientEmail: boolean;
   language: string;
+  isResolved?: boolean;
 }) => {
   const t = getTranslations(data.isClientEmail ? data.language : 'en');
   const initial = (data.clientName || 'C').charAt(0).toUpperCase();
@@ -223,7 +238,13 @@ const buildReminderEmailHtml = (data: {
           <p style="font-family:Roboto,Arial,sans-serif; font-size:14px; color:#5f6368; margin:8px 0 0;">
             ${subtitleText}
           </p>
-          ${data.isClientEmail && approvedClientCopy[data.language] ? `<div style="font-family:Roboto,Arial,sans-serif; font-size:14px; color:#0f1b3d; line-height:1.7; text-align:left; margin:20px 0 0;">${approvedClientCopy[data.language]}</div>` : ''}
+          ${(() => {
+            if (!data.isClientEmail) return '';
+            const notice = data.isResolved ? `<p>${(resolvedNotice[data.language] || resolvedNotice.en).replace('{amount}', data.amount)}</p>` : '';
+            const copy = approvedClientCopy[data.language];
+            const inner = copy ? copy.replace('</p>', `</p>${notice}`) : notice;
+            return inner ? `<div style="font-family:Roboto,Arial,sans-serif; font-size:14px; color:#0f1b3d; line-height:1.7; text-align:left; margin:20px 0 0;">${inner}</div>` : '';
+          })()}
         </td></tr>
 
         <!-- Invoice Details Card -->
