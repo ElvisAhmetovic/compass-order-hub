@@ -22,11 +22,11 @@ export default function CancelledInvoiceInfo({ invoice }: { invoice: Invoice }) 
     if (!open || by || !invoice.cancelled_by) return;
     const { data } = await supabase
       .from("profiles")
-      .select("full_name, first_name, last_name")
+      .select("first_name, last_name")
       .eq("id", invoice.cancelled_by)
       .maybeSingle();
-    const d = data as { full_name?: string; first_name?: string; last_name?: string } | null;
-    setBy(d?.full_name || [d?.first_name, d?.last_name].filter(Boolean).join(" ") || null);
+    const d = data as { first_name?: string; last_name?: string } | null;
+    setBy([d?.first_name, d?.last_name].filter(Boolean).join(" ") || null);
   };
 
   const when = invoice.cancelled_at;
