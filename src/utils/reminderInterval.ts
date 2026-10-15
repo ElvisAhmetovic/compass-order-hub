@@ -3,6 +3,13 @@ import { supabase } from "@/integrations/supabase/client";
 /** Default automated payment reminder interval: 7 days. */
 export const DEFAULT_REMINDER_INTERVAL_HOURS = 168;
 
+/** Interval once the linked order is Resolved: 3 days (mirrors DB trigger). */
+export const RESOLVED_REMINDER_INTERVAL_HOURS = 72;
+
+export function reminderIntervalForOrder(resolved: boolean): number {
+  return resolved ? RESOLVED_REMINDER_INTERVAL_HOURS : DEFAULT_REMINDER_INTERVAL_HOURS;
+}
+
 /** Returns an ISO timestamp `hours` (default 7 days) from now. */
 export function nextReminderFromHours(hours?: number | null): string {
   const interval = hours && hours > 0 ? hours : DEFAULT_REMINDER_INTERVAL_HOURS;
