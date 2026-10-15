@@ -834,6 +834,19 @@ export class OrderService {
               invoice_number: inv.invoice_number,
               metadata: { phase: 'auto_cancel_on_order_cancel', previous_status: inv.status },
             });
+
+            // Tell the client the invoice is cancelled (fire-and-forget)
+            void (async () => {
+              const { toast } = await import('@/hooks/use-toast');
+              const { data, error } = await supabase.functions.invoke('send-invoice-cancellation', {
+                body: { invoice_id: inv.id },
+              });
+              if (error) {
+                toast({ title: 'Cancellation email failed', description: `${inv.invoice_number}: the invoice is cancelled, but the client was not emailed.`, variant: 'destructive' });
+              } else if (data?.sent) {
+                toast({ title: 'Cancellation email sent to client', description: `${inv.invoice_number} → ${data.to}` });
+              }
+            })();
           }
 
           // Stop any reminders that are still scheduled for this order
