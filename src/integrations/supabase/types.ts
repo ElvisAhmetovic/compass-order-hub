@@ -963,6 +963,8 @@ export type Database = {
           bill_to_email: string | null
           bill_to_name: string | null
           bill_to_zip_code: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
           cc_emails: string[]
           client_id: string
           created_at: string
@@ -1001,6 +1003,8 @@ export type Database = {
           bill_to_email?: string | null
           bill_to_name?: string | null
           bill_to_zip_code?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           cc_emails?: string[]
           client_id: string
           created_at?: string
@@ -1039,6 +1043,8 @@ export type Database = {
           bill_to_email?: string | null
           bill_to_name?: string | null
           bill_to_zip_code?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           cc_emails?: string[]
           client_id?: string
           created_at?: string

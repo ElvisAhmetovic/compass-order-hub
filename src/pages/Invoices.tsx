@@ -46,6 +46,7 @@ import InvoiceReminderHistory from "@/components/invoices/InvoiceReminderHistory
 import { supabase } from "@/integrations/supabase/client";
 import { nextReminderForInvoice } from "@/utils/reminderInterval";
 import { getOutstandingAmount, getPaidAmount } from "@/utils/invoiceBalance";
+import CancelledInvoiceInfo from "@/components/invoices/CancelledInvoiceInfo";
 
 const PAGE_SIZE = 25;
 
@@ -1051,6 +1052,7 @@ const Invoices = () => {
                                       </AlertDialogContent>
                                     </AlertDialog>
                                   )}
+                                  {invoice.status === 'cancelled' && <CancelledInvoiceInfo invoice={invoice} />}
                                   <InvoiceReminderHistory invoice={invoice} />
                                   <Button 
                                     variant="ghost" 
