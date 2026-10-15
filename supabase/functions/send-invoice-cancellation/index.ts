@@ -137,10 +137,11 @@ ${c.body(inv.invoice_number).map((p) => `<p>${esc(p)}</p>`).join("")}
       return json({ error: "Email failed", status: res.status, details }, 502);
     }
 
-    await admin.from("client_email_logs").insert({
+    if (inv.order_id) await admin.from("client_email_logs").insert({
       order_id: inv.order_id, sent_to: to, sent_by_name: (claims.claims.email as string) || "System",
       company_name: client?.name || inv.bill_to_name || "Unknown", order_price: inv.total_amount,
       currency: inv.currency || "EUR", custom_message: inv.id, template_name: "invoice_cancellation",
+      email_subject: subject, invoice_number: inv.invoice_number,
     });
     return json({ sent: true, to, language: lang });
   } catch (e) {
