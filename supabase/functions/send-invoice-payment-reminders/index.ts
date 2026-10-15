@@ -369,6 +369,7 @@ const handler = async (req: Request): Promise<Response> => {
         reminderNumber: 1,
         isClientEmail: true,
         language: testLang,
+        isResolved: body.test_resolved === true,
       });
 
       const t = getTranslations(testLang);
@@ -554,6 +555,7 @@ const handler = async (req: Request): Promise<Response> => {
           amount,
           reminderNumber: newReminderCount,
           language: detectedLanguage,
+          isResolved: order?.status_resolved === true,
         };
 
         // Send to client if email exists — in the detected language
