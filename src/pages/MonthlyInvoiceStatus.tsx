@@ -185,7 +185,7 @@ const MonthlyInvoiceStatus: React.FC = () => {
   const runCatchup = async () => {
     setRunningCatchup(true);
     try {
-      const { data, error } = await supabase.functions.invoke("monthly-billing-catchup");
+      const { data, error } = await supabase.functions.invoke("monthly-billing-catchup?force=true");
       if (error) throw error;
       const count = (data as any)?.retriggered ?? 0;
       toast({ title: "Catch-up started", description: `Re-triggered ${count} contracts. Refreshing in 10s.` });

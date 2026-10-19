@@ -11,16 +11,29 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    if (isCompanyWeekend()) {
+    const force = new URL(req.url).searchParams.get("force") === "true";
+    const json = (b: unknown) => new Response(JSON.stringify(b), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+
+    if (!force && isCompanyWeekend()) {
       console.log("Weekend (Europe/Sarajevo) - monthly catch-up waits until Monday");
-      return new Response(JSON.stringify({ skipped: "weekend" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return json({ skipped: "weekend" });
     }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceRoleKey);
+
+    // Single-flight: only one automatic catch-up per company day.
+    if (!force) {
+      const runDate = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Sarajevo" }).format(new Date());
+      const { error: lockErr } = await supabase.from("monthly_billing_daily_locks").insert({ run_date: runDate });
+      if (lockErr) {
+        console.log(`Catch-up already ran for ${runDate} - skipping duplicate start (${lockErr.code})`);
+        return json({ skipped: "already_ran_today" });
+      }
+    }
 
     const today = new Date().toISOString().split("T")[0];
 
