@@ -1,0 +1,1 @@
+UPDATE public.invoices SET status='cancelled', cancelled_at=now(), next_reminder_at=NULL, reminders_paused=true WHERE invoice_number IN ('INV-2026-1595','INV-2026-541');
