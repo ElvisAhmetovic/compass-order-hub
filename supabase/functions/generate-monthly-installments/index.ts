@@ -1030,6 +1030,13 @@ Deno.serve(async (req) => {
           .select()
           .single();
 
+        if (insertError?.code === "23505") {
+          await logResult({
+            contract_id: contract.id, client_name: contract.client_name,
+            month_label: monthLabel, status: "skipped", reason: "Month already claimed by another run",
+          });
+          continue;
+        }
         if (insertError) {
           errorsCount++;
           await logResult({

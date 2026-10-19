@@ -1166,6 +1166,21 @@ export type Database = {
           },
         ]
       }
+      monthly_billing_daily_locks: {
+        Row: {
+          created_at: string
+          run_date: string
+        }
+        Insert: {
+          created_at?: string
+          run_date: string
+        }
+        Update: {
+          created_at?: string
+          run_date?: string
+        }
+        Relationships: []
+      }
       monthly_contracts: {
         Row: {
           assigned_to: string | null
