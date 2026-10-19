@@ -1,0 +1,1 @@
+UPDATE public.monthly_installments SET invoice_id=(SELECT id FROM public.invoices WHERE invoice_number='INV-2026-1594') WHERE invoice_id=(SELECT id FROM public.invoices WHERE invoice_number='INV-2026-1595');
