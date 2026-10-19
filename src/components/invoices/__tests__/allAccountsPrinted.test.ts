@@ -11,7 +11,7 @@ describe("every tickable account prints on preview and PDF", () => {
       it(`${f} includes ${opt.id}`, () => {
         const acc = PAYMENT_ACCOUNTS.find((a) => a.id === opt.id)!;
         expect(src).toContain(`id: "${opt.id}"`);
-        expect(src).toContain(acc.iban.replace(/\s/g, ""));
+        expect(src.replace(/\s/g, "")).toContain(acc.iban.replace(/\s/g, ""));
       });
     }
   }

@@ -24,6 +24,14 @@ describe("Payoneer account", () => {
     expect([...MONTHLY_PAYMENT_ACCOUNT_IDS]).not.toContain("payoneer");
   });
   it("uses the owner names from the list as tick-box labels", () => {
-    expect(OPTS.map((o) => o.label)).toEqual(["German Bank Account (Media Marketing LTD)", "MEDIA MARKETING LIMITED WISE", "MEDIA MARKETING LIMITED PAYONEER", "WEBS WORKERS LTD REVOLUT"]);
+    expect(OPTS.map((o) => o.label)).toEqual(["German Bank Account (Media Marketing LTD)", "MEDIA MARKETING LIMITED WISE", "MEDIA MARKETING LIMITED PAYONEER", "MEDIA MARKETING LIMITED WISE UK", "WEBS WORKERS LTD REVOLUT"]);
+  });
+});
+
+describe("Wise UK account", () => {
+  it("prints GB83 TRWI 6084 6467 2787 39 / TRWIGB2LXXX and is not a default", () => {
+    expect(pick(ALL, ["wiseUk"]).map((a) => [a.iban, a.bic, a.sortCode, a.accountNumber])).toEqual([["GB83 TRWI 6084 6467 2787 39", "TRWIGB2LXXX", "60-84-64", "67278739"]]);
+    expect(norm(undefined)).not.toContain("wiseUk");
+    expect([...MONTHLY_PAYMENT_ACCOUNT_IDS]).not.toContain("wiseUk");
   });
 });
