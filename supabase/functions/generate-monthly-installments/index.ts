@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { jsPDF } from "https://esm.sh/jspdf@2.5.1";
+import { isCompanyWeekend } from "../_shared/businessDays.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -847,6 +848,15 @@ Deno.serve(async (req) => {
     const url = new URL(req.url);
     const contractIdFilter = url.searchParams.get("contract_id");
     const triggerSource = url.searchParams.get("trigger") || (contractIdFilter ? "manual" : "cron");
+
+    // Automatic runs never email clients at weekends; the daily catch-up sends on Monday.
+    if (triggerSource !== "manual" && isCompanyWeekend()) {
+      console.log(`Weekend (Europe/Sarajevo) - skipping ${triggerSource} run`);
+      return new Response(JSON.stringify({ skipped: "weekend" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
 
     const now = new Date();
     const currentMonth = now.getMonth();
