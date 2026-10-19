@@ -108,7 +108,19 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
     bank: "Payoneer",
   };
 
-  const selectedAccounts = filterAccountsByChoice([germanyAccount, revolutAccount, wiseAccount, payoneerAccount], templateSettings.selectedPaymentAccount);
+  const wiseUkAccount = {
+    ...germanyAccount,
+    id: "wiseUk",
+    name: "MEDIA MARKETING LIMITED WISE UK",
+    iban: "GB83 TRWI 6084 6467 2787 39",
+    bic: "TRWIGB2LXXX",
+    sortCode: "60-84-64",
+    accountNumber: "67278739",
+    bank: "Wise Payments Limited",
+    address: "Worship Square, 65 Clifton Street, London, EC2A 4JE, United Kingdom",
+  };
+
+  const selectedAccounts = filterAccountsByChoice([germanyAccount, revolutAccount, wiseAccount, payoneerAccount, wiseUkAccount], templateSettings.selectedPaymentAccount);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-GB', {

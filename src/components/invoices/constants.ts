@@ -48,6 +48,17 @@ export const PAYMENT_ACCOUNTS: PaymentAccount[] = [
     iban: "LU574080000049188578",
     bic: "BCIRLULL",
     bank: "Payoneer"
+  },
+  {
+    id: "wiseUk",
+    country: "United Kingdom",
+    name: "MEDIA MARKETING LIMITED WISE UK",
+    iban: "GB83 TRWI 6084 6467 2787 39",
+    bic: "TRWIGB2LXXX",
+    sortCode: "60-84-64",
+    accountNumber: "67278739",
+    bank: "Wise Payments Limited",
+    address: "Worship Square, 65 Clifton Street, London, EC2A 4JE, United Kingdom"
   }
 ];
 
@@ -108,6 +119,7 @@ export const PAYMENT_ACCOUNT_OPTIONS = [
   { id: "germany", label: "German Bank Account (Media Marketing LTD)" },
   { id: "wise", label: "MEDIA MARKETING LIMITED WISE" },
   { id: "payoneer", label: "MEDIA MARKETING LIMITED PAYONEER" },
+  { id: "wiseUk", label: "MEDIA MARKETING LIMITED WISE UK" },
   { id: "revolut", label: "WEBS WORKERS LTD REVOLUT" },
 ];
 
