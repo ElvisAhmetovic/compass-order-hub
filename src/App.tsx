@@ -1,5 +1,20 @@
 // App entry
-import { useEffect, lazy, Suspense } from "react";
+import { useEffect, lazy as reactLazy, Suspense, ComponentType } from "react";
+
+// If a page file is missing (stale tab after a publish), reload once to get the latest version.
+const lazy = <T extends ComponentType<any>>(factory: () => Promise<{ default: T }>) =>
+  reactLazy(() =>
+    factory().catch((err) => {
+      const key = "chunk-reload-at";
+      const last = Number(sessionStorage.getItem(key) || 0);
+      if (Date.now() - last > 10000) {
+        sessionStorage.setItem(key, String(Date.now()));
+        window.location.reload();
+        return new Promise<{ default: T }>(() => {});
+      }
+      throw err;
+    })
+  );
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "./context/AuthContext";
