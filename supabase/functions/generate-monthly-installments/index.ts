@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { jsPDF } from "https://esm.sh/jspdf@2.5.1";
+import { isCompanyWeekend } from "../_shared/businessDays.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -848,6 +849,15 @@ Deno.serve(async (req) => {
     const contractIdFilter = url.searchParams.get("contract_id");
     const triggerSource = url.searchParams.get("trigger") || (contractIdFilter ? "manual" : "cron");
 
+    // Automatic runs never email clients at weekends; the daily catch-up sends on Monday.
+    if (triggerSource !== "manual" && isCompanyWeekend()) {
+      console.log(`Weekend (Europe/Sarajevo) - skipping ${triggerSource} run`);
+      return new Response(JSON.stringify({ skipped: "weekend" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+
     const now = new Date();
     const currentMonth = now.getMonth();
     const currentYear = now.getFullYear();
@@ -1006,19 +1016,16 @@ Deno.serve(async (req) => {
           continue;
         }
 
-        const clientId = await findOrCreateClient(supabase, contract);
-        const dueDate = computeDueDate(new Date().toISOString().split("T")[0], `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-15`);
-        const { invoiceId, invoiceNumber, issueDate } = await createInvoice(supabase, clientId, contract, monthLabel, dueDate, lang);
-        invoicesCreated++;
-
+        // Claim the month first (installment row), so two overlapping runs can't both bill it.
+        const installmentDue = `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-01`;
         const { data: newInstallment, error: insertError } = await supabase
           .from("monthly_installments")
           .insert({
             contract_id: contract.id, month_label: monthLabel, month_number: monthNumber,
-            due_date: `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-01`,
+            due_date: installmentDue,
             amount: contract.monthly_amount, currency: contract.currency,
             payment_status: "unpaid", client_name: contract.client_name,
-            client_email: contract.client_email, website: contract.website, invoice_id: invoiceId,
+            client_email: contract.client_email, website: contract.website, invoice_id: null,
           })
           .select()
           .single();
@@ -1032,6 +1039,28 @@ Deno.serve(async (req) => {
           });
           continue;
         }
+
+        const { data: claims } = await supabase
+          .from("monthly_installments")
+          .select("id")
+          .eq("contract_id", contract.id)
+          .eq("due_date", installmentDue)
+          .order("created_at", { ascending: true })
+          .order("id", { ascending: true });
+        if (claims && claims.length > 1 && claims[0].id !== newInstallment.id) {
+          await supabase.from("monthly_installments").delete().eq("id", newInstallment.id);
+          await logResult({
+            contract_id: contract.id, client_name: contract.client_name,
+            month_label: monthLabel, status: "skipped", reason: "Duplicate run - month already claimed",
+          });
+          continue;
+        }
+
+        const clientId = await findOrCreateClient(supabase, contract);
+        const dueDate = computeDueDate(new Date().toISOString().split("T")[0], `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-15`);
+        const { invoiceId, invoiceNumber, issueDate } = await createInvoice(supabase, clientId, contract, monthLabel, dueDate, lang);
+        invoicesCreated++;
+        await supabase.from("monthly_installments").update({ invoice_id: invoiceId }).eq("id", newInstallment.id);
         processed++;
 
         const totalAmount = contract.monthly_amount;
