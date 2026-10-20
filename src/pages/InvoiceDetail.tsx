@@ -1,3 +1,4 @@
+import { toVatFraction, getDefaultLineVatRate } from "@/utils/invoiceVat";
 import { isValidPaymentLink } from '@/components/invoices/stripePaymentLink';
 import { getInvoiceTemplateSettingsSync, loadInvoiceTemplateSettings, applyLanguageNoteReset } from '@/components/invoices/loadTemplateSettings';
 
