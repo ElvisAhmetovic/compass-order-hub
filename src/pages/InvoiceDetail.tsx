@@ -272,7 +272,10 @@ const InvoiceDetail = () => {
             ...prev,
             ...((invoiceData as any).language ? { language: (invoiceData as any).language } : {}),
             customTerms: (invoiceData as any).custom_terms || '',
-            currency: invoiceData.currency
+            currency: invoiceData.currency,
+            // VAT settings belong to the invoice, not the browser
+            ...(typeof (invoiceData as any).vat_enabled === 'boolean' ? { vatEnabled: (invoiceData as any).vat_enabled } : {}),
+            ...((invoiceData as any).vat_rate_default != null ? { vatRate: Math.round(Number((invoiceData as any).vat_rate_default) * 10000) / 100 } : {}),
           }));
         }
       }
@@ -314,7 +317,7 @@ const InvoiceDetail = () => {
       quantity: 1,
       unit: 'pcs',
       unit_price: 0,
-      vat_rate: 0,
+      vat_rate: getDefaultLineVatRate(templateSettings),
       discount_rate: 0,
       line_total: 0,
       created_at: new Date().toISOString(),
@@ -460,6 +463,8 @@ const InvoiceDetail = () => {
           ...formData,
           language: templateSettings.language || undefined,
           custom_terms: templateSettings.customTerms || null,
+          vat_enabled: templateSettings.vatEnabled !== false,
+          vat_rate_default: toVatFraction(templateSettings.vatRate),
           line_items: lineItemsForCreation
         };
 
@@ -501,6 +506,8 @@ const InvoiceDetail = () => {
           bill_to_country: billToOverride.country || null,
           language: templateSettings.language || null,
           custom_terms: templateSettings.customTerms || '',
+          vat_enabled: templateSettings.vatEnabled !== false,
+          vat_rate_default: toVatFraction(templateSettings.vatRate),
           ...(customInvoiceNumber ? { invoice_number: customInvoiceNumber } : {})
         };
 
