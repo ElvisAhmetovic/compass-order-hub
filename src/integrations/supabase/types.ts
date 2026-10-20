@@ -994,6 +994,8 @@ export type Database = {
           updated_at: string
           user_id: string
           vat_amount: number
+          vat_enabled: boolean
+          vat_rate_default: number
         }
         Insert: {
           auto_cancelled_by_order?: boolean
@@ -1034,6 +1036,8 @@ export type Database = {
           updated_at?: string
           user_id: string
           vat_amount?: number
+          vat_enabled?: boolean
+          vat_rate_default?: number
         }
         Update: {
           auto_cancelled_by_order?: boolean
@@ -1074,6 +1078,8 @@ export type Database = {
           updated_at?: string
           user_id?: string
           vat_amount?: number
+          vat_enabled?: boolean
+          vat_rate_default?: number
         }
         Relationships: [
           {
