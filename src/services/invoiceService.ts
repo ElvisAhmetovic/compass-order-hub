@@ -247,6 +247,8 @@ export class InvoiceService {
           stripe_payment_link: (invoiceData as any).stripe_payment_link || null,
           ...((invoiceData as any).language ? { language: (invoiceData as any).language } : {}),
           custom_terms: (invoiceData as any).custom_terms || null,
+          ...(typeof (invoiceData as any).vat_enabled === 'boolean' ? { vat_enabled: (invoiceData as any).vat_enabled } : {}),
+          ...((invoiceData as any).vat_rate_default != null ? { vat_rate_default: (invoiceData as any).vat_rate_default } : {}),
           ...((invoiceData as any).bill_to_country ? { bill_to_country: (invoiceData as any).bill_to_country } : {}),
           currency: invoiceData.currency,
           payment_terms: invoiceData.payment_terms,
