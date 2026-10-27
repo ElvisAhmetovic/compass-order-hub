@@ -9,7 +9,7 @@ const DEFAULT_COMPANY_INFO = {
   postal: "47051",
   city: "Duisburg",
   country: "Germany",
-  phone: "+4920370907262",
+  phone: "+49 203 7090 1754",
   fax: "",
   email: "",
   website: "https://www.mediaamarketing.com/de",

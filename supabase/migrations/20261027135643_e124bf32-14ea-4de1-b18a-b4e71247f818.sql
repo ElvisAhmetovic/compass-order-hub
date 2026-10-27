@@ -1,0 +1,1 @@
+update public.company_settings set phone = '+49 203 7090 1754', fax = null where phone = '+4920370907262' or fax = '+49 203 70 90 73 53';

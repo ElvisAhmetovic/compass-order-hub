@@ -322,8 +322,8 @@ const COMPANY = {
   postal: "47051",
   city: "Duisburg",
   country: "Germany",
-  phone: "+4920370907262",
-  fax: "+49 203 70 90 73 53",
+  phone: "+49 203 7090 1754",
+  fax: "",
   email: "",
   website: "https://www.mediaamarketing.com/de",
   registrationNumber: "17507679",
@@ -732,12 +732,12 @@ async function sendInvoiceEmail(
       <p>${E.attachmentNote}</p>
       <p>${E.paymentRequest}</p>
       <p>${E.questionsNote}</p>
-      <br/><p>${E.closing}<br/><strong>Media Marketing LTD</strong></p>
+      <br/><p>${E.closing}<br/><strong>Media Marketing LTD</strong><br/><a href="mailto:invoice@mediaamarketing.com">invoice@mediaamarketing.com</a></p>
     </div>`;
 
   try {
     const res = await resendFetchWithRetry({
-      from: "Thomas Klein <noreply@mediaamarketing.com>",
+      from: "Media Marketing LTD <noreply@mediaamarketing.com>",
       to: [to],
       subject: E.subject(invoiceNumber, monthLabel, formattedPrice),
       html,
@@ -786,7 +786,7 @@ async function sendTeamNotifications(
   // Single Resend call with BCC list — 1 API call instead of 12
   try {
     const res = await resendFetchWithRetry({
-      from: "Thomas Klein <noreply@mediaamarketing.com>",
+      from: "Media Marketing LTD <noreply@mediaamarketing.com>",
       to: ["invoice@mediaamarketing.com"],
       bcc: TEAM_EMAILS.filter((e) => e !== "invoice@mediaamarketing.com"),
       subject,
