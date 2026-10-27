@@ -981,6 +981,7 @@ export type Database = {
           next_reminder_at: string | null
           notes: string | null
           order_id: string | null
+          paid_at: string | null
           payment_terms: string | null
           proposal_id: string | null
           reminder_count: number
@@ -1023,6 +1024,7 @@ export type Database = {
           next_reminder_at?: string | null
           notes?: string | null
           order_id?: string | null
+          paid_at?: string | null
           payment_terms?: string | null
           proposal_id?: string | null
           reminder_count?: number
@@ -1065,6 +1067,7 @@ export type Database = {
           next_reminder_at?: string | null
           notes?: string | null
           order_id?: string | null
+          paid_at?: string | null
           payment_terms?: string | null
           proposal_id?: string | null
           reminder_count?: number
