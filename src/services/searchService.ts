@@ -293,10 +293,10 @@ export class SearchService {
       }
 
       // Convert profiles to assignedUsers format
-      const assignedUsers = (profiles || []).map(profile => ({
+      const assignedUsers = filterAssignableTeam((profiles || []).map(profile => ({
         id: profile.id,
-        name: `${profile.first_name} ${profile.last_name}`.trim() || 'Unknown User'
-      }));
+        name: `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'Unknown User'
+      })));
 
       // Get all orders to extract unique values for other filters
       const orders = await OrderService.getOrders();
