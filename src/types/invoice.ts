@@ -51,6 +51,7 @@ export interface Invoice {
   bill_to_country?: string | null;
   stripe_payment_link?: string | null;
   cancelled_at?: string | null;
+  paid_at?: string | null;
   cancelled_by?: string | null;
   auto_cancelled_by_order?: boolean | null;
 }

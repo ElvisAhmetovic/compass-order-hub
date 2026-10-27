@@ -47,6 +47,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { nextReminderForInvoice } from "@/utils/reminderInterval";
 import { getOutstandingAmount, getPaidAmount } from "@/utils/invoiceBalance";
 import CancelledInvoiceInfo from "@/components/invoices/CancelledInvoiceInfo";
+import { paidDateLabel, paidDateTime } from "@/utils/paidDate";
 
 const PAGE_SIZE = 25;
 
@@ -931,6 +932,11 @@ const Invoices = () => {
                                 })()}
                               </TableCell>
                               <TableCell>
+                                {paidDateLabel(invoice.status, invoice.paid_at) && (
+                                  <div className="text-[11px] text-muted-foreground mb-1" title={paidDateTime(invoice.paid_at!)}>
+                                    {paidDateLabel(invoice.status, invoice.paid_at)}
+                                  </div>
+                                )}
                                 <DropdownMenu>
                                   <DropdownMenuTrigger asChild>
                                     <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium cursor-pointer ${
