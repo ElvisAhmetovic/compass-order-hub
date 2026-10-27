@@ -1,4 +1,5 @@
 import { Order, Company } from '@/types';
+import { filterAssignableTeam } from '@/config/assignableTeam';
 import { OrderService } from './orderService';
 import { supabase } from '@/integrations/supabase/client';
 import { InvoiceSearchService } from './invoiceSearchService';
