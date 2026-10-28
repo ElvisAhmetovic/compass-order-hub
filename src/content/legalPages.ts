@@ -16,7 +16,6 @@ export const legalPages: Record<LegalKey, { path: string; copy: Record<HomepageL
         metaTitle: "Impressum — Empria Tech", metaDescription: "Impressum und Anbieterkennzeichnung von Empria Tech (MEDIA MARKETING), London.", title: "Impressum", updated: "Stand: Oktober 2026",
         sections: [
           { heading: "Angaben gemäß § 5 DDG", paragraphs: [company("de"), "Empria Tech ist eine Marke der MEDIA MARKETING."] },
-          { heading: "Vertreten durch", paragraphs: [soon.de] },
           { heading: "Kontakt", paragraphs: [`E-Mail: ${contactInfo.email}`, `Telefon: ${contactInfo.phone}`] },
           { heading: "Registereintrag", paragraphs: ["Registerbehörde: Companies House, Vereinigtes Königreich", `Unternehmensnummer: ${contactInfo.companyNumber}`] },
           { heading: "Umsatzsteuer-ID", paragraphs: [`Umsatzsteuer-Identifikationsnummer gemäß § 27a UStG: ${soon.de}`] },
@@ -33,7 +32,6 @@ export const legalPages: Record<LegalKey, { path: string; copy: Record<HomepageL
         metaTitle: "Legal notice — Empria Tech", metaDescription: "Legal notice (Impressum) of Empria Tech (MEDIA MARKETING), London.", title: "Legal notice (Impressum)", updated: "Last updated: October 2026",
         sections: [
           { heading: "Information pursuant to § 5 DDG", paragraphs: [company("en"), "Empria Tech is a brand of MEDIA MARKETING."] },
-          { heading: "Represented by", paragraphs: [soon.en] },
           { heading: "Contact", paragraphs: [`Email: ${contactInfo.email}`, `Phone: ${contactInfo.phone}`] },
           { heading: "Register entry", paragraphs: ["Register authority: Companies House, United Kingdom", `Company number: ${contactInfo.companyNumber}`] },
           { heading: "VAT ID", paragraphs: [`VAT identification number pursuant to § 27a UStG: ${soon.en}`] },
