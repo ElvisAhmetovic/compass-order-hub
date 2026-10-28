@@ -26,9 +26,9 @@ type OfferStrings = {
 
 const TRANSLATIONS: Record<string, OfferStrings> = {
   en: {
-    subject: 'Your Offer from Media Marketing Limited',
+    subject: 'Your Offer from Media Marketing',
     headerTag: 'Service Offer',
-    headline: 'You have received an offer from Media Marketing Limited',
+    headline: 'You have received an offer from Media Marketing',
     priceLabel: 'Price',
     cta: 'Confirm Your Order',
     greeting: (n) => `Dear ${n},`,
@@ -38,9 +38,9 @@ const TRANSLATIONS: Record<string, OfferStrings> = {
     bestRegards: 'Best regards,',
   },
   de: {
-    subject: 'Ihr Angebot von Media Marketing Limited',
+    subject: 'Ihr Angebot von Media Marketing',
     headerTag: 'Dienstleistungsangebot',
-    headline: 'Sie haben ein Angebot von Media Marketing Limited erhalten',
+    headline: 'Sie haben ein Angebot von Media Marketing erhalten',
     priceLabel: 'Preis',
     cta: 'Bestellung bestätigen',
     greeting: (n) => `Sehr geehrte/r ${n},`,
@@ -50,9 +50,9 @@ const TRANSLATIONS: Record<string, OfferStrings> = {
     bestRegards: 'Mit freundlichen Grüßen,',
   },
   nl: {
-    subject: 'Uw offerte van Media Marketing Limited',
+    subject: 'Uw offerte van Media Marketing',
     headerTag: 'Dienstenofferte',
-    headline: 'U heeft een offerte ontvangen van Media Marketing Limited',
+    headline: 'U heeft een offerte ontvangen van Media Marketing',
     priceLabel: 'Prijs',
     cta: 'Bestelling bevestigen',
     greeting: (n) => `Beste ${n},`,
@@ -62,9 +62,9 @@ const TRANSLATIONS: Record<string, OfferStrings> = {
     bestRegards: 'Met vriendelijke groet,',
   },
   fr: {
-    subject: 'Votre offre de Media Marketing Limited',
+    subject: 'Votre offre de Media Marketing',
     headerTag: 'Offre de service',
-    headline: 'Vous avez reçu une offre de Media Marketing Limited',
+    headline: 'Vous avez reçu une offre de Media Marketing',
     priceLabel: 'Prix',
     cta: 'Confirmer votre commande',
     greeting: (n) => `Cher/Chère ${n},`,
@@ -74,9 +74,9 @@ const TRANSLATIONS: Record<string, OfferStrings> = {
     bestRegards: 'Cordialement,',
   },
   es: {
-    subject: 'Su oferta de Media Marketing Limited',
+    subject: 'Su oferta de Media Marketing',
     headerTag: 'Oferta de servicio',
-    headline: 'Ha recibido una oferta de Media Marketing Limited',
+    headline: 'Ha recibido una oferta de Media Marketing',
     priceLabel: 'Precio',
     cta: 'Confirmar su pedido',
     greeting: (n) => `Estimado/a ${n},`,
@@ -86,9 +86,9 @@ const TRANSLATIONS: Record<string, OfferStrings> = {
     bestRegards: 'Atentamente,',
   },
   it: {
-    subject: 'La sua offerta da Media Marketing Limited',
+    subject: 'La sua offerta da Media Marketing',
     headerTag: 'Offerta di servizio',
-    headline: 'Ha ricevuto un\'offerta da Media Marketing Limited',
+    headline: 'Ha ricevuto un\'offerta da Media Marketing',
     priceLabel: 'Prezzo',
     cta: 'Conferma il tuo ordine',
     greeting: (n) => `Gentile ${n},`,
@@ -98,9 +98,9 @@ const TRANSLATIONS: Record<string, OfferStrings> = {
     bestRegards: 'Cordiali saluti,',
   },
   cs: {
-    subject: 'Vaše nabídka od Media Marketing Limited',
+    subject: 'Vaše nabídka od Media Marketing',
     headerTag: 'Nabídka služeb',
-    headline: 'Obdrželi jste nabídku od Media Marketing Limited',
+    headline: 'Obdrželi jste nabídku od Media Marketing',
     priceLabel: 'Cena',
     cta: 'Potvrdit objednávku',
     greeting: (n) => `Vážený/á ${n},`,
@@ -110,9 +110,9 @@ const TRANSLATIONS: Record<string, OfferStrings> = {
     bestRegards: 'S pozdravem,',
   },
   pl: {
-    subject: 'Twoja oferta od Media Marketing Limited',
+    subject: 'Twoja oferta od Media Marketing',
     headerTag: 'Oferta usług',
-    headline: 'Otrzymałeś ofertę od Media Marketing Limited',
+    headline: 'Otrzymałeś ofertę od Media Marketing',
     priceLabel: 'Cena',
     cta: 'Potwierdź zamówienie',
     greeting: (n) => `Szanowny/a ${n},`,
@@ -122,9 +122,9 @@ const TRANSLATIONS: Record<string, OfferStrings> = {
     bestRegards: 'Z poważaniem,',
   },
   sv: {
-    subject: 'Ditt erbjudande från Media Marketing Limited',
+    subject: 'Ditt erbjudande från Media Marketing',
     headerTag: 'Tjänsteerbjudande',
-    headline: 'Du har fått ett erbjudande från Media Marketing Limited',
+    headline: 'Du har fått ett erbjudande från Media Marketing',
     priceLabel: 'Pris',
     cta: 'Bekräfta din beställning',
     greeting: (n) => `Hej ${n},`,
@@ -134,9 +134,9 @@ const TRANSLATIONS: Record<string, OfferStrings> = {
     bestRegards: 'Med vänliga hälsningar,',
   },
   no: {
-    subject: 'Ditt tilbud fra Media Marketing Limited',
+    subject: 'Ditt tilbud fra Media Marketing',
     headerTag: 'Tjenestetilbud',
-    headline: 'Du har mottatt et tilbud fra Media Marketing Limited',
+    headline: 'Du har mottatt et tilbud fra Media Marketing',
     priceLabel: 'Pris',
     cta: 'Bekreft bestillingen',
     greeting: (n) => `Hei ${n},`,
@@ -146,9 +146,9 @@ const TRANSLATIONS: Record<string, OfferStrings> = {
     bestRegards: 'Med vennlig hilsen,',
   },
   da: {
-    subject: 'Dit tilbud fra Media Marketing Limited',
+    subject: 'Dit tilbud fra Media Marketing',
     headerTag: 'Servicetilbud',
-    headline: 'Du har modtaget et tilbud fra Media Marketing Limited',
+    headline: 'Du har modtaget et tilbud fra Media Marketing',
     priceLabel: 'Pris',
     cta: 'Bekræft din bestilling',
     greeting: (n) => `Kære ${n},`,
@@ -199,7 +199,7 @@ const buildOfferEmailHtml = (data: {
         <tr><td style="padding:22px 32px;">
           <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"><tr>
             <td align="left" style="font-family:Roboto,Arial,sans-serif; font-size:13px; color:#606368;">${t.headerTag}</td>
-            <td align="right" style="font-family:Roboto,Arial,sans-serif; font-size:18px; font-weight:bold; color:#1e3a5f;">Media Marketing Limited</td>
+            <td align="right" style="font-family:Roboto,Arial,sans-serif; font-size:18px; font-weight:bold; color:#1e3a5f;">Media Marketing</td>
           </tr></table>
         </td></tr>
 
@@ -271,12 +271,12 @@ const buildOfferEmailHtml = (data: {
           <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"><tr>
             <td style="font-family:Roboto,Arial,sans-serif; font-size:10px; color:#515354; line-height:16px;">
               ${t.bestRegards}<br>
-              ${data.senderName}, Media Marketing Limited<br><br>
+              ${data.senderName}, Media Marketing<br><br>
               <a href="https://www.mediaamarketing.com/de" style="color:#1e3a5f; text-decoration:none;">www.mediaamarketing.com</a>
             </td>
             <td align="right" style="padding-left:20px; vertical-align:top;">
-              <div style="font-family:Roboto,Arial,sans-serif; font-size:14px; font-weight:bold; color:#1e3a5f;">Media Marketing Limited</div>
-              <div style="font-family:Roboto,Arial,sans-serif; font-size:10px; color:#515354; margin-top:6px;">&copy; ${new Date().getFullYear()} Media Marketing Limited</div>
+              <div style="font-family:Roboto,Arial,sans-serif; font-size:14px; font-weight:bold; color:#1e3a5f;">Media Marketing</div>
+              <div style="font-family:Roboto,Arial,sans-serif; font-size:10px; color:#515354; margin-top:6px;">&copy; ${new Date().getFullYear()} Media Marketing</div>
             </td>
           </tr></table>
         </td></tr>
@@ -321,7 +321,7 @@ serve(async (req) => {
       description: description || '',
       price: price || 0,
       currency: currency || 'EUR',
-      senderName: senderName || 'Media Marketing Limited',
+      senderName: senderName || 'Media Marketing',
       confirmUrl,
       language: lang,
       vatRate: typeof vatRate === 'number' ? vatRate : undefined,
@@ -338,7 +338,7 @@ serve(async (req) => {
         'Authorization': `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: 'Media Marketing LTD <noreply@mediaamarketing.com>',
+        from: 'Media Marketing <noreply@mediaamarketing.com>',
         to: [clientEmail],
         subject: clientSubject,
         html,
@@ -371,7 +371,7 @@ serve(async (req) => {
     ];
 
     // Team copy keeps English prefix for internal consistency
-    const teamSubject = `[Team Copy] Your Offer from Media Marketing Limited – ${companyName} (${lang.toUpperCase()})`;
+    const teamSubject = `[Team Copy] Your Offer from Media Marketing – ${companyName} (${lang.toUpperCase()})`;
 
     (async () => {
       try {
@@ -385,7 +385,7 @@ serve(async (req) => {
                 'Authorization': `Bearer ${RESEND_API_KEY}`,
               },
               body: JSON.stringify({
-                from: 'Media Marketing LTD <noreply@mediaamarketing.com>',
+                from: 'Media Marketing <noreply@mediaamarketing.com>',
                 to: [email],
                 subject: teamSubject,
                 html,

@@ -134,7 +134,7 @@ serve(async (req) => {
           </table>
           <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 16px 0;" />
           <p style="color: #9ca3af; font-size: 12px; text-align: center; margin: 0;">
-            Media Marketing LTD — Monthly Package Notifications
+            Media Marketing — Monthly Package Notifications
           </p>
         </div>
       </div>
@@ -152,7 +152,7 @@ serve(async (req) => {
             Authorization: `Bearer ${RESEND_API_KEY}`,
           },
           body: JSON.stringify({
-            from: "Media Marketing LTD <noreply@mediaamarketing.com>",
+            from: "Media Marketing <noreply@mediaamarketing.com>",
             to: [email],
             subject,
             html,

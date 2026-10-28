@@ -263,7 +263,7 @@ const generateInvoiceHTML = (data: InvoicePDFData): string => {
   const wiseAccount = {
     ...germanyAccount,
     id: "wise",
-    name: "Media Marketing LTD WISE",
+    name: "Media Marketing WISE",
     iban: "BE75903030215751",
     bic: "TRWIBEB1XXX",
     bank: "Wise",
@@ -272,7 +272,7 @@ const generateInvoiceHTML = (data: InvoicePDFData): string => {
   const payoneerAccount = {
     ...germanyAccount,
     id: "payoneer",
-    name: "MEDIA MARKETING LIMITED PAYONEER",
+    name: "MEDIA MARKETING PAYONEER",
     iban: "LU574080000049188578",
     bic: "BCIRLULL",
     bank: "Payoneer",
@@ -281,7 +281,7 @@ const generateInvoiceHTML = (data: InvoicePDFData): string => {
   const wiseUkAccount = {
     ...germanyAccount,
     id: "wiseUk",
-    name: "MEDIA MARKETING LIMITED WISE UK",
+    name: "MEDIA MARKETING WISE UK",
     iban: "GB83 TRWI 6084 6467 2787 39",
     bic: "TRWIGB2LXXX",
     sortCode: "60-84-64",

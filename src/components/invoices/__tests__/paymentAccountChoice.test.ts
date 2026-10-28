@@ -24,7 +24,7 @@ describe("Payoneer account", () => {
     expect([...MONTHLY_PAYMENT_ACCOUNT_IDS]).not.toContain("payoneer");
   });
   it("uses the owner names from the list as tick-box labels", () => {
-    expect(OPTS.map((o) => o.label)).toEqual(["German Bank Account (Media Marketing LTD)", "MEDIA MARKETING LIMITED WISE", "MEDIA MARKETING LIMITED PAYONEER", "MEDIA MARKETING LIMITED WISE UK", "WEBS WORKERS LTD REVOLUT"]);
+    expect(OPTS.map((o) => o.label)).toEqual(["German Bank Account (Media Marketing)", "MEDIA MARKETING WISE", "MEDIA MARKETING PAYONEER", "MEDIA MARKETING WISE UK", "WEBS WORKERS LTD REVOLUT"]);
   });
 });
 

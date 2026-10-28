@@ -36,13 +36,13 @@ const getInviteEmailHtml = (
     <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
       <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 30px; border-radius: 10px 10px 0 0;">
         <h1 style="color: #ffffff; margin: 0; font-size: 24px;">🔐 Client Portal Access</h1>
-        <p style="color: #a0a0a0; margin: 10px 0 0 0;">Media Marketing LTD</p>
+        <p style="color: #a0a0a0; margin: 10px 0 0 0;">Media Marketing</p>
       </div>
       
       <div style="background: #ffffff; padding: 30px; border: 1px solid #e0e0e0; border-top: none;">
         <p style="font-size: 16px; margin-bottom: 20px;">Dear <strong>${clientName}</strong>,</p>
         
-        <p style="margin-bottom: 20px;">You have been granted access to the Media Marketing LTD Client Portal where you can track your orders and view their progress.</p>
+        <p style="margin-bottom: 20px;">You have been granted access to the Media Marketing Client Portal where you can track your orders and view their progress.</p>
         
         <div style="background: #e8f5e9; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #4caf50;">
           <h3 style="margin: 0 0 15px 0; color: #1a1a2e;">Your Order</h3>
@@ -71,16 +71,16 @@ const getInviteEmailHtml = (
           <p style="margin: 10px 0 0 0;">Contact us at <a href="mailto:service@team-abmedia.com" style="color: #1976d2;">service@team-abmedia.com</a></p>
         </div>
         
-        <p style="margin-top: 30px;">Thank you for choosing Media Marketing LTD!</p>
+        <p style="margin-top: 30px;">Thank you for choosing Media Marketing!</p>
         
         <p style="margin-top: 20px;">
           Best regards,<br>
-          <strong>Media Marketing LTD</strong>
+          <strong>Media Marketing</strong>
         </p>
       </div>
       
       <div style="background: #f5f5f5; padding: 20px; border-radius: 0 0 10px 10px; text-align: center; font-size: 12px; color: #666;">
-        <p style="margin: 0;">This is an automated message from Media Marketing LTD.</p>
+        <p style="margin: 0;">This is an automated message from Media Marketing.</p>
         <p style="margin: 5px 0 0 0;">If you did not expect this email, please contact us.</p>
       </div>
     </body>
@@ -145,7 +145,7 @@ const handler = async (req: Request): Promise<Response> => {
     const emailResponse = await resend.emails.send({
       from: "Thomas Klein <ThomasKlein@mediaamarketing.com>",
       to: [clientEmail],
-      subject: `🔐 Client Portal Access - ${companyName} - Media Marketing LTD`,
+      subject: `🔐 Client Portal Access - ${companyName} - Media Marketing`,
       html: emailHtml,
     });
 

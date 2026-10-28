@@ -12,7 +12,7 @@ const GERMAN_BIC = "SWIFT/BIC: DEUTDE2HP22";
 describe("invoice email templates", () => {
   it("uses the German account in the German invoice message", () => {
     expect(SUBJECT_TEMPLATES.de).toBe(
-      "Media Marketing Limited Rechnung",
+      "Media Marketing Rechnung",
     );
     expect(MESSAGE_TEMPLATES.de).toBe(`Hallo,
 
@@ -44,7 +44,7 @@ Mit freundlichen Grüßen
 
 Annalena Klein
 
-Media Marketing LTD
+Media Marketing
 
 +49 203 7090 7262
 
@@ -59,7 +59,7 @@ Düsseldorfer Str. 32
     expect(TEMPLATE_LANGUAGES).toHaveLength(10);
 
     for (const { value } of TEMPLATE_LANGUAGES) {
-      expect(SUBJECT_TEMPLATES[value]).toContain("Media Marketing Limited");
+      expect(SUBJECT_TEMPLATES[value]).toContain("Media Marketing");
       expect(MESSAGE_TEMPLATES[value]).toContain(GERMAN_IBAN);
       expect(MESSAGE_TEMPLATES[value]).toContain(GERMAN_BIC);
       expect(MESSAGE_TEMPLATES[value]).toContain("Bank: Postbank/DSL Ndl of Deutsche Bank");

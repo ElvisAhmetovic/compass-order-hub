@@ -36,7 +36,7 @@ export const PAYMENT_ACCOUNTS: PaymentAccount[] = [
   {
     id: "wise",
     country: "Belgium",
-    name: "Media Marketing LTD WISE",
+    name: "Media Marketing WISE",
     iban: "BE75903030215751",
     bic: "TRWIBEB1XXX",
     bank: "Wise"
@@ -52,7 +52,7 @@ export const PAYMENT_ACCOUNTS: PaymentAccount[] = [
   {
     id: "wiseUk",
     country: "United Kingdom",
-    name: "MEDIA MARKETING LIMITED WISE UK",
+    name: "MEDIA MARKETING WISE UK",
     iban: "GB83 TRWI 6084 6467 2787 39",
     bic: "TRWIGB2LXXX",
     sortCode: "60-84-64",
@@ -116,10 +116,10 @@ export const DEFAULT_PAYMENT_ACCOUNT_IDS = ["germany", "revolut"];
 
 /** Checkbox labels only (owner in brackets) — never printed on invoices. */
 export const PAYMENT_ACCOUNT_OPTIONS = [
-  { id: "germany", label: "German Bank Account (Media Marketing LTD)" },
-  { id: "wise", label: "MEDIA MARKETING LIMITED WISE" },
-  { id: "payoneer", label: "MEDIA MARKETING LIMITED PAYONEER" },
-  { id: "wiseUk", label: "MEDIA MARKETING LIMITED WISE UK" },
+  { id: "germany", label: "German Bank Account (Media Marketing)" },
+  { id: "wise", label: "MEDIA MARKETING WISE" },
+  { id: "payoneer", label: "MEDIA MARKETING PAYONEER" },
+  { id: "wiseUk", label: "MEDIA MARKETING WISE UK" },
   { id: "revolut", label: "WEBS WORKERS LTD REVOLUT" },
 ];
 

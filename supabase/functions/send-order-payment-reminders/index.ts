@@ -193,7 +193,7 @@ const handler = async (req: Request): Promise<Response> => {
                 </center>
               </div>
               <div class="footer">
-                <p>This is an automated payment reminder from Media Marketing LTD</p>
+                <p>This is an automated payment reminder from Media Marketing</p>
               </div>
             </div>
           </body>
@@ -205,7 +205,7 @@ const handler = async (req: Request): Promise<Response> => {
         for (const email of TEAM_EMAILS) {
           try {
             await resend.emails.send({
-              from: "Media Marketing LTD <noreply@mediaamarketing.com>",
+              from: "Media Marketing <noreply@mediaamarketing.com>",
               to: [email],
               subject: `💰 Payment Reminder: ${order.company_name} - ${price}`,
               html: emailHtml,

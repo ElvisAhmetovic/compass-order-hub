@@ -89,7 +89,7 @@ const getDefaultEmailHtml = (
     <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
       <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 30px; border-radius: 10px 10px 0 0;">
         <h1 style="color: #ffffff; margin: 0; font-size: 24px;">💰 Payment Reminder</h1>
-        <p style="color: #a0a0a0; margin: 10px 0 0 0;">Media Marketing LTD</p>
+        <p style="color: #a0a0a0; margin: 10px 0 0 0;">Media Marketing</p>
       </div>
       
       <div style="background: #ffffff; padding: 30px; border: 1px solid #e0e0e0; border-top: none;">
@@ -165,12 +165,12 @@ const getDefaultEmailHtml = (
         </div>
         
         <p style="margin-top: 20px;">
-          ${language === 'de' ? 'Herzliche Grüße' : 'Kind regards,'}<br>Annalena Klein<br>Media Marketing Limited<br>+49 203 7090 7262
+          ${language === 'de' ? 'Herzliche Grüße' : 'Kind regards,'}<br>Annalena Klein<br>Media Marketing<br>+49 203 7090 7262
         </p>
       </div>
       
       <div style="background: #f5f5f5; padding: 20px; border-radius: 0 0 10px 10px; text-align: center; font-size: 12px; color: #666;">
-        <p style="margin: 0;">This is an automated payment reminder from Media Marketing LTD.</p>
+        <p style="margin: 0;">This is an automated payment reminder from Media Marketing.</p>
         <p style="margin: 5px 0 0 0;">If you have already made the payment, please disregard this message.</p>
       </div>
     </body>
@@ -191,7 +191,7 @@ const wrapTemplateInEmailWrapper = (bodyHtml: string): string => {
     <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
       <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 30px; border-radius: 10px 10px 0 0;">
         <h1 style="color: #ffffff; margin: 0; font-size: 24px;">💰 Payment Reminder</h1>
-        <p style="color: #a0a0a0; margin: 10px 0 0 0;">Media Marketing LTD</p>
+        <p style="color: #a0a0a0; margin: 10px 0 0 0;">Media Marketing</p>
       </div>
       
       <div style="background: #ffffff; padding: 30px; border: 1px solid #e0e0e0; border-top: none;">
@@ -212,7 +212,7 @@ const wrapTemplateInEmailWrapper = (bodyHtml: string): string => {
       </div>
       
       <div style="background: #f5f5f5; padding: 20px; border-radius: 0 0 10px 10px; text-align: center; font-size: 12px; color: #666;">
-        <p style="margin: 0;">This is an automated payment reminder from Media Marketing LTD.</p>
+        <p style="margin: 0;">This is an automated payment reminder from Media Marketing.</p>
         <p style="margin: 5px 0 0 0;">If you have already made the payment, please disregard this message.</p>
       </div>
     </body>
@@ -311,7 +311,7 @@ const handler = async (req: Request): Promise<Response> => {
         customMessage,
         language || 'en'
       );
-      finalSubject = `💰 Payment Reminder - Media Marketing LTD - ${formattedPrice}`;
+      finalSubject = `💰 Payment Reminder - Media Marketing - ${formattedPrice}`;
       console.log("Using default email template");
     }
 
@@ -416,7 +416,7 @@ const handler = async (req: Request): Promise<Response> => {
             </table>
           </div>
           
-          <p style="font-size: 12px; color: #666; margin-top: 15px;">This is an automated notification from the Media Marketing LTD order management system.</p>
+          <p style="font-size: 12px; color: #666; margin-top: 15px;">This is an automated notification from the Media Marketing order management system.</p>
         </div>
       </body>
       </html>

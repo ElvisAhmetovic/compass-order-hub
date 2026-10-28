@@ -57,7 +57,7 @@ export interface CompanySettingsInput {
 // Default company info for fallback
 const DEFAULT_COMPANY_INFO: CompanySettingsInput = {
   logo: "https://placehold.co/200x60?text=Your+Logo",
-  name: "Media Marketing Limited",
+  name: "Media Marketing",
   contact_person: "Annalena Klein",
   street: "Düsseldorfer Str. 32",
   postal: "47051",

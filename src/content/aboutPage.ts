@@ -19,17 +19,17 @@ export const aboutPage = {
   copy: {
     de: {
       metaTitle: "Über uns — Empria Tech",
-      metaDescription: "Empria Tech von MEDIA MARKETING LTD: Webdesign, Google SEO, Digital Marketing und App-Entwicklung aus einer Hand. Unsere Geschichte, unsere Werte und unser Team.",
+      metaDescription: "Empria Tech von MEDIA MARKETING: Webdesign, Google SEO, Digital Marketing und App-Entwicklung aus einer Hand. Unsere Geschichte, unsere Werte und unser Team.",
       eyebrow: "Über Empria Tech",
       title: "Digitale Arbeit mit",
       accent: "Klarheit und Substanz.",
-      intro: "Empria Tech wird von MEDIA MARKETING LTD betrieben, einem im Vereinigten Königreich registrierten Unternehmen für Softwareentwicklung und Digital Marketing. Wir bieten Geschäftskunden Webentwicklung, Unternehmenssoftware, SEO, Online-Werbung und Digital-Marketing-Leistungen.",
+      intro: "Empria Tech wird von MEDIA MARKETING betrieben, einem im Vereinigten Königreich registrierten Unternehmen für Softwareentwicklung und Digital Marketing. Wir bieten Geschäftskunden Webentwicklung, Unternehmenssoftware, SEO, Online-Werbung und Digital-Marketing-Leistungen.",
       imageAlt: "Team der Digitalagentur arbeitet gemeinsam an Website-Layouts und SEO-Auswertungen an einem großen Bildschirm",
       story: {
         eyebrow: "Unsere Geschichte",
         title: "Eine Agentur, die Disziplinen verbindet, statt sie zu trennen.",
         paragraphs: [
-          "MEDIA MARKETING LTD betreibt die Marke Empria Tech und bietet Geschäftskunden Softwareentwicklung und Digital-Marketing-Leistungen. Wir entwickeln Websites und webbasierte Unternehmenssoftware und bieten SEO, Online-Werbung, Website-Management sowie damit verbundene Digital-Marketing-Leistungen.",
+          "MEDIA MARKETING betreibt die Marke Empria Tech und bietet Geschäftskunden Softwareentwicklung und Digital-Marketing-Leistungen. Wir entwickeln Websites und webbasierte Unternehmenssoftware und bieten SEO, Online-Werbung, Website-Management sowie damit verbundene Digital-Marketing-Leistungen.",
           "Unsere Umsätze stammen aus Softwareentwicklungsprojekten sowie wiederkehrenden Digital-Marketing- und Wartungsleistungen.",
           "Unser Ansatz entstand aus einer einfachen Beobachtung: Websites, Suchmaschinenoptimierung und Marketing werden oft von unterschiedlichen Stellen getrennt voneinander behandelt. Das Ergebnis sind Auftritte, die gut aussehen, aber nicht gefunden werden – oder gefunden werden, aber nicht überzeugen.",
           "Deshalb verbinden wir bei Empria Tech Gestaltung, Technik und Marketing zu einem zusammenhängenden Prozess. Eine Website wird bei uns von Anfang an so geplant, dass sie von Menschen geschätzt und von Suchmaschinen verstanden wird. Kampagnen und Inhalte bauen auf dieser Grundlage auf, statt dagegen zu arbeiten.",
@@ -67,17 +67,17 @@ export const aboutPage = {
     },
     en: {
       metaTitle: "About us — Empria Tech",
-      metaDescription: "Empria Tech by MEDIA MARKETING LTD: web design, Google SEO, digital marketing and app development from one team. Our story, our values and our team.",
+      metaDescription: "Empria Tech by MEDIA MARKETING: web design, Google SEO, digital marketing and app development from one team. Our story, our values and our team.",
       eyebrow: "About Empria Tech",
       title: "Digital work with",
       accent: "clarity and substance.",
-      intro: "Empria Tech is operated by MEDIA MARKETING LTD, a UK-registered software development and digital marketing company. We provide web development, business software, SEO, online advertising and digital marketing services to business clients.",
+      intro: "Empria Tech is operated by MEDIA MARKETING, a UK-registered software development and digital marketing company. We provide web development, business software, SEO, online advertising and digital marketing services to business clients.",
       imageAlt: "Digital agency team collaborating on website layouts and SEO dashboards on a large screen",
       story: {
         eyebrow: "Our story",
         title: "One agency that connects disciplines instead of separating them.",
         paragraphs: [
-          "MEDIA MARKETING LTD operates the Empria Tech brand and provides software development and digital marketing services to business clients. We develop websites and web-based business software and provide SEO, online advertising, website management and related digital marketing services.",
+          "MEDIA MARKETING operates the Empria Tech brand and provides software development and digital marketing services to business clients. We develop websites and web-based business software and provide SEO, online advertising, website management and related digital marketing services.",
           "Our revenue comes from software development projects and recurring digital marketing and maintenance services.",
           "Our approach grew out of a simple observation: websites, search engine optimization and marketing are often handled separately by different providers. The result is presences that look good but are never found — or are found but fail to convince.",
           "That is why at Empria Tech we combine design, technology and marketing into one connected process. From the very start, a website is planned so that people appreciate it and search engines understand it. Campaigns and content build on that foundation instead of working against it.",

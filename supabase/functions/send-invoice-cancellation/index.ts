@@ -9,7 +9,7 @@ const json = (b: unknown, status = 200) =>
   new Response(JSON.stringify(b), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
 const TEAM_INBOX = "invoice@mediaamarketing.com";
-const SIGNATURE = ["Annalena Klein", "Media Marketing LTD", "+49 203 7090 7262", TEAM_INBOX, "Düsseldorfer Str. 32", "47051 Duisburg"];
+const SIGNATURE = ["Annalena Klein", "Media Marketing", "+49 203 7090 7262", TEAM_INBOX, "Düsseldorfer Str. 32", "47051 Duisburg"];
 
 type Copy = { subject: (n: string) => string; hello: (name: string) => string; body: (n: string) => string[]; regards: string };
 const COPY: Record<string, Copy> = {
@@ -129,7 +129,7 @@ ${c.body(inv.invoice_number).map((p) => `<p>${esc(p)}</p>`).join("")}
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ from: "Media Marketing LTD <noreply@mediaamarketing.com>", to: [to], bcc: [TEAM_INBOX], reply_to: TEAM_INBOX, subject, html, text }),
+      body: JSON.stringify({ from: "Media Marketing <noreply@mediaamarketing.com>", to: [to], bcc: [TEAM_INBOX], reply_to: TEAM_INBOX, subject, html, text }),
     });
     if (!res.ok) {
       const details = await res.text();

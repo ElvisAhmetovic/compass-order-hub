@@ -9,7 +9,7 @@ describe("normalizeTemplateSettings", () => {
     selectedPaymentAccount: "all",
     companyInfo: { name: "AB MEDIA TEAM LTD", email: "kontakt.abmedia@gmail.com" },
   };
-  const dbInfo = { name: "Media Marketing Limited", email: "" };
+  const dbInfo = { name: "Media Marketing", email: "" };
 
   it("replaces the old logo with the new default", () => {
     expect(normalizeTemplateSettings(stale, dbInfo).logo).toBe(DEFAULT_COMPANY_LOGO);
@@ -18,7 +18,7 @@ describe("normalizeTemplateSettings", () => {
     expect(normalizeTemplateSettings({ logo: "data:image/png;base64,x" }, dbInfo).logo).toBe("data:image/png;base64,x");
   });
   it("uses shared company info, not the browser copy", () => {
-    expect(normalizeTemplateSettings(stale, dbInfo).companyInfo.name).toBe("Media Marketing Limited");
+    expect(normalizeTemplateSettings(stale, dbInfo).companyInfo.name).toBe("Media Marketing");
   });
   it("resets the old default note", () => {
     expect(normalizeTemplateSettings(stale, dbInfo).customTerms).toBe("");
@@ -36,7 +36,7 @@ describe("normalizeTemplateSettings", () => {
         logo: "https://www.empriatech.com/lovable-uploads/2d4259f4-7fb1-4221-9e23-4bec4378d055.png",
         companyInfo: { contactPerson: "Andreas Berger", vatId: "13426 27369", email: "kontakt.abmedia@gmail.com" },
       },
-      { name: "Media Marketing Limited", contactPerson: "Annalena Klein", vatId: "", email: "" },
+      { name: "Media Marketing", contactPerson: "Annalena Klein", vatId: "", email: "" },
     );
     expect(r.logo).toBe(DEFAULT_COMPANY_LOGO);
     expect(r.companyInfo.contactPerson).toBe("Annalena Klein");

@@ -1,19 +1,19 @@
 export const SUBJECT_TEMPLATES: Record<string, string> = {
-  en: "Media Marketing Limited Invoice",
-  de: "Media Marketing Limited Rechnung",
-  nl: "Media Marketing Limited Factuur",
-  fr: "Facture Media Marketing Limited",
-  es: "Factura de Media Marketing Limited",
-  da: "Media Marketing Limited-faktura",
-  no: "Media Marketing Limited-faktura",
-  cs: "Faktura Media Marketing Limited",
-  pl: "Faktura Media Marketing Limited",
-  sv: "Media Marketing Limited-faktura",
+  en: "Media Marketing Invoice",
+  de: "Media Marketing Rechnung",
+  nl: "Media Marketing Factuur",
+  fr: "Facture Media Marketing",
+  es: "Factura de Media Marketing",
+  da: "Media Marketing-faktura",
+  no: "Media Marketing-faktura",
+  cs: "Faktura Media Marketing",
+  pl: "Faktura Media Marketing",
+  sv: "Media Marketing-faktura",
 };
 
 const SIGNATURE = `Annalena Klein
 
-Media Marketing LTD
+Media Marketing
 
 +49 203 7090 7262
 
@@ -372,19 +372,19 @@ export const getClientInvoiceEmailTemplate = (language: string) => ({
 // Extra "Send to Client" languages (invoice languages beyond the monthly-package set). No bank details.
 type ClientCopy = { subject: string; hello: string; thanks: string; attached: string; pay: string; closing: string; regards: string };
 const EXTRA_CLIENT_COPY: Record<string, ClientCopy & { label: string }> = {
-  it: { label: "Italiano", subject: "Fattura Media Marketing Limited", hello: "Buongiorno,", thanks: "La ringraziamo per il Suo ordine.", attached: "In allegato trova la nostra fattura attuale.", pay: "La preghiamo gentilmente di saldare l'importo della fattura entro la data di scadenza indicata sulla fattura, per garantire un'elaborazione regolare e senza interruzioni dei Suoi servizi.", closing: "Grazie per la Sua attenzione.", regards: "Cordiali saluti," },
-  ru: { label: "Русский", subject: "Счёт Media Marketing Limited", hello: "Здравствуйте,", thanks: "Благодарим Вас за заказ.", attached: "Во вложении Вы найдёте наш текущий счёт.", pay: "Просим Вас оплатить сумму счёта до срока оплаты, указанного в счёте, чтобы обеспечить бесперебойное оказание Ваших услуг.", closing: "Благодарим за внимание.", regards: "С уважением," },
-  uk: { label: "Українська", subject: "Рахунок Media Marketing Limited", hello: "Добрий день,", thanks: "Дякуємо за Ваше замовлення.", attached: "У вкладенні Ви знайдете наш поточний рахунок.", pay: "Просимо Вас сплатити суму рахунку до терміну оплати, зазначеного в рахунку, щоб забезпечити безперебійне надання Ваших послуг.", closing: "Дякуємо за увагу.", regards: "З повагою," },
-  ro: { label: "Română", subject: "Factură Media Marketing Limited", hello: "Bună ziua,", thanks: "Vă mulțumim pentru comanda dumneavoastră.", attached: "Atașat găsiți factura noastră curentă.", pay: "Vă rugăm să achitați suma facturii până la data scadenței menționată pe factură, pentru a asigura procesarea fără întreruperi a serviciilor dumneavoastră.", closing: "Vă mulțumim pentru atenție.", regards: "Cu stimă," },
-  tr: { label: "Türkçe", subject: "Media Marketing Limited Faturası", hello: "Merhaba,", thanks: "Siparişiniz için teşekkür ederiz.", attached: "Güncel faturamızı ekte bulabilirsiniz.", pay: "Hizmetlerinizin sorunsuz ve kesintisiz devam etmesi için fatura tutarını faturada belirtilen vade tarihine kadar ödemenizi rica ederiz.", closing: "İlginiz için teşekkür ederiz.", regards: "Saygılarımızla," },
-  pt: { label: "Português", subject: "Fatura Media Marketing Limited", hello: "Olá,", thanks: "Obrigado pela sua encomenda.", attached: "Em anexo encontra a nossa fatura atual.", pay: "Pedimos que efetue o pagamento do valor da fatura até à data de vencimento indicada na fatura, para garantir o processamento regular e ininterrupto dos seus serviços.", closing: "Obrigado pela sua atenção.", regards: "Com os melhores cumprimentos," },
-  hu: { label: "Magyar", subject: "Media Marketing Limited számla", hello: "Jó napot kívánunk!", thanks: "Köszönjük megrendelését.", attached: "Mellékelten küldjük aktuális számlánkat.", pay: "Kérjük, hogy szolgáltatásai zavartalan teljesítése érdekében a számla összegét a számlán feltüntetett fizetési határidőig egyenlítse ki.", closing: "Köszönjük figyelmét.", regards: "Üdvözlettel," },
-  el: { label: "Ελληνικά", subject: "Τιμολόγιο Media Marketing Limited", hello: "Γεια σας,", thanks: "Σας ευχαριστούμε για την παραγγελία σας.", attached: "Επισυνάπτεται το τρέχον τιμολόγιό μας.", pay: "Παρακαλούμε να εξοφλήσετε το ποσό του τιμολογίου έως την ημερομηνία λήξης που αναγράφεται στο τιμολόγιο, ώστε να διασφαλιστεί η ομαλή και αδιάκοπη παροχή των υπηρεσιών σας.", closing: "Σας ευχαριστούμε για την προσοχή σας.", regards: "Με εκτίμηση," },
-  bg: { label: "Български", subject: "Фактура от Media Marketing Limited", hello: "Здравейте,", thanks: "Благодарим Ви за поръчката.", attached: "Приложено ще намерите нашата текуща фактура.", pay: "Молим да заплатите сумата по фактурата до датата на падежа, посочена във фактурата, за да осигурим безпроблемното обслужване на Вашите услуги.", closing: "Благодарим Ви за вниманието.", regards: "С уважение," },
-  fi: { label: "Suomi", subject: "Media Marketing Limited -lasku", hello: "Hei,", thanks: "Kiitos tilauksestasi.", attached: "Liitteenä on ajankohtainen laskumme.", pay: "Pyydämme ystävällisesti maksamaan laskun summan laskussa mainittuun eräpäivään mennessä, jotta palvelujesi käsittely sujuu keskeytyksettä.", closing: "Kiitos huomiostasi.", regards: "Ystävällisin terveisin," },
-  sk: { label: "Slovenčina", subject: "Faktúra Media Marketing Limited", hello: "Dobrý deň,", thanks: "ďakujeme za Vašu objednávku.", attached: "V prílohe nájdete našu aktuálnu faktúru.", pay: "Prosíme Vás o uhradenie sumy faktúry do dátumu splatnosti uvedeného na faktúre, aby bolo zabezpečené plynulé a neprerušené spracovanie Vašich služieb.", closing: "Ďakujeme za Vašu pozornosť.", regards: "S pozdravom," },
-  sl: { label: "Slovenščina", subject: "Račun Media Marketing Limited", hello: "Pozdravljeni,", thanks: "zahvaljujemo se vam za naročilo.", attached: "V prilogi vam pošiljamo naš trenutni račun.", pay: "Prosimo, da znesek računa poravnate do datuma zapadlosti, navedenega na računu, da zagotovimo nemoteno in neprekinjeno izvajanje vaših storitev.", closing: "Hvala za vašo pozornost.", regards: "Lep pozdrav," },
-  mk: { label: "Македонски", subject: "Фактура од Media Marketing Limited", hello: "Здраво,", thanks: "Ви благодариме за нарачката.", attached: "Во прилог ќе ја најдете нашата тековна фактура.", pay: "Ве молиме износот на фактурата да го платите до датумот на доспевање наведен на фактурата, за да се обезбеди непречена обработка на вашите услуги.", closing: "Ви благодариме за вниманието.", regards: "Со почит," },
+  it: { label: "Italiano", subject: "Fattura Media Marketing", hello: "Buongiorno,", thanks: "La ringraziamo per il Suo ordine.", attached: "In allegato trova la nostra fattura attuale.", pay: "La preghiamo gentilmente di saldare l'importo della fattura entro la data di scadenza indicata sulla fattura, per garantire un'elaborazione regolare e senza interruzioni dei Suoi servizi.", closing: "Grazie per la Sua attenzione.", regards: "Cordiali saluti," },
+  ru: { label: "Русский", subject: "Счёт Media Marketing", hello: "Здравствуйте,", thanks: "Благодарим Вас за заказ.", attached: "Во вложении Вы найдёте наш текущий счёт.", pay: "Просим Вас оплатить сумму счёта до срока оплаты, указанного в счёте, чтобы обеспечить бесперебойное оказание Ваших услуг.", closing: "Благодарим за внимание.", regards: "С уважением," },
+  uk: { label: "Українська", subject: "Рахунок Media Marketing", hello: "Добрий день,", thanks: "Дякуємо за Ваше замовлення.", attached: "У вкладенні Ви знайдете наш поточний рахунок.", pay: "Просимо Вас сплатити суму рахунку до терміну оплати, зазначеного в рахунку, щоб забезпечити безперебійне надання Ваших послуг.", closing: "Дякуємо за увагу.", regards: "З повагою," },
+  ro: { label: "Română", subject: "Factură Media Marketing", hello: "Bună ziua,", thanks: "Vă mulțumim pentru comanda dumneavoastră.", attached: "Atașat găsiți factura noastră curentă.", pay: "Vă rugăm să achitați suma facturii până la data scadenței menționată pe factură, pentru a asigura procesarea fără întreruperi a serviciilor dumneavoastră.", closing: "Vă mulțumim pentru atenție.", regards: "Cu stimă," },
+  tr: { label: "Türkçe", subject: "Media Marketing Faturası", hello: "Merhaba,", thanks: "Siparişiniz için teşekkür ederiz.", attached: "Güncel faturamızı ekte bulabilirsiniz.", pay: "Hizmetlerinizin sorunsuz ve kesintisiz devam etmesi için fatura tutarını faturada belirtilen vade tarihine kadar ödemenizi rica ederiz.", closing: "İlginiz için teşekkür ederiz.", regards: "Saygılarımızla," },
+  pt: { label: "Português", subject: "Fatura Media Marketing", hello: "Olá,", thanks: "Obrigado pela sua encomenda.", attached: "Em anexo encontra a nossa fatura atual.", pay: "Pedimos que efetue o pagamento do valor da fatura até à data de vencimento indicada na fatura, para garantir o processamento regular e ininterrupto dos seus serviços.", closing: "Obrigado pela sua atenção.", regards: "Com os melhores cumprimentos," },
+  hu: { label: "Magyar", subject: "Media Marketing számla", hello: "Jó napot kívánunk!", thanks: "Köszönjük megrendelését.", attached: "Mellékelten küldjük aktuális számlánkat.", pay: "Kérjük, hogy szolgáltatásai zavartalan teljesítése érdekében a számla összegét a számlán feltüntetett fizetési határidőig egyenlítse ki.", closing: "Köszönjük figyelmét.", regards: "Üdvözlettel," },
+  el: { label: "Ελληνικά", subject: "Τιμολόγιο Media Marketing", hello: "Γεια σας,", thanks: "Σας ευχαριστούμε για την παραγγελία σας.", attached: "Επισυνάπτεται το τρέχον τιμολόγιό μας.", pay: "Παρακαλούμε να εξοφλήσετε το ποσό του τιμολογίου έως την ημερομηνία λήξης που αναγράφεται στο τιμολόγιο, ώστε να διασφαλιστεί η ομαλή και αδιάκοπη παροχή των υπηρεσιών σας.", closing: "Σας ευχαριστούμε για την προσοχή σας.", regards: "Με εκτίμηση," },
+  bg: { label: "Български", subject: "Фактура от Media Marketing", hello: "Здравейте,", thanks: "Благодарим Ви за поръчката.", attached: "Приложено ще намерите нашата текуща фактура.", pay: "Молим да заплатите сумата по фактурата до датата на падежа, посочена във фактурата, за да осигурим безпроблемното обслужване на Вашите услуги.", closing: "Благодарим Ви за вниманието.", regards: "С уважение," },
+  fi: { label: "Suomi", subject: "Media Marketing -lasku", hello: "Hei,", thanks: "Kiitos tilauksestasi.", attached: "Liitteenä on ajankohtainen laskumme.", pay: "Pyydämme ystävällisesti maksamaan laskun summan laskussa mainittuun eräpäivään mennessä, jotta palvelujesi käsittely sujuu keskeytyksettä.", closing: "Kiitos huomiostasi.", regards: "Ystävällisin terveisin," },
+  sk: { label: "Slovenčina", subject: "Faktúra Media Marketing", hello: "Dobrý deň,", thanks: "ďakujeme za Vašu objednávku.", attached: "V prílohe nájdete našu aktuálnu faktúru.", pay: "Prosíme Vás o uhradenie sumy faktúry do dátumu splatnosti uvedeného na faktúre, aby bolo zabezpečené plynulé a neprerušené spracovanie Vašich služieb.", closing: "Ďakujeme za Vašu pozornosť.", regards: "S pozdravom," },
+  sl: { label: "Slovenščina", subject: "Račun Media Marketing", hello: "Pozdravljeni,", thanks: "zahvaljujemo se vam za naročilo.", attached: "V prilogi vam pošiljamo naš trenutni račun.", pay: "Prosimo, da znesek računa poravnate do datuma zapadlosti, navedenega na računu, da zagotovimo nemoteno in neprekinjeno izvajanje vaših storitev.", closing: "Hvala za vašo pozornost.", regards: "Lep pozdrav," },
+  mk: { label: "Македонски", subject: "Фактура од Media Marketing", hello: "Здраво,", thanks: "Ви благодариме за нарачката.", attached: "Во прилог ќе ја најдете нашата тековна фактура.", pay: "Ве молиме износот на фактурата да го платите до датумот на доспевање наведен на фактурата, за да се обезбеди непречена обработка на вашите услуги.", closing: "Ви благодариме за вниманието.", regards: "Со почит," },
 };
 
 for (const [k, c] of Object.entries(EXTRA_CLIENT_COPY)) {

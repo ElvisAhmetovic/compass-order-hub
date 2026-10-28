@@ -3,7 +3,7 @@ import { companySettingsService, CompanySettingsInput } from "@/services/company
 // Default company info for synchronous fallback
 const DEFAULT_COMPANY_INFO = {
   logo: "https://placehold.co/200x60?text=Your+Logo",
-  name: "Media Marketing Limited",
+  name: "Media Marketing",
   contactPerson: "Annalena Klein",
   street: "Düsseldorfer Str. 32",
   postal: "47051",

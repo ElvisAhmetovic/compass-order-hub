@@ -35,11 +35,11 @@ const Login = () => {
         <div className="flex flex-col items-center gap-4 mb-4">
           <img
             src={abTeamSymbol}
-            alt="Media Marketing LTD"
+            alt="Media Marketing"
             className="h-16 w-16 object-contain"
           />
           <div>
-            <h1 className="font-heading text-3xl font-bold text-primary">Media Marketing LTD - CRM</h1>
+            <h1 className="font-heading text-3xl font-bold text-primary">Media Marketing - CRM</h1>
             <p className="text-muted-foreground">Sign in to continue</p>
           </div>
         </div>
