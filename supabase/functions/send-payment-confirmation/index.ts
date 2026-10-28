@@ -105,11 +105,11 @@ serve(async (req) => {
           </p>
           <p style="color: #374151; font-size: 16px; line-height: 1.6; margin-top: 30px;">
             Best regards,<br/>
-            <strong>Media Marketing Limited</strong>
+            <strong>Media Marketing</strong>
           </p>
         </div>
         <div style="text-align: center; padding: 20px; color: #9ca3af; font-size: 12px;">
-          <p>Media Marketing Limited | noreply@mediaamarketing.com</p>
+          <p>Media Marketing | noreply@mediaamarketing.com</p>
         </div>
       </div>
     `;
@@ -137,7 +137,7 @@ serve(async (req) => {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        from: 'Media Marketing LTD <noreply@mediaamarketing.com>',
+        from: 'Media Marketing <noreply@mediaamarketing.com>',
         to: [client_email],
         subject: `Payment Received — Invoice ${invoice_number}`,
         html: clientEmailHtml,
@@ -162,7 +162,7 @@ serve(async (req) => {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              from: 'Media Marketing LTD <noreply@mediaamarketing.com>',
+              from: 'Media Marketing <noreply@mediaamarketing.com>',
               to: [email],
               subject: `💰 Payment Confirmed: ${invoice_number} — ${client_name}`,
               html: teamEmailHtml,

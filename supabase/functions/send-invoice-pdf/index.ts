@@ -78,7 +78,7 @@ serve(async (req) => {
         ${stripeButton}
         <p style="color: #666; margin-top: 20px;">Please find the invoice PDF attached to this email.</p>
         <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
-        <p style="color: #999; font-size: 12px;">Media Marketing Limited</p>
+        <p style="color: #999; font-size: 12px;">Media Marketing</p>
       </div>
     `;
 
@@ -93,9 +93,9 @@ serve(async (req) => {
         'Authorization': `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: 'Media Marketing LTD <noreply@mediaamarketing.com>',
+        from: 'Media Marketing <noreply@mediaamarketing.com>',
         to: [client_email],
-        subject: subject || `Invoice ${invoice_number} from Media Marketing Limited`,
+        subject: subject || `Invoice ${invoice_number} from Media Marketing`,
         html: htmlBody,
         attachments: [
           {
@@ -138,7 +138,7 @@ serve(async (req) => {
               'Authorization': `Bearer ${RESEND_API_KEY}`,
             },
             body: JSON.stringify({
-              from: 'Media Marketing LTD <noreply@mediaamarketing.com>',
+              from: 'Media Marketing <noreply@mediaamarketing.com>',
               to: [email],
               subject: `[Team] Invoice ${invoice_number} sent to ${client_email}`,
               html: teamHtml,

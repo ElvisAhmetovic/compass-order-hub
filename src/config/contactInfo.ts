@@ -5,7 +5,7 @@ import type { HomepageLanguage } from "@/content/homepage";
 
 export const contactInfo = {
   email: "kontakt@empriatech.com",
-  legalName: "MEDIA MARKETING LTD",
+  legalName: "MEDIA MARKETING",
   companyNumber: "17507679",
   phone: "+49 203 7090 1754",
   address: {

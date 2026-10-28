@@ -157,8 +157,8 @@ const translations: Record<string, ReminderTranslations> = {
 const getTranslations = (lang: string): ReminderTranslations => translations[lang] || translations.en;
 
 const approvedClientCopy: Record<string, string> = {
-  en: `<p>Hello,</p><p>We would like to kindly remind you that we have not yet received your payment!</p><p>Your payment means a lot to us as motivation for continuing our work on your project, and it also covers our costs, as we have substantial investments that compel us to remind you about payments.</p><p>It would be nice if you could let us know when you were planning to pay our invoice.</p><p>Kind regards,<br>Annalena Klein<br>Media Marketing Limited<br>+49 203 7090 7262</p>`,
-  de: `<p>Hallo,</p><p>Wir möchten Sie freundlich daran erinnern, dass wir Ihre Zahlung noch nicht erhalten haben!</p><p>Ihre Zahlung bedeutet uns viel als Motivation für die weitere Arbeit an Ihrem Projekt, und sie deckt auch unsere Kosten, da wir hohe Investitionen haben, aufgrund derer wir gezwungen sind, Sie an die Zahlungen zu erinnern.</p><p>Es wäre schön, wenn Sie uns mitteilen würden, wann Sie vorhatten, unsere Rechnung zu bezahlen.</p><p>Herzliche Grüße<br>Annalena Klein<br>Media Marketing Limited<br>+49 203 7090 7262</p>`,
+  en: `<p>Hello,</p><p>We would like to kindly remind you that we have not yet received your payment!</p><p>Your payment means a lot to us as motivation for continuing our work on your project, and it also covers our costs, as we have substantial investments that compel us to remind you about payments.</p><p>It would be nice if you could let us know when you were planning to pay our invoice.</p><p>Kind regards,<br>Annalena Klein<br>Media Marketing<br>+49 203 7090 7262</p>`,
+  de: `<p>Hallo,</p><p>Wir möchten Sie freundlich daran erinnern, dass wir Ihre Zahlung noch nicht erhalten haben!</p><p>Ihre Zahlung bedeutet uns viel als Motivation für die weitere Arbeit an Ihrem Projekt, und sie deckt auch unsere Kosten, da wir hohe Investitionen haben, aufgrund derer wir gezwungen sind, Sie an die Zahlungen zu erinnern.</p><p>Es wäre schön, wenn Sie uns mitteilen würden, wann Sie vorhatten, unsere Rechnung zu bezahlen.</p><p>Herzliche Grüße<br>Annalena Klein<br>Media Marketing<br>+49 203 7090 7262</p>`,
 };
 
 // Mirrors RESOLVED_SERVICE_NOTICE in src/services/paymentReminderCopy.ts (en/de).
@@ -207,7 +207,7 @@ const buildReminderEmailHtml = (data: {
 
   return `<!DOCTYPE html>
 <html lang="${data.isClientEmail ? data.language : 'en'}">
-<head><meta charset="UTF-8"><title>${urgencyLabel} - Media Marketing LTD</title></head>
+<head><meta charset="UTF-8"><title>${urgencyLabel} - Media Marketing</title></head>
 <body style="margin:0; padding:0; background-color:#ffffff; font-family:Arial,Helvetica,sans-serif;">
   <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color:#ffffff; padding:40px 0;">
     <tr><td align="center">
@@ -216,7 +216,7 @@ const buildReminderEmailHtml = (data: {
         <tr><td style="padding:22px 32px;">
           <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"><tr>
             <td align="left" style="font-family:Roboto,Arial,sans-serif; font-size:13px; color:${urgencyColor}; font-weight:bold;">${urgencyLabel} #${data.reminderNumber}</td>
-            <td align="right" style="font-family:Roboto,Arial,sans-serif; font-size:18px; font-weight:bold; color:#1e3a5f;">Media Marketing LTD</td>
+            <td align="right" style="font-family:Roboto,Arial,sans-serif; font-size:18px; font-weight:bold; color:#1e3a5f;">Media Marketing</td>
           </tr></table>
         </td></tr>
 
@@ -318,7 +318,7 @@ const buildReminderEmailHtml = (data: {
         <tr><td style="padding:24px 32px; border-top:1px solid #e8eaed;">
           <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"><tr>
             <td style="font-family:Roboto,Arial,sans-serif; font-size:11px; color:#9aa0a6; text-align:center;">
-              ${t.footer} <strong>Media Marketing LTD</strong><br>
+              ${t.footer} <strong>Media Marketing</strong><br>
               ${data.isClientEmail ? `${urgencyLabel}` : `Reminder`} #${data.reminderNumber} • ${new Date().toLocaleDateString('de-DE')}
             </td>
           </tr></table>
@@ -374,7 +374,7 @@ const handler = async (req: Request): Promise<Response> => {
 
       const t = getTranslations(testLang);
       await resend.emails.send({
-        from: "Media Marketing LTD <noreply@mediaamarketing.com>",
+        from: "Media Marketing <noreply@mediaamarketing.com>",
         to: [testEmail],
         subject: `💰 ${t.urgency[0]} #1: ${t.invoiceLabel} INV-2026-TEST - ${formatPrice(1299, "EUR")}`,
         html: demoHtml,
@@ -576,7 +576,7 @@ const handler = async (req: Request): Promise<Response> => {
             const clientSubject = `💰 ${t.urgency[urgencyIdx]} #${newReminderCount}: ${t.invoiceLabel} ${invoice.invoice_number} - ${amount}`;
 
             await resend.emails.send({
-              from: "Media Marketing LTD <noreply@mediaamarketing.com>",
+              from: "Media Marketing <noreply@mediaamarketing.com>",
               to: [clientEmail],
               cc: ccList.length > 0 ? ccList : undefined,
               subject: clientSubject,

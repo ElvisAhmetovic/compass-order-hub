@@ -10,11 +10,11 @@ const Register = () => {
         <div className="flex justify-center mb-4">
           <img
             src={abTeamSymbol}
-            alt="Media Marketing LTD"
+            alt="Media Marketing"
             className="h-16 w-16 object-contain"
           />
         </div>
-        <h1 className="text-center font-heading text-3xl font-bold text-primary">Media Marketing LTD - CRM</h1>
+        <h1 className="text-center font-heading text-3xl font-bold text-primary">Media Marketing - CRM</h1>
         <p className="text-center text-muted-foreground">Create a new account</p>
       </div>
       <RegisterForm />

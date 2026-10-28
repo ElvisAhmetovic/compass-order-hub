@@ -8,7 +8,7 @@ const en = getClientInvoiceEmailTemplate("en");
 describe("Send to Client languages", () => {
   it("Italian opens with Italian subject and message", () => {
     const t = getClientInvoiceEmailTemplate("it");
-    expect(t.subject).toBe("Fattura Media Marketing Limited");
+    expect(t.subject).toBe("Fattura Media Marketing");
     expect(t.message).toContain("entro la data di scadenza indicata sulla fattura");
     expect(t.message).not.toContain("IBAN");
   });

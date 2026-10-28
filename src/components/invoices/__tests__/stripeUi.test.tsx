@@ -11,7 +11,7 @@ vi.mock("@/utils/invoicePdfGenerator", () => ({ generateInvoicePDFBase64: async 
 import InvoicePreview from "../InvoicePreview";
 import SendInvoicePDFDialog from "../SendInvoicePDFDialog";
 
-const ts = { language: "en", currency: "EUR", vatEnabled: true, vatRate: 0, selectedPaymentAccount: ["germany"], companyInfo: { name: "Media Marketing Limited" } };
+const ts = { language: "en", currency: "EUR", vatEnabled: true, vatRate: 0, selectedPaymentAccount: ["germany"], companyInfo: { name: "Media Marketing" } };
 const base: any = { id: "1", invoice_number: "INV-1", issue_date: "2026-10-12", due_date: "2026-11-11", currency: "EUR" };
 const LINK = "https://buy.stripe.com/test_ABC";
 

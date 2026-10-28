@@ -125,7 +125,7 @@ Invoice Details:
 Thank you for your business!
 
 Best regards,
-Media Marketing LTD`,
+Media Marketing`,
     payment_reminder: `Dear {client_name},
 
 This is a friendly reminder that invoice {invoice_number} is due.
@@ -138,7 +138,7 @@ Invoice Details:
 Please process payment at your earliest convenience.
 
 Best regards,
-Media Marketing LTD`,
+Media Marketing`,
     order_status: `Dear {client_name},
 
 Your order status has been updated.
@@ -150,7 +150,7 @@ Updated: {updated_date}
 Thank you for choosing our services!
 
 Best regards,
-Media Marketing LTD`
+Media Marketing`
   };
 
   const handleTemplateTypeChange = (type: string) => {
@@ -228,7 +228,7 @@ Media Marketing LTD`
                     id="subject"
                     value={formData.subject}
                     onChange={(e) => setFormData(prev => ({ ...prev, subject: e.target.value }))}
-                    placeholder="e.g., Invoice {invoice_number} from Media Marketing LTD"
+                    placeholder="e.g., Invoice {invoice_number} from Media Marketing"
                   />
                 </div>
 

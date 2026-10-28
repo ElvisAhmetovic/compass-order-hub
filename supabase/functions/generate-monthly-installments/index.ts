@@ -316,7 +316,7 @@ const INVOICE_DB_TEXT: Record<Lang, {
 
 // Company info (matches frontend defaults)
 const COMPANY = {
-  name: "Media Marketing Limited",
+  name: "Media Marketing",
   contactPerson: "Annalena Klein",
   street: "Düsseldorfer Str. 32",
   postal: "47051",
@@ -476,7 +476,7 @@ function generateInvoicePDF(
   // ── Header ──
   doc.setFontSize(22);
   doc.setFont("helvetica", "bold");
-  doc.text("Media Marketing Limited", marginLeft, y);
+  doc.text("Media Marketing", marginLeft, y);
   y += 8;
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
@@ -732,12 +732,12 @@ async function sendInvoiceEmail(
       <p>${E.attachmentNote}</p>
       <p>${E.paymentRequest}</p>
       <p>${E.questionsNote}</p>
-      <br/><p>${E.closing}<br/><strong>Media Marketing LTD</strong><br/><a href="mailto:invoice@mediaamarketing.com">invoice@mediaamarketing.com</a></p>
+      <br/><p>${E.closing}<br/><strong>Media Marketing</strong><br/><a href="mailto:invoice@mediaamarketing.com">invoice@mediaamarketing.com</a></p>
     </div>`;
 
   try {
     const res = await resendFetchWithRetry({
-      from: "Media Marketing LTD <noreply@mediaamarketing.com>",
+      from: "Media Marketing <noreply@mediaamarketing.com>",
       to: [to],
       subject: E.subject(invoiceNumber, monthLabel, formattedPrice),
       html,
@@ -786,7 +786,7 @@ async function sendTeamNotifications(
   // Single Resend call with BCC list — 1 API call instead of 12
   try {
     const res = await resendFetchWithRetry({
-      from: "Media Marketing LTD <noreply@mediaamarketing.com>",
+      from: "Media Marketing <noreply@mediaamarketing.com>",
       to: ["invoice@mediaamarketing.com"],
       bcc: TEAM_EMAILS.filter((e) => e !== "invoice@mediaamarketing.com"),
       subject,

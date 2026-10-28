@@ -72,7 +72,7 @@ const handler = async (req: Request): Promise<Response> => {
       .replace(/•/g, '&bull;');
 
     const emailResponse = await resend.emails.send({
-      from: "Media Marketing LTD <noreply@mediaamarketing.com>",
+      from: "Media Marketing <noreply@mediaamarketing.com>",
       to: [to],
       subject: subject,
       html: `
@@ -85,7 +85,7 @@ const handler = async (req: Request): Promise<Response> => {
         </head>
         <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-            <h1 style="color: #1e3a5f; margin: 0; font-size: 24px;">Media Marketing LTD</h1>
+            <h1 style="color: #1e3a5f; margin: 0; font-size: 24px;">Media Marketing</h1>
             <p style="margin: 5px 0 0 0; color: #6b7280;">Payment Reminder</p>
           </div>
           
@@ -109,7 +109,7 @@ const handler = async (req: Request): Promise<Response> => {
           </div>
           
           <div style="margin-top: 20px; padding: 15px; background-color: #f3f4f6; border-radius: 8px; font-size: 14px; color: #6b7280;">
-            <p style="margin: 0;"><strong>Media Marketing LTD</strong></p>
+            <p style="margin: 0;"><strong>Media Marketing</strong></p>
             <p style="margin: 5px 0 0 0;">This is an automated payment reminder. If you have any questions, please contact our accounting department.</p>
           </div>
         </body>

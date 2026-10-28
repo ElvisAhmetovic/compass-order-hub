@@ -72,7 +72,7 @@ const LoginForm = () => {
         <div className="flex justify-center mb-2">
           <img
             src={abTeamSymbol}
-            alt="Media Marketing LTD"
+            alt="Media Marketing"
             className="h-14 w-14 object-contain"
           />
         </div>
