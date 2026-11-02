@@ -1212,6 +1212,8 @@ export type Database = {
           priority: string | null
           start_date: string
           status: string
+          stopped_at: string | null
+          stopped_reason: string | null
           total_value: number
           updated_at: string
           vat_enabled: boolean | null
@@ -1239,6 +1241,8 @@ export type Database = {
           priority?: string | null
           start_date: string
           status?: string
+          stopped_at?: string | null
+          stopped_reason?: string | null
           total_value: number
           updated_at?: string
           vat_enabled?: boolean | null
@@ -1266,6 +1270,8 @@ export type Database = {
           priority?: string | null
           start_date?: string
           status?: string
+          stopped_at?: string | null
+          stopped_reason?: string | null
           total_value?: number
           updated_at?: string
           vat_enabled?: boolean | null

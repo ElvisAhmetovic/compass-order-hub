@@ -7,7 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
-import { Trash2, ChevronDown, ChevronRight, ExternalLink, FileText, Mail, Loader2, UserCheck, UserX, KeyRound } from "lucide-react";
+import { Trash2, ChevronDown, ChevronRight, ExternalLink, FileText, Mail, Loader2, UserCheck, UserX, KeyRound, PauseCircle, PlayCircle } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 import {
   monthlyContractService, MonthlyContract, MonthlyInstallment,
@@ -302,6 +303,27 @@ const MonthlyInstallmentsTable: React.FC<Props> = ({ contracts, installments, on
     }
   };
 
+  const [stopReason, setStopReason] = useState("");
+  const handleStopContract = async (contractId: string) => {
+    try {
+      await monthlyContractService.stopContract(contractId, stopReason);
+      setStopReason("");
+      toast({ title: "Package stopped", description: "No new invoices will be created. Client data is kept." });
+      onRefresh();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+  };
+  const handleResumeContract = async (contractId: string) => {
+    try {
+      await monthlyContractService.resumeContract(contractId);
+      toast({ title: "Package resumed", description: "Billing continues from the next due month." });
+      onRefresh();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+  };
+
   const handleDeleteContract = async (contractId: string) => {
     try {
       await monthlyContractService.deleteContract(contractId);
@@ -397,8 +419,11 @@ const MonthlyInstallmentsTable: React.FC<Props> = ({ contracts, installments, on
                   </div>
                   <Progress value={progressPercent} className="h-2" />
                 </div>
-                <Badge variant={contract.status === "active" ? "default" : contract.status === "completed" ? "secondary" : "destructive"}>
-                  {contract.status === "active" ? "Active" : contract.status === "completed" ? "Completed" : "Cancelled"}
+                <Badge
+                  variant={contract.status === "active" ? "default" : contract.status === "cancelled" ? "destructive" : "secondary"}
+                  title={(contract as any).stopped_reason || undefined}
+                >
+                  {contract.status === "active" ? "Active" : contract.status === "completed" ? "Completed" : contract.status === "stopped" ? "Stopped" : "Cancelled"}
                 </Badge>
                 <Button
                   variant="outline"
@@ -412,6 +437,35 @@ const MonthlyInstallmentsTable: React.FC<Props> = ({ contracts, installments, on
                   <KeyRound className="w-4 h-4 mr-1" />
                   Portal
                 </Button>
+                {isAdmin && contract.status === "active" && (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="outline" size="sm" className="h-8 px-2" onClick={(e) => e.stopPropagation()}>
+                        <PauseCircle className="w-4 h-4 mr-1" />
+                        Stop
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Stop this package?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          No new monthly invoices will be created or sent. The client's details, past months and existing invoices are kept. Invoices already sent stay open. You can resume it at any time.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <Input placeholder="Reason (optional)" value={stopReason} onChange={(e) => setStopReason(e.target.value)} />
+                      <AlertDialogFooter>
+                        <AlertDialogCancel onClick={() => setStopReason("")}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => handleStopContract(contract.id)}>Stop package</AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                )}
+                {isAdmin && contract.status === "stopped" && (
+                  <Button variant="outline" size="sm" className="h-8 px-2" onClick={(e) => { e.stopPropagation(); handleResumeContract(contract.id); }}>
+                    <PlayCircle className="w-4 h-4 mr-1" />
+                    Resume
+                  </Button>
+                )}
                 {isAdmin && (
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
@@ -422,7 +476,7 @@ const MonthlyInstallmentsTable: React.FC<Props> = ({ contracts, installments, on
                     <AlertDialogContent>
                       <AlertDialogHeader>
                         <AlertDialogTitle>Delete contract?</AlertDialogTitle>
-                        <AlertDialogDescription>This will permanently delete the contract and all associated installments.</AlertDialogDescription>
+                        <AlertDialogDescription>This will permanently delete the contract and all associated installments. To end a package but keep the client's data, use "Stop" instead.</AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>

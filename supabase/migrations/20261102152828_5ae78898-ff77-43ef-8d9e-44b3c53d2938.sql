@@ -1,0 +1,1 @@
+ALTER TABLE public.monthly_contracts ADD COLUMN IF NOT EXISTS stopped_at timestamptz, ADD COLUMN IF NOT EXISTS stopped_reason text;
