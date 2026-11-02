@@ -351,28 +351,29 @@ function formatDate(dateStr: string): string {
 // ── Find or create client ──────────────────────────────────────────
 async function findOrCreateClient(supabase: any, contract: any): Promise<string> {
   // Try email + name match first (prevents wrong client when multiple companies share an email)
-  const { data: exactMatch } = await supabase
+  const name = String(contract.client_name || "").trim();
+  const { data: sameEmail } = await supabase
     .from("clients")
-    .select("id")
-    .eq("email", contract.client_email)
-    .eq("name", contract.client_name)
-    .maybeSingle();
+    .select("id, name")
+    .eq("email", contract.client_email);
 
-  if (exactMatch) return exactMatch.id;
+  const exact = (sameEmail || []).find((c: any) => String(c.name || "").trim().toLowerCase() === name.toLowerCase());
+  if (exact) return exact.id;
 
-  // Fallback: email only
-  const { data: emailMatch } = await supabase
-    .from("clients")
-    .select("id")
-    .eq("email", contract.client_email)
-    .maybeSingle();
-
-  if (emailMatch) return emailMatch.id;
+  // Fallback to an email-only match only when exactly one client uses that email
+  // and no other package shares it (otherwise each package gets its own client).
+  if ((sameEmail || []).length === 1) {
+    const { count } = await supabase
+      .from("monthly_contracts")
+      .select("id", { count: "exact", head: true })
+      .eq("client_email", contract.client_email);
+    if ((count || 0) <= 1) return sameEmail[0].id;
+  }
 
   const { data: newClient, error } = await supabase
     .from("clients")
     .insert({
-      name: contract.client_name,
+      name: name,
       email: contract.client_email,
       address: contract.company_address || null,
       phone: contract.contact_phone || null,
@@ -427,6 +428,9 @@ async function createInvoice(
       user_id: userId,
       notes: dbText.notes(monthLabel),
       payment_terms: dbText.paymentTerms,
+      bill_to_name: String(contract.client_name || "").trim() || null,
+      bill_to_email: contract.client_email || null,
+      bill_to_address: contract.company_address || null,
       next_reminder_at: new Date(Date.now() + 168 * 60 * 60 * 1000).toISOString(),
     })
     .select("id")
