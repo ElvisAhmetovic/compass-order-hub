@@ -176,6 +176,23 @@ export const monthlyContractService = {
     if (error) throw error;
   },
 
+  /** Stop a package: keeps client data, months and invoices; billing only runs for 'active'. */
+  async stopContract(contractId: string, reason?: string) {
+    const { error } = await supabase
+      .from("monthly_contracts")
+      .update({ status: "stopped", stopped_at: new Date().toISOString(), stopped_reason: reason?.trim() || null } as any)
+      .eq("id", contractId);
+    if (error) throw error;
+  },
+
+  async resumeContract(contractId: string) {
+    const { error } = await supabase
+      .from("monthly_contracts")
+      .update({ status: "active", stopped_at: null, stopped_reason: null } as any)
+      .eq("id", contractId);
+    if (error) throw error;
+  },
+
   async toggleEmailSent(installmentId: string, newStatus: boolean) {
     const updateData: any = {
       email_sent: newStatus,
