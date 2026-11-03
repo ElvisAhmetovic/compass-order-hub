@@ -506,7 +506,7 @@ function generateInvoicePDF(
   // ── Header ──
   if (logoDataUrl) {
     try {
-      doc.addImage(logoDataUrl, "PNG", pageWidth - marginRight - 30, 10, 30, 19.8);
+      doc.addImage(logoDataUrl, "PNG", pageWidth - marginRight - 30, 10, 30, 19.8, "mm-logo", "FAST");
     } catch (e) { console.error("addImage failed", e); }
   }
   doc.setFontSize(22);
