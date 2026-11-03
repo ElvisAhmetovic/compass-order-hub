@@ -339,7 +339,14 @@ const BANK_ACCOUNTS = [
   { label: "Media Marketing WISE (Belgium)", iban: "BE75903030215751", bic: "TRWIBEB1XXX", bank: "Wise" },
 ];
 
-const LOGO_URL = "https://empriatech.com/__l5e/assets-v1/906c24c2-78df-48fa-8700-fa60a29a3174/media-marketing-symbol-light.png";
+const LOGO_URL = "https://empriatech.com/__l5e/assets-v1/c75cf69c-b426-41f3-a0ee-f479e4acf86e/media-marketing-symbol.png";
+function bytesToBase64(input: Uint8Array | ArrayBuffer): string {
+  const b = input instanceof Uint8Array ? input : new Uint8Array(input);
+  let bin = "";
+  for (let i = 0; i < b.length; i += 0x8000) bin += String.fromCharCode(...b.subarray(i, i + 0x8000));
+  return btoa(bin);
+}
+
 let logoCache: string | null | undefined;
 async function getLogoDataUrl(): Promise<string | null> {
   if (logoCache !== undefined) return logoCache;
@@ -499,7 +506,7 @@ function generateInvoicePDF(
   // ── Header ──
   if (logoDataUrl) {
     try {
-      doc.addImage(logoDataUrl, "PNG", pageWidth - marginRight - 30, 10, 30, 19.8);
+      doc.addImage(logoDataUrl, "PNG", pageWidth - marginRight - 30, 10, 30, 19.8, "mm-logo", "FAST");
     } catch (e) { console.error("addImage failed", e); }
   }
   doc.setFontSize(22);
@@ -742,7 +749,12 @@ async function sendInvoiceEmail(
     return { ok: false, error: "RESEND_API_KEY_ABMEDIA not configured" };
   }
   const formattedPrice = formatPrice(totalAmount, currency);
-  const base64Pdf = btoa(String.fromCharCode(...new Uint8Array(pdfBytes)));
+  const pdfLen = pdfBytes instanceof Uint8Array ? pdfBytes.length : (pdfBytes as unknown as ArrayBuffer).byteLength;
+  if (!pdfLen || pdfLen < 1000) {
+    console.error(`PDF for ${invoiceNumber} is empty (${pdfLen} bytes) – not sending`);
+    return { ok: false, error: `Empty PDF (${pdfLen} bytes)` };
+  }
+  const base64Pdf = bytesToBase64(pdfBytes);
   const E = EMAIL_TRANSLATIONS[lang];
 
   const html = `
@@ -1004,7 +1016,7 @@ Deno.serve(async (req) => {
               .eq("id", existing.id);
             emailsSent++;
 
-            const teamPdfBase64 = btoa(String.fromCharCode(...new Uint8Array(pdfBytes)));
+            const teamPdfBase64 = bytesToBase64(pdfBytes);
             // Pause between client email and team copy to stay under Resend's 2 req/sec ceiling
             await sleep(INTER_EMAIL_DELAY_MS);
             const teamSent = await sendTeamNotifications(contract.client_name, monthLabel, totalAmount, contract.currency || "EUR", invoiceNumber, teamPdfBase64);
@@ -1121,7 +1133,7 @@ Deno.serve(async (req) => {
             .eq("id", newInstallment.id);
           emailsSent++;
 
-          const newTeamPdfBase64 = btoa(String.fromCharCode(...new Uint8Array(pdfBytes)));
+          const newTeamPdfBase64 = bytesToBase64(pdfBytes);
           // Pause between client email and team copy to stay under Resend's 2 req/sec ceiling
           await sleep(INTER_EMAIL_DELAY_MS);
           const teamSent = await sendTeamNotifications(contract.client_name, monthLabel, totalAmount, contract.currency || "EUR", invoiceNumber, newTeamPdfBase64);
