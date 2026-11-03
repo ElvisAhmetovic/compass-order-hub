@@ -335,8 +335,8 @@ const COMPANY = {
 const REGISTERED_OFFICE = "Monomark House, 27 Old Gloucester Street, London WC1N 3AX, United Kingdom";
 
 const BANK_ACCOUNTS = [
-  { label: "German Bank Account", iban: "DE91240703680071572200", bic: "DEUTDE2HP22", bank: "Postbank/DSL Ndl of Deutsche Bank" },
-  { label: "Media Marketing WISE (Belgium)", iban: "BE75903030215751", bic: "TRWIBEB1XXX", bank: "Wise" },
+  { label: "German Bank Account", iban: "DE91240703680071572200", bic: "DEUTDE2HP22", bank: "Postbank/DSL Ndl of Deutsche Bank", accountHolder: "Selmin Huzbasic" },
+  { label: "Media Marketing Limited", iban: "BE75903030215751", bic: "TRWIBEB1XXX", bank: "Wise" },
 ];
 
 const LOGO_URL = "https://empriatech.com/__l5e/assets-v1/c75cf69c-b426-41f3-a0ee-f479e4acf86e/media-marketing-symbol.png";
@@ -698,7 +698,7 @@ function generateInvoicePDF(
     y += 5;
     doc.setFont("helvetica", "normal");
     if (acc.accountHolder) {
-      doc.text(`Account Holder: ${acc.accountHolder}`, marginLeft + 5, y);
+      doc.text(`${lang === "de" ? "Inhaber" : "Owner"}: ${acc.accountHolder}`, marginLeft + 5, y);
       y += 5;
     }
     doc.text(`IBAN: ${acc.iban}`, marginLeft + 5, y);

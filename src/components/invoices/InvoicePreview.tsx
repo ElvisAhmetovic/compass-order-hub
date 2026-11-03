@@ -78,12 +78,14 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
     account: undefined as string | undefined,
     sortCode: undefined as string | undefined,
     accountNumber: undefined as string | undefined,
-    address: undefined as string | undefined
+    address: undefined as string | undefined,
+    accountHolder: "Selmin Huzbasic" as string | undefined
   };
 
   const revolutAccount = {
     ...germanyAccount,
     id: "revolut",
+    accountHolder: undefined,
     name: "Revolut Ltd",
     iban: "GB40REVO23012083344414",
     bic: "REVOGB21",
@@ -93,7 +95,8 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
   const wiseAccount = {
     ...germanyAccount,
     id: "wise",
-    name: "Media Marketing WISE",
+    name: "Media Marketing Limited",
+    accountHolder: undefined,
     iban: "BE75903030215751",
     bic: "TRWIBEB1XXX",
     bank: "Wise",
@@ -102,7 +105,8 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
   const payoneerAccount = {
     ...germanyAccount,
     id: "payoneer",
-    name: "MEDIA MARKETING PAYONEER",
+    name: "Media Marketing Limited",
+    accountHolder: undefined,
     iban: "LU574080000049188578",
     bic: "BCIRLULL",
     bank: "Payoneer",
@@ -111,7 +115,8 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
   const wiseUkAccount = {
     ...germanyAccount,
     id: "wiseUk",
-    name: "MEDIA MARKETING WISE UK",
+    name: "Media Marketing Limited",
+    accountHolder: undefined,
     iban: "GB83 TRWI 6084 6467 2787 39",
     bic: "TRWIGB2LXXX",
     sortCode: "60-84-64",
@@ -325,6 +330,7 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
                 {selectedAccounts.map((account, idx) => (
                   <div key={account.id} className={idx > 0 ? "mt-3 pt-3 border-t border-gray-200" : ""}>
                     <div className="font-semibold mb-2">{account.name}:</div>
+                    {account.accountHolder && <div><strong>{templateSettings.language === "de" ? "Inhaber" : "Owner"}:</strong> <span className="text-black font-bold text-base">{account.accountHolder}</span></div>}
                     <div><strong>{getTranslatedText('iban')}:</strong> <span className="text-black font-bold text-base">{account.iban}</span></div>
                     {account.bic && <div><strong>{getTranslatedText('bic')}:</strong> <span className="text-black font-bold text-base">{account.bic}</span></div>}
                     {account.blz && <div><strong>{getTranslatedText('blz')}:</strong> <span className="text-black font-bold text-base">{account.blz}</span> <strong>{getTranslatedText('account')}:</strong> <span className="text-black font-bold text-base">{account.account}</span></div>}
