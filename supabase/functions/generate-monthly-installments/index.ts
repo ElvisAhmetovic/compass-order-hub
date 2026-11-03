@@ -991,7 +991,7 @@ Deno.serve(async (req) => {
           const pdfBytes = generateInvoicePDF(
             invoiceNumber, new Date().toISOString().split("T")[0], dueDate,
             contract.client_name, contract.company_address, contract.client_email,
-            description, netAmount, vatAmount, totalAmount, contract.currency || "EUR", lang,
+            description, netAmount, vatAmount, totalAmount, contract.currency || "EUR", lang, await getLogoDataUrl(),
           );
 
           const result = await sendInvoiceEmail(
@@ -1107,7 +1107,7 @@ Deno.serve(async (req) => {
         const pdfBytes = generateInvoicePDF(
           invoiceNumber, issueDate, dueDate,
           contract.client_name, contract.company_address, contract.client_email,
-          description, netAmount, vatAmount, totalAmount, contract.currency || "EUR", lang,
+          description, netAmount, vatAmount, totalAmount, contract.currency || "EUR", lang, await getLogoDataUrl(),
         );
 
         const result = await sendInvoiceEmail(
