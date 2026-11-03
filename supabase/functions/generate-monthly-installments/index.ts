@@ -1056,6 +1056,38 @@ Deno.serve(async (req) => {
           continue;
         }
 
+        // Respect billing interval (e.g. 12 = yearly): only bill in billing months.
+        const billingFrequency = Math.max(1, Number(contract.billing_frequency) || 1);
+        if ((monthNumber - 1) % billingFrequency !== 0) {
+          await logResult({
+            contract_id: contract.id, client_name: contract.client_name,
+            month_label: monthLabel, status: "skipped",
+            reason: `Not a billing month (every ${billingFrequency} months)`,
+          });
+          continue;
+        }
+
+        // Duplicate guard: any non-cancelled invoice for same client email + amount in this billing period.
+        if (contract.client_email) {
+          const periodStart = new Date(Date.UTC(currentYear, currentMonth - (billingFrequency - 1), 1)).toISOString();
+          const { data: dupes } = await supabase
+            .from("invoices")
+            .select("id, invoice_number")
+            .ilike("bill_to_email", contract.client_email.trim())
+            .eq("total_amount", contract.monthly_amount)
+            .neq("status", "cancelled")
+            .gte("created_at", periodStart)
+            .limit(1);
+          if (dupes && dupes.length > 0 && billingFrequency > 1) {
+            await logResult({
+              contract_id: contract.id, client_name: contract.client_name,
+              month_label: monthLabel, status: "skipped",
+              reason: `Already invoiced this period (${dupes[0].invoice_number})`, invoice_id: dupes[0].id,
+            });
+            continue;
+          }
+        }
+
         // Claim the month first (installment row), so two overlapping runs can't both bill it.
         const installmentDue = `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-01`;
         const { data: newInstallment, error: insertError } = await supabase
