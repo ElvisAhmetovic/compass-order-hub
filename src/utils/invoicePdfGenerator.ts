@@ -248,12 +248,14 @@ const generateInvoiceHTML = (data: InvoicePDFData): string => {
     account: undefined as string | undefined,
     sortCode: undefined as string | undefined,
     accountNumber: undefined as string | undefined,
-    address: undefined as string | undefined
+    address: undefined as string | undefined,
+    accountHolder: "Selmin Huzbasic" as string | undefined
   };
 
   const revolutAccount = {
     ...germanyAccount,
     id: "revolut",
+    accountHolder: undefined,
     name: "Revolut Ltd",
     iban: "GB40REVO23012083344414",
     bic: "REVOGB21",
@@ -263,7 +265,8 @@ const generateInvoiceHTML = (data: InvoicePDFData): string => {
   const wiseAccount = {
     ...germanyAccount,
     id: "wise",
-    name: "Media Marketing WISE",
+    name: "Media Marketing Limited",
+    accountHolder: undefined,
     iban: "BE75903030215751",
     bic: "TRWIBEB1XXX",
     bank: "Wise",
@@ -272,7 +275,8 @@ const generateInvoiceHTML = (data: InvoicePDFData): string => {
   const payoneerAccount = {
     ...germanyAccount,
     id: "payoneer",
-    name: "MEDIA MARKETING PAYONEER",
+    name: "Media Marketing Limited",
+    accountHolder: undefined,
     iban: "LU574080000049188578",
     bic: "BCIRLULL",
     bank: "Payoneer",
@@ -281,7 +285,8 @@ const generateInvoiceHTML = (data: InvoicePDFData): string => {
   const wiseUkAccount = {
     ...germanyAccount,
     id: "wiseUk",
-    name: "MEDIA MARKETING WISE UK",
+    name: "Media Marketing Limited",
+    accountHolder: undefined,
     iban: "GB83 TRWI 6084 6467 2787 39",
     bic: "TRWIGB2LXXX",
     sortCode: "60-84-64",
@@ -481,7 +486,7 @@ const generateInvoiceHTML = (data: InvoicePDFData): string => {
             ${selectedAccounts.map((account, idx) => `
               <div${idx > 0 ? ' style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #e5e7eb;"' : ''}>
                 <div style="font-weight: 600; margin-bottom: 4px;">${account.name}:</div>
-                ${'accountHolder' in account && account.accountHolder ? `<div><strong>Account Holder:</strong> <span style="font-weight: bold; color: #000; font-size: 13px;">${account.accountHolder}</span></div>` : ''}
+                ${'accountHolder' in account && account.accountHolder ? `<div><strong>${templateSettings.language === "de" ? "Inhaber" : "Owner"}:</strong> <span style="font-weight: bold; color: #000; font-size: 13px;">${account.accountHolder}</span></div>` : ''}
                 <div><strong>${getTranslatedText('iban')}:</strong> <span style="font-weight: bold; color: #000; font-size: 13px;">${account.iban}</span></div>
                 ${account.bic ? `<div><strong>${getTranslatedText('bic')}:</strong> <span style="font-weight: bold; color: #000; font-size: 13px;">${account.bic}</span></div>` : ''}
                 ${account.blz ? `<div><strong>${getTranslatedText('blz')}:</strong> <span style="font-weight: bold; color: #000; font-size: 13px;">${account.blz}</span> <strong>${getTranslatedText('account')}:</strong> <span style="font-weight: bold; color: #000; font-size: 13px;">${account.account}</span></div>` : ''}
