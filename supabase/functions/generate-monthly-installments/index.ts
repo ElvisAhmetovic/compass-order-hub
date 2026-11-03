@@ -336,8 +336,26 @@ const REGISTERED_OFFICE = "Monomark House, 27 Old Gloucester Street, London WC1N
 
 const BANK_ACCOUNTS = [
   { label: "German Bank Account", iban: "DE91240703680071572200", bic: "DEUTDE2HP22", bank: "Postbank/DSL Ndl of Deutsche Bank" },
-  { label: "Revolut Account", iban: "GB40REVO23012083344414", bic: "REVOGB21", bank: "Revolut Ltd" },
+  { label: "Media Marketing WISE (Belgium)", iban: "BE75903030215751", bic: "TRWIBEB1XXX", bank: "Wise" },
 ];
+
+const LOGO_URL = "https://empriatech.com/__l5e/assets-v1/906c24c2-78df-48fa-8700-fa60a29a3174/media-marketing-symbol-light.png";
+let logoCache: string | null | undefined;
+async function getLogoDataUrl(): Promise<string | null> {
+  if (logoCache !== undefined) return logoCache;
+  try {
+    const r = await fetch(LOGO_URL, { redirect: "follow" });
+    if (!r.ok) throw new Error(`logo ${r.status}`);
+    const b = new Uint8Array(await r.arrayBuffer());
+    let bin = "";
+    for (let i = 0; i < b.length; i += 0x8000) bin += String.fromCharCode(...b.subarray(i, i + 0x8000));
+    logoCache = `data:image/png;base64,${btoa(bin)}`;
+  } catch (e) {
+    console.error("Logo fetch failed", e);
+    logoCache = null;
+  }
+  return logoCache;
+}
 
 function formatPrice(amount: number, currency: string): string {
   return new Intl.NumberFormat("de-DE", { style: "currency", currency: currency || "EUR" }).format(amount);
@@ -468,6 +486,7 @@ function generateInvoicePDF(
   totalAmount: number,
   currency: string,
   lang: Lang,
+  logoDataUrl: string | null = null,
 ): Uint8Array {
   const L = PDF_LABELS[lang];
   const doc = new jsPDF({ unit: "mm", format: "a4" });
@@ -478,6 +497,11 @@ function generateInvoicePDF(
   let y = 20;
 
   // ── Header ──
+  if (logoDataUrl) {
+    try {
+      doc.addImage(logoDataUrl, "PNG", pageWidth - marginRight - 30, 10, 30, 19.8);
+    } catch (e) { console.error("addImage failed", e); }
+  }
   doc.setFontSize(22);
   doc.setFont("helvetica", "bold");
   doc.text("Media Marketing", marginLeft, y);
