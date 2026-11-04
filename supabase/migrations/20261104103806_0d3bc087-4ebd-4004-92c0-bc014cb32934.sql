@@ -1,0 +1,1 @@
+ALTER TABLE public.outreach_drafts ADD COLUMN IF NOT EXISTS won_back_order_id uuid, ADD COLUMN IF NOT EXISTS won_back_at timestamptz;

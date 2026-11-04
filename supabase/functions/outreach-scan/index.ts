@@ -1,20 +1,9 @@
-import { generateResponse, GatewayError } from "npm:@lovable.dev/ai-gateway";
+import { GatewayError } from "npm:@lovable.dev/ai-gateway";
+import { generateDraft, pastServices, topServices, type OutreachOrder } from "../_shared/outreachDraft.ts";
 import { admin, corsHeaders, getTeamUser, json } from "../_shared/outreachAuth.ts";
-import { COOLDOWN_DAYS, inCooldown, isInactive, SCAN_BATCH } from "../_shared/outreachRules.ts";
+import { COOLDOWN_DAYS, inCooldown, isInactive, isWinBack, SCAN_BATCH } from "../_shared/outreachRules.ts";
 
-type Order = { contact_email: string | null; company_name: string | null; company_address: string | null; description: string | null; price: number | null; amount: number | null; currency: string | null; created_at: string; contact_name: string | null };
-
-const SCHEMA = {
-  type: "object",
-  additionalProperties: false,
-  required: ["language", "subject", "body", "reason"],
-  properties: {
-    language: { type: "string", description: "ISO 639-1 code of the email language" },
-    subject: { type: "string" },
-    body: { type: "string", description: "Plain-text email body with greeting and sign-off, paragraphs separated by blank lines" },
-    reason: { type: "string", description: "One short English sentence explaining why this client was picked and what is suggested" },
-  },
-};
+type Order = OutreachOrder;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -37,7 +26,7 @@ Deno.serve(async (req) => {
     const orders: Order[] = [];
     for (let from = 0; ; from += 1000) {
       const { data, error } = await db.from("orders")
-        .select("contact_email, company_name, company_address, description, price, amount, currency, created_at, contact_name")
+        .select("id, contact_email, company_name, company_address, description, price, amount, currency, created_at, contact_name")
         .is("deleted_at", null).not("contact_email", "is", null)
         .order("created_at", { ascending: false }).range(from, from + 999);
       if (error) throw error;
@@ -45,13 +34,7 @@ Deno.serve(async (req) => {
       if (!data || data.length < 1000) break;
     }
 
-    // Our services = most common order descriptions (grounding, no invented services)
-    const svcCount = new Map<string, number>();
-    for (const o of orders) {
-      const d = (o.description || "").trim().slice(0, 80);
-      if (d) svcCount.set(d, (svcCount.get(d) || 0) + 1);
-    }
-    const ourServices = [...svcCount.entries()].sort((a, b) => b[1] - a[1]).slice(0, 20).map(([d]) => d);
+    const ourServices = topServices(orders);
 
     const byEmail = new Map<string, Order[]>();
     for (const o of orders) {
@@ -59,6 +42,15 @@ Deno.serve(async (req) => {
       if (!e.includes("@")) continue;
       if (!byEmail.has(e)) byEmail.set(e, []);
       byEmail.get(e)!.push(o);
+    }
+
+    // Win-back tracking: link a new order to the sent offer it followed
+    const { data: openSent } = await db.from("outreach_drafts").select("id, email, sent_at")
+      .eq("status", "sent").is("won_back_order_id", null).not("sent_at", "is", null);
+    for (const d of openSent ?? []) {
+      const os = byEmail.get(d.email.toLowerCase()) ?? [];
+      const hit = [...os].reverse().find((o) => isWinBack(new Date(d.sent_at), new Date(o.created_at)));
+      if (hit?.id) await db.from("outreach_drafts").update({ won_back_order_id: hit.id, won_back_at: hit.created_at }).eq("id", d.id);
     }
 
     const [{ data: optOuts }, { data: contracts }, { data: noMail }, { data: recent }] = await Promise.all([
@@ -83,24 +75,12 @@ Deno.serve(async (req) => {
 
     let created = 0;
     for (const [email, os] of candidates) {
-      const history = os.slice(0, 10).map((o) =>
-        `- ${o.created_at.slice(0, 10)}: ${(o.description || "service").slice(0, 150)} (${o.price ?? o.amount ?? "?"} ${o.currency || "EUR"})`).join("\n");
-      const prompt = `Client: ${os[0].company_name || ""}\nContact person: ${os[0].contact_name || "unknown"}\nEmail: ${email}\nAddress: ${os[0].company_address || "unknown"}\nLast order: ${os[0].created_at.slice(0, 10)}\nOrder history (newest first):\n${history}\n\nServices our company offers (from real orders):\n${ourServices.map((s) => `- ${s}`).join("\n")}`;
       try {
-        const res = await generateResponse({
-          model: "openai/gpt-6-astra",
-          reasoning: { effort: "low" },
-          instructions: `You write short, friendly re-engagement emails for the digital marketing agency "Media Marketing" (never write LTD or Limited). The client has not ordered for a while. Write in the client's language, inferred from address/country/email domain (German if unclear). Mention the services they used before and suggest 1-2 related services ONLY from the provided list. Never invent prices, discounts, deadlines, guarantees or promises. Ask if they need anything. Keep it under 150 words. Sign off with "Annalena Klein\nMedia Marketing". Do not include an unsubscribe line.`,
-          input: prompt,
-          text: { format: { type: "json_schema", name: "offer", strict: true, schema: SCHEMA } },
-        } as never);
-        // deno-lint-ignore no-explicit-any
-        const out = (res as any).output?.flatMap((i: any) => i.content ?? []).find((c: any) => c.type === "output_text")?.text;
-        const parsed = JSON.parse(out);
+        const parsed = await generateDraft(email, os, ourServices);
         const { error } = await db.from("outreach_drafts").insert({
           email, company_name: os[0].company_name, language: parsed.language, subject: parsed.subject,
           body: parsed.body, reason: parsed.reason, last_order_at: os[0].created_at,
-          past_services: os.slice(0, 5).map((o) => (o.description || "").slice(0, 60)).join("; "),
+          past_services: pastServices(os),
         });
         if (!error) created++;
       } catch (e) {
