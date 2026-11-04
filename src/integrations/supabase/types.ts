@@ -1900,6 +1900,99 @@ export type Database = {
           },
         ]
       }
+      outreach_drafts: {
+        Row: {
+          approved_by: string | null
+          approved_by_name: string | null
+          body: string
+          company_name: string | null
+          created_at: string
+          email: string
+          error: string | null
+          id: string
+          language: string
+          last_order_at: string | null
+          past_services: string | null
+          reason: string | null
+          resend_id: string | null
+          sent_at: string | null
+          status: string
+          subject: string
+          updated_at: string
+        }
+        Insert: {
+          approved_by?: string | null
+          approved_by_name?: string | null
+          body: string
+          company_name?: string | null
+          created_at?: string
+          email: string
+          error?: string | null
+          id?: string
+          language?: string
+          last_order_at?: string | null
+          past_services?: string | null
+          reason?: string | null
+          resend_id?: string | null
+          sent_at?: string | null
+          status?: string
+          subject: string
+          updated_at?: string
+        }
+        Update: {
+          approved_by?: string | null
+          approved_by_name?: string | null
+          body?: string
+          company_name?: string | null
+          created_at?: string
+          email?: string
+          error?: string | null
+          id?: string
+          language?: string
+          last_order_at?: string | null
+          past_services?: string | null
+          reason?: string | null
+          resend_id?: string | null
+          sent_at?: string | null
+          status?: string
+          subject?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      outreach_opt_outs: {
+        Row: {
+          created_at: string
+          email: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+        }
+        Relationships: []
+      }
+      outreach_scan_lock: {
+        Row: {
+          id: number
+          locked_until: string
+          paused_reason: string | null
+        }
+        Insert: {
+          id?: number
+          locked_until?: string
+          paused_reason?: string | null
+        }
+        Update: {
+          id?: number
+          locked_until?: string
+          paused_reason?: string | null
+        }
+        Relationships: []
+      }
       payment_reminder_logs: {
         Row: {
           action: string

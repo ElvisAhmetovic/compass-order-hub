@@ -69,6 +69,7 @@ const WorkHoursV2 = lazy(() => import("./pages/WorkHoursV2"));
 const WorkHoursAdmin = lazy(() => import("./pages/WorkHoursAdmin"));
 const InvoiceAuditLogPage = lazy(() => import("./pages/admin/InvoiceAuditLogPage"));
 const MonthlyPackages = lazy(() => import("./pages/MonthlyPackages"));
+const AiOutreach = lazy(() => import("./pages/AiOutreach"));
 const MonthlyInvoiceStatus = lazy(() => import("./pages/MonthlyInvoiceStatus"));
 const Offers = lazy(() => import("./pages/Offers"));
 const TicketSubmitted = lazy(() => import("./pages/TicketSubmitted"));
@@ -367,6 +368,11 @@ function App() {
                   <Route path="/monthly-packages" element={
                     <RequireAuth>
                       <MonthlyPackages />
+                    </RequireAuth>
+                  } />
+                  <Route path="/ai-outreach" element={
+                    <RequireAuth>
+                      <AiOutreach />
                     </RequireAuth>
                   } />
                   <Route path="/monthly-invoice-status" element={

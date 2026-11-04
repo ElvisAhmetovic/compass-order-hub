@@ -7,3 +7,5 @@
 - Keep public marketing routes and shared public-site navigation separate from authenticated CRM and client areas — why: service pages must remain indexable and accessible without a session.
 - Keep public legal content in the shared bilingual legal-page system and link every public legal page from the footer — why: company disclosures must stay consistent across the marketing site.
 - Keep the landing page and `/kontakt` on the shared public contact-form component and validation schema — why: both inquiry entry points must submit and validate identically.
+
+- AI win-back offers: drafts are created by `outreach-scan` and only sent by `outreach-send` after a team member approves; rules live in `supabase/functions/_shared/outreachRules.ts` — why: no AI email reaches a client without human review.
