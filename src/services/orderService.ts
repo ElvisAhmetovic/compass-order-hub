@@ -1057,9 +1057,7 @@ export class OrderService {
           // order_id is now set at invoice insert-time (enforced by DB unique index).
           
           // Then sync status via RPC to bypass RLS
-          const newRpcNextReminder = invoiceStatus === 'sent' 
-            ? await nextReminderForInvoice(newInvoice.id)
-            : null;
+          const newRpcNextReminder = null; // Draft/paid invoices get no reminders
           console.log(`📄 Syncing new invoice ${newInvoice.id} to status "${invoiceStatus}" via RPC`);
           const { error: newRpcError } = await supabase.rpc('sync_invoice_status', {
             p_invoice_id: newInvoice.id,
