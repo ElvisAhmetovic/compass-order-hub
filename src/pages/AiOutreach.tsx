@@ -74,10 +74,21 @@ export default function AiOutreach() {
 
   const reject = async (d: Draft) => {
     setBusy(d.id);
+    const { data: auth } = await supabase.auth.getUser();
+    const uid = auth.user?.id ?? null;
+    let name: string | null = auth.user?.email ?? null;
+    if (uid) {
+      const { data: p } = await supabase.from("profiles").select("full_name").eq("id", uid).maybeSingle();
+      if (p?.full_name) name = p.full_name;
+    }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase as any).from("outreach_drafts").update({ status: "rejected" }).eq("id", d.id).eq("status", "pending");
+    const { data, error } = await (supabase as any).from("outreach_drafts")
+      .update({ status: "rejected", approved_by: uid, approved_by_name: name })
+      .eq("id", d.id).eq("status", "pending").select("id");
     setBusy(null);
     if (error) toast({ title: "Could not reject", description: error.message, variant: "destructive" });
+    else if (!data?.length) toast({ title: "Could not reject", description: "This draft is no longer pending.", variant: "destructive" });
+    else toast({ title: "Draft rejected", description: d.email });
     load();
   };
 
@@ -158,7 +169,7 @@ export default function AiOutreach() {
                       <p className="text-xs text-muted-foreground">
                         Created {fmt(d.created_at)}
                         {d.sent_at && ` · Sent ${fmt(d.sent_at)}`}
-                        {d.approved_by_name && ` · by ${d.approved_by_name}`}
+                        {d.approved_by_name && ` · ${d.status === "rejected" ? "rejected" : "by"} ${d.approved_by_name}`}
                         {d.error && ` · ${d.error}`}
                       </p>
                     </CardContent>

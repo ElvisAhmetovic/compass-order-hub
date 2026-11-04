@@ -44,15 +44,23 @@ ${finalBody.split(/\n\s*\n/).map((p: string) => `<p>${esc(p).replace(/\n/g, "<br
 <p style="color:#6b7280;font-size:12px">invoice@mediaamarketing.com · +49 203 7090 1754 · <a href="https://www.mediaamarketing.com/de">mediaamarketing.com</a></p>
 <p style="color:#9ca3af;font-size:11px"><a href="${unsubUrl}" style="color:#9ca3af">${de ? "Keine weiteren Angebote erhalten" : "Don't send me offers anymore"}</a></p></div>`;
 
-  const res = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${Deno.env.get("RESEND_API_KEY_ABMEDIA")}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      from: "Media Marketing <noreply@mediaamarketing.com>", to: [draft.email], reply_to: "invoice@mediaamarketing.com",
-      subject: finalSubject, html, text: `${finalBody}\n\n${unsubUrl}`,
-    }),
-  });
-  const txt = await res.text();
+  let res: Response; let txt: string;
+  try {
+    res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${Deno.env.get("RESEND_API_KEY_ABMEDIA")}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        from: "Media Marketing <noreply@mediaamarketing.com>", to: [draft.email], reply_to: "invoice@mediaamarketing.com",
+        subject: finalSubject, html, text: `${finalBody}\n\n${unsubUrl}`,
+      }),
+    });
+    txt = await res.text();
+  } catch (e) {
+    // Never leave a draft stuck in "sending"
+    const msg = `Network error: ${e instanceof Error ? e.message : String(e)}`.slice(0, 500);
+    await db.from("outreach_drafts").update({ status: "failed", error: msg, approved_by: user.id, approved_by_name: user.name }).eq("id", id);
+    return json({ error: "Email failed", details: msg }, 502);
+  }
   if (!res.ok) {
     await db.from("outreach_drafts").update({ status: "failed", error: `[${res.status}] ${txt}`.slice(0, 500), approved_by: user.id, approved_by_name: user.name }).eq("id", id);
     return json({ error: "Email failed", status: res.status, details: txt }, 502);
