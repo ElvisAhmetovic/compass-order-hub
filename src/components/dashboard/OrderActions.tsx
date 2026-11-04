@@ -69,13 +69,16 @@ const OrderActions = ({ order, onOrderView, onRefresh }: OrderActionsProps) => {
     const existingInvoice = await InvoiceService.getInvoiceByOrderId(orderId);
 
     if (existingInvoice) {
-      // Update existing invoice status
-      const invoiceStatus = status === "Invoice Sent" ? "sent" : "paid";
-      await InvoiceService.updateInvoice(existingInvoice.id, { status: invoiceStatus });
+      // Only "Invoice Paid" changes an existing invoice; Sent happens when it's actually emailed.
+      if (status === "Invoice Paid") {
+        await InvoiceService.updateInvoice(existingInvoice.id, { status: "paid" });
+      }
 
       toast({
         title: "Invoice updated",
-        description: `Existing invoice ${existingInvoice.invoice_number} status updated to ${invoiceStatus}. You can find it in Invoices by searching the invoice number or client name.`,
+        description: status === "Invoice Paid"
+          ? `Existing invoice ${existingInvoice.invoice_number} marked as paid.`
+          : `Invoice ${existingInvoice.invoice_number} already exists. Its status was not changed.`,
       });
       return;
     }
