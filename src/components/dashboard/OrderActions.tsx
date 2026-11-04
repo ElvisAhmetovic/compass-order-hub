@@ -171,9 +171,10 @@ const OrderActions = ({ order, onOrderView, onRefresh }: OrderActionsProps) => {
 
     // order_id is now set at invoice insert-time (enforced by DB unique index).
     
-    // Update the invoice status to match the order status
-    const invoiceStatus = status === "Invoice Sent" ? "sent" : "paid";
-    await InvoiceService.updateInvoice(newInvoice.id, { status: invoiceStatus });
+    // New invoices from "Invoice Sent" stay Draft until actually emailed; "Invoice Paid" marks them paid.
+    if (status === "Invoice Paid") {
+      await InvoiceService.updateInvoice(newInvoice.id, { status: "paid" });
+    }
     
     // Trigger workflow automation
     await WorkflowService.handleInvoiceCreated(orderId);
