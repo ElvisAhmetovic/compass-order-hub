@@ -9,13 +9,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Sparkles, Send, X, Search, Loader2 } from "lucide-react";
+import { Sparkles, Send, X, Search, Loader2, RefreshCw, FlaskConical, Trophy } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 type Draft = {
   id: string; email: string; company_name: string | null; language: string; reason: string | null;
   subject: string; body: string; status: string; last_order_at: string | null; past_services: string | null;
   approved_by_name: string | null; sent_at: string | null; error: string | null; created_at: string;
+  won_back_order_id: string | null; won_back_at: string | null;
 };
 
 const fmt = (d: string | null) => (d ? new Date(d).toLocaleString("de-DE", { dateStyle: "short", timeStyle: "short" }) : "–");
@@ -36,6 +37,7 @@ export default function AiOutreach() {
   const [q, setQ] = useState("");
   const [scanning, setScanning] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
+  const [hints, setHints] = useState<Record<string, string>>({});
   const [edits, setEdits] = useState<Record<string, { subject: string; body: string }>>({});
 
   const load = useCallback(async () => {
@@ -47,8 +49,10 @@ export default function AiOutreach() {
   useEffect(() => { load(); }, [load]);
 
   const filtered = useMemo(() => drafts.filter((d) =>
-    (tab === "all" || d.status === tab) &&
+    (tab === "all" || (tab === "won" ? !!d.won_back_order_id : d.status === tab)) &&
     (!q || `${d.email} ${d.company_name ?? ""}`.toLowerCase().includes(q.toLowerCase()))), [drafts, tab, q]);
+  const sentTotal = drafts.filter((d) => d.status === "sent").length;
+  const wonBack = drafts.filter((d) => d.won_back_order_id).length;
   const sentToday = drafts.filter((d) => d.status === "sent" && d.sent_at && new Date(d.sent_at).toDateString() === new Date().toDateString()).length;
 
   const scan = async () => {
@@ -70,6 +74,25 @@ export default function AiOutreach() {
     if (error) toast({ title: "Not sent", description: await errText(error), variant: "destructive" });
     else toast({ title: "Offer sent", description: d.email });
     load();
+  };
+
+  const regenerate = async (d: Draft) => {
+    setBusy(d.id);
+    const { error } = await supabase.functions.invoke("outreach-regenerate", { body: { id: d.id, instruction: hints[d.id] } });
+    setBusy(null);
+    if (error) return toast({ title: "Could not rewrite", description: await errText(error), variant: "destructive" });
+    setEdits((x) => { const n = { ...x }; delete n[d.id]; return n; });
+    toast({ title: "Draft rewritten" });
+    load();
+  };
+
+  const sendTest = async (d: Draft) => {
+    setBusy(d.id);
+    const e = edits[d.id];
+    const { data, error } = await supabase.functions.invoke("outreach-send", { body: { id: d.id, subject: e?.subject, body: e?.body, test: true } });
+    setBusy(null);
+    if (error) toast({ title: "Test not sent", description: await errText(error), variant: "destructive" });
+    else toast({ title: "Test sent to you", description: data?.to });
   };
 
   const reject = async (d: Draft) => {
@@ -107,6 +130,9 @@ export default function AiOutreach() {
                   <p className="text-sm text-muted-foreground">
                     Offers for clients with no order in 3+ months. Nothing is sent without approval. Sent today: {sentToday}/50
                   </p>
+                  <p className="text-sm text-muted-foreground">
+                    Won back: {wonBack} of {sentTotal} sent ({sentTotal ? Math.round((wonBack / sentTotal) * 100) : 0}%) · new order within 60 days
+                  </p>
                 </div>
               </div>
               <Button onClick={scan} disabled={scanning}>
@@ -118,9 +144,9 @@ export default function AiOutreach() {
             <div className="flex flex-wrap items-center gap-3">
               <Tabs value={tab} onValueChange={setTab}>
                 <TabsList>
-                  {["pending", "sent", "rejected", "failed", "all"].map((t) => (
+                  {["pending", "sent", "won", "rejected", "failed", "all"].map((t) => (
                     <TabsTrigger key={t} value={t} className="capitalize">
-                      {t} ({t === "all" ? drafts.length : drafts.filter((d) => d.status === t).length})
+                      {t === "won" ? "won back" : t} ({t === "all" ? drafts.length : t === "won" ? wonBack : drafts.filter((d) => d.status === t).length})
                     </TabsTrigger>
                   ))}
                 </TabsList>
@@ -146,7 +172,10 @@ export default function AiOutreach() {
                             {d.email} · {d.language.toUpperCase()} · last order {d.last_order_at ? new Date(d.last_order_at).toLocaleDateString("de-DE") : "–"}
                           </p>
                         </div>
-                        <Badge variant={statusVariant[d.status] ?? "outline"} className="capitalize">{d.status}</Badge>
+                        <div className="flex gap-1">
+                          {d.won_back_order_id && <Badge><Trophy className="h-3 w-3 mr-1" />Won back</Badge>}
+                          <Badge variant={statusVariant[d.status] ?? "outline"} className="capitalize">{d.status}</Badge>
+                        </div>
                       </div>
                       {d.reason && <p className="text-sm"><span className="font-medium">Why:</span> {d.reason}</p>}
                       {d.past_services && <p className="text-xs text-muted-foreground">Past services: {d.past_services}</p>}
@@ -156,6 +185,12 @@ export default function AiOutreach() {
                         <>
                           <Input value={e.subject} onChange={(ev) => setEdits({ ...edits, [d.id]: { ...e, subject: ev.target.value } })} />
                           <Textarea rows={8} value={e.body} onChange={(ev) => setEdits({ ...edits, [d.id]: { ...e, body: ev.target.value } })} />
+                          <div className="flex flex-wrap gap-2">
+                            <Input className="h-9 w-64" placeholder="Rewrite hint, e.g. shorter, more formal" value={hints[d.id] ?? ""}
+                              onChange={(ev) => setHints({ ...hints, [d.id]: ev.target.value })} />
+                            <Button size="sm" variant="outline" onClick={() => regenerate(d)} disabled={busy === d.id}><RefreshCw className="h-4 w-4 mr-1" />Rewrite with AI</Button>
+                            <Button size="sm" variant="outline" onClick={() => sendTest(d)} disabled={busy === d.id}><FlaskConical className="h-4 w-4 mr-1" />Send test to me</Button>
+                          </div>
                           <div className="flex gap-2">
                             <Button size="sm" onClick={() => send(d)} disabled={busy === d.id}><Send className="h-4 w-4 mr-1" />Send</Button>
                             <Button size="sm" variant="outline" onClick={() => reject(d)} disabled={busy === d.id}><X className="h-4 w-4 mr-1" />Reject</Button>
@@ -171,6 +206,7 @@ export default function AiOutreach() {
                         Created {fmt(d.created_at)}
                         {d.sent_at && ` · Sent ${fmt(d.sent_at)}`}
                         {d.approved_by_name && ` · ${d.status === "rejected" ? "rejected" : "by"} ${d.approved_by_name}`}
+                        {d.won_back_at && ` · New order ${fmt(d.won_back_at)}`}
                         {d.error && ` · ${d.error}`}
                       </p>
                     </CardContent>
