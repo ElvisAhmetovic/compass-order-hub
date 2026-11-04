@@ -1919,6 +1919,8 @@ export type Database = {
           status: string
           subject: string
           updated_at: string
+          won_back_at: string | null
+          won_back_order_id: string | null
         }
         Insert: {
           approved_by?: string | null
@@ -1938,6 +1940,8 @@ export type Database = {
           status?: string
           subject: string
           updated_at?: string
+          won_back_at?: string | null
+          won_back_order_id?: string | null
         }
         Update: {
           approved_by?: string | null
@@ -1957,6 +1961,8 @@ export type Database = {
           status?: string
           subject?: string
           updated_at?: string
+          won_back_at?: string | null
+          won_back_order_id?: string | null
         }
         Relationships: []
       }
