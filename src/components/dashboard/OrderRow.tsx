@@ -129,12 +129,15 @@ const OrderRow = ({
 
       if (existingInvoice) {
         // Update existing invoice status
-        const invoiceStatus = status === "Invoice Sent" ? "sent" : "paid";
-        await InvoiceService.updateInvoice(existingInvoice.id, { status: invoiceStatus });
-        
+        if (status === "Invoice Paid") {
+          await InvoiceService.updateInvoice(existingInvoice.id, { status: "paid" });
+        }
+
         toast({
           title: "Invoice updated",
-          description: `Existing invoice ${existingInvoice.invoice_number} status updated to ${invoiceStatus}. You can find it in Invoices by searching the invoice number or client name.`,
+          description: status === "Invoice Paid"
+            ? `Existing invoice ${existingInvoice.invoice_number} marked as paid.`
+            : `Invoice ${existingInvoice.invoice_number} already exists. Its status was not changed.`,
         });
         return;
       }
@@ -204,9 +207,10 @@ const OrderRow = ({
         ...(locale.country ? { bill_to_country: locale.country } : {}),
       } as any);
       
-      // Update the invoice status to match the order status
-      const invoiceStatus = status === "Invoice Sent" ? "sent" : "paid";
-      await InvoiceService.updateInvoice(newInvoice.id, { status: invoiceStatus });
+      // New invoices stay Draft until actually emailed; only "Invoice Paid" marks them paid.
+      if (status === "Invoice Paid") {
+        await InvoiceService.updateInvoice(newInvoice.id, { status: "paid" });
+      }
       
       toast({
         title: "Invoice created",
