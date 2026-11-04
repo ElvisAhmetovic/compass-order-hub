@@ -27,6 +27,7 @@ import Index from "./pages/Index";
 const ServicePage = lazy(() => import("./pages/ServicePage"));
 const LegalPage = lazy(() => import("./pages/LegalPage"));
 const ContactPage = lazy(() => import("./pages/ContactPage"));
+const OffersUnsubscribed = lazy(() => import("./pages/OffersUnsubscribed"));
 const AboutPage = lazy(() => import("./pages/AboutPage"));
 const Login = lazy(() => import("./pages/Login"));
 const Register = lazy(() => import("./pages/Register"));
@@ -148,6 +149,7 @@ function App() {
                   <Route path="/digital-marketing" element={<ServicePage serviceKey="digitalMarketing" />} />
                   <Route path="/app-entwicklung" element={<ServicePage serviceKey="appDevelopment" />} />
                   <Route path="/kontakt" element={<ContactPage />} />
+                  <Route path="/offers-unsubscribed" element={<OffersUnsubscribed />} />
                   <Route path="/ueber-uns" element={<AboutPage />} />
                   <Route path="/impressum" element={<LegalPage pageKey="impressum" />} />
                   <Route path="/datenschutz" element={<LegalPage pageKey="datenschutz" />} />
