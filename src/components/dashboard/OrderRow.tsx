@@ -132,7 +132,9 @@ const OrderRow = ({
         if (status === "Invoice Paid") {
           await InvoiceService.updateInvoice(existingInvoice.id, { status: "paid" });
         }
-...
+
+        toast({
+          title: "Invoice updated",
           description: status === "Invoice Paid"
             ? `Existing invoice ${existingInvoice.invoice_number} marked as paid.`
             : `Invoice ${existingInvoice.invoice_number} already exists. Its status was not changed.`,
