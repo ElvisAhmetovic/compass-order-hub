@@ -38,3 +38,11 @@ export function isSendWindow(now: Date): boolean {
 export function sarajevoDate(now: Date): string {
   return sarajevoParts(now).date;
 }
+
+export const WIN_BACK_DAYS = 60;
+
+/** A client counts as won back when they order after the offer was sent, within 60 days. */
+export function isWinBack(sentAt: Date, orderAt: Date): boolean {
+  const diff = orderAt.getTime() - sentAt.getTime();
+  return diff > 0 && diff <= WIN_BACK_DAYS * DAY;
+}
