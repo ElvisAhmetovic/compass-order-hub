@@ -933,17 +933,31 @@ export class OrderService {
           newInvoiceStatus = orderAfter?.status_invoice_paid ? "paid" : "draft";
         }
 
-        const rpcNextReminder = newInvoiceStatus === 'sent' 
-          ? await nextReminderForOrder(orderId)
-          : null;
-
-        // Single RPC call that finds + updates the invoice, bypassing RLS entirely
-        console.log(`📄 Syncing invoice for order ${orderId} to "${newInvoiceStatus}" via RPC`);
-        const { data: syncResult, error: rpcError } = await supabase.rpc('sync_invoice_status_by_order', {
-          p_order_id: orderId,
-          p_status: newInvoiceStatus,
-          p_next_reminder_at: rpcNextReminder
-        });
+        // Ticking "Invoice Sent" must not upgrade an existing invoice (e.g. a Draft) to Sent;
+        // only actually emailing the invoice does that.
+        let syncResult: any[] | null = null;
+        let rpcError: any = null;
+        if (status === "Invoice Sent" && enabled) {
+          const { data: existing } = await supabase
+            .from('invoices')
+            .select('id, invoice_number')
+            .eq('order_id', orderId)
+            .neq('status', 'cancelled')
+            .limit(1);
+          syncResult = (existing || []).map((i: any) => ({ synced_invoice_id: i.id, synced_invoice_number: i.invoice_number }));
+        } else {
+          const rpcNextReminder = newInvoiceStatus === 'sent'
+            ? await nextReminderForOrder(orderId)
+            : null;
+          console.log(`📄 Syncing invoice for order ${orderId} to "${newInvoiceStatus}" via RPC`);
+          const res = await supabase.rpc('sync_invoice_status_by_order', {
+            p_order_id: orderId,
+            p_status: newInvoiceStatus,
+            p_next_reminder_at: rpcNextReminder
+          });
+          syncResult = res.data as any[] | null;
+          rpcError = res.error;
+        }
 
         if (rpcError) {
           console.error('📄 Invoice sync RPC error:', rpcError);
@@ -1036,15 +1050,14 @@ export class OrderService {
             throw createErr;
           }
           
-          const invoiceStatus = status === "Invoice Sent" ? "sent" : "paid";
+          // "Invoice Sent" creates a Draft; it becomes Sent only when actually emailed.
+          const invoiceStatus = status === "Invoice Sent" ? "draft" : "paid";
 
 
           // order_id is now set at invoice insert-time (enforced by DB unique index).
           
           // Then sync status via RPC to bypass RLS
-          const newRpcNextReminder = invoiceStatus === 'sent' 
-            ? await nextReminderForInvoice(newInvoice.id)
-            : null;
+          const newRpcNextReminder = null; // Draft/paid invoices get no reminders
           console.log(`📄 Syncing new invoice ${newInvoice.id} to status "${invoiceStatus}" via RPC`);
           const { error: newRpcError } = await supabase.rpc('sync_invoice_status', {
             p_invoice_id: newInvoice.id,
