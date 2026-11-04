@@ -78,8 +78,9 @@ export default function AiOutreach() {
     const uid = auth.user?.id ?? null;
     let name: string | null = auth.user?.email ?? null;
     if (uid) {
-      const { data: p } = await supabase.from("profiles").select("full_name").eq("id", uid).maybeSingle();
-      if (p?.full_name) name = p.full_name;
+      const { data: p } = await supabase.from("profiles").select("first_name, last_name").eq("id", uid).maybeSingle();
+      const full = [p?.first_name, p?.last_name].filter(Boolean).join(" ");
+      if (full) name = full;
     }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase as any).from("outreach_drafts")
