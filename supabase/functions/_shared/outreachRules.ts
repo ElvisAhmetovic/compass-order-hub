@@ -46,3 +46,30 @@ export function isWinBack(sentAt: Date, orderAt: Date): boolean {
   const diff = orderAt.getTime() - sentAt.getTime();
   return diff > 0 && diff <= WIN_BACK_DAYS * DAY;
 }
+
+export type InvoiceLite = { status: string | null; paid_at: string | null };
+/** A client with any sent-but-unpaid invoice gets no offer. Drafts, paid and cancelled don't count. */
+export function hasUnpaidInvoice(invoices: InvoiceLite[]): boolean {
+  return invoices.some((i) => (i.status === "sent" || i.status === "overdue" || i.status === "partially_paid") && !i.paid_at);
+}
+
+export type ContractLite = { status: string | null; stopped_at: string | null; updated_at: string | null };
+/** Stopped or completed packages count as older contracts that can be won back. */
+export function isLapsedContract(c: ContractLite): boolean {
+  return c.status === "stopped" || c.status === "completed";
+}
+export function contractEndedAt(c: ContractLite): Date | null {
+  const d = c.stopped_at ?? c.updated_at;
+  return d ? new Date(d) : null;
+}
+
+/** The automatic scan runs in the first 7 days of each month (weekdays), 10 drafts per run. */
+export function isMonthlyScanWindow(now: Date): boolean {
+  return Number(sarajevoDate(now).slice(8, 10)) <= 7;
+}
+
+/** Test emails always go to the signed-in person who clicked, never to the client. */
+export function testRecipient(callerEmail: string | null | undefined): string | null {
+  const e = (callerEmail ?? "").trim().toLowerCase();
+  return e.includes("@") ? e : null;
+}
