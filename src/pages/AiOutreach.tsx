@@ -38,6 +38,8 @@ export default function AiOutreach() {
   const [scanning, setScanning] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [hints, setHints] = useState<Record<string, string>>({});
+  const [myEmail, setMyEmail] = useState<string>("");
+  const [skips, setSkips] = useState<{ email: string; company_name: string | null; reason: string; details: string | null; scanned_at: string }[]>([]);
   const [edits, setEdits] = useState<Record<string, { subject: string; body: string }>>({});
 
   const load = useCallback(async () => {
@@ -45,7 +47,11 @@ export default function AiOutreach() {
     const { data, error } = await (supabase as any).from("outreach_drafts").select("*").order("created_at", { ascending: false }).limit(500);
     if (error) toast({ title: "Could not load drafts", description: error.message, variant: "destructive" });
     else setDrafts(data as Draft[]);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: sk } = await (supabase as any).from("outreach_skips").select("*").order("scanned_at", { ascending: false }).limit(500);
+    setSkips(sk ?? []);
   }, []);
+  useEffect(() => { supabase.auth.getUser().then(({ data }) => setMyEmail(data.user?.email ?? "")); }, []);
   useEffect(() => { load(); }, [load]);
 
   const filtered = useMemo(() => drafts.filter((d) =>
@@ -62,7 +68,7 @@ export default function AiOutreach() {
     if (error) return toast({ title: "Scan failed", description: await errText(error), variant: "destructive" });
     if (data?.skipped) toast({ title: "Scan is already running", description: "Try again in a few minutes." });
     else if (data?.error) toast({ title: "AI paused", description: data.error, variant: "destructive" });
-    else toast({ title: `${data?.created ?? 0} new drafts`, description: `${data?.candidates ?? 0} inactive clients checked.` });
+    else toast({ title: `${data?.created ?? 0} new drafts`, description: `${data?.candidates ?? 0} eligible clients · ${data?.skipped_unpaid ?? 0} skipped for unpaid invoices.` });
     load();
   };
 
@@ -87,6 +93,8 @@ export default function AiOutreach() {
   };
 
   const sendTest = async (d: Draft) => {
+    if (!myEmail) return toast({ title: "Your account has no email address", variant: "destructive" });
+    if (!confirm(`Send a test of this draft to ${myEmail}? The client will not receive it.`)) return;
     setBusy(d.id);
     const e = edits[d.id];
     const { data, error } = await supabase.functions.invoke("outreach-send", { body: { id: d.id, subject: e?.subject, body: e?.body, test: true } });
@@ -128,7 +136,7 @@ export default function AiOutreach() {
                 <div>
                   <h1 className="text-2xl font-bold">AI Outreach</h1>
                   <p className="text-sm text-muted-foreground">
-                    Offers for clients with no order in 3+ months. Nothing is sent without approval. Sent today: {sentToday}/50
+                    Offers for clients with no order or package in 3+ months. Runs automatically in the first week of each month. Nothing is sent without approval. Sent today: {sentToday}/50
                   </p>
                   <p className="text-sm text-muted-foreground">
                     Won back: {wonBack} of {sentTotal} sent ({sentTotal ? Math.round((wonBack / sentTotal) * 100) : 0}%) · new order within 60 days
@@ -144,9 +152,9 @@ export default function AiOutreach() {
             <div className="flex flex-wrap items-center gap-3">
               <Tabs value={tab} onValueChange={setTab}>
                 <TabsList>
-                  {["pending", "sent", "won", "rejected", "failed", "all"].map((t) => (
+                  {["pending", "sent", "won", "rejected", "failed", "skipped", "all"].map((t) => (
                     <TabsTrigger key={t} value={t} className="capitalize">
-                      {t === "won" ? "won back" : t} ({t === "all" ? drafts.length : t === "won" ? wonBack : drafts.filter((d) => d.status === t).length})
+                      {t === "won" ? "won back" : t === "skipped" ? "skipped – unpaid" : t} ({t === "all" ? drafts.length : t === "won" ? wonBack : t === "skipped" ? skips.length : drafts.filter((d) => d.status === t).length})
                     </TabsTrigger>
                   ))}
                 </TabsList>
@@ -157,7 +165,19 @@ export default function AiOutreach() {
               </div>
             </div>
 
-            {filtered.length === 0 && <p className="text-muted-foreground">No drafts here.</p>}
+            {tab === "skipped" && (
+              <Card><CardContent className="pt-6 space-y-2">
+                <p className="text-sm text-muted-foreground">These inactive clients got no offer because they have an unpaid invoice. Updated with every scan.</p>
+                {skips.filter((s) => !q || `${s.email} ${s.company_name ?? ""}`.toLowerCase().includes(q.toLowerCase())).map((s) => (
+                  <div key={s.email} className="flex flex-wrap justify-between gap-2 border-t pt-2 text-sm">
+                    <span><span className="font-medium">{s.company_name || s.email}</span> · {s.email}</span>
+                    <span className="text-muted-foreground">Unpaid: {s.details} · checked {fmt(s.scanned_at)}</span>
+                  </div>
+                ))}
+                {skips.length === 0 && <p className="text-sm">Nobody skipped.</p>}
+              </CardContent></Card>
+            )}
+            {tab !== "skipped" && filtered.length === 0 && <p className="text-muted-foreground">No drafts here.</p>}
             <div className="grid gap-4">
               {filtered.map((d) => {
                 const editable = d.status === "pending";
@@ -189,7 +209,7 @@ export default function AiOutreach() {
                             <Input className="h-9 w-64" placeholder="Rewrite hint, e.g. shorter, more formal" value={hints[d.id] ?? ""}
                               onChange={(ev) => setHints({ ...hints, [d.id]: ev.target.value })} />
                             <Button size="sm" variant="outline" onClick={() => regenerate(d)} disabled={busy === d.id}><RefreshCw className="h-4 w-4 mr-1" />Rewrite with AI</Button>
-                            <Button size="sm" variant="outline" onClick={() => sendTest(d)} disabled={busy === d.id}><FlaskConical className="h-4 w-4 mr-1" />Send test to me</Button>
+                            <Button size="sm" variant="outline" onClick={() => sendTest(d)} disabled={busy === d.id}><FlaskConical className="h-4 w-4 mr-1" />Send test to me{myEmail ? ` (${myEmail})` : ""}</Button>
                           </div>
                           <div className="flex gap-2">
                             <Button size="sm" onClick={() => send(d)} disabled={busy === d.id}><Send className="h-4 w-4 mr-1" />Send</Button>
