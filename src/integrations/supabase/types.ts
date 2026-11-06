@@ -1999,6 +1999,33 @@ export type Database = {
         }
         Relationships: []
       }
+      outreach_skips: {
+        Row: {
+          company_name: string | null
+          details: string | null
+          email: string
+          id: string
+          reason: string
+          scanned_at: string
+        }
+        Insert: {
+          company_name?: string | null
+          details?: string | null
+          email: string
+          id?: string
+          reason: string
+          scanned_at?: string
+        }
+        Update: {
+          company_name?: string | null
+          details?: string | null
+          email?: string
+          id?: string
+          reason?: string
+          scanned_at?: string
+        }
+        Relationships: []
+      }
       payment_reminder_logs: {
         Row: {
           action: string
@@ -2407,6 +2434,84 @@ export type Database = {
           id?: string
           user_id?: string
           user_name?: string
+        }
+        Relationships: []
+      }
+      service_catalog: {
+        Row: {
+          active: boolean
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          languages: string | null
+          name: string
+          typical_price: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          languages?: string | null
+          name: string
+          typical_price?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          languages?: string | null
+          name?: string
+          typical_price?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      service_insights: {
+        Row: {
+          bought_with: string | null
+          computed_at: string
+          confirmed: boolean
+          display_name: string | null
+          hidden: boolean
+          id: string
+          order_count: number
+          revenue: number
+          revenue_share: number
+          service_name: string
+          typical_clients: string | null
+        }
+        Insert: {
+          bought_with?: string | null
+          computed_at?: string
+          confirmed?: boolean
+          display_name?: string | null
+          hidden?: boolean
+          id?: string
+          order_count?: number
+          revenue?: number
+          revenue_share?: number
+          service_name: string
+          typical_clients?: string | null
+        }
+        Update: {
+          bought_with?: string | null
+          computed_at?: string
+          confirmed?: boolean
+          display_name?: string | null
+          hidden?: boolean
+          id?: string
+          order_count?: number
+          revenue?: number
+          revenue_share?: number
+          service_name?: string
+          typical_clients?: string | null
         }
         Relationships: []
       }

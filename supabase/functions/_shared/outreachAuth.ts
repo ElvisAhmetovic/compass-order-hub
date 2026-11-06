@@ -25,7 +25,7 @@ export async function getTeamUser(req: Request) {
   const { data: roles } = await db.from("user_roles").select("role").eq("user_id", uid);
   if ((roles ?? []).some((r: { role: string }) => r.role === "client")) return null;
   const { data: prof } = await db.from("profiles").select("first_name, last_name").eq("id", uid).maybeSingle();
-  return { id: uid as string, name: `${prof?.first_name ?? ""} ${prof?.last_name ?? ""}`.trim() };
+  return { id: uid as string, email: (data?.claims?.email as string | undefined) ?? null, name: `${prof?.first_name ?? ""} ${prof?.last_name ?? ""}`.trim() };
 }
 
 async function hmac(text: string) {
