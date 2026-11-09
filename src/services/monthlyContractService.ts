@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 export interface MonthlyContract {
   id: string;
+  offer_id?: string | null;
   client_name: string;
   client_email: string;
   website: string | null;

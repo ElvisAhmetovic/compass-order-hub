@@ -395,6 +395,9 @@ const MonthlyInstallmentsTable: React.FC<Props> = ({ contracts, installments, on
                     <span className={`shrink-0 text-xs font-medium rounded px-1.5 py-0.5 border ${portalState === "active" ? "border-green-500 text-green-600" : portalState === "invited" ? "border-amber-500 text-amber-600" : "text-muted-foreground"}`}>
                       {PORTAL_LABEL[portalState]}
                     </span>
+                    {contract.offer_id && (
+                      <a href="/offers" onClick={e => e.stopPropagation()} className="shrink-0 text-xs font-medium rounded px-1.5 py-0.5 border border-primary text-primary">From offer</a>
+                    )}
                   </div>
                   <div className="text-sm text-muted-foreground truncate">
                     {contract.client_email}
