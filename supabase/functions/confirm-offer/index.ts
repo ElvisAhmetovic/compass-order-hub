@@ -1,3 +1,4 @@
+import { parseOfferPackage, shouldSendStripeLink } from "../_shared/offerPackageRules.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -48,6 +49,7 @@ serve(async (req) => {
         currency: offer.currency,
         confirmed_at: offer.confirmed_at,
         expires_at: offer.expires_at,
+        monthly_package: parseOfferPackage(od.monthly_package),
         vatEnabled: od.vatEnabled ?? false,
         vatPercentage: od.vatPercentage ?? 0,
         netPrice: od.netPrice ?? null,
@@ -118,6 +120,54 @@ serve(async (req) => {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}` },
         body: JSON.stringify({ email: offer.client_email, name: offer.client_name, companyName: offer.company_name, orderId: createdOrder.id }),
       }).catch((e) => console.error('ensure-client-portal failed', e));
+    }
+
+    // Offer marked as monthly package → create the package (once per offer) and optionally send the Stripe link
+    const pkg = parseOfferPackage(orderData.monthly_package);
+    if (pkg && createdOrder?.id) {
+      try {
+        const { data: existing } = await supabase.from('monthly_contracts').select('id').eq('offer_id', offer.id).maybeSingle();
+        let contractId = existing?.id as string | undefined;
+        let createdNow = false;
+        if (!contractId) {
+          const { data: c, error: cErr } = await supabase.from('monthly_contracts').insert({
+            client_name: offer.client_name,
+            client_email: offer.client_email,
+            website: orderData.companyLink || null,
+            company_address: offer.client_address || null,
+            contact_phone: offer.client_phone || null,
+            company_link: orderData.companyLink || null,
+            monthly_amount: pkg.monthly_amount,
+            total_value: Math.round(pkg.monthly_amount * pkg.duration_months * 100) / 100,
+            currency: offer.currency || 'EUR',
+            start_date: pkg.start_date,
+            duration_months: pkg.duration_months,
+            billing_frequency: pkg.billing_frequency,
+            description: offer.description || null,
+            internal_notes: orderData.internalNotes || null,
+            created_by: offer.sent_by,
+            assigned_to: offer.sent_by,
+            assigned_to_name: offer.sent_by_name,
+            payment_method: pkg.use_stripe ? 'stripe' : 'bank_transfer',
+            stripe_product_name: pkg.stripe_product_name || null,
+            offer_id: offer.id,
+            order_id: createdOrder.id,
+          }).select('id').single();
+          if (cErr) throw cErr;
+          contractId = c.id;
+          createdNow = true;
+        }
+        if (contractId && shouldSendStripeLink(pkg, createdNow)) {
+          const r = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/stripe-billing`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}` },
+            body: JSON.stringify({ action: 'create_checkout', contract_id: contractId, send_email: true, ...(pkg.stripe_product_name ? { product_name: pkg.stripe_product_name } : {}) }),
+          });
+          if (!r.ok) console.error('Stripe link from offer failed', r.status, await r.text());
+        }
+      } catch (e) {
+        console.error('Failed to create monthly package from offer:', e);
+      }
     }
 
     // Auto-link to existing client portal account by matching contact_email

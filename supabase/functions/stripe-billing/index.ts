@@ -13,11 +13,13 @@ const Body = z.object({
   product_description: z.string().trim().max(300).optional(),
 });
 
-type Caller = { id: string; email: string; isClient: boolean };
+type Caller = { id: string; email: string; isClient: boolean; system?: boolean };
 
 async function getCaller(req: Request): Promise<Caller | null> {
   const auth = req.headers.get("Authorization");
   if (!auth?.startsWith("Bearer ")) return null;
+  // Server-to-server (confirm-offer): service-role token, limited to create_checkout below.
+  if (auth.slice(7) === Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")) return { id: "system", email: "", isClient: false, system: true };
   const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, { global: { headers: { Authorization: auth } } });
   const { data, error } = await sb.auth.getClaims(auth.slice(7));
   const uid = data?.claims?.sub as string | undefined;
@@ -85,6 +87,7 @@ Deno.serve(async (req) => {
     if (!parsed.success) return json({ error: parsed.error.flatten().fieldErrors }, 400);
     const { action, contract_id, send_email, product_name, product_description } = parsed.data;
     const db = admin();
+    if (caller.system && action !== "create_checkout") return json({ error: "Forbidden" }, 403);
 
     if (action === "overview") {
       if (!caller.isClient) return json({ error: "Clients only" }, 403);
