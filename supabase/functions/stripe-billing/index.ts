@@ -6,6 +6,7 @@ import { stripe, APP_URL, BILLING_INBOX, sendBillingEmail, emailShell, button, e
 import { orderLinkAmountCents } from "../_shared/orderLinkRules.ts";
 import { portalLineHtml } from "../_shared/portalEmailCopy.ts";
 import { must } from "../_shared/dbResult.ts";
+import { THANK_YOU_URL } from "../_shared/receiptRules.ts";
 import { cycleAmountCents, recurringFor, productNameFor } from "../_shared/stripeRules.ts";
 
 const Body = z.object({
@@ -123,7 +124,7 @@ async function createCheckout(contract: Record<string, any>, nameIn?: string, de
     } } },
     subscription_data: { metadata: { contract_id: contract.id } },
     metadata: { contract_id: contract.id },
-    success_url: `${APP_URL}/client/invoices?stripe=success`,
+    success_url: THANK_YOU_URL(APP_URL),
     cancel_url: `${APP_URL}/client/invoices?stripe=cancelled`,
   });
   await db.from("monthly_contracts").update({
@@ -179,7 +180,7 @@ Deno.serve(async (req) => {
           line_items: { 0: { price: price.id, quantity: 1 } },
           metadata: meta,
           payment_intent_data: { metadata: meta, ...(p.description ? { description: p.description } : {}) },
-          after_completion: { type: "redirect", redirect: { url: `${APP_URL}/client/invoices?stripe=success` } },
+          after_completion: { type: "redirect", redirect: { url: THANK_YOU_URL(APP_URL) } },
           restrictions: { completed_sessions: { limit: 1 } },
         });
         await db.from("order_payment_links").update({ stripe_link_id: link.id, url: link.url }).eq("id", row.id);
