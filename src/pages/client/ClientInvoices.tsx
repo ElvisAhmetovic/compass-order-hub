@@ -21,7 +21,8 @@ interface Contract {
 interface Installment { id: string; contract_id: string; month_label: string; due_date: string; amount: number; currency: string; payment_status: string; paid_at: string | null }
 interface Payment { id: string; contract_id: string | null; amount: number; currency: string; status: string; hosted_invoice_url: string | null; invoice_pdf_url: string | null; period_start: string | null; paid_at: string | null; created_at: string }
 interface Invoice { id: string; invoice_number: string; issue_date: string; due_date: string; total_amount: number; currency: string; status: string; order_id: string | null; stripe_payment_link: string | null }
-interface Overview { contracts: Contract[]; installments: Installment[]; payments: Payment[]; invoices: Invoice[] }
+interface OrderLink { id: string; order_id: string; title: string; description: string | null; total_amount: number; currency: string; vat_enabled: boolean; vat_rate: number; url: string | null; status: string; paid_at: string | null; created_at: string }
+interface Overview { contracts: Contract[]; installments: Installment[]; payments: Payment[]; invoices: Invoice[]; order_links?: OrderLink[] }
 
 const money = (v: number, c = "EUR") => new Intl.NumberFormat("de-DE", { style: "currency", currency: (c || "EUR").toUpperCase() }).format(Number(v || 0));
 const day = (d: string | null) => (d ? new Date(d).toLocaleDateString("de-DE") : "–");
@@ -153,6 +154,30 @@ const ClientInvoices = () => {
                     </div>
                   );
                 })}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader><CardTitle className="flex items-center gap-2"><CreditCard className="h-5 w-5" />{t("billing.openPayments")}</CardTitle></CardHeader>
+              <CardContent>
+                {!data?.order_links?.some((l) => l.status === "pending") ? <p className="text-muted-foreground">{t("billing.noOpenPayments")}</p> : (
+                  <ul className="divide-y">
+                    {data.order_links.filter((l) => l.status === "pending").map((l) => (
+                      <li key={l.id} className="flex flex-wrap items-center justify-between gap-2 py-3">
+                        <div>
+                          <p className="font-medium text-foreground">{l.title}</p>
+                          {l.description && <p className="text-xs text-muted-foreground">{l.description}</p>}
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="font-medium">{money(l.total_amount, l.currency)}</span>
+                          {payBadge("open")}
+                          {l.url && <Button size="sm" asChild><a href={l.url} target="_blank" rel="noopener noreferrer">{t("billing.payNow")}</a></Button>}
+                          <Button size="sm" variant="ghost" asChild><Link to={`/client/orders/${l.order_id}`}>{t("billing.viewOrder")}</Link></Button>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </CardContent>
             </Card>
 
