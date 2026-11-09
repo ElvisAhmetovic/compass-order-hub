@@ -5,48 +5,57 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, ArrowLeft, CheckCircle, Clock, FileText, XCircle, Paperclip, Download, ExternalLink, Megaphone, AlertTriangle, Wifi, WifiOff } from "lucide-react";
+import { Loader2, ArrowLeft, CheckCircle, Clock, FileText, XCircle, Paperclip, Download, ExternalLink, Megaphone, AlertTriangle, CreditCard } from "lucide-react";
 import { fetchClientOrderById, getOrderAttachments, ClientOrder, OrderAttachment } from "@/services/clientOrderService";
-import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { getClientStatusFromOrder, getClientStatusStep, getActionButtonConfig } from "@/utils/clientStatusTranslator";
 import { useClientOrdersRealtime } from "@/hooks/useClientOrdersRealtime";
 import { useLanguage } from "@/context/ClientLanguageContext";
+import LoadErrorCard from "@/components/client-portal/LoadErrorCard";
+import { useBillingOverview } from "@/components/client-portal/billing/useBillingOverview";
+import { InvoiceRow, OpenLinkRow, PaymentRow } from "@/components/client-portal/billing/BillingParts";
+import { dateLocale, money } from "@/components/client-portal/billing/billingFormat";
 
 const ClientOrderDetail = () => {
   const { id } = useParams<{ id: string }>();
   const [order, setOrder] = useState<ClientOrder | null>(null);
   const [attachments, setAttachments] = useState<OrderAttachment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const { toast } = useToast();
-  const { t } = useLanguage();
+  const [loadError, setLoadError] = useState(false);
+  const [attachmentsError, setAttachmentsError] = useState(false);
+  const { t, language } = useLanguage();
+  const locale = dateLocale(language);
+  const billing = useBillingOverview(id);
 
   const loadOrder = useCallback(async () => {
     if (!id) return;
-    
+    setLoadError(false);
+    setAttachmentsError(false);
     try {
       const [orderData, attachmentData] = await Promise.all([
         fetchClientOrderById(id),
-        getOrderAttachments(id).catch(() => [] as OrderAttachment[])
+        getOrderAttachments(id).catch((e) => {
+          console.error("Attachments failed to load:", e);
+          setAttachmentsError(true);
+          return [] as OrderAttachment[];
+        }),
       ]);
       setOrder(orderData);
       setAttachments(attachmentData);
     } catch (error) {
       console.error("Error loading order:", error);
-      toast({
-        variant: "destructive",
-        title: t('common.error'),
-        description: t('common.errorLoadingOrder')
-      });
+      setLoadError(true);
     } finally {
       setIsLoading(false);
     }
-  }, [id, toast, t]);
+  }, [id]);
 
-  const { isConnected } = useClientOrdersRealtime({
+  const reloadBilling = billing.reload;
+  useClientOrdersRealtime({
     orderId: id,
     onOrderUpdate: () => {
       loadOrder();
+      reloadBilling();
     },
     showToast: true,
   });
@@ -60,6 +69,22 @@ const ClientOrderDetail = () => {
       <ClientLayout>
         <div className="flex items-center justify-center h-64">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </ClientLayout>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <ClientLayout>
+        <div className="space-y-4">
+          <Button asChild variant="ghost">
+            <Link to="/client/orders">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              {t('orderDetail.backToOrders')}
+            </Link>
+          </Button>
+          <LoadErrorCard onRetry={loadOrder} message={t('common.errorLoadingOrder')} />
         </div>
       </ClientLayout>
     );
@@ -85,22 +110,22 @@ const ClientOrderDetail = () => {
     );
   }
 
-  const statusConfig = getClientStatusFromOrder(order);
-  const actionConfig = getActionButtonConfig(order);
+  const statusConfig = getClientStatusFromOrder(order, t);
+  const actionConfig = getActionButtonConfig(order, t);
   const isCancelled = order.status_cancelled;
 
   const statusSteps = [
-    { ...getClientStatusStep("created", !!order.status_created), icon: Clock },
-    { ...getClientStatusStep("in_progress", !!order.status_in_progress), icon: Clock },
-    { ...getClientStatusStep("invoice_sent", !!order.status_invoice_sent), icon: FileText },
-    { ...getClientStatusStep("invoice_paid", !!order.status_invoice_paid), icon: CheckCircle },
-    { ...getClientStatusStep("resolved", !!order.status_resolved), icon: CheckCircle },
+    { ...getClientStatusStep("created", !!order.status_created, t), icon: Clock },
+    { ...getClientStatusStep("in_progress", !!order.status_in_progress, t), icon: Clock },
+    { ...getClientStatusStep("invoice_sent", !!order.status_invoice_sent, t), icon: FileText },
+    { ...getClientStatusStep("invoice_paid", !!order.status_invoice_paid, t), icon: CheckCircle },
+    { ...getClientStatusStep("resolved", !!order.status_resolved, t), icon: CheckCircle },
   ];
 
   return (
     <ClientLayout>
       <div className="space-y-6">
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-4">
           <Button asChild variant="ghost" size="sm">
             <Link to="/client/orders">
               <ArrowLeft className="h-4 w-4 mr-2" />
@@ -110,8 +135,8 @@ const ClientOrderDetail = () => {
           <h1 className="text-2xl font-bold text-foreground">{t('orderDetail.title')}</h1>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-3">
-          <div className="lg:col-span-2 space-y-6">
+        <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
+          <div className="lg:col-span-2 space-y-6 min-w-0">
             {actionConfig.showButton && actionConfig.url && (
               <Card className="border-destructive/50 bg-destructive/10">
                 <CardHeader className="pb-2">
@@ -140,7 +165,7 @@ const ClientOrderDetail = () => {
                       {actionConfig.label}
                     </a>
                   </Button>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-muted-foreground break-all">
                     {t('orderDetail.opens')}: {actionConfig.url}
                   </p>
                 </CardContent>
@@ -161,7 +186,7 @@ const ClientOrderDetail = () => {
                   </p>
                   {order.updated_at && (
                     <p className="text-xs text-muted-foreground mt-3">
-                      {t('orderDetail.lastUpdated')}: {format(new Date(order.updated_at), "PPP 'at' p")}
+                      {t('orderDetail.lastUpdated')}: {format(new Date(order.updated_at), "PPP p", { locale })}
                     </p>
                   )}
                 </CardContent>
@@ -170,8 +195,8 @@ const ClientOrderDetail = () => {
 
             <Card>
               <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle>{order.company_name}</CardTitle>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <CardTitle className="break-words min-w-0">{order.company_name}</CardTitle>
                   <Badge 
                     variant={statusConfig.badgeVariant}
                     className={statusConfig.badgeClassName}
@@ -191,19 +216,19 @@ const ClientOrderDetail = () => {
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
                     <h3 className="font-medium text-sm text-muted-foreground mb-1">{t('orderDetail.created')}</h3>
-                    <p>{format(new Date(order.created_at), "PPP")}</p>
+                    <p>{format(new Date(order.created_at), "PPP", { locale })}</p>
                   </div>
                   {order.updated_at && (
                     <div>
                       <h3 className="font-medium text-sm text-muted-foreground mb-1">{t('orderDetail.lastUpdatedLabel')}</h3>
-                      <p>{format(new Date(order.updated_at), "PPP")}</p>
+                      <p>{format(new Date(order.updated_at), "PPP", { locale })}</p>
                     </div>
                   )}
                   {order.price && (
                     <div>
                       <h3 className="font-medium text-sm text-muted-foreground mb-1">{t('orderDetail.price')}</h3>
                       <p className="text-lg font-semibold">
-                        {order.currency || "EUR"} {order.price.toFixed(2)}
+                        {money(order.price, order.currency || "EUR")}
                       </p>
                     </div>
                   )}
@@ -260,6 +285,50 @@ const ClientOrderDetail = () => {
               </CardContent>
             </Card>
 
+            <Card data-testid="order-payments">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <CreditCard className="h-5 w-5" />
+                  {t('orderDetail.payments')}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {billing.loading && !billing.data ? (
+                  <div className="flex justify-center py-4"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+                ) : billing.error || !billing.data ? (
+                  <LoadErrorCard compact onRetry={billing.reload} message={t('billing.loadFailed')} />
+                ) : (() => {
+                  const links = billing.data.order_links.filter((l) => l.status === "pending");
+                  const { invoices, payments } = billing.data;
+                  if (!links.length && !invoices.length && !payments.length) {
+                    return <p className="text-sm text-muted-foreground">{t('orderDetail.noPayments')}</p>;
+                  }
+                  return (
+                    <>
+                      {links.length > 0 && (
+                        <div>
+                          <p className="text-sm font-medium text-foreground">{t('billing.openPayments')}</p>
+                          <ul className="divide-y">{links.map((l) => <OpenLinkRow key={l.id} link={l} showOrder={false} />)}</ul>
+                        </div>
+                      )}
+                      {invoices.length > 0 && (
+                        <div>
+                          <p className="text-sm font-medium text-foreground">{t('billing.invoices')}</p>
+                          <ul className="divide-y">{invoices.map((i) => <InvoiceRow key={i.id} inv={i} showOrder={false} />)}</ul>
+                        </div>
+                      )}
+                      {payments.length > 0 && (
+                        <div>
+                          <p className="text-sm font-medium text-foreground">{t('billing.payments')}</p>
+                          <ul className="divide-y">{payments.map((p) => <PaymentRow key={p.id} p={p} />)}</ul>
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
+              </CardContent>
+            </Card>
+
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
@@ -268,7 +337,9 @@ const ClientOrderDetail = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {attachments.length > 0 ? (
+                {attachmentsError ? (
+                  <LoadErrorCard compact onRetry={loadOrder} />
+                ) : attachments.length > 0 ? (
                   <div className="space-y-2">
                     {attachments.map((attachment) => (
                       <div
@@ -280,8 +351,8 @@ const ClientOrderDetail = () => {
                           <div className="min-w-0">
                             <p className="font-medium text-sm text-foreground truncate">{attachment.file_name}</p>
                             <p className="text-xs text-muted-foreground">
-                              {attachment.file_size ? `${(attachment.file_size / 1024).toFixed(1)} KB` : 'Unknown size'} 
-                              {' • '}{format(new Date(attachment.created_at), "MMM d, yyyy")}
+                              {attachment.file_size ? `${(attachment.file_size / 1024).toFixed(1)} KB` : t('orderDetail.unknownSize')} 
+                              {' • '}{format(new Date(attachment.created_at), "PP", { locale })}
                             </p>
                           </div>
                         </div>

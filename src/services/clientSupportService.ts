@@ -1,3 +1,4 @@
+import { clientOrderOwnershipFilter } from "@/services/clientOwnership";
 import { supabase } from "@/integrations/supabase/client";
 import { NOTIFICATION_EMAIL_LIST } from "@/constants/notificationEmails";
 
@@ -88,7 +89,7 @@ export async function fetchClientInquiries(): Promise<ClientSupportInquiry[]> {
 
   if (error) {
     console.error("Error fetching client inquiries:", error);
-    return [];
+    throw error;
   }
 
   // Fetch order company names for linked inquiries
@@ -351,14 +352,14 @@ export async function fetchClientOrders(): Promise<
   }
 
   const { data, error } = await supabase
-    .from("orders")
+    .from("client_orders")
     .select("id, company_name")
-    .eq("client_id", userData.user.id)
+    .or(clientOrderOwnershipFilter(userData.user.id, userData.user.email))
     .order("created_at", { ascending: false });
 
   if (error) {
     console.error("Error fetching client orders:", error);
-    return [];
+    throw error;
   }
 
   return data || [];

@@ -131,6 +131,42 @@ const STATUS_TRANSLATION_MAP: Record<string, ClientStatusConfig> = {
   },
 };
 
+/** Translation keys for the English client-facing labels above. */
+const LABEL_KEYS: Record<string, string> = {
+  "Order Received": "orderStatus.received",
+  "In Progress": "orderStatus.inProgress",
+  "Invoice Sent": "orderStatus.invoiceSent",
+  "Payment Received": "orderStatus.paymentReceived",
+  "Completed": "orderStatus.completed",
+  "Cancelled": "orderStatus.cancelled",
+  "Quality Review": "orderStatus.qualityReview",
+  "Getting Started": "orderStatus.gettingStarted",
+  "Action Required": "orderStatus.actionRequired",
+  "Under Review": "orderStatus.underReview",
+  "Processing": "orderStatus.processing",
+  "Provide Feedback": "orderStatus.provideFeedback",
+  "Take Action": "orderStatus.takeAction",
+};
+
+export type Translate = (key: string, params?: Record<string, string>) => string;
+
+/** Translate a client-facing label; unknown labels (raw statuses) pass through. */
+export function translateStatusLabel(label: string, t?: Translate): string {
+  const key = LABEL_KEYS[label];
+  if (!t || !key) return label;
+  const out = t(key);
+  return out === key ? label : out;
+}
+
+function localize(cfg: ClientStatusConfig, t?: Translate): ClientStatusConfig {
+  if (!t) return cfg;
+  return {
+    ...cfg,
+    label: translateStatusLabel(cfg.label, t),
+    actionButtonLabel: cfg.actionButtonLabel ? translateStatusLabel(cfg.actionButtonLabel, t) : cfg.actionButtonLabel,
+  };
+}
+
 // Default fallback for unknown statuses
 const DEFAULT_STATUS: ClientStatusConfig = {
   label: "Processing",
@@ -153,7 +189,11 @@ export function getClientStatus(internalStatus: string): ClientStatusConfig {
  * Get translated status from order with boolean flags
  * Priority order determines which status to show
  */
-export function getClientStatusFromOrder(order: ClientOrder): ClientStatusConfig {
+export function getClientStatusFromOrder(order: ClientOrder, t?: Translate): ClientStatusConfig {
+  return localize(rawStatusFromOrder(order), t);
+}
+
+function rawStatusFromOrder(order: ClientOrder): ClientStatusConfig {
   // Check in order of priority (most important first)
   if (order.status_cancelled) return STATUS_TRANSLATION_MAP["Cancelled"];
   if (order.status_resolved) return STATUS_TRANSLATION_MAP["Resolved"];
@@ -189,16 +229,16 @@ export function statusRequiresAction(internalStatus: string): boolean {
 /**
  * Get action button configuration for an order
  */
-export function getActionButtonConfig(order: ClientOrder): {
+export function getActionButtonConfig(order: ClientOrder, t?: Translate): {
   showButton: boolean;
   label: string;
   url: string | null;
 } {
-  const statusConfig = getClientStatusFromOrder(order);
+  const statusConfig = getClientStatusFromOrder(order, t);
   
   return {
     showButton: statusConfig.requiresAction === true && !!order.client_action_url,
-    label: statusConfig.actionButtonLabel || "Take Action",
+    label: statusConfig.actionButtonLabel || translateStatusLabel("Take Action", t),
     url: order.client_action_url || null
   };
 }
@@ -208,7 +248,8 @@ export function getActionButtonConfig(order: ClientOrder): {
  */
 export function getClientStatusStep(
   stepKey: string, 
-  isActive: boolean
+  isActive: boolean,
+  t?: Translate
 ): { key: string; label: string; emoji: string; active: boolean } {
   const stepMap: Record<string, { label: string; emoji: string }> = {
     "created": { label: "Order Received", emoji: "📋" },
@@ -223,7 +264,7 @@ export function getClientStatusStep(
   
   return {
     key: stepKey,
-    label: step.label,
+    label: translateStatusLabel(step.label, t),
     emoji: step.emoji,
     active: isActive
   };

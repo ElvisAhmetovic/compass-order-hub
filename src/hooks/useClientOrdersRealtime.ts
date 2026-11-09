@@ -1,7 +1,8 @@
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/context/ClientLanguageContext";
 
 interface UseClientOrdersRealtimeOptions {
   onOrderUpdate?: (orderId: string) => void;
@@ -9,82 +10,55 @@ interface UseClientOrdersRealtimeOptions {
   showToast?: boolean;
 }
 
+/**
+ * Live order updates for the portal. The subscription is created once per
+ * user/order (callbacks are read through refs, so re-renders never reconnect).
+ * Without an orderId it listens to new and changed orders; the database's
+ * access rules decide which orders this client receives.
+ */
 export const useClientOrdersRealtime = (options: UseClientOrdersRealtimeOptions = {}) => {
   const { onOrderUpdate, orderId, showToast = true } = options;
   const { user } = useAuth();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [isConnected, setIsConnected] = useState(false);
-  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
-  const handleOrderUpdate = useCallback((payload: { new: { id: string } }) => {
-    const updatedOrderId = payload.new?.id;
-    
-    if (updatedOrderId) {
-      console.log("[Realtime] Order updated:", updatedOrderId);
-      
-      // If we're filtering by orderId and this isn't our order, skip
-      if (orderId && updatedOrderId !== orderId) {
-        return;
-      }
-      
-      // Call the callback
-      onOrderUpdate?.(updatedOrderId);
-      
-      // Show toast notification
-      if (showToast) {
-        toast({
-          title: "Order Updated",
-          description: "Your order status has been updated.",
-        });
-      }
-    }
-  }, [orderId, onOrderUpdate, showToast, toast]);
+  const latest = useRef({ onOrderUpdate, showToast, toast, t });
+  latest.current = { onOrderUpdate, showToast, toast, t };
 
   useEffect(() => {
-    if (!user?.id) {
-      console.log("[Realtime] No user, skipping subscription");
-      return;
+    if (!user?.id) return;
+
+    const suffix = Math.random().toString(36).slice(2);
+    const channelName = orderId ? `client-order-${orderId}-${suffix}` : `client-orders-${user.id}-${suffix}`;
+
+    const handle = (kind: "INSERT" | "UPDATE") => (payload: { new: { id?: string } }) => {
+      const id = payload.new?.id;
+      if (!id || (orderId && id !== orderId)) return;
+      const { onOrderUpdate: cb, showToast: show, toast: notify, t: tr } = latest.current;
+      cb?.(id);
+      if (show) {
+        notify(kind === "INSERT"
+          ? { title: tr("realtime.newOrder"), description: tr("realtime.newOrderDesc") }
+          : { title: tr("realtime.orderUpdated"), description: tr("realtime.orderUpdatedDesc") });
+      }
+    };
+
+    let channel = supabase.channel(channelName).on(
+      "postgres_changes",
+      { event: "UPDATE", schema: "public", table: "orders", ...(orderId ? { filter: `id=eq.${orderId}` } : {}) },
+      handle("UPDATE"),
+    );
+    if (!orderId) {
+      channel = channel.on("postgres_changes", { event: "INSERT", schema: "public", table: "orders" }, handle("INSERT"));
     }
-
-    const channelName = orderId 
-      ? `client-order-${orderId}-${user.id}` 
-      : `client-orders-${user.id}`;
-
-    console.log("[Realtime] Setting up subscription:", channelName);
-
-    // Build filter - either for a specific order or all orders for this client
-    const filter = orderId
-      ? `id=eq.${orderId}`
-      : `client_id=eq.${user.id}`;
-
-    const channel = supabase
-      .channel(channelName)
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'orders',
-          filter,
-        },
-        handleOrderUpdate
-      )
-      .subscribe((status) => {
-        console.log("[Realtime] Subscription status:", status);
-        setIsConnected(status === 'SUBSCRIBED');
-      });
-
-    channelRef.current = channel;
+    channel.subscribe((status) => setIsConnected(status === "SUBSCRIBED"));
 
     return () => {
-      console.log("[Realtime] Cleaning up subscription:", channelName);
-      if (channelRef.current) {
-        supabase.removeChannel(channelRef.current);
-        channelRef.current = null;
-      }
+      supabase.removeChannel(channel);
       setIsConnected(false);
     };
-  }, [user?.id, orderId, handleOrderUpdate]);
+  }, [user?.id, orderId]);
 
   return { isConnected };
 };

@@ -8,6 +8,7 @@ import { format } from "date-fns";
 import { ClientOrder } from "@/services/clientOrderService";
 import { getClientStatusFromOrder, getActionButtonConfig } from "@/utils/clientStatusTranslator";
 import { useLanguage } from "@/context/ClientLanguageContext";
+import { dateLocale } from "@/components/client-portal/billing/billingFormat";
 
 interface ClientOrderCardProps {
   order: ClientOrder;
@@ -15,10 +16,10 @@ interface ClientOrderCardProps {
 }
 
 const ClientOrderCard = ({ order, attachmentCount = 0 }: ClientOrderCardProps) => {
-  const statusConfig = getClientStatusFromOrder(order);
-  const actionConfig = getActionButtonConfig(order);
+  const { t, language } = useLanguage();
+  const statusConfig = getClientStatusFromOrder(order, t);
+  const actionConfig = getActionButtonConfig(order, t);
   const isCancelled = order.status_cancelled;
-  const { t } = useLanguage();
 
   return (
     <Link to={`/client/orders/${order.id}`}>
@@ -40,7 +41,7 @@ const ClientOrderCard = ({ order, attachmentCount = 0 }: ClientOrderCardProps) =
 
               <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
                 <Calendar className="h-3.5 w-3.5" />
-                <span>{format(new Date(order.created_at), "MMM d, yyyy")}</span>
+                <span>{format(new Date(order.created_at), "PP", { locale: dateLocale(language) })}</span>
               </div>
 
               {actionConfig.showButton && actionConfig.url ? (

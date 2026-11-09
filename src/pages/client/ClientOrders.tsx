@@ -6,14 +6,15 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Loader2, Eye, Package, Wifi, WifiOff } from "lucide-react";
 import { fetchClientOrders, ClientOrder } from "@/services/clientOrderService";
-import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
-import { getClientStatusFromOrder } from "@/utils/clientStatusTranslator";
+import { getClientStatusFromOrder, Translate } from "@/utils/clientStatusTranslator";
 import { useClientOrdersRealtime } from "@/hooks/useClientOrdersRealtime";
+import LoadErrorCard from "@/components/client-portal/LoadErrorCard";
 import { useLanguage } from "@/context/ClientLanguageContext";
+import { dateLocale } from "@/components/client-portal/billing/billingFormat";
 
-const getStatusBadge = (order: ClientOrder) => {
-  const config = getClientStatusFromOrder(order);
+const getStatusBadge = (order: ClientOrder, t?: Translate) => {
+  const config = getClientStatusFromOrder(order, t);
   return (
     <Badge 
       variant={config.badgeVariant}
@@ -27,25 +28,22 @@ const getStatusBadge = (order: ClientOrder) => {
 const ClientOrders = () => {
   const [orders, setOrders] = useState<ClientOrder[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [updatedOrderId, setUpdatedOrderId] = useState<string | null>(null);
-  const { toast } = useToast();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   const loadOrders = useCallback(async () => {
+    setLoadError(false);
     try {
       const data = await fetchClientOrders();
       setOrders(data);
     } catch (error) {
       console.error("Error loading orders:", error);
-      toast({
-        variant: "destructive",
-        title: t('common.error'),
-        description: t('common.errorLoadingOrders')
-      });
+      setLoadError(true);
     } finally {
       setIsLoading(false);
     }
-  }, [toast, t]);
+  }, []);
 
   const { isConnected } = useClientOrdersRealtime({
     onOrderUpdate: (orderId) => {
@@ -95,7 +93,9 @@ const ClientOrders = () => {
           </div>
         </div>
 
-        {orders.length === 0 ? (
+        {loadError ? (
+          <LoadErrorCard onRetry={loadOrders} message={t('common.errorLoadingOrders')} />
+        ) : orders.length === 0 ? (
           <Card className="border-dashed">
             <CardContent className="py-12 text-center">
               <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
@@ -119,7 +119,7 @@ const ClientOrders = () => {
                 <CardHeader className="pb-2">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-lg">{order.company_name}</CardTitle>
-                    {getStatusBadge(order)}
+                    {getStatusBadge(order, t)}
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -128,7 +128,7 @@ const ClientOrders = () => {
                       {order.description && (
                         <p className="line-clamp-2">{order.description}</p>
                       )}
-                      <p>{t('orders.created')}: {format(new Date(order.created_at), "PPP")}</p>
+                      <p>{t('orders.created')}: {format(new Date(order.created_at), "PPP", { locale: dateLocale(language) })}</p>
                       {order.price && (
                         <p className="font-medium text-foreground">
                           {order.currency || "EUR"} {order.price.toFixed(2)}

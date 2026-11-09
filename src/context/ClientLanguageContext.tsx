@@ -5,7 +5,8 @@ import { useAuth } from '@/context/AuthContext';
 
 interface ClientLanguageContextType {
   language: ClientLanguage;
-  setLanguage: (lang: ClientLanguage) => Promise<void>;
+  /** Applies the language now; resolves false when saving it to the profile failed. */
+  setLanguage: (lang: ClientLanguage) => Promise<boolean>;
   t: (key: string, params?: Record<string, string>) => string;
 }
 
@@ -40,12 +41,13 @@ export const ClientLanguageProvider = ({ children }: { children: ReactNode }) =>
   const setLanguage = useCallback(async (lang: ClientLanguage) => {
     setLanguageState(lang);
     
-    if (user?.id) {
-      await supabase
-        .from('profiles')
-        .update({ preferred_language: lang })
-        .eq('id', user.id);
-    }
+    if (!user?.id) return true;
+    const { error } = await supabase
+      .from('profiles')
+      .update({ preferred_language: lang })
+      .eq('id', user.id);
+    if (error) console.error('Saving language failed:', error);
+    return !error;
   }, [user?.id]);
 
   const t = useCallback((key: string, params?: Record<string, string>) => {

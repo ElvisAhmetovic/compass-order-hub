@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { passwordChangeEmail } from "../_shared/passwordChangeEmail.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -11,7 +12,8 @@ serve(async (req) => {
   }
 
   try {
-    const { userEmail, userName, companyName, newPassword } = await req.json();
+    // Any password in the request is ignored: it must never be emailed.
+    const { userEmail, userName, companyName } = await req.json();
     const RESEND_API_KEY = (Deno.env.get("RESEND_API_KEY_ABMEDIA") ?? Deno.env.get("RESEND_API_KEY"));
 
     if (!RESEND_API_KEY) {
@@ -19,16 +21,7 @@ serve(async (req) => {
     }
 
     const adminEmails = ["jungabmedia@gmail.com", "kleinabmedia1@gmail.com"];
-    const subject = `Client Password Changed - ${companyName || "Unknown Company"}`;
-    const html = `
-      <h2>Client Password Changed</h2>
-      <p><strong>User:</strong> ${userName || "N/A"}</p>
-      <p><strong>Email:</strong> ${userEmail || "N/A"}</p>
-      <p><strong>Company:</strong> ${companyName || "N/A"}</p>
-      <p><strong>New Password:</strong> ${newPassword}</p>
-      <hr/>
-      <p style="color:#888;font-size:12px;">This is an automated notification from the client portal.</p>
-    `;
+    const { subject, html } = passwordChangeEmail({ userEmail, userName, companyName });
 
     for (const email of adminEmails) {
       const res = await fetch("https://api.resend.com/emails", {
