@@ -173,7 +173,9 @@ const ConfirmOffer = () => {
                 <div className="text-sm text-muted-foreground">📍 {offer?.client_address}</div>
               )}
               <div className="text-xl font-bold text-primary mt-2">
-                Price: {formatPrice(offer?.price || 0, offer?.currency || 'EUR')}
+                {offer?.monthly_package
+                  ? `Price: ${formatPrice(offer.monthly_package.monthly_amount, offer?.currency || 'EUR')} per month, ${offer.monthly_package.duration_months} months`
+                  : `Price: ${formatPrice(offer?.price || 0, offer?.currency || 'EUR')}`}
               </div>
               {offer?.description && (
                 <div className="text-sm text-muted-foreground mt-2 whitespace-pre-line">
