@@ -6,7 +6,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Loader2, Eye, Package, Wifi, WifiOff } from "lucide-react";
 import { fetchClientOrders, ClientOrder } from "@/services/clientOrderService";
-import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { getClientStatusFromOrder, Translate } from "@/utils/clientStatusTranslator";
 import { useClientOrdersRealtime } from "@/hooks/useClientOrdersRealtime";
@@ -31,7 +30,6 @@ const ClientOrders = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [updatedOrderId, setUpdatedOrderId] = useState<string | null>(null);
-  const { toast } = useToast();
   const { t, language } = useLanguage();
 
   const loadOrders = useCallback(async () => {
