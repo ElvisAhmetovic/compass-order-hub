@@ -78,7 +78,7 @@ async function createCheckout(contract: Record<string, any>, nameIn?: string, de
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-  try {
+    const { action, contract_id, send_email, product_name, product_description } = parsed.data;
     const caller = await getCaller(req);
     if (!caller) return json({ error: "Unauthorized" }, 401);
     const parsed = Body.safeParse(await req.json().catch(() => ({})));
@@ -121,7 +121,7 @@ Deno.serve(async (req) => {
       const { emails } = await clientIdentity(caller);
       if (!emails.includes(String(contract.client_email).toLowerCase())) return json({ error: "Forbidden" }, 403);
       if (action === "create_checkout") return json({ error: "Forbidden" }, 403);
-    }
+      const url = action === "create_checkout" ? await createCheckout(contract, product_name, product_description) : await createCheckout(contract);
 
     if (action === "create_checkout" || action === "pay") {
       if (contract.stripe_subscription_id && ["active", "trialing"].includes(contract.stripe_status)) return json({ error: "Already subscribed" }, 409);
@@ -132,7 +132,7 @@ Deno.serve(async (req) => {
         const period = contract.billing_frequency === 12 ? "Jahr / year" : contract.billing_frequency > 1 ? `${contract.billing_frequency} Monate / months` : "Monat / month";
         await sendBillingEmail(contract.client_email, "Ihr Abonnement – bitte Zahlung einrichten / Set up your subscription payment", emailShell(
           `Hallo ${contract.client_name},`,
-          `<p>für Ihr Paket (${contract.website || "Media Marketing"}) können Sie jetzt bequem per Karte oder SEPA-Lastschrift bezahlen: <b>${amount} pro ${period}</b>.</p>
+          `<p>für <b>${productNameFor(product_name, contract.stripe_product_name, contract.client_name, contract.website)}</b> können Sie jetzt bequem per Karte oder SEPA-Lastschrift bezahlen: <b>${amount} pro ${period}</b>.</p>
            <p>You can now pay your package by card or SEPA direct debit: <b>${amount} per ${period}</b>.</p>
            ${button(url, "Jetzt abonnieren / Subscribe now")}
            <p style="font-size:13px;color:#64748b">Der Link ist 24 Stunden gültig. Danach finden Sie den Zahlungsbutton jederzeit in Ihrem Kundenportal unter Rechnungen: <a href="${APP_URL}/client/invoices">${APP_URL}/client/invoices</a>. Banküberweisung ist weiterhin möglich.<br/>The link is valid for 24 hours; afterwards use the Pay button in your client portal. Bank transfer remains available.</p>`));
