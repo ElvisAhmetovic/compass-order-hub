@@ -9,6 +9,7 @@ import { Loader2, Building2, Mail } from "lucide-react";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { getTranslation } from "@/i18n/clientTranslations";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,9 +22,17 @@ import {
 } from "@/components/ui/alert-dialog";
 
 const loginSchema = z.object({
-  email: z.string().email("Invalid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
+  email: z.string().email("login.invalidEmail"),
+  password: z.string().min(6, "login.passwordShort"),
 });
+
+type LoginLang = "de" | "en";
+const LANG_KEY = "client_login_lang";
+const initialLang = (): LoginLang => {
+  const saved = typeof localStorage !== "undefined" ? localStorage.getItem(LANG_KEY) : null;
+  if (saved === "de" || saved === "en") return saved;
+  return typeof navigator !== "undefined" && navigator.language?.toLowerCase().startsWith("en") ? "en" : "de";
+};
 
 const ClientLogin = () => {
   const [email, setEmail] = useState("");
@@ -38,6 +47,9 @@ const ClientLogin = () => {
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
+  const [lang, setLang] = useState<LoginLang>(initialLang);
+  const t = (key: string) => getTranslation(lang, key);
+  const chooseLang = (l: LoginLang) => { setLang(l); try { localStorage.setItem(LANG_KEY, l); } catch { /* ignore */ } };
 
   const from = (location.state as { from?: { pathname: string } })?.from?.pathname || "/client/dashboard";
 
@@ -72,20 +84,20 @@ const ClientLogin = () => {
       if (data?.error) {
         toast({
           variant: "destructive",
-          title: "Could not send credentials",
+          title: t("login.credentialsFailed"),
           description: data.error,
         });
       } else {
         toast({
-          title: "Credentials sent!",
-          description: "Check your email for your login details. You can then sign in below.",
+          title: t("login.credentialsSent"),
+          description: t("login.credentialsSentDesc"),
         });
       }
     } catch (err: any) {
       toast({
         variant: "destructive",
-        title: "Error",
-        description: err.message || "Failed to request credentials. Please try again.",
+        title: t("common.error"),
+        description: err.message || t("login.credentialsError"),
       });
     } finally {
       setRequestingCredentials(false);
@@ -107,14 +119,14 @@ const ClientLogin = () => {
       const success = await login(validated.email, validated.password);
       
       if (!success) {
-        setErrors({ password: "Invalid email or password" });
+        setErrors({ password: t("login.invalidCredentials") });
       }
     } catch (err) {
       if (err instanceof z.ZodError) {
         const fieldErrors: { email?: string; password?: string } = {};
         err.errors.forEach((error) => {
           const field = error.path[0] as "email" | "password";
-          fieldErrors[field] = error.message;
+          fieldErrors[field] = t(error.message);
         });
         setErrors(fieldErrors);
       }
@@ -138,11 +150,10 @@ const ClientLogin = () => {
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
               <Mail className="h-5 w-5 text-primary" />
-              Welcome to the Client Portal
+              {t("login.welcomeTitle")}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Would you like us to send your login credentials to your email address? 
-              You'll receive your email and password to access your portal where you can track orders, view invoices, and more.
+              {t("login.welcomeDesc")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -150,10 +161,10 @@ const ClientLogin = () => {
               {requestingCredentials ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Sending...
+                  {t("login.sending")}
                 </>
               ) : (
-                "Send My Login Info"
+                t("login.sendInfo")
               )}
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -163,24 +174,31 @@ const ClientLogin = () => {
       <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
+            <div className="flex justify-end gap-1" role="group" aria-label="Language / Sprache">
+              {(["de", "en"] as const).map((l) => (
+                <Button key={l} type="button" size="sm" variant={lang === l ? "secondary" : "ghost"} onClick={() => chooseLang(l)} aria-pressed={lang === l}>
+                  {l.toUpperCase()}
+                </Button>
+              ))}
+            </div>
             <div className="flex justify-center mb-4">
               <div className="p-3 rounded-full bg-primary/10">
                 <Building2 className="h-8 w-8 text-primary" />
               </div>
             </div>
-            <CardTitle className="text-2xl">Client Portal</CardTitle>
+            <CardTitle className="text-2xl">{t("login.title")}</CardTitle>
             <CardDescription>
-              Sign in to view your orders and invoices
+              {t("login.subtitle")}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">{t("login.email")}</Label>
                 <Input
                   id="email"
                   type="email"
-                  placeholder="your@email.com"
+                  placeholder={t("login.emailPlaceholder")}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   disabled={isSubmitting}
@@ -191,7 +209,7 @@ const ClientLogin = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password">{t("login.password")}</Label>
                 <Input
                   id="password"
                   type="password"
@@ -209,16 +227,16 @@ const ClientLogin = () => {
                 {isSubmitting ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Signing in...
+                    {t("login.signingIn")}
                   </>
                 ) : (
-                  "Sign In"
+                  t("login.signIn")
                 )}
               </Button>
             </form>
 
             <div className="mt-6 text-center text-sm text-muted-foreground">
-              <p>Need access? Contact your account manager.</p>
+              <p>{t("login.needAccess")}</p>
             </div>
           </CardContent>
         </Card>

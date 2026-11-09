@@ -9,11 +9,14 @@ import { NotificationService, Notification } from '@/services/notificationServic
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { formatDistanceToNow } from 'date-fns';
+import { useLanguage } from '@/context/ClientLanguageContext';
+import { dateLocale } from '@/components/client-portal/billing/billingFormat';
 
 const ClientNotificationCenter = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const { user } = useAuth();
+  const { t, language } = useLanguage();
   const navigate = useNavigate();
 
   const isClientRelevant = (n: { action_url?: string | null }) =>
@@ -105,7 +108,7 @@ const ClientNotificationCenter = () => {
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative">
+        <Button variant="ghost" size="icon" className="relative" aria-label={t("notifications.title")}>
           <Bell className="h-5 w-5" />
           {unreadCount > 0 && (
             <Badge
@@ -117,14 +120,14 @@ const ClientNotificationCenter = () => {
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-80 p-0" align="end">
+      <PopoverContent className="w-[calc(100vw-1.5rem)] max-w-80 p-0" align="end" collisionPadding={12}>
         <div className="p-4 border-b">
           <div className="flex items-center justify-between">
-            <h3 className="font-semibold">Notifications</h3>
+            <h3 className="font-semibold">{t("notifications.title")}</h3>
             {unreadCount > 0 && (
               <Button variant="ghost" size="sm" onClick={handleMarkAllAsRead}>
                 <CheckCheck className="h-4 w-4 mr-1" />
-                Mark all read
+                {t("notifications.markAllRead")}
               </Button>
             )}
           </div>
@@ -132,7 +135,7 @@ const ClientNotificationCenter = () => {
         <ScrollArea className="h-96">
           {notifications.length === 0 ? (
             <div className="p-4 text-center text-muted-foreground">
-              No notifications yet
+              {t("notifications.empty")}
             </div>
           ) : (
             <div className="p-2">
@@ -145,17 +148,17 @@ const ClientNotificationCenter = () => {
                   }`}
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         <span className="text-sm">{getNotificationIcon(notification.type)}</span>
                         <span className="font-medium text-sm">{notification.title}</span>
                       </div>
-                      <p className="text-sm text-muted-foreground mb-2">
+                      <p className="text-sm text-muted-foreground mb-2 break-words">
                         {notification.message}
                       </p>
                       <div className="flex items-center justify-between">
                         <span className="text-xs text-muted-foreground">
-                          {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
+                          {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true, locale: dateLocale(language) })}
                         </span>
                         {!notification.read && (
                           <Button
