@@ -3,12 +3,14 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import { z } from "npm:zod@3.23.8";
 import { admin, corsHeaders, json } from "../_shared/outreachAuth.ts";
 import { stripe, APP_URL, BILLING_INBOX, sendBillingEmail, emailShell, button, eur } from "../_shared/stripeApi.ts";
-import { cycleAmountCents, recurringFor } from "../_shared/stripeRules.ts";
+import { cycleAmountCents, recurringFor, productNameFor } from "../_shared/stripeRules.ts";
 
 const Body = z.object({
   action: z.enum(["create_checkout", "cancel", "resume", "overview", "pay", "portal"]),
   contract_id: z.string().uuid().optional(),
   send_email: z.boolean().optional(),
+  product_name: z.string().trim().min(1).max(120).optional(),
+  product_description: z.string().trim().max(300).optional(),
 });
 
 type Caller = { id: string; email: string; isClient: boolean };
@@ -40,8 +42,10 @@ async function loadContract(id: string) {
   return data;
 }
 
-async function createCheckout(contract: Record<string, any>): Promise<string> {
+async function createCheckout(contract: Record<string, any>, nameIn?: string, descIn?: string): Promise<string> {
   const db = admin();
+  const productName = productNameFor(nameIn, contract.stripe_product_name, contract.client_name, contract.website);
+  const productDesc = (descIn !== undefined ? descIn : contract.stripe_product_description ?? "").trim().slice(0, 300);
   let customer = contract.stripe_customer_id as string | null;
   if (!customer) {
     const c = await stripe<{ id: string }>("customers", {
@@ -57,7 +61,7 @@ async function createCheckout(contract: Record<string, any>): Promise<string> {
       currency: String(contract.currency || "EUR").toLowerCase(),
       unit_amount: cycleAmountCents(contract.monthly_amount, contract.billing_frequency, contract.vat_enabled, contract.vat_rate),
       recurring: recurringFor(contract.billing_frequency),
-      product_data: { name: `${contract.client_name} – ${contract.website || "Paket"}`.slice(0, 200) },
+      product_data: { name: productName, ...(productDesc ? { description: productDesc } : {}) },
     } } },
     subscription_data: { metadata: { contract_id: contract.id } },
     metadata: { contract_id: contract.id },
@@ -66,6 +70,7 @@ async function createCheckout(contract: Record<string, any>): Promise<string> {
   });
   await db.from("monthly_contracts").update({
     payment_method: "stripe", stripe_customer_id: customer, stripe_checkout_url: session.url,
+    stripe_product_name: productName, stripe_product_description: productDesc || null,
     stripe_status: contract.stripe_subscription_id ? contract.stripe_status : "pending",
   }).eq("id", contract.id);
   return session.url;
