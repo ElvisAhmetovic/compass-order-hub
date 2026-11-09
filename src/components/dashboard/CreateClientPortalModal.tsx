@@ -370,13 +370,13 @@ const CreateClientPortalModal = ({ open, onOpenChange, entity, onSuccess }: Crea
                 className="w-full sm:w-auto"
               >
                 {loading ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-1" />}
-                Re-send Credentials
+                Resend login details
               </Button>
             </>
           ) : (
             <Button onClick={handleCreateAndInvite} disabled={loading || checking || !clientEmail} className="w-full sm:w-auto">
               {loading ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <KeyRound className="h-4 w-4 mr-1" />}
-              Create & Send Invite
+              Create portal access
             </Button>
           )}
         </DialogFooter>
