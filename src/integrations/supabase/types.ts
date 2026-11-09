@@ -1211,6 +1211,8 @@ export type Database = {
           internal_notes: string | null
           inventory_items: string | null
           monthly_amount: number
+          offer_id: string | null
+          order_id: string | null
           payment_method: string
           priority: string | null
           start_date: string
@@ -1249,6 +1251,8 @@ export type Database = {
           internal_notes?: string | null
           inventory_items?: string | null
           monthly_amount: number
+          offer_id?: string | null
+          order_id?: string | null
           payment_method?: string
           priority?: string | null
           start_date: string
@@ -1287,6 +1291,8 @@ export type Database = {
           internal_notes?: string | null
           inventory_items?: string | null
           monthly_amount?: number
+          offer_id?: string | null
+          order_id?: string | null
           payment_method?: string
           priority?: string | null
           start_date?: string
