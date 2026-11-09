@@ -133,19 +133,19 @@ const STATUS_TRANSLATION_MAP: Record<string, ClientStatusConfig> = {
 
 /** Translation keys for the English client-facing labels above. */
 const LABEL_KEYS: Record<string, string> = {
-  "Order Received": "status.received",
-  "In Progress": "status.inProgress",
-  "Invoice Sent": "status.invoiceSent",
-  "Payment Received": "status.paymentReceived",
-  "Completed": "status.completed",
-  "Cancelled": "status.cancelled",
-  "Quality Review": "status.qualityReview",
-  "Getting Started": "status.gettingStarted",
-  "Action Required": "status.actionRequired",
-  "Under Review": "status.underReview",
-  "Processing": "status.processing",
-  "Provide Feedback": "status.provideFeedback",
-  "Take Action": "status.takeAction",
+  "Order Received": "orderStatus.received",
+  "In Progress": "orderStatus.inProgress",
+  "Invoice Sent": "orderStatus.invoiceSent",
+  "Payment Received": "orderStatus.paymentReceived",
+  "Completed": "orderStatus.completed",
+  "Cancelled": "orderStatus.cancelled",
+  "Quality Review": "orderStatus.qualityReview",
+  "Getting Started": "orderStatus.gettingStarted",
+  "Action Required": "orderStatus.actionRequired",
+  "Under Review": "orderStatus.underReview",
+  "Processing": "orderStatus.processing",
+  "Provide Feedback": "orderStatus.provideFeedback",
+  "Take Action": "orderStatus.takeAction",
 };
 
 export type Translate = (key: string, params?: Record<string, string>) => string;
