@@ -15,6 +15,7 @@ import { stripeBilling } from "@/services/stripeBillingService";
 import LoadErrorCard from "@/components/client-portal/LoadErrorCard";
 import { useBillingOverview, grossAmount as gross } from "@/components/client-portal/billing/useBillingOverview";
 import { InvoiceRow, OpenLinkRow, PayBadge, PaymentRow, useContractStatus } from "@/components/client-portal/billing/BillingParts";
+import { invoiceStatus, invoiceSummary, todayIso } from "@/components/client-portal/billing/invoiceStatus";
 import { day as fmtDay, money } from "@/components/client-portal/billing/billingFormat";
 
 const ClientInvoices = () => {
@@ -25,6 +26,7 @@ const ClientInvoices = () => {
   const [busy, setBusy] = useState<string | null>(null);
   const day = (d: string | null) => fmtDay(d, language);
   const statusOf = useContractStatus();
+  const [filter, setFilter] = useState<"all" | "unpaid" | "paid" | null>(null);
   useEffect(() => {
     const s = params.get("stripe");
     if (s === "success") toast({ title: t("billing.success") });
@@ -135,16 +137,49 @@ const ClientInvoices = () => {
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader><CardTitle className="flex items-center gap-2"><FileText className="h-5 w-5" />{t("billing.invoices")}</CardTitle></CardHeader>
-              <CardContent>
-                {!data?.invoices.length ? <p className="text-muted-foreground">{t("billing.noInvoices")}</p> : (
-                  <ul className="divide-y">
-                    {data.invoices.map((inv) => <InvoiceRow key={inv.id} inv={inv} />)}
-                  </ul>
-                )}
-              </CardContent>
-            </Card>
+            {(() => {
+              const today = todayIso();
+              const sum = invoiceSummary(data.invoices, today);
+              const cur = data.invoices[0]?.currency || "EUR";
+              const f = filter ?? (sum.unpaidCount > 0 ? "unpaid" : "all");
+              const list = data.invoices.filter((i) => {
+                const st = invoiceStatus(i, today);
+                return f === "all" || (f === "paid" ? st === "paid" : st === "unpaid" || st === "overdue");
+              });
+              return (
+                <Card>
+                  <CardHeader><CardTitle className="flex items-center gap-2"><FileText className="h-5 w-5" />{t("billing.invoices")}</CardTitle></CardHeader>
+                  <CardContent className="space-y-4">
+                    {!data.invoices.length ? <p className="text-muted-foreground">{t("billing.noInvoices")}</p> : (
+                      <>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" data-testid="invoice-summary">
+                          <div className="rounded-lg border border-warning/40 bg-warning/10 p-4">
+                            <p className="text-sm text-muted-foreground">{t("invoices.unpaid")}</p>
+                            <p className="text-2xl font-bold text-foreground">{money(sum.unpaidTotal, cur)}</p>
+                            <p className="text-xs text-muted-foreground">{t("invoices.count", { n: String(sum.unpaidCount) })}</p>
+                          </div>
+                          <div className="rounded-lg border border-success/40 bg-success/10 p-4">
+                            <p className="text-sm text-muted-foreground">{t("billing.paid")}</p>
+                            <p className="text-2xl font-bold text-foreground">{money(sum.paidTotal, cur)}</p>
+                            <p className="text-xs text-muted-foreground">{t("invoices.count", { n: String(sum.paidCount) })}</p>
+                          </div>
+                        </div>
+                        <div className="flex flex-wrap gap-2" role="tablist">
+                          {(["all", "unpaid", "paid"] as const).map((k) => (
+                            <Button key={k} size="sm" role="tab" aria-selected={f === k} variant={f === k ? "default" : "outline"} onClick={() => setFilter(k)}>
+                              {k === "all" ? t("invoices.all") : k === "paid" ? t("billing.paid") : t("invoices.unpaid")}
+                            </Button>
+                          ))}
+                        </div>
+                        {!list.length ? <p className="text-muted-foreground">{t("invoices.noneInFilter")}</p> : (
+                          <ul className="divide-y">{list.map((inv) => <InvoiceRow key={inv.id} inv={inv} />)}</ul>
+                        )}
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })()}
 
             <Card>
               <CardHeader><CardTitle className="flex items-center gap-2"><Receipt className="h-5 w-5" />{t("billing.payments")}</CardTitle></CardHeader>
