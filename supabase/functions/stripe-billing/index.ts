@@ -84,9 +84,11 @@ Deno.serve(async (req) => {
       if (!caller.isClient) return json({ error: "Clients only" }, 403);
       const { emails, clientIds } = await clientIdentity(caller);
       const orFilter = emails.map((e) => `client_email.ilike.${e}`).join(",");
-      const { data: contracts } = await db.from("monthly_contracts")
-        .select("id, client_name, website, monthly_amount, billing_frequency, currency, vat_enabled, vat_rate, status, start_date, duration_months, payment_method, stripe_status, current_period_end, cancel_at, stopped_at")
+      const { data: rawContracts } = await db.from("monthly_contracts")
+        .select("client_email, id, client_name, website, monthly_amount, billing_frequency, currency, vat_enabled, vat_rate, status, start_date, duration_months, payment_method, stripe_status, current_period_end, cancel_at, stopped_at")
         .or(orFilter).order("start_date", { ascending: false });
+      // ilike treats "_" as a wildcard, so keep exact matches only.
+      const contracts = (rawContracts ?? []).filter((c: { client_email: string }) => emails.includes(c.client_email.toLowerCase()));
       const ids = (contracts ?? []).map((c: { id: string }) => c.id);
       const [inst, pays, invs] = await Promise.all([
         ids.length ? db.from("monthly_installments").select("id, contract_id, month_label, due_date, amount, currency, payment_status, paid_at, invoice_id").in("contract_id", ids).order("due_date", { ascending: false }) : { data: [] },
