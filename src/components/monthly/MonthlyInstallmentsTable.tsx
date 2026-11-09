@@ -24,6 +24,7 @@ import {
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import SendMonthlyInvoiceDialog from "./SendMonthlyInvoiceDialog";
 import CreateClientPortalModal from "@/components/dashboard/CreateClientPortalModal";
+import { usePortalStatuses, PORTAL_LABEL } from "@/components/dashboard/portalStatus";
 import { supabase } from "@/integrations/supabase/client";
 import { enqueueNotification } from "@/utils/notificationQueue";
 import { nextReminderForInvoice } from "@/utils/reminderInterval";
@@ -75,6 +76,7 @@ const MonthlyInstallmentsTable: React.FC<Props> = ({ contracts, installments, on
   // Portal status
   const [portalStatuses, setPortalStatuses] = useState<Record<string, boolean>>({});
   const [portalModalContract, setPortalModalContract] = useState<MonthlyContract | null>(null);
+  const portalDetail = usePortalStatuses(contracts.map(c => c.client_email), Object.keys(portalStatuses).length);
 
   // Send dialog state
   const [sendDialogOpen, setSendDialogOpen] = useState(false);
@@ -361,6 +363,7 @@ const MonthlyInstallmentsTable: React.FC<Props> = ({ contracts, installments, on
         const progressPercent = totalInstallments > 0 ? (paidCount / totalInstallments) * 100 : 0;
         const isExpanded = expandedContracts.has(contract.id);
         const hasPortal = portalStatuses[contract.id] ?? false;
+        const portalState = portalDetail[contract.client_email.toLowerCase()] ?? (hasPortal ? "invited" : "none");
 
         return (
           <div key={contract.id} className="border rounded-lg overflow-hidden bg-card">
@@ -385,10 +388,13 @@ const MonthlyInstallmentsTable: React.FC<Props> = ({ contracts, installments, on
                           </span>
                         </TooltipTrigger>
                         <TooltipContent>
-                          {hasPortal ? "Client portal active" : "No client portal"}
+                          {hasPortal ? "Client portal account exists" : "No client portal"}
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
+                    <span className={`shrink-0 text-xs font-medium rounded px-1.5 py-0.5 border ${portalState === "active" ? "border-green-500 text-green-600" : portalState === "invited" ? "border-amber-500 text-amber-600" : "text-muted-foreground"}`}>
+                      {PORTAL_LABEL[portalState]}
+                    </span>
                   </div>
                   <div className="text-sm text-muted-foreground truncate">
                     {contract.client_email}

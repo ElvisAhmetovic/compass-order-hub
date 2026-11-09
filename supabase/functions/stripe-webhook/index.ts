@@ -1,3 +1,4 @@
+import { portalLineHtml } from "../_shared/portalEmailCopy.ts";
 // Receives Stripe events. Only signature-verified events change data; each event is processed once.
 import { admin, corsHeaders, json } from "../_shared/outreachAuth.ts";
 import { APP_URL, BILLING_INBOX, sendBillingEmail, emailShell, button, eur } from "../_shared/stripeApi.ts";
@@ -77,7 +78,8 @@ async function handleInvoice(db: ReturnType<typeof admin>, inv: Obj, paid: boole
     await sendBillingEmail(contract.client_email, "Zahlung fehlgeschlagen / Payment failed", emailShell(`Hallo ${contract.client_name},`,
       `<p>leider konnte Ihre Zahlung über <b>${amount}</b> nicht eingezogen werden. Bitte aktualisieren Sie Ihre Zahlungsmethode oder zahlen Sie erneut.</p>
        <p>Unfortunately your payment of <b>${amount}</b> failed. Please update your payment method or pay again.</p>
-       ${inv.hosted_invoice_url ? button(inv.hosted_invoice_url, "Jetzt bezahlen / Pay now") : ""}`));
+       ${inv.hosted_invoice_url ? button(inv.hosted_invoice_url, "Jetzt bezahlen / Pay now") : ""}
+       ${portalLineHtml()}`));
     await sendBillingEmail(BILLING_INBOX, `Stripe payment FAILED: ${contract.client_name} – ${amount}`, emailShell("Stripe payment failed",
       `<p>${contract.client_name} (${contract.client_email}) – charge of ${amount} failed. The client was emailed a retry link.</p>`));
   }

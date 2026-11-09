@@ -25,6 +25,7 @@ import { formatCurrency } from "@/utils/currencyUtils";
 import ScheduleReminderModal from "@/components/orders/ScheduleReminderModal";
 import SendClientReminderModal from "@/components/orders/SendClientReminderModal";
 import CreateClientPortalModal from "./CreateClientPortalModal";
+import { usePortalStatuses, PORTAL_LABEL } from "./portalStatus";
 
 interface OrderRowProps {
   order: Order;
@@ -53,6 +54,7 @@ const OrderRow = ({
   const [showReminderModal, setShowReminderModal] = useState(false);
   const [showClientReminderModal, setShowClientReminderModal] = useState(false);
   const [showPortalModal, setShowPortalModal] = useState(false);
+  const portalStatus = usePortalStatuses([order.contact_email])[order.contact_email?.toLowerCase() ?? ""] ?? "none";
   const [activeReminder, setActiveReminder] = useState<PaymentReminder | null>(null);
   const { user } = useAuth();
   const { toast } = useToast();
@@ -706,10 +708,11 @@ const OrderRow = ({
               e.stopPropagation();
               setShowPortalModal(true);
             }}
-            className={`h-8 px-2 w-full ${order.client_id ? "border-green-500 text-green-600 hover:bg-green-50 dark:hover:bg-green-950" : ""}`}
+            title={portalStatus === "none" ? "Create portal access" : "Resend login details"}
+            className={`h-8 px-2 w-full ${portalStatus === "active" ? "border-green-500 text-green-600 hover:bg-green-50 dark:hover:bg-green-950" : portalStatus === "invited" ? "border-amber-500 text-amber-600" : ""}`}
           >
             <KeyRound className="h-4 w-4 mr-1" />
-            Portal
+            {PORTAL_LABEL[portalStatus]}
           </Button>
           
           {!hideActions && isAdmin ? (

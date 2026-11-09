@@ -3888,6 +3888,14 @@ export type Database = {
         Args: { company_id_param: string }
         Returns: boolean
       }
+      portal_status_for_emails: {
+        Args: { p_emails: string[] }
+        Returns: {
+          email: string
+          has_account: boolean
+          last_sign_in_at: string
+        }[]
+      }
       recalculate_invoice_totals: {
         Args: { invoice_id_param: string }
         Returns: undefined

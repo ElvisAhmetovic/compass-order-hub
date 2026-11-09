@@ -1,3 +1,4 @@
+import { credentialsSubject } from "../_shared/portalEmailCopy.ts";
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.8";
 
@@ -73,61 +74,35 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("RESEND_API_KEY_ABMEDIA not configured");
     }
 
-    const subject = isResend
-      ? `Your Updated Client Portal Credentials - ${companyName || "Media Marketing"}`
-      : `Welcome to Your Client Portal - ${companyName || "Media Marketing"}`;
-
+    const subject = credentialsSubject(!!isResend, companyName || "Media Marketing");
+    const name = clientName || "Kunde / Client";
+    const row = (l: string, v: string) => `<tr><td style="padding:8px 0;color:#666;font-weight:600;">${l}</td><td style="padding:8px 0;font-family:monospace;">${v}</td></tr>`;
     const htmlBody = `
-      <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
-        <div style="background: linear-gradient(135deg, #1e3a5f 0%, #3b6fa0 100%); border-radius: 12px; padding: 30px; margin-bottom: 30px;">
-          <h1 style="color: white; margin: 0; font-size: 24px;">
-            ${isResend ? "🔑 Updated Credentials" : "🎉 Welcome to Your Client Portal"}
-          </h1>
+      <div style="font-family:'Segoe UI',Tahoma,Arial,sans-serif;max-width:600px;margin:0 auto;padding:40px 20px;color:#333">
+        <div style="background:#1e3a5f;border-radius:12px;padding:30px;margin-bottom:30px;">
+          <h1 style="color:white;margin:0;font-size:22px;">${isResend ? "Ihre neuen Zugangsdaten / Your updated login" : "Willkommen im Kundenportal / Welcome to your client portal"}</h1>
         </div>
-        
-        <p style="color: #333; font-size: 16px; line-height: 1.6;">
-          Hello <strong>${clientName || "Client"}</strong>,
-        </p>
-        
-        <p style="color: #333; font-size: 16px; line-height: 1.6;">
-          ${isResend
-            ? "Your client portal credentials have been updated. Please use the new login details below:"
-            : "Your client portal account has been created. You can now track your orders, view invoices, and communicate with our team directly."}
-        </p>
-        
-        <div style="background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 20px; margin: 24px 0;">
-          <h3 style="margin: 0 0 16px 0; color: #333;">Your Login Details</h3>
-          <table style="width: 100%; border-collapse: collapse;">
-            <tr>
-              <td style="padding: 8px 0; color: #666; font-weight: 600;">Portal URL:</td>
-              <td style="padding: 8px 0;"><a href="${portalUrl}" style="color: #1e3a5f; text-decoration: none;">${portalUrl}</a></td>
-            </tr>
-            <tr>
-              <td style="padding: 8px 0; color: #666; font-weight: 600;">Email:</td>
-              <td style="padding: 8px 0; font-family: monospace;">${clientEmail}</td>
-            </tr>
-            <tr>
-              <td style="padding: 8px 0; color: #666; font-weight: 600;">Password:</td>
-              <td style="padding: 8px 0; font-family: monospace; background: #fff3cd; padding: 4px 8px; border-radius: 4px;">${password}</td>
-            </tr>
+        <p style="font-size:16px;line-height:1.6;">Hallo <strong>${name}</strong>,</p>
+        <p style="font-size:16px;line-height:1.6;">${isResend
+          ? "Ihre Zugangsdaten für das Kundenportal wurden aktualisiert. Bitte verwenden Sie die folgenden Daten:"
+          : "Ihr Kundenportal-Konto wurde erstellt. Dort sehen Sie Ihre Aufträge, Rechnungen und offene Zahlungen und können direkt mit unserem Team kommunizieren."}</p>
+        <p style="font-size:14px;line-height:1.6;color:#555;"><em>${isResend
+          ? "Your client portal login has been updated. Please use the details below:"
+          : "Your client portal account has been created. There you can see your orders, invoices and open payments and talk to our team directly."}</em></p>
+        <div style="background:#f8f9fa;border:1px solid #e9ecef;border-radius:8px;padding:20px;margin:24px 0;">
+          <h3 style="margin:0 0 16px 0;">Ihre Zugangsdaten / Your login details</h3>
+          <table style="width:100%;border-collapse:collapse;">
+            <tr><td style="padding:8px 0;color:#666;font-weight:600;">Portal:</td><td style="padding:8px 0;"><a href="${portalUrl}" style="color:#1e3a5f;">${portalUrl}</a></td></tr>
+            ${row("E-Mail:", clientEmail)}
+            ${row("Passwort / Password:", password)}
           </table>
         </div>
-        
-        <div style="text-align: center; margin: 30px 0;">
-          <a href="${portalUrl}" style="background: linear-gradient(135deg, #1e3a5f 0%, #3b6fa0 100%); color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; display: inline-block;">
-            Go to Portal →
-          </a>
+        <div style="text-align:center;margin:30px 0;">
+          <a href="${portalUrl}" style="background:#1e3a5f;color:white;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block;">Zum Portal / Go to portal →</a>
         </div>
-        
-        <p style="color: #666; font-size: 14px; line-height: 1.6;">
-          We recommend changing your password after your first login for security purposes.
-        </p>
-        
-        <hr style="border: none; border-top: 1px solid #e9ecef; margin: 30px 0;" />
-        
-        <p style="color: #999; font-size: 12px;">
-          This email was sent by ${senderName || "the Media Marketing team"}. If you did not expect this email, please ignore it.
-        </p>
+        <p style="color:#666;font-size:14px;line-height:1.6;">Bitte ändern Sie Ihr Passwort nach der ersten Anmeldung.<br/>Please change your password after your first login.</p>
+        <hr style="border:none;border-top:1px solid #e9ecef;margin:30px 0;" />
+        <p style="color:#999;font-size:12px;">Gesendet von / Sent by ${senderName || "Media Marketing"}. Falls Sie diese E-Mail nicht erwartet haben, ignorieren Sie sie bitte. / If you did not expect this email, please ignore it.</p>
       </div>
     `;
 

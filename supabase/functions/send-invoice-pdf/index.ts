@@ -1,3 +1,4 @@
+import { portalLineHtml } from "../_shared/portalEmailCopy.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { buildStripeButton } from "./stripeButton.ts";
 
@@ -77,6 +78,7 @@ serve(async (req) => {
         ${message ? `<div style="margin: 20px 0; white-space: pre-wrap;">${message}</div>` : ''}
         ${stripeButton}
         <p style="color: #666; margin-top: 20px;">Please find the invoice PDF attached to this email.</p>
+        ${portalLineHtml()}
         <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
         <p style="color: #999; font-size: 12px;">Media Marketing</p>
       </div>
