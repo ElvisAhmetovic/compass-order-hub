@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { RealtimeChannel } from "@supabase/supabase-js";
+import { clientOrderOwnershipFilter } from "@/services/clientOwnership";
 
 export interface ClientOrder {
   id: string;
@@ -35,8 +36,7 @@ export const fetchClientOrders = async (): Promise<ClientOrder[]> => {
     throw new Error("User not authenticated");
   }
 
-  // Fetch orders through the client_orders view using client_id (direct link)
-  // Falls back to client_user_id for backwards compatibility
+  // Same ownership rule everywhere in the portal (see clientOwnership.ts).
   // Explicitly select only client-safe columns (no internal_notes, assigned_to, etc.)
   const { data, error } = await supabase
     .from("client_orders")
@@ -66,7 +66,7 @@ export const fetchClientOrders = async (): Promise<ClientOrder[]> => {
       client_visible_update,
       client_action_url
     `)
-    .or(`client_id.eq.${user.id},client_user_id.eq.${user.id}`)
+    .or(clientOrderOwnershipFilter(user.id, user.email))
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -114,7 +114,7 @@ export const fetchClientOrderById = async (orderId: string): Promise<ClientOrder
       client_action_url
     `)
     .eq("id", orderId)
-    .or(`client_id.eq.${user.id},client_user_id.eq.${user.id}`)
+    .or(clientOrderOwnershipFilter(user.id, user.email))
     .maybeSingle();
 
   if (error) {
@@ -149,9 +149,8 @@ export const getClientCompany = async () => {
   return data;
 };
 
-export const getClientOrderStats = async () => {
-  const orders = await fetchClientOrders();
-  
+/** Counts for the dashboard, from an already-loaded order list (no second fetch). */
+export const orderStatsFrom = (orders: ClientOrder[]) => {
   return {
     total: orders.length,
     inProgress: orders.filter(o => o.status_in_progress).length,
