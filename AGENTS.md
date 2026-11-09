@@ -13,3 +13,4 @@
 
 - Follow `PROJECT_RULES.md` (pre-build spec, tests, verification gates, read-only live data) for every change — why: team quality rules adapted to this project.
 - Stripe subscriptions for monthly packages: all Stripe calls go through `stripe-billing` (team/client actions, ownership checked server-side) and status/payments change only in the signature-verified, idempotent `stripe-webhook`; `generate-monthly-installments` skips contracts Stripe bills (`stripeBillsContract`) — why: no double billing and no client-trusted payment state.
+- New orders, monthly packages and accepted offers call `ensure-client-portal`, which creates a client portal account only when none exists and never resets an existing password — why: every client can reach their orders and payments without a manual step.
