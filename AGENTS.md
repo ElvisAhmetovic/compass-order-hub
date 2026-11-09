@@ -10,3 +10,5 @@
 
 - AI win-back offers: drafts are created by `outreach-scan` and only sent by `outreach-send` after a team member approves; rules live in `supabase/functions/_shared/outreachRules.ts` — why: no AI email reaches a client without human review.
 - AI outreach drafts read full client context (orders incl. internal notes, invoices, packages) via `supabase/functions/_shared/outreachContext.ts`, skip clients with unpaid invoices, and suggest only services from `service_catalog`/`service_insights` — why: offers must be grounded and never reach clients who owe money.
+
+- Follow `PROJECT_RULES.md` (pre-build spec, tests, verification gates, read-only live data) for every change — why: team quality rules adapted to this project.
