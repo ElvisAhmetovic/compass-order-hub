@@ -1750,6 +1750,81 @@ export type Database = {
           },
         ]
       }
+      order_payment_links: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          currency: string
+          description: string | null
+          id: string
+          net_amount: number
+          order_id: string
+          paid_at: string | null
+          sent_at: string | null
+          status: string
+          stripe_link_id: string | null
+          title: string
+          total_amount: number
+          updated_at: string
+          url: string | null
+          vat_enabled: boolean
+          vat_rate: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          description?: string | null
+          id?: string
+          net_amount: number
+          order_id: string
+          paid_at?: string | null
+          sent_at?: string | null
+          status?: string
+          stripe_link_id?: string | null
+          title: string
+          total_amount: number
+          updated_at?: string
+          url?: string | null
+          vat_enabled?: boolean
+          vat_rate?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          description?: string | null
+          id?: string
+          net_amount?: number
+          order_id?: string
+          paid_at?: string | null
+          sent_at?: string | null
+          status?: string
+          stripe_link_id?: string | null
+          title?: string
+          total_amount?: number
+          updated_at?: string
+          url?: string | null
+          vat_enabled?: boolean
+          vat_rate?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_payment_links_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "client_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_payment_links_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_status_history: {
         Row: {
           actor_id: string | null
@@ -2854,6 +2929,7 @@ export type Database = {
       stripe_payments: {
         Row: {
           amount: number
+          checkout_session_id: string | null
           client_email: string | null
           contract_id: string | null
           created_at: string
@@ -2862,7 +2938,9 @@ export type Database = {
           id: string
           installment_id: string | null
           invoice_pdf_url: string | null
+          order_id: string | null
           paid_at: string | null
+          payment_link_id: string | null
           period_end: string | null
           period_start: string | null
           status: string
@@ -2872,6 +2950,7 @@ export type Database = {
         }
         Insert: {
           amount?: number
+          checkout_session_id?: string | null
           client_email?: string | null
           contract_id?: string | null
           created_at?: string
@@ -2880,7 +2959,9 @@ export type Database = {
           id?: string
           installment_id?: string | null
           invoice_pdf_url?: string | null
+          order_id?: string | null
           paid_at?: string | null
+          payment_link_id?: string | null
           period_end?: string | null
           period_start?: string | null
           status: string
@@ -2890,6 +2971,7 @@ export type Database = {
         }
         Update: {
           amount?: number
+          checkout_session_id?: string | null
           client_email?: string | null
           contract_id?: string | null
           created_at?: string
@@ -2898,7 +2980,9 @@ export type Database = {
           id?: string
           installment_id?: string | null
           invoice_pdf_url?: string | null
+          order_id?: string | null
           paid_at?: string | null
+          payment_link_id?: string | null
           period_end?: string | null
           period_start?: string | null
           status?: string
