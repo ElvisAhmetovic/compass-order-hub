@@ -78,12 +78,12 @@ async function createCheckout(contract: Record<string, any>, nameIn?: string, de
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-    const { action, contract_id, send_email, product_name, product_description } = parsed.data;
+  try {
     const caller = await getCaller(req);
     if (!caller) return json({ error: "Unauthorized" }, 401);
     const parsed = Body.safeParse(await req.json().catch(() => ({})));
     if (!parsed.success) return json({ error: parsed.error.flatten().fieldErrors }, 400);
-    const { action, contract_id, send_email } = parsed.data;
+    const { action, contract_id, send_email, product_name, product_description } = parsed.data;
     const db = admin();
 
     if (action === "overview") {
@@ -121,12 +121,12 @@ Deno.serve(async (req) => {
       const { emails } = await clientIdentity(caller);
       if (!emails.includes(String(contract.client_email).toLowerCase())) return json({ error: "Forbidden" }, 403);
       if (action === "create_checkout") return json({ error: "Forbidden" }, 403);
-      const url = action === "create_checkout" ? await createCheckout(contract, product_name, product_description) : await createCheckout(contract);
+    }
 
     if (action === "create_checkout" || action === "pay") {
       if (contract.stripe_subscription_id && ["active", "trialing"].includes(contract.stripe_status)) return json({ error: "Already subscribed" }, 409);
       if (action === "pay" && contract.payment_method !== "stripe") return json({ error: "Stripe not enabled for this package" }, 400);
-      const url = await createCheckout(contract);
+      const url = action === "create_checkout" ? await createCheckout(contract, product_name, product_description) : await createCheckout(contract);
       if (action === "create_checkout" && send_email) {
         const amount = eur(cycleAmountCents(contract.monthly_amount, contract.billing_frequency, contract.vat_enabled, contract.vat_rate), contract.currency);
         const period = contract.billing_frequency === 12 ? "Jahr / year" : contract.billing_frequency > 1 ? `${contract.billing_frequency} Monate / months` : "Monat / month";
