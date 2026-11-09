@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { getClientStatusFromOrder, Translate } from "@/utils/clientStatusTranslator";
 import { useClientOrdersRealtime } from "@/hooks/useClientOrdersRealtime";
+import LoadErrorCard from "@/components/client-portal/LoadErrorCard";
 import { useLanguage } from "@/context/ClientLanguageContext";
 import { dateLocale } from "@/components/client-portal/billing/billingFormat";
 
@@ -28,25 +29,23 @@ const getStatusBadge = (order: ClientOrder, t?: Translate) => {
 const ClientOrders = () => {
   const [orders, setOrders] = useState<ClientOrder[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [updatedOrderId, setUpdatedOrderId] = useState<string | null>(null);
   const { toast } = useToast();
   const { t, language } = useLanguage();
 
   const loadOrders = useCallback(async () => {
+    setLoadError(false);
     try {
       const data = await fetchClientOrders();
       setOrders(data);
     } catch (error) {
       console.error("Error loading orders:", error);
-      toast({
-        variant: "destructive",
-        title: t('common.error'),
-        description: t('common.errorLoadingOrders')
-      });
+      setLoadError(true);
     } finally {
       setIsLoading(false);
     }
-  }, [toast, t]);
+  }, []);
 
   const { isConnected } = useClientOrdersRealtime({
     onOrderUpdate: (orderId) => {
@@ -96,7 +95,9 @@ const ClientOrders = () => {
           </div>
         </div>
 
-        {orders.length === 0 ? (
+        {loadError ? (
+          <LoadErrorCard onRetry={loadOrders} message={t('common.errorLoadingOrders')} />
+        ) : orders.length === 0 ? (
           <Card className="border-dashed">
             <CardContent className="py-12 text-center">
               <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />

@@ -41,6 +41,7 @@ import {
 import { getUnreadCountsForInquiries } from "@/services/supportReadService";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
+import { dateLocale } from "@/components/client-portal/billing/billingFormat";
 import LoadErrorCard from "@/components/client-portal/LoadErrorCard";
 import { useLanguage } from "@/context/ClientLanguageContext";
 
@@ -52,7 +53,7 @@ const ClientSupport = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [inquiries, setInquiries] = useState<InquiryWithUnread[]>([]);
   const [orders, setOrders] = useState<{ id: string; company_name: string }[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -304,7 +305,7 @@ const ClientSupport = () => {
                       <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground">
                         <div className="flex items-center gap-1">
                           <Clock className="h-3.5 w-3.5" />
-                          {format(new Date(inquiry.created_at), "MMM d, yyyy")}
+                          {format(new Date(inquiry.created_at), "PP", { locale: dateLocale(language) })}
                         </div>
                         {inquiry.order_company_name && (
                           <div className="flex items-center gap-1">
