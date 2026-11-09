@@ -1,3 +1,4 @@
+import { logPortalActivity } from "@/services/portalActivity";
 import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -43,7 +44,7 @@ export const OpenLinkRow = ({ link, showOrder = true }: { link: OrderLink; showO
       <div className="flex flex-wrap items-center gap-2">
         <span className="font-medium">{money(link.total_amount, link.currency)}</span>
         <PayBadge status="open" />
-        {link.url && <Button size="sm" asChild><a href={link.url} target="_blank" rel="noopener noreferrer">{t("billing.payNow")}</a></Button>}
+        {link.url && <Button size="sm" asChild><a href={link.url} target="_blank" rel="noopener noreferrer" onClick={() => { window.__lovableEvents?.track?.("project.portal_pay_clicked", { type: "order_link" }); logPortalActivity("pay_clicked", { type: "order_link" }); }}>{t("billing.payNow")}</a></Button>}
         {showOrder && <Button size="sm" variant="ghost" asChild><Link to={`/client/orders/${link.order_id}`}>{t("billing.viewOrder")}</Link></Button>}
       </div>
     </li>
@@ -77,7 +78,7 @@ export const InvoiceRow = ({ inv, showOrder = true }: { inv: Invoice; showOrder?
         <span className="font-medium">{money(inv.total_amount, inv.currency)}</span>
         <InvoiceStatusBadge inv={inv} />
         {open && inv.stripe_payment_link && (
-          <Button size="sm" asChild><a href={inv.stripe_payment_link} target="_blank" rel="noopener noreferrer">{t("billing.payNow")}</a></Button>
+          <Button size="sm" asChild><a href={inv.stripe_payment_link} target="_blank" rel="noopener noreferrer" onClick={() => { window.__lovableEvents?.track?.("project.portal_pay_clicked", { type: "invoice" }); logPortalActivity("pay_clicked", { type: "invoice" }); }}>{t("billing.payNow")}</a></Button>
         )}
         {showOrder && inv.order_id && (
           <Button size="sm" variant="ghost" asChild><Link to={`/client/orders/${inv.order_id}`}>{t("billing.viewOrder")}</Link></Button>
@@ -97,14 +98,14 @@ export const PaymentRow = ({ p }: { p: Payment }) => {
         <PayBadge status={p.status} />
         {p.hosted_invoice_url && (
           <Button size="sm" variant={p.status === "failed" ? "default" : "ghost"} asChild>
-            <a href={p.hosted_invoice_url} target="_blank" rel="noopener noreferrer">
+            <a href={p.hosted_invoice_url} target="_blank" rel="noopener noreferrer" onClick={() => { if (p.status === "failed") { window.__lovableEvents?.track?.("project.portal_pay_clicked", { type: "failed_payment" }); logPortalActivity("pay_clicked", { type: "failed_payment" }); } else { window.__lovableEvents?.track?.("project.portal_document_downloaded", { kind: "receipt" }); logPortalActivity("document_downloaded", { kind: "receipt" }); } }}>
               {p.status === "failed" ? t("billing.payNow") : t("billing.receipt")} <ExternalLink className="h-3 w-3 ml-1" />
             </a>
           </Button>
         )}
         {p.invoice_pdf_url && (
           <Button size="sm" variant="ghost" asChild>
-            <a href={p.invoice_pdf_url} target="_blank" rel="noopener noreferrer">
+            <a href={p.invoice_pdf_url} target="_blank" rel="noopener noreferrer" onClick={() => { window.__lovableEvents?.track?.("project.portal_document_downloaded", { kind: "pdf" }); logPortalActivity("document_downloaded", { kind: "pdf" }); }}>
               <Download className="h-3 w-3 mr-1" />{t("billing.downloadPdf")}
             </a>
           </Button>
