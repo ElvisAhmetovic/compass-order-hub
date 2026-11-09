@@ -13,6 +13,12 @@ export function cycleAmountCents(installmentAmount: number, _billingFrequency: n
   return Math.round(gross * 100);
 }
 
+/** Product name on the Stripe page: typed value, then saved value, then "client – website". */
+export function productNameFor(input: string | null | undefined, saved: string | null | undefined, clientName: string, website: string | null): string {
+  const pick = [input, saved].map((v) => (v ?? "").trim()).find((v) => v.length > 0);
+  return (pick ?? `${clientName} – ${website || "Paket"}`).slice(0, 120);
+}
+
 /** Stripe recurring settings for a package's billing frequency (1 = monthly, 3 = quarterly, 12 = yearly). */
 export function recurringFor(billingFrequency: number): { interval: "month" | "year"; interval_count: number } {
   const months = Math.max(1, Math.floor(billingFrequency || 1));

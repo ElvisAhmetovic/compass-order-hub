@@ -1,4 +1,11 @@
 import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
+import { productNameFor } from "./stripeRules.ts";
+Deno.test("product name: typed > saved > default", () => {
+  assertEquals(productNameFor("SEO Paket Premium", "Old", "ACME", "acme.de"), "SEO Paket Premium");
+  assertEquals(productNameFor("  ", "Saved name", "ACME", "acme.de"), "Saved name");
+  assertEquals(productNameFor(null, null, "ACME", "acme.de"), "ACME – acme.de");
+  assertEquals(productNameFor(null, null, "ACME", null), "ACME – Paket");
+});
 import { cycleAmountCents, recurringFor, dueDateFromPeriodStart, monthNumberFor, stripeBillsContract, verifyStripeSignature, signForTest } from "./stripeRules.ts";
 
 Deno.test("monthly package €399,99 without VAT charges 39999 cents", () => {

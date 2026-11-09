@@ -35,6 +35,7 @@ import InventoryItemsSelector, { SelectedInventoryItem } from "@/components/dash
 import { Order } from "@/types";
 import { Switch } from "@/components/ui/switch";
 import { stripeBilling } from "@/services/stripeBillingService";
+import { defaultProductName } from "./StripeLinkDialog";
 import { Label } from "@/components/ui/label";
 
 const formSchema = z.object({
@@ -75,6 +76,8 @@ const CreateMonthlyContractModal: React.FC<Props> = ({ open, onOpenChange, onCre
   const [selectedInventoryItems, setSelectedInventoryItems] = useState<SelectedInventoryItem[]>([]);
   const [vatEnabled, setVatEnabled] = useState(false);
   const [payByStripe, setPayByStripe] = useState(false);
+  const [stripeName, setStripeName] = useState("");
+  const [stripeDesc, setStripeDesc] = useState("");
   const [vatPercentage, setVatPercentage] = useState(19);
 
   const form = useForm<FormValues>({
@@ -220,7 +223,11 @@ const CreateMonthlyContractModal: React.FC<Props> = ({ open, onOpenChange, onCre
 
       // Fire-and-forget: create the Stripe subscription link and email it to the client.
       if (payByStripe && created?.id) {
-        stripeBilling("create_checkout", { contract_id: created.id, send_email: true })
+        stripeBilling("create_checkout", {
+          contract_id: created.id, send_email: true,
+          product_name: stripeName.trim() || defaultProductName(values.clientName, values.website || null),
+          product_description: stripeDesc.trim() || undefined,
+        })
           .then(() => { toast({ title: "Stripe link sent", description: `Subscription link emailed to ${values.clientEmail}.` }); onCreated(); })
           .catch((err: Error) => toast({ title: "Stripe link failed", description: err.message, variant: "destructive" }));
       }
@@ -363,6 +370,18 @@ const CreateMonthlyContractModal: React.FC<Props> = ({ open, onOpenChange, onCre
                   <div>
                     <Label htmlFor="stripe-toggle" className="text-sm font-medium">Pay by Stripe subscription</Label>
                     <p className="text-xs text-muted-foreground">Emails the client a card/SEPA subscription link. Bank details stay available.</p>
+                    {payByStripe && (
+                      <div className="mt-3 space-y-2">
+                        <div className="space-y-1">
+                          <Label htmlFor="stripe-name-create" className="text-xs">Product name on Stripe (empty = client – website)</Label>
+                          <Input id="stripe-name-create" maxLength={120} value={stripeName} onChange={(e) => setStripeName(e.target.value)} placeholder="e.g. SEO Paket Premium – monatlich" />
+                        </div>
+                        <div className="space-y-1">
+                          <Label htmlFor="stripe-desc-create" className="text-xs">Short description (optional)</Label>
+                          <Input id="stripe-desc-create" maxLength={300} value={stripeDesc} onChange={(e) => setStripeDesc(e.target.value)} />
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 

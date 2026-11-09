@@ -8,14 +8,24 @@ import {
 import { CreditCard, Loader2, Copy } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { stripeBilling, stripeStatusLabel, StripeContractFields } from "@/services/stripeBillingService";
+import StripeLinkDialog, { defaultProductName } from "./StripeLinkDialog";
 
 interface Props {
-  contract: StripeContractFields & { id: string; client_email: string; status: string };
+  contract: StripeContractFields & {
+    id: string; client_email: string; client_name: string; website: string | null; status: string;
+    monthly_amount: number; currency: string; billing_frequency: number; vat_enabled: boolean | null; vat_rate: number | null;
+    stripe_product_name?: string | null; stripe_product_description?: string | null;
+  };
   onChanged: () => void;
 }
 
 const StripeContractControls: React.FC<Props> = ({ contract, onChanged }) => {
   const [busy, setBusy] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const vat = Number(contract.vat_rate ?? 0);
+  const gross = Number(contract.monthly_amount) * (contract.vat_enabled ? 1 + (vat > 1 ? vat / 100 : vat) : 1);
+  const per = contract.billing_frequency === 12 ? "year" : contract.billing_frequency > 1 ? `${contract.billing_frequency} months` : "month";
+  const priceLabel = `${new Intl.NumberFormat("de-DE", { style: "currency", currency: contract.currency || "EUR" }).format(gross)} per ${per}`;
   const label = stripeStatusLabel(contract);
   const subscribed = !!contract.stripe_subscription_id && ["active", "trialing", "past_due", "unpaid"].includes(contract.stripe_status ?? "");
   const stop = (e: React.MouseEvent) => e.stopPropagation();
@@ -27,8 +37,9 @@ const StripeContractControls: React.FC<Props> = ({ contract, onChanged }) => {
     finally { setBusy(false); }
   };
 
-  const sendLink = () => run(async () => {
-    const r = await stripeBilling("create_checkout", { contract_id: contract.id, send_email: true });
+  const sendLink = (product_name: string, product_description: string) => run(async () => {
+    const r = await stripeBilling("create_checkout", { contract_id: contract.id, send_email: true, product_name, product_description });
+    setDialogOpen(false);
     if (r.url) await navigator.clipboard?.writeText(r.url).catch(() => undefined);
     toast({ title: "Stripe link sent", description: `Emailed to ${contract.client_email} and copied to your clipboard.` });
   });
@@ -46,7 +57,7 @@ const StripeContractControls: React.FC<Props> = ({ contract, onChanged }) => {
         </Badge>
       )}
       {!subscribed && contract.status === "active" && (
-        <Button variant="outline" size="sm" className="h-8 px-2" disabled={busy} onClick={sendLink} title="Create a Stripe subscription link and email it to the client">
+        <Button variant="outline" size="sm" className="h-8 px-2" disabled={busy} onClick={() => setDialogOpen(true)} title="Create a Stripe subscription link and email it to the client">
           {busy ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <CreditCard className="w-4 h-4 mr-1" />}
           {contract.payment_method === "stripe" ? "Resend Stripe link" : "Stripe link"}
         </Button>
@@ -76,6 +87,15 @@ const StripeContractControls: React.FC<Props> = ({ contract, onChanged }) => {
           </AlertDialogContent>
         </AlertDialog>
       )}
+      <StripeLinkDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        initialName={contract.stripe_product_name || defaultProductName(contract.client_name, contract.website)}
+        initialDescription={contract.stripe_product_description || ""}
+        priceLabel={priceLabel}
+        busy={busy}
+        onSend={sendLink}
+      />
     </div>
   );
 };

@@ -3,12 +3,14 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import { z } from "npm:zod@3.23.8";
 import { admin, corsHeaders, json } from "../_shared/outreachAuth.ts";
 import { stripe, APP_URL, BILLING_INBOX, sendBillingEmail, emailShell, button, eur } from "../_shared/stripeApi.ts";
-import { cycleAmountCents, recurringFor } from "../_shared/stripeRules.ts";
+import { cycleAmountCents, recurringFor, productNameFor } from "../_shared/stripeRules.ts";
 
 const Body = z.object({
   action: z.enum(["create_checkout", "cancel", "resume", "overview", "pay", "portal"]),
   contract_id: z.string().uuid().optional(),
   send_email: z.boolean().optional(),
+  product_name: z.string().trim().min(1).max(120).optional(),
+  product_description: z.string().trim().max(300).optional(),
 });
 
 type Caller = { id: string; email: string; isClient: boolean };
@@ -40,8 +42,10 @@ async function loadContract(id: string) {
   return data;
 }
 
-async function createCheckout(contract: Record<string, any>): Promise<string> {
+async function createCheckout(contract: Record<string, any>, nameIn?: string, descIn?: string): Promise<string> {
   const db = admin();
+  const productName = productNameFor(nameIn, contract.stripe_product_name, contract.client_name, contract.website);
+  const productDesc = (descIn !== undefined ? descIn : contract.stripe_product_description ?? "").trim().slice(0, 300);
   let customer = contract.stripe_customer_id as string | null;
   if (!customer) {
     const c = await stripe<{ id: string }>("customers", {
@@ -57,7 +61,7 @@ async function createCheckout(contract: Record<string, any>): Promise<string> {
       currency: String(contract.currency || "EUR").toLowerCase(),
       unit_amount: cycleAmountCents(contract.monthly_amount, contract.billing_frequency, contract.vat_enabled, contract.vat_rate),
       recurring: recurringFor(contract.billing_frequency),
-      product_data: { name: `${contract.client_name} – ${contract.website || "Paket"}`.slice(0, 200) },
+      product_data: { name: productName, ...(productDesc ? { description: productDesc } : {}) },
     } } },
     subscription_data: { metadata: { contract_id: contract.id } },
     metadata: { contract_id: contract.id },
@@ -66,6 +70,7 @@ async function createCheckout(contract: Record<string, any>): Promise<string> {
   });
   await db.from("monthly_contracts").update({
     payment_method: "stripe", stripe_customer_id: customer, stripe_checkout_url: session.url,
+    stripe_product_name: productName, stripe_product_description: productDesc || null,
     stripe_status: contract.stripe_subscription_id ? contract.stripe_status : "pending",
   }).eq("id", contract.id);
   return session.url;
@@ -78,7 +83,7 @@ Deno.serve(async (req) => {
     if (!caller) return json({ error: "Unauthorized" }, 401);
     const parsed = Body.safeParse(await req.json().catch(() => ({})));
     if (!parsed.success) return json({ error: parsed.error.flatten().fieldErrors }, 400);
-    const { action, contract_id, send_email } = parsed.data;
+    const { action, contract_id, send_email, product_name, product_description } = parsed.data;
     const db = admin();
 
     if (action === "overview") {
@@ -121,13 +126,13 @@ Deno.serve(async (req) => {
     if (action === "create_checkout" || action === "pay") {
       if (contract.stripe_subscription_id && ["active", "trialing"].includes(contract.stripe_status)) return json({ error: "Already subscribed" }, 409);
       if (action === "pay" && contract.payment_method !== "stripe") return json({ error: "Stripe not enabled for this package" }, 400);
-      const url = await createCheckout(contract);
+      const url = action === "create_checkout" ? await createCheckout(contract, product_name, product_description) : await createCheckout(contract);
       if (action === "create_checkout" && send_email) {
         const amount = eur(cycleAmountCents(contract.monthly_amount, contract.billing_frequency, contract.vat_enabled, contract.vat_rate), contract.currency);
         const period = contract.billing_frequency === 12 ? "Jahr / year" : contract.billing_frequency > 1 ? `${contract.billing_frequency} Monate / months` : "Monat / month";
         await sendBillingEmail(contract.client_email, "Ihr Abonnement – bitte Zahlung einrichten / Set up your subscription payment", emailShell(
           `Hallo ${contract.client_name},`,
-          `<p>für Ihr Paket (${contract.website || "Media Marketing"}) können Sie jetzt bequem per Karte oder SEPA-Lastschrift bezahlen: <b>${amount} pro ${period}</b>.</p>
+          `<p>für <b>${productNameFor(product_name, contract.stripe_product_name, contract.client_name, contract.website)}</b> können Sie jetzt bequem per Karte oder SEPA-Lastschrift bezahlen: <b>${amount} pro ${period}</b>.</p>
            <p>You can now pay your package by card or SEPA direct debit: <b>${amount} per ${period}</b>.</p>
            ${button(url, "Jetzt abonnieren / Subscribe now")}
            <p style="font-size:13px;color:#64748b">Der Link ist 24 Stunden gültig. Danach finden Sie den Zahlungsbutton jederzeit in Ihrem Kundenportal unter Rechnungen: <a href="${APP_URL}/client/invoices">${APP_URL}/client/invoices</a>. Banküberweisung ist weiterhin möglich.<br/>The link is valid for 24 hours; afterwards use the Pay button in your client portal. Bank transfer remains available.</p>`));
