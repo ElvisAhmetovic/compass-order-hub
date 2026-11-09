@@ -123,8 +123,8 @@ const ClientLogin = () => {
         setErrors({ password: t("login.invalidCredentials") });
         window.__lovableEvents?.track?.("project.portal_login_failed", { reason: "wrong_password" });
       } else {
-        window.__lovableEvents?.track?.("project.portal_login", { language });
-        logPortalActivity("login", { language });
+        window.__lovableEvents?.track?.("project.portal_login", { language: lang });
+        logPortalActivity("login", { language: lang });
       }
     } catch (err) {
       if (err instanceof z.ZodError) {
