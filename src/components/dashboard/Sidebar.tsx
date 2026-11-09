@@ -224,6 +224,7 @@ const Sidebar = () => {
 
   // Auto-expand "More..." if active route is inside it
   const [moreOpen, setMoreOpen] = useState(false);
+  const [aiOpen, setAiOpen] = useState<boolean | null>(null);
   const activeInMore = moreItems.some(item => 
     location.pathname === item.href || 
     (item.href !== '/dashboard' && item.href !== '/active-orders' && location.pathname.startsWith(item.href)) ||
