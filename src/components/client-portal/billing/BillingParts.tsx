@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Download, ExternalLink } from "lucide-react";
 import { useLanguage } from "@/context/ClientLanguageContext";
 import { day, money } from "./billingFormat";
+import { invoiceStatus, todayIso } from "./invoiceStatus";
 import type { Contract, Invoice, OrderLink, Payment } from "./useBillingOverview";
 
 type Variant = "default" | "secondary" | "destructive" | "outline";
@@ -49,18 +50,33 @@ export const OpenLinkRow = ({ link, showOrder = true }: { link: OrderLink; showO
   );
 };
 
+export const InvoiceStatusBadge = ({ inv }: { inv: Invoice }) => {
+  const { t } = useLanguage();
+  const st = invoiceStatus(inv, todayIso());
+  if (st === "paid") return <Badge className="bg-success text-success-foreground hover:bg-success">{t("billing.paid")}</Badge>;
+  if (st === "overdue") return <Badge variant="destructive">{t("invoices.overdue")}</Badge>;
+  if (st === "cancelled") return <Badge variant="outline">{t("invoices.cancelled")}</Badge>;
+  return <Badge className="bg-warning text-warning-foreground hover:bg-warning">{t("invoices.unpaid")}</Badge>;
+};
+
 export const InvoiceRow = ({ inv, showOrder = true }: { inv: Invoice; showOrder?: boolean }) => {
   const { t, language } = useLanguage();
+  const st = invoiceStatus(inv, todayIso());
+  const open = st === "unpaid" || st === "overdue";
   return (
-    <li className="flex flex-wrap items-center justify-between gap-2 py-3">
-      <div>
+    <li className="flex flex-wrap items-center justify-between gap-2 py-3" data-testid="invoice-row" data-status={st}>
+      <div className="min-w-0">
         <p className="font-medium text-foreground">{inv.invoice_number}</p>
-        <p className="text-xs text-muted-foreground">{day(inv.issue_date, language)}</p>
+        <p className="text-xs text-muted-foreground">
+          {day(inv.issue_date, language)}
+          {st === "paid" && inv.paid_at && <> · {t("invoices.paidOn", { date: day(inv.paid_at, language) })}</>}
+          {open && inv.due_date && <> · {t("invoices.dueOn", { date: day(inv.due_date, language) })}</>}
+        </p>
       </div>
       <div className="flex flex-wrap items-center gap-2">
         <span className="font-medium">{money(inv.total_amount, inv.currency)}</span>
-        <PayBadge status={inv.status === "paid" ? "paid" : "open"} />
-        {inv.status !== "paid" && inv.stripe_payment_link && (
+        <InvoiceStatusBadge inv={inv} />
+        {open && inv.stripe_payment_link && (
           <Button size="sm" asChild><a href={inv.stripe_payment_link} target="_blank" rel="noopener noreferrer">{t("billing.payNow")}</a></Button>
         )}
         {showOrder && inv.order_id && (
