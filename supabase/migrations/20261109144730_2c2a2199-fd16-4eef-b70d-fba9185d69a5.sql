@@ -1,0 +1,2 @@
+ALTER TABLE public.monthly_contracts ADD COLUMN IF NOT EXISTS offer_id uuid, ADD COLUMN IF NOT EXISTS order_id uuid;
+CREATE UNIQUE INDEX IF NOT EXISTS monthly_contracts_offer_id_key ON public.monthly_contracts(offer_id) WHERE offer_id IS NOT NULL;
