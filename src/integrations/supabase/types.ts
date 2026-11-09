@@ -1195,6 +1195,7 @@ export type Database = {
           assigned_to: string | null
           assigned_to_name: string | null
           billing_frequency: number
+          cancel_at: string | null
           client_email: string
           client_name: string
           company_address: string | null
@@ -1203,17 +1204,23 @@ export type Database = {
           created_at: string
           created_by: string | null
           currency: string
+          current_period_end: string | null
           description: string | null
           duration_months: number
           id: string
           internal_notes: string | null
           inventory_items: string | null
           monthly_amount: number
+          payment_method: string
           priority: string | null
           start_date: string
           status: string
           stopped_at: string | null
           stopped_reason: string | null
+          stripe_checkout_url: string | null
+          stripe_customer_id: string | null
+          stripe_status: string | null
+          stripe_subscription_id: string | null
           total_value: number
           updated_at: string
           vat_enabled: boolean | null
@@ -1224,6 +1231,7 @@ export type Database = {
           assigned_to?: string | null
           assigned_to_name?: string | null
           billing_frequency?: number
+          cancel_at?: string | null
           client_email: string
           client_name: string
           company_address?: string | null
@@ -1232,17 +1240,23 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           currency?: string
+          current_period_end?: string | null
           description?: string | null
           duration_months?: number
           id?: string
           internal_notes?: string | null
           inventory_items?: string | null
           monthly_amount: number
+          payment_method?: string
           priority?: string | null
           start_date: string
           status?: string
           stopped_at?: string | null
           stopped_reason?: string | null
+          stripe_checkout_url?: string | null
+          stripe_customer_id?: string | null
+          stripe_status?: string | null
+          stripe_subscription_id?: string | null
           total_value: number
           updated_at?: string
           vat_enabled?: boolean | null
@@ -1253,6 +1267,7 @@ export type Database = {
           assigned_to?: string | null
           assigned_to_name?: string | null
           billing_frequency?: number
+          cancel_at?: string | null
           client_email?: string
           client_name?: string
           company_address?: string | null
@@ -1261,17 +1276,23 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           currency?: string
+          current_period_end?: string | null
           description?: string | null
           duration_months?: number
           id?: string
           internal_notes?: string | null
           inventory_items?: string | null
           monthly_amount?: number
+          payment_method?: string
           priority?: string | null
           start_date?: string
           status?: string
           stopped_at?: string | null
           stopped_reason?: string | null
+          stripe_checkout_url?: string | null
+          stripe_customer_id?: string | null
+          stripe_status?: string | null
+          stripe_subscription_id?: string | null
           total_value?: number
           updated_at?: string
           vat_enabled?: boolean | null
@@ -2799,6 +2820,96 @@ export type Database = {
           users?: number | null
         }
         Relationships: []
+      }
+      stripe_events: {
+        Row: {
+          id: string
+          processed_at: string
+          type: string
+        }
+        Insert: {
+          id: string
+          processed_at?: string
+          type: string
+        }
+        Update: {
+          id?: string
+          processed_at?: string
+          type?: string
+        }
+        Relationships: []
+      }
+      stripe_payments: {
+        Row: {
+          amount: number
+          client_email: string | null
+          contract_id: string | null
+          created_at: string
+          currency: string
+          hosted_invoice_url: string | null
+          id: string
+          installment_id: string | null
+          invoice_pdf_url: string | null
+          paid_at: string | null
+          period_end: string | null
+          period_start: string | null
+          status: string
+          stripe_invoice_id: string | null
+          stripe_subscription_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          client_email?: string | null
+          contract_id?: string | null
+          created_at?: string
+          currency?: string
+          hosted_invoice_url?: string | null
+          id?: string
+          installment_id?: string | null
+          invoice_pdf_url?: string | null
+          paid_at?: string | null
+          period_end?: string | null
+          period_start?: string | null
+          status: string
+          stripe_invoice_id?: string | null
+          stripe_subscription_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          client_email?: string | null
+          contract_id?: string | null
+          created_at?: string
+          currency?: string
+          hosted_invoice_url?: string | null
+          id?: string
+          installment_id?: string | null
+          invoice_pdf_url?: string | null
+          paid_at?: string | null
+          period_end?: string | null
+          period_start?: string | null
+          status?: string
+          stripe_invoice_id?: string | null
+          stripe_subscription_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stripe_payments_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_payments_installment_id_fkey"
+            columns: ["installment_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_installments"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       support_inquiries: {
         Row: {
