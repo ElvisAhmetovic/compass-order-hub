@@ -437,6 +437,7 @@ const MonthlyInstallmentsTable: React.FC<Props> = ({ contracts, installments, on
                   <KeyRound className="w-4 h-4 mr-1" />
                   Portal
                 </Button>
+                <StripeContractControls contract={contract} onChanged={onRefresh} />
                 {isAdmin && contract.status === "active" && (
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
