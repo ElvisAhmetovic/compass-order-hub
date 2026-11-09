@@ -11,6 +11,7 @@ import { format } from "date-fns";
 import { getClientStatusFromOrder, Translate } from "@/utils/clientStatusTranslator";
 import { useClientOrdersRealtime } from "@/hooks/useClientOrdersRealtime";
 import { useLanguage } from "@/context/ClientLanguageContext";
+import { dateLocale } from "@/components/client-portal/billing/billingFormat";
 
 const getStatusBadge = (order: ClientOrder, t?: Translate) => {
   const config = getClientStatusFromOrder(order, t);
@@ -29,7 +30,7 @@ const ClientOrders = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [updatedOrderId, setUpdatedOrderId] = useState<string | null>(null);
   const { toast } = useToast();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   const loadOrders = useCallback(async () => {
     try {
@@ -119,7 +120,7 @@ const ClientOrders = () => {
                 <CardHeader className="pb-2">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-lg">{order.company_name}</CardTitle>
-                    {getStatusBadge(order)}
+                    {getStatusBadge(order, t)}
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -128,7 +129,7 @@ const ClientOrders = () => {
                       {order.description && (
                         <p className="line-clamp-2">{order.description}</p>
                       )}
-                      <p>{t('orders.created')}: {format(new Date(order.created_at), "PPP")}</p>
+                      <p>{t('orders.created')}: {format(new Date(order.created_at), "PPP", { locale: dateLocale(language) })}</p>
                       {order.price && (
                         <p className="font-medium text-foreground">
                           {order.currency || "EUR"} {order.price.toFixed(2)}
