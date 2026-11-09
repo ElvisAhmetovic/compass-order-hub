@@ -5,6 +5,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import StripeContractControls from "./StripeContractControls";
 import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
 import { Trash2, ChevronDown, ChevronRight, ExternalLink, FileText, Mail, Loader2, UserCheck, UserX, KeyRound, PauseCircle, PlayCircle } from "lucide-react";
