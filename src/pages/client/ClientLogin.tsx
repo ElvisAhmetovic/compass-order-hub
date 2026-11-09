@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, Building2, Mail } from "lucide-react";
+import { logPortalActivity } from "@/services/portalActivity";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -120,6 +121,10 @@ const ClientLogin = () => {
       
       if (!success) {
         setErrors({ password: t("login.invalidCredentials") });
+        window.__lovableEvents?.track?.("project.portal_login_failed", { reason: "wrong_password" });
+      } else {
+        window.__lovableEvents?.track?.("project.portal_login", { language });
+        logPortalActivity("login", { language });
       }
     } catch (err) {
       if (err instanceof z.ZodError) {

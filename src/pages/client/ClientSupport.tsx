@@ -1,3 +1,4 @@
+import { logPortalActivity } from "@/services/portalActivity";
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
@@ -156,6 +157,8 @@ const ClientSupport = () => {
     });
 
     if (result.success) {
+      window.__lovableEvents?.track?.("project.portal_ticket_created");
+      logPortalActivity("ticket_created");
       toast({
         title: t('support.inquiryCreated'),
         description: t('support.inquiryCreatedDesc'),

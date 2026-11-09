@@ -1,3 +1,4 @@
+import { logPortalActivity } from "@/services/portalActivity";
 import { useState } from "react";
 import ClientLayout from "@/components/client-portal/ClientLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -67,6 +68,7 @@ const ClientSettings = () => {
 
   const handleLanguageChange = async (newLang: string) => {
     const saved = await setLanguage(newLang as ClientLanguage);
+    if (saved) { window.__lovableEvents?.track?.("project.portal_language_changed", { language: newLang }); logPortalActivity("language_changed", { language: newLang }); }
     if (saved) toast({ title: t('settings.languageUpdated'), description: t('settings.languageUpdatedDesc') });
     else toast({ variant: "destructive", title: t('settings.languageSaveFailed'), description: t('settings.languageSaveFailedDesc') });
   };

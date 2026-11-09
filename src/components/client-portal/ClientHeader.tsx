@@ -1,3 +1,4 @@
+import { logPortalActivity } from "@/services/portalActivity";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { LogOut, Building2 } from "lucide-react";
@@ -40,7 +41,7 @@ const ClientHeader = () => {
         <Button
           variant="ghost"
           size="sm"
-          onClick={logout}
+          onClick={() => { window.__lovableEvents?.track?.("project.portal_logout"); logPortalActivity("logout"); setTimeout(logout, 300); }}
           className="flex items-center gap-2 text-muted-foreground hover:text-foreground px-2"
         >
           <LogOut className="h-4 w-4" />
