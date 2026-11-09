@@ -2,7 +2,7 @@ import { resolveOrderClient } from '@/services/orderClientResolver';
 import { orderLocale } from '@/utils/countryLanguage';
 import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
-import { MoreHorizontal, FileText, Send, Receipt, ArrowLeft, X, Bell, Mail, AlertCircle, KeyRound, UserCheck, UserX } from "lucide-react";
+import { MoreHorizontal, FileText, Send, Receipt, ArrowLeft, X, Bell, Mail, AlertCircle, KeyRound, UserCheck, UserX, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -25,6 +25,7 @@ import { formatCurrency } from "@/utils/currencyUtils";
 import ScheduleReminderModal from "@/components/orders/ScheduleReminderModal";
 import SendClientReminderModal from "@/components/orders/SendClientReminderModal";
 import CreateClientPortalModal from "./CreateClientPortalModal";
+import OrderStripeLinkDialog from "./OrderStripeLinkDialog";
 import { usePortalStatuses, PORTAL_LABEL } from "./portalStatus";
 
 interface OrderRowProps {
@@ -54,6 +55,7 @@ const OrderRow = ({
   const [showReminderModal, setShowReminderModal] = useState(false);
   const [showClientReminderModal, setShowClientReminderModal] = useState(false);
   const [showPortalModal, setShowPortalModal] = useState(false);
+  const [showStripeLink, setShowStripeLink] = useState(false);
   const portalStatus = usePortalStatuses([order.contact_email])[order.contact_email?.toLowerCase() ?? ""] ?? "none";
   const [activeReminder, setActiveReminder] = useState<PaymentReminder | null>(null);
   const { user } = useAuth();
@@ -619,19 +621,19 @@ const OrderRow = ({
             </Button>
           )}
 
-          {/* Move to Yearly Packages button - visible for admins on regular orders only */}
-          {isAdmin && !order.is_yearly_package && (
+          {/* Stripe one-time payment link (replaces the old "→ Yearly" button; that action is in the ⋯ menu) */}
+          {!order.is_yearly_package && (
             <Button
               variant="outline"
               size="sm"
               onClick={(e) => {
                 e.stopPropagation();
-                handleMoveToYearlyPackages();
+                setShowStripeLink(true);
               }}
-              disabled={isMovingToYearly}
               className="h-8 px-2 w-full"
             >
-              {isMovingToYearly ? "Moving..." : "→ Yearly"}
+              <CreditCard className="h-4 w-4 mr-1" />
+              Stripe
             </Button>
           )}
 
@@ -727,6 +729,11 @@ const OrderRow = ({
                 <DropdownMenuItem onClick={() => onOrderClick(order)}>
                   View Details
                 </DropdownMenuItem>
+                {!order.is_yearly_package && (
+                  <DropdownMenuItem disabled={isMovingToYearly} onClick={() => handleMoveToYearlyPackages()}>
+                    {isMovingToYearly ? "Moving..." : "Move to yearly packages"}
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => handleUpdateStatus("In Progress")}>
                   Add In Progress Status
@@ -786,6 +793,8 @@ const OrderRow = ({
         onOpenChange={setShowClientReminderModal}
         order={order}
       />
+
+      <OrderStripeLinkDialog open={showStripeLink} onOpenChange={setShowStripeLink} order={order} />
 
       {/* Client Portal Modal */}
       <CreateClientPortalModal
