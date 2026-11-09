@@ -5,6 +5,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import StripeContractControls from "./StripeContractControls";
 import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
 import { Trash2, ChevronDown, ChevronRight, ExternalLink, FileText, Mail, Loader2, UserCheck, UserX, KeyRound, PauseCircle, PlayCircle } from "lucide-react";
@@ -437,6 +438,7 @@ const MonthlyInstallmentsTable: React.FC<Props> = ({ contracts, installments, on
                   <KeyRound className="w-4 h-4 mr-1" />
                   Portal
                 </Button>
+                <StripeContractControls contract={contract} onChanged={onRefresh} />
                 {isAdmin && contract.status === "active" && (
                   <AlertDialog>
                     <AlertDialogTrigger asChild>

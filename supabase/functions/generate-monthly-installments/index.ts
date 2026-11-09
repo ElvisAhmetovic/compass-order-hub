@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { jsPDF } from "https://esm.sh/jspdf@2.5.1";
 import { isCompanyWeekend } from "../_shared/businessDays.ts";
+import { stripeBillsContract } from "../_shared/stripeRules.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -947,6 +948,12 @@ Deno.serve(async (req) => {
 
     for (const contract of contracts) {
       try {
+        // Stripe subscriptions bill themselves (recorded by stripe-webhook) — never also send a bank-transfer invoice.
+        if (stripeBillsContract(contract.payment_method, contract.stripe_status)) {
+          await logResult({ contract_id: contract.id, client_name: contract.client_name,
+            month_label: `${currentMonth + 1}/${currentYear}`, status: "skipped", reason: "Billed by Stripe subscription" });
+          continue;
+        }
         const lang = detectLanguageFromAddress(contract.company_address);
         const monthLabel = `${MONTH_NAMES[lang][currentMonth]} ${currentYear}`;
         const germanMonthLabel = `${MONTH_NAMES["de"][currentMonth]} ${currentYear}`;

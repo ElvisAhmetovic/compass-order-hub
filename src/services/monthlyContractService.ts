@@ -26,6 +26,12 @@ export interface MonthlyContract {
   billing_frequency: number;
   vat_enabled: boolean;
   vat_rate: number;
+  payment_method?: string | null;
+  stripe_status?: string | null;
+  stripe_subscription_id?: string | null;
+  stripe_checkout_url?: string | null;
+  current_period_end?: string | null;
+  cancel_at?: string | null;
 }
 
 export interface MonthlyInstallment {

@@ -137,3 +137,9 @@ verify_jwt = false
 
 [functions.send-invoice-cancellation]
 verify_jwt = true
+
+[functions.stripe-billing]
+verify_jwt = false
+
+[functions.stripe-webhook]
+verify_jwt = false
