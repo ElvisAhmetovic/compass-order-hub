@@ -135,8 +135,8 @@ const ClientOrderDetail = () => {
           <h1 className="text-2xl font-bold text-foreground">{t('orderDetail.title')}</h1>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-3">
-          <div className="lg:col-span-2 space-y-6">
+        <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
+          <div className="lg:col-span-2 space-y-6 min-w-0">
             {actionConfig.showButton && actionConfig.url && (
               <Card className="border-destructive/50 bg-destructive/10">
                 <CardHeader className="pb-2">
