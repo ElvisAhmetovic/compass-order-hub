@@ -1219,6 +1219,8 @@ export type Database = {
           stopped_reason: string | null
           stripe_checkout_url: string | null
           stripe_customer_id: string | null
+          stripe_product_description: string | null
+          stripe_product_name: string | null
           stripe_status: string | null
           stripe_subscription_id: string | null
           total_value: number
@@ -1255,6 +1257,8 @@ export type Database = {
           stopped_reason?: string | null
           stripe_checkout_url?: string | null
           stripe_customer_id?: string | null
+          stripe_product_description?: string | null
+          stripe_product_name?: string | null
           stripe_status?: string | null
           stripe_subscription_id?: string | null
           total_value: number
@@ -1291,6 +1295,8 @@ export type Database = {
           stopped_reason?: string | null
           stripe_checkout_url?: string | null
           stripe_customer_id?: string | null
+          stripe_product_description?: string | null
+          stripe_product_name?: string | null
           stripe_status?: string | null
           stripe_subscription_id?: string | null
           total_value?: number
