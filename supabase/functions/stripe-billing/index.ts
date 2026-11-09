@@ -5,6 +5,7 @@ import { admin, corsHeaders, json } from "../_shared/outreachAuth.ts";
 import { stripe, APP_URL, BILLING_INBOX, sendBillingEmail, emailShell, button, eur } from "../_shared/stripeApi.ts";
 import { orderLinkAmountCents } from "../_shared/orderLinkRules.ts";
 import { portalLineHtml } from "../_shared/portalEmailCopy.ts";
+import { must } from "../_shared/dbResult.ts";
 import { cycleAmountCents, recurringFor, productNameFor } from "../_shared/stripeRules.ts";
 
 const Body = z.object({
@@ -47,6 +48,51 @@ async function clientIdentity(c: Caller) {
   const emails = new Set<string>([c.email]);
   (rows ?? []).forEach((r: { email: string | null }) => r.email && emails.add(r.email.toLowerCase()));
   return { emails: [...emails].filter(Boolean), clientIds: (rows ?? []).map((r: { id: string }) => r.id) };
+}
+
+type Db = ReturnType<typeof admin>;
+
+/** Client billing: packages, invoices, payment links and payments. Throws on any query error so clients never see "nothing owed" by mistake. */
+async function billingOverview(db: Db, caller: Caller, orderId?: string) {
+  const { emails, clientIds } = await clientIdentity(caller);
+  // Orders this client owns: linked account, login email, or company they own (same rule as public.client_owns_order).
+  const companies = must(await db.from("companies").select("id").eq("client_user_id", caller.id)) as { id: string }[];
+  const companyIds = companies.map((c) => c.id);
+  const orFilter = [`client_id.eq.${caller.id}`, ...emails.map((e) => `contact_email.ilike.${e}`), ...(companyIds.length ? [`company_id.in.(${companyIds.join(",")})`] : [])].join(",");
+  const rawOrders = must(await db.from("orders").select("id, contact_email, client_id, company_id").or(orFilter).eq("status_deleted", false)) as
+    { id: string; contact_email: string | null; client_id: string | null; company_id: string | null }[];
+  let orderIds = rawOrders.filter((o) => o.client_id === caller.id || emails.includes(String(o.contact_email ?? "").toLowerCase()) || (o.company_id && companyIds.includes(o.company_id))).map((o) => o.id);
+  if (orderId) {
+    if (!orderIds.includes(orderId)) return { contracts: [], installments: [], payments: [], invoices: [], order_links: [] };
+    orderIds = [orderId];
+  }
+
+  const contractCols = "client_email, id, client_name, website, monthly_amount, billing_frequency, currency, vat_enabled, vat_rate, status, start_date, duration_months, payment_method, stripe_status, current_period_end, cancel_at, stopped_at, order_id";
+  let contracts: { id: string; client_email: string }[];
+  if (orderId) {
+    contracts = must(await db.from("monthly_contracts").select(contractCols).eq("order_id", orderId)) as typeof contracts;
+  } else {
+    const raw = must(await db.from("monthly_contracts").select(contractCols).or(emails.map((e) => `client_email.ilike.${e}`).join(",")).order("start_date", { ascending: false })) as typeof contracts;
+    // ilike treats "_" as a wildcard, so keep exact matches only.
+    contracts = raw.filter((c) => emails.includes(String(c.client_email).toLowerCase()));
+  }
+  const ids = contracts.map((c) => c.id);
+  const invCols = "id, invoice_number, issue_date, due_date, total_amount, currency, status, order_id, stripe_payment_link";
+  const payCols = "id, contract_id, order_id, amount, currency, status, hosted_invoice_url, invoice_pdf_url, period_start, period_end, paid_at, created_at";
+  const none = { data: [], error: null };
+  const [inst, pays, invByClient, invByOrder, links, orderPays] = await Promise.all([
+    ids.length ? db.from("monthly_installments").select("id, contract_id, month_label, due_date, amount, currency, payment_status, paid_at, invoice_id").in("contract_id", ids).order("due_date", { ascending: false }) : none,
+    ids.length ? db.from("stripe_payments").select(payCols).in("contract_id", ids) : none,
+    !orderId && clientIds.length ? db.from("invoices").select(invCols).in("client_id", clientIds).neq("status", "draft") : none,
+    orderIds.length ? db.from("invoices").select(invCols).in("order_id", orderIds).neq("status", "draft") : none,
+    orderIds.length ? db.from("order_payment_links").select("id, order_id, title, description, total_amount, currency, vat_enabled, vat_rate, url, status, paid_at, created_at").in("order_id", orderIds).in("status", ["pending", "paid"]).order("created_at", { ascending: false }) : none,
+    orderIds.length ? db.from("stripe_payments").select(payCols).in("order_id", orderIds) : none,
+  ]);
+  type Row = { id: string; created_at?: string; issue_date?: string };
+  const dedupe = (rows: Row[]) => [...new Map(rows.map((r) => [r.id, r])).values()];
+  const payments = dedupe([...(must(pays) as Row[]), ...(must(orderPays) as Row[])]).sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
+  const invoices = dedupe([...(must(invByClient) as Row[]), ...(must(invByOrder) as Row[])]).sort((a, b) => String(b.issue_date).localeCompare(String(a.issue_date)));
+  return { contracts, installments: must(inst), payments, invoices, order_links: must(links) };
 }
 
 async function loadContract(id: string) {
@@ -158,27 +204,12 @@ Deno.serve(async (req) => {
 
     if (action === "overview") {
       if (!caller.isClient) return json({ error: "Clients only" }, 403);
-      const { emails, clientIds } = await clientIdentity(caller);
-      const orFilter = emails.map((e) => `client_email.ilike.${e}`).join(",");
-      const { data: rawContracts } = await db.from("monthly_contracts")
-        .select("client_email, id, client_name, website, monthly_amount, billing_frequency, currency, vat_enabled, vat_rate, status, start_date, duration_months, payment_method, stripe_status, current_period_end, cancel_at, stopped_at")
-        .or(orFilter).order("start_date", { ascending: false });
-      // ilike treats "_" as a wildcard, so keep exact matches only.
-      const contracts = (rawContracts ?? []).filter((c: { client_email: string }) => emails.includes(c.client_email.toLowerCase()));
-      const ids = (contracts ?? []).map((c: { id: string }) => c.id);
-      const [inst, pays, invs] = await Promise.all([
-        ids.length ? db.from("monthly_installments").select("id, contract_id, month_label, due_date, amount, currency, payment_status, paid_at, invoice_id").in("contract_id", ids).order("due_date", { ascending: false }) : { data: [] },
-        ids.length ? db.from("stripe_payments").select("id, contract_id, amount, currency, status, hosted_invoice_url, invoice_pdf_url, period_start, period_end, paid_at, created_at").in("contract_id", ids).order("created_at", { ascending: false }) : { data: [] },
-        clientIds.length ? db.from("invoices").select("id, invoice_number, issue_date, due_date, total_amount, currency, status, order_id, stripe_payment_link").in("client_id", clientIds).neq("status", "draft").order("issue_date", { ascending: false }) : { data: [] },
-      ]);
-      const { data: rawOrders } = await db.from("orders").select("id, company_name, contact_email, client_id").or([`client_id.eq.${caller.id}`, ...emails.map((e) => `contact_email.ilike.${e}`)].join(",")).eq("status_deleted", false);
-      const orderIds = (rawOrders ?? []).filter((o: { client_id: string | null; contact_email: string | null }) => o.client_id === caller.id || emails.includes(String(o.contact_email ?? "").toLowerCase())).map((o: { id: string }) => o.id);
-      const [links, orderPays] = await Promise.all([
-        orderIds.length ? db.from("order_payment_links").select("id, order_id, title, description, total_amount, currency, vat_enabled, vat_rate, url, status, paid_at, created_at").in("order_id", orderIds).in("status", ["pending", "paid"]).order("created_at", { ascending: false }) : { data: [] },
-        orderIds.length ? db.from("stripe_payments").select("id, contract_id, order_id, amount, currency, status, hosted_invoice_url, invoice_pdf_url, period_start, period_end, paid_at, created_at").in("order_id", orderIds) : { data: [] },
-      ]);
-      const payments = [...(pays.data ?? []), ...(orderPays.data ?? [])].sort((a: { created_at: string }, b: { created_at: string }) => b.created_at.localeCompare(a.created_at));
-      return json({ contracts: contracts ?? [], installments: inst.data ?? [], payments, invoices: invs.data ?? [], order_links: links.data ?? [] });
+      try {
+        return json(await billingOverview(db, caller, p.order_id));
+      } catch (e) {
+        console.error("overview failed", e);
+        return json({ error: "Billing data could not be loaded" }, 500);
+      }
     }
 
     if (action === "portal") {

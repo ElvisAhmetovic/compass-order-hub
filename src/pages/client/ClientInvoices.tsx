@@ -13,7 +13,7 @@ import { useLanguage } from "@/context/ClientLanguageContext";
 import { useToast } from "@/hooks/use-toast";
 import { stripeBilling } from "@/services/stripeBillingService";
 import LoadErrorCard from "@/components/client-portal/LoadErrorCard";
-import { useBillingOverview, grossAmount as gross, type Contract } from "@/components/client-portal/billing/useBillingOverview";
+import { useBillingOverview, grossAmount as gross } from "@/components/client-portal/billing/useBillingOverview";
 import { InvoiceRow, OpenLinkRow, PayBadge, PaymentRow, useContractStatus } from "@/components/client-portal/billing/BillingParts";
 import { day as fmtDay, money } from "@/components/client-portal/billing/billingFormat";
 
