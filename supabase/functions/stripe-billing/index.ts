@@ -43,8 +43,8 @@ async function getCaller(req: Request): Promise<Caller | null> {
 /** All emails and client-record ids that belong to a signed-in client. */
 async function clientIdentity(c: Caller) {
   const db = admin();
-  const { data: raw } = await db.from("clients").select("id, email, user_id").or(`user_id.eq.${c.id},email.ilike.${c.email}`);
-  const rows = (raw ?? []).filter((r: { email: string | null; user_id: string | null }) => r.user_id === c.id || r.email?.toLowerCase() === c.email);
+  const raw = must(await db.from("clients").select("id, email, user_id").or(`user_id.eq.${c.id},email.ilike.${c.email}`)) as { id: string; email: string | null; user_id: string | null }[];
+  const rows = raw.filter((r: { email: string | null; user_id: string | null }) => r.user_id === c.id || r.email?.toLowerCase() === c.email);
   const emails = new Set<string>([c.email]);
   (rows ?? []).forEach((r: { email: string | null }) => r.email && emails.add(r.email.toLowerCase()));
   return { emails: [...emails].filter(Boolean), clientIds: (rows ?? []).map((r: { id: string }) => r.id) };
