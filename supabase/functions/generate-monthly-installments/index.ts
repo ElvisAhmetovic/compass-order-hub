@@ -950,7 +950,7 @@ Deno.serve(async (req) => {
       try {
         // Stripe subscriptions bill themselves (recorded by stripe-webhook) — never also send a bank-transfer invoice.
         if (stripeBillsContract(contract.payment_method, contract.stripe_status)) {
-          await logResult({ contract_id: contract.id, client_name: contract.client_name, client_email: contract.client_email,
+          await logResult({ contract_id: contract.id, client_name: contract.client_name,
             month_label: `${currentMonth + 1}/${currentYear}`, status: "skipped", reason: "Billed by Stripe subscription" });
           continue;
         }
