@@ -4,7 +4,7 @@ export type StripeAction = "create_checkout" | "cancel" | "resume" | "overview" 
 
 export async function stripeBilling<T = { url?: string; ok?: boolean; cancel_at?: string | null }>(
   action: StripeAction,
-  payload: { contract_id?: string; send_email?: boolean } = {},
+  payload: { contract_id?: string; send_email?: boolean; product_name?: string; product_description?: string } = {},
 ): Promise<T> {
   const { data, error } = await supabase.functions.invoke("stripe-billing", { body: { action, ...payload } });
   if (error) {
