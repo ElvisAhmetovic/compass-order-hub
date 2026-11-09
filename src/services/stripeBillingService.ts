@@ -1,10 +1,13 @@
 import { supabase } from "@/integrations/supabase/client";
 
-export type StripeAction = "create_checkout" | "cancel" | "resume" | "overview" | "pay" | "portal";
+export type StripeAction = "create_checkout" | "cancel" | "resume" | "overview" | "pay" | "portal" | "create_order_link" | "send_order_link";
 
 export async function stripeBilling<T = { url?: string; ok?: boolean; cancel_at?: string | null }>(
   action: StripeAction,
-  payload: { contract_id?: string; send_email?: boolean; product_name?: string; product_description?: string } = {},
+  payload: {
+    contract_id?: string; send_email?: boolean; product_name?: string; product_description?: string;
+    order_id?: string; title?: string; description?: string; net_amount?: number; vat_enabled?: boolean; vat_rate?: number; currency?: string;
+  } = {},
 ): Promise<T> {
   const { data, error } = await supabase.functions.invoke("stripe-billing", { body: { action, ...payload } });
   if (error) {
