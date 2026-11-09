@@ -84,6 +84,8 @@ const Offers = () => {
     price: "",
     description: "",
   });
+  const emptyPkg = { enabled: false, monthly_amount: "", billing_frequency: "1", duration_months: "12", start_date: "", use_stripe: false, stripe_product_name: "" };
+  const [pkgForm, setPkgForm] = useState(emptyPkg);
 
   // Same period logic as Invoices: quick ranges, specific months, custom range
   const dateRange = useMemo(() => {
@@ -219,6 +221,16 @@ const Offers = () => {
         price: String(selectedOffer.price),
         description: selectedOffer.description || "",
       });
+      const mp = (selectedOffer.order_data?.monthly_package || {}) as Record<string, unknown>;
+      setPkgForm({
+        enabled: mp.enabled === true,
+        monthly_amount: mp.monthly_amount != null ? String(mp.monthly_amount) : "",
+        billing_frequency: String(mp.billing_frequency ?? "1"),
+        duration_months: String(mp.duration_months ?? "12"),
+        start_date: String(mp.start_date ?? ""),
+        use_stripe: mp.use_stripe === true,
+        stripe_product_name: String(mp.stripe_product_name ?? ""),
+      });
     }
   }, [selectedOffer]);
 
@@ -250,7 +262,25 @@ const Offers = () => {
         client_address: editForm.client_address.trim() || null,
         price: parseFloat(editForm.price) || 0,
         description: editForm.description.trim() || null,
+        order_data: {
+          ...(selectedOffer.order_data || {}),
+          monthly_package: pkgForm.enabled
+            ? {
+                enabled: true,
+                monthly_amount: parseFloat(pkgForm.monthly_amount) || 0,
+                billing_frequency: Number(pkgForm.billing_frequency),
+                duration_months: parseInt(pkgForm.duration_months) || 0,
+                start_date: pkgForm.start_date,
+                use_stripe: pkgForm.use_stripe,
+                stripe_product_name: pkgForm.stripe_product_name.trim(),
+              }
+            : { enabled: false },
+        },
       };
+      if (pkgForm.enabled && (!(parseFloat(pkgForm.monthly_amount) > 0) || !pkgForm.start_date || !(parseInt(pkgForm.duration_months) > 0))) {
+        toast({ variant: "destructive", title: "Monthly package needs a monthly price, duration and start date" });
+        return;
+      }
 
       const { error } = await supabase
         .from("offers")
@@ -668,6 +698,50 @@ const Offers = () => {
                       <p className="text-muted-foreground text-xs">Date</p>
                       <p className="font-medium mt-1">{format(new Date(selectedOffer.created_at), "dd.MM.yyyy HH:mm")}</p>
                     </div>
+                  </div>
+                  <div className="rounded-md border p-3 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="offer-pkg-toggle" className="text-sm font-medium">This is a monthly package</Label>
+                      <Switch id="offer-pkg-toggle" checked={pkgForm.enabled} disabled={!!selectedOffer.confirmed_at} onCheckedChange={v => setPkgForm(f => ({ ...f, enabled: v }))} />
+                    </div>
+                    {pkgForm.enabled && (
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div>
+                          <Label className="text-muted-foreground text-xs">Price per month ({selectedOffer.currency})</Label>
+                          <Input type="number" step="0.01" value={pkgForm.monthly_amount} onChange={e => setPkgForm(f => ({ ...f, monthly_amount: e.target.value }))} className="mt-1 h-8" />
+                        </div>
+                        <div>
+                          <Label className="text-muted-foreground text-xs">Billing</Label>
+                          <Select value={pkgForm.billing_frequency} onValueChange={v => setPkgForm(f => ({ ...f, billing_frequency: v }))}>
+                            <SelectTrigger className="mt-1 h-8"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="1">Monthly</SelectItem>
+                              <SelectItem value="3">Quarterly</SelectItem>
+                              <SelectItem value="12">Yearly</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label className="text-muted-foreground text-xs">Duration (months)</Label>
+                          <Input type="number" min={1} value={pkgForm.duration_months} onChange={e => setPkgForm(f => ({ ...f, duration_months: e.target.value }))} className="mt-1 h-8" />
+                        </div>
+                        <div>
+                          <Label className="text-muted-foreground text-xs">Start date</Label>
+                          <Input type="date" value={pkgForm.start_date} onChange={e => setPkgForm(f => ({ ...f, start_date: e.target.value }))} className="mt-1 h-8" />
+                        </div>
+                        <div className="col-span-2 flex items-center justify-between">
+                          <Label htmlFor="offer-pkg-stripe" className="text-sm">Pay by Stripe subscription</Label>
+                          <Switch id="offer-pkg-stripe" checked={pkgForm.use_stripe} onCheckedChange={v => setPkgForm(f => ({ ...f, use_stripe: v }))} />
+                        </div>
+                        {pkgForm.use_stripe && (
+                          <div className="col-span-2">
+                            <Label className="text-muted-foreground text-xs">Product name on Stripe (optional)</Label>
+                            <Input value={pkgForm.stripe_product_name} maxLength={120} onChange={e => setPkgForm(f => ({ ...f, stripe_product_name: e.target.value }))} className="mt-1 h-8" placeholder="e.g. SEO package – website.de" />
+                          </div>
+                        )}
+                        <p className="col-span-2 text-xs text-muted-foreground">When the client accepts, the package is created automatically{pkgForm.use_stripe ? " and they get the Stripe subscribe link by email" : ""}.</p>
+                      </div>
+                    )}
                   </div>
                   <div>
                     <Label className="text-muted-foreground text-xs">Description</Label>
