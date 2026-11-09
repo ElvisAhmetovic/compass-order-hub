@@ -3,9 +3,13 @@ import { Link } from "react-router-dom";
 import ClientLayout from "@/components/client-portal/ClientLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Package, Clock, FileText, CheckCircle, Loader2, ArrowRight, User, Building2 } from "lucide-react";
-import { getClientOrderStats, getClientCompany, fetchClientOrders, ClientOrder } from "@/services/clientOrderService";
-import { useToast } from "@/hooks/use-toast";
+import { Package, Clock, FileText, CheckCircle, Loader2, ArrowRight, User, Building2, CreditCard } from "lucide-react";
+import { orderStatsFrom, getClientCompany, fetchClientOrders, ClientOrder } from "@/services/clientOrderService";
+import LoadErrorCard from "@/components/client-portal/LoadErrorCard";
+import { useBillingOverview, grossAmount } from "@/components/client-portal/billing/useBillingOverview";
+import { InvoiceRow, OpenLinkRow, useContractStatus } from "@/components/client-portal/billing/BillingParts";
+import { money } from "@/components/client-portal/billing/billingFormat";
+import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/context/AuthContext";
 import ClientOrderCard from "@/components/client-portal/ClientOrderCard";
 import { useClientOrdersRealtime } from "@/hooks/useClientOrdersRealtime";
@@ -33,35 +37,33 @@ const ClientDashboard = () => {
   const [company, setCompany] = useState<Company | null>(null);
   const [recentOrders, setRecentOrders] = useState<ClientOrder[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const { toast } = useToast();
+  const [loadError, setLoadError] = useState(false);
   const { user } = useAuth();
   const { t } = useLanguage();
+  const billing = useBillingOverview();
+  const contractStatus = useContractStatus();
 
   const loadData = useCallback(async () => {
+    setLoadError(false);
     try {
-      const [orderStats, companyData, orders] = await Promise.all([
-        getClientOrderStats(),
-        getClientCompany(),
-        fetchClientOrders()
-      ]);
-      setStats(orderStats);
+      // Orders are fetched once; counts and the recent list come from the same result.
+      const [orders, companyData] = await Promise.all([fetchClientOrders(), getClientCompany()]);
+      setStats(orderStatsFrom(orders));
       setCompany(companyData);
       setRecentOrders(orders.slice(0, 5));
     } catch (error) {
       console.error("Error loading dashboard data:", error);
-      toast({
-        variant: "destructive",
-        title: t('common.error'),
-        description: t('common.errorLoadingData')
-      });
+      setLoadError(true);
     } finally {
       setIsLoading(false);
     }
-  }, [toast, t]);
+  }, []);
 
-  const { isConnected } = useClientOrdersRealtime({
+  const reloadBilling = billing.reload;
+  useClientOrdersRealtime({
     onOrderUpdate: () => {
       loadData();
+      reloadBilling();
     },
     showToast: true,
   });
@@ -98,6 +100,68 @@ const ClientDashboard = () => {
             {t('dashboard.subtitle')}
           </p>
         </div>
+
+        {loadError && <LoadErrorCard onRetry={loadData} message={t('common.errorLoadingData')} />}
+
+        <Card data-testid="dashboard-billing">
+          <CardHeader className="pb-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <CreditCard className="h-5 w-5 text-primary" />
+                {t('dashboard.payments')}
+              </CardTitle>
+              <Button asChild variant="ghost" size="sm" className="text-primary hover:text-primary/80">
+                <Link to="/client/invoices">{t('dashboard.allPayments')}<ArrowRight className="h-4 w-4 ml-1" /></Link>
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {billing.loading && !billing.data ? (
+              <div className="flex justify-center py-4"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+            ) : billing.error || !billing.data ? (
+              <LoadErrorCard compact onRetry={billing.reload} message={t('billing.loadFailed')} />
+            ) : (() => {
+              const links = billing.data?.order_links.filter((l) => l.status === "pending") ?? [];
+              const openInvoices = billing.data.invoices.filter((i) => i.status !== "paid" && i.status !== "cancelled" && i.stripe_payment_link);
+              const contracts = billing.data.contracts.filter((c) => c.status === "active" || ["active", "trialing", "past_due", "unpaid"].includes(c.stripe_status ?? ""));
+              if (!links.length && !openInvoices.length && !contracts.length) {
+                return <p className="text-sm text-muted-foreground">{t('dashboard.nothingToPay')}</p>;
+              }
+              return (
+                <>
+                  {(links.length > 0 || openInvoices.length > 0) && (
+                    <div>
+                      <p className="text-sm font-medium text-foreground">{t('billing.openPayments')}</p>
+                      <ul className="divide-y">
+                        {links.map((l) => <OpenLinkRow key={l.id} link={l} />)}
+                        {openInvoices.map((i) => <InvoiceRow key={i.id} inv={i} />)}
+                      </ul>
+                    </div>
+                  )}
+                  {contracts.length > 0 && (
+                    <div>
+                      <p className="text-sm font-medium text-foreground mb-2">{t('billing.subscriptions')}</p>
+                      <ul className="space-y-2">
+                        {contracts.map((c) => {
+                          const st = contractStatus(c);
+                          return (
+                            <li key={c.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border p-3">
+                              <span className="font-medium text-foreground break-words">{c.website || c.client_name}</span>
+                              <span className="flex items-center gap-2 text-sm">
+                                {money(grossAmount(c), c.currency)}
+                                <Badge variant={st.variant}>{st.label}</Badge>
+                              </span>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
+                  )}
+                </>
+              );
+            })()}
+          </CardContent>
+        </Card>
 
         <div className="grid gap-3 md:gap-4 grid-cols-2 lg:grid-cols-4">
           {statCards.map((stat) => (
@@ -155,7 +219,7 @@ const ClientDashboard = () => {
                     {t('dashboard.quickProfile')}
                   </CardTitle>
                   <Button asChild variant="ghost" size="sm" className="text-primary hover:text-primary/80">
-                    <Link to="/client/profile">
+                    <Link to="/client/settings">
                       {t('dashboard.edit')}
                       <ArrowRight className="h-4 w-4 ml-1" />
                     </Link>
