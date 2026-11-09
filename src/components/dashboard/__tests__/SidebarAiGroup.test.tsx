@@ -15,16 +15,18 @@ vi.mock("@/services/workHoursV2Service", () => ({
   fetchLateCountToday: () => Promise.resolve(0),
 }));
 vi.mock("@/integrations/supabase/client", () => {
-  const chain: Record<string, unknown> = {};
-  const fn = () => chain;
-  Object.assign(chain, {
-    select: fn, eq: fn, neq: fn, in: fn, is: fn, order: fn, limit: fn,
-    then: (r: (v: { data: never[]; count: number; error: null }) => unknown) => Promise.resolve(r({ data: [], count: 0, error: null })),
+  const result = { data: [], count: 0, error: null };
+  const chain: unknown = new Proxy(function () {}, {
+    get: (_t, prop) =>
+      prop === "then"
+        ? (r: (v: typeof result) => unknown) => Promise.resolve(r(result))
+        : () => chain,
+    apply: () => chain,
   });
   return {
     supabase: {
       from: () => chain,
-      channel: () => ({ on() { return this; }, subscribe() { return this; } }),
+      channel: () => chain,
       removeChannel: () => {},
     },
   };
