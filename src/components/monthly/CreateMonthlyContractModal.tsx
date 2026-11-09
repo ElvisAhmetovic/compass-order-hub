@@ -73,6 +73,7 @@ const CreateMonthlyContractModal: React.FC<Props> = ({ open, onOpenChange, onCre
   const [users, setUsers] = useState<User[]>([]);
   const [selectedInventoryItems, setSelectedInventoryItems] = useState<SelectedInventoryItem[]>([]);
   const [vatEnabled, setVatEnabled] = useState(false);
+  const [payByStripe, setPayByStripe] = useState(false);
   const [vatPercentage, setVatPercentage] = useState(19);
 
   const form = useForm<FormValues>({
@@ -168,7 +169,7 @@ const CreateMonthlyContractModal: React.FC<Props> = ({ open, onOpenChange, onCre
       const assignedUser = users.find((u) => u.id === values.assignedTo);
       const assignedToName = assignedUser?.full_name || (values.assignedTo === user.id ? user.full_name : "");
 
-      await monthlyContractService.createContract(
+      const created = await monthlyContractService.createContract(
         {
           client_name: values.clientName,
           client_email: values.clientEmail,
@@ -215,6 +216,13 @@ const CreateMonthlyContractModal: React.FC<Props> = ({ open, onOpenChange, onCre
           priority: values.priority,
         },
       }).catch((err) => console.error('Failed to send contract notification:', err));
+
+      // Fire-and-forget: create the Stripe subscription link and email it to the client.
+      if (payByStripe && created?.id) {
+        stripeBilling("create_checkout", { contract_id: created.id, send_email: true })
+          .then(() => { toast({ title: "Stripe link sent", description: `Subscription link emailed to ${values.clientEmail}.` }); onCreated(); })
+          .catch((err: Error) => toast({ title: "Stripe link failed", description: err.message, variant: "destructive" }));
+      }
 
       toast({
         title: "Contract created",
@@ -346,6 +354,15 @@ const CreateMonthlyContractModal: React.FC<Props> = ({ open, onOpenChange, onCre
                       <FormMessage />
                     </FormItem>
                   )} />
+                </div>
+
+                {/* Stripe subscription */}
+                <div className="flex items-start gap-3 p-3 rounded-lg border bg-muted/30">
+                  <Switch checked={payByStripe} onCheckedChange={setPayByStripe} id="stripe-toggle" />
+                  <div>
+                    <Label htmlFor="stripe-toggle" className="text-sm font-medium">Pay by Stripe subscription</Label>
+                    <p className="text-xs text-muted-foreground">Emails the client a card/SEPA subscription link. Bank details stay available.</p>
+                  </div>
                 </div>
 
                 {/* VAT Toggle */}
