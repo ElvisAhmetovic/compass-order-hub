@@ -74,8 +74,8 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const subject = isResend
-      ? `Your Updated Client Portal Credentials - ${companyName || "ABMedia"}`
-      : `Welcome to Your Client Portal - ${companyName || "ABMedia"}`;
+      ? `Your Updated Client Portal Credentials - ${companyName || "Media Marketing"}`
+      : `Welcome to Your Client Portal - ${companyName || "Media Marketing"}`;
 
     const htmlBody = `
       <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
@@ -126,7 +126,7 @@ const handler = async (req: Request): Promise<Response> => {
         <hr style="border: none; border-top: 1px solid #e9ecef; margin: 30px 0;" />
         
         <p style="color: #999; font-size: 12px;">
-          This email was sent by ${senderName || "the ABMedia team"}. If you did not expect this email, please ignore it.
+          This email was sent by ${senderName || "the Media Marketing team"}. If you did not expect this email, please ignore it.
         </p>
       </div>
     `;
@@ -136,7 +136,7 @@ const handler = async (req: Request): Promise<Response> => {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${resendApiKey}` },
       body: JSON.stringify({
-        from: "ABMedia Team <noreply@mediaamarketing.com>",
+        from: "Media Marketing <noreply@mediaamarketing.com>",
         to: [clientEmail],
         subject,
         html: htmlBody,
@@ -177,7 +177,7 @@ const handler = async (req: Request): Promise<Response> => {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${resendApiKey}` },
           body: JSON.stringify({
-            from: "ABMedia Team <noreply@mediaamarketing.com>",
+            from: "Media Marketing <noreply@mediaamarketing.com>",
             to: batch,
             subject: internalSubject,
             html: internalHtml,

@@ -1,3 +1,4 @@
+import { ensureClientPortal } from "@/services/clientPortalAutoService";
 import { resolveOrderClient } from './orderClientResolver';
 import { orderLocale } from '@/utils/countryLanguage';
 
@@ -172,6 +173,8 @@ export class OrderService {
         throw error;
       }
 
+      ensureClientPortal({ email: data.contact_email, name: data.contact_name, companyName: data.company_name, orderId: data.id });
+
       // Auto-sync company data from the new order
       try {
         const { SupabaseCompanySyncService } = await import('./supabaseCompanySyncService');
@@ -265,6 +268,8 @@ export class OrderService {
         console.error('Error creating yearly package:', error);
         throw error;
       }
+
+      ensureClientPortal({ email: data.contact_email, name: data.contact_name, companyName: data.company_name, orderId: data.id });
 
       // Auto-sync company data from the new yearly package
       try {
