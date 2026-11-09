@@ -97,6 +97,7 @@ const ClientSupport = lazy(() => import("./pages/client/ClientSupport"));
 const ClientSupportDetail = lazy(() => import("./pages/client/ClientSupportDetail"));
 const ClientSettings = lazy(() => import("./pages/client/ClientSettings"));
 const ClientLogin = lazy(() => import("./pages/client/ClientLogin"));
+const PaymentThankYou = lazy(() => import("./pages/payment/PaymentThankYou"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -150,6 +151,7 @@ function App() {
                   <Route path="/digital-marketing" element={<ServicePage serviceKey="digitalMarketing" />} />
                   <Route path="/app-entwicklung" element={<ServicePage serviceKey="appDevelopment" />} />
                   <Route path="/kontakt" element={<ContactPage />} />
+                  <Route path="/payment/thank-you" element={<PaymentThankYou />} />
                   <Route path="/offers-unsubscribed" element={<OffersUnsubscribed />} />
                   <Route path="/ueber-uns" element={<AboutPage />} />
                   <Route path="/impressum" element={<LegalPage pageKey="impressum" />} />
