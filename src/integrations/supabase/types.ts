@@ -3944,6 +3944,14 @@ export type Database = {
         }
         Returns: number
       }
+      client_owns_order: {
+        Args: {
+          p_client_id: string
+          p_company_id: string
+          p_contact_email: string
+        }
+        Returns: boolean
+      }
       generate_invoice_number: {
         Args: {
           prefix_param?: string
