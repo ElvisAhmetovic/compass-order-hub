@@ -111,6 +111,15 @@ serve(async (req) => {
       throw new Error('Failed to create order');
     }
 
+    // Ensure the client has a portal account (created + emailed only if new)
+    if (createdOrder?.id && offer.client_email) {
+      fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/ensure-client-portal`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}` },
+        body: JSON.stringify({ email: offer.client_email, name: offer.client_name, companyName: offer.company_name, orderId: createdOrder.id }),
+      }).catch((e) => console.error('ensure-client-portal failed', e));
+    }
+
     // Auto-link to existing client portal account by matching contact_email
     if (createdOrder?.id && offer.client_email) {
       try {

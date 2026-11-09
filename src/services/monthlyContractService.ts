@@ -1,3 +1,4 @@
+import { ensureClientPortal } from "@/services/clientPortalAutoService";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface MonthlyContract {
@@ -110,6 +111,7 @@ export const monthlyContractService = {
 
     if (error) throw error;
     const newContract = data as unknown as MonthlyContract;
+    ensureClientPortal({ email: newContract.client_email, name: newContract.client_name, companyName: newContract.client_name });
 
     // Pre-generate installment rows spaced by billing frequency
     const startDate = new Date(contract.start_date);
