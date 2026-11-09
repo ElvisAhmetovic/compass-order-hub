@@ -1,0 +1,209 @@
+{
+  "schema_version": 1,
+  "events": {
+    "project.payment_thank_you_viewed": {
+      "event_schema_version": 1,
+      "description": "The payment confirmation page settled on a final state.",
+      "privacy": {
+        "contains_pii": false,
+        "purpose": "product_analytics"
+      },
+      "properties_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "paid",
+              "notFound"
+            ]
+          }
+        }
+      }
+    },
+    "project.portal_document_downloaded": {
+      "event_schema_version": 1,
+      "description": "A client opened a receipt or invoice PDF.",
+      "privacy": {
+        "contains_pii": false,
+        "purpose": "product_analytics"
+      },
+      "properties_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "receipt",
+              "pdf"
+            ]
+          }
+        }
+      }
+    },
+    "project.portal_invoice_filter": {
+      "event_schema_version": 1,
+      "description": "A client switched the invoice filter.",
+      "privacy": {
+        "contains_pii": false,
+        "purpose": "product_analytics"
+      },
+      "properties_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "filter": {
+            "type": "string",
+            "enum": [
+              "all",
+              "unpaid",
+              "paid"
+            ]
+          }
+        }
+      }
+    },
+    "project.portal_language_changed": {
+      "event_schema_version": 1,
+      "description": "A client changed the portal language.",
+      "privacy": {
+        "contains_pii": false,
+        "purpose": "product_analytics"
+      },
+      "properties_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "language": {
+            "type": "string",
+            "maxLength": 5
+          }
+        }
+      }
+    },
+    "project.portal_load_failed": {
+      "event_schema_version": 1,
+      "description": "A portal page showed the couldn't-load error card.",
+      "privacy": {
+        "contains_pii": false,
+        "purpose": "product_analytics"
+      },
+      "properties_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "page": {
+            "type": "string",
+            "maxLength": 60
+          }
+        }
+      }
+    },
+    "project.portal_login": {
+      "event_schema_version": 1,
+      "description": "A client signed in to the client portal.",
+      "privacy": {
+        "contains_pii": false,
+        "purpose": "product_analytics"
+      },
+      "properties_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "language": {
+            "type": "string",
+            "enum": [
+              "de",
+              "en"
+            ]
+          }
+        }
+      }
+    },
+    "project.portal_login_failed": {
+      "event_schema_version": 1,
+      "description": "A client portal sign-in attempt failed.",
+      "privacy": {
+        "contains_pii": false,
+        "purpose": "product_analytics"
+      },
+      "properties_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "reason": {
+            "type": "string",
+            "enum": [
+              "wrong_password",
+              "other"
+            ]
+          }
+        }
+      }
+    },
+    "project.portal_logout": {
+      "event_schema_version": 1,
+      "description": "A client logged out of the client portal.",
+      "privacy": {
+        "contains_pii": false,
+        "purpose": "product_analytics"
+      },
+      "properties_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {}
+      }
+    },
+    "project.portal_package_cancelled": {
+      "event_schema_version": 1,
+      "description": "A client cancelled a monthly package.",
+      "privacy": {
+        "contains_pii": false,
+        "purpose": "product_analytics"
+      },
+      "properties_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {}
+      }
+    },
+    "project.portal_pay_clicked": {
+      "event_schema_version": 1,
+      "description": "A client clicked a Pay button in the portal.",
+      "privacy": {
+        "contains_pii": false,
+        "purpose": "product_analytics"
+      },
+      "properties_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "package",
+              "order_link",
+              "invoice",
+              "failed_payment"
+            ]
+          }
+        }
+      }
+    },
+    "project.portal_ticket_created": {
+      "event_schema_version": 1,
+      "description": "A client created a support ticket.",
+      "privacy": {
+        "contains_pii": false,
+        "purpose": "product_analytics"
+      },
+      "properties_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {}
+      }
+    }
+  }
+}

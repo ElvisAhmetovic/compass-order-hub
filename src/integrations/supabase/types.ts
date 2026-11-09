@@ -260,6 +260,33 @@ export type Database = {
           },
         ]
       }
+      client_portal_activity: {
+        Row: {
+          created_at: string
+          details: Json
+          event: string
+          id: string
+          user_email: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          details?: Json
+          event: string
+          id?: string
+          user_email?: string | null
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          details?: Json
+          event?: string
+          id?: string
+          user_email?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       clients: {
         Row: {
           address: string | null

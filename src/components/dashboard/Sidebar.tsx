@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
+  Activity,
   LayoutDashboard,
   Building2,
   UsersRound,
@@ -172,6 +173,7 @@ const Sidebar = () => {
     { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', roles: ['admin', 'agent', 'user'] },
     { href: '/work-hours', icon: Clock, label: 'Work Hours', roles: ['admin', 'agent'] },
     { href: '/admin/work-hours', icon: CalendarClock, label: 'Work Hours Admin', roles: ['admin', 'agent', 'user'], superAdminOnly: true, showWhAdminBadge: true },
+    { href: '/admin/client-activity', icon: Activity, label: 'Client Portal Activity', roles: ['admin', 'agent'] },
     { href: '/monthly-packages', icon: CalendarRange, label: 'Monthly Packages', roles: ['admin', 'agent'] },
     { href: '/monthly-invoice-status', icon: ClipboardList, label: 'Invoice Status', roles: ['admin', 'agent'] },
     { href: '/reminders', icon: BellRing, label: 'Reminders', roles: ['admin', 'agent'] },

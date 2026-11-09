@@ -1,3 +1,6 @@
+import { useEffect } from "react";
+import { useLocation } from "react-router-dom";
+import { logPortalActivity } from "@/services/portalActivity";
 import { AlertTriangle, RefreshCw } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,6 +11,12 @@ interface Props { onRetry: () => void; message?: string; compact?: boolean }
 /** Shown when portal data could not be loaded — never an empty list. */
 const LoadErrorCard = ({ onRetry, message, compact }: Props) => {
   const { t } = useLanguage();
+  const { pathname } = useLocation();
+  useEffect(() => {
+    const page = pathname.replace(/[0-9a-f-]{36}/g, ":id");
+    window.__lovableEvents?.track?.("project.portal_load_failed", { page });
+    logPortalActivity("load_failed", { page });
+  }, [pathname]);
   const body = (
     <div className={`flex flex-col items-center text-center gap-3 ${compact ? "py-4" : "py-10"}`} role="alert">
       <AlertTriangle className={compact ? "h-6 w-6 text-destructive" : "h-10 w-10 text-destructive"} />

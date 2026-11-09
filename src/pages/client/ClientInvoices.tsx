@@ -1,3 +1,4 @@
+import { logPortalActivity } from "@/services/portalActivity";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import ClientLayout from "@/components/client-portal/ClientLayout";
@@ -38,9 +39,9 @@ const ClientInvoices = () => {
     setBusy(key);
     try { await fn(); } catch { toast({ title: t("billing.error"), variant: "destructive" }); } finally { setBusy(null); }
   };
-  const pay = (id: string) => act(`pay-${id}`, async () => { const r = await stripeBilling("pay", { contract_id: id }); if (r.url) window.location.href = r.url; });
+  const pay = (id: string) => act(`pay-${id}`, async () => { window.__lovableEvents?.track?.("project.portal_pay_clicked", { type: "package" }); logPortalActivity("pay_clicked", { type: "package" }); const r = await stripeBilling("pay", { contract_id: id }); if (r.url) window.location.href = r.url; });
   const portal = () => act("portal", async () => { const r = await stripeBilling("portal"); if (r.url) window.location.href = r.url; });
-  const cancel = (id: string) => act(`cancel-${id}`, async () => { await stripeBilling("cancel", { contract_id: id }); await load(); });
+  const cancel = (id: string) => act(`cancel-${id}`, async () => { await stripeBilling("cancel", { contract_id: id }); window.__lovableEvents?.track?.("project.portal_package_cancelled"); logPortalActivity("package_cancelled"); await load(); });
 
   const period = (f: number) => (f === 12 ? t("billing.year") : f > 1 ? t("billing.months", { n: String(f) }) : t("billing.month"));
   return (
@@ -166,7 +167,7 @@ const ClientInvoices = () => {
                         </div>
                         <div className="flex flex-wrap gap-2" role="tablist">
                           {(["all", "unpaid", "paid"] as const).map((k) => (
-                            <Button key={k} size="sm" role="tab" aria-selected={f === k} variant={f === k ? "default" : "outline"} onClick={() => setFilter(k)}>
+                            <Button key={k} size="sm" role="tab" aria-selected={f === k} variant={f === k ? "default" : "outline"} onClick={() => { setFilter(k); window.__lovableEvents?.track?.("project.portal_invoice_filter", { filter: k }); logPortalActivity("invoice_filter", { filter: k }); }}>
                               {k === "all" ? t("invoices.all") : k === "paid" ? t("billing.paid") : t("invoices.unpaid")}
                             </Button>
                           ))}

@@ -71,6 +71,9 @@ const PaymentThankYou = () => {
 
   const switchLang = (l: Lang) => { setLang(l); localStorage.setItem(LANG_KEY, l); };
   const state = receiptState(r, { loading: !r, notFound, failed, gaveUp });
+  useEffect(() => {
+    if (state === "paid" || state === "notFound") window.__lovableEvents?.track?.("project.payment_thank_you_viewed", { state });
+  }, [state]);
   const locale = lang === "de" ? "de-DE" : "en-GB";
   const day = (d: string) => new Date(d).toLocaleDateString(locale, { day: "2-digit", month: "long", year: "numeric" });
   const money = (n: number, c: string) => new Intl.NumberFormat("de-DE", { style: "currency", currency: c }).format(n);
