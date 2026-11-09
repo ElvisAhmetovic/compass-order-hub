@@ -8,12 +8,12 @@ import { Loader2, Eye, Package, Wifi, WifiOff } from "lucide-react";
 import { fetchClientOrders, ClientOrder } from "@/services/clientOrderService";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
-import { getClientStatusFromOrder } from "@/utils/clientStatusTranslator";
+import { getClientStatusFromOrder, Translate } from "@/utils/clientStatusTranslator";
 import { useClientOrdersRealtime } from "@/hooks/useClientOrdersRealtime";
 import { useLanguage } from "@/context/ClientLanguageContext";
 
-const getStatusBadge = (order: ClientOrder) => {
-  const config = getClientStatusFromOrder(order);
+const getStatusBadge = (order: ClientOrder, t?: Translate) => {
+  const config = getClientStatusFromOrder(order, t);
   return (
     <Badge 
       variant={config.badgeVariant}
