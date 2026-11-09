@@ -173,8 +173,6 @@ const Sidebar = () => {
     { href: '/work-hours', icon: Clock, label: 'Work Hours', roles: ['admin', 'agent'] },
     { href: '/admin/work-hours', icon: CalendarClock, label: 'Work Hours Admin', roles: ['admin', 'agent', 'user'], superAdminOnly: true, showWhAdminBadge: true },
     { href: '/monthly-packages', icon: CalendarRange, label: 'Monthly Packages', roles: ['admin', 'agent'] },
-    { href: '/ai-outreach', icon: Sparkles, label: 'AI Outreach', roles: ['admin', 'agent', 'user'] },
-    { href: '/services-knowledge', icon: BookOpen, label: 'Services Knowledge', roles: ['admin', 'agent', 'user'] },
     { href: '/monthly-invoice-status', icon: ClipboardList, label: 'Invoice Status', roles: ['admin', 'agent'] },
     { href: '/reminders', icon: BellRing, label: 'Reminders', roles: ['admin', 'agent'] },
     { href: '/user-management', icon: UsersRound, label: 'User Management', roles: ['admin'] },
@@ -226,6 +224,7 @@ const Sidebar = () => {
 
   // Auto-expand "More..." if active route is inside it
   const [moreOpen, setMoreOpen] = useState(false);
+  const [aiOpen, setAiOpen] = useState<boolean | null>(null);
   const activeInMore = moreItems.some(item => 
     location.pathname === item.href || 
     (item.href !== '/dashboard' && item.href !== '/active-orders' && location.pathname.startsWith(item.href)) ||
@@ -356,6 +355,56 @@ const Sidebar = () => {
         ) : (
           <>
             {mainItems.map(renderItem)}
+
+            {user?.role && ['admin', 'agent', 'user'].includes(user.role) && (() => {
+              const aiItems = [
+                { href: '/ai-outreach', icon: Sparkles, label: 'AI Outreach' },
+                { href: '/services-knowledge', icon: BookOpen, label: 'Services Knowledge' },
+              ];
+              const aiActive = aiItems.some((i) => location.pathname.startsWith(i.href));
+              const open = aiOpen ?? aiActive;
+              return (
+                <div className="border-t border-sidebar-border mt-2">
+                  <button
+                    onClick={() => setAiOpen(!open)}
+                    className={cn(
+                      "flex items-center justify-between w-full px-6 py-3 text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors",
+                      aiActive && "text-sidebar-foreground"
+                    )}
+                  >
+                    <div className="flex items-center">
+                      <Sparkles className="w-5 h-5 mr-3" />
+                      AI
+                    </div>
+                    <ChevronDown className={cn("w-4 h-4 transition-transform", open && "rotate-180")} />
+                  </button>
+                  {open && (
+                    <div className="bg-sidebar-accent/40">
+                      {aiItems.map((item) => {
+                        const Icon = item.icon;
+                        const isActive = location.pathname.startsWith(item.href);
+                        return (
+                          <Link
+                            key={item.href}
+                            to={item.href}
+                            className={cn(
+                              "flex items-center px-10 py-2.5 text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors",
+                              isActive && "bg-sidebar-accent text-sidebar-foreground border-r-2 border-sidebar-primary"
+                            )}
+                          >
+                            <Icon
+                              className={cn("w-4 h-4 mr-3 transition-colors", isActive ? "text-sidebar-primary" : "text-sidebar-foreground/60")}
+                              strokeWidth={1.75}
+                            />
+                            {item.label}
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
             {showSocialGroup && (
               <div className="border-t border-sidebar-border mt-2">
