@@ -324,39 +324,8 @@ const Sidebar = () => {
     );
   };
 
-  return (
-    <aside className="sticky top-0 flex min-h-screen w-64 shrink-0 self-start flex-col bg-sidebar border-r border-sidebar-border">
-      <div className="p-6">
-        <a
-          href="https://www.mediaamarketing.com/de"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-block text-xl font-bold font-heading text-sidebar-foreground hover:text-sidebar-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring rounded transition-colors"
-        >
-          Media Marketing - CRM
-        </a>
-        <div className="mt-2 text-sidebar-foreground/60">
-          <div className="font-mono text-lg font-semibold text-sidebar-foreground">
-            {currentTime.toLocaleTimeString('de-DE', { timeZone: 'Europe/Berlin' })}
-          </div>
-          <div className="text-xs">
-            {currentTime.toLocaleDateString('en-US', { timeZone: 'Europe/Berlin', weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' })}
-            {' · '}Duisburg, Germany
-          </div>
-        </div>
-      </div>
-      <nav className="mt-6 flex-1">
-        {roleFilteredItems.length === 0 ? (
-          <div className="px-6 py-3 text-sidebar-foreground/60 text-sm">
-            No menu items available
-            <br />
-            Role: {user?.role || 'No role'}
-          </div>
-        ) : (
-          <>
-            {mainItems.map(renderItem)}
-
-            {user?.role && ['admin', 'agent', 'user'].includes(user.role) && (() => {
+  const renderAiGroup = () => {
+    if (!user?.role || !['admin', 'agent', 'user'].includes(user.role)) return null;
               const aiItems = [
                 { href: '/ai-outreach', icon: Sparkles, label: 'AI Outreach' },
                 { href: '/services-knowledge', icon: BookOpen, label: 'Services Knowledge' },
@@ -364,7 +333,7 @@ const Sidebar = () => {
               const aiActive = aiItems.some((i) => location.pathname.startsWith(i.href));
               const open = aiOpen ?? aiActive;
               return (
-                <div className="border-t border-sidebar-border mt-2">
+                <div key="ai-group" data-testid="sidebar-ai-group">
                   <button
                     onClick={() => setAiOpen(!open)}
                     className={cn(
@@ -404,7 +373,49 @@ const Sidebar = () => {
                   )}
                 </div>
               );
+  };
+
+  return (
+    <aside className="sticky top-0 flex min-h-screen w-64 shrink-0 self-start flex-col bg-sidebar border-r border-sidebar-border">
+      <div className="p-6">
+        <a
+          href="https://www.mediaamarketing.com/de"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-block text-xl font-bold font-heading text-sidebar-foreground hover:text-sidebar-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring rounded transition-colors"
+        >
+          Media Marketing - CRM
+        </a>
+        <div className="mt-2 text-sidebar-foreground/60">
+          <div className="font-mono text-lg font-semibold text-sidebar-foreground">
+            {currentTime.toLocaleTimeString('de-DE', { timeZone: 'Europe/Berlin' })}
+          </div>
+          <div className="text-xs">
+            {currentTime.toLocaleDateString('en-US', { timeZone: 'Europe/Berlin', weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' })}
+            {' · '}Duisburg, Germany
+          </div>
+        </div>
+      </div>
+      <nav className="mt-6 flex-1">
+        {roleFilteredItems.length === 0 ? (
+          <div className="px-6 py-3 text-sidebar-foreground/60 text-sm">
+            No menu items available
+            <br />
+            Role: {user?.role || 'No role'}
+          </div>
+        ) : (
+          <>
+            {(() => {
+              // AI group sits where AI Outreach used to be (after Monthly Packages), so it stays visible near the top.
+              const anchorIdx = mainItems.findIndex((i) => i.href === '/monthly-packages');
+              const insertAt = anchorIdx >= 0 ? anchorIdx + 1 : Math.min(1, mainItems.length);
+              return [
+                ...mainItems.slice(0, insertAt).map(renderItem),
+                renderAiGroup(),
+                ...mainItems.slice(insertAt).map(renderItem),
+              ];
             })()}
+
 
             {showSocialGroup && (
               <div className="border-t border-sidebar-border mt-2">
