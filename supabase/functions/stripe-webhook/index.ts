@@ -1,3 +1,4 @@
+import { canMarkLinkPaid } from "../_shared/orderLinkRules.ts";
 import { portalLineHtml } from "../_shared/portalEmailCopy.ts";
 // Receives Stripe events. Only signature-verified events change data; each event is processed once.
 import { admin, corsHeaders, json } from "../_shared/outreachAuth.ts";
@@ -100,6 +101,35 @@ async function handleSubscription(db: ReturnType<typeof admin>, s: Obj, deleted:
   }
 }
 
+async function handleOrderPayment(db: ReturnType<typeof admin>, sess: Obj) {
+  const linkId = sess.metadata?.link_id;
+  if (!linkId || sess.payment_status !== "paid") return;
+  const { data: link } = await db.from("order_payment_links").select("*").eq("id", linkId).maybeSingle();
+  if (!link) return;
+  const cents = Number(sess.amount_total ?? Math.round(Number(link.total_amount) * 100));
+  const { data: order } = await db.from("orders").select("id, company_name, contact_email, contact_name").eq("id", link.order_id).maybeSingle();
+  // Always record the money; only a still-current link flips order/invoice state.
+  await db.from("stripe_payments").upsert({
+    checkout_session_id: sess.id, order_id: link.order_id, payment_link_id: link.id,
+    client_email: order?.contact_email ?? sess.customer_details?.email ?? null,
+    amount: cents / 100, currency: String(sess.currency || link.currency).toUpperCase(), status: "paid", paid_at: new Date().toISOString(),
+  }, { onConflict: "checkout_session_id" });
+  if (!canMarkLinkPaid(link.status)) {
+    await sendBillingEmail(BILLING_INBOX, `Stripe payment on a REPLACED link: ${order?.company_name ?? link.order_id}`, emailShell("Check this payment",
+      `<p>A payment of ${eur(cents, sess.currency || "eur")} arrived on an old/replaced link "${link.title}". Please check it manually.</p>`));
+    return;
+  }
+  await db.from("order_payment_links").update({ status: "paid", paid_at: new Date().toISOString() }).eq("id", link.id);
+  await db.from("orders").update({ status_invoice_paid: true }).eq("id", link.order_id);
+  await db.from("invoices").update({ status: "paid" }).eq("order_id", link.order_id).in("status", ["sent", "overdue", "partially_paid"]);
+  const amount = eur(cents, sess.currency || "eur");
+  if (order?.contact_email) await sendBillingEmail(order.contact_email, `Zahlung erhalten / Payment received – ${amount}`, emailShell(`Hallo ${order.contact_name || order.company_name},`,
+    `<p>vielen Dank – wir haben Ihre Zahlung über <b>${amount}</b> für <b>${link.title}</b> erhalten.</p><p>Thank you – we received your payment of <b>${amount}</b> for <b>${link.title}</b>.</p>
+     <p style="font-size:13px">Alle Zahlungen / All payments: <a href="${APP_URL}/client/invoices">${APP_URL}/client/invoices</a></p>`));
+  await sendBillingEmail(BILLING_INBOX, `Stripe payment received: ${order?.company_name ?? ""} – ${amount}`, emailShell("Stripe payment received",
+    `<p>${order?.company_name ?? ""} (${order?.contact_email ?? ""}) paid ${amount} for "${link.title}". The order is marked Invoice paid.</p>`));
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
@@ -122,6 +152,8 @@ Deno.serve(async (req) => {
             payment_method: "stripe", stripe_customer_id: o.customer, stripe_subscription_id: o.subscription,
             stripe_status: "active", stripe_checkout_url: null,
           }).eq("id", id);
+        } else if (o.mode === "payment") {
+          await handleOrderPayment(db, o);
         }
         break;
       case "invoice.paid": await handleInvoice(db, o, true); break;
