@@ -1,30 +1,25 @@
-# Next step: test Stripe with play money, then go live
+# Edit what the client pays for on the Stripe link
 
-Stripe has a **test mode** (sandbox). It works exactly like live but uses fake cards, so no real money moves. We test there first, then switch back to the live keys.
+## What changes
+Clicking **Stripe link** (or **Resend Stripe link**) on a package opens a small window instead of sending right away:
 
-## What you do in Stripe (about 5 minutes)
-1. Turn on **Test mode / Sandbox** (top right in Stripe).
-2. **Developers → API keys:** copy the test **Secret key** (starts with `sk_test_`).
-3. **Developers → Webhooks → Add destination:** same URL and the same 6 events as before:
-   `https://fjybmlugiqmiggsdrkiq.supabase.co/functions/v1/stripe-webhook`
-   Copy its signing secret (`whsec_...`).
-4. **Settings → Billing → Customer portal** in test mode: turn on Payment methods + Invoice history and save (test mode has its own settings).
+- **Product name** (required, max 120 characters): what the client sees on the Stripe payment page, receipts and Stripe invoices. It starts filled with the current text (client name – website). Example: "SEO Paket Premium – monatlich".
+- **Short description** (optional, max 300 characters): extra line shown under the name on the payment page.
+- A preview of the price per period (read-only).
+- Buttons: **Cancel** / **Send link to client**.
 
-## What I do
-1. Open the secure form so you can paste the two test keys there. The live keys are replaced for the duration of the test.
-2. Create one test package for **invoice@mediaamarketing.com** at **€1/month** with "Pay by Stripe subscription" turned on.
-3. You pay from the email link with Stripe's fake card `4242 4242 4242 4242` (any future date, any CVC).
-4. I check:
-   - The package shows "Stripe: active", the month is marked paid, and a payment record exists.
-   - The "Payment received" emails arrive (client + invoice inbox).
-   - The client portal Invoices page shows the package, the payment, the receipt and the Manage payment method button.
-5. Failed payment test: you switch the test card to `4000 0000 0000 0341` in the portal, and I trigger a renewal in Stripe test mode. I check that "Payment failed" shows and the retry email arrives.
-6. Cancel test: cancel from the client portal and check "Cancels on [date]" and the emails.
-7. Fix anything that breaks, then clean up: delete the test package and its records (only those, with your OK).
-8. Go live: you paste the live secret key and the **live** webhook signing secret back through the secure form.
-9. You publish, so the team and clients see the new buttons and the Invoices page.
+The text is saved on the package, so a resend starts with the same wording. The **Pay by Stripe subscription** switch in the new-package form also gets the same two fields.
+
+Already-active subscriptions keep their current name. A new name only applies to links sent from now on.
+
+## Rules (Given/When/Then)
+- Given a package without a saved name, when I open the window, then the name field is prefilled with "client name – website".
+- Given I type "SEO Paket Premium", when I send, then the Stripe payment page and receipts show "SEO Paket Premium".
+- Given an empty name, when I press send, then it is blocked with "Product name is required".
+- Given a name was saved earlier, when I resend, then the field shows that saved name.
 
 ## Technical details
-- Secrets swapped via update_secret: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`. No code change needed for test mode.
-- Renewal trigger: Stripe test clock or "advance" via the dashboard; the client portal is checked with a signed-in client session if one is available. Otherwise you take a screenshot of the client portal.
-- Cleanup deletes only rows tied to the test contract id (monthly_contracts, monthly_installments, stripe_payments), listed for approval first.
+- Migration: `monthly_contracts` add `stripe_product_name text`, `stripe_product_description text`.
+- `stripe-billing` `create_checkout`: accept optional `product_name` (1–120) and `product_description` (≤300) via zod; save to the contract; use them in `price_data.product_data.name/description`, falling back to the saved value, then to the default.
+- New `StripeLinkDialog.tsx` used by `StripeContractControls`; create modal gains the two inputs when the switch is on.
+- Tests: Deno test for the name fallback helper; vitest for the dialog's required-name validation. Gate A: eslint, typecheck, deploy, 401 check.
