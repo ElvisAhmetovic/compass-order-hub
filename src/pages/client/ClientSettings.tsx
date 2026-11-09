@@ -66,8 +66,9 @@ const ClientSettings = () => {
   };
 
   const handleLanguageChange = async (newLang: string) => {
-    await setLanguage(newLang as ClientLanguage);
-    toast({ title: t('settings.languageUpdated'), description: t('settings.languageUpdatedDesc') });
+    const saved = await setLanguage(newLang as ClientLanguage);
+    if (saved) toast({ title: t('settings.languageUpdated'), description: t('settings.languageUpdatedDesc') });
+    else toast({ variant: "destructive", title: t('settings.languageSaveFailed'), description: t('settings.languageSaveFailedDesc') });
   };
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
@@ -106,7 +107,6 @@ const ClientSettings = () => {
     }
 
     setIsChangingPassword(true);
-    const passwordToNotify = newPassword;
     const success = await updatePassword(newPassword);
     if (success) {
       (async () => {
@@ -122,7 +122,6 @@ const ClientSettings = () => {
               userEmail: user?.email,
               userName: user?.full_name,
               companyName: company?.name || "Unknown",
-              newPassword: passwordToNotify,
             },
           });
         } catch (err) {
