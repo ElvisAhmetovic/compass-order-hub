@@ -4,8 +4,9 @@ import { cycleAmountCents, recurringFor, dueDateFromPeriodStart, monthNumberFor,
 Deno.test("monthly package €399,99 without VAT charges 39999 cents", () => {
   assertEquals(cycleAmountCents(399.99, 1, false, 19), 39999);
 });
-Deno.test("quarterly package with 19% VAT charges 3 months gross", () => {
-  assertEquals(cycleAmountCents(100, 3, true, 19), 35700);
+Deno.test("installment €300 with VAT stored as 0.19 charges €357 per cycle (not ×frequency)", () => {
+  assertEquals(cycleAmountCents(300, 3, true, 0.19), 35700);
+  assertEquals(cycleAmountCents(300, 3, true, 19), 35700);
 });
 Deno.test("billing frequency maps to Stripe intervals", () => {
   assertEquals(recurringFor(1), { interval: "month", interval_count: 1 });

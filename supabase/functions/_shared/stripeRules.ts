@@ -1,10 +1,15 @@
 // Pure Stripe helpers (no network) so they can be unit-tested.
 
-/** Amount charged per Stripe billing cycle, in cents (gross incl. VAT when enabled). */
-export function cycleAmountCents(monthlyAmount: number, billingFrequency: number, vatEnabled: boolean | null, vatRate: number | null): number {
-  const months = Math.max(1, Math.floor(billingFrequency || 1));
-  const net = Number(monthlyAmount || 0) * months;
-  const gross = vatEnabled ? net * (1 + Number(vatRate ?? 0) / 100) : net;
+/**
+ * Amount charged per Stripe billing cycle, in cents (gross incl. VAT when enabled).
+ * `monthly_amount` already holds the per-installment amount (total / installments), so it is NOT
+ * multiplied by the billing frequency. VAT is stored as a fraction (0.19); percent values (19) are accepted too.
+ */
+export function cycleAmountCents(installmentAmount: number, _billingFrequency: number, vatEnabled: boolean | null, vatRate: number | null): number {
+  const net = Number(installmentAmount || 0);
+  const r = Number(vatRate ?? 0);
+  const fraction = r > 1 ? r / 100 : r;
+  const gross = vatEnabled ? net * (1 + fraction) : net;
   return Math.round(gross * 100);
 }
 
