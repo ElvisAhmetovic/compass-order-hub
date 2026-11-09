@@ -3,10 +3,20 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import { z } from "npm:zod@3.23.8";
 import { admin, corsHeaders, json } from "../_shared/outreachAuth.ts";
 import { stripe, APP_URL, BILLING_INBOX, sendBillingEmail, emailShell, button, eur } from "../_shared/stripeApi.ts";
+import { orderLinkAmountCents } from "../_shared/orderLinkRules.ts";
+import { portalLineHtml } from "../_shared/portalEmailCopy.ts";
 import { cycleAmountCents, recurringFor, productNameFor } from "../_shared/stripeRules.ts";
 
 const Body = z.object({
-  action: z.enum(["create_checkout", "cancel", "resume", "overview", "pay", "portal"]),
+  action: z.enum(["create_checkout", "cancel", "resume", "overview", "pay", "portal", "create_order_link", "send_order_link"]),
+  order_id: z.string().uuid().optional(),
+  link_id: z.string().uuid().optional(),
+  title: z.string().trim().min(1).max(120).optional(),
+  description: z.string().trim().max(300).optional(),
+  net_amount: z.number().positive().max(1_000_000).optional(),
+  vat_enabled: z.boolean().optional(),
+  vat_rate: z.number().min(0).max(30).optional(),
+  currency: z.enum(["EUR", "USD", "GBP", "CHF"]).optional(),
   contract_id: z.string().uuid().optional(),
   send_email: z.boolean().optional(),
   product_name: z.string().trim().min(1).max(120).optional(),
@@ -86,8 +96,65 @@ Deno.serve(async (req) => {
     const parsed = Body.safeParse(await req.json().catch(() => ({})));
     if (!parsed.success) return json({ error: parsed.error.flatten().fieldErrors }, 400);
     const { action, contract_id, send_email, product_name, product_description } = parsed.data;
+    const p = parsed.data;
     const db = admin();
     if (caller.system && action !== "create_checkout") return json({ error: "Forbidden" }, 403);
+
+    if (action === "create_order_link" || action === "send_order_link") {
+      if (caller.isClient || caller.system) return json({ error: "Forbidden" }, 403);
+      const { data: roles } = await db.from("user_roles").select("role").eq("user_id", caller.id);
+      if (!(roles ?? []).some((r: { role: string }) => ["admin", "agent", "user"].includes(r.role))) return json({ error: "Forbidden" }, 403);
+      if (!p.order_id) return json({ error: "order_id required" }, 400);
+      const { data: order } = await db.from("orders").select("id, company_name, contact_name, contact_email").eq("id", p.order_id).maybeSingle();
+      if (!order) return json({ error: "Order not found" }, 404);
+
+      if (action === "create_order_link") {
+        if (!p.title || !p.net_amount) return json({ error: "title and net_amount required" }, 400);
+        const vatOn = !!p.vat_enabled, rate = vatOn ? (p.vat_rate ?? 19) : 0;
+        const cents = orderLinkAmountCents(p.net_amount, vatOn, rate);
+        const currency = p.currency ?? "EUR";
+        // Replace any previous pending link: deactivate it in Stripe so the old amount can't be paid.
+        const { data: prev } = await db.from("order_payment_links").select("id, stripe_link_id").eq("order_id", order.id).eq("status", "pending");
+        for (const old of prev ?? []) {
+          if (old.stripe_link_id) await stripe(`payment_links/${old.stripe_link_id}`, { active: false }).catch((e) => console.error("deactivate failed", e));
+          await db.from("order_payment_links").update({ status: "replaced" }).eq("id", old.id);
+        }
+        const { data: row, error: insErr } = await db.from("order_payment_links").insert({
+          order_id: order.id, title: p.title, description: p.description || null, net_amount: p.net_amount,
+          vat_enabled: vatOn, vat_rate: rate, total_amount: cents / 100, currency, created_by: caller.id,
+        }).select("id").single();
+        if (insErr) throw insErr;
+        const price = await stripe<{ id: string }>("prices", {
+          currency: currency.toLowerCase(), unit_amount: cents,
+          product_data: { name: p.title },
+        });
+        const meta = { order_id: order.id, link_id: row.id };
+        const link = await stripe<{ id: string; url: string }>("payment_links", {
+          line_items: { 0: { price: price.id, quantity: 1 } },
+          metadata: meta,
+          payment_intent_data: { metadata: meta, ...(p.description ? { description: p.description } : {}) },
+          after_completion: { type: "redirect", redirect: { url: `${APP_URL}/client/invoices?stripe=success` } },
+          restrictions: { completed_sessions: { limit: 1 } },
+        });
+        await db.from("order_payment_links").update({ stripe_link_id: link.id, url: link.url }).eq("id", row.id);
+        return json({ id: row.id, url: link.url, total_amount: cents / 100 });
+      }
+
+      // send_order_link
+      const { data: link } = await db.from("order_payment_links").select("*").eq("order_id", order.id).eq("status", "pending").order("created_at", { ascending: false }).limit(1).maybeSingle();
+      if (!link?.url) return json({ error: "No open payment link" }, 404);
+      if (!order.contact_email) return json({ error: "Order has no client email" }, 400);
+      const amount = eur(Math.round(Number(link.total_amount) * 100), link.currency);
+      await sendBillingEmail(order.contact_email, `Zahlung / Payment: ${link.title} – ${amount}`, emailShell(
+        `Hallo ${order.contact_name || order.company_name},`,
+        `<p>für <b>${link.title}</b> können Sie bequem online bezahlen: <b>${amount}</b>${link.vat_enabled ? ` (inkl. ${link.vat_rate}% MwSt.)` : ""}.</p>
+         ${link.description ? `<p>${link.description}</p>` : ""}
+         <p>You can pay <b>${link.title}</b> online: <b>${amount}</b>${link.vat_enabled ? ` (incl. ${link.vat_rate}% VAT)` : ""}.</p>
+         ${button(link.url, "Jetzt bezahlen / Pay now")}
+         ${portalLineHtml()}`));
+      await db.from("order_payment_links").update({ sent_at: new Date().toISOString() }).eq("id", link.id);
+      return json({ ok: true });
+    }
 
     if (action === "overview") {
       if (!caller.isClient) return json({ error: "Clients only" }, 403);
@@ -104,7 +171,14 @@ Deno.serve(async (req) => {
         ids.length ? db.from("stripe_payments").select("id, contract_id, amount, currency, status, hosted_invoice_url, invoice_pdf_url, period_start, period_end, paid_at, created_at").in("contract_id", ids).order("created_at", { ascending: false }) : { data: [] },
         clientIds.length ? db.from("invoices").select("id, invoice_number, issue_date, due_date, total_amount, currency, status, order_id, stripe_payment_link").in("client_id", clientIds).neq("status", "draft").order("issue_date", { ascending: false }) : { data: [] },
       ]);
-      return json({ contracts: contracts ?? [], installments: inst.data ?? [], payments: pays.data ?? [], invoices: invs.data ?? [] });
+      const { data: rawOrders } = await db.from("orders").select("id, company_name, contact_email, client_id").or([`client_id.eq.${caller.id}`, ...emails.map((e) => `contact_email.ilike.${e}`)].join(",")).eq("status_deleted", false);
+      const orderIds = (rawOrders ?? []).filter((o: { client_id: string | null; contact_email: string | null }) => o.client_id === caller.id || emails.includes(String(o.contact_email ?? "").toLowerCase())).map((o: { id: string }) => o.id);
+      const [links, orderPays] = await Promise.all([
+        orderIds.length ? db.from("order_payment_links").select("id, order_id, title, description, total_amount, currency, vat_enabled, vat_rate, url, status, paid_at, created_at").in("order_id", orderIds).in("status", ["pending", "paid"]).order("created_at", { ascending: false }) : { data: [] },
+        orderIds.length ? db.from("stripe_payments").select("id, contract_id, order_id, amount, currency, status, hosted_invoice_url, invoice_pdf_url, period_start, period_end, paid_at, created_at").in("order_id", orderIds) : { data: [] },
+      ]);
+      const payments = [...(pays.data ?? []), ...(orderPays.data ?? [])].sort((a: { created_at: string }, b: { created_at: string }) => b.created_at.localeCompare(a.created_at));
+      return json({ contracts: contracts ?? [], installments: inst.data ?? [], payments, invoices: invs.data ?? [], order_links: links.data ?? [] });
     }
 
     if (action === "portal") {
