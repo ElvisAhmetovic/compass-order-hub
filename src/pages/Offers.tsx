@@ -55,6 +55,7 @@ interface Offer {
   sent_by: string | null;
   sent_by_name: string;
   order_data: any;
+  confirmed_at?: string | null;
   status: string;
   created_at: string;
 }
