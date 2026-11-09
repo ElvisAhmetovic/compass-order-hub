@@ -10,7 +10,7 @@ import { THANK_YOU_URL } from "../_shared/receiptRules.ts";
 import { cycleAmountCents, recurringFor, productNameFor } from "../_shared/stripeRules.ts";
 
 const Body = z.object({
-  action: z.enum(["create_checkout", "cancel", "resume", "overview", "pay", "portal", "create_order_link", "send_order_link"]),
+  action: z.enum(["create_checkout", "cancel", "resume", "overview", "pay", "portal", "create_order_link", "send_order_link", "refresh_link_redirects"]),
   order_id: z.string().uuid().optional(),
   link_id: z.string().uuid().optional(),
   title: z.string().trim().min(1).max(120).optional(),
@@ -201,6 +201,20 @@ Deno.serve(async (req) => {
          ${portalLineHtml()}`));
       await db.from("order_payment_links").update({ sent_at: new Date().toISOString() }).eq("id", link.id);
       return json({ ok: true });
+    }
+
+    if (action === "refresh_link_redirects") {
+      // One-off/admin: point already-sent pending order links at the confirmation page.
+      if (caller.isClient || caller.system) return json({ error: "Forbidden" }, 403);
+      const { data: isAdm } = await db.from("user_roles").select("role").eq("user_id", caller.id).eq("role", "admin");
+      if (!isAdm?.length) return json({ error: "Forbidden" }, 403);
+      const links = must(await db.from("order_payment_links").select("stripe_link_id").eq("status", "pending").not("stripe_link_id", "is", null)) as { stripe_link_id: string }[];
+      let updated = 0;
+      for (const l of links) {
+        try { await stripe(`payment_links/${l.stripe_link_id}`, { after_completion: { type: "redirect", redirect: { url: THANK_YOU_URL(APP_URL) } } }); updated++; }
+        catch (e) { console.error("redirect update failed", l.stripe_link_id, e); }
+      }
+      return json({ ok: true, total: links.length, updated });
     }
 
     if (action === "overview") {
