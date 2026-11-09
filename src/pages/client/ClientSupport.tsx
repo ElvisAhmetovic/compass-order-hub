@@ -41,6 +41,7 @@ import {
 import { getUnreadCountsForInquiries } from "@/services/supportReadService";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
+import LoadErrorCard from "@/components/client-portal/LoadErrorCard";
 import { useLanguage } from "@/context/ClientLanguageContext";
 
 interface InquiryWithUnread extends ClientSupportInquiry {
@@ -55,6 +56,7 @@ const ClientSupport = () => {
   const [inquiries, setInquiries] = useState<InquiryWithUnread[]>([]);
   const [orders, setOrders] = useState<{ id: string; company_name: string }[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
 
@@ -110,22 +112,29 @@ const ClientSupport = () => {
 
   const loadData = async () => {
     setIsLoading(true);
-    const [inquiriesData, ordersData] = await Promise.all([
-      fetchClientInquiries(),
-      fetchClientOrders(),
-    ]);
-    
-    const inquiryIds = inquiriesData.map(i => i.id);
-    const unreadCounts = await getUnreadCountsForInquiries(inquiryIds);
-    
-    const inquiriesWithUnread = inquiriesData.map(inquiry => ({
-      ...inquiry,
-      unread_count: unreadCounts.get(inquiry.id) || 0
-    }));
-    
-    setInquiries(inquiriesWithUnread);
-    setOrders(ordersData);
-    setIsLoading(false);
+    setLoadError(false);
+    try {
+      const [inquiriesData, ordersData] = await Promise.all([
+        fetchClientInquiries(),
+        fetchClientOrders(),
+      ]);
+
+      const inquiryIds = inquiriesData.map(i => i.id);
+      const unreadCounts = await getUnreadCountsForInquiries(inquiryIds);
+
+      const inquiriesWithUnread = inquiriesData.map(inquiry => ({
+        ...inquiry,
+        unread_count: unreadCounts.get(inquiry.id) || 0
+      }));
+
+      setInquiries(inquiriesWithUnread);
+      setOrders(ordersData);
+    } catch (e) {
+      console.error("Support data failed to load:", e);
+      setLoadError(true);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleCreateInquiry = async () => {
@@ -266,6 +275,8 @@ const ClientSupport = () => {
           <div className="flex items-center justify-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
+        ) : loadError ? (
+          <LoadErrorCard onRetry={loadData} />
         ) : inquiries.length === 0 ? (
           <Card className="border-dashed">
             <CardContent className="py-12 text-center">
