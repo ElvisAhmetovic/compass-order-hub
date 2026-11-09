@@ -69,6 +69,7 @@ const WorkHours = lazy(() => import("./pages/WorkHours"));
 const WorkHoursV2 = lazy(() => import("./pages/WorkHoursV2"));
 const WorkHoursAdmin = lazy(() => import("./pages/WorkHoursAdmin"));
 const InvoiceAuditLogPage = lazy(() => import("./pages/admin/InvoiceAuditLogPage"));
+const ClientPortalActivityPage = lazy(() => import("./pages/admin/ClientPortalActivityPage"));
 const MonthlyPackages = lazy(() => import("./pages/MonthlyPackages"));
 const AiOutreach = lazy(() => import("./pages/AiOutreach"));
 const ServicesKnowledge = lazy(() => import("./pages/ServicesKnowledge"));
@@ -363,6 +364,7 @@ function App() {
                       </AdminGuard>
                     </RequireAuth>
                   } />
+                  <Route path="/admin/client-activity" element={<RequireAuth><ClientPortalActivityPage /></RequireAuth>} />
                   <Route path="/admin/invoice-audit" element={
                     <RequireAuth>
                       <AdminGuard>
