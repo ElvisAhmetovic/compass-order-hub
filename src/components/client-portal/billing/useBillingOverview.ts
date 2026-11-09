@@ -8,7 +8,7 @@ export interface Contract {
 }
 export interface Installment { id: string; contract_id: string; month_label: string; due_date: string; amount: number; currency: string; payment_status: string; paid_at: string | null }
 export interface Payment { id: string; contract_id: string | null; order_id?: string | null; amount: number; currency: string; status: string; hosted_invoice_url: string | null; invoice_pdf_url: string | null; period_start: string | null; paid_at: string | null; created_at: string }
-export interface Invoice { id: string; invoice_number: string; issue_date: string; due_date: string; total_amount: number; currency: string; status: string; order_id: string | null; stripe_payment_link: string | null }
+export interface Invoice { id: string; invoice_number: string; issue_date: string; due_date: string; total_amount: number; currency: string; status: string; order_id: string | null; stripe_payment_link: string | null; paid_at?: string | null }
 export interface OrderLink { id: string; order_id: string; title: string; description: string | null; total_amount: number; currency: string; vat_enabled: boolean; vat_rate: number; url: string | null; status: string; paid_at: string | null; created_at: string }
 export interface Overview { contracts: Contract[]; installments: Installment[]; payments: Payment[]; invoices: Invoice[]; order_links: OrderLink[] }
 

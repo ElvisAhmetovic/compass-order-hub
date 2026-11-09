@@ -33,6 +33,10 @@ html {
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 210 40% 98%;
+    --success: 142 64% 34%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 26 83% 14%;
 
     --border: 214 25% 88%;
     --input: 214 25% 88%;
@@ -80,6 +84,10 @@ html {
 
     --destructive: 0 62.8% 42%;
     --destructive-foreground: 210 40% 98%;
+    --success: 142 64% 34%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 26 83% 14%;
 
     --border: 220 35% 20%;
     --input: 220 35% 20%;

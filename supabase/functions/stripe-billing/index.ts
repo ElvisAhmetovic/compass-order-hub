@@ -77,7 +77,7 @@ async function billingOverview(db: Db, caller: Caller, orderId?: string) {
     contracts = raw.filter((c) => emails.includes(String(c.client_email).toLowerCase()));
   }
   const ids = contracts.map((c) => c.id);
-  const invCols = "id, invoice_number, issue_date, due_date, total_amount, currency, status, order_id, stripe_payment_link";
+  const invCols = "id, invoice_number, issue_date, due_date, total_amount, currency, status, order_id, stripe_payment_link, paid_at";
   const payCols = "id, contract_id, order_id, amount, currency, status, hosted_invoice_url, invoice_pdf_url, period_start, period_end, paid_at, created_at";
   const none = { data: [], error: null };
   const [inst, pays, invByClient, invByOrder, links, orderPays] = await Promise.all([
