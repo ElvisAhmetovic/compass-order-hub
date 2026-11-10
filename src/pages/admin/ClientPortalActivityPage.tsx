@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import Sidebar from "@/components/dashboard/Sidebar";
 import { supabase } from "@/integrations/supabase/client";
 import { activitySummary, describeActivity, EVENT_LABELS, type ActivityRow } from "@/services/portalActivityView";
 
@@ -52,6 +53,7 @@ const ClientPortalActivityPage = () => {
 
   return (
     <div className="flex min-h-screen">
+      <Sidebar />
       <div className="flex-1 flex flex-col p-4 md:p-6 gap-4 min-w-0">
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-3">
