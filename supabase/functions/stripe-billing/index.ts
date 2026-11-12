@@ -10,7 +10,7 @@ import { THANK_YOU_URL } from "../_shared/receiptRules.ts";
 import { cycleAmountCents, recurringFor, productNameFor } from "../_shared/stripeRules.ts";
 
 const Body = z.object({
-  action: z.enum(["create_checkout", "cancel", "resume", "overview", "pay", "portal", "create_order_link", "send_order_link", "refresh_link_redirects"]),
+  action: z.enum(["create_checkout", "cancel", "resume", "overview", "pay", "portal", "create_order_link", "send_order_link", "send_contract_link", "refresh_link_redirects"]),
   order_id: z.string().uuid().optional(),
   link_id: z.string().uuid().optional(),
   title: z.string().trim().min(1).max(120).optional(),
@@ -128,11 +128,25 @@ async function createCheckout(contract: Record<string, any>, nameIn?: string, de
     cancel_url: `${APP_URL}/client/invoices?stripe=cancelled`,
   });
   await db.from("monthly_contracts").update({
-    payment_method: "stripe", stripe_customer_id: customer, stripe_checkout_url: session.url,
+    payment_method: "stripe", stripe_customer_id: customer, stripe_checkout_url: session.url, stripe_checkout_created_at: new Date().toISOString(),
     stripe_product_name: productName, stripe_product_description: productDesc || null,
     stripe_status: contract.stripe_subscription_id ? contract.stripe_status : "pending",
   }).eq("id", contract.id);
   return session.url;
+}
+
+async function emailContractLink(db: Db, contract: Record<string, any>, url: string, product_name?: string) {
+        const amount = eur(cycleAmountCents(contract.monthly_amount, contract.billing_frequency, contract.vat_enabled, contract.vat_rate), contract.currency);
+        const period = contract.billing_frequency === 12 ? "Jahr / year" : contract.billing_frequency > 1 ? `${contract.billing_frequency} Monate / months` : "Monat / month";
+        const amount = eur(cycleAmountCents(contract.monthly_amount, contract.billing_frequency, contract.vat_enabled, contract.vat_rate), contract.currency);
+        const period = contract.billing_frequency === 12 ? "Jahr / year" : contract.billing_frequency > 1 ? `${contract.billing_frequency} Monate / months` : "Monat / month";
+        await sendBillingEmail(contract.client_email, "Ihr Abonnement – bitte Zahlung einrichten / Set up your subscription payment", emailShell(
+          `Hallo ${contract.client_name},`,
+          `<p>für <b>${productNameFor(product_name, contract.stripe_product_name, contract.client_name, contract.website)}</b> können Sie jetzt bequem per Karte oder SEPA-Lastschrift bezahlen: <b>${amount} pro ${period}</b>.</p>
+           <p>You can now pay your package by card or SEPA direct debit: <b>${amount} per ${period}</b>.</p>
+           ${button(url, "Jetzt abonnieren / Subscribe now")}
+           <p style="font-size:13px;color:#64748b">Der Link ist 24 Stunden gültig. Danach finden Sie den Zahlungsbutton jederzeit in Ihrem Kundenportal unter Rechnungen: <a href="${APP_URL}/client/invoices">${APP_URL}/client/invoices</a>. Banküberweisung ist weiterhin möglich.<br/>The link is valid for 24 hours; afterwards use the Pay button in your client portal. Bank transfer remains available.</p>`));
+  await db.from("monthly_contracts").update({ stripe_link_sent_at: new Date().toISOString() }).eq("id", contract.id);
 }
 
 Deno.serve(async (req) => {
@@ -246,20 +260,19 @@ Deno.serve(async (req) => {
       if (action === "create_checkout") return json({ error: "Forbidden" }, 403);
     }
 
+    if (action === "send_contract_link") {
+      if (caller.isClient) return json({ error: "Forbidden" }, 403);
+      if (!contract.stripe_checkout_url) return json({ error: "No saved link – create one first" }, 404);
+      if (contract.stripe_checkout_created_at && Date.now() - new Date(contract.stripe_checkout_created_at).getTime() > 24 * 3600e3) return json({ error: "Link expired – create a new one" }, 410);
+      await emailContractLink(db, contract, contract.stripe_checkout_url);
+      return json({ ok: true });
+    }
+
     if (action === "create_checkout" || action === "pay") {
       if (contract.stripe_subscription_id && ["active", "trialing"].includes(contract.stripe_status)) return json({ error: "Already subscribed" }, 409);
       if (action === "pay" && contract.payment_method !== "stripe") return json({ error: "Stripe not enabled for this package" }, 400);
       const url = action === "create_checkout" ? await createCheckout(contract, product_name, product_description) : await createCheckout(contract);
-      if (action === "create_checkout" && send_email) {
-        const amount = eur(cycleAmountCents(contract.monthly_amount, contract.billing_frequency, contract.vat_enabled, contract.vat_rate), contract.currency);
-        const period = contract.billing_frequency === 12 ? "Jahr / year" : contract.billing_frequency > 1 ? `${contract.billing_frequency} Monate / months` : "Monat / month";
-        await sendBillingEmail(contract.client_email, "Ihr Abonnement – bitte Zahlung einrichten / Set up your subscription payment", emailShell(
-          `Hallo ${contract.client_name},`,
-          `<p>für <b>${productNameFor(product_name, contract.stripe_product_name, contract.client_name, contract.website)}</b> können Sie jetzt bequem per Karte oder SEPA-Lastschrift bezahlen: <b>${amount} pro ${period}</b>.</p>
-           <p>You can now pay your package by card or SEPA direct debit: <b>${amount} per ${period}</b>.</p>
-           ${button(url, "Jetzt abonnieren / Subscribe now")}
-           <p style="font-size:13px;color:#64748b">Der Link ist 24 Stunden gültig. Danach finden Sie den Zahlungsbutton jederzeit in Ihrem Kundenportal unter Rechnungen: <a href="${APP_URL}/client/invoices">${APP_URL}/client/invoices</a>. Banküberweisung ist weiterhin möglich.<br/>The link is valid for 24 hours; afterwards use the Pay button in your client portal. Bank transfer remains available.</p>`));
-      }
+      if (action === "create_checkout" && send_email) await emailContractLink(db, contract, url, product_name);
       return json({ url });
     }
 
