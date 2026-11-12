@@ -4,7 +4,8 @@ import { portalLineHtml } from "../_shared/portalEmailCopy.ts";
 import { admin, corsHeaders, json } from "../_shared/outreachAuth.ts";
 import { APP_URL, BILLING_INBOX, sendBillingEmail, emailShell, button, eur } from "../_shared/stripeApi.ts";
 import { verifyStripeSignature, dueDateFromPeriodStart, monthNumberFor, subscriptionEndUnix, paymentMethodLabel } from "../_shared/stripeRules.ts";
-import { stripe } from "../_shared/stripeApi.ts";
+import { stripe, stripeTestMode } from "../_shared/stripeApi.ts";
+import { refundStatus, sessionIsPaid } from "../_shared/stripeRules.ts";
 
 const MONTHS_DE = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
 type Obj = Record<string, any>;
@@ -80,6 +81,7 @@ async function handleInvoice(db: ReturnType<typeof admin>, inv: Obj, paid: boole
   const details = await paymentDetails(inv);
   await db.from("stripe_payments").upsert({
     payment_method_label: details.label, failure_reason: paid ? null : details.reason,
+    payment_intent_id: typeof inv.payment_intent === "string" ? inv.payment_intent : inv.payment_intent?.id ?? null,
     stripe_invoice_id: inv.id, contract_id: contract.id, installment_id: installmentId, client_email: contract.client_email,
     stripe_subscription_id: sub, amount: amountCents / 100, currency: String(inv.currency || "eur").toUpperCase(),
     status: paid ? "paid" : "failed", hosted_invoice_url: inv.hosted_invoice_url ?? null, invoice_pdf_url: inv.invoice_pdf ?? null,
@@ -140,14 +142,14 @@ async function handleSubscription(db: ReturnType<typeof admin>, s: Obj, deleted:
 
 async function handleOrderPayment(db: ReturnType<typeof admin>, sess: Obj) {
   const linkId = sess.metadata?.link_id;
-  if (!linkId || sess.payment_status !== "paid") return;
+  if (!linkId || !sessionIsPaid(sess.payment_status)) return;
   const { data: link } = await db.from("order_payment_links").select("*").eq("id", linkId).maybeSingle();
   if (!link) return;
   const cents = Number(sess.amount_total ?? Math.round(Number(link.total_amount) * 100));
   const { data: order } = await db.from("orders").select("id, company_name, contact_email, contact_name").eq("id", link.order_id).maybeSingle();
   // Always record the money; only a still-current link flips order/invoice state.
   await db.from("stripe_payments").upsert({
-    checkout_session_id: sess.id, order_id: link.order_id, payment_link_id: link.id,
+    checkout_session_id: sess.id, payment_intent_id: typeof sess.payment_intent === "string" ? sess.payment_intent : sess.payment_intent?.id ?? null, order_id: link.order_id, payment_link_id: link.id,
     client_email: order?.contact_email ?? sess.customer_details?.email ?? null,
     amount: cents / 100, currency: String(sess.currency || link.currency).toUpperCase(), status: "paid", paid_at: new Date().toISOString(),
   }, { onConflict: "checkout_session_id" });
@@ -167,11 +169,85 @@ async function handleOrderPayment(db: ReturnType<typeof admin>, sess: Obj) {
     `<p>${order?.company_name ?? ""} (${order?.contact_email ?? ""}) paid ${amount} for "${link.title}". The order is marked Invoice paid.</p>`));
 }
 
+/** Finds our stored payment for a charge (by payment intent, then by Stripe invoice). */
+async function paymentForCharge(db: ReturnType<typeof admin>, ch: Obj) {
+  const pi = typeof ch.payment_intent === "string" ? ch.payment_intent : ch.payment_intent?.id;
+  if (pi) {
+    const { data } = await db.from("stripe_payments").select("*").eq("payment_intent_id", pi).maybeSingle();
+    if (data) return data;
+  }
+  const inv = typeof ch.invoice === "string" ? ch.invoice : ch.invoice?.id;
+  if (inv) {
+    const { data } = await db.from("stripe_payments").select("*").eq("stripe_invoice_id", inv).maybeSingle();
+    if (data) return data;
+  }
+  return null;
+}
+
+async function handleRefund(db: ReturnType<typeof admin>, ch: Obj) {
+  const p = await paymentForCharge(db, ch);
+  const amount = eur(ch.amount_refunded ?? 0, ch.currency || "eur");
+  if (!p) {
+    await sendBillingEmail(BILLING_INBOX, `Stripe refund (unmatched): ${amount}`, emailShell("Stripe refund", `<p>A refund of ${amount} happened on charge ${ch.id}, but no matching payment was found. Please check it manually.</p>`));
+    return;
+  }
+  const status = refundStatus(Number(ch.amount ?? 0), Number(ch.amount_refunded ?? 0));
+  await db.from("stripe_payments").update({ status, refunded_amount: (ch.amount_refunded ?? 0) / 100, refunded_at: new Date().toISOString() }).eq("id", p.id);
+  if (status === "refunded") {
+    if (p.order_id) {
+      await db.from("orders").update({ status_invoice_paid: false }).eq("id", p.order_id);
+      await db.from("invoices").update({ status: "refunded" }).eq("order_id", p.order_id).eq("status", "paid");
+      if (p.payment_link_id) await db.from("order_payment_links").update({ status: "refunded" }).eq("id", p.payment_link_id);
+    }
+    if (p.installment_id) {
+      const { data: inst } = await db.from("monthly_installments").select("invoice_id").eq("id", p.installment_id).maybeSingle();
+      await db.from("monthly_installments").update({ payment_status: "unpaid", paid_at: null }).eq("id", p.installment_id);
+      if (inst?.invoice_id) await db.from("invoices").update({ status: "refunded" }).eq("id", inst.invoice_id);
+    }
+  }
+  const label = status === "refunded" ? "Refunded" : "Partly refunded";
+  await sendBillingEmail(BILLING_INBOX, `Stripe ${label}: ${p.client_email ?? ""} – ${amount}`, emailShell(`Stripe payment ${label.toLowerCase()}`,
+    `<p>${amount} of the payment from ${p.client_email ?? "a client"} was refunded. Status is now <b>${label}</b>.</p>`));
+  await notifyAdmins(db, `Stripe ${label}`, `${amount} refunded to ${p.client_email ?? "client"}.`, "warning");
+}
+
+async function handleDispute(db: ReturnType<typeof admin>, d: Obj, closed: boolean) {
+  const p = await paymentForCharge(db, { payment_intent: d.payment_intent, invoice: null });
+  if (p) await db.from("stripe_payments").update({ dispute_status: closed ? d.status : "open" }).eq("id", p.id);
+  const amount = eur(d.amount ?? 0, d.currency || "eur");
+  const who = p?.client_email ?? "unknown client";
+  const title = closed ? `Stripe dispute closed (${d.status}): ${who}` : `URGENT – Stripe dispute opened: ${who} – ${amount}`;
+  await sendBillingEmail(BILLING_INBOX, title, emailShell(closed ? "Dispute closed" : "Chargeback / dispute opened",
+    `<p>${closed ? `The dispute over ${amount} was closed with result <b>${d.status}</b>.` : `${who} disputed a payment of ${amount} (reason: ${d.reason ?? "unknown"}). Respond in the Stripe dashboard before the deadline${d.evidence_details?.due_by ? ` (${new Date(d.evidence_details.due_by * 1000).toLocaleDateString("de-DE")})` : ""}.`}</p>`));
+  await notifyAdmins(db, closed ? "Stripe dispute closed" : "Stripe dispute opened", `${who} – ${amount}`, closed ? "info" : "error");
+}
+
+async function handleExpired(db: ReturnType<typeof admin>, sess: Obj) {
+  const now = new Date().toISOString();
+  if (sess.metadata?.link_id) await db.from("order_payment_links").update({ expired_at: now }).eq("id", sess.metadata.link_id).eq("status", "pending");
+  const cid = sess.metadata?.contract_id ?? (sess.mode === "subscription" ? sess.client_reference_id : null);
+  if (cid) await db.from("monthly_contracts").update({ stripe_checkout_expired_at: now }).eq("id", cid).is("stripe_subscription_id", null);
+}
+
+async function handleActionRequired(db: ReturnType<typeof admin>, inv: Obj) {
+  const { sub, contractId } = invoiceSubscription(inv);
+  const contract = await contractFor(db, sub, contractId);
+  const to = contract?.client_email ?? inv.customer_email;
+  if (!to || !inv.hosted_invoice_url) return;
+  const amount = eur(inv.amount_due ?? 0, inv.currency || "eur");
+  await sendBillingEmail(to, "Bestätigung erforderlich / Payment confirmation needed", emailShell(`Hallo ${contract?.client_name ?? ""},`,
+    `<p>Ihre Bank verlangt eine Bestätigung für die Zahlung über <b>${amount}</b>. Bitte bestätigen Sie sie hier.</p>
+     <p>Your bank needs you to confirm the payment of <b>${amount}</b>. Please confirm it here.</p>
+     ${button(inv.hosted_invoice_url, "Zahlung bestätigen / Confirm payment")}`));
+  await sendBillingEmail(BILLING_INBOX, `Stripe: client must confirm payment – ${contract?.client_name ?? to}`, emailShell("Payment needs confirmation",
+    `<p>${contract?.client_name ?? to} must confirm a ${amount} payment (3-D Secure). We emailed them the link.</p>`));
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
   const payload = await req.text();
-  const ok = await verifyStripeSignature(payload, req.headers.get("stripe-signature"), Deno.env.get("STRIPE_WEBHOOK_SECRET") ?? "");
+  const ok = await verifyStripeSignature(payload, req.headers.get("stripe-signature"), (stripeTestMode() ? Deno.env.get("STRIPE_TEST_WEBHOOK_SECRET") : Deno.env.get("STRIPE_WEBHOOK_SECRET")) ?? "");
   if (!ok) return json({ error: "Invalid signature" }, 400);
 
   const event = JSON.parse(payload) as { id: string; type: string; data: { object: Obj } };
@@ -199,6 +275,16 @@ Deno.serve(async (req) => {
           await handleOrderPayment(db, o);
         }
         break;
+      case "checkout.session.async_payment_succeeded": if (o.mode === "payment") await handleOrderPayment(db, o); break;
+      case "checkout.session.async_payment_failed":
+        await sendBillingEmail(BILLING_INBOX, "Stripe delayed payment FAILED", emailShell("Delayed payment failed", `<p>A bank/SEPA payment for checkout ${o.id} (${o.customer_details?.email ?? ""}) failed. Nothing was marked paid.</p>`));
+        await notifyAdmins(db, "Stripe delayed payment failed", o.customer_details?.email ?? o.id, "error");
+        break;
+      case "checkout.session.expired": await handleExpired(db, o); break;
+      case "charge.refunded": await handleRefund(db, o); break;
+      case "charge.dispute.created": await handleDispute(db, o, false); break;
+      case "charge.dispute.closed": await handleDispute(db, o, true); break;
+      case "invoice.payment_action_required": await handleActionRequired(db, o); break;
       case "invoice.paid": await handleInvoice(db, o, true); break;
       case "invoice.payment_failed": await handleInvoice(db, o, false); break;
       case "customer.subscription.created":

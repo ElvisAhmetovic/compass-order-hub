@@ -59,3 +59,19 @@ Deno.test("link older than 24h is expired", () => {
   if (checkoutLinkState(null, null, true, now) !== "paid") throw new Error();
 });
 Deno.test("card label", () => { if (paymentMethodLabel({ card: { brand: "visa", last4: "4242" } }) !== "Visa •••• 4242") throw new Error(); });
+
+import { refundStatus, sessionIsPaid, useStripeTestMode } from "./stripeRules.ts";
+Deno.test("refundStatus full / partial / none", () => {
+  if (refundStatus(39999, 39999) !== "refunded") throw new Error("full");
+  if (refundStatus(39999, 10000) !== "partially_refunded") throw new Error("partial");
+  if (refundStatus(39999, 0) !== "paid") throw new Error("none");
+});
+Deno.test("sessionIsPaid ignores unpaid SEPA sessions", () => {
+  if (sessionIsPaid("unpaid")) throw new Error("unpaid counted");
+  if (!sessionIsPaid("paid")) throw new Error("paid not counted");
+});
+Deno.test("test mode needs flag and key", () => {
+  if (useStripeTestMode("true", undefined)) throw new Error("no key");
+  if (useStripeTestMode(undefined, "sk_test")) throw new Error("no flag");
+  if (!useStripeTestMode("true", "sk_test")) throw new Error("both");
+});

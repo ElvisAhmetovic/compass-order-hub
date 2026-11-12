@@ -98,3 +98,19 @@ export function paymentMethodLabel(pm: { type?: string; card?: { brand?: string;
   if (pm.sepa_debit?.last4) return `SEPA •••• ${pm.sepa_debit.last4}`;
   return pm.type ? pm.type : null;
 }
+
+/** Status after a refund: full refund -> "refunded", partial -> "partially_refunded". */
+export function refundStatus(amountCents: number, refundedCents: number): "paid" | "refunded" | "partially_refunded" {
+  if (!(refundedCents > 0)) return "paid";
+  return refundedCents >= amountCents ? "refunded" : "partially_refunded";
+}
+
+/** Money counts only when Stripe says it has cleared (SEPA/bank redirects arrive later). */
+export function sessionIsPaid(paymentStatus: string | null | undefined): boolean {
+  return paymentStatus === "paid" || paymentStatus === "no_payment_required";
+}
+
+/** Test mode is on only when explicitly enabled AND a test key exists. */
+export function useStripeTestMode(flag: string | undefined, testKey: string | undefined): boolean {
+  return flag === "true" && !!testKey;
+}
