@@ -6,6 +6,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import StripeContractControls from "./StripeContractControls";
+import StripePaymentsPanel from "./StripePaymentsPanel";
 import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
 import { Trash2, ChevronDown, ChevronRight, ExternalLink, FileText, Mail, Loader2, UserCheck, UserX, KeyRound, PauseCircle, PlayCircle } from "lucide-react";
@@ -531,6 +532,7 @@ const MonthlyInstallmentsTable: React.FC<Props> = ({ contracts, installments, on
                           </TableCell>
                           <TableCell>
                             <Badge variant={isPaid ? "default" : "destructive"}>{isPaid ? "Paid" : "Unpaid"}</Badge>
+                            {isPaid && inst.paid_at && <span className="ml-2 text-xs text-muted-foreground">{new Date(inst.paid_at).toLocaleDateString("de-DE")}</span>}
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-1">
@@ -575,6 +577,16 @@ const MonthlyInstallmentsTable: React.FC<Props> = ({ contracts, installments, on
                     })}
                   </TableBody>
                 </Table>
+                {(contract as any).payment_method === "stripe" && (
+                  <StripePaymentsPanel
+                    contractId={contract.id}
+                    durationMonths={(contract as any).duration_months ?? null}
+                    billingFrequency={(contract as any).billing_frequency ?? 1}
+                    nextCharge={(contract as any).stripe_status === "active" && !(contract as any).cancel_at ? (contract as any).current_period_end ?? null : null}
+                    endsAt={(contract as any).stripe_ends_at ?? null}
+                    reloadKey={contractInstallments.length}
+                  />
+                )}
               </div>
             )}
           </div>
