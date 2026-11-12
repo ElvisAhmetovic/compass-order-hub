@@ -107,7 +107,7 @@ async function handleInvoice(db: ReturnType<typeof admin>, inv: Obj, paid: boole
     await sendBillingEmail(BILLING_INBOX, `Stripe payment FAILED: ${contract.client_name} – ${amount}`, emailShell("Stripe payment failed",
       `<p>${contract.client_name} (${contract.client_email}) – charge of ${amount} failed.${details.reason ? ` Stripe says: <i>${details.reason}</i>` : ""} The client was emailed a retry link. Stripe retries automatically.</p>
        ${button(`${APP_URL}/monthly-packages`, "Open Monthly Packages")}`));
-    await notifyAdmins(db, `Payment failed: ${contract.client_name}`, `${amount} could not be charged${details.reason ? ` – ${details.reason}` : ""}.`, "payment_failed");
+    await notifyAdmins(db, `Payment failed: ${contract.client_name}`, `${amount} could not be charged${details.reason ? ` – ${details.reason}` : ""}.`, "error");
   }
 }
 
@@ -130,7 +130,7 @@ async function handleSubscription(db: ReturnType<typeof admin>, s: Obj, deleted:
       await sendBillingEmail(contract.client_email, "Ihr Paket ist abgeschlossen / Your package is complete", emailShell(`Hallo ${contract.client_name},`,
         `<p>Ihr ${contract.duration_months}-Monats-Paket ist vollständig bezahlt und abgeschlossen – vielen Dank! Es werden keine weiteren Zahlungen eingezogen. Möchten Sie verlängern? Antworten Sie einfach auf diese E-Mail, wir senden Ihnen gerne ein Angebot.</p>
          <p>Your ${contract.duration_months}-month package is fully paid and complete – thank you! No further payments will be taken. Would you like to renew? Just reply to this email and we will send you an offer.</p>`));
-      await notifyAdmins(db, `Offer renewal: ${contract.client_name}`, `The ${contract.duration_months}-month package is complete.`, "renewal");
+      await notifyAdmins(db, `Offer renewal: ${contract.client_name}`, `The ${contract.duration_months}-month package is complete.`, "info");
     } else {
       await sendBillingEmail(BILLING_INBOX, `Stripe subscription ended: ${contract.client_name}`, emailShell("Subscription ended",
         `<p>The Stripe subscription of ${contract.client_name} (${contract.client_email}) has ended.</p>`));
