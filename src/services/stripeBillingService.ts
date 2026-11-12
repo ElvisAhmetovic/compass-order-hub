@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 
-export type StripeAction = "create_checkout" | "cancel" | "resume" | "overview" | "pay" | "portal" | "create_order_link" | "send_order_link";
+export type StripeAction = "create_checkout" | "cancel" | "resume" | "overview" | "pay" | "portal" | "create_order_link" | "send_order_link" | "send_contract_link";
 
 export async function stripeBilling<T = { url?: string; ok?: boolean; cancel_at?: string | null }>(
   action: StripeAction,
