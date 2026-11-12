@@ -138,8 +138,6 @@ async function createCheckout(contract: Record<string, any>, nameIn?: string, de
 async function emailContractLink(db: Db, contract: Record<string, any>, url: string, product_name?: string) {
         const amount = eur(cycleAmountCents(contract.monthly_amount, contract.billing_frequency, contract.vat_enabled, contract.vat_rate), contract.currency);
         const period = contract.billing_frequency === 12 ? "Jahr / year" : contract.billing_frequency > 1 ? `${contract.billing_frequency} Monate / months` : "Monat / month";
-        const amount = eur(cycleAmountCents(contract.monthly_amount, contract.billing_frequency, contract.vat_enabled, contract.vat_rate), contract.currency);
-        const period = contract.billing_frequency === 12 ? "Jahr / year" : contract.billing_frequency > 1 ? `${contract.billing_frequency} Monate / months` : "Monat / month";
         await sendBillingEmail(contract.client_email, "Ihr Abonnement – bitte Zahlung einrichten / Set up your subscription payment", emailShell(
           `Hallo ${contract.client_name},`,
           `<p>für <b>${productNameFor(product_name, contract.stripe_product_name, contract.client_name, contract.website)}</b> können Sie jetzt bequem per Karte oder SEPA-Lastschrift bezahlen: <b>${amount} pro ${period}</b>.</p>
