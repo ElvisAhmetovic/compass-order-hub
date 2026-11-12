@@ -40,3 +40,22 @@ Deno.test("valid signature accepted, tampered or stale rejected", async () => {
   assertEquals(await verifyStripeSignature(body, `t=${t},v1=${sig}`, secret, t + 1000), false);
   assertEquals(await verifyStripeSignature(body, null, secret, t), false);
 });
+
+import { chargesFor, subscriptionEndUnix, checkoutLinkState, paymentMethodLabel } from "./stripeRules.ts";
+
+Deno.test("12 months monthly = 12 charges", () => { if (chargesFor(12, 1) !== 12) throw new Error(); });
+Deno.test("12 months quarterly = 4 charges", () => { if (chargesFor(12, 3) !== 4) throw new Error(); });
+Deno.test("no length = unlimited", () => { if (chargesFor(0, 1) !== null || chargesFor(null, 1) !== null) throw new Error(); });
+Deno.test("12 monthly charges from 12 Nov 2026 stop before 12 Nov 2027", () => {
+  const start = Date.UTC(2026, 10, 12, 10, 0) / 1000;
+  const end = subscriptionEndUnix(start, 12, 1)!;
+  const e = new Date(end * 1000);
+  if (e.toISOString() !== "2027-11-12T09:00:00.000Z") throw new Error(e.toISOString());
+});
+Deno.test("link older than 24h is expired", () => {
+  const now = Date.UTC(2026, 10, 12);
+  if (checkoutLinkState("u", new Date(now - 25 * 3600e3).toISOString(), false, now) !== "expired") throw new Error();
+  if (checkoutLinkState("u", new Date(now - 1 * 3600e3).toISOString(), false, now) !== "waiting") throw new Error();
+  if (checkoutLinkState(null, null, true, now) !== "paid") throw new Error();
+});
+Deno.test("card label", () => { if (paymentMethodLabel({ card: { brand: "visa", last4: "4242" } }) !== "Visa •••• 4242") throw new Error(); });

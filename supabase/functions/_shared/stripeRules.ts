@@ -63,3 +63,38 @@ export async function verifyStripeSignature(payload: string, header: string | nu
 }
 
 export const signForTest = hmacHex;
+
+/** Number of Stripe charges for a package length: 12 months monthly = 12, 12 months quarterly = 4. 0/empty length = unlimited (null). */
+export function chargesFor(durationMonths: number | null | undefined, billingFrequency: number): number | null {
+  const d = Math.floor(Number(durationMonths ?? 0));
+  if (!d || d <= 0) return null;
+  const f = Math.max(1, Math.floor(billingFrequency || 1));
+  return Math.ceil(d / f);
+}
+
+/** When the subscription must stop so the client is charged exactly `chargesFor` times (unix seconds), or null for unlimited. */
+export function subscriptionEndUnix(startUnix: number, durationMonths: number | null | undefined, billingFrequency: number): number | null {
+  const n = chargesFor(durationMonths, billingFrequency);
+  if (n === null) return null;
+  const d = new Date(startUnix * 1000);
+  const months = n * Math.max(1, Math.floor(billingFrequency || 1));
+  const end = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + months, d.getUTCDate(), d.getUTCHours(), d.getUTCMinutes()));
+  // Stop a little before the next renewal so no extra charge is created.
+  return Math.floor(end.getTime() / 1000) - 3600;
+}
+
+/** A Stripe Checkout link is valid 24 hours. */
+export function checkoutLinkState(url: string | null, createdAt: string | null, subscribed: boolean, now = Date.now()): "none" | "paid" | "waiting" | "expired" {
+  if (subscribed) return "paid";
+  if (!url) return "none";
+  if (!createdAt) return "waiting";
+  return now - new Date(createdAt).getTime() > 24 * 3600 * 1000 ? "expired" : "waiting";
+}
+
+/** "Visa •••• 4242", "SEPA •••• 3000", or null. */
+export function paymentMethodLabel(pm: { type?: string; card?: { brand?: string; last4?: string }; sepa_debit?: { last4?: string } } | null | undefined): string | null {
+  if (!pm) return null;
+  if (pm.card?.last4) { const b = pm.card.brand ?? "Card"; return `${b.charAt(0).toUpperCase()}${b.slice(1)} •••• ${pm.card.last4}`; }
+  if (pm.sepa_debit?.last4) return `SEPA •••• ${pm.sepa_debit.last4}`;
+  return pm.type ? pm.type : null;
+}
