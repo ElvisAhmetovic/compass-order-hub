@@ -277,7 +277,12 @@ Deno.serve(async (req) => {
     if (action === "cancel" || action === "resume") {
       if (!contract.stripe_subscription_id) return json({ error: "No Stripe subscription" }, 400);
       const sub = await stripe<{ cancel_at: number | null; current_period_end: number }>(`subscriptions/${contract.stripe_subscription_id}`, { cancel_at_period_end: action === "cancel" ? "true" : "false" });
-      const cancelAt = sub.cancel_at ? new Date(sub.cancel_at * 1000).toISOString() : null;
+      let cancelAt = sub.cancel_at ? new Date(sub.cancel_at * 1000).toISOString() : null;
+      // Resuming a fixed-length package keeps its planned end date.
+      if (action === "resume" && contract.stripe_ends_at && new Date(contract.stripe_ends_at).getTime() > Date.now()) {
+        await stripe(`subscriptions/${contract.stripe_subscription_id}`, { cancel_at: Math.floor(new Date(contract.stripe_ends_at).getTime() / 1000) });
+        cancelAt = contract.stripe_ends_at;
+      }
       await db.from("monthly_contracts").update({ cancel_at: cancelAt }).eq("id", contract.id);
       if (action === "cancel") {
         const date = cancelAt ? new Date(cancelAt).toLocaleDateString("de-DE") : "";
