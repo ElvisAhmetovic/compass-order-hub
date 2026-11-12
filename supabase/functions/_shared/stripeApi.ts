@@ -1,4 +1,8 @@
 // Minimal Stripe REST client (form-encoded) + billing email helper.
+import { useStripeTestMode } from "./stripeRules.ts";
+
+/** STRIPE_MODE=test + STRIPE_TEST_SECRET_KEY switches every Stripe call to test mode. */
+export const stripeTestMode = () => useStripeTestMode(Deno.env.get("STRIPE_MODE") === "test" ? "true" : undefined, Deno.env.get("STRIPE_TEST_SECRET_KEY"));
 
 function encode(obj: Record<string, unknown>, prefix = "", out: string[] = []): string[] {
   for (const [k, v] of Object.entries(obj)) {
@@ -11,7 +15,7 @@ function encode(obj: Record<string, unknown>, prefix = "", out: string[] = []): 
 }
 
 export async function stripe<T = Record<string, unknown>>(path: string, params?: Record<string, unknown>, method = params ? "POST" : "GET"): Promise<T> {
-  const key = Deno.env.get("STRIPE_SECRET_KEY");
+  const key = stripeTestMode() ? Deno.env.get("STRIPE_TEST_SECRET_KEY") : Deno.env.get("STRIPE_SECRET_KEY");
   if (!key) throw new Error("Stripe is not configured");
   const res = await fetch(`https://api.stripe.com/v1/${path}`, {
     method,

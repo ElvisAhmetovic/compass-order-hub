@@ -1248,6 +1248,7 @@ export type Database = {
           stopped_at: string | null
           stopped_reason: string | null
           stripe_checkout_created_at: string | null
+          stripe_checkout_expired_at: string | null
           stripe_checkout_url: string | null
           stripe_customer_id: string | null
           stripe_ends_at: string | null
@@ -1292,6 +1293,7 @@ export type Database = {
           stopped_at?: string | null
           stopped_reason?: string | null
           stripe_checkout_created_at?: string | null
+          stripe_checkout_expired_at?: string | null
           stripe_checkout_url?: string | null
           stripe_customer_id?: string | null
           stripe_ends_at?: string | null
@@ -1336,6 +1338,7 @@ export type Database = {
           stopped_at?: string | null
           stopped_reason?: string | null
           stripe_checkout_created_at?: string | null
+          stripe_checkout_expired_at?: string | null
           stripe_checkout_url?: string | null
           stripe_customer_id?: string | null
           stripe_ends_at?: string | null
@@ -1795,6 +1798,7 @@ export type Database = {
           created_by: string | null
           currency: string
           description: string | null
+          expired_at: string | null
           id: string
           net_amount: number
           order_id: string
@@ -1814,6 +1818,7 @@ export type Database = {
           created_by?: string | null
           currency?: string
           description?: string | null
+          expired_at?: string | null
           id?: string
           net_amount: number
           order_id: string
@@ -1833,6 +1838,7 @@ export type Database = {
           created_by?: string | null
           currency?: string
           description?: string | null
+          expired_at?: string | null
           id?: string
           net_amount?: number
           order_id?: string
@@ -2973,6 +2979,7 @@ export type Database = {
           contract_id: string | null
           created_at: string
           currency: string
+          dispute_status: string | null
           failure_reason: string | null
           hosted_invoice_url: string | null
           id: string
@@ -2980,10 +2987,13 @@ export type Database = {
           invoice_pdf_url: string | null
           order_id: string | null
           paid_at: string | null
+          payment_intent_id: string | null
           payment_link_id: string | null
           payment_method_label: string | null
           period_end: string | null
           period_start: string | null
+          refunded_amount: number
+          refunded_at: string | null
           status: string
           stripe_invoice_id: string | null
           stripe_subscription_id: string | null
@@ -2996,6 +3006,7 @@ export type Database = {
           contract_id?: string | null
           created_at?: string
           currency?: string
+          dispute_status?: string | null
           failure_reason?: string | null
           hosted_invoice_url?: string | null
           id?: string
@@ -3003,10 +3014,13 @@ export type Database = {
           invoice_pdf_url?: string | null
           order_id?: string | null
           paid_at?: string | null
+          payment_intent_id?: string | null
           payment_link_id?: string | null
           payment_method_label?: string | null
           period_end?: string | null
           period_start?: string | null
+          refunded_amount?: number
+          refunded_at?: string | null
           status: string
           stripe_invoice_id?: string | null
           stripe_subscription_id?: string | null
@@ -3019,6 +3033,7 @@ export type Database = {
           contract_id?: string | null
           created_at?: string
           currency?: string
+          dispute_status?: string | null
           failure_reason?: string | null
           hosted_invoice_url?: string | null
           id?: string
@@ -3026,10 +3041,13 @@ export type Database = {
           invoice_pdf_url?: string | null
           order_id?: string | null
           paid_at?: string | null
+          payment_intent_id?: string | null
           payment_link_id?: string | null
           payment_method_label?: string | null
           period_end?: string | null
           period_start?: string | null
+          refunded_amount?: number
+          refunded_at?: string | null
           status?: string
           stripe_invoice_id?: string | null
           stripe_subscription_id?: string | null
