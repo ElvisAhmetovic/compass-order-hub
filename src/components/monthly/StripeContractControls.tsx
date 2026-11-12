@@ -5,7 +5,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { CreditCard, Loader2, Copy } from "lucide-react";
+import { CreditCard, Loader2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { stripeBilling, stripeStatusLabel, contractLinkState, StripeContractFields } from "@/services/stripeBillingService";
 import StripeLinkDialog, { defaultProductName } from "./StripeLinkDialog";
