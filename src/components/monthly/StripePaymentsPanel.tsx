@@ -8,7 +8,7 @@ import { paidProgress } from "@/services/stripeBillingService";
 interface PaymentRow {
   id: string; amount: number; currency: string; status: string; paid_at: string | null; created_at: string;
   period_start: string | null; period_end: string | null; hosted_invoice_url: string | null; invoice_pdf_url: string | null;
-  payment_method_label: string | null; failure_reason: string | null;
+  payment_method_label: string | null; failure_reason: string | null; refunded_amount?: number | null; dispute_status?: string | null;
 }
 
 interface Props {
