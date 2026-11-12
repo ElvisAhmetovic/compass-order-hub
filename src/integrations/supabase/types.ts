@@ -1242,12 +1242,16 @@ export type Database = {
           order_id: string | null
           payment_method: string
           priority: string | null
+          renewal_notified_at: string | null
           start_date: string
           status: string
           stopped_at: string | null
           stopped_reason: string | null
+          stripe_checkout_created_at: string | null
           stripe_checkout_url: string | null
           stripe_customer_id: string | null
+          stripe_ends_at: string | null
+          stripe_link_sent_at: string | null
           stripe_product_description: string | null
           stripe_product_name: string | null
           stripe_status: string | null
@@ -1282,12 +1286,16 @@ export type Database = {
           order_id?: string | null
           payment_method?: string
           priority?: string | null
+          renewal_notified_at?: string | null
           start_date: string
           status?: string
           stopped_at?: string | null
           stopped_reason?: string | null
+          stripe_checkout_created_at?: string | null
           stripe_checkout_url?: string | null
           stripe_customer_id?: string | null
+          stripe_ends_at?: string | null
+          stripe_link_sent_at?: string | null
           stripe_product_description?: string | null
           stripe_product_name?: string | null
           stripe_status?: string | null
@@ -1322,12 +1330,16 @@ export type Database = {
           order_id?: string | null
           payment_method?: string
           priority?: string | null
+          renewal_notified_at?: string | null
           start_date?: string
           status?: string
           stopped_at?: string | null
           stopped_reason?: string | null
+          stripe_checkout_created_at?: string | null
           stripe_checkout_url?: string | null
           stripe_customer_id?: string | null
+          stripe_ends_at?: string | null
+          stripe_link_sent_at?: string | null
           stripe_product_description?: string | null
           stripe_product_name?: string | null
           stripe_status?: string | null
@@ -2961,6 +2973,7 @@ export type Database = {
           contract_id: string | null
           created_at: string
           currency: string
+          failure_reason: string | null
           hosted_invoice_url: string | null
           id: string
           installment_id: string | null
@@ -2968,6 +2981,7 @@ export type Database = {
           order_id: string | null
           paid_at: string | null
           payment_link_id: string | null
+          payment_method_label: string | null
           period_end: string | null
           period_start: string | null
           status: string
@@ -2982,6 +2996,7 @@ export type Database = {
           contract_id?: string | null
           created_at?: string
           currency?: string
+          failure_reason?: string | null
           hosted_invoice_url?: string | null
           id?: string
           installment_id?: string | null
@@ -2989,6 +3004,7 @@ export type Database = {
           order_id?: string | null
           paid_at?: string | null
           payment_link_id?: string | null
+          payment_method_label?: string | null
           period_end?: string | null
           period_start?: string | null
           status: string
@@ -3003,6 +3019,7 @@ export type Database = {
           contract_id?: string | null
           created_at?: string
           currency?: string
+          failure_reason?: string | null
           hosted_invoice_url?: string | null
           id?: string
           installment_id?: string | null
@@ -3010,6 +3027,7 @@ export type Database = {
           order_id?: string | null
           paid_at?: string | null
           payment_link_id?: string | null
+          payment_method_label?: string | null
           period_end?: string | null
           period_start?: string | null
           status?: string

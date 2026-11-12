@@ -3,12 +3,33 @@ import { portalLineHtml } from "../_shared/portalEmailCopy.ts";
 // Receives Stripe events. Only signature-verified events change data; each event is processed once.
 import { admin, corsHeaders, json } from "../_shared/outreachAuth.ts";
 import { APP_URL, BILLING_INBOX, sendBillingEmail, emailShell, button, eur } from "../_shared/stripeApi.ts";
-import { verifyStripeSignature, dueDateFromPeriodStart, monthNumberFor } from "../_shared/stripeRules.ts";
+import { verifyStripeSignature, dueDateFromPeriodStart, monthNumberFor, subscriptionEndUnix, paymentMethodLabel } from "../_shared/stripeRules.ts";
+import { stripe } from "../_shared/stripeApi.ts";
 
 const MONTHS_DE = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
 type Obj = Record<string, any>;
 
 const ts = (s?: number | null) => (s ? new Date(s * 1000).toISOString() : null);
+
+/** In-app bell notification for every admin (never blocks the webhook). */
+async function notifyAdmins(db: ReturnType<typeof admin>, title: string, message: string, type: string) {
+  try {
+    const { data } = await db.from("user_roles").select("user_id").eq("role", "admin");
+    const rows = (data ?? []).map((r: { user_id: string }) => ({ user_id: r.user_id, title, message, type, action_url: "/monthly-packages" }));
+    if (rows.length) await db.from("notifications").insert(rows);
+  } catch (e) { console.error("notifyAdmins failed", e); }
+}
+
+/** Card/SEPA label and failure reason from the invoice's payment intent. */
+async function paymentDetails(inv: Obj): Promise<{ label: string | null; reason: string | null }> {
+  const pi = typeof inv.payment_intent === "string" ? inv.payment_intent : inv.payment_intent?.id;
+  if (!pi) return { label: null, reason: null };
+  try {
+    const p = await stripe<Obj>(`payment_intents/${pi}?expand[]=payment_method`);
+    const pm = typeof p.payment_method === "object" ? p.payment_method : p.last_payment_error?.payment_method;
+    return { label: paymentMethodLabel(pm), reason: p.last_payment_error?.message ?? null };
+  } catch (e) { console.error("payment details failed", e); return { label: null, reason: null }; }
+}
 
 async function contractFor(db: ReturnType<typeof admin>, subscriptionId?: string | null, contractId?: string | null) {
   if (contractId) {
@@ -56,7 +77,9 @@ async function handleInvoice(db: ReturnType<typeof admin>, inv: Obj, paid: boole
     }
   }
 
+  const details = await paymentDetails(inv);
   await db.from("stripe_payments").upsert({
+    payment_method_label: details.label, failure_reason: paid ? null : details.reason,
     stripe_invoice_id: inv.id, contract_id: contract.id, installment_id: installmentId, client_email: contract.client_email,
     stripe_subscription_id: sub, amount: amountCents / 100, currency: String(inv.currency || "eur").toUpperCase(),
     status: paid ? "paid" : "failed", hosted_invoice_url: inv.hosted_invoice_url ?? null, invoice_pdf_url: inv.invoice_pdf ?? null,
@@ -82,7 +105,9 @@ async function handleInvoice(db: ReturnType<typeof admin>, inv: Obj, paid: boole
        ${inv.hosted_invoice_url ? button(inv.hosted_invoice_url, "Jetzt bezahlen / Pay now") : ""}
        ${portalLineHtml()}`));
     await sendBillingEmail(BILLING_INBOX, `Stripe payment FAILED: ${contract.client_name} – ${amount}`, emailShell("Stripe payment failed",
-      `<p>${contract.client_name} (${contract.client_email}) – charge of ${amount} failed. The client was emailed a retry link.</p>`));
+      `<p>${contract.client_name} (${contract.client_email}) – charge of ${amount} failed.${details.reason ? ` Stripe says: <i>${details.reason}</i>` : ""} The client was emailed a retry link. Stripe retries automatically.</p>
+       ${button(`${APP_URL}/monthly-packages`, "Open Monthly Packages")}`));
+    await notifyAdmins(db, `Payment failed: ${contract.client_name}`, `${amount} could not be charged${details.reason ? ` – ${details.reason}` : ""}.`, "error");
   }
 }
 
@@ -96,8 +121,20 @@ async function handleSubscription(db: ReturnType<typeof admin>, s: Obj, deleted:
     cancel_at: ts(s.cancel_at) ?? (deleted ? new Date().toISOString() : null),
   }).eq("id", contract.id);
   if (deleted) {
-    await sendBillingEmail(BILLING_INBOX, `Stripe subscription ended: ${contract.client_name}`, emailShell("Subscription ended",
-      `<p>The Stripe subscription of ${contract.client_name} (${contract.client_email}) has ended.</p>`));
+    const finished = !!contract.stripe_ends_at && Date.now() >= new Date(contract.stripe_ends_at).getTime() - 2 * 3600e3;
+    if (finished && !contract.renewal_notified_at) {
+      await db.from("monthly_contracts").update({ renewal_notified_at: new Date().toISOString() }).eq("id", contract.id);
+      await sendBillingEmail(BILLING_INBOX, `Package finished – offer renewal: ${contract.client_name}`, emailShell("Offer a renewal",
+        `<p>The ${contract.duration_months}-month package of <b>${contract.client_name}</b> (${contract.client_email}, ${contract.website || ""}) is fully paid and has ended. No further charges will happen.</p>
+         <p>Please contact the client and offer a renewal (a new package + Stripe link).</p>${button(`${APP_URL}/monthly-packages`, "Open Monthly Packages")}`));
+      await sendBillingEmail(contract.client_email, "Ihr Paket ist abgeschlossen / Your package is complete", emailShell(`Hallo ${contract.client_name},`,
+        `<p>Ihr ${contract.duration_months}-Monats-Paket ist vollständig bezahlt und abgeschlossen – vielen Dank! Es werden keine weiteren Zahlungen eingezogen. Möchten Sie verlängern? Antworten Sie einfach auf diese E-Mail, wir senden Ihnen gerne ein Angebot.</p>
+         <p>Your ${contract.duration_months}-month package is fully paid and complete – thank you! No further payments will be taken. Would you like to renew? Just reply to this email and we will send you an offer.</p>`));
+      await notifyAdmins(db, `Offer renewal: ${contract.client_name}`, `The ${contract.duration_months}-month package is complete.`, "info");
+    } else {
+      await sendBillingEmail(BILLING_INBOX, `Stripe subscription ended: ${contract.client_name}`, emailShell("Subscription ended",
+        `<p>The Stripe subscription of ${contract.client_name} (${contract.client_email}) has ended.</p>`));
+    }
   }
 }
 
@@ -148,10 +185,16 @@ Deno.serve(async (req) => {
       case "checkout.session.completed":
         if (o.mode === "subscription") {
           const id = o.metadata?.contract_id ?? o.client_reference_id;
-          if (id) await db.from("monthly_contracts").update({
-            payment_method: "stripe", stripe_customer_id: o.customer, stripe_subscription_id: o.subscription,
-            stripe_status: "active", stripe_checkout_url: null,
-          }).eq("id", id);
+          if (id) {
+            const c = await contractFor(db, null, id);
+            // Fixed-length package: stop the subscription after the agreed number of charges.
+            const endUnix = c ? subscriptionEndUnix(o.created ?? Math.floor(Date.now() / 1000), c.duration_months, c.billing_frequency) : null;
+            if (endUnix && o.subscription) await stripe(`subscriptions/${o.subscription}`, { cancel_at: endUnix });
+            await db.from("monthly_contracts").update({
+              payment_method: "stripe", stripe_customer_id: o.customer, stripe_subscription_id: o.subscription,
+              stripe_status: "active", stripe_checkout_url: null, stripe_ends_at: ts(endUnix),
+            }).eq("id", id);
+          }
         } else if (o.mode === "payment") {
           await handleOrderPayment(db, o);
         }

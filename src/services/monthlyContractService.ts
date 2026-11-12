@@ -36,6 +36,9 @@ export interface MonthlyContract {
   cancel_at?: string | null;
   stripe_product_name?: string | null;
   stripe_product_description?: string | null;
+  stripe_checkout_created_at?: string | null;
+  stripe_link_sent_at?: string | null;
+  stripe_ends_at?: string | null;
 }
 
 export interface MonthlyInstallment {
