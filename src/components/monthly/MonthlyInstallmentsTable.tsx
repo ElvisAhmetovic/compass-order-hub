@@ -577,13 +577,13 @@ const MonthlyInstallmentsTable: React.FC<Props> = ({ contracts, installments, on
                     })}
                   </TableBody>
                 </Table>
-                {(contract as any).payment_method === "stripe" && (
+                {contract.payment_method === "stripe" && (
                   <StripePaymentsPanel
                     contractId={contract.id}
-                    durationMonths={(contract as any).duration_months ?? null}
-                    billingFrequency={(contract as any).billing_frequency ?? 1}
-                    nextCharge={(contract as any).stripe_status === "active" && !(contract as any).cancel_at ? (contract as any).current_period_end ?? null : null}
-                    endsAt={(contract as any).stripe_ends_at ?? null}
+                    durationMonths={contract.duration_months ?? null}
+                    billingFrequency={contract.billing_frequency ?? 1}
+                    nextCharge={contract.stripe_status === "active" && !contract.cancel_at ? contract.current_period_end ?? null : null}
+                    endsAt={contract.stripe_ends_at ?? null}
                     reloadKey={contractInstallments.length}
                   />
                 )}
