@@ -23,6 +23,8 @@ interface Props {
 const day = (d: string | null) => (d ? new Date(d).toLocaleDateString("de-DE") : "–");
 const money = (v: number, c: string) => new Intl.NumberFormat("de-DE", { style: "currency", currency: c || "EUR" }).format(Number(v));
 
+const STATUS_LABEL: Record<string, string> = { paid: "Paid", failed: "Failed", refunded: "Refunded", partially_refunded: "Partly refunded" };
+
 /** Team view of every Stripe charge for one monthly package. */
 const StripePaymentsPanel: React.FC<Props> = ({ contractId, durationMonths, billingFrequency, nextCharge, endsAt, reloadKey }) => {
   const [rows, setRows] = useState<PaymentRow[] | null>(null);
@@ -31,7 +33,7 @@ const StripePaymentsPanel: React.FC<Props> = ({ contractId, durationMonths, bill
   const load = async () => {
     setError(false);
     const { data, error: e } = await supabase.from("stripe_payments")
-      .select("id, amount, currency, status, paid_at, created_at, period_start, period_end, hosted_invoice_url, invoice_pdf_url, payment_method_label, failure_reason")
+      .select("id, amount, currency, status, paid_at, created_at, period_start, period_end, hosted_invoice_url, invoice_pdf_url, payment_method_label, failure_reason, refunded_amount, dispute_status")
       .eq("contract_id", contractId).order("created_at", { ascending: false });
     if (e) { setError(true); return; }
     setRows((data ?? []) as unknown as PaymentRow[]);
@@ -60,9 +62,10 @@ const StripePaymentsPanel: React.FC<Props> = ({ contractId, durationMonths, bill
         <div className="space-y-2">
           {rows.map((r) => (
             <div key={r.id} className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-md border p-2 text-sm">
-              <Badge variant={r.status === "paid" ? "default" : "destructive"}>{r.status === "paid" ? "Paid" : "Failed"}</Badge>
+              <Badge variant={r.status === "paid" ? "default" : r.status === "partially_refunded" ? "secondary" : "destructive"}>{STATUS_LABEL[r.status] ?? r.status}</Badge>
+              {r.dispute_status && <Badge variant="destructive">Dispute: {r.dispute_status}</Badge>}
               <span className="font-medium">{money(r.amount, r.currency)}</span>
-              <span>{r.status === "paid" ? `paid ${day(r.paid_at)}` : `tried ${day(r.created_at)}`}</span>
+              <span>{r.status !== "failed" ? `paid ${day(r.paid_at)}` : `tried ${day(r.created_at)}`}</span>
               {r.period_start && <span className="text-muted-foreground">period {day(r.period_start)} – {day(r.period_end)}</span>}
               {r.payment_method_label && <span className="text-muted-foreground">{r.payment_method_label}</span>}
               {r.failure_reason && <span className="text-destructive">{r.failure_reason}</span>}
