@@ -20,6 +20,7 @@ import ScheduleReminderModal from "@/components/orders/ScheduleReminderModal";
 import { PaymentReminderService, PaymentReminder } from "@/services/paymentReminderService";
 import ClientEmailHistory from "@/components/orders/ClientEmailHistory";
 import PaymentRemindersSentTab from "@/components/orders/PaymentRemindersSentTab";
+import NotifyClientDialog from "./OrderEditForm/NotifyClientDialog";
 
 interface OrderModalProps {
   order: Order | null;
@@ -37,6 +38,7 @@ const OrderModal = ({ order: orderProp, open, onClose, userRole }: OrderModalPro
   const [showReminderModal, setShowReminderModal] = useState(false);
   const [activeReminder, setActiveReminder] = useState<PaymentReminder | null>(null);
 
+  const [showNotifyClient, setShowNotifyClient] = useState(false);
   const handleRefresh = () => {
     setRefreshTrigger(prev => prev + 1);
   };
@@ -51,7 +53,7 @@ const OrderModal = ({ order: orderProp, open, onClose, userRole }: OrderModalPro
     handleFieldChange,
     handleSave,
     handleCancel
-  } = useOrderEdit(order, handleRefresh, selectedInventoryItems, setSelectedInventoryItems, setOrder);
+  } = useOrderEdit(order, handleRefresh, selectedInventoryItems, setSelectedInventoryItems, (saved) => { setOrder(saved); setShowNotifyClient(true); });
 
   // Fetch existing reminder when modal opens
   useEffect(() => {
@@ -286,6 +288,8 @@ const OrderModal = ({ order: orderProp, open, onClose, userRole }: OrderModalPro
         existingReminder={activeReminder}
         onReminderUpdated={handleReminderUpdated}
       />
+
+      <NotifyClientDialog order={order} open={showNotifyClient} onOpenChange={setShowNotifyClient} />
     </Dialog>
   );
 };
