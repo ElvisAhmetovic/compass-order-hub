@@ -79,7 +79,7 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
     sortCode: undefined as string | undefined,
     accountNumber: undefined as string | undefined,
     address: undefined as string | undefined,
-    accountHolder: "Selmin Huzbasic" as string | undefined
+    accountHolder: "Dr. Selmin Huzbasic" as string | undefined
   };
 
   const revolutAccount = {
