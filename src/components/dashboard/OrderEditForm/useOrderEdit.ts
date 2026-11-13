@@ -7,13 +7,29 @@ import { OrderFormData, ValidationErrors, validateOrderForm } from "./validation
 import { SelectedInventoryItem } from "../InventoryItemsSelector";
 import { supabase } from "@/integrations/supabase/client";
 
-interface ExtendedOrderFormData extends OrderFormData {
+export interface ExtendedOrderFormData extends OrderFormData {
   assigned_to?: string;
   internal_notes?: string;
   description?: string;
   client_visible_update?: string;
   client_action_url?: string;
 }
+
+// Internal notes and the client-visible update must stay in their own columns.
+export const buildOrderUpdatePayload = (e: ExtendedOrderFormData, order: Order): Partial<Order> => ({
+  company_name: e.company_name || order.company_name || "",
+  company_address: e.company_address || "",
+  contact_email: e.contact_email || "",
+  contact_phone: e.contact_phone || "",
+  company_link: e.company_link || "",
+  price: e.price !== undefined ? Number(e.price) : 0,
+  currency: e.currency || "EUR",
+  priority: (e.priority as OrderPriority) || "medium",
+  internal_notes: e.internal_notes || "",
+  description: e.description || "",
+  client_visible_update: e.client_visible_update || "",
+  client_action_url: e.client_action_url || "",
+});
 
 interface UseOrderEditProps {
   order: Order | null;
@@ -130,20 +146,7 @@ export const useOrderEdit = (
     
     try {
       // Prepare update data including internal notes, description, and client visible update
-      const updateData: Partial<Order> = {
-        company_name: editedOrder.company_name || order.company_name || "",
-        company_address: editedOrder.company_address || "",
-        contact_email: editedOrder.contact_email || "",
-        contact_phone: editedOrder.contact_phone || "",
-        company_link: editedOrder.company_link || "",
-        price: editedOrder.price !== undefined ? editedOrder.price : 0,
-        currency: editedOrder.currency || "EUR",
-        priority: editedOrder.priority as OrderPriority || "medium",
-        internal_notes: editedOrder.internal_notes || "",
-        description: editedOrder.description || "",
-        client_visible_update: editedOrder.client_visible_update || "",
-        client_action_url: editedOrder.client_action_url || ""
-      };
+      const updateData: Partial<Order> = buildOrderUpdatePayload(editedOrder, order);
 
       // Handle inventory items
       if (selectedInventoryItems.length > 0) {
