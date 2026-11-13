@@ -336,7 +336,7 @@ const COMPANY = {
 const REGISTERED_OFFICE = "Monomark House, 27 Old Gloucester Street, London WC1N 3AX, United Kingdom";
 
 const BANK_ACCOUNTS = [
-  { label: "German Bank Account", iban: "DE91240703680071572200", bic: "DEUTDE2HP22", bank: "Postbank/DSL Ndl of Deutsche Bank", accountHolder: "Selmin Huzbasic" },
+  { label: "German Bank Account", iban: "DE91240703680071572200", bic: "DEUTDE2HP22", bank: "Postbank/DSL Ndl of Deutsche Bank", accountHolder: "Dr. Selmin Huzbasic" },
   { label: "Media Marketing Limited", iban: "BE75903030215751", bic: "TRWIBEB1XXX", bank: "Wise" },
 ];
 
