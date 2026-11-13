@@ -26,7 +26,8 @@ export const useOrderEdit = (
   order: Order | null, 
   onRefresh: () => void,
   selectedInventoryItems: SelectedInventoryItem[] = [],
-  onInventoryItemsChange: (items: SelectedInventoryItem[]) => void = () => {}
+  onInventoryItemsChange: (items: SelectedInventoryItem[]) => void = () => {},
+  onSaved: (updated: Order) => void = () => {}
 ) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedOrder, setEditedOrder] = useState<ExtendedOrderFormData>({
@@ -171,7 +172,9 @@ export const useOrderEdit = (
       console.log('Order ID:', order.id);
       console.log('Sending update data to API:', updateData);
       
-      await OrderService.updateOrder(order.id, updateData);
+      const saved = await OrderService.updateOrder(order.id, updateData);
+      if (!saved) throw new Error('Order was not saved');
+      onSaved(saved);
       
       toast({
         title: "Order Updated",
@@ -226,7 +229,7 @@ export const useOrderEdit = (
     } finally {
       setIsSaving(false);
     }
-  }, [editedOrder, order, toast, onRefresh, selectedInventoryItems]);
+  }, [editedOrder, order, toast, onRefresh, selectedInventoryItems, onSaved]);
 
   const handleCancel = useCallback(() => {
     console.log('Canceling edit mode');

@@ -28,7 +28,10 @@ interface OrderModalProps {
   userRole: UserRole;
 }
 
-const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
+const OrderModal = ({ order: orderProp, open, onClose, userRole }: OrderModalProps) => {
+  // Local copy so saved edits show immediately (the parent passes a snapshot)
+  const [order, setOrder] = useState<Order | null>(orderProp);
+  useEffect(() => { setOrder(orderProp); }, [orderProp]);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [selectedInventoryItems, setSelectedInventoryItems] = useState<SelectedInventoryItem[]>([]);
   const [showReminderModal, setShowReminderModal] = useState(false);
@@ -48,7 +51,7 @@ const OrderModal = ({ order, open, onClose, userRole }: OrderModalProps) => {
     handleFieldChange,
     handleSave,
     handleCancel
-  } = useOrderEdit(order, handleRefresh, selectedInventoryItems, setSelectedInventoryItems);
+  } = useOrderEdit(order, handleRefresh, selectedInventoryItems, setSelectedInventoryItems, setOrder);
 
   // Fetch existing reminder when modal opens
   useEffect(() => {
