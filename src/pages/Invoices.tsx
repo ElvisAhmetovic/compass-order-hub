@@ -622,6 +622,17 @@ const Invoices = () => {
 
   return (
     <div className="flex min-h-screen">
+      {stornoPrompt && (
+        <InvoiceCancelNotifyDialog
+          open
+          mode={stornoPrompt.mode}
+          invoiceId={stornoPrompt.invoice.id}
+          invoiceNumber={stornoPrompt.invoice.invoice_number}
+          recipient={cancellationRecipient(stornoPrompt.invoice)}
+          onClose={() => setStornoPrompt(null)}
+          onDone={stornoPrompt.mode === "deleted" ? () => handleDeleteInvoice(stornoPrompt.invoice.id) : undefined}
+        />
+      )}
       <Sidebar />
       <div className="flex-1 flex min-w-0">
         <Layout userRole={user?.role || "user"}>
