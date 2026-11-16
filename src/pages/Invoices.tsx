@@ -47,6 +47,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { nextReminderForInvoice } from "@/utils/reminderInterval";
 import { getOutstandingAmount, getPaidAmount } from "@/utils/invoiceBalance";
 import CancelledInvoiceInfo from "@/components/invoices/CancelledInvoiceInfo";
+import InvoiceCancelNotifyDialog from "@/components/invoices/InvoiceCancelNotifyDialog";
+import { cancellationRecipient, shouldOfferCancellationEmail, type CancellationMode } from "@/components/invoices/cancellationEmail";
 import { paidDateLabel, paidDateTime } from "@/utils/paidDate";
 
 const PAGE_SIZE = 25;
@@ -160,6 +162,14 @@ const Invoices = () => {
     loadInvoices();
   }, []);
 
+  const [stornoPrompt, setStornoPrompt] = useState<{ mode: CancellationMode; invoice: Invoice } | null>(null);
+
+  const requestDeleteInvoice = (id: string) => {
+    const inv = invoices.find((i) => i.id === id);
+    if (inv && shouldOfferCancellationEmail(inv.status)) setStornoPrompt({ mode: "deleted", invoice: inv });
+    else handleDeleteInvoice(id);
+  };
+
   const handleDeleteInvoice = async (id: string) => {
     try {
       await InvoiceService.deleteInvoice(id);
@@ -256,6 +266,10 @@ const Invoices = () => {
   };
 
   const handleUpdateStatus = async (id: string, newStatus: string) => {
+    const before = invoices.find((inv) => inv.id === id);
+    if (newStatus === 'cancelled' && before && shouldOfferCancellationEmail(before.status)) {
+      setStornoPrompt({ mode: "cancelled", invoice: { ...before, status: 'cancelled' } });
+    }
     try {
       // Create update data with status + reminder scheduling
       const updateData: any = { 
@@ -608,6 +622,17 @@ const Invoices = () => {
 
   return (
     <div className="flex min-h-screen">
+      {stornoPrompt && (
+        <InvoiceCancelNotifyDialog
+          open
+          mode={stornoPrompt.mode}
+          invoiceId={stornoPrompt.invoice.id}
+          invoiceNumber={stornoPrompt.invoice.invoice_number}
+          recipient={cancellationRecipient(stornoPrompt.invoice)}
+          onClose={() => setStornoPrompt(null)}
+          onDone={stornoPrompt.mode === "deleted" ? () => handleDeleteInvoice(stornoPrompt.invoice.id) : undefined}
+        />
+      )}
       <Sidebar />
       <div className="flex-1 flex min-w-0">
         <Layout userRole={user?.role || "user"}>
@@ -1089,7 +1114,7 @@ const Invoices = () => {
                                         <AlertDialogCancel>Cancel</AlertDialogCancel>
                                         <AlertDialogAction
                                           className="bg-destructive hover:bg-destructive/90"
-                                          onClick={() => handleDeleteInvoice(invoice.id)}
+                                          onClick={() => requestDeleteInvoice(invoice.id)}
                                         >
                                           Delete Invoice
                                         </AlertDialogAction>

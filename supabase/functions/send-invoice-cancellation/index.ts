@@ -69,6 +69,21 @@ const COPY: Record<string, Copy> = {
   },
 };
 
+function invoiceOnlyBody(lang: string, n: string, amount: string, issued: string | null): string[] | null {
+  const d = issued ? new Date(issued).toLocaleDateString(lang === "de" ? "de-DE" : "en-GB") : "";
+  if (lang === "de") return [
+    `hiermit teilen wir Ihnen mit, dass wir die Rechnung Nr. ${n}${d ? ` vom ${d}` : ""} über ${amount} storniert haben.`,
+    `Die Rechnung ist damit gegenstandslos und muss nicht bezahlt werden. Sie erhalten dazu keine weiteren Zahlungserinnerungen. Bereits geleistete Zahlungen werden selbstverständlich verrechnet oder erstattet.`,
+    `Bei Fragen erreichen Sie uns jederzeit unter ${TEAM_INBOX}.`,
+  ];
+  if (lang === "en") return [
+    `we hereby inform you that invoice no. ${n}${d ? ` dated ${d}` : ""} for ${amount} has been cancelled.`,
+    `The invoice is therefore void and does not need to be paid. You will not receive any further payment reminders for it. Any payments already made will of course be credited or refunded.`,
+    `If you have any questions, please contact us at ${TEAM_INBOX}.`,
+  ];
+  return null;
+}
+
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]!));
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const UUID_RE = /^[0-9a-f-]{36}$/i;
@@ -83,17 +98,23 @@ Deno.serve(async (req) => {
     const { data: claims, error: authErr } = await userClient.auth.getClaims(auth.replace("Bearer ", ""));
     if (authErr || !claims?.claims) return json({ error: "Unauthorized" }, 401);
 
-    const { invoice_id } = await req.json().catch(() => ({}));
+    const { invoice_id, mode: rawMode } = await req.json().catch(() => ({}));
     if (typeof invoice_id !== "string" || !UUID_RE.test(invoice_id)) return json({ error: "invoice_id required" }, 400);
+    // "order" (default, from order cancellation) | "cancelled" (invoice cancelled directly) | "deleted" (sent right before deletion)
+    const mode = rawMode === "cancelled" || rawMode === "deleted" ? rawMode : "order";
+    // Team only
+    const { data: isAdmin } = await userClient.rpc("is_admin");
+    const { data: role } = await userClient.rpc("get_auth_user_role");
+    if (!isAdmin && role !== "agent" && role !== "admin") return json({ error: "Forbidden" }, 403);
 
     const admin = createClient(url, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
     const { data: inv } = await admin
       .from("invoices")
-      .select("id, invoice_number, status, language, order_id, bill_to_name, bill_to_email, total_amount, currency, client:clients(name, contact_person, email, auto_reminders_enabled)")
+      .select("id, invoice_number, status, language, order_id, bill_to_name, bill_to_email, total_amount, issue_date, currency, client:clients(name, contact_person, email, auto_reminders_enabled)")
       .eq("id", invoice_id)
       .maybeSingle();
     if (!inv) return json({ error: "Invoice not found" }, 404);
-    if (inv.status !== "cancelled") return json({ skipped: "not_cancelled" });
+    if (mode !== "deleted" && inv.status !== "cancelled") return json({ skipped: "not_cancelled" });
     // deno-lint-ignore no-explicit-any
     const client: any = Array.isArray(inv.client) ? inv.client[0] : inv.client;
     if (client?.auto_reminders_enabled === false) return json({ skipped: "client_opted_out" });
@@ -110,7 +131,7 @@ Deno.serve(async (req) => {
     const { data: cancelledInfo } = await admin.from("invoices").select("cancelled_at").eq("id", inv.id).maybeSingle();
     // deno-lint-ignore no-explicit-any
     const prev: any = already?.[0];
-    if (prev && (!cancelledInfo?.cancelled_at || new Date(prev.sent_at) >= new Date(cancelledInfo.cancelled_at))) {
+    if (mode !== "deleted" && prev && (!cancelledInfo?.cancelled_at || new Date(prev.sent_at) >= new Date(cancelledInfo.cancelled_at))) {
       return json({ skipped: "already_sent" });
     }
 
@@ -118,11 +139,13 @@ Deno.serve(async (req) => {
     const c = COPY[lang];
     const name = client?.contact_person || inv.bill_to_name || client?.name || "";
     const subject = c.subject(inv.invoice_number);
+    const amount = new Intl.NumberFormat(lang === "de" ? "de-DE" : "en-GB", { style: "currency", currency: inv.currency || "EUR" }).format(Number(inv.total_amount || 0));
+    const body = mode === "order" ? c.body(inv.invoice_number) : invoiceOnlyBody(lang, inv.invoice_number, amount, inv.issue_date) ?? c.body(inv.invoice_number);
     const html = `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;color:#1f2937;font-size:15px;line-height:1.6">
 <p>${esc(c.hello(name).replace(/\s+,/, ","))}</p>
-${c.body(inv.invoice_number).map((p) => `<p>${esc(p)}</p>`).join("")}
+${body.map((p) => `<p>${esc(p)}</p>`).join("")}
 <p>${esc(c.regards)}<br>${SIGNATURE.map(esc).join("<br>")}</p></div>`;
-    const text = [c.hello(name), "", ...c.body(inv.invoice_number), "", c.regards, ...SIGNATURE].join("\n");
+    const text = [c.hello(name), "", ...body, "", c.regards, ...SIGNATURE].join("\n");
 
     const key = Deno.env.get("RESEND_API_KEY_ABMEDIA");
     if (!key) return json({ error: "Email service not configured" }, 500);
