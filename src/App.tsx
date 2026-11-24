@@ -24,6 +24,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "next-themes";
 import Index from "./pages/Index";
+const AssistantBubble = lazy(() => import("@/components/assistant/AssistantBubble"));
 const ServicePage = lazy(() => import("./pages/ServicePage"));
 const LegalPage = lazy(() => import("./pages/LegalPage"));
 const ContactPage = lazy(() => import("./pages/ContactPage"));
@@ -144,6 +145,7 @@ function App() {
           <AuthProvider>
             <Router>
               <NavigationProgress />
+              <Suspense fallback={null}><AssistantBubble /></Suspense>
               <div className="min-h-screen bg-background">
                 <Suspense fallback={<div className="min-h-screen bg-background" />}>
             <Routes>

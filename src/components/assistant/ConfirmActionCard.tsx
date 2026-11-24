@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, ShieldCheck } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { InvoiceResultActions } from "./InvoiceResultActions";
 
 type Action = { id: string; tool: string; summary: string; status: string; result: unknown };
 
@@ -40,6 +41,9 @@ export function ConfirmActionCard({ actionId }: { actionId: string }) {
           <Button size="sm" disabled={busy} onClick={() => decide("confirm")}>{busy && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}Confirm</Button>
           <Button size="sm" variant="outline" disabled={busy} onClick={() => decide("cancel")}>Cancel</Button>
         </div>
+      )}
+      {action.status === "confirmed" && action.tool === "create_invoice" && (action.result as { invoice_id?: string } | null)?.invoice_id && (
+        <InvoiceResultActions invoiceId={(action.result as { invoice_id: string }).invoice_id} />
       )}
       {action.status === "failed" && <p className="mt-1 text-destructive">{JSON.stringify((action.result as { error?: unknown } | null)?.error ?? action.result)}</p>}
     </div>

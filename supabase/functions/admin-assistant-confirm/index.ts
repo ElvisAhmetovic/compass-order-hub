@@ -14,6 +14,9 @@ const S = {
   set_ticket_status: z.object({ ticket_id: z.string().uuid(), status: z.enum(["open", "in_progress", "closed"]), notes: z.string().max(5000).optional() }),
   set_contract_status: z.object({ contract_id: z.string().uuid(), status: z.enum(["active", "stopped"]) }),
   create_portal_account: z.object({ email, name: z.string().min(1).max(200), company_name: z.string().max(200).optional() }),
+  create_invoice: z.object({ client_id: z.string().uuid(), order_id: z.string().uuid().optional(), due_days: z.number().int().min(0).max(365).optional(), currency: z.string().length(3).optional(), vat_rate: z.number().min(0).max(30).optional(), language: z.enum(["de", "en"]).optional(), notes: z.string().max(5000).optional(), items: z.array(z.object({ description: z.string().min(1).max(500), quantity: z.number().positive().max(10000).optional(), unit_price: z.number().nonnegative().max(1_000_000) })).min(1).max(50) }),
+  create_support_ticket: z.object({ order_id: z.string().uuid(), client_email: email, client_name: z.string().max(200).optional(), company_name: z.string().max(200).optional(), subject: z.string().min(1).max(300), message: z.string().max(5000).optional() }),
+  stop_stripe_package: z.object({ contract_id: z.string().uuid() }),
 };
 
 Deno.serve(async (req) => {
@@ -99,6 +102,38 @@ Deno.serve(async (req) => {
         const out = await r.json().catch(() => ({}));
         if (!r.ok) return finish("failed", out);
         return finish("confirmed", out);
+      }
+      case "create_invoice": {
+        const { data: client } = await db.from("clients").select("id,name,email").eq("id", a.client_id).maybeSingle();
+        if (!client) return finish("failed", { error: "Client not found" });
+        const issue = new Date(); const due = new Date(issue); due.setDate(due.getDate() + (a.due_days ?? 14));
+        const vat = a.vat_rate ?? 0;
+        let inv: { id: string; invoice_number: string } | null = null;
+        for (let attempt = 0; attempt < 5 && !inv; attempt++) {
+          const { data: num, error: nErr } = await db.rpc("generate_invoice_number", { prefix_param: "INV" });
+          if (nErr) throw nErr;
+          const { data, error } = await db.from("invoices").insert({ invoice_number: num, client_id: client.id, order_id: a.order_id ?? null, issue_date: issue.toISOString().slice(0, 10), due_date: due.toISOString().slice(0, 10), currency: a.currency ?? "EUR", language: a.language ?? "de", vat_enabled: vat > 0, vat_rate_default: vat, payment_terms: `Net ${a.due_days ?? 14}`, notes: a.notes ?? null, status: "draft", user_id: userId }).select("id,invoice_number").single();
+          if (error) { if (error.code === "23505" && String(error.message).includes("invoice_number")) continue; throw error; }
+          inv = data;
+        }
+        if (!inv) return finish("failed", { error: "Could not get a free invoice number" });
+        const { error: liErr } = await db.from("invoice_line_items").insert(a.items.map((i: { description: string; quantity?: number; unit_price: number }) => ({ invoice_id: inv!.id, item_description: i.description, quantity: i.quantity ?? 1, unit: "pcs", unit_price: i.unit_price, vat_rate: vat, discount_rate: 0 })));
+        if (liErr) throw liErr;
+        await db.rpc("recalculate_invoice_totals", { p_invoice_id: inv.id }).then(() => {}, () => {});
+        return finish("confirmed", { invoice_id: inv.id, invoice_number: inv.invoice_number });
+      }
+      case "create_support_ticket": {
+        const { data: order } = await db.from("orders").select("id").eq("id", a.order_id).maybeSingle();
+        if (!order) return finish("failed", { error: "Order not found" });
+        const { data, error } = await db.from("customer_tickets").insert({ ...a, status: "open" }).select("id").single();
+        if (error) throw error;
+        return finish("confirmed", { ticket_id: data.id });
+      }
+      case "stop_stripe_package": {
+        const r = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/stripe-billing`, { method: "POST", headers: { Authorization: auth, "Content-Type": "application/json" }, body: JSON.stringify({ action: "cancel", contract_id: a.contract_id }) });
+        const out = await r.json().catch(() => ({}));
+        if (!r.ok) return finish("failed", out);
+        return finish("confirmed", { contract_id: a.contract_id, ...out });
       }
     }
   } catch (e) {

@@ -24,6 +24,7 @@ export const READ_TABLES: Record<string, { cols: string[]; date: string; money?:
 export const WRITE_TOOLS = [
   "create_order", "update_order", "set_order_status", "set_invoice_status",
   "create_follow_up_reminder", "set_ticket_status", "set_contract_status", "create_portal_account",
+  "create_invoice", "create_support_ticket", "stop_stripe_package",
 ] as const;
 export type WriteTool = typeof WRITE_TOOLS[number];
 /** Every write tool needs a human Confirm click; nothing writes during the chat. */
