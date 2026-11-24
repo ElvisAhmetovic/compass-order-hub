@@ -18,13 +18,14 @@ export const READ_TABLES: Record<string, { cols: string[]; date: string; money?:
   customer_tickets: { cols: ["id", "order_id", "client_email", "client_name", "company_name", "subject", "status", "message", "notes", "created_at"], date: "created_at", search: ["client_email", "client_name", "company_name", "subject"] },
   follow_up_reminders: { cols: ["id", "company_name", "contact_phone", "note", "remind_at", "assignee_email", "assignee_name", "status", "created_at"], date: "remind_at", search: ["company_name", "note"] },
   offers: { cols: ["id", "client_name", "client_email", "company_name", "description", "price", "currency", "status", "sent_by_name", "created_at", "confirmed_at", "expires_at"], date: "created_at", money: ["price"], search: ["client_name", "client_email", "company_name"] },
-  client_portal_activity: { cols: ["*"], date: "created_at", search: [] },
+  client_portal_activity: { cols: ["id", "user_id", "user_email", "event", "details", "created_at"], date: "created_at", search: [] },
+  client_email_logs: { cols: ["id", "order_id", "sent_to", "sent_by_name", "company_name", "email_subject", "template_name", "invoice_number", "created_at"], date: "created_at", search: ["sent_to", "company_name", "email_subject"] },
 };
 
 export const WRITE_TOOLS = [
   "create_order", "update_order", "set_order_status", "set_invoice_status",
   "create_follow_up_reminder", "set_ticket_status", "set_contract_status", "create_portal_account",
-  "create_invoice", "create_support_ticket", "stop_stripe_package",
+  "create_invoice", "create_support_ticket", "stop_stripe_package", "send_invoice_reminders", "bulk_set_status",
 ] as const;
 export type WriteTool = typeof WRITE_TOOLS[number];
 /** Every write tool needs a human Confirm click; nothing writes during the chat. */

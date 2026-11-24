@@ -2,6 +2,7 @@ import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { z } from "npm:zod@3";
 import { json, requireAdmin } from "../_shared/assistantAuth.ts";
 import { ORDER_STATUS_COLUMNS, INVOICE_STATUSES } from "../_shared/assistantRules.ts";
+import { InvoiceIds, BulkStatus, SupportTicket, sendConfirmedReminders, setConfirmedBulkStatus, prepareTicket, claimAssistantAction } from "../_shared/assistantOperations.ts";
 
 const Body = z.object({ actionId: z.string().uuid(), decision: z.enum(["confirm", "cancel"]) });
 const email = z.string().email().max(255);
@@ -15,8 +16,10 @@ const S = {
   set_contract_status: z.object({ contract_id: z.string().uuid(), status: z.enum(["active", "stopped"]) }),
   create_portal_account: z.object({ email, name: z.string().min(1).max(200), company_name: z.string().max(200).optional() }),
   create_invoice: z.object({ client_id: z.string().uuid(), order_id: z.string().uuid().optional(), due_days: z.number().int().min(0).max(365).optional(), currency: z.string().length(3).optional(), vat_rate: z.number().min(0).max(30).optional(), language: z.enum(["de", "en"]).optional(), notes: z.string().max(5000).optional(), items: z.array(z.object({ description: z.string().min(1).max(500), quantity: z.number().positive().max(10000).optional(), unit_price: z.number().nonnegative().max(1_000_000) })).min(1).max(50) }),
-  create_support_ticket: z.object({ order_id: z.string().uuid(), client_email: email, client_name: z.string().max(200).optional(), company_name: z.string().max(200).optional(), subject: z.string().min(1).max(300), message: z.string().max(5000).optional() }),
+  create_support_ticket: SupportTicket,
   stop_stripe_package: z.object({ contract_id: z.string().uuid() }),
+  send_invoice_reminders: InvoiceIds,
+  bulk_set_status: BulkStatus,
 };
 
 Deno.serve(async (req) => {
@@ -30,7 +33,9 @@ Deno.serve(async (req) => {
   if (!action) return json({ error: "Not found" }, 404);
   if (action.status !== "pending") return json({ error: `Already ${action.status}` }, 409);
   const finish = async (status: string, result: unknown) => {
-    await db.from("assistant_actions").update({ status, result, confirmed_by: userId }).eq("id", action.id).eq("status", "pending");
+    const { data: saved, error } = await db.from("assistant_actions").update({ status, result, confirmed_by: userId }).eq("id", action.id).in("status", status === "cancelled" ? ["pending"] : ["pending", "processing"]).select("id");
+    if (error) return json({ error: "Could not save action outcome. Do not repeat the action." }, 500);
+    if (!saved?.length) return json({ error: "Action is already being handled; reload the conversation." }, 409);
     return json({ status, result }, status === "failed" ? 422 : 200);
   };
   if (parsed.data.decision === "cancel") return finish("cancelled", null);
@@ -39,12 +44,22 @@ Deno.serve(async (req) => {
   if (!schema) return finish("failed", { error: "Unknown action" });
   const p = schema.safeParse(action.args);
   if (!p.success) return finish("failed", { error: "Invalid details", details: p.error.flatten().fieldErrors });
-  // deno-lint-ignore no-explicit-any
-  const a: any = p.data;
+  try {
+    if (!await claimAssistantAction(db, action.id, userId)) return json({ error: "This action is already being handled" }, 409);
+  } catch { return json({ error: "Could not claim the action; nothing was changed" }, 500); }
   const now = new Date().toISOString();
   try {
     switch (action.tool) {
+      case "send_invoice_reminders": {
+        const results = await sendConfirmedReminders(db, action.args);
+        return finish(results.every(r => r.status === "done") ? "confirmed" : "failed", { results, error: results.some(r => r.status !== "done") ? "Some reminders were not sent; review individual results. Do not repeat completed items." : undefined });
+      }
+      case "bulk_set_status": {
+        const results = await setConfirmedBulkStatus(db, action.args, userId);
+        return finish(results.every(r => r.status === "done") ? "confirmed" : "failed", { results, error: results.some(r => r.status !== "done") ? "Some records were not changed; review individual results." : undefined });
+      }
       case "create_order": {
+        const a = S.create_order.parse(action.args);
         const { data, error } = await db.from("orders").insert({ ...a, amount: a.price, currency: a.currency ?? "EUR", status: "Created", status_created: true, created_by: userId }).select("id").single();
         if (error) throw error;
         await db.from("order_audit_logs").insert({ order_id: data.id, action: "created", actor_id: userId, details: "Created via admin assistant" });
@@ -53,6 +68,7 @@ Deno.serve(async (req) => {
         return finish("confirmed", { order_id: data.id, link: `/dashboard?order=${data.id}` });
       }
       case "update_order": {
+        const a = S.update_order.parse(action.args);
         const ch = { ...a.changes, ...(a.changes.price !== undefined ? { amount: a.changes.price } : {}), updated_at: now };
         const { data, error } = await db.from("orders").update(ch).eq("id", a.order_id).select("id");
         if (error) throw error;
@@ -61,6 +77,7 @@ Deno.serve(async (req) => {
         return finish("confirmed", { order_id: a.order_id });
       }
       case "set_order_status": {
+        const a = S.set_order_status.parse(action.args);
         const col = ORDER_STATUS_COLUMNS[a.status];
         const { data, error } = await db.from("orders").update({ status: a.status, [col]: true, status_date: now }).eq("id", a.order_id).select("id");
         if (error) throw error;
@@ -70,6 +87,7 @@ Deno.serve(async (req) => {
         return finish("confirmed", { order_id: a.order_id, status: a.status });
       }
       case "set_invoice_status": {
+        const a = S.set_invoice_status.parse(action.args);
         const patch: Record<string, unknown> = { status: a.status };
         if (a.status === "cancelled") Object.assign(patch, { cancelled_at: now, cancelled_by: userId });
         const { data, error } = await db.from("invoices").update(patch).eq("id", a.invoice_id).select("id,invoice_number");
@@ -78,17 +96,20 @@ Deno.serve(async (req) => {
         return finish("confirmed", { invoice: data[0].invoice_number, status: a.status });
       }
       case "create_follow_up_reminder": {
+        const a = S.create_follow_up_reminder.parse(action.args);
         const { data, error } = await db.from("follow_up_reminders").insert({ ...a, remind_at: new Date(a.remind_at).toISOString(), created_by: userId }).select("id").single();
         if (error) throw error;
         return finish("confirmed", { reminder_id: data.id });
       }
       case "set_ticket_status": {
+        const a = S.set_ticket_status.parse(action.args);
         const { data, error } = await db.from("customer_tickets").update({ status: a.status, ...(a.notes ? { notes: a.notes } : {}) }).eq("id", a.ticket_id).select("id");
         if (error) throw error;
         if (!data?.length) return finish("failed", { error: "Ticket not found" });
         return finish("confirmed", { ticket_id: a.ticket_id, status: a.status });
       }
       case "set_contract_status": {
+        const a = S.set_contract_status.parse(action.args);
         const { data: c } = await db.from("monthly_contracts").select("id,stripe_subscription_id").eq("id", a.contract_id).maybeSingle();
         if (!c) return finish("failed", { error: "Package not found" });
         if (c.stripe_subscription_id) return finish("failed", { error: "This package is billed by Stripe. Cancel or resume it from Monthly Packages." });
@@ -98,12 +119,14 @@ Deno.serve(async (req) => {
         return finish("confirmed", { contract_id: a.contract_id, status: a.status });
       }
       case "create_portal_account": {
+        const a = S.create_portal_account.parse(action.args);
         const r = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/ensure-client-portal`, { method: "POST", headers: { Authorization: auth, "Content-Type": "application/json" }, body: JSON.stringify({ email: a.email, name: a.name, companyName: a.company_name }) });
         const out = await r.json().catch(() => ({}));
         if (!r.ok) return finish("failed", out);
         return finish("confirmed", out);
       }
       case "create_invoice": {
+        const a = S.create_invoice.parse(action.args);
         const { data: client } = await db.from("clients").select("id,name,email").eq("id", a.client_id).maybeSingle();
         if (!client) return finish("failed", { error: "Client not found" });
         const issue = new Date(); const due = new Date(issue); due.setDate(due.getDate() + (a.due_days ?? 14));
@@ -117,19 +140,20 @@ Deno.serve(async (req) => {
           inv = data;
         }
         if (!inv) return finish("failed", { error: "Could not get a free invoice number" });
-        const { error: liErr } = await db.from("invoice_line_items").insert(a.items.map((i: { description: string; quantity?: number; unit_price: number }) => ({ invoice_id: inv!.id, item_description: i.description, quantity: i.quantity ?? 1, unit: "pcs", unit_price: i.unit_price, vat_rate: vat, discount_rate: 0 })));
+        const invoiceId = inv.id;
+        const { error: liErr } = await db.from("invoice_line_items").insert(a.items.map((i: { description: string; quantity?: number; unit_price: number }) => ({ invoice_id: invoiceId, item_description: i.description, quantity: i.quantity ?? 1, unit: "pcs", unit_price: i.unit_price, vat_rate: vat, discount_rate: 0 })));
         if (liErr) throw liErr;
         await db.rpc("recalculate_invoice_totals", { p_invoice_id: inv.id }).then(() => {}, () => {});
         return finish("confirmed", { invoice_id: inv.id, invoice_number: inv.invoice_number });
       }
       case "create_support_ticket": {
-        const { data: order } = await db.from("orders").select("id").eq("id", a.order_id).maybeSingle();
-        if (!order) return finish("failed", { error: "Order not found" });
-        const { data, error } = await db.from("customer_tickets").insert({ ...a, status: "open" }).select("id").single();
+        const details = await prepareTicket(db, action.args);
+        const { data, error } = await db.from("customer_tickets").insert({ ...details, status: "open" }).select("id").single();
         if (error) throw error;
         return finish("confirmed", { ticket_id: data.id });
       }
       case "stop_stripe_package": {
+        const a = S.stop_stripe_package.parse(action.args);
         const r = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/stripe-billing`, { method: "POST", headers: { Authorization: auth, "Content-Type": "application/json" }, body: JSON.stringify({ action: "cancel", contract_id: a.contract_id }) });
         const out = await r.json().catch(() => ({}));
         if (!r.ok) return finish("failed", out);
