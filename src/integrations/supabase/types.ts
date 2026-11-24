@@ -74,6 +74,118 @@ export type Database = {
         }
         Relationships: []
       }
+      assistant_actions: {
+        Row: {
+          args: Json
+          confirmed_by: string | null
+          created_at: string
+          id: string
+          result: Json | null
+          status: string
+          summary: string
+          thread_id: string
+          tool: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          args?: Json
+          confirmed_by?: string | null
+          created_at?: string
+          id?: string
+          result?: Json | null
+          status?: string
+          summary?: string
+          thread_id: string
+          tool: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          args?: Json
+          confirmed_by?: string | null
+          created_at?: string
+          id?: string
+          result?: Json | null
+          status?: string
+          summary?: string
+          thread_id?: string
+          tool?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assistant_actions_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "assistant_threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      assistant_messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          parts: Json
+          role: string
+          thread_id: string
+          user_id: string
+        }
+        Insert: {
+          content?: string
+          created_at?: string
+          id?: string
+          parts?: Json
+          role: string
+          thread_id: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          parts?: Json
+          role?: string
+          thread_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assistant_messages_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "assistant_threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      assistant_threads: {
+        Row: {
+          created_at: string
+          id: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          title?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       background_templates: {
         Row: {
           background_image: string

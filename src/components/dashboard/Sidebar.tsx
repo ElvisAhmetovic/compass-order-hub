@@ -27,6 +27,7 @@ import {
   CalendarClock,
   CalendarRange,
   Sparkles,
+  Bot,
   BookOpen,
   CalendarDays,
   Instagram,
@@ -329,6 +330,7 @@ const Sidebar = () => {
   const renderAiGroup = () => {
     if (!user?.role || !['admin', 'agent', 'user'].includes(user.role)) return null;
               const aiItems = [
+                ...(user?.role === 'admin' ? [{ href: '/assistant', icon: Bot, label: 'Assistant' }] : []),
                 { href: '/ai-outreach', icon: Sparkles, label: 'AI Outreach' },
                 { href: '/services-knowledge', icon: BookOpen, label: 'Services Knowledge' },
               ];

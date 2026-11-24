@@ -73,6 +73,7 @@ const ClientPortalActivityPage = lazy(() => import("./pages/admin/ClientPortalAc
 const MonthlyPackages = lazy(() => import("./pages/MonthlyPackages"));
 const AiOutreach = lazy(() => import("./pages/AiOutreach"));
 const ServicesKnowledge = lazy(() => import("./pages/ServicesKnowledge"));
+const AdminAssistant = lazy(() => import("./pages/AdminAssistant"));
 const MonthlyInvoiceStatus = lazy(() => import("./pages/MonthlyInvoiceStatus"));
 const Offers = lazy(() => import("./pages/Offers"));
 const TicketSubmitted = lazy(() => import("./pages/TicketSubmitted"));
@@ -382,6 +383,8 @@ function App() {
                       <AiOutreach />
                     </RequireAuth>
                   } />
+                  <Route path="/assistant" element={<RequireAuth><AdminAssistant /></RequireAuth>} />
+                  <Route path="/assistant/:threadId" element={<RequireAuth><AdminAssistant /></RequireAuth>} />
                   <Route path="/services-knowledge" element={
                     <RequireAuth>
                       <ServicesKnowledge />
