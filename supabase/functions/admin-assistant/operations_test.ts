@@ -150,6 +150,16 @@ Deno.test("automatic reminders require scheduler credential or verified admin", 
   assertEquals((await requireReminderCaller(new Request("http://localhost")))?.status, 401);
 });
 
+Deno.test("scheduled reminder job is accepted only with the correct vault pass", async () => {
+  const unauth = async () => json({ error: "Unauthorized" }, 401);
+  const check = async (s: string) => s === "right-pass-test";
+  const req = (h: Record<string, string>) => new Request("http://localhost", { headers: h });
+  assertEquals(await requireReminderCaller(req({ "x-cron-secret": "right-pass-test" }), unauth, "fake-scheduler-test", check), null);
+  assertEquals((await requireReminderCaller(req({ "x-cron-secret": "wrong-pass-test" }), unauth, "fake-scheduler-test", check))?.status, 401);
+  // the public website key alone is not enough
+  assertEquals((await requireReminderCaller(req({ Authorization: "Bearer public-key-test" }), unauth, "fake-scheduler-test", check))?.status, 401);
+});
+
 Deno.test("a pending action can be claimed once and only by its owner", async () => {
   const f = fakeDb({ assistant_actions: [{ id: id(1), user_id: id(2), status: "pending" }] });
   assertEquals(await claimAssistantAction(f.db, id(1), id(3)), false);

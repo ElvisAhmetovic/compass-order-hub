@@ -17,8 +17,23 @@ export async function requireAdmin(req: Request, clients: typeof createClient = 
   return { userId: data.claims.sub as string, email: (data.claims.email as string) ?? null, db, auth };
 }
 
-/** Automatic reminders accept the scheduler's service credential or a verified admin. */
-export async function requireReminderCaller(req: Request, adminCheck = requireAdmin, serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")): Promise<Response | null> {
+/** Checks the scheduler's pass against the encrypted vault (server-only lookup). */
+export async function verifyCronSecret(secret: string): Promise<boolean> {
+  const db = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+  const { data, error } = await db.rpc("verify_reminder_cron_secret", { p_secret: secret });
+  if (error) { console.error("cron secret check failed", error.message); return false; }
+  return data === true;
+}
+
+/** Automatic reminders accept the scheduler's vault pass, the service credential, or a verified admin. */
+export async function requireReminderCaller(
+  req: Request,
+  adminCheck = requireAdmin,
+  serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"),
+  cronCheck: (secret: string) => Promise<boolean> = verifyCronSecret,
+): Promise<Response | null> {
+  const cronSecret = req.headers.get("x-cron-secret");
+  if (cronSecret) return (await cronCheck(cronSecret)) ? null : json({ error: "Unauthorized" }, 401);
   const token = req.headers.get("Authorization")?.replace(/^Bearer /, "");
   if (serviceKey && token === serviceKey) return null;
   const admin = await adminCheck(req);

@@ -4202,6 +4202,10 @@ export type Database = {
         Args: { p_header: Json; p_invoice_id: string; p_lines: Json }
         Returns: undefined
       }
+      verify_reminder_cron_secret: {
+        Args: { p_secret: string }
+        Returns: boolean
+      }
       wh_admin_bulk_set_lock: {
         Args: { p_ids: string[]; p_lock: boolean; p_reason: string }
         Returns: number
