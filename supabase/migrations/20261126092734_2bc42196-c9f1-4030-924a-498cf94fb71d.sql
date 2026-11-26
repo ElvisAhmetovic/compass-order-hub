@@ -1,0 +1,2 @@
+DROP POLICY IF EXISTS "Users can manage their proposals" ON public.proposals;
+CREATE POLICY "Team can manage their proposals" ON public.proposals FOR ALL TO authenticated USING (public.is_team() AND auth.uid() = user_id) WITH CHECK (public.is_team() AND auth.uid() = user_id);
