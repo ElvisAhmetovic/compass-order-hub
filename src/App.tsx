@@ -15,7 +15,7 @@ const lazy = <T extends ComponentType<any>>(factory: () => Promise<{ default: T 
       throw err;
     })
   );
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "./context/AuthContext";
 import { ClientLanguageProvider } from "./context/ClientLanguageContext";
@@ -31,7 +31,6 @@ const ContactPage = lazy(() => import("./pages/ContactPage"));
 const OffersUnsubscribed = lazy(() => import("./pages/OffersUnsubscribed"));
 const AboutPage = lazy(() => import("./pages/AboutPage"));
 const Login = lazy(() => import("./pages/Login"));
-const Register = lazy(() => import("./pages/Register"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Analytics = lazy(() => import("./pages/Analytics"));
 const Rankings = lazy(() => import("./pages/Rankings"));
@@ -165,7 +164,7 @@ function App() {
                   <Route path="/ticket-submitted" element={<TicketSubmitted />} />
                   <Route path="/confirm-offer/:offerId" element={<ConfirmOffer />} />
                   <Route path="/login" element={<Login />} />
-                  <Route path="/register" element={<Register />} />
+                  <Route path="/register" element={<Navigate to="/login" replace />} />
                   <Route path="/dashboard" element={
                     <RequireAuth>
                       <Dashboard />

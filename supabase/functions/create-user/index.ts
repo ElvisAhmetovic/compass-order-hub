@@ -75,7 +75,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // Get user data from request body
-    const { email, password, firstName, lastName, role, linkOrderId } = await req.json();
+    const { email, password, firstName, lastName, role, linkOrderId, sendLoginEmail } = await req.json();
 
     // Validate required fields
     if (!email || !password) {
@@ -193,9 +193,15 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
+    let loginEmailSent = false;
+    if (sendLoginEmail === true && (role === "admin" || role === "agent")) {
+      loginEmailSent = await sendTeamLoginEmail(email, firstName || "", password);
+    }
+
     return new Response(
       JSON.stringify({ 
         success: true, 
+        login_email_sent: loginEmailSent,
         message: "User created successfully",
         user_id: userData.user.id,
         email: userData.user.email
@@ -211,5 +217,30 @@ const handler = async (req: Request): Promise<Response> => {
     );
   }
 };
+
+const esc = (v: string) => v.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] as string));
+
+async function sendTeamLoginEmail(to: string, firstName: string, password: string): Promise<boolean> {
+  const key = Deno.env.get("RESEND_API_KEY_ABMEDIA");
+  if (!key) { console.error("RESEND_API_KEY_ABMEDIA missing"); return false; }
+  const loginUrl = "https://www.empriatech.com/login";
+  const html = `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;color:#1f2937">
+<h2 style="color:#0f2747">Welcome to the Empria team</h2>
+<p>Hello ${esc(firstName || "there")},</p>
+<p>An Empria admin has created your team account. You can sign in here:</p>
+<p><a href="${loginUrl}" style="display:inline-block;background:#0f2747;color:#ffffff;padding:12px 20px;border-radius:6px;text-decoration:none">Sign in to Empria</a></p>
+<p><strong>Email:</strong> ${esc(to)}<br/><strong>Temporary password:</strong> ${esc(password)}</p>
+<p>Please change your password after your first sign-in.</p>
+<p>Best regards,<br/>Media Marketing</p></div>`;
+  try {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ from: "Media Marketing <noreply@mediaamarketing.com>", to: [to], subject: "Your Empria team account", html }),
+    });
+    if (!res.ok) { console.error("Login email failed", res.status, await res.text()); return false; }
+    return true;
+  } catch (e) { console.error("Login email error", e); return false; }
+}
 
 serve(handler);

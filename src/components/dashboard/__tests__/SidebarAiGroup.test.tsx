@@ -76,10 +76,10 @@ describe("Sidebar AI group", () => {
     expect(within(group).getByRole("link", { name: "AI Outreach" })).toBeInTheDocument();
   });
 
-  it("is shown for the 'user' role too, but not for clients", () => {
+  it("is hidden for self-registered 'user' accounts and for clients", () => {
     mockRole = "user";
     const { unmount } = renderAt("/dashboard");
-    expect(screen.getByTestId("sidebar-ai-group")).toBeInTheDocument();
+    expect(screen.queryByTestId("sidebar-ai-group")).toBeNull();
     unmount();
     mockRole = "client";
     renderAt("/dashboard");

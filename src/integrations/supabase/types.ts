@@ -4161,6 +4161,7 @@ export type Database = {
         Args: { company_id_param: string }
         Returns: boolean
       }
+      is_team: { Args: never; Returns: boolean }
       portal_status_for_emails: {
         Args: { p_emails: string[] }
         Returns: {

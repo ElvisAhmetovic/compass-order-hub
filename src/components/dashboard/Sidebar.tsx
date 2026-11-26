@@ -1,3 +1,4 @@
+import { isTeamRole } from '@/components/auth/teamAccess';
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
@@ -209,7 +210,7 @@ const Sidebar = () => {
       href: "/team-collaboration",
       icon: MessageSquare,
       label: "Team Chat",
-      roles: ["admin", "agent", "user"]
+      roles: ["admin", "agent"]
     }
   ];
 
@@ -218,6 +219,7 @@ const Sidebar = () => {
   // Filter sidebar items based on user role
   const roleFilteredItems = menuItems.filter(item => {
     if (!user || !user.role) return false;
+    if (!isTeamRole(user.role)) return false;
     return item.roles.includes(user.role);
   });
 
@@ -328,10 +330,11 @@ const Sidebar = () => {
   };
 
   const renderAiGroup = () => {
+              if (!isTeamRole(user?.role)) return null;
     if (!user?.role || !['admin', 'agent', 'user'].includes(user.role)) return null;
               const aiItems = [
                 ...(user?.role === 'admin' ? [{ href: '/assistant', icon: Bot, label: 'Assistant' }] : []),
-                { href: '/ai-outreach', icon: Sparkles, label: 'AI Outreach' },
+                ...(user?.role === 'admin' || user?.role === 'agent' ? [{ href: '/ai-outreach', icon: Sparkles, label: 'AI Outreach' }] : []),
                 { href: '/services-knowledge', icon: BookOpen, label: 'Services Knowledge' },
               ];
               const aiActive = aiItems.some((i) => location.pathname.startsWith(i.href));

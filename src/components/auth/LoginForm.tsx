@@ -120,19 +120,7 @@ const LoginForm = () => {
           >
             {isLoading ? "Logging in..." : "Login"}
           </Button>
-          <div className="mt-4 text-sm text-center">
-            Don't have an account?{" "}
-            <a
-              href="/register"
-              className="text-primary hover:text-primary/80 hover:underline"
-              onClick={(e) => {
-                e.preventDefault();
-                navigate("/register");
-              }}
-            >
-              Register
-            </a>
-          </div>
+          <p className="mt-4 text-sm text-center text-muted-foreground">Accounts are created by the Empria team.</p>
         </CardFooter>
       </form>
     </Card>

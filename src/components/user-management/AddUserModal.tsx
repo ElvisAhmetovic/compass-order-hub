@@ -33,6 +33,7 @@ import { UserRole } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Eye, EyeOff } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const formSchema = z.object({
   email: z.string().email({ message: "Invalid email address" }),
@@ -43,6 +44,7 @@ const formSchema = z.object({
     message: "Full name must be at least 2 characters.",
   }),
   role: z.enum(["user", "admin", "agent", "client"] as const),
+  sendLoginEmail: z.boolean(),
 });
 
 interface AddUserModalProps {
@@ -66,7 +68,8 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({
       email: "",
       password: "",
       fullName: "",
-      role: "user",
+      role: "agent",
+      sendLoginEmail: true,
     },
   });
 
@@ -86,6 +89,7 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({
           firstName,
           lastName,
           role: values.role,
+          sendLoginEmail: values.sendLoginEmail,
         },
       });
 
@@ -99,7 +103,7 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({
 
       toast({
         title: "User created successfully",
-        description: `${values.fullName} can now log in with the provided credentials.`,
+        description: data?.login_email_sent ? `Login details were emailed to ${values.email}.` : `${values.fullName} can now log in with the provided credentials.`,
       });
 
       // Reset form and close modal
@@ -207,6 +211,18 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({
                     </SelectContent>
                   </Select>
                   <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="sendLoginEmail"
+              render={({ field }) => (
+                <FormItem className="flex items-center gap-2 space-y-0">
+                  <FormControl>
+                    <Checkbox checked={field.value} onCheckedChange={(v) => field.onChange(v === true)} />
+                  </FormControl>
+                  <FormLabel className="font-normal">Email login details to this person (admins and agents only)</FormLabel>
                 </FormItem>
               )}
             />

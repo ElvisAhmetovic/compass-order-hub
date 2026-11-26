@@ -4,6 +4,7 @@ import { UserRole } from '@/types';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { isTeamRole } from './teamAccess';
 
 interface AuthGuardProps {
   children: ReactNode;
@@ -33,7 +34,7 @@ const AuthGuard = ({ children, requiredRoles = [] }: AuthGuardProps) => {
   }
 
   // Check if user has required role (role comes from profiles table via AuthContext)
-  if (requiredRoles.length > 0 && !requiredRoles.includes(user.role)) {
+  if ((requiredRoles.length > 0 && !requiredRoles.includes(user.role)) || (user.role !== 'client' && !isTeamRole(user.role))) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4 text-center">
         <h1 className="text-2xl font-bold mb-2">Access Denied</h1>
