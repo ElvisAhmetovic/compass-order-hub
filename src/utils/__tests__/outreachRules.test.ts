@@ -42,3 +42,19 @@ describe("AI outreach replies", () => {
     expect(withSubjectRef("Offer [Ref JN-AO]", "Johann Nowak")).toBe("Offer [Ref JN-AO]");
   });
 });
+
+import { draftIdFromAddresses } from "../../../supabase/functions/_shared/outreachRules";
+describe("AI outreach reply inbox", () => {
+  const id = "0f8fad5b-d9cb-469f-a165-70867728950e";
+  it("with the reply domain set, replies go to an offer-specific address plus the sender", () => {
+    expect(outreachReplyTo("Johann Nowak", "johann@x.com", id, "replies.mediaamarketing.com"))
+      .toEqual([`"Johann Nowak (AI Outreach)" <reply+${id}@replies.mediaamarketing.com>`, "johann@x.com"]);
+  });
+  it("without the reply domain, replies still go to invoice@", () => {
+    expect(outreachReplyTo("Johann Nowak", null, id, null)).toEqual(['"Johann Nowak (AI Outreach)" <invoice@mediaamarketing.com>']);
+  });
+  it("a reply is matched to its offer, other addresses are not", () => {
+    expect(draftIdFromAddresses([`Reply+${id}@replies.mediaamarketing.com`])).toBe(id);
+    expect(draftIdFromAddresses(["reply+notanid@replies.mediaamarketing.com", "invoice@mediaamarketing.com"])).toBeNull();
+  });
+});

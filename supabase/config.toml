@@ -146,3 +146,6 @@ verify_jwt = false
 
 [functions.payment-receipt]
 verify_jwt = false
+
+[functions.outreach-inbound]
+verify_jwt = false

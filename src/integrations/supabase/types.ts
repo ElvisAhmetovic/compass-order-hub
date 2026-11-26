@@ -2246,6 +2246,62 @@ export type Database = {
         }
         Relationships: []
       }
+      outreach_replies: {
+        Row: {
+          created_at: string
+          draft_id: string | null
+          from_email: string
+          from_name: string | null
+          html_body: string | null
+          id: string
+          provider_message_id: string
+          read_at: string | null
+          read_by: string | null
+          received_at: string
+          subject: string | null
+          text_body: string | null
+          to_address: string | null
+        }
+        Insert: {
+          created_at?: string
+          draft_id?: string | null
+          from_email: string
+          from_name?: string | null
+          html_body?: string | null
+          id?: string
+          provider_message_id: string
+          read_at?: string | null
+          read_by?: string | null
+          received_at?: string
+          subject?: string | null
+          text_body?: string | null
+          to_address?: string | null
+        }
+        Update: {
+          created_at?: string
+          draft_id?: string | null
+          from_email?: string
+          from_name?: string | null
+          html_body?: string | null
+          id?: string
+          provider_message_id?: string
+          read_at?: string | null
+          read_by?: string | null
+          received_at?: string
+          subject?: string | null
+          text_body?: string | null
+          to_address?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "outreach_replies_draft_id_fkey"
+            columns: ["draft_id"]
+            isOneToOne: false
+            referencedRelation: "outreach_drafts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       outreach_scan_lock: {
         Row: {
           id: number

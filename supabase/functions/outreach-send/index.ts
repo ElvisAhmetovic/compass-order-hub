@@ -52,7 +52,7 @@ ${user.name ? `<p>${de ? "Ihr Ansprechpartner" : "Your contact"}: ${esc(user.nam
       method: "POST",
       headers: { Authorization: `Bearer ${Deno.env.get("RESEND_API_KEY_ABMEDIA")}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        from: "Media Marketing <noreply@mediaamarketing.com>", to: [draft.email], reply_to: outreachReplyTo(user.name, user.email),
+        from: "Media Marketing <noreply@mediaamarketing.com>", to: [draft.email], reply_to: outreachReplyTo(user.name, user.email, draft.id, Deno.env.get("OUTREACH_INBOUND_DOMAIN")),
         subject: withSubjectRef(finalSubject, user.name), html,
         text: `${finalBody}${user.name ? `\n\n${de ? "Ihr Ansprechpartner" : "Your contact"}: ${user.name}` : ""}\n\n${unsubUrl}`,
       }),

@@ -77,9 +77,11 @@ export function testRecipient(callerEmail: string | null | undefined): string | 
 export const OUTREACH_SHARED_MAILBOX = "invoice@mediaamarketing.com";
 
 /** Replies go to the shared team mailbox, labelled with the sender, plus the sender's own address. */
-export function outreachReplyTo(senderName: string, senderEmail: string | null): string[] {
+export function outreachReplyTo(senderName: string, senderEmail: string | null, draftId?: string, inboundDomain?: string | null): string[] {
   const label = `${(senderName || "Media Marketing").replace(/["<>]/g, "")} (AI Outreach)`;
-  const list = [`"${label}" <${OUTREACH_SHARED_MAILBOX}>`];
+  const domain = inboundDomain?.trim().toLowerCase();
+  const box = domain && draftId ? `reply+${draftId}@${domain}` : OUTREACH_SHARED_MAILBOX;
+  const list = [`"${label}" <${box}>`];
   const e = senderEmail?.trim().toLowerCase();
   if (e && e !== OUTREACH_SHARED_MAILBOX) list.push(e);
   return list;
@@ -94,4 +96,21 @@ export function outreachSubjectRef(senderName: string): string {
 export function withSubjectRef(subject: string, senderName: string): string {
   const ref = outreachSubjectRef(senderName);
   return subject.includes(ref) ? subject : `${subject.slice(0, 200 - ref.length - 1)} ${ref}`;
+}
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+/** Finds the offer id in a reply address like "reply+<id>@replies.example.com". */
+export function draftIdFromAddresses(addresses: string[]): string | null {
+  for (const a of addresses) {
+    const m = /reply\+([^@\s>]+)@/i.exec(a ?? "");
+    if (m && UUID.test(m[1])) return m[1].toLowerCase();
+  }
+  return null;
+}
+
+/** Splits '"Jane Doe" <jane@x.com>' into name and lowercase email. */
+export function parseFromHeader(from: string): { name: string | null; email: string } {
+  const m = /^\s*"?([^"<]*?)"?\s*<([^>]+)>\s*$/.exec(from ?? "");
+  if (m) return { name: m[1].trim() || null, email: m[2].trim().toLowerCase() };
+  return { name: null, email: (from ?? "").trim().toLowerCase() };
 }

@@ -1,0 +1,77 @@
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Mail, MailOpen } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
+
+export type OutreachReply = {
+  id: string; draft_id: string | null; from_email: string; from_name: string | null; subject: string | null;
+  text_body: string | null; received_at: string; read_at: string | null;
+};
+type DraftInfo = { id: string; approved_by_name: string | null; company_name: string | null };
+
+const fmt = (d: string) => new Date(d).toLocaleString("de-DE", { dateStyle: "short", timeStyle: "short" });
+
+export default function OutreachReplies({ replies, drafts, q, onChanged }: {
+  replies: OutreachReply[]; drafts: DraftInfo[]; q: string; onChanged: () => void;
+}) {
+  const [open, setOpen] = useState<string | null>(null);
+  const byId = new Map(drafts.map((d) => [d.id, d]));
+  const list = replies.filter((r) => !q || `${r.from_email} ${r.from_name ?? ""} ${r.subject ?? ""}`.toLowerCase().includes(q.toLowerCase()));
+
+  const markRead = async (r: OutreachReply, read: boolean) => {
+    const { data: auth } = await supabase.auth.getUser();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase as any).from("outreach_replies")
+      .update({ read_at: read ? new Date().toISOString() : null, read_by: read ? auth.user?.id ?? null : null }).eq("id", r.id);
+    if (error) toast({ title: "Could not update", description: error.message, variant: "destructive" });
+    onChanged();
+  };
+
+  useEffect(() => {
+    const r = replies.find((x) => x.id === open);
+    if (r && !r.read_at) markRead(r, true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  if (list.length === 0) return <p className="text-muted-foreground">No replies yet. Client replies to sent offers show up here.</p>;
+  return (
+    <div className="grid gap-2">
+      {list.map((r) => {
+        const d = r.draft_id ? byId.get(r.draft_id) : undefined;
+        const isOpen = open === r.id;
+        return (
+          <Card key={r.id} className={r.read_at ? "" : "border-primary"}>
+            <CardContent className="pt-4 space-y-2">
+              <button type="button" className="w-full text-left" onClick={() => setOpen(isOpen ? null : r.id)}>
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    {r.read_at ? <MailOpen className="h-4 w-4 text-muted-foreground" /> : <Mail className="h-4 w-4 text-primary" />}
+                    <span className={r.read_at ? "" : "font-semibold"}>{r.from_name ? `${r.from_name} · ` : ""}{r.from_email}</span>
+                  </div>
+                  <span className="text-xs text-muted-foreground">{fmt(r.received_at)}</span>
+                </div>
+                <p className="text-sm mt-1">{r.subject || "(no subject)"}</p>
+                <div className="mt-1">
+                  {d ? <Badge variant="secondary">Offer sent by {d.approved_by_name || "unknown"}{d.company_name ? ` · ${d.company_name}` : ""}</Badge>
+                    : <Badge variant="outline">Not linked to an offer</Badge>}
+                </div>
+              </button>
+              {isOpen && (
+                <>
+                  <p className="text-sm whitespace-pre-wrap border-t pt-2">{r.text_body || "(This email has no plain-text content.)"}</p>
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="outline" asChild><a href={`mailto:${r.from_email}?subject=${encodeURIComponent(`Re: ${r.subject ?? ""}`)}`}>Reply by email</a></Button>
+                    <Button size="sm" variant="ghost" onClick={() => markRead(r, false)}>Mark unread</Button>
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        );
+      })}
+    </div>
+  );
+}

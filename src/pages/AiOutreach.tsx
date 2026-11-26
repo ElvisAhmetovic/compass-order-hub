@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Sparkles, Send, X, Search, Loader2, RefreshCw, FlaskConical, Trophy } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import OutreachReplies, { type OutreachReply } from "@/components/outreach/OutreachReplies";
 
 type Draft = {
   id: string; email: string; company_name: string | null; language: string; reason: string | null;
@@ -40,6 +41,7 @@ export default function AiOutreach() {
   const [hints, setHints] = useState<Record<string, string>>({});
   const [myEmail, setMyEmail] = useState<string>("");
   const [skips, setSkips] = useState<{ email: string; company_name: string | null; reason: string; details: string | null; scanned_at: string }[]>([]);
+  const [replies, setReplies] = useState<OutreachReply[]>([]);
   const [edits, setEdits] = useState<Record<string, { subject: string; body: string }>>({});
 
   const load = useCallback(async () => {
@@ -50,11 +52,16 @@ export default function AiOutreach() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: sk } = await (supabase as any).from("outreach_skips").select("*").order("scanned_at", { ascending: false }).limit(500);
     setSkips(sk ?? []);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: rp, error: rpErr } = await (supabase as any).from("outreach_replies")
+      .select("id, draft_id, from_email, from_name, subject, text_body, received_at, read_at").order("received_at", { ascending: false }).limit(500);
+    if (rpErr) toast({ title: "Could not load replies", description: rpErr.message, variant: "destructive" });
+    else setReplies(rp as OutreachReply[]);
   }, []);
   useEffect(() => { supabase.auth.getUser().then(({ data }) => setMyEmail(data.user?.email ?? "")); }, []);
   useEffect(() => { load(); }, [load]);
 
-  const filtered = useMemo(() => drafts.filter((d) =>
+  const filtered = useMemo(() => tab === "replies" ? [] : drafts.filter((d) =>
     (tab === "all" || (tab === "won" ? !!d.won_back_order_id : d.status === tab)) &&
     (!q || `${d.email} ${d.company_name ?? ""}`.toLowerCase().includes(q.toLowerCase()))), [drafts, tab, q]);
   const sentTotal = drafts.filter((d) => d.status === "sent").length;
@@ -152,9 +159,9 @@ export default function AiOutreach() {
             <div className="flex flex-wrap items-center gap-3">
               <Tabs value={tab} onValueChange={setTab}>
                 <TabsList>
-                  {["pending", "sent", "won", "rejected", "failed", "skipped", "all"].map((t) => (
+                  {["replies", "pending", "sent", "won", "rejected", "failed", "skipped", "all"].map((t) => (
                     <TabsTrigger key={t} value={t} className="capitalize">
-                      {t === "won" ? "won back" : t === "skipped" ? "skipped – unpaid" : t} ({t === "all" ? drafts.length : t === "won" ? wonBack : t === "skipped" ? skips.length : drafts.filter((d) => d.status === t).length})
+                      {t === "won" ? "won back" : t === "skipped" ? "skipped – unpaid" : t} ({t === "replies" ? `${replies.filter((r) => !r.read_at).length} new` : t === "all" ? drafts.length : t === "won" ? wonBack : t === "skipped" ? skips.length : drafts.filter((d) => d.status === t).length})
                     </TabsTrigger>
                   ))}
                 </TabsList>
@@ -177,7 +184,8 @@ export default function AiOutreach() {
                 {skips.length === 0 && <p className="text-sm">Nobody skipped.</p>}
               </CardContent></Card>
             )}
-            {tab !== "skipped" && filtered.length === 0 && <p className="text-muted-foreground">No drafts here.</p>}
+            {tab === "replies" && <OutreachReplies replies={replies} drafts={drafts} q={q} onChanged={load} />}
+            {tab !== "skipped" && tab !== "replies" && filtered.length === 0 && <p className="text-muted-foreground">No drafts here.</p>}
             <div className="grid gap-4">
               {filtered.map((d) => {
                 const editable = d.status === "pending";
