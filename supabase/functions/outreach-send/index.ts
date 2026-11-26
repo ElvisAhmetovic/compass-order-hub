@@ -1,5 +1,5 @@
 import { admin, corsHeaders, getTeamUser, json, unsubscribeToken } from "../_shared/outreachAuth.ts";
-import { isSendWindow, testRecipient, remainingDailyQuota, sarajevoDate } from "../_shared/outreachRules.ts";
+import { isSendWindow, testRecipient, remainingDailyQuota, sarajevoDate, outreachReplyTo, withSubjectRef } from "../_shared/outreachRules.ts";
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]!));
 
@@ -42,6 +42,7 @@ Deno.serve(async (req) => {
   const de = draft.language === "de";
   const html = `<div style="font-family:Arial,sans-serif;font-size:14px;line-height:1.6;color:#1f2937">
 ${finalBody.split(/\n\s*\n/).map((p: string) => `<p>${esc(p).replace(/\n/g, "<br>")}</p>`).join("")}
+${user.name ? `<p>${de ? "Ihr Ansprechpartner" : "Your contact"}: ${esc(user.name)}</p>` : ""}
 <p style="color:#6b7280;font-size:12px">invoice@mediaamarketing.com · +49 203 7090 1754 · <a href="https://www.mediaamarketing.com/de">mediaamarketing.com</a></p>
 <p style="color:#9ca3af;font-size:11px"><a href="${unsubUrl}" style="color:#9ca3af">${de ? "Keine weiteren Angebote erhalten" : "Don't send me offers anymore"}</a></p></div>`;
 
@@ -51,8 +52,9 @@ ${finalBody.split(/\n\s*\n/).map((p: string) => `<p>${esc(p).replace(/\n/g, "<br
       method: "POST",
       headers: { Authorization: `Bearer ${Deno.env.get("RESEND_API_KEY_ABMEDIA")}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        from: "Media Marketing <noreply@mediaamarketing.com>", to: [draft.email], reply_to: "invoice@mediaamarketing.com",
-        subject: finalSubject, html, text: `${finalBody}\n\n${unsubUrl}`,
+        from: "Media Marketing <noreply@mediaamarketing.com>", to: [draft.email], reply_to: outreachReplyTo(user.name, user.email),
+        subject: withSubjectRef(finalSubject, user.name), html,
+        text: `${finalBody}${user.name ? `\n\n${de ? "Ihr Ansprechpartner" : "Your contact"}: ${user.name}` : ""}\n\n${unsubUrl}`,
       }),
     });
     txt = await res.text();

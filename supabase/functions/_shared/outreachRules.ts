@@ -73,3 +73,25 @@ export function testRecipient(callerEmail: string | null | undefined): string | 
   const e = (callerEmail ?? "").trim().toLowerCase();
   return e.includes("@") ? e : null;
 }
+
+export const OUTREACH_SHARED_MAILBOX = "invoice@mediaamarketing.com";
+
+/** Replies go to the shared team mailbox, labelled with the sender, plus the sender's own address. */
+export function outreachReplyTo(senderName: string, senderEmail: string | null): string[] {
+  const label = `${(senderName || "Media Marketing").replace(/["<>]/g, "")} (AI Outreach)`;
+  const list = [`"${label}" <${OUTREACH_SHARED_MAILBOX}>`];
+  const e = senderEmail?.trim().toLowerCase();
+  if (e && e !== OUTREACH_SHARED_MAILBOX) list.push(e);
+  return list;
+}
+
+/** Subject reference with the sender's initials, e.g. "[Ref JN-AO]". */
+export function outreachSubjectRef(senderName: string): string {
+  const initials = (senderName || "").split(/\s+/).filter(Boolean).map((p) => p[0]!.toUpperCase()).join("").slice(0, 3) || "MM";
+  return `[Ref ${initials}-AO]`;
+}
+
+export function withSubjectRef(subject: string, senderName: string): string {
+  const ref = outreachSubjectRef(senderName);
+  return subject.includes(ref) ? subject : `${subject.slice(0, 200 - ref.length - 1)} ${ref}`;
+}

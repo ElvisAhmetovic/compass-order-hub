@@ -31,3 +31,14 @@ describe("AI outreach rules", () => {
     expect(isWinBack(sent, daysAgo(9))).toBe(false);
   });
 });
+
+import { outreachReplyTo, withSubjectRef } from "../../../supabase/functions/_shared/outreachRules";
+describe("AI outreach replies", () => {
+  it("replies go to the shared mailbox labelled with the sender, plus the sender", () => {
+    expect(outreachReplyTo("Johann Nowak", "Johann@x.com")).toEqual(['"Johann Nowak (AI Outreach)" <invoice@mediaamarketing.com>', "johann@x.com"]);
+  });
+  it("subject carries the sender's initials once", () => {
+    expect(withSubjectRef("Offer", "Johann Nowak")).toBe("Offer [Ref JN-AO]");
+    expect(withSubjectRef("Offer [Ref JN-AO]", "Johann Nowak")).toBe("Offer [Ref JN-AO]");
+  });
+});
