@@ -9,9 +9,16 @@ import { toast } from "@/hooks/use-toast";
 export type OutreachReply = {
   id: string; draft_id: string | null; from_email: string; from_name: string | null; subject: string | null;
   text_body: string | null; received_at: string; read_at: string | null; company_name?: string | null;
+  followup_status?: string | null; followup_sent_at?: string | null;
 };
 type DraftInfo = { id: string; approved_by_name: string | null; company_name: string | null };
 
+const SKIP: Record<string, string> = { disabled: "automatic follow-up is off", not_linked: "not linked to an offer", already_sent: "already sent for this offer",
+  opted_out: "client opted out", system_sender: "system or no-reply sender", own_address: "our own address", auto_reply: "automatic reply / out of office", no_reply_domain: "reply address not set up" };
+const followUpLabel = (r: { followup_status?: string | null; followup_sent_at?: string | null }) =>
+  r.followup_status === "sent" ? `Follow-up sent ${r.followup_sent_at ? fmt(r.followup_sent_at) : ""}`
+  : r.followup_status === "failed" ? "Follow-up could not be sent"
+  : `No follow-up: ${SKIP[(r.followup_status ?? "").replace("skipped:", "")] ?? r.followup_status}`;
 const fmt = (d: string) => new Date(d).toLocaleString("de-DE", { dateStyle: "short", timeStyle: "short" });
 
 export default function OutreachReplies({ replies, drafts, q, onChanged }: {
@@ -61,6 +68,7 @@ export default function OutreachReplies({ replies, drafts, q, onChanged }: {
                 <div className="mt-1">
                   {d ? <Badge variant="secondary">Offer sent by {d.approved_by_name || "unknown"}</Badge>
                     : <Badge variant="outline">Not linked to an offer</Badge>}
+                  {r.followup_status && <p className="text-xs text-muted-foreground mt-1">{followUpLabel(r)}</p>}
                 </div>
               </button>
               {isOpen && (

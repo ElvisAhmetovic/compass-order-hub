@@ -1,7 +1,7 @@
 // Receives client replies to AI outreach emails from Resend (email.received) and stores them for the team inbox.
 import { admin, corsHeaders, json } from "../_shared/outreachAuth.ts";
 import { verifySvix } from "../_shared/svixVerify.ts";
-import { buildOutreachTicket, pickCompanyName, draftIdFromAddresses, parseFromHeader } from "../_shared/outreachRules.ts";
+import { buildOutreachTicket, followUpSkipReason, outreachSubjectRef, pickCompanyName, renderReplyFollowUp, type ReplyTemplate, draftIdFromAddresses, parseFromHeader } from "../_shared/outreachRules.ts";
 
 type Received = { email_id?: string; from?: string; to?: string[]; subject?: string; created_at?: string };
 
@@ -26,6 +26,7 @@ Deno.serve(async (req) => {
 
   // Full content comes from Resend's receiving API
   let text: string | null = null, html: string | null = null;
+  let inHeaders: Record<string, string> = {};
   const res = await fetch(`https://api.resend.com/emails/receiving/${encodeURIComponent(d.email_id)}`, {
     headers: { Authorization: `Bearer ${Deno.env.get("RESEND_API_KEY_ABMEDIA")}` },
   });
@@ -33,13 +34,14 @@ Deno.serve(async (req) => {
     const full = await res.json();
     text = typeof full.text === "string" ? full.text.slice(0, 50000) : null;
     html = typeof full.html === "string" ? full.html.slice(0, 200000) : null;
+    if (full.headers && typeof full.headers === "object") inHeaders = full.headers as Record<string, string>;
   } else console.error(`Resend receiving fetch failed [${res.status}]: ${await res.text()}`);
 
   const to = Array.isArray(d.to) ? d.to : [];
   let draftId = draftIdFromAddresses(to);
-  let draft: { subject: string; approved_by_name: string | null; company_name: string | null; email: string } | null = null;
+  let draft: { subject: string; approved_by_name: string | null; company_name: string | null; email: string; language: string | null; approved_by_email?: string | null } | null = null;
   if (draftId) {
-    const { data: dr } = await db.from("outreach_drafts").select("id, subject, approved_by_name, company_name, email").eq("id", draftId).maybeSingle();
+    const { data: dr } = await db.from("outreach_drafts").select("id, subject, approved_by_name, company_name, email, language").eq("id", draftId).maybeSingle();
     if (!dr) draftId = null; else draft = dr;
   }
   const from = parseFromHeader(d.from);
@@ -66,5 +68,43 @@ Deno.serve(async (req) => {
     if (tErr && tErr.code !== "23505") console.error("Ticket creation failed", tErr);
     ticketId = t?.id ?? null;
   }
-  return json({ stored: true, linked: !!draftId, ticket_id: ticketId });
+
+  // Automatic follow-up: team-written template only, at most one per offer, never to auto-replies
+  let followup: string | null = null;
+  if (saved?.id) {
+    try { followup = await sendFollowUp(db, saved.id, draftId, draft, from, d.subject ?? "", inHeaders, companyName); }
+    catch (e) { console.error("Follow-up failed", e); followup = "failed"; }
+    await db.from("outreach_replies").update({ followup_status: followup, followup_sent_at: followup === "sent" ? new Date().toISOString() : null }).eq("id", saved.id);
+  }
+  return json({ stored: true, linked: !!draftId, ticket_id: ticketId, followup });
 });
+
+// deno-lint-ignore no-explicit-any
+async function sendFollowUp(db: any, replyId: string, draftId: string | null, draft: { subject: string; approved_by_name: string | null; language: string | null } | null,
+  from: { email: string; name: string | null }, subject: string, headers: Record<string, string>, companyName: string | null): Promise<string> {
+  const { data: tpl } = await db.from("outreach_reply_template").select("enabled, subject_en, body_en, subject_de, body_de").eq("id", 1).maybeSingle();
+  const { data: opt } = await db.from("outreach_opt_outs").select("email").ilike("email", from.email).maybeSingle();
+  const { data: prior } = draftId
+    ? await db.from("outreach_replies").select("id").eq("draft_id", draftId).eq("followup_status", "sent").neq("id", replyId).limit(1).maybeSingle()
+    : { data: null };
+  const skip = followUpSkipReason({ template: tpl as ReplyTemplate | null, linkedToOffer: !!draft && !!draftId, fromEmail: from.email, subject, headers, optedOut: !!opt, alreadySent: !!prior });
+  if (skip) return `skipped:${skip}`;
+  const domain = Deno.env.get("OUTREACH_INBOUND_DOMAIN")?.trim().toLowerCase();
+  if (!domain || !draft || !draftId) return "skipped:no_reply_domain";
+  // Claim the one-per-offer slot first (unique index), so concurrent replies never send twice
+  const { error: claimErr } = await db.from("outreach_replies").update({ followup_status: "sent" }).eq("id", replyId);
+  if (claimErr) return claimErr.code === "23505" ? "skipped:already_sent" : "failed";
+  const msg = renderReplyFollowUp(tpl as ReplyTemplate, draft.language, { client_name: from.name, company_name: companyName, sender_name: draft.approved_by_name });
+  const ref = outreachSubjectRef(draft.approved_by_name ?? "");
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${Deno.env.get("RESEND_API_KEY_ABMEDIA")}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      from: `Media Marketing <reply@${domain}>`, to: [from.email], reply_to: [`reply+${draftId}@${domain}`],
+      subject: ref ? `${msg.subject} ${ref}` : msg.subject, text: msg.text, html: msg.html,
+      headers: { "Auto-Submitted": "auto-replied" },
+    }),
+  });
+  if (!res.ok) { console.error(`Follow-up send failed [${res.status}]: ${await res.text()}`); await db.from("outreach_replies").update({ followup_status: "failed" }).eq("id", replyId); return "failed"; }
+  return "sent";
+}

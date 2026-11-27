@@ -141,3 +141,48 @@ export function pickCompanyName(...candidates: Array<string | null | undefined>)
   for (const c of candidates) { const t = (c ?? "").trim(); if (t) return t; }
   return null;
 }
+
+// ---- Automatic follow-up to outreach replies (team-written template only, never AI) ----
+export type ReplyTemplate = { enabled: boolean; subject_en: string; body_en: string; subject_de: string; body_de: string };
+export type FollowUpVars = { client_name?: string | null; company_name?: string | null; sender_name?: string | null };
+
+const escHtml = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+
+/** Fills {client_name}, {company_name}, {sender_name}; German when lang starts with "de", else English. */
+export function renderReplyFollowUp(t: ReplyTemplate, lang: string | null | undefined, v: FollowUpVars) {
+  const de = (lang ?? "").toLowerCase().startsWith("de");
+  const fill = (s: string) => s
+    .replace(/\{client_name\}/g, (v.client_name ?? "").trim() || (de ? "Sehr geehrte Damen und Herren" : "there"))
+    .replace(/\{company_name\}/g, (v.company_name ?? "").trim())
+    .replace(/\{sender_name\}/g, (v.sender_name ?? "").trim() || (de ? "Unser Team" : "Our team"));
+  const subject = fill(de ? t.subject_de : t.subject_en).replace(/[\r\n]+/g, " ").trim().slice(0, 200);
+  const text = fill(de ? t.body_de : t.body_en).trim();
+  const html = `<div style="font-family:Arial,sans-serif;font-size:14px;line-height:1.6">${escHtml(text).replace(/\n/g, "<br>")}</div>`;
+  return { subject, text, html };
+}
+
+const AUTO_SUBJECT = /(out of (the )?office|abwesenheit|automatic reply|auto(matische)? ?(antwort|reply)|autoreply|urlaub|vacation|undeliverable|delivery status|unzustellbar)/i;
+const SYSTEM_SENDER = /^(mailer-daemon|postmaster|no-?reply|do-?not-?reply|bounce)/i;
+const OWN_DOMAINS = ["mediaamarketing.com", "empriatech.com", "empriadental.de"];
+
+export type FollowUpCheck = {
+  template: ReplyTemplate | null; linkedToOffer: boolean; fromEmail: string; subject: string;
+  headers: Record<string, string>; optedOut: boolean; alreadySent: boolean;
+};
+
+/** Returns null when a follow-up may be sent, otherwise the skip reason. */
+export function followUpSkipReason(c: FollowUpCheck): string | null {
+  if (!c.template?.enabled) return "disabled";
+  if (!c.linkedToOffer) return "not_linked";
+  if (c.alreadySent) return "already_sent";
+  if (c.optedOut) return "opted_out";
+  const email = c.fromEmail.trim().toLowerCase();
+  const domain = email.split("@")[1] ?? "";
+  if (!email.includes("@") || SYSTEM_SENDER.test(email)) return "system_sender";
+  if (OWN_DOMAINS.some((d) => domain === d || domain.endsWith(`.${d}`))) return "own_address";
+  const h = Object.fromEntries(Object.entries(c.headers).map(([k, v]) => [k.toLowerCase(), String(v).toLowerCase()]));
+  if ((h["auto-submitted"] && h["auto-submitted"] !== "no") || h["x-autoreply"] || h["x-autorespond"]
+    || /bulk|auto_reply|junk|list/.test(h["precedence"] ?? "")) return "auto_reply";
+  if (AUTO_SUBJECT.test(c.subject)) return "auto_reply";
+  return null;
+}

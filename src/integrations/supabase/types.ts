@@ -2261,6 +2261,8 @@ export type Database = {
           company_name: string | null
           created_at: string
           draft_id: string | null
+          followup_sent_at: string | null
+          followup_status: string | null
           from_email: string
           from_name: string | null
           html_body: string | null
@@ -2277,6 +2279,8 @@ export type Database = {
           company_name?: string | null
           created_at?: string
           draft_id?: string | null
+          followup_sent_at?: string | null
+          followup_status?: string | null
           from_email: string
           from_name?: string | null
           html_body?: string | null
@@ -2293,6 +2297,8 @@ export type Database = {
           company_name?: string | null
           created_at?: string
           draft_id?: string | null
+          followup_sent_at?: string | null
+          followup_status?: string | null
           from_email?: string
           from_name?: string | null
           html_body?: string | null
@@ -2314,6 +2320,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      outreach_reply_template: {
+        Row: {
+          body_de: string
+          body_en: string
+          created_at: string
+          enabled: boolean
+          id: number
+          subject_de: string
+          subject_en: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          body_de?: string
+          body_en?: string
+          created_at?: string
+          enabled?: boolean
+          id?: number
+          subject_de?: string
+          subject_en?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          body_de?: string
+          body_en?: string
+          created_at?: string
+          enabled?: boolean
+          id?: number
+          subject_de?: string
+          subject_en?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
       }
       outreach_scan_lock: {
         Row: {

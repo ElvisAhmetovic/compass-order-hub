@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Bot, Plus, Trash2 } from "lucide-react";
 import { AssistantChat, useAssistantThreads } from "@/components/assistant/AssistantChat";
 import { assistantPath } from "@/components/assistant/assistantView";
+import ReplyFollowUpTemplate from "@/components/assistant/ReplyFollowUpTemplate";
 
 export default function AdminAssistant() {
   const { user } = useAuth();
@@ -41,7 +42,8 @@ export default function AdminAssistant() {
           <header className="flex items-center gap-3 border-b border-border px-5 py-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground"><Bot className="h-5 w-5" /></div>
             <div><h1 className="font-semibold leading-tight">Empria Assistant</h1><p className="text-xs text-muted-foreground">Asks before changing anything</p></div>
-            <Button size="sm" variant="outline" className="ml-auto md:hidden" onClick={newThread}><Plus className="h-4 w-4" /></Button>
+            <div className="ml-auto"><ReplyFollowUpTemplate /></div>
+            <Button size="sm" variant="outline" className="md:hidden" onClick={newThread}><Plus className="h-4 w-4" /></Button>
           </header>
           <AssistantChat threadId={threadId ?? null} onNewChat={newThread} onReplied={reload} />
         </main>
