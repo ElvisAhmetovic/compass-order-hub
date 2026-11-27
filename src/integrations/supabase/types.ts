@@ -2340,10 +2340,12 @@ export type Database = {
           from_team_user: string | null
           html_body: string | null
           id: string
+          internet_message_id: string | null
           provider_message_id: string
           read_at: string | null
           read_by: string | null
           received_at: string
+          source: string
           subject: string | null
           text_body: string | null
           ticket_skip_reason: string | null
@@ -2363,10 +2365,12 @@ export type Database = {
           from_team_user?: string | null
           html_body?: string | null
           id?: string
+          internet_message_id?: string | null
           provider_message_id: string
           read_at?: string | null
           read_by?: string | null
           received_at?: string
+          source?: string
           subject?: string | null
           text_body?: string | null
           ticket_skip_reason?: string | null
@@ -2386,10 +2390,12 @@ export type Database = {
           from_team_user?: string | null
           html_body?: string | null
           id?: string
+          internet_message_id?: string | null
           provider_message_id?: string
           read_at?: string | null
           read_by?: string | null
           received_at?: string
+          source?: string
           subject?: string | null
           text_body?: string | null
           ticket_skip_reason?: string | null
