@@ -1,0 +1,2 @@
+ALTER TABLE public.outreach_replies ADD COLUMN IF NOT EXISTS source text NOT NULL DEFAULT 'offer', ADD COLUMN IF NOT EXISTS internet_message_id text;
+CREATE INDEX IF NOT EXISTS outreach_replies_internet_message_id_idx ON public.outreach_replies (internet_message_id);

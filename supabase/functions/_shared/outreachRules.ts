@@ -232,3 +232,24 @@ export function renderForwardEmail(v: { clientName: string; companyName: string 
 <p><a href="${v.link}">Open in Empria</a> · Reply to this email to answer the client directly.</p></div>`;
   return { subject, html, text: `${intro}\n\n${body}\n\nOpen in Empria: ${v.link}` };
 }
+
+/** Mail forwarded from the office@ Gmail mailbox arrives at office@<inbound domain>. */
+export function isOfficeInbox(to: string[], domain: string | null | undefined): boolean {
+  if (!domain) return false;
+  const target = `office@${domain.trim().toLowerCase()}`;
+  return to.some((a) => (a.match(/<([^>]+)>/)?.[1] ?? a).trim().toLowerCase() === target);
+}
+
+const OUR_ADDRESSES = ["office@mediaamarketing.com", "noreply@mediaamarketing.com"];
+/** Our own office/noreply mail (e.g. a manual Gmail forward) must not appear as the client: fall back to Reply-To. */
+export function officeSender(from: { email: string; name: string | null }, replyTo: string | null | undefined): { email: string; name: string | null } | null {
+  if (!OUR_ADDRESSES.includes(from.email.toLowerCase())) return from;
+  if (!replyTo) return null;
+  const r = parseFromHeader(replyTo);
+  return OUR_ADDRESSES.includes(r.email.toLowerCase()) ? null : r;
+}
+
+export function headerValue(headers: Record<string, string>, name: string): string | null {
+  const k = Object.keys(headers).find((h) => h.toLowerCase() === name.toLowerCase());
+  return k ? String(headers[k]) : null;
+}

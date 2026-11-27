@@ -1,7 +1,7 @@
 // Receives client replies to AI outreach emails from Resend (email.received) and stores them for the team inbox.
 import { admin, corsHeaders, json } from "../_shared/outreachAuth.ts";
 import { verifySvix } from "../_shared/svixVerify.ts";
-import { isBulkMail, shouldForwardReply, renderForwardEmail, ticketSkipReason, buildOutreachTicket, followUpSkipReason, outreachSubjectRef, pickCompanyName, renderReplyFollowUp, type ReplyTemplate, draftIdFromAddresses, parseFromHeader, OUTREACH_FROM } from "../_shared/outreachRules.ts";
+import { isBulkMail, shouldForwardReply, renderForwardEmail, ticketSkipReason, buildOutreachTicket, followUpSkipReason, outreachSubjectRef, pickCompanyName, renderReplyFollowUp, type ReplyTemplate, draftIdFromAddresses, parseFromHeader, OUTREACH_FROM, isOfficeInbox, officeSender, headerValue } from "../_shared/outreachRules.ts";
 
 type Received = { email_id?: string; from?: string; to?: string[]; subject?: string; created_at?: string };
 
@@ -38,16 +38,31 @@ Deno.serve(async (req) => {
   } else console.error(`Resend receiving fetch failed [${res.status}]: ${await res.text()}`);
 
   const to = Array.isArray(d.to) ? d.to : [];
-  let draftId = draftIdFromAddresses(to);
+  const office = isOfficeInbox(to, Deno.env.get("OUTREACH_INBOUND_DOMAIN"));
+  const internetId = headerValue(inHeaders, "message-id")?.trim().slice(0, 500) || null;
+  if (internetId) {
+    const { data: dup } = await db.from("outreach_replies").select("id").eq("internet_message_id", internetId).limit(1).maybeSingle();
+    if (dup) return json({ duplicate: true });
+  }
+  let draftId = office ? null : draftIdFromAddresses(to);
   let draft: { subject: string; approved_by_name: string | null; company_name: string | null; email: string; language: string | null; approved_by?: string | null; sent_at?: string | null } | null = null;
   if (draftId) {
     const { data: dr } = await db.from("outreach_drafts").select("id, subject, approved_by_name, company_name, email, language, approved_by, sent_at").eq("id", draftId).maybeSingle();
     if (!dr) draftId = null; else draft = dr;
   }
-  const from = parseFromHeader(d.from);
+  const rawFrom = parseFromHeader(d.from);
+  const sender = office ? officeSender(rawFrom, headerValue(inHeaders, "reply-to")) : rawFrom;
+  if (!sender) return json({ ignored: "own_address" });
+  const from = sender;
+  // Office mail quoting an offer (subject ref) is linked to that client's latest sent offer
+  if (office && /AO\]/.test(d.subject ?? "")) {
+    const { data: dr } = await db.from("outreach_drafts").select("id, subject, approved_by_name, company_name, email, language, approved_by, sent_at")
+      .ilike("email", from.email).not("sent_at", "is", null).order("sent_at", { ascending: false }).limit(1).maybeSingle();
+    if (dr) { draftId = dr.id; draft = dr; }
+  }
   // Who sent the offer, and is this mail from that team member (their own-mailbox answer copied to the reply address)?
   let ownerEmail: string | null = null;
-  if (draft?.approved_by) {
+  if (draft?.approved_by && !office) {
     const { data: u } = await db.auth.admin.getUserById(draft.approved_by);
     ownerEmail = u?.user?.email?.toLowerCase() ?? null;
   }
@@ -59,7 +74,7 @@ Deno.serve(async (req) => {
   const { data: co } = await db.from("companies").select("name").ilike("email", lookupEmail).limit(1).maybeSingle();
   const companyName = pickCompanyName(draft?.company_name, cl?.name, co?.name, ord?.company_name);
   const { data: saved, error } = await db.from("outreach_replies").insert({
-    provider_message_id: d.email_id, draft_id: draftId, from_email: from.email, from_name: from.name,
+    provider_message_id: d.email_id, internet_message_id: internetId, source: office ? "office" : "offer", draft_id: draftId, from_email: from.email, from_name: from.name,
     to_address: to.join(", ").slice(0, 500), subject: (d.subject ?? "").slice(0, 300), text_body: text, html_body: html, company_name: companyName,
     received_at: d.created_at ?? new Date().toISOString(),
     from_team_user: fromTeam ? draft?.approved_by ?? null : null, from_team_name: fromTeam ? draft?.approved_by_name ?? null : null, read_at: fromTeam ? new Date().toISOString() : null,
@@ -69,7 +84,7 @@ Deno.serve(async (req) => {
   if (fromTeam) return json({ stored: true, linked: true, from_team: true });
 
   // Forward to the team member who sent the offer (once, real replies only)
-  if (saved?.id) {
+  if (saved?.id && !office) {
     const autoReply = followUpSkipReason({ template: { enabled: true, subject_en: "", body_en: "", subject_de: "", body_de: "" }, linkedToOffer: true, fromEmail: from.email, subject: d.subject ?? "", headers: inHeaders, optedOut: false, alreadySent: false }) !== null;
     if (shouldForwardReply({ linked: !!draft, bulk: isBulkMail(inHeaders), autoReply, fromTeam, alreadyForwarded: false, to: ownerEmail })) {
       const domain = Deno.env.get("OUTREACH_INBOUND_DOMAIN")?.trim().toLowerCase();
@@ -102,7 +117,7 @@ Deno.serve(async (req) => {
 
   // Automatic follow-up: team-written template only, at most one per offer, never to auto-replies
   let followup: string | null = null;
-  if (saved?.id) {
+  if (saved?.id && !office) {
     try { followup = await sendFollowUp(db, saved.id, draftId, draft, from, d.subject ?? "", inHeaders, companyName); }
     catch (e) { console.error("Follow-up failed", e); followup = "failed"; }
     await db.from("outreach_replies").update({ followup_status: followup, followup_sent_at: followup === "sent" ? new Date().toISOString() : null }).eq("id", saved.id);
