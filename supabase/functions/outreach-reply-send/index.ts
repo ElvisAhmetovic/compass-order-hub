@@ -1,6 +1,6 @@
 import { z } from "npm:zod@3";
 import { admin, corsHeaders, getTeamUser, json, unsubscribeToken } from "../_shared/outreachAuth.ts";
-import { outreachReplyTo, renderOutreachHtml, withSubjectRef } from "../_shared/outreachRules.ts";
+import { outreachReplyTo, renderOutreachHtml, withSubjectRef, OUTREACH_FROM } from "../_shared/outreachRules.ts";
 
 const Body = z.object({ reply_id: z.string().uuid(), subject: z.string().trim().min(1).max(200), body: z.string().trim().min(1).max(10000) });
 
@@ -31,7 +31,7 @@ Deno.serve(async (req) => {
     method: "POST",
     headers: { Authorization: `Bearer ${Deno.env.get("RESEND_API_KEY_ABMEDIA")}`, "Content-Type": "application/json" },
     body: JSON.stringify({
-      from: "Media Marketing <noreply@mediaamarketing.com>", to: [to],
+      from: OUTREACH_FROM, to: [to],
       reply_to: outreachReplyTo(user.name, user.email, draft?.id, Deno.env.get("OUTREACH_INBOUND_DOMAIN")),
       subject: finalSubject, html: renderOutreachHtml(body, { de, contactName: user.name, unsubUrl }),
       text: `${body}${user.name ? `\n\n${de ? "Ihr Ansprechpartner" : "Your contact"}: ${user.name}` : ""}\n\n${unsubUrl}`,

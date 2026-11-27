@@ -1,7 +1,7 @@
 // Receives client replies to AI outreach emails from Resend (email.received) and stores them for the team inbox.
 import { admin, corsHeaders, json } from "../_shared/outreachAuth.ts";
 import { verifySvix } from "../_shared/svixVerify.ts";
-import { isBulkMail, shouldForwardReply, renderForwardEmail, ticketSkipReason, buildOutreachTicket, followUpSkipReason, outreachSubjectRef, pickCompanyName, renderReplyFollowUp, type ReplyTemplate, draftIdFromAddresses, parseFromHeader } from "../_shared/outreachRules.ts";
+import { isBulkMail, shouldForwardReply, renderForwardEmail, ticketSkipReason, buildOutreachTicket, followUpSkipReason, outreachSubjectRef, pickCompanyName, renderReplyFollowUp, type ReplyTemplate, draftIdFromAddresses, parseFromHeader, OUTREACH_FROM } from "../_shared/outreachRules.ts";
 
 type Received = { email_id?: string; from?: string; to?: string[]; subject?: string; created_at?: string };
 
@@ -131,7 +131,7 @@ async function sendFollowUp(db: any, replyId: string, draftId: string | null, dr
     method: "POST",
     headers: { Authorization: `Bearer ${Deno.env.get("RESEND_API_KEY_ABMEDIA")}`, "Content-Type": "application/json" },
     body: JSON.stringify({
-      from: `Media Marketing <reply@${domain}>`, to: [from.email], reply_to: [`reply+${draftId}@${domain}`],
+      from: OUTREACH_FROM, to: [from.email], reply_to: [`reply+${draftId}@${domain}`],
       subject: ref ? `${msg.subject} ${ref}` : msg.subject, text: msg.text, html: msg.html,
       headers: { "Auto-Submitted": "auto-replied" },
     }),

@@ -75,6 +75,7 @@ export function testRecipient(callerEmail: string | null | undefined): string | 
 }
 
 export const OUTREACH_SHARED_MAILBOX = "invoice@mediaamarketing.com";
+export const OUTREACH_FROM = "Media Marketing <office@mediaamarketing.com>";
 
 /** Replies go to the shared team mailbox, labelled with the sender, plus the sender's own address. */
 export function outreachReplyTo(senderName: string, senderEmail: string | null, draftId?: string, inboundDomain?: string | null): string[] {

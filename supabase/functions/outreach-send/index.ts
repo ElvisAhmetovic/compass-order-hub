@@ -1,5 +1,5 @@
 import { admin, corsHeaders, getTeamUser, json, unsubscribeToken } from "../_shared/outreachAuth.ts";
-import { isSendWindow, testRecipient, remainingDailyQuota, sarajevoDate, outreachReplyTo, withSubjectRef } from "../_shared/outreachRules.ts";
+import { isSendWindow, testRecipient, remainingDailyQuota, sarajevoDate, outreachReplyTo, withSubjectRef, OUTREACH_FROM } from "../_shared/outreachRules.ts";
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]!));
 
@@ -52,7 +52,7 @@ ${user.name ? `<p>${de ? "Ihr Ansprechpartner" : "Your contact"}: ${esc(user.nam
       method: "POST",
       headers: { Authorization: `Bearer ${Deno.env.get("RESEND_API_KEY_ABMEDIA")}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        from: "Media Marketing <noreply@mediaamarketing.com>", to: [draft.email], reply_to: outreachReplyTo(user.name, user.email, draft.id, Deno.env.get("OUTREACH_INBOUND_DOMAIN")),
+        from: OUTREACH_FROM, to: [draft.email], reply_to: outreachReplyTo(user.name, user.email, draft.id, Deno.env.get("OUTREACH_INBOUND_DOMAIN")),
         subject: withSubjectRef(finalSubject, user.name), html,
         text: `${finalBody}${user.name ? `\n\n${de ? "Ihr Ansprechpartner" : "Your contact"}: ${user.name}` : ""}\n\n${unsubUrl}`,
       }),
@@ -89,7 +89,7 @@ async function sendTest(user: { email: string | null; name: string }, id: string
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { Authorization: `Bearer ${Deno.env.get("RESEND_API_KEY_ABMEDIA")}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ from: "Media Marketing <noreply@mediaamarketing.com>", to: [to], subject: `[TEST] ${s}`, html, text: `TEST\n\n${b}` }),
+    body: JSON.stringify({ from: OUTREACH_FROM, to: [to], subject: `[TEST] ${s}`, html, text: `TEST\n\n${b}` }),
   });
   const txt = await res.text();
   if (!res.ok) return json({ error: "Test email failed", status: res.status, details: txt }, 502);
