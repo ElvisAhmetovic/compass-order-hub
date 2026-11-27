@@ -135,3 +135,9 @@ export function buildOutreachTicket(reply: OutreachTicketReply, draft: OutreachT
     status: "open",
   };
 }
+
+/** First non-blank business name, in priority order (offer, client, company, latest order). */
+export function pickCompanyName(...candidates: Array<string | null | undefined>): string | null {
+  for (const c of candidates) { const t = (c ?? "").trim(); if (t) return t; }
+  return null;
+}

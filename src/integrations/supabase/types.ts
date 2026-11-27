@@ -2258,6 +2258,7 @@ export type Database = {
       }
       outreach_replies: {
         Row: {
+          company_name: string | null
           created_at: string
           draft_id: string | null
           from_email: string
@@ -2273,6 +2274,7 @@ export type Database = {
           to_address: string | null
         }
         Insert: {
+          company_name?: string | null
           created_at?: string
           draft_id?: string | null
           from_email: string
@@ -2288,6 +2290,7 @@ export type Database = {
           to_address?: string | null
         }
         Update: {
+          company_name?: string | null
           created_at?: string
           draft_id?: string | null
           from_email?: string

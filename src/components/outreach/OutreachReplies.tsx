@@ -8,7 +8,7 @@ import { toast } from "@/hooks/use-toast";
 
 export type OutreachReply = {
   id: string; draft_id: string | null; from_email: string; from_name: string | null; subject: string | null;
-  text_body: string | null; received_at: string; read_at: string | null;
+  text_body: string | null; received_at: string; read_at: string | null; company_name?: string | null;
 };
 type DraftInfo = { id: string; approved_by_name: string | null; company_name: string | null };
 
@@ -19,7 +19,8 @@ export default function OutreachReplies({ replies, drafts, q, onChanged }: {
 }) {
   const [open, setOpen] = useState<string | null>(null);
   const byId = new Map(drafts.map((d) => [d.id, d]));
-  const list = replies.filter((r) => !q || `${r.from_email} ${r.from_name ?? ""} ${r.subject ?? ""}`.toLowerCase().includes(q.toLowerCase()));
+  const companyOf = (r: OutreachReply) => r.company_name || (r.draft_id ? byId.get(r.draft_id)?.company_name : null) || null;
+  const list = replies.filter((r) => !q || `${companyOf(r) ?? ""} ${r.from_email} ${r.from_name ?? ""} ${r.subject ?? ""}`.toLowerCase().includes(q.toLowerCase()));
 
   const markRead = async (r: OutreachReply, read: boolean) => {
     const { data: auth } = await supabase.auth.getUser();
@@ -49,13 +50,16 @@ export default function OutreachReplies({ replies, drafts, q, onChanged }: {
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div className="flex items-center gap-2">
                     {r.read_at ? <MailOpen className="h-4 w-4 text-muted-foreground" /> : <Mail className="h-4 w-4 text-primary" />}
-                    <span className={r.read_at ? "" : "font-semibold"}>{r.from_name ? `${r.from_name} · ` : ""}{r.from_email}</span>
+                    <div>
+                      <p className="font-semibold">{companyOf(r) ?? <span className="text-muted-foreground font-normal">Unknown business</span>}</p>
+                      <p className={`text-sm ${r.read_at ? "text-muted-foreground" : ""}`}>{r.from_name ? `${r.from_name} · ` : ""}{r.from_email}</p>
+                    </div>
                   </div>
                   <span className="text-xs text-muted-foreground">{fmt(r.received_at)}</span>
                 </div>
                 <p className="text-sm mt-1">{r.subject || "(no subject)"}</p>
                 <div className="mt-1">
-                  {d ? <Badge variant="secondary">Offer sent by {d.approved_by_name || "unknown"}{d.company_name ? ` · ${d.company_name}` : ""}</Badge>
+                  {d ? <Badge variant="secondary">Offer sent by {d.approved_by_name || "unknown"}</Badge>
                     : <Badge variant="outline">Not linked to an offer</Badge>}
                 </div>
               </button>

@@ -1,0 +1,1 @@
+ALTER TABLE public.outreach_replies ADD COLUMN IF NOT EXISTS company_name text;

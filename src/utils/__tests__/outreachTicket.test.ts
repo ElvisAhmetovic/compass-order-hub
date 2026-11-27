@@ -22,3 +22,15 @@ describe("buildOutreachTicket", () => {
     expect(t.subject.length).toBe(300);
   });
 });
+
+import { pickCompanyName } from "../../../supabase/functions/_shared/outreachRules";
+describe("pickCompanyName", () => {
+  it("prefers the offer's business, then client, company, order", () => {
+    expect(pickCompanyName("Offer GmbH", "Client", "Co", "Order")).toBe("Offer GmbH");
+    expect(pickCompanyName(null, "  ", "Co AG", "Order")).toBe("Co AG");
+    expect(pickCompanyName(undefined, null, null, "Order Ltd")).toBe("Order Ltd");
+  });
+  it("returns null when nothing matches", () => {
+    expect(pickCompanyName(null, "", undefined)).toBeNull();
+  });
+});

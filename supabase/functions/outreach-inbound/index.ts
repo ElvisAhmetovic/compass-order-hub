@@ -1,7 +1,7 @@
 // Receives client replies to AI outreach emails from Resend (email.received) and stores them for the team inbox.
 import { admin, corsHeaders, json } from "../_shared/outreachAuth.ts";
 import { verifySvix } from "../_shared/svixVerify.ts";
-import { buildOutreachTicket, draftIdFromAddresses, parseFromHeader } from "../_shared/outreachRules.ts";
+import { buildOutreachTicket, pickCompanyName, draftIdFromAddresses, parseFromHeader } from "../_shared/outreachRules.ts";
 
 type Received = { email_id?: string; from?: string; to?: string[]; subject?: string; created_at?: string };
 
@@ -43,9 +43,15 @@ Deno.serve(async (req) => {
     if (!dr) draftId = null; else draft = dr;
   }
   const from = parseFromHeader(d.from);
+  const lookupEmail = draft?.email ?? from.email;
+  const { data: ord } = await db.from("orders").select("id, company_name").ilike("contact_email", lookupEmail)
+    .is("deleted_at", null).order("created_at", { ascending: false }).limit(1).maybeSingle();
+  const { data: cl } = await db.from("clients").select("name").ilike("email", lookupEmail).limit(1).maybeSingle();
+  const { data: co } = await db.from("companies").select("name").ilike("email", lookupEmail).limit(1).maybeSingle();
+  const companyName = pickCompanyName(draft?.company_name, cl?.name, co?.name, ord?.company_name);
   const { data: saved, error } = await db.from("outreach_replies").insert({
     provider_message_id: d.email_id, draft_id: draftId, from_email: from.email, from_name: from.name,
-    to_address: to.join(", ").slice(0, 500), subject: (d.subject ?? "").slice(0, 300), text_body: text, html_body: html,
+    to_address: to.join(", ").slice(0, 500), subject: (d.subject ?? "").slice(0, 300), text_body: text, html_body: html, company_name: companyName,
     received_at: d.created_at ?? new Date().toISOString(),
   }).select("id").maybeSingle();
   if (error && error.code !== "23505") { console.error(error); return json({ error: "Could not store reply" }, 500); }
@@ -53,10 +59,8 @@ Deno.serve(async (req) => {
   // Open a support ticket for every reply so no lead is missed (one per reply via unique outreach_reply_id)
   let ticketId: string | null = null;
   if (saved?.id) {
-    const lookupEmail = draft?.email ?? from.email;
-    const { data: ord } = await db.from("orders").select("id").ilike("contact_email", lookupEmail)
-      .is("deleted_at", null).order("created_at", { ascending: false }).limit(1).maybeSingle();
-    const ticket = buildOutreachTicket({ from_email: from.email, from_name: from.name, subject: d.subject ?? "", text_body: text }, draft);
+    const ticket = buildOutreachTicket({ from_email: from.email, from_name: from.name, subject: d.subject ?? "", text_body: text }, draft ? { ...draft, company_name: companyName } : null);
+    if (!draft) ticket.company_name = companyName;
     const { data: t, error: tErr } = await db.from("customer_tickets")
       .insert({ ...ticket, order_id: ord?.id ?? null, outreach_reply_id: saved.id }).select("id").maybeSingle();
     if (tErr && tErr.code !== "23505") console.error("Ticket creation failed", tErr);
