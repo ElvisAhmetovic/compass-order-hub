@@ -149,3 +149,6 @@ verify_jwt = false
 
 [functions.outreach-inbound]
 verify_jwt = false
+
+[functions.outreach-reply-send]
+verify_jwt = false

@@ -2250,6 +2250,66 @@ export type Database = {
         }
         Relationships: []
       }
+      outreach_messages: {
+        Row: {
+          body: string
+          created_at: string
+          draft_id: string | null
+          error: string | null
+          id: string
+          reply_id: string | null
+          resend_id: string | null
+          sent_by: string | null
+          sent_by_name: string | null
+          status: string
+          subject: string
+          to_email: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          draft_id?: string | null
+          error?: string | null
+          id?: string
+          reply_id?: string | null
+          resend_id?: string | null
+          sent_by?: string | null
+          sent_by_name?: string | null
+          status?: string
+          subject: string
+          to_email: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          draft_id?: string | null
+          error?: string | null
+          id?: string
+          reply_id?: string | null
+          resend_id?: string | null
+          sent_by?: string | null
+          sent_by_name?: string | null
+          status?: string
+          subject?: string
+          to_email?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "outreach_messages_draft_id_fkey"
+            columns: ["draft_id"]
+            isOneToOne: false
+            referencedRelation: "outreach_drafts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outreach_messages_reply_id_fkey"
+            columns: ["reply_id"]
+            isOneToOne: false
+            referencedRelation: "outreach_replies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       outreach_opt_outs: {
         Row: {
           created_at: string

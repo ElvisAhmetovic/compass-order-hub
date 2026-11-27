@@ -161,7 +161,7 @@ export default function AiOutreach() {
                 <TabsList>
                   {["replies", "pending", "sent", "won", "rejected", "failed", "skipped", "all"].map((t) => (
                     <TabsTrigger key={t} value={t} className="capitalize">
-                      {t === "won" ? "won back" : t === "skipped" ? "skipped – unpaid" : t} ({t === "replies" ? `${replies.filter((r) => !r.read_at).length} new` : t === "all" ? drafts.length : t === "won" ? wonBack : t === "skipped" ? skips.length : drafts.filter((d) => d.status === t).length})
+                      {t === "won" ? "won back" : t === "skipped" ? "skipped – unpaid" : t} ({t === "replies" ? `${replies.length}) (${replies.filter((r) => !r.read_at).length} new` : t === "all" ? drafts.length : t === "won" ? wonBack : t === "skipped" ? skips.length : drafts.filter((d) => d.status === t).length})
                     </TabsTrigger>
                   ))}
                 </TabsList>

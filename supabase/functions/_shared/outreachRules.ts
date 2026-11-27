@@ -200,3 +200,19 @@ export function ticketSkipReason(c: { linkedToOffer: boolean; knownClient: boole
   if (c.knownClient) return null;
   return "unknown_sender";
 }
+
+/** Same email layout as outreach offers: paragraphs, contact name, contact line, unsubscribe link. */
+export function renderOutreachHtml(body: string, opts: { de: boolean; contactName?: string | null; unsubUrl: string }): string {
+  const paras = body.split(/\n\s*\n/).map((p) => `<p>${escHtml(p).replace(/\n/g, "<br>")}</p>`).join("");
+  return `<div style="font-family:Arial,sans-serif;font-size:14px;line-height:1.6;color:#1f2937">
+${paras}
+${opts.contactName ? `<p>${opts.de ? "Ihr Ansprechpartner" : "Your contact"}: ${escHtml(opts.contactName)}</p>` : ""}
+<p style="color:#6b7280;font-size:12px">invoice@mediaamarketing.com · +49 203 7090 1754 · <a href="https://www.mediaamarketing.com/de">mediaamarketing.com</a></p>
+<p style="color:#9ca3af;font-size:11px"><a href="${opts.unsubUrl}" style="color:#9ca3af">${opts.de ? "Keine weiteren Angebote erhalten" : "Don't send me offers anymore"}</a></p></div>`;
+}
+
+/** "Re: " prefix once. */
+export function replySubject(s: string): string {
+  const t = (s || "").trim();
+  return /^re:/i.test(t) ? t : `Re: ${t}`;
+}
