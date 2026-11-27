@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { ChevronRight, Loader2, Plus, Send } from "lucide-react";
+import { Brain, ChevronRight, Loader2, Plus, Send } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { ConfirmActionCard } from "./ConfirmActionCard";
 import { toChatMessage, type ChatMessage } from "./assistantView";
@@ -122,6 +122,9 @@ export function AssistantChat({ threadId, onNewChat, onReplied, compact }: Props
                 </details>
               )}
               <AssistantMarkdown content={m.content} />
+              {m.parts.trace?.filter((t) => (t.tool === "remember_fact" || t.tool === "update_fact") && t.result.includes('"learned":true')).map((t, i) => (
+                <div key={`l${i}`} className="flex items-start gap-1.5 rounded-md bg-muted px-3 py-1.5 text-xs text-muted-foreground"><Brain className="mt-0.5 h-3 w-3 shrink-0" /><span><b>Learned:</b> {String(t.args.content ?? "")}</span></div>
+              ))}
               {m.parts.actions?.map((a) => <ConfirmActionCard key={a} actionId={a} />)}
             </div>
           ))}

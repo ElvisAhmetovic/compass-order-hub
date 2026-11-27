@@ -124,6 +124,42 @@ export type Database = {
           },
         ]
       }
+      assistant_knowledge: {
+        Row: {
+          active: boolean
+          content: string
+          created_at: string
+          created_by: string | null
+          created_by_name: string | null
+          id: string
+          source_thread_id: string | null
+          topic: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          content: string
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          id?: string
+          source_thread_id?: string | null
+          topic?: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          id?: string
+          source_thread_id?: string | null
+          topic?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       assistant_messages: {
         Row: {
           content: string
