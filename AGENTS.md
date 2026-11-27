@@ -25,3 +25,4 @@
 - AI outreach replies: offers use a per-offer reply address only when `OUTREACH_INBOUND_DOMAIN` is set; `outreach-inbound` (Resend signature-verified, idempotent) stores replies in `outreach_replies` (team-only) — why: replies are visible in the app and matched to the offer and sender.
 - Every stored outreach reply opens one `customer_tickets` row in `outreach-inbound` (unique `outreach_reply_id`, `order_id` may be null) — why: no client reply to an offer is missed as a lead.
 - Outreach reply follow-ups are sent only from the admin-edited `outreach_reply_template` (never AI text), at most once per offer, skipping auto-replies/opt-outs (`followUpSkipReason`) — why: automatic emails must stay team-approved and never loop.
+- Replies and Customer Tickets show client details by matching email to `clients` via `useClientsByEmail` + `matchClientByEmail` (`src/lib/clientMatch.ts`); profile lives at `/clients/:id` — why: one email-match rule, no duplicated client data.

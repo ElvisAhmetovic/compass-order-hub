@@ -5,6 +5,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Mail, MailOpen } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { Link } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
+import { useClientsByEmail } from "@/hooks/useClientsByEmail";
+import { matchClientByEmail } from "@/lib/clientMatch";
+import { CreateClientDialog } from "@/components/clients/CreateClientDialog";
 
 export type OutreachReply = {
   id: string; draft_id: string | null; from_email: string; from_name: string | null; subject: string | null;
@@ -25,8 +30,11 @@ export default function OutreachReplies({ replies, drafts, q, onChanged }: {
   replies: OutreachReply[]; drafts: DraftInfo[]; q: string; onChanged: () => void;
 }) {
   const [open, setOpen] = useState<string | null>(null);
+  const [creating, setCreating] = useState<{ name?: string | null; contact_person?: string | null; email?: string | null } | null>(null);
+  const qc = useQueryClient();
+  const { data: known = [] } = useClientsByEmail(replies.map((r) => r.from_email));
   const byId = new Map(drafts.map((d) => [d.id, d]));
-  const companyOf = (r: OutreachReply) => r.company_name || (r.draft_id ? byId.get(r.draft_id)?.company_name : null) || null;
+  const companyOf = (r: OutreachReply) => matchClientByEmail(known, r.from_email)?.name || r.company_name || (r.draft_id ? byId.get(r.draft_id)?.company_name : null) || null;
   const list = replies.filter((r) => !q || `${companyOf(r) ?? ""} ${r.from_email} ${r.from_name ?? ""} ${r.subject ?? ""}`.toLowerCase().includes(q.toLowerCase()));
 
   const markRead = async (r: OutreachReply, read: boolean) => {
@@ -65,6 +73,9 @@ export default function OutreachReplies({ replies, drafts, q, onChanged }: {
                   <span className="text-xs text-muted-foreground">{fmt(r.received_at)}</span>
                 </div>
                 <p className="text-sm mt-1">{r.subject || "(no subject)"}</p>
+                {(() => { const c = matchClientByEmail(known, r.from_email); return c
+                  ? <p className="text-xs text-muted-foreground mt-1">{c.contact_person ? `${c.contact_person} · ` : ""}{c.phone || "no phone"} · <Link className="underline text-primary" to={`/clients/${c.id}`} onClick={(e) => e.stopPropagation()}>View client</Link></p>
+                  : <p className="text-xs text-muted-foreground mt-1">Not a known client · <span role="link" tabIndex={0} className="underline text-primary cursor-pointer" onClick={(e) => { e.stopPropagation(); setCreating({ name: r.company_name || r.from_name, contact_person: r.from_name, email: r.from_email }); }}>Create client</span></p>; })()}
                 <div className="mt-1">
                   {d ? <Badge variant="secondary">Offer sent by {d.approved_by_name || "unknown"}</Badge>
                     : <Badge variant="outline">Not linked to an offer</Badge>}
@@ -84,6 +95,8 @@ export default function OutreachReplies({ replies, drafts, q, onChanged }: {
           </Card>
         );
       })}
+      <CreateClientDialog open={!!creating} onOpenChange={(o) => !o && setCreating(null)} prefill={creating ?? undefined}
+        onClientCreated={() => { setCreating(null); qc.invalidateQueries({ queryKey: ["clients-by-email"] }); }} />
     </div>
   );
 }

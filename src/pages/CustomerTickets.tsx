@@ -12,12 +12,15 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { toast } from '@/hooks/use-toast';
+import { useClientsByEmail } from '@/hooks/useClientsByEmail';
+import { matchClientByEmail } from '@/lib/clientMatch';
 
 const CustomerTickets = () => {
   const [tickets, setTickets] = useState<CustomerTicket[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>('all');
   const navigate = useNavigate();
+  const { data: known = [] } = useClientsByEmail(tickets.map((t) => t.client_email));
 
   const fetchTickets = async () => {
     try {
@@ -164,15 +167,18 @@ const CustomerTickets = () => {
                         <div className="flex items-center gap-2">
                           <Mail className="w-4 h-4 text-muted-foreground" />
                           <div>
-                            <p className="font-medium">{ticket.client_name || ticket.client_email}</p>
-                            <p className="text-xs text-muted-foreground">{ticket.client_email}</p>
+                            {(() => { const c = matchClientByEmail(known, ticket.client_email); return c ? (<>
+                              <button className="font-medium text-primary hover:underline text-left" onClick={(e) => { e.stopPropagation(); navigate(`/clients/${c.id}`); }}>{c.contact_person || c.name}</button>
+                              <p className="text-xs text-muted-foreground">{ticket.client_email}{c.phone ? ` · ${c.phone}` : ""}</p></>) : (<>
+                              <p className="font-medium">{ticket.client_name || ticket.client_email}</p>
+                              <p className="text-xs text-muted-foreground">{ticket.client_email}</p></>); })()}
                           </div>
                         </div>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <Building2 className="w-4 h-4 text-muted-foreground" />
-                          {ticket.company_name || '-'}
+                          {matchClientByEmail(known, ticket.client_email)?.name || ticket.company_name || '-'}
                         </div>
                       </TableCell>
                       <TableCell>{ticket.subject}</TableCell>

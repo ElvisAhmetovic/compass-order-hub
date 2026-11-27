@@ -410,6 +410,9 @@ export type Database = {
           email: string
           id: string
           name: string
+          notes: string | null
+          notes_updated_at: string | null
+          notes_updated_by: string | null
           phone: string | null
           tax_id: string | null
           updated_at: string
@@ -427,6 +430,9 @@ export type Database = {
           email: string
           id?: string
           name: string
+          notes?: string | null
+          notes_updated_at?: string | null
+          notes_updated_by?: string | null
           phone?: string | null
           tax_id?: string | null
           updated_at?: string
@@ -444,6 +450,9 @@ export type Database = {
           email?: string
           id?: string
           name?: string
+          notes?: string | null
+          notes_updated_at?: string | null
+          notes_updated_by?: string | null
           phone?: string | null
           tax_id?: string | null
           updated_at?: string

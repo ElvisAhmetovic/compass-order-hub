@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import Sidebar from "@/components/dashboard/Sidebar";
 import { useAuth } from "@/context/AuthContext";
@@ -190,7 +190,7 @@ const Clients = () => {
                           <TableCell>
                             <div className="flex items-center gap-2">
                               <Users size={16} className="text-gray-400" />
-                              <span className="font-medium">{client.name}</span>
+                              <Link to={`/clients/${client.id}`} className="font-medium hover:underline text-primary">{client.name}</Link>
                               {client.auto_reminders_enabled === false && (
                                 <span className="rounded-full border px-2 py-0.5 text-xs text-muted-foreground">
                                   Reminders off

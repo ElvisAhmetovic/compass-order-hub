@@ -14,12 +14,14 @@ interface CreateClientDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onClientCreated: (client: Client) => void;
+  prefill?: { name?: string | null; contact_person?: string | null; email?: string | null };
 }
 
 export const CreateClientDialog: React.FC<CreateClientDialogProps> = ({
   open,
   onOpenChange,
   onClientCreated,
+  prefill,
 }) => {
   const { toast } = useToast();
   const { user } = useAuth();
@@ -37,6 +39,9 @@ export const CreateClientDialog: React.FC<CreateClientDialogProps> = ({
     tax_id: "",
     auto_reminders_enabled: true,
   });
+  React.useEffect(() => {
+    if (open && prefill) setFormData((f) => ({ ...f, name: prefill.name ?? f.name, contact_person: prefill.contact_person ?? f.contact_person, email: prefill.email ?? f.email }));
+  }, [open, prefill]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

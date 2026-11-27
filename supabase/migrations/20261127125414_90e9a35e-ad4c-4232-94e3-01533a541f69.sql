@@ -1,0 +1,2 @@
+ALTER TABLE public.clients ADD COLUMN IF NOT EXISTS notes text, ADD COLUMN IF NOT EXISTS notes_updated_at timestamptz, ADD COLUMN IF NOT EXISTS notes_updated_by uuid;
+CREATE INDEX IF NOT EXISTS clients_email_lower_idx ON public.clients (lower(email));

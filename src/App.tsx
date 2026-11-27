@@ -41,6 +41,7 @@ const UserManagement = lazy(() => import("./pages/UserManagement"));
 const Invoices = lazy(() => import("./pages/Invoices"));
 const InvoiceDetail = lazy(() => import("./pages/InvoiceDetail"));
 const Clients = lazy(() => import("./pages/Clients"));
+const ClientProfile = lazy(() => import("./pages/ClientProfile"));
 const Proposals = lazy(() => import("./pages/Proposals"));
 const ProposalDetail = lazy(() => import("./pages/ProposalDetail"));
 const Support = lazy(() => import("./pages/Support"));
@@ -280,6 +281,11 @@ function App() {
                   <Route path="/clients" element={
                     <RequireAuth>
                       <Clients />
+                    </RequireAuth>
+                  } />
+                  <Route path="/clients/:id" element={
+                    <RequireAuth>
+                      <ClientProfile />
                     </RequireAuth>
                   } />
                   <Route path="/proposals" element={

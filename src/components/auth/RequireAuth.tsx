@@ -29,7 +29,7 @@ export const RequireAuth = ({ children }: RequireAuthProps) => {
   // If user is a client trying to access admin routes, redirect to client dashboard
   if (user.role === 'client') {
     const clientRoutes = ['/client'];
-    const isClientRoute = clientRoutes.some(route => location.pathname.startsWith(route));
+    const isClientRoute = clientRoutes.some(route => location.pathname === route || location.pathname.startsWith(`${route}/`));
     
     if (!isClientRoute) {
       console.log('Client user attempting to access admin route, redirecting to client dashboard');
