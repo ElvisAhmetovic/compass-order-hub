@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Mail, Phone, MapPin, User } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import ClientConversationHistory from "@/components/clients/ClientConversationHistory";
 
 const fmt = (d: string | null) => d ? new Date(d).toLocaleString("de-DE", { dateStyle: "short", timeStyle: "short" }) : "";
 const UUID = /^[0-9a-f-]{36}$/i;
@@ -94,8 +95,10 @@ export default function ClientProfile() {
       </CardContent>
     </Card>
 
-    {related.error ? <Card><CardContent className="pt-6 flex items-center gap-3"><span>Could not load orders, tickets and replies.</span><Button size="sm" onClick={() => related.refetch()}>Retry</Button></CardContent></Card> : (
-      <div className="grid gap-4 lg:grid-cols-3">
+    {email && <ClientConversationHistory email={email} />}
+
+    {related.error ? <Card><CardContent className="pt-6 flex items-center gap-3"><span>Could not load orders and tickets.</span><Button size="sm" onClick={() => related.refetch()}>Retry</Button></CardContent></Card> : (
+      <div className="grid gap-4 lg:grid-cols-2">
         <Card><CardHeader><CardTitle className="text-base">Orders ({related.data?.orders.length ?? "…"})</CardTitle></CardHeader>
           <CardContent className="space-y-2 text-sm">{related.data?.orders.map((o) => (
             <div key={o.id} className="border-b border-border pb-2"><p className="font-medium">{o.description || o.company_name}</p>
@@ -106,11 +109,6 @@ export default function ClientProfile() {
             <button key={t.id} className="block w-full text-left border-b border-border pb-2 hover:text-primary" onClick={() => navigate(`/customer-tickets/${t.id}`)}>
               <p className="font-medium">{t.subject}</p><p className="text-xs text-muted-foreground">{fmt(t.created_at)} · {t.status}</p></button>))}
             {related.data && !related.data.tickets.length && <p className="text-muted-foreground">No tickets.</p>}</CardContent></Card>
-        <Card><CardHeader><CardTitle className="text-base">Outreach replies ({related.data?.replies.length ?? "…"})</CardTitle></CardHeader>
-          <CardContent className="space-y-2 text-sm">{related.data?.replies.map((r) => (
-            <button key={r.id} className="block w-full text-left border-b border-border pb-2 hover:text-primary" onClick={() => navigate("/ai-outreach")}>
-              <p className="font-medium">{r.subject || "(no subject)"}</p><p className="text-xs text-muted-foreground">{fmt(r.received_at)}</p></button>))}
-            {related.data && !related.data.replies.length && <p className="text-muted-foreground">No replies.</p>}</CardContent></Card>
       </div>)}
   </>);
 }

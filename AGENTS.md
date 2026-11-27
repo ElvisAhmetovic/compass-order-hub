@@ -27,3 +27,4 @@
 - Outreach reply follow-ups are sent only from the admin-edited `outreach_reply_template` (never AI text), at most once per offer, skipping auto-replies/opt-outs (`followUpSkipReason`) — why: automatic emails must stay team-approved and never loop.
 - Replies and Customer Tickets show client details by matching email to `clients` via `useClientsByEmail` + `matchClientByEmail` (`src/lib/clientMatch.ts`); profile lives at `/clients/:id` — why: one email-match rule, no duplicated client data.
 - Team answers to outreach replies go only through `outreach-reply-send` (team JWT, human-written, opt-out checked, logged in `outreach_messages`, same layout via `renderOutreachHtml`) — why: two-way client email stays reviewed and traceable.
+- Client conversation history is built read-only from existing email logs via `buildClientTimeline` (`src/lib/clientTimeline.ts`), never a copied email table — why: one source of truth per email.
