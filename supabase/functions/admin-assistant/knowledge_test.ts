@@ -21,3 +21,17 @@ Deno.test("Unknown topics fall back to general", () => {
 Deno.test("Knowledge block says rules win over learned facts", () => {
   assertEquals(knowledgeBlock([{ id: "1", topic: "orders", content: "A" }]).includes("the rules win"), true);
 });
+
+import { patternRejectReason as prr, MAX_FACTS_IN_PROMPT as MAXF } from "../_shared/assistantKnowledgeRules.ts";
+Deno.test("Given a reply pattern with an email, when checked, then it is rejected", () => {
+  if (!prr("Clients like anna@shop.de ask for discounts")) throw new Error("email accepted");
+});
+Deno.test("Given a reply pattern with an amount, when checked, then it is rejected", () => {
+  if (!prr("They push back when the price is €399 or more")) throw new Error("amount accepted");
+});
+Deno.test("Given an anonymous pattern, when checked, then it is accepted", () => {
+  if (prr("Clients often ask whether the offer includes ongoing support.")) throw new Error("rejected");
+});
+Deno.test("Given the walkthrough, when loading knowledge, then up to 150 facts fit", () => {
+  if (MAXF !== 150) throw new Error(String(MAXF));
+});

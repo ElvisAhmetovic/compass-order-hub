@@ -1,8 +1,8 @@
 // Rules for what the admin assistant may remember. Tested in admin-assistant/knowledge_test.ts.
-export const KNOWLEDGE_TOPICS = ["general", "orders", "invoices", "statuses", "clients", "outreach", "packages"] as const;
+export const KNOWLEDGE_TOPICS = ["general", "orders", "invoices", "statuses", "clients", "outreach", "packages", "client_replies"] as const;
 export type KnowledgeTopic = typeof KNOWLEDGE_TOPICS[number];
 export const MAX_FACT_LENGTH = 500;
-export const MAX_FACTS_IN_PROMPT = 80;
+export const MAX_FACTS_IN_PROMPT = 150;
 
 const SECRET_PATTERNS: RegExp[] = [
   /\b[A-Z]{2}\d{2}(?:\s?[A-Z0-9]{4}){3,7}\b/i, // IBAN
@@ -18,6 +18,22 @@ export function factRejectReason(content: string): string | null {
   if (t.length < 5) return "Too short to be useful.";
   if (t.length > MAX_FACT_LENGTH) return `Too long (max ${MAX_FACT_LENGTH} characters).`;
   if (SECRET_PATTERNS.some((p) => p.test(t))) return "Looks like a password, key or bank/card detail; these are never stored.";
+  return null;
+}
+
+export const KNOWLEDGE_SOURCES = ["chat", "manual", "site_walkthrough", "client_replies"] as const;
+
+const PII_PATTERNS: RegExp[] = [
+  /[\w.+-]+@[\w-]+\.[\w.-]+/, // email
+  /\+?\d[\d\s/()-]{7,}\d/, // phone
+  /€\s?\d|\d\s?€|\beur\b\s?\d/i, // amounts
+];
+
+/** Reply-learned patterns must be anonymous: no emails, phones or amounts. */
+export function patternRejectReason(content: string): string | null {
+  const base = factRejectReason(content);
+  if (base) return base;
+  if (PII_PATTERNS.some((p) => p.test(content))) return "Contains personal details or amounts.";
   return null;
 }
 

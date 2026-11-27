@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Sparkles, Send, X, Search, Loader2, RefreshCw, FlaskConical, Trophy } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import OutreachFlowDiagram from "@/components/outreach/OutreachFlowDiagram";
 import OutreachReplies, { type OutreachReply } from "@/components/outreach/OutreachReplies";
 
 type Draft = {
@@ -155,6 +156,8 @@ export default function AiOutreach() {
                 Find clients now
               </Button>
             </div>
+
+            <OutreachFlowDiagram />
 
             <div className="flex flex-wrap items-center gap-3">
               <Tabs value={tab} onValueChange={setTab}>
