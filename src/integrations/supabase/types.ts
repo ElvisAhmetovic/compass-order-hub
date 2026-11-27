@@ -634,7 +634,8 @@ export type Database = {
           id: string
           message: string | null
           notes: string | null
-          order_id: string
+          order_id: string | null
+          outreach_reply_id: string | null
           status: string
           subject: string
         }
@@ -650,7 +651,8 @@ export type Database = {
           id?: string
           message?: string | null
           notes?: string | null
-          order_id: string
+          order_id?: string | null
+          outreach_reply_id?: string | null
           status?: string
           subject?: string
         }
@@ -666,7 +668,8 @@ export type Database = {
           id?: string
           message?: string | null
           notes?: string | null
-          order_id?: string
+          order_id?: string | null
+          outreach_reply_id?: string | null
           status?: string
           subject?: string
         }
@@ -683,6 +686,13 @@ export type Database = {
             columns: ["order_id"]
             isOneToOne: false
             referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_tickets_outreach_reply_id_fkey"
+            columns: ["outreach_reply_id"]
+            isOneToOne: true
+            referencedRelation: "outreach_replies"
             referencedColumns: ["id"]
           },
         ]

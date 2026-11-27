@@ -1,0 +1,2 @@
+ALTER TABLE public.customer_tickets ALTER COLUMN order_id DROP NOT NULL;
+ALTER TABLE public.customer_tickets ADD COLUMN IF NOT EXISTS outreach_reply_id uuid UNIQUE REFERENCES public.outreach_replies(id) ON DELETE SET NULL;
