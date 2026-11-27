@@ -1,5 +1,5 @@
 import { admin, corsHeaders, getTeamUser, json, unsubscribeToken } from "../_shared/outreachAuth.ts";
-import { isSendWindow, testRecipient, remainingDailyQuota, sarajevoDate, outreachReplyTo, withSubjectRef, OUTREACH_FROM } from "../_shared/outreachRules.ts";
+import { isSendWindow, testRecipient, outreachReplyTo, withSubjectRef, OUTREACH_FROM } from "../_shared/outreachRules.ts";
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]!));
 
@@ -15,13 +15,6 @@ Deno.serve(async (req) => {
   if (!isSendWindow(now)) return json({ error: "Offers can only be sent on weekdays between 09:00 and 17:00." }, 400);
 
   const db = admin();
-  // Count today's sends (Sarajevo day, approximated by the last 24h on the same date)
-  const { data: sentRows } = await db.from("outreach_drafts").select("sent_at").eq("status", "sent")
-    .gte("sent_at", new Date(now.getTime() - 86_400_000).toISOString());
-  const today = sarajevoDate(now);
-  const sentToday = (sentRows ?? []).filter((r) => sarajevoDate(new Date(r.sent_at)) === today).length;
-  if (remainingDailyQuota(sentToday) <= 0) return json({ error: "Daily limit of 50 offer emails reached." }, 429);
-
   const { data: draft } = await db.from("outreach_drafts").select("*").eq("id", id).maybeSingle();
   if (!draft || draft.status !== "pending") return json({ error: "Draft is not pending" }, 400);
   const { data: opt } = await db.from("outreach_opt_outs").select("email").eq("email", draft.email.toLowerCase()).maybeSingle();

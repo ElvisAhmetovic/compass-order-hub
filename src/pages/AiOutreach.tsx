@@ -143,7 +143,7 @@ export default function AiOutreach() {
                 <div>
                   <h1 className="text-2xl font-bold">AI Outreach</h1>
                   <p className="text-sm text-muted-foreground">
-                    Offers for clients with no order or package in 3+ months. Runs automatically in the first week of each month. Nothing is sent without approval. Sent today: {sentToday}/50
+                    Offers for clients with no order or package in 3+ months. Runs automatically in the first week of each month. Nothing is sent without approval. Sent today: {sentToday}
                   </p>
                   <p className="text-sm text-muted-foreground">
                     Won back: {wonBack} of {sentTotal} sent ({sentTotal ? Math.round((wonBack / sentTotal) * 100) : 0}%) · new order within 60 days
