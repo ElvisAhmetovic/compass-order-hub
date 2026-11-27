@@ -13,7 +13,7 @@ import { CreateClientDialog } from "@/components/clients/CreateClientDialog";
 
 export type OutreachReply = {
   id: string; draft_id: string | null; from_email: string; from_name: string | null; subject: string | null;
-  text_body: string | null; received_at: string; read_at: string | null; company_name?: string | null;
+  text_body: string | null; received_at: string; read_at: string | null; company_name?: string | null; ticket_skip_reason?: string | null;
   followup_status?: string | null; followup_sent_at?: string | null;
 };
 type DraftInfo = { id: string; approved_by_name: string | null; company_name: string | null };
@@ -79,12 +79,13 @@ export default function OutreachReplies({ replies, drafts, q, onChanged }: {
                 <div className="mt-1">
                   {d ? <Badge variant="secondary">Offer sent by {d.approved_by_name || "unknown"}</Badge>
                     : <Badge variant="outline">Not linked to an offer</Badge>}
+                  {r.ticket_skip_reason === "newsletter" && <Badge variant="outline" className="ml-1">Newsletter / not a reply</Badge>}
                   {r.followup_status && <p className="text-xs text-muted-foreground mt-1">{followUpLabel(r)}</p>}
                 </div>
               </button>
               {isOpen && (
                 <>
-                  <p className="text-sm whitespace-pre-wrap border-t pt-2">{r.text_body || "(This email has no plain-text content.)"}</p>
+                  <p className="text-sm whitespace-pre-wrap break-words [overflow-wrap:anywhere] border-t pt-2">{r.text_body || "(This email has no plain-text content.)"}</p>
                   <div className="flex gap-2">
                     <Button size="sm" variant="outline" asChild><a href={`mailto:${r.from_email}?subject=${encodeURIComponent(`Re: ${r.subject ?? ""}`)}`}>Reply by email</a></Button>
                     <Button size="sm" variant="ghost" onClick={() => markRead(r, false)}>Mark unread</Button>

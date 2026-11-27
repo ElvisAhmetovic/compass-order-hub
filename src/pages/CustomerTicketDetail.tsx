@@ -257,7 +257,7 @@ const CustomerTicketDetail = () => {
           </CardHeader>
           <CardContent>
             {ticket.message ? (
-              <p className="whitespace-pre-wrap">{ticket.message}</p>
+              <p className="whitespace-pre-wrap break-words [overflow-wrap:anywhere]">{ticket.message}</p>
             ) : (
               <p className="text-muted-foreground">
                 No description provided (submitted before the form existed).

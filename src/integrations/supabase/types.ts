@@ -2282,6 +2282,7 @@ export type Database = {
           received_at: string
           subject: string | null
           text_body: string | null
+          ticket_skip_reason: string | null
           to_address: string | null
         }
         Insert: {
@@ -2300,6 +2301,7 @@ export type Database = {
           received_at?: string
           subject?: string | null
           text_body?: string | null
+          ticket_skip_reason?: string | null
           to_address?: string | null
         }
         Update: {
@@ -2318,6 +2320,7 @@ export type Database = {
           received_at?: string
           subject?: string | null
           text_body?: string | null
+          ticket_skip_reason?: string | null
           to_address?: string | null
         }
         Relationships: [

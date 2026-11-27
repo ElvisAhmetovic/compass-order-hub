@@ -186,3 +186,17 @@ export function followUpSkipReason(c: FollowUpCheck): string | null {
   if (AUTO_SUBJECT.test(c.subject)) return "auto_reply";
   return null;
 }
+
+/** True for newsletters / mailing-list mail (List-Unsubscribe, List-Id or Precedence bulk/list). */
+export function isBulkMail(headers: Record<string, string>): boolean {
+  const h = Object.fromEntries(Object.entries(headers ?? {}).map(([k, v]) => [k.toLowerCase(), String(v).toLowerCase()]));
+  return !!(h["list-unsubscribe"] || h["list-id"]) || /bulk|list/.test(h["precedence"] ?? "");
+}
+
+/** Returns null when a reply should open a ticket, otherwise why not. */
+export function ticketSkipReason(c: { linkedToOffer: boolean; knownClient: boolean; headers: Record<string, string> }): string | null {
+  if (c.linkedToOffer) return null;
+  if (isBulkMail(c.headers)) return "newsletter";
+  if (c.knownClient) return null;
+  return "unknown_sender";
+}

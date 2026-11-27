@@ -1,7 +1,7 @@
 // Receives client replies to AI outreach emails from Resend (email.received) and stores them for the team inbox.
 import { admin, corsHeaders, json } from "../_shared/outreachAuth.ts";
 import { verifySvix } from "../_shared/svixVerify.ts";
-import { buildOutreachTicket, followUpSkipReason, outreachSubjectRef, pickCompanyName, renderReplyFollowUp, type ReplyTemplate, draftIdFromAddresses, parseFromHeader } from "../_shared/outreachRules.ts";
+import { ticketSkipReason, buildOutreachTicket, followUpSkipReason, outreachSubjectRef, pickCompanyName, renderReplyFollowUp, type ReplyTemplate, draftIdFromAddresses, parseFromHeader } from "../_shared/outreachRules.ts";
 
 type Received = { email_id?: string; from?: string; to?: string[]; subject?: string; created_at?: string };
 
@@ -58,9 +58,11 @@ Deno.serve(async (req) => {
   }).select("id").maybeSingle();
   if (error && error.code !== "23505") { console.error(error); return json({ error: "Could not store reply" }, 500); }
 
-  // Open a support ticket for every reply so no lead is missed (one per reply via unique outreach_reply_id)
+  // Open a ticket for replies to offers or from known clients; newsletters/unknown senders only land in Replies (one per reply via unique outreach_reply_id)
   let ticketId: string | null = null;
-  if (saved?.id) {
+  const ticketSkip = ticketSkipReason({ linkedToOffer: !!draft, knownClient: !!(cl || co || ord), headers: inHeaders });
+  if (saved?.id && ticketSkip) await db.from("outreach_replies").update({ ticket_skip_reason: ticketSkip }).eq("id", saved.id);
+  if (saved?.id && !ticketSkip) {
     const ticket = buildOutreachTicket({ from_email: from.email, from_name: from.name, subject: d.subject ?? "", text_body: text }, draft ? { ...draft, company_name: companyName } : null);
     if (!draft) ticket.company_name = companyName;
     const { data: t, error: tErr } = await db.from("customer_tickets")
