@@ -114,3 +114,24 @@ export function parseFromHeader(from: string): { name: string | null; email: str
   if (m) return { name: m[1].trim() || null, email: m[2].trim().toLowerCase() };
   return { name: null, email: (from ?? "").trim().toLowerCase() };
 }
+
+export type OutreachTicketDraft = { subject: string; approved_by_name: string | null; company_name: string | null } | null;
+export type OutreachTicketReply = { from_email: string; from_name: string | null; subject: string; text_body: string | null };
+
+/** Builds the support ticket opened automatically for every client reply to an outreach offer. */
+export function buildOutreachTicket(reply: OutreachTicketReply, draft: OutreachTicketDraft) {
+  const subj = (reply.subject || "(no subject)").trim();
+  const notes = draft
+    ? `Reply to AI outreach offer "${draft.subject}". Offer sent by ${draft.approved_by_name || "unknown"}.`
+    : "Unmatched outreach reply — could not be linked to a specific offer.";
+  return {
+    subject: `Outreach reply: ${subj}`.slice(0, 300),
+    client_subject: subj.slice(0, 300),
+    client_email: reply.from_email,
+    client_name: reply.from_name,
+    company_name: draft?.company_name ?? null,
+    message: (reply.text_body ?? "").slice(0, 20000) || null,
+    notes,
+    status: "open",
+  };
+}

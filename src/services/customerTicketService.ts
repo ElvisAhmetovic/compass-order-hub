@@ -2,7 +2,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 export interface CustomerTicket {
   id: string;
-  order_id: string;
+  order_id: string | null;
   client_email: string;
   client_name: string | null;
   company_name: string | null;

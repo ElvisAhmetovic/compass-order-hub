@@ -1,7 +1,7 @@
 // Receives client replies to AI outreach emails from Resend (email.received) and stores them for the team inbox.
 import { admin, corsHeaders, json } from "../_shared/outreachAuth.ts";
 import { verifySvix } from "../_shared/svixVerify.ts";
-import { draftIdFromAddresses, parseFromHeader } from "../_shared/outreachRules.ts";
+import { buildOutreachTicket, draftIdFromAddresses, parseFromHeader } from "../_shared/outreachRules.ts";
 
 type Received = { email_id?: string; from?: string; to?: string[]; subject?: string; created_at?: string };
 
@@ -37,16 +37,30 @@ Deno.serve(async (req) => {
 
   const to = Array.isArray(d.to) ? d.to : [];
   let draftId = draftIdFromAddresses(to);
+  let draft: { subject: string; approved_by_name: string | null; company_name: string | null; email: string } | null = null;
   if (draftId) {
-    const { data: dr } = await db.from("outreach_drafts").select("id").eq("id", draftId).maybeSingle();
-    if (!dr) draftId = null;
+    const { data: dr } = await db.from("outreach_drafts").select("id, subject, approved_by_name, company_name, email").eq("id", draftId).maybeSingle();
+    if (!dr) draftId = null; else draft = dr;
   }
   const from = parseFromHeader(d.from);
-  const { error } = await db.from("outreach_replies").insert({
+  const { data: saved, error } = await db.from("outreach_replies").insert({
     provider_message_id: d.email_id, draft_id: draftId, from_email: from.email, from_name: from.name,
     to_address: to.join(", ").slice(0, 500), subject: (d.subject ?? "").slice(0, 300), text_body: text, html_body: html,
     received_at: d.created_at ?? new Date().toISOString(),
-  });
+  }).select("id").maybeSingle();
   if (error && error.code !== "23505") { console.error(error); return json({ error: "Could not store reply" }, 500); }
-  return json({ stored: true, linked: !!draftId });
+
+  // Open a support ticket for every reply so no lead is missed (one per reply via unique outreach_reply_id)
+  let ticketId: string | null = null;
+  if (saved?.id) {
+    const lookupEmail = draft?.email ?? from.email;
+    const { data: ord } = await db.from("orders").select("id").ilike("contact_email", lookupEmail)
+      .is("deleted_at", null).order("created_at", { ascending: false }).limit(1).maybeSingle();
+    const ticket = buildOutreachTicket({ from_email: from.email, from_name: from.name, subject: d.subject ?? "", text_body: text }, draft);
+    const { data: t, error: tErr } = await db.from("customer_tickets")
+      .insert({ ...ticket, order_id: ord?.id ?? null, outreach_reply_id: saved.id }).select("id").maybeSingle();
+    if (tErr && tErr.code !== "23505") console.error("Ticket creation failed", tErr);
+    ticketId = t?.id ?? null;
+  }
+  return json({ stored: true, linked: !!draftId, ticket_id: ticketId });
 });
