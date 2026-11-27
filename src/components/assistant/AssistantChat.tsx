@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import ReactMarkdown from "react-markdown";
+import { AssistantMarkdown } from "./AssistantMarkdown";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -96,13 +96,13 @@ export function AssistantChat({ threadId, onNewChat, onReplied, compact }: Props
             <div key={m.id} className="space-y-2">
               {!!m.parts.trace?.length && (
                 <details className="rounded-md border border-border text-xs">
-                  <summary className="flex cursor-pointer items-center gap-1 px-3 py-2 text-muted-foreground"><ChevronRight className="h-3 w-3" />Looked up {m.parts.trace.length} thing{m.parts.trace.length > 1 ? "s" : ""}</summary>
+                  <summary className="flex cursor-pointer items-center gap-1 px-3 py-2 text-muted-foreground"><ChevronRight className="h-3 w-3" />Steps used ({m.parts.trace.length})</summary>
                   <div className="space-y-2 px-3 pb-3">{m.parts.trace.map((t, i) => (
                     <div key={i}><span className="font-mono font-semibold">{t.tool}</span> <span className="font-mono text-muted-foreground break-all">{JSON.stringify(t.args)}</span><pre className="mt-1 max-h-40 overflow-auto whitespace-pre-wrap rounded bg-muted p-2">{t.result}</pre></div>
                   ))}</div>
                 </details>
               )}
-              <div className="prose prose-sm max-w-none overflow-x-auto text-foreground [&_table]:text-xs [&_td]:border [&_td]:border-border [&_td]:px-2 [&_th]:border [&_th]:border-border [&_th]:px-2"><ReactMarkdown>{m.content}</ReactMarkdown></div>
+              <AssistantMarkdown content={m.content} />
               {m.parts.actions?.map((a) => <ConfirmActionCard key={a} actionId={a} />)}
             </div>
           ))}
