@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AssistantMarkdown } from "./AssistantMarkdown";
+import { FunctionsHttpError } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -9,18 +10,29 @@ import { toast } from "@/hooks/use-toast";
 import { ConfirmActionCard } from "./ConfirmActionCard";
 import { toChatMessage, type ChatMessage } from "./assistantView";
 
+/** Readable server error message from a failed function call. */
+async function errorText(error: unknown): Promise<string> {
+  if (!error) return "";
+  if (error instanceof FunctionsHttpError) {
+    try { const b = await error.context.clone().json(); return typeof b?.error === "string" ? b.error : ""; } catch { return ""; }
+  }
+  return error instanceof Error ? error.message : "";
+}
+
 export type Thread = { id: string; title: string; updated_at: string };
 
 /** Saved conversations of the signed-in admin. */
 export function useAssistantThreads(enabled: boolean) {
   const { user } = useAuth();
   const [threads, setThreads] = useState<Thread[]>([]);
+  const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const reload = useCallback(async () => {
     const { data, error } = await supabase.from("assistant_threads").select("id,title,updated_at").order("updated_at", { ascending: false });
     if (error) { setError(error.message); return; }
     setError(null);
     setThreads(data ?? []);
+    setLoaded(true);
   }, []);
   const create = useCallback(async (): Promise<string | null> => {
     if (!user?.id) return null;
@@ -36,10 +48,10 @@ export function useAssistantThreads(enabled: boolean) {
     return true;
   }, []);
   useEffect(() => { if (enabled) reload(); }, [enabled, reload]);
-  return { threads, error, reload, create, remove };
+  return { threads, loaded, error, reload, create, remove };
 }
 
-type Props = { threadId: string | null; onNewChat: () => void; onReplied?: () => void; compact?: boolean };
+type Props = { threadId: string | null; onNewChat: () => Promise<string | null>; onReplied?: () => void; compact?: boolean };
 
 export function AssistantChat({ threadId, onNewChat, onReplied, compact }: Props) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -65,11 +77,18 @@ export function AssistantChat({ threadId, onNewChat, onReplied, compact }: Props
     setInput("");
     setMessages((m) => [...m, { id: `tmp-${Date.now()}`, role: "user", content: text, parts: {} }]);
     setSending(true);
-    const { data, error } = await supabase.functions.invoke("admin-assistant", { body: { threadId, message: text } });
+    const ask = (id: string) => supabase.functions.invoke("admin-assistant", { body: { threadId: id, message: text } });
+    let { data, error } = await ask(threadId);
+    let detail = await errorText(error);
+    if (detail === "Thread not found") {
+      const fresh = await onNewChat();
+      if (fresh) ({ data, error } = await ask(fresh));
+      detail = await errorText(error);
+    }
     setSending(false);
     if (error) {
       setInput(text);
-      toast({ title: "Assistant failed", description: "Your message was kept. Please try again.", variant: "destructive" });
+      toast({ title: "Assistant failed", description: `${detail || "Something went wrong"}. Your message was kept, please try again.`, variant: "destructive" });
     } else {
       const d = data as { text: string; parts: ChatMessage["parts"] };
       setMessages((m) => [...m, { id: `a-${Date.now()}`, role: "assistant", content: d.text, parts: d.parts }]);

@@ -13,7 +13,7 @@ export default function AdminAssistant() {
   const isAdmin = user?.role === "admin";
   const { threads, error, reload, create, remove } = useAssistantThreads(isAdmin);
 
-  const newThread = async () => { const id = await create(); if (id) navigate(assistantPath(id)); };
+  const newThread = async () => { const id = await create(); if (id) navigate(assistantPath(id)); return id; };
   const del = async (id: string) => { if ((await remove(id)) && id === threadId) navigate(assistantPath()); };
 
   if (user && !isAdmin) {

@@ -19,12 +19,14 @@ export default function AssistantBubble() {
   const saved = (() => { try { return JSON.parse(sessionStorage.getItem(KEY) || "{}"); } catch { return {}; } })();
   const [open, setOpen] = useState<boolean>(!!saved.open);
   const [threadId, setThreadId] = useState<string | null>(saved.threadId ?? null);
-  const { threads, reload, create } = useAssistantThreads(visible && open);
+  const { threads, loaded, reload, create } = useAssistantThreads(visible && open);
 
   useEffect(() => { sessionStorage.setItem(KEY, JSON.stringify({ open, threadId })); }, [open, threadId]);
 
+  useEffect(() => { if (loaded && threadId && !threads.some((t) => t.id === threadId)) setThreadId(null); }, [loaded, threads, threadId]);
+
   if (!visible) return null;
-  const newChat = async () => { const id = await create(); if (id) setThreadId(id); };
+  const newChat = async () => { const id = await create(); if (id) setThreadId(id); return id; };
 
   if (!open) return (
     <button aria-label="Open assistant" onClick={() => setOpen(true)}
