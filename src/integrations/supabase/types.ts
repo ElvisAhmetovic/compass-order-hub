@@ -132,6 +132,8 @@ export type Database = {
           created_by: string | null
           created_by_name: string | null
           id: string
+          kind: string
+          source: string
           source_thread_id: string | null
           topic: string
           updated_at: string
@@ -143,6 +145,8 @@ export type Database = {
           created_by?: string | null
           created_by_name?: string | null
           id?: string
+          kind?: string
+          source?: string
           source_thread_id?: string | null
           topic?: string
           updated_at?: string
@@ -154,6 +158,8 @@ export type Database = {
           created_by?: string | null
           created_by_name?: string | null
           id?: string
+          kind?: string
+          source?: string
           source_thread_id?: string | null
           topic?: string
           updated_at?: string
