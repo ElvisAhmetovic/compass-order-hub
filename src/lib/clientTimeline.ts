@@ -4,7 +4,7 @@ export type TimelineFilter = "all" | "sent" | "received" | "outreach" | "orders"
 
 type Src = {
   offers?: { id: string; sent_at: string | null; subject: string; body: string; approved_by_name: string | null }[];
-  replies?: { id: string; received_at: string; subject: string | null; text_body: string | null; from_name: string | null; from_email: string }[];
+  replies?: { id: string; received_at: string; subject: string | null; text_body: string | null; from_name: string | null; from_email: string; from_team_name?: string | null; from_team_user?: string | null }[];
   messages?: { id: string; created_at: string; subject: string; body: string; sent_by_name: string | null; status: string }[];
   orderEmails?: { id: string; created_at: string; email_subject: string | null; template_name: string | null; custom_message: string | null; sent_by_name: string | null; invoice_number: string | null }[];
   statusEmails?: { id: string; created_at: string; sent_at: string | null; email_subject: string | null; new_status: string | null; changed_by_name: string | null; email_sent: boolean | null }[];
@@ -14,7 +14,9 @@ type Src = {
 export function buildClientTimeline(s: Src): TimelineEntry[] {
   const out: TimelineEntry[] = [];
   for (const o of s.offers ?? []) if (o.sent_at) out.push({ key: `o${o.id}`, at: o.sent_at, kind: "outreach_offer", direction: "sent", subject: o.subject, who: o.approved_by_name, body: o.body });
-  for (const r of s.replies ?? []) out.push({ key: `r${r.id}`, at: r.received_at, kind: "outreach_reply", direction: "received", subject: r.subject || "(no subject)", who: r.from_name || r.from_email, body: r.text_body });
+  for (const r of s.replies ?? []) out.push(r.from_team_user
+    ? { key: `r${r.id}`, at: r.received_at, kind: "team_reply", direction: "sent", subject: r.subject || "(no subject)", who: r.from_team_name || r.from_email, body: r.text_body }
+    : { key: `r${r.id}`, at: r.received_at, kind: "outreach_reply", direction: "received", subject: r.subject || "(no subject)", who: `Client: ${r.from_name || r.from_email}`, body: r.text_body });
   for (const m of s.messages ?? []) if (m.status === "sent") out.push({ key: `m${m.id}`, at: m.created_at, kind: "team_reply", direction: "sent", subject: m.subject, who: m.sent_by_name, body: m.body });
   for (const e of s.orderEmails ?? []) out.push({ key: `e${e.id}`, at: e.created_at, kind: "order_email", direction: "sent",
     subject: e.email_subject || e.template_name || (e.invoice_number ? `Invoice ${e.invoice_number}` : "Order email"), who: e.sent_by_name, body: e.custom_message });

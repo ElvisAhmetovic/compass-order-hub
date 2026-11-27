@@ -2332,8 +2332,12 @@ export type Database = {
           draft_id: string | null
           followup_sent_at: string | null
           followup_status: string | null
+          forwarded_at: string | null
+          forwarded_to: string | null
           from_email: string
           from_name: string | null
+          from_team_name: string | null
+          from_team_user: string | null
           html_body: string | null
           id: string
           provider_message_id: string
@@ -2351,8 +2355,12 @@ export type Database = {
           draft_id?: string | null
           followup_sent_at?: string | null
           followup_status?: string | null
+          forwarded_at?: string | null
+          forwarded_to?: string | null
           from_email: string
           from_name?: string | null
+          from_team_name?: string | null
+          from_team_user?: string | null
           html_body?: string | null
           id?: string
           provider_message_id: string
@@ -2370,8 +2378,12 @@ export type Database = {
           draft_id?: string | null
           followup_sent_at?: string | null
           followup_status?: string | null
+          forwarded_at?: string | null
+          forwarded_to?: string | null
           from_email?: string
           from_name?: string | null
+          from_team_name?: string | null
+          from_team_user?: string | null
           html_body?: string | null
           id?: string
           provider_message_id?: string

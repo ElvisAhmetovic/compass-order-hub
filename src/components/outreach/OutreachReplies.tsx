@@ -17,7 +17,7 @@ import ReplyConversation from "./ReplyConversation";
 export type OutreachReply = {
   id: string; draft_id: string | null; from_email: string; from_name: string | null; subject: string | null;
   text_body: string | null; received_at: string; read_at: string | null; company_name?: string | null; ticket_skip_reason?: string | null;
-  followup_status?: string | null; followup_sent_at?: string | null;
+  followup_status?: string | null; followup_sent_at?: string | null; forwarded_to?: string | null; from_team_user?: string | null; from_team_name?: string | null;
 };
 type DraftInfo = { id: string; approved_by_name: string | null; company_name: string | null; subject?: string; body?: string; sent_at?: string | null };
 
@@ -41,7 +41,7 @@ export default function OutreachReplies({ replies, drafts, q, onChanged }: {
   const { data: known = [] } = useClientsByEmail(replies.map((r) => r.from_email));
   const byId = new Map(drafts.map((d) => [d.id, d]));
   const companyOf = (r: OutreachReply) => matchClientByEmail(known, r.from_email)?.name || r.company_name || (r.draft_id ? byId.get(r.draft_id)?.company_name : null) || null;
-  const list = replies.filter((r) => !q || `${companyOf(r) ?? ""} ${r.from_email} ${r.from_name ?? ""} ${r.subject ?? ""}`.toLowerCase().includes(q.toLowerCase()));
+  const list = replies.filter((r) => !r.from_team_user).filter((r) => !q || `${companyOf(r) ?? ""} ${r.from_email} ${r.from_name ?? ""} ${r.subject ?? ""}`.toLowerCase().includes(q.toLowerCase()));
 
   const markRead = async (r: OutreachReply, read: boolean) => {
     const { data: auth } = await supabase.auth.getUser();
@@ -120,6 +120,7 @@ export default function OutreachReplies({ replies, drafts, q, onChanged }: {
                   {d ? <Badge variant="secondary">Offer sent by {d.approved_by_name || "unknown"}</Badge>
                     : <Badge variant="outline">Not linked to an offer</Badge>}
                   {r.ticket_skip_reason === "newsletter" && <Badge variant="outline" className="ml-1">Newsletter / not a reply</Badge>}
+                  {r.forwarded_to && <p className="text-xs text-muted-foreground mt-1">Forwarded to {r.forwarded_to}</p>}
                   {r.followup_status && <p className="text-xs text-muted-foreground mt-1">{followUpLabel(r)}</p>}
                 </div>
               </button>

@@ -1,0 +1,1 @@
+ALTER TABLE public.outreach_replies ADD COLUMN IF NOT EXISTS forwarded_to text, ADD COLUMN IF NOT EXISTS forwarded_at timestamptz, ADD COLUMN IF NOT EXISTS from_team_user uuid, ADD COLUMN IF NOT EXISTS from_team_name text;

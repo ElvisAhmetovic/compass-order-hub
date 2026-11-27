@@ -54,7 +54,7 @@ export default function AiOutreach() {
     setSkips(sk ?? []);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: rp, error: rpErr } = await (supabase as any).from("outreach_replies")
-      .select("id, draft_id, from_email, from_name, subject, text_body, received_at, read_at, company_name, followup_status, followup_sent_at, ticket_skip_reason").order("received_at", { ascending: false }).limit(500);
+      .select("id, draft_id, from_email, from_name, subject, text_body, received_at, read_at, company_name, followup_status, followup_sent_at, ticket_skip_reason, forwarded_to, from_team_user, from_team_name").order("received_at", { ascending: false }).limit(500);
     if (rpErr) toast({ title: "Could not load replies", description: rpErr.message, variant: "destructive" });
     else setReplies(rp as OutreachReply[]);
   }, []);

@@ -23,14 +23,15 @@ export default function ClientConversationHistory({ email }: { email: string }) 
       const sb = supabase as any;
       const [o, r, m, e, n] = await Promise.all([
         sb.from("outreach_drafts").select("id, sent_at, subject, body, approved_by_name").ilike("email", email).eq("status", "sent").limit(200),
-        sb.from("outreach_replies").select("id, draft_id, received_at, subject, text_body, from_name, from_email").ilike("from_email", email).order("received_at", { ascending: false }).limit(200),
+        sb.from("outreach_replies").select("id, draft_id, received_at, subject, text_body, from_name, from_email, from_team_name, from_team_user").ilike("from_email", email).order("received_at", { ascending: false }).limit(200),
         sb.from("outreach_messages").select("id, created_at, subject, body, sent_by_name, status").ilike("to_email", email).limit(200),
         sb.from("client_email_logs").select("id, created_at, email_subject, template_name, custom_message, sent_by_name, invoice_number").ilike("sent_to", `%${email}%`).limit(200),
         sb.from("notification_logs").select("id, created_at, sent_at, email_subject, new_status, changed_by_name, email_sent").contains("recipient_emails", [email]).limit(200),
       ]);
       for (const x of [o, r, m, e, n]) if (x.error) throw x.error;
+      const clientReplies = (r.data ?? []).filter((x: { from_team_user: string | null }) => !x.from_team_user);
       return { list: buildClientTimeline({ offers: o.data, replies: r.data, messages: m.data, orderEmails: e.data, statusEmails: n.data }),
-        latestReply: (r.data?.[0] ?? null) as { id: string; draft_id: string | null; subject: string | null } | null };
+        latestReply: (clientReplies[0] ?? null) as { id: string; draft_id: string | null; subject: string | null } | null };
     },
   });
   const list = q.data ? filterTimeline(q.data.list, filter) : [];

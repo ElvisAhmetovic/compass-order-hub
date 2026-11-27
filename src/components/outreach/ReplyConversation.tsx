@@ -23,7 +23,7 @@ export default function ReplyConversation({ replyId, draftId, email, subject, of
     queryFn: async (): Promise<Entry[]> => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const sb = supabase as any;
-      const rq = sb.from("outreach_replies").select("id, from_email, from_name, subject, text_body, received_at");
+      const rq = sb.from("outreach_replies").select("id, from_email, from_name, subject, text_body, received_at, from_team_name, from_team_user");
       const mq = sb.from("outreach_messages").select("id, subject, body, sent_by_name, status, created_at");
       const [r, m] = await Promise.all([
         draftId ? rq.eq("draft_id", draftId) : rq.is("draft_id", null).ilike("from_email", email),
@@ -32,8 +32,10 @@ export default function ReplyConversation({ replyId, draftId, email, subject, of
       if (r.error) throw r.error;
       if (m.error) throw m.error;
       const list: Entry[] = [
-        ...r.data.map((x: { id: string; from_email: string; from_name: string | null; subject: string | null; text_body: string | null; received_at: string }) =>
-          ({ key: `r${x.id}`, at: x.received_at, who: x.from_name || x.from_email, out: false, subject: x.subject, body: x.text_body })),
+        ...r.data.map((x: { id: string; from_email: string; from_name: string | null; subject: string | null; text_body: string | null; received_at: string; from_team_name: string | null; from_team_user: string | null }) =>
+          x.from_team_user
+            ? ({ key: `r${x.id}`, at: x.received_at, who: `${x.from_team_name || x.from_email} (from own mailbox)`, out: true, subject: x.subject, body: x.text_body })
+            : ({ key: `r${x.id}`, at: x.received_at, who: `Client: ${x.from_name || x.from_email}`, out: false, subject: x.subject, body: x.text_body })),
         ...m.data.map((x: { id: string; subject: string; body: string; sent_by_name: string | null; status: string; created_at: string }) =>
           ({ key: `m${x.id}`, at: x.created_at, who: x.sent_by_name || "Team", out: true, subject: x.subject, body: x.body, failed: x.status !== "sent" })),
       ];
@@ -67,7 +69,7 @@ export default function ReplyConversation({ replyId, draftId, email, subject, of
         : error ? <p className="text-sm text-destructive">Could not load the conversation. <button className="underline" onClick={() => refetch()}>Try again</button></p>
         : <div className="space-y-2">{entries.map((e) => (
             <div key={e.key} className={`rounded-md p-3 text-sm min-w-0 ${e.out ? "bg-primary/5 ml-8" : "bg-muted mr-8"}`}>
-              <p className="text-xs text-muted-foreground">{e.out ? "You · " : ""}{e.who} · {fmt(e.at)}{e.failed ? " · not delivered" : ""}</p>
+              <p className="text-xs text-muted-foreground">{e.who} · {fmt(e.at)}{e.failed ? " · not delivered" : ""}</p>
               {e.subject && <p className="font-medium">{e.subject}</p>}
               <p className="whitespace-pre-wrap break-words [overflow-wrap:anywhere]">{e.body || "(no plain-text content)"}</p>
             </div>))}</div>}

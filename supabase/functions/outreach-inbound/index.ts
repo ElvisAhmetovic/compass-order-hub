@@ -1,7 +1,7 @@
 // Receives client replies to AI outreach emails from Resend (email.received) and stores them for the team inbox.
 import { admin, corsHeaders, json } from "../_shared/outreachAuth.ts";
 import { verifySvix } from "../_shared/svixVerify.ts";
-import { ticketSkipReason, buildOutreachTicket, followUpSkipReason, outreachSubjectRef, pickCompanyName, renderReplyFollowUp, type ReplyTemplate, draftIdFromAddresses, parseFromHeader } from "../_shared/outreachRules.ts";
+import { isBulkMail, shouldForwardReply, renderForwardEmail, ticketSkipReason, buildOutreachTicket, followUpSkipReason, outreachSubjectRef, pickCompanyName, renderReplyFollowUp, type ReplyTemplate, draftIdFromAddresses, parseFromHeader } from "../_shared/outreachRules.ts";
 
 type Received = { email_id?: string; from?: string; to?: string[]; subject?: string; created_at?: string };
 
@@ -39,12 +39,19 @@ Deno.serve(async (req) => {
 
   const to = Array.isArray(d.to) ? d.to : [];
   let draftId = draftIdFromAddresses(to);
-  let draft: { subject: string; approved_by_name: string | null; company_name: string | null; email: string; language: string | null; approved_by_email?: string | null } | null = null;
+  let draft: { subject: string; approved_by_name: string | null; company_name: string | null; email: string; language: string | null; approved_by?: string | null; sent_at?: string | null } | null = null;
   if (draftId) {
-    const { data: dr } = await db.from("outreach_drafts").select("id, subject, approved_by_name, company_name, email, language").eq("id", draftId).maybeSingle();
+    const { data: dr } = await db.from("outreach_drafts").select("id, subject, approved_by_name, company_name, email, language, approved_by, sent_at").eq("id", draftId).maybeSingle();
     if (!dr) draftId = null; else draft = dr;
   }
   const from = parseFromHeader(d.from);
+  // Who sent the offer, and is this mail from that team member (their own-mailbox answer copied to the reply address)?
+  let ownerEmail: string | null = null;
+  if (draft?.approved_by) {
+    const { data: u } = await db.auth.admin.getUserById(draft.approved_by);
+    ownerEmail = u?.user?.email?.toLowerCase() ?? null;
+  }
+  const fromTeam = !!ownerEmail && from.email.toLowerCase() === ownerEmail;
   const lookupEmail = draft?.email ?? from.email;
   const { data: ord } = await db.from("orders").select("id, company_name").ilike("contact_email", lookupEmail)
     .is("deleted_at", null).order("created_at", { ascending: false }).limit(1).maybeSingle();
@@ -55,8 +62,30 @@ Deno.serve(async (req) => {
     provider_message_id: d.email_id, draft_id: draftId, from_email: from.email, from_name: from.name,
     to_address: to.join(", ").slice(0, 500), subject: (d.subject ?? "").slice(0, 300), text_body: text, html_body: html, company_name: companyName,
     received_at: d.created_at ?? new Date().toISOString(),
+    from_team_user: fromTeam ? draft?.approved_by ?? null : null, from_team_name: fromTeam ? draft?.approved_by_name ?? null : null, read_at: fromTeam ? new Date().toISOString() : null,
   }).select("id").maybeSingle();
   if (error && error.code !== "23505") { console.error(error); return json({ error: "Could not store reply" }, 500); }
+
+  if (fromTeam) return json({ stored: true, linked: true, from_team: true });
+
+  // Forward to the team member who sent the offer (once, real replies only)
+  if (saved?.id) {
+    const autoReply = followUpSkipReason({ template: { enabled: true, subject_en: "", body_en: "", subject_de: "", body_de: "" }, linkedToOffer: true, fromEmail: from.email, subject: d.subject ?? "", headers: inHeaders, optedOut: false, alreadySent: false }) !== null;
+    if (shouldForwardReply({ linked: !!draft, bulk: isBulkMail(inHeaders), autoReply, fromTeam, alreadyForwarded: false, to: ownerEmail })) {
+      const domain = Deno.env.get("OUTREACH_INBOUND_DOMAIN")?.trim().toLowerCase();
+      const m = renderForwardEmail({ clientName: from.name || from.email, companyName, subject: d.subject ?? "",
+        offerDate: draft?.sent_at ? new Date(draft.sent_at).toLocaleDateString("de-DE") : null, text, link: "https://www.empriatech.com/ai-outreach" });
+      try {
+        const fr = await fetch("https://api.resend.com/emails", { method: "POST",
+          headers: { Authorization: `Bearer ${Deno.env.get("RESEND_API_KEY_ABMEDIA")}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ from: "Media Marketing <noreply@mediaamarketing.com>", to: [ownerEmail], subject: m.subject, html: m.html, text: m.text,
+            reply_to: [from.email, ...(domain && draftId ? [`reply+${draftId}@${domain}`] : [])] }) });
+        const ft = await fr.text();
+        if (fr.ok) await db.from("outreach_replies").update({ forwarded_to: ownerEmail, forwarded_at: new Date().toISOString() }).eq("id", saved.id).is("forwarded_at", null);
+        else console.error(`Forward failed [${fr.status}]: ${ft}`);
+      } catch (e) { console.error("Forward failed", e); }
+    }
+  }
 
   // Open a ticket for replies to offers or from known clients; newsletters/unknown senders only land in Replies (one per reply via unique outreach_reply_id)
   let ticketId: string | null = null;

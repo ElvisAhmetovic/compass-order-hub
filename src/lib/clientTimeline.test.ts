@@ -16,7 +16,11 @@ describe("buildClientTimeline", () => {
   });
   it("marks client replies as received and names the sender", () => {
     const r = buildClientTimeline(src).find((e) => e.key === "r3")!;
-    expect(r.direction).toBe("received"); expect(r.who).toBe("a@b.de");
+    expect(r.direction).toBe("received"); expect(r.who).toBe("Client: a@b.de");
+  });
+  it("shows a team member's own-mailbox answer as sent by them", () => {
+    const t = buildClientTimeline({ replies: [{ id: "9", received_at: "2026-11-05T10:00:00Z", subject: "Re", text_body: "ok", from_name: null, from_email: "max@x.de", from_team_name: "Max", from_team_user: "u1" }] });
+    expect(t[0]).toMatchObject({ direction: "sent", who: "Max", kind: "team_reply" });
   });
   it("filters by direction and type", () => {
     const t = buildClientTimeline(src);

@@ -216,3 +216,18 @@ export function replySubject(s: string): string {
   const t = (s || "").trim();
   return /^re:/i.test(t) ? t : `Re: ${t}`;
 }
+
+/** Forward a client reply to the offer's sender only once, only for real replies. */
+export function shouldForwardReply(c: { linked: boolean; bulk: boolean; autoReply: boolean; fromTeam: boolean; alreadyForwarded: boolean; to: string | null }): boolean {
+  return c.linked && !c.bulk && !c.autoReply && !c.fromTeam && !c.alreadyForwarded && !!c.to && c.to.includes("@");
+}
+
+export function renderForwardEmail(v: { clientName: string; companyName: string | null; subject: string; offerDate: string | null; text: string | null; link: string }) {
+  const subject = `Client reply: ${v.subject || "(no subject)"}${v.companyName ? ` – ${v.companyName}` : ""}`.replace(/[\r\n]+/g, " ").slice(0, 200);
+  const intro = `${v.clientName} replied to your offer${v.offerDate ? ` from ${v.offerDate}` : ""}.`;
+  const body = (v.text || "(This email has no plain-text content.)").trim();
+  const html = `<div style="font-family:Arial,sans-serif;font-size:14px;line-height:1.6;color:#1f2937"><p><b>${escHtml(intro)}</b></p>
+<div style="border-left:3px solid #d1d5db;padding-left:12px;white-space:pre-wrap">${escHtml(body)}</div>
+<p><a href="${v.link}">Open in Empria</a> · Reply to this email to answer the client directly.</p></div>`;
+  return { subject, html, text: `${intro}\n\n${body}\n\nOpen in Empria: ${v.link}` };
+}
